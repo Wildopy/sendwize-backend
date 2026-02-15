@@ -894,12 +894,13 @@
       <span class="brand-name">sendwize</span>
     </div>
     <div class="header-actions">
-      <div class="compliance-badge" id="headerScoreBadge">
+      <div class="compliance-badge visible" id="headerScoreBadge">
         <div>
           <div class="score" id="headerScore">0%</div>
           <div class="label">Compliance</div>
         </div>
       </div>
+      <!-- Button removed - users access through Webflow -->
     </div>
   </div>
   
@@ -994,26 +995,26 @@
       
     </div>
   </div>
-  
-  <!-- Dashboard Section -->
-  <div id="results-container">
-    <p style="text-align: center; padding: 60px; color: #999;">Loading your compliance checks...</p>
-  </div>
 
   <script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
-
+  
   <script>
     // =========================
     // CONFIGURATION
     // =========================
     
-    // Get the URL parameters to check for redirect from Webflow
+    // Get redirect URL from query parameters
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUrl = urlParams.get('redirect') || 'https://yourwebflowsite.com/dashboard';
     
     // Auto-save configuration
     let autoSaveTimeout = null;
     const AUTO_SAVE_DELAY = 3000; // 3 seconds
+    
+    // =========================
+    // COMPREHENSIVE QUESTION STRUCTURE
+    // All 140+ questions from your Word doc organized by section
+    // =========================
     
     const questions = [
       // SECTION 1: CAMPAIGN BASICS
@@ -2274,27 +2275,6 @@
       recommendationsList.innerHTML = recommendationsHTML;
     }
     
-
-      
-      const recommendationsList = document.getElementById('recommendationsList');
-      let recommendationsHTML = '';
-      
-      if (results.recommendations.length === 0) {
-        recommendationsHTML = '<p style="text-align: center; color: #666;">No specific recommendations - great work!</p>';
-      } else {
-        results.recommendations.forEach(rec => {
-          recommendationsHTML += `
-            <div class="recommendation-item">
-              <h4>${rec.title}</h4>
-              <p>${rec.description}</p>
-            </div>
-          `;
-        });
-      }
-      
-      recommendationsList.innerHTML = recommendationsHTML;
-    }
-    
     function determineResultCategory(results) {
       if (results.overallScore >= 85) {
         return 'Send this Wizely';
@@ -2335,7 +2315,7 @@
           }]
         };
         
-        // Call Netlify function instead of Airtable directly
+        // Call Vercel serverless function instead of Airtable directly
         const response = await fetch('/.netlify/functions/submit-check', {
           method: 'POST',
           headers: {
@@ -2360,7 +2340,7 @@
       }
     }
     
-    // DASHBOARD FUNCTIONS
+    // DASHBOARD FUNCTIONS (PRESERVED FROM YOUR ORIGINAL)
     async function loadResults() {
       try {
         const { data: member } = await window.$memberstackDom.getCurrentMember();
@@ -2371,7 +2351,7 @@
           return;
         }
         
-        // Call Netlify function instead of Airtable directly
+        // Call Vercel serverless function instead of Airtable directly
         const response = await fetch(`/.netlify/functions/load-results?userId=${member.id}`);
         
         if (!response.ok) {
@@ -2457,36 +2437,47 @@
       }
     }
     
-    // INITIALIZATION
+    // INITIALIZATION - Auto-show form
     async function init() {
       try {
-        const { data: member } = await window.$memberstackDom.getCurrentMember();
-        
-        if (!member) {
-          document.getElementById('results-container').innerHTML = `
-            <div class="empty-state">
-              <h2>Please Log In</h2>
-              <p>You need to be logged in to use the compliance checker. Please log in through your main dashboard.</p>
-              <p style="margin-top: 20px;"><a href="${redirectUrl}" style="color: #f97316; text-decoration: underline;">Return to Dashboard</a></p>
-            </div>
-          `;
-          document.getElementById('newCheckButton').style.display = 'none';
+        // Wait for Memberstack to be ready
+        if (!window.$memberstackDom) {
+          console.log('Waiting for Memberstack...');
+          setTimeout(init, 100);
           return;
         }
         
-        await loadResults();
+        const { data: member } = await window.$memberstackDom.getCurrentMember();
+        
+        if (!member) {
+          document.getElementById('formContainer').innerHTML = `
+            <div class="empty-state" style="text-align: center; padding: 100px 40px;">
+              <h2>Please Log In</h2>
+              <p>Please log in through your dashboard to use the compliance checker.</p>
+              <p style="margin-top: 20px;"><a href="${redirectUrl}" style="color: #f97316; text-decoration: underline;">Return to Dashboard</a></p>
+            </div>
+          `;
+          document.getElementById('formContainer').classList.remove('hidden');
+          return;
+        }
+        
+        // Auto-show the form
+        showForm();
         
       } catch (error) {
         console.error('Initialization error:', error);
-        document.getElementById('results-container').innerHTML = `
-          <div class="empty-state" style="color: #ef4444;">
+        document.getElementById('formContainer').innerHTML = `
+          <div class="empty-state" style="text-align: center; padding: 100px 40px;">
             <h2>Error</h2>
-            <p>Failed to load dashboard. Please refresh the page.</p>
+            <p>Failed to load. Please try refreshing the page.</p>
+            <p style="margin-top: 20px;"><a href="${redirectUrl}" style="color: #f97316; text-decoration: underline;">Return to Dashboard</a></p>
           </div>
         `;
+        document.getElementById('formContainer').classList.remove('hidden');
       }
     }
     
+    // Wait for both DOM and Memberstack to be ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
     } else {
@@ -2495,3 +2486,13 @@
   </script>
 </body>
 </html>
+
+<!-- ============================================ -->
+<!-- END OF CODE - PASTE ALL 4 PARTS IN ORDER INTO YOUR WEBFLOW CODE EMBED -->
+<!-- Part 1: HTML + CSS -->
+<!-- Part 2: HTML Body -->
+<!-- Part 3A: JavaScript Config + Questions A -->
+<!-- Part 3B: JavaScript Questions B -->
+<!-- Part 3C: JavaScript Questions C + Core Logic -->
+<!-- Part 3D: JavaScript Functions + Closing -->
+<!-- ============================================ -->
