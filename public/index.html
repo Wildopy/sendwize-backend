@@ -1,81 +1,2605 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PECR Test</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, sans-serif; background: #fafafa; padding: 20px; }
-    .card { background: white; padding: 40px; border-radius: 10px; max-width: 800px; margin: 0 auto; }
-    h1 { color: #f97316; margin-bottom: 10px; }
-    .question { font-size: 24px; font-weight: 700; margin: 20px 0; }
-    .option { padding: 15px; border: 2px solid #e5e5e5; border-radius: 8px; margin: 10px 0; cursor: pointer; }
-    .option:hover { border-color: #f97316; }
-    .option.selected { border-color: #f97316; background: #fff7ed; }
-    input { width: 100%; padding: 15px; font-size: 16px; border: 2px solid #e5e5e5; border-radius: 8px; }
-    button { padding: 15px 30px; background: #f97316; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 20px; }
-    button:disabled { background: #ccc; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PECR Compliance Checker - Sendwize</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #ffffff;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ========== HEADER ========== */
+.header {
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.score-badge {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 25px;
+  border: 2px solid #86efac;
+  transition: all 0.3s ease;
+}
+
+.score {
+  font-size: 28px;
+  font-weight: 700;
+  color: #166534;
+  transition: transform 0.3s ease;
+}
+
+.score-label {
+  font-size: 13px;
+  color: #15803d;
+  font-weight: 600;
+}
+
+/* ========== SPLIT LAYOUT ========== */
+.split-container {
+  display: flex;
+  min-height: calc(100vh - 81px);
+}
+
+.left-panel {
+  width: 40%;
+  background: linear-gradient(165deg, #f97316 0%, #ea580c 100%);
+  padding: 60px 50px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated gradient background */
+.left-panel::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 500px;
+  height: 500px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.left-content {
+  position: relative;
+  z-index: 2;
+}
+
+.panel-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.panel-subtitle {
+  font-size: 18px;
+  opacity: 0.9;
+  margin-bottom: 50px;
+  line-height: 1.6;
+}
+
+/* ========== PROGRESS BAR WITH WAVE ANIMATION ========== */
+.progress-bar {
+  background: rgba(255, 255, 255, 0.2);
+  height: 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: white;
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Wave animation effect */
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    transparent 100%);
+  animation: wave 2s linear infinite;
+}
+
+@keyframes wave {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-text {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 40px;
+}
+
+.stats-box {
+  margin-top: 60px;
+  padding: 25px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.stats-box h3 {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stats-box .big-number {
+  font-size: 36px;
+  font-weight: 700;
+  transition: transform 0.3s ease;
+}
+
+.stats-box .big-number.pulse {
+  animation: pulse 0.5s ease;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ========== RIGHT PANEL ========== */
+.right-panel {
+  width: 60%;
+  padding: 60px 80px;
+  background: #fafafa;
+  position: relative;
+}
+
+.form-wrapper {
+  max-width: 600px;
+}
+
+/* ========== QUESTION CONTAINER WITH SLIDE ANIMATION ========== */
+.question-container {
+  animation: slideInRight 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.question-meta {
+  color: #f97316;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.question-text {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  line-height: 1.3;
+  position: relative;
+  display: inline-block;
+}
+
+/* Tooltip for complex questions */
+.tooltip-trigger {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background: #f97316;
+  color: white;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 20px;
+  font-size: 12px;
+  margin-left: 10px;
+  cursor: help;
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1a1a1a;
+}
+
+.tooltip-trigger:hover .tooltip {
+  opacity: 1;
+}
+
+.question-description {
+  font-size: 17px;
+  color: #666;
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+/* ========== INPUTS ========== */
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 18px 20px;
+  font-size: 16px;
+  border: 2px solid #e5e5e5;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  background: white;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+/* ========== OPTIONS WITH BOUNCE EFFECT ========== */
+.option {
+  padding: 20px 25px;
+  border: 2px solid #e5e5e5;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  text-align: left;
+  font-size: 17px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.option:hover {
+  border-color: #f97316;
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
+}
+
+.option:active {
+  transform: translateX(5px) scale(0.98);
+}
+
+.option.selected {
+  border-color: #f97316;
+  background: #fff7ed;
+  color: #1a1a1a;
+  font-weight: 600;
+  animation: bounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.05); }
+  50% { transform: scale(0.95); }
+  75% { transform: scale(1.02); }
+}
+
+.option.selected::after {
+  content: '✓';
+  position: absolute;
+  right: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #f97316;
+  font-size: 20px;
+  font-weight: bold;
+  animation: checkmark 0.3s ease;
+}
+
+@keyframes checkmark {
+  0% { opacity: 0; transform: translateY(-50%) scale(0); }
+  100% { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
+/* ========== BUTTONS ========== */
+.buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 50px;
+}
+
+button {
+  padding: 16px 32px;
+  font-size: 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+button:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-primary {
+  background: #f97316;
+  color: white;
+  flex: 1;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.btn-primary:hover {
+  background: #ea580c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+}
+
+.btn-primary:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: white;
+  color: #666;
+  border: 2px solid #e5e5e5;
+  min-width: 120px;
+}
+
+.btn-secondary:hover {
+  background: #f9f9f9;
+  border-color: #d1d5db;
+}
+
+/* ========== KEYBOARD SHORTCUT HINT ========== */
+.keyboard-hint {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1a1a1a;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+  z-index: 50;
+}
+
+.keyboard-hint:hover {
+  opacity: 1;
+}
+
+.kbd {
+  background: #333;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  margin: 0 4px;
+}
+
+/* ========== LOADING ========== */
+.loading {
+  display: none;
+  text-align: center;
+  padding: 100px 40px;
+}
+
+.loading.active { display: block; }
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #f97316;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 25px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ========== RESULT ========== */
+.result {
+  display: none;
+  text-align: center;
+  padding: 80px 40px;
+}
+
+.result.active { display: block; }
+
+.result-icon { font-size: 70px; margin-bottom: 25px; }
+.result-title { font-size: 36px; font-weight: 700; margin-bottom: 20px; }
+.result-message { font-size: 18px; color: #666; margin-bottom: 40px; line-height: 1.6; }
+
+/* ========== CONFETTI ========== */
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  background: #f97316;
+  position: absolute;
+  animation: confetti-fall 3s linear forwards;
+  z-index: 9999;
+}
+
+@keyframes confetti-fall {
+  to {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 968px) {
+  .split-container { flex-direction: column; }
+  .left-panel, .right-panel { width: 100%; }
+  .left-panel { padding: 40px 30px; }
+  .right-panel { padding: 40px 30px; }
+  .question-text { font-size: 28px; }
+}
+</style>
 </head>
 <body>
-  <div class="card" id="app">
-    <h1>🚀 PECR Compliance Checker</h1>
-    <div id="content"></div>
-  </div>
 
-  <script>
-    let currentIndex = 0;
-    let answers = {};
+<div class="header">
+  <div class="logo-container">
+    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 200 200">
+      <path d="M0 0 C163.02 0 326.04 0 494 0 C494 31.35 494 62.7 494 95 C330.98 95 167.96 95 0 95 C0 63.65 0 32.3 0 0 Z " fill="#FCFCFB" transform="translate(0,0)"/>
+      <path d="M0 0 C6.6 0 13.2 0 20 0 C20 25.41 20 50.82 20 77 C15.05 77 10.1 77 5 77 C4.67 75.35 4.34 73.7 4 72 C2.9275 72.61875 1.855 73.2375 0.75 73.875 C-0.49448778 74.59297372 -1.74478166 75.30095564 -3 76 C-3.57492188 76.36867188 -4.14984375 76.73734375 -4.7421875 77.1171875 C-8.07303885 78.4195619 -11.3530687 78.28877356 -14.875 78.25 C-15.56980469 78.25773437 -16.26460937 78.26546875 -16.98046875 78.2734375 C-25.28095239 78.24217391 -31.03397 75.58469612 -37 70 C-43.48568277 61.79896032 -44.97889703 53.28446139 -44 43 C-41.65526128 33.73511348 -37.00062432 27.87002512 -28.8671875 22.98046875 C-24.81918227 20.85484257 -21.32298392 20.80428867 -16.8125 20.75 C-15.54019531 20.72421875 -14.26789063 20.6984375 -12.95703125 20.671875 C-9 21 -9 21 -1 24 C-0.67 16.08 -0.34 8.16 0 0 Z " fill="#EE973F" transform="translate(226,10)"/>
+      <path d="M0 0 C6.93 0 13.86 0 21 0 C24.66059603 8.57625355 27.93971252 17.19679005 31 26 C32.83924204 23.24113694 33.81462726 21.02578385 34.91015625 17.9296875 C35.26013672 16.95128906 35.61011719 15.97289062 35.97070312 14.96484375 C36.33099609 13.94519531 36.69128906 12.92554688 37.0625 11.875 C37.78003304 9.85066785 38.49995563 7.82718055 39.22265625 5.8046875 C39.53984619 4.90733887 39.85703613 4.00999023 40.18383789 3.08544922 C41 1 41 1 42 0 C44.69654854 -0.07319621 47.36691458 -0.09242537 50.0625 -0.0625 C50.82111328 -0.05798828 51.57972656 -0.05347656 52.36132812 -0.04882812 C54.24091871 -0.0370068 56.12046899 -0.01907078 58 0 C58.2673999 0.74685059 58.5347998 1.49370117 58.81030273 2.26318359 C60.0180808 5.63425204 61.22776589 9.00463303 62.4375 12.375 C62.85837891 13.550625 63.27925781 14.72625 63.71289062 15.9375 C64.11572266 17.05898438 64.51855469 18.18046875 64.93359375 19.3359375 C65.4913147 20.89127197 65.4913147 20.89127197 66.06030273 22.47802734 C66.92952058 24.94802049 66.92952058 24.94802049 68 27 C68.2673999 26.25314941 68.5347998 25.50629883 68.81030273 24.73681641 C70.0180808 21.36574796 71.22776589 17.99536697 72.4375 14.625 C72.85837891 13.449375 73.27925781 12.27375 73.71289062 11.0625 C74.11572266 9.94101562 74.51855469 8.81953125 74.93359375 7.6640625 C75.30540771 6.62717285 75.67722168 5.5902832 76.06030273 4.52197266 C77 2 77 2 78 0 C84.93 0 91.86 0 99 0 C95.625 11.25 95.625 11.25 94.09887695 15.26611328 C93.75875076 16.16629181 93.41862457 17.06647034 93.06819153 17.993927 C92.53363594 19.39298782 92.53363594 19.39298782 91.98828125 20.8203125 C91.61519333 21.80498505 91.24210541 22.78965759 90.85771179 23.8041687 C89.67919847 26.91234758 88.49593566 30.01869242 87.3125 33.125 C86.50684522 35.24727581 85.7015037 37.36967057 84.89648438 39.4921875 C82.9346061 44.66283963 80.96846969 49.83185383 79 55 C72.73 55 66.46 55 60 55 C56.7 46.09 53.4 37.18 50 28 C45.90669983 37.7886857 45.90669983 37.7886857 42.25 47.6875 C40.10684474 53.89315526 40.10684474 53.89315526 39 55 C37.65732587 55.08631874 36.31025678 55.10706473 34.96484375 55.09765625 C34.15595703 55.09443359 33.34707031 55.09121094 32.51367188 55.08789062 C31.66353516 55.07951172 30.81339844 55.07113281 29.9375 55.0625 C29.08349609 55.05798828 28.22949219 55.05347656 27.34960938 55.04882812 C25.23304337 55.03700373 23.11651315 55.01906769 21 55 C16.19768381 45.24323821 12.54715253 35.04322648 8.78686523 24.85351562 C7.67679436 21.84599515 6.56055254 18.8408187 5.44335938 15.8359375 C4.73662372 13.92981925 4.03023065 12.02357394 3.32421875 10.1171875 C2.82277596 8.76583206 2.82277596 8.76583206 2.311203 7.38717651 C2.00700943 6.56186432 1.70281586 5.73655212 1.3894043 4.88623047 C1.12024704 4.15773895 0.85108978 3.42924744 0.57377625 2.67868042 C0 1 0 1 0 0 Z " fill="#EE973F" transform="translate(248,32)"/>
+    </svg>
+    <span class="brand-name">sendwize</span>
+  </div>
+  <div class="score-badge">
+    <div class="score" id="headerScore">0%</div>
+    <div class="score-label">Compliance</div>
+  </div>
+</div>
+
+<div class="split-container">
+  <div class="left-panel">
+    <div class="left-content">
+      <h1 class="panel-title">PECR Compliance Check</h1>
+      <p class="panel-subtitle">Answer questions to ensure your marketing campaign meets UK privacy regulations.</p>
+      
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+      <p class="progress-text" id="progressText">0 of 0 completed</p>
+      
+      <div class="stats-box">
+        <h3>Compliance Score</h3>
+        <div class="big-number" id="complianceScore">0%</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="right-panel">
+    <div class="form-wrapper" id="formContent"></div>
     
-    const questions = [
-      { id: 'name', type: 'text', question: 'What is your campaign name?' },
-      { id: 'marketing', type: 'choice', question: 'Is this marketing?', options: ['Yes', 'No', 'Unsure'] },
-      { id: 'consent', type: 'choice', question: 'Do you have consent?', options: ['Yes', 'No'] }
-    ];
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Analyzing your campaign compliance...</p>
+    </div>
     
-    function render() {
-      const q = questions[currentIndex];
-      let html = `<div class="question">Question ${currentIndex + 1}: ${q.question}</div>`;
+    <div class="result" id="result">
+      <div class="result-icon" id="resultIcon"></div>
+      <h2 class="result-title" id="resultTitle"></h2>
+      <p class="result-message" id="resultMessage"></p>
+      <button class="btn-primary" onclick="backToDashboard()">Back to Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- Keyboard shortcut hint -->
+<div class="keyboard-hint">
+  <kbd>Enter</kbd> Next • <kbd>←</kbd> Back • <kbd>Esc</kbd> Cancel
+</div>
+
+<script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const redirectUrl = urlParams.get('redirect') || 'https://new-mvp-v2.webflow.io';
+
+let currentIndex = 0;
+let answers = {};
+let totalQuestions = 0;
+
+// Questions with tooltips for complex ones
+const questions = [
+  {
+    id: 'q1',
+    type: 'text',
+    question: 'Q1. What is the name of your campaign?',
+    required: true
+  },
+  {
+    id: 'q2',
+    type: 'choice',
+    question: 'Q2. Are you sure this is marketing?',
+    options: [
+      { value: 'yes__skip_to_q5', label: 'Yes  SKIP to Q5' },
+      { value: 'no__go_to_q3', label: 'No  GO to Q3' },
+      { value: 'unsure__go_to_q4', label: 'Unsure  GO to Q4' },
+    ],
+    required: true
+  },
+  {
+    id: 'q3',
+    type: 'multiChoice',
+    question: 'Q3. If you answered "No", which of the following describes your communication?',
+    options: [
+      { value: 'genuine_service_messages_with_', label: 'Genuine service messages with no promotional content (e.g., payment reminder, password reset)' },
+      { value: 'genuine_market_research_with_n', label: 'Genuine market research with no promotional content or intent to enable marketing' },
+      { value: 'administrative_messages_only_', label: 'Administrative messages only (e.g., checking contact details are correct)' },
+      { value: 'regulatory_communication_requi', label: 'Regulatory communication required by law' },
+      { value: 'election_address_sent_via_free', label: 'Election address sent via Freepost (political parties/candidates only)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q4',
+    type: 'multiChoice',
+    question: 'Q4. If you\'re unsure whether this is direct marketing, does your communication do ANY of the following?',
+    options: [
+      { value: 'commercially_market_products_a', label: 'Commercially market products and/or services' },
+      { value: 'promote_aims_and_ideals_fundr', label: 'Promote aims and ideals (fundraising, political campaigns, charitable/community work)' },
+      { value: 'actively_promote_or_encourage_', label: 'Actively promote or encourage people to use a particular service, special offer, or upgrade' },
+      { value: 'include_any_promotional_elemen', label: 'Include ANY promotional element alongside service information' },
+      { value: 'use_people\'s_information_to_bu', label: 'Use people\'s information to build profiles to enable sending marketing' },
+      { value: 'use_people\'s_information_for_a', label: 'Use people\'s information for anything that supports sending direct marketing (e.g., targeting, segmentation)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q5',
+    type: 'choice',
+    question: 'Q5. Are you sending communications for direct marketing purposes (including activities that lead up to, directly enable or support sending direct marketing messages)?',
+    options: [
+      { value: 'yes__go_to_q6', label: 'Yes  GO to Q6' },
+      { value: 'no__**stop_-_return_to_q2-q4_t', label: 'No  **STOP - Return to Q2-Q4 to reconsider**' },
+      { value: 'give_me_examples__[display_exa', label: 'Give me examples  [Display examples, then return to this question]' },
+    ],
+    required: true
+  },
+  {
+    id: 'q6',
+    type: 'choice',
+    question: 'Q6. Are you directing the marketing at specific individuals or categories of individuals?',
+    options: [
+      { value: 'yes__go_to_q7', label: 'Yes  GO to Q7' },
+      { value: 'no__**stop_-_this_may_not_be_d', label: 'No  **STOP - This may not be direct marketing. Direct marketing must be "directed to particular individuals"**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q7',
+    type: 'choice',
+    question: 'Q7. Are you marketing B2B or B2C?',
+    options: [
+      { value: 'b2b_business_to_business__no', label: 'B2B (Business to Business)  Note: Some rules differ for corporate subscribers' },
+      { value: 'b2c_business_to_consumer__no', label: 'B2C (Business to Consumer)  Note: Full PECR individual subscriber rules apply' },
+      { value: 'both__note:_you_must_comply_wi', label: 'Both  Note: You must comply with rules for BOTH' },
+    ],
+    required: true
+  },
+  {
+    id: 'q8',
+    type: 'choice',
+    question: 'Q8. Which channel(s) of communication are you using? (Select all that apply)',
+    options: [
+      { value: 'live_calls__go_to_section_4_q', label: 'Live calls  GO to SECTION 4 (Q18)' },
+      { value: 'automated_calls__go_to_section', label: 'Automated calls  GO to SECTION 5 (Q29)' },
+      { value: 'fax__go_to_section_9_q48', label: 'Fax  GO to SECTION 9 (Q48)' },
+      { value: 'post__go_to_section_8_q45', label: 'Post  GO to SECTION 8 (Q45)' },
+      { value: 'email__go_to_section_7_q32', label: 'Email  GO to SECTION 7 (Q32)' },
+      { value: 'text_messages_sms__go_to_sec', label: 'Text messages (SMS)  GO to SECTION 7 (Q32)' },
+      { value: 'picture/video_messages_mms__', label: 'Picture/video messages (MMS)  GO to SECTION 7 (Q32)' },
+      { value: 'voicemail_messages__go_to_sect', label: 'Voicemail messages  GO to SECTION 7 (Q32)' },
+      { value: 'in-app_messages__go_to_section', label: 'In-app messages  GO to SECTION 7 (Q32)' },
+      { value: 'direct_messages_on_social_medi', label: 'Direct messages on social media platforms  GO to SECTIONS 7 & 11' },
+    ],
+    required: true
+  },
+  {
+    id: 'q9',
+    type: 'choice',
+    question: 'Q9. Does your marketing activity involve processing personal data?',
+    options: [
+      { value: 'yes__go_to_q10', label: 'Yes  GO to Q10' },
+      { value: 'no__go_to_q11', label: 'No  GO to Q11' },
+      { value: 'basic_identifiers_names_addr', label: 'Basic identifiers (names, addresses, email addresses, phone numbers)  GO to Q12' },
+      { value: 'special_category_data_health', label: 'Special category data (health, race, ethnicity, political opinions, religious beliefs, trade union membership, genetic data, biometric data, sex life/sexual orientation)  GO to Q13' },
+      { value: 'inferred_or_predicted_data_abo', label: 'Inferred or predicted data about individuals  GO to Q14' },
+      { value: 'children\'s_data_under_18__go', label: 'Children\'s data (under 18)  GO to Q15' },
+    ],
+    required: true
+  },
+  {
+    id: 'q10',
+    type: 'choice',
+    question: 'Q11. Despite not processing personal data, do you know the name of any individual recipient of your direct marketing?',
+    options: [
+      { value: 'yes__**warning:_you_are_proces', label: 'Yes  **WARNING: You ARE processing personal data**  GO to Q10' },
+      { value: 'no__note:_you_still_must_compl', label: 'No  Note: You still must comply with PECR where applicable  GO to Q16' },
+    ],
+    required: true
+  },
+  {
+    id: 'q11',
+    type: 'text',
+    question: 'Q12. [Basic personal data pathway]',
+    required: true
+  },
+  {
+    id: 'q12',
+    type: 'choice',
+    question: 'Q13. If processing special category data, do you have explicit consent for this processing specifically for direct marketing?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__note:_document_this_expli', label: 'Yes  Note: Document this explicit consent  GO to Q16' },
+      { value: 'no__**stop_-_you_cannot_proces', label: 'No  **STOP - You cannot process special category data for direct marketing without explicit consent**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q13',
+    type: 'choice',
+    question: 'Q14. Are you inferring or predicting special category data about individuals?',
+    options: [
+      { value: 'yes__**you_are_processing_spec', label: 'Yes  **You are processing special category data**  GO to Q13' },
+      { value: 'no__go_to_q16', label: 'No  GO to Q16' },
+      { value: 'unsure__**conduct_a_thorough_a', label: 'Unsure  **Conduct a thorough audit. If there\'s any possibility, treat as YES**  GO to Q13' },
+    ],
+    required: true
+  },
+  {
+    id: 'q14',
+    type: 'choice',
+    question: 'Q15. Will your marketing target or potentially reach children (under 18)?',
+    options: [
+      { value: 'yes__go_to_q15a', label: 'Yes  GO to Q15a' },
+      { value: 'no__go_to_q16', label: 'No  GO to Q16' },
+      { value: 'unsure__**conduct_age_verifica', label: 'Unsure  **Conduct age verification checks**  GO to Q15a' },
+    ],
+    required: true
+  },
+  {
+    id: 'q15',
+    type: 'choice',
+    question: 'Q15a. Have you:',
+    options: [
+      { value: 'yes_to_all__go_to_q16', label: 'Yes to all  GO to Q16' },
+      { value: 'no_to_any__**stop_-_implement_', label: 'No to any  **STOP - Implement required safeguards before proceeding**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q16',
+    type: 'choice',
+    question: 'Q16. What is your lawful basis for processing personal data for this marketing campaign under UK GDPR?',
+    tooltip: 'Under GDPR, you need a legal reason to process personal data',
+    options: [
+      { value: 'consent__go_to_section_18_q10', label: 'Consent  GO to SECTION 18 (Q105), then return to Q17' },
+      { value: 'legitimate_interests__go_to_q1', label: 'Legitimate interests  GO to Q17' },
+      { value: 'public_task_public_authoritie', label: 'Public task (public authorities only)  GO to SECTION 19 (Q110)' },
+      { value: 'other__**warning_-_consent_and', label: 'Other  **WARNING - Consent and legitimate interests are the only lawful bases typically appropriate for direct marketing**  Reconsider' },
+      { value: 'unsure__**you_must_determine_y', label: 'Unsure  **You MUST determine your lawful basis before processing**  Seek legal advice' },
+    ],
+    required: true
+  },
+  {
+    id: 'q17',
+    type: 'choice',
+    question: 'Q17. [For Legitimate Interests] Do you have a properly documented legitimate interests assessment (LIA)?',
+    tooltip: 'You must balance your interests against the rights of individuals',
+    options: [
+      { value: 'yes__go_to_q17a', label: 'Yes  GO to Q17a' },
+      { value: 'no__**stop_-_you_must_complete', label: 'No  **STOP - You must complete an LIA before relying on legitimate interests**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q18',
+    type: 'choice',
+    question: 'Q17a. Does your LIA demonstrate:',
+    options: [
+      { value: 'yes_to_all__go_to_q18_or_next', label: 'Yes to all  GO to Q18 (or next applicable section based on channel selected in Q8)' },
+      { value: 'no_to_any__**stop_-_your_lia_i', label: 'No to any  **STOP - Your LIA is insufficient. Revise before proceeding**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q19',
+    type: 'choice',
+    question: 'Q18. Does the proposed live telephone marketing activity involve processing personal data?',
+    options: [
+      { value: 'yes__go_to_q19', label: 'Yes  GO to Q19' },
+      { value: 'no__go_to_q20', label: 'No  GO to Q20' },
+    ],
+    required: true
+  },
+  {
+    id: 'q20',
+    type: 'choice',
+    question: 'Q19. What is your lawful basis under UK GDPR for processing personal data for live telephone marketing?',
+    tooltip: 'Under GDPR, you need a legal reason to process personal data',
+    options: [
+      { value: 'legitimate_interests_with_docu', label: 'Legitimate interests with documented LIA  GO to Q21' },
+      { value: 'consent__go_to_q21', label: 'Consent  GO to Q21' },
+      { value: 'other/unsure__**warning_-_revi', label: 'Other/Unsure  **WARNING - Review Section 3 (Q16-Q17)**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q21',
+    type: 'choice',
+    question: 'Q20. Does the proposed telephone marketing involve processing special category personal data?',
+    options: [
+      { value: 'yes__confirm_you_have_explicit', label: 'Yes  Confirm you have explicit consent from Q13  GO to Q21' },
+      { value: 'no__go_to_q21', label: 'No  GO to Q21' },
+    ],
+    required: true
+  },
+  {
+    id: 'q22',
+    type: 'choice',
+    question: 'Q21. Are you making live marketing calls about pension schemes?',
+    options: [
+      { value: 'yes__go_to_q21a', label: 'Yes  GO to Q21a' },
+      { value: 'no__go_to_q24', label: 'No  GO to Q24' },
+      { value: 'n/a__go_to_q24', label: 'N/A  GO to Q24' },
+    ],
+    required: true
+  },
+  {
+    id: 'q23',
+    type: 'choice',
+    question: 'Q21a. Are you either:',
+    options: [
+      { value: 'yes__go_to_q22', label: 'Yes  GO to Q22' },
+      { value: 'no__**stop_-_you_cannot_make_t', label: 'No  **STOP - You cannot make these calls without this authorization**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q24',
+    type: 'choice',
+    question: 'Q22. For pension scheme calls, do you have either:',
+    options: [
+      { value: 'yes__go_to_q24', label: 'Yes  GO to Q24' },
+      { value: 'no__**stop_-_you_cannot_make_p', label: 'No  **STOP - You cannot make pension scheme marketing calls without consent or existing relationship with opt-out**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q25',
+    type: 'choice',
+    question: 'Q24. Are you making live marketing calls about claims management services?',
+    options: [
+      { value: 'yes__go_to_q24a', label: 'Yes  GO to Q24a' },
+      { value: 'no__go_to_q25', label: 'No  GO to Q25' },
+      { value: 'n/a__go_to_q25', label: 'N/A  GO to Q25' },
+    ],
+    required: true
+  },
+  {
+    id: 'q26',
+    type: 'choice',
+    question: 'Q24a. Do you have the individual\'s consent specifically for claims management calls?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__go_to_q25', label: 'Yes  GO to Q25' },
+      { value: 'no__**stop_-_you_must_have_con', label: 'No  **STOP - You must have consent for claims management marketing calls**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q27',
+    type: 'choice',
+    question: 'Q25. Have you screened your proposed recipient list against the Telephone Preference Service (TPS)?',
+    options: [
+      { value: 'yes__go_to_q26', label: 'Yes  GO to Q26' },
+      { value: 'no__**stop_-_you_must_screen_a', label: 'No  **STOP - You MUST screen against TPS before making calls to individual subscribers**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q28',
+    type: 'choice',
+    question: 'Q26. [If B2B selected in Q7] Have you screened your proposed recipient list against the Corporate Telephone Preference Service (CTPS)?',
+    options: [
+      { value: 'yes__go_to_q27', label: 'Yes  GO to Q27' },
+      { value: 'no__**stop_-_you_should_screen', label: 'No  **STOP - You should screen against CTPS for B2B calls**' },
+      { value: 'n/a_-_not_making_b2b_calls__go', label: 'N/A - not making B2B calls  GO to Q27' },
+    ],
+    required: true
+  },
+  {
+    id: 'q29',
+    type: 'choice',
+    question: 'Q27. Have you screened your proposed recipient list against your own customer preference/suppression list for calls?',
+    options: [
+      { value: 'yes__go_to_q28', label: 'Yes  GO to Q28' },
+      { value: 'no__**stop_-_you_must_maintain', label: 'No  **STOP - You MUST maintain and screen against your own suppression list**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q30',
+    type: 'choice',
+    question: 'Q28. Will you display your telephone number (or alternative contact number) to recipients?',
+    options: [
+      { value: 'yes__go_to_q28a', label: 'Yes  GO to Q28a' },
+      { value: 'no__**warning_-_you_must_not_w', label: 'No  **WARNING - You MUST NOT withhold your number. This is a PECR requirement**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q31',
+    type: 'choice',
+    question: 'Q28a. Will you provide your name and (if asked) a contact address or freephone number during the call?',
+    options: [
+      { value: 'yes__go_to_q28b', label: 'Yes  GO to Q28b' },
+      { value: 'no__**stop_-_you_must_provide_', label: 'No  **STOP - You MUST provide this information. This is a PECR requirement**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q32',
+    type: 'choice',
+    question: 'Q28b. Have you implemented measures to:',
+    options: [
+      { value: 'yes_to_all__**complete_for_liv', label: 'Yes to all  **COMPLETE for Live Calls**  Return to Q8 if other channels selected, otherwise GO to SECTION 12 (Q80)' },
+      { value: 'no_to_any__**implement_these_m', label: 'No to any  **Implement these measures before proceeding**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q33',
+    type: 'choice',
+    question: 'Q29. Do you have explicit consent specifically for automated marketing calls?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__go_to_q29a', label: 'Yes  GO to Q29a' },
+      { value: 'no__**stop_-_you_must_have_exp', label: 'No  **STOP - You MUST have explicit consent specifically for automated calls. This is a PECR requirement**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q34',
+    type: 'choice',
+    question: 'Q29a. Does your consent documentation:',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_to_all__go_to_q30', label: 'Yes to all  GO to Q30' },
+      { value: 'no_to_any__**stop_-_your_conse', label: 'No to any  **STOP - Your consent is insufficient for automated calls**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q35',
+    type: 'choice',
+    question: 'Q30. Will your automated calls include your name and a contact address or freephone number in the recorded message?',
+    options: [
+      { value: 'yes__go_to_q31', label: 'Yes  GO to Q31' },
+      { value: 'no__**stop_-_you_must_include_', label: 'No  **STOP - You MUST include this information. This is a PECR requirement**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q36',
+    type: 'choice',
+    question: 'Q31. Will you allow your number (or alternative contact number) to be displayed to recipients?',
+    options: [
+      { value: 'yes__**complete_for_automated_', label: 'Yes  **COMPLETE for Automated Calls**  Return to Q8 if other channels selected, otherwise GO to SECTION 12 (Q80)' },
+      { value: 'no__**stop_-_you_must_not_with', label: 'No  **STOP - You MUST NOT withhold your number. This is a PECR requirement**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q37',
+    type: 'choice',
+    question: 'Q51. Will your online advertising or website use cookies or similar tracking technologies?',
+    options: [
+      { value: 'yes__go_to_q52', label: 'Yes  GO to Q52' },
+      { value: 'no__go_to_q64', label: 'No  GO to Q64' },
+      { value: 'n/a__skip_this_section', label: 'N/A  Skip this section' },
+    ],
+    required: true
+  },
+  {
+    id: 'q38',
+    type: 'choice',
+    question: 'Q52. Have you identified and classified ALL cookies and tracking technologies you use?',
+    options: [
+      { value: 'yes_-_fully_classified__go_to_', label: 'Yes - fully classified  GO to Q53' },
+      { value: 'partially__**complete_classifi', label: 'Partially  **COMPLETE classification before proceeding**' },
+      { value: 'no__**stop_-_you_must_identify', label: 'No  **STOP - You MUST identify and classify all technologies before use**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q39',
+    type: 'choice',
+    question: 'Q53. For NON-EXEMPT cookies/technologies (advertising, non-essential analytics, tracking, etc.), have you obtained valid PECR/UK GDPR consent BEFORE placing or activating these technologies?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__go_to_q54', label: 'Yes  GO to Q54' },
+      { value: 'no__**stop_-_you_must_obtain_c', label: 'No  **STOP - You MUST obtain consent BEFORE placing non-exempt cookies. This is a PECR requirement**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q40',
+    type: 'choice',
+    question: 'Q54. Does your consent mechanism:',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_to_all__go_to_q55', label: 'Yes to all  GO to Q55' },
+      { value: 'no_to_any__**stop_-_your_conse', label: 'No to any  **STOP - Your consent mechanism is non-compliant. Revise before proceeding**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q41',
+    type: 'choice',
+    question: 'Q55. Are you using tracking pixels in your direct marketing emails?',
+    options: [
+      { value: 'yes__go_to_q55a', label: 'Yes  GO to Q55a' },
+      { value: 'no__go_to_q56', label: 'No  GO to Q56' },
+    ],
+    required: true
+  },
+  {
+    id: 'q42',
+    type: 'choice',
+    question: 'Q55a. Have you obtained consent under PECR for these tracking pixels?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__go_to_q56', label: 'Yes  GO to Q56' },
+      { value: 'no__**stop_-_remove_tracking_p', label: 'No  **STOP - Remove tracking pixels or obtain consent first**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q43',
+    type: 'choice',
+    question: 'Q56. If using analytics cookies, have you confirmed they:',
+    options: [
+      { value: 'yes_-_consent_obtained_or_duaa', label: 'Yes - consent obtained or DUAA exception applies  GO to Q57' },
+      { value: 'no_-_using_without_consent__**', label: 'No - using without consent  **STOP - Obtain consent or ensure DUAA exception applies**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q44',
+    type: 'choice',
+    question: 'Q57. If using advertising cookies (including third-party ad tech), have you obtained consent for:',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_consent_for_all__go_to_q', label: 'Yes - consent for all  GO to Q58' },
+      { value: 'no__**stop_-_you_must_have_con', label: 'No  **STOP - You MUST have consent for all advertising cookie purposes**' },
+      { value: 'n/a_-_not_using_advertising_co', label: 'N/A - not using advertising cookies  GO to Q58' },
+    ],
+    required: true
+  },
+  {
+    id: 'q45',
+    type: 'choice',
+    question: 'Q58. If you have obtained consent for cookies under PECR, are you also using consent as your lawful basis under UK GDPR for processing personal data collected via those cookies?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_using_consent_for_both__', label: 'Yes - using consent for both  GO to Q59' },
+      { value: 'no_-_trying_to_use_different_b', label: 'No - trying to use different basis  **WARNING - This is not recommended by ICO. Use consent for both**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q46',
+    type: 'choice',
+    question: 'Q59. Do you have processes to:',
+    options: [
+      { value: 'yes_to_all__**complete_for_coo', label: 'Yes to all  **COMPLETE for Cookies/Tracking**  Continue to next applicable section' },
+      { value: 'no_to_any__**implement_these_p', label: 'No to any  **Implement these processes**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q47',
+    type: 'choice',
+    question: 'Q32. Is the intended recipient an individual subscriber or corporate subscriber?',
+    options: [
+      { value: 'individual_subscriber__go_to_q', label: 'Individual subscriber  GO to Q33' },
+      { value: 'corporate_subscriber__go_to_q4', label: 'Corporate subscriber  GO to Q44a' },
+      { value: 'unsure__**check_legal_structur', label: 'Unsure  **Check legal structure. If unsure, treat as individual (stricter rules)**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q48',
+    type: 'choice',
+    question: 'Q33. For individual subscribers, which of the following applies to your electronic mail marketing?',
+    options: [
+      { value: 'i_have_valid_pecr_consent__go_', label: 'I have valid PECR consent  GO to Q34' },
+      { value: 'i_am_relying_on_soft_opt-in__g', label: 'I am relying on soft opt-in  GO to Q38' },
+      { value: 'neither/unsure__**stop_-_you_m', label: 'Neither/Unsure  **STOP - You MUST have either consent or meet ALL soft opt-in conditions**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q49',
+    type: 'choice',
+    question: 'Q34. If relying on consent, does the consent:',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_to_all__go_to_q35', label: 'Yes to all  GO to Q35' },
+      { value: 'no_to_any__**stop_-_your_conse', label: 'No to any  **STOP - Your consent is invalid under PECR**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q50',
+    type: 'choice',
+    question: 'Q35. Did you obtain this consent directly from the individual (not via a third party)?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_obtained_directly__go_to', label: 'Yes - obtained directly  GO to Q43' },
+      { value: 'no_-_obtained_via_third_party_', label: 'No - obtained via third party  GO to Q36' },
+    ],
+    required: true
+  },
+  {
+    id: 'q51',
+    type: 'choice',
+    question: 'Q36. [Third-party consent] If consent was obtained by a third party:',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_all_verified_and_consent', label: 'Yes - all verified and consent names my organization  GO to Q37' },
+      { value: 'no_-_cannot_verify_all_or_cons', label: 'No - cannot verify all OR consent doesn\'t name my organization  **STOP - You cannot use this consent for electronic mail marketing**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q52',
+    type: 'choice',
+    question: 'Q37. Is the third-party consent more than 6 months old?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__**stop_-_you_should_refre', label: 'Yes  **STOP - You should refresh/obtain new consent directly from individuals**' },
+      { value: 'no__**warning_-_consider_refre', label: 'No  **WARNING - Consider refreshing consent proactively**  GO to Q43' },
+    ],
+    required: true
+  },
+  {
+    id: 'q53',
+    type: 'choice',
+    question: 'Q38. Do you satisfy ALL three PECR soft opt-in conditions:',
+    options: [
+      { value: 'yes_-_all_three_conditions_met', label: 'Yes - ALL three conditions met  GO to Q39' },
+      { value: 'no_-_one_or_more_conditions_no', label: 'No - one or more conditions NOT met  **STOP - You cannot use soft opt-in. You need consent**' },
+      { value: 'unsure__**review_each_conditio', label: 'Unsure  **Review each condition carefully**  If any doubt, get consent instead' },
+    ],
+    required: true
+  },
+  {
+    id: 'q54',
+    type: 'choice',
+    question: 'Q39. Did you obtain the contact details directly from the individual during YOUR sale/negotiation?',
+    options: [
+      { value: 'yes__go_to_q40', label: 'Yes  GO to Q40' },
+      { value: 'no__**stop_-_soft_opt-in_does_', label: 'No  **STOP - Soft opt-in does not apply. You need consent**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q55',
+    type: 'choice',
+    question: 'Q40. Is your marketing about similar products/services to what the recipient purchased or negotiated to purchase from YOU?',
+    options: [
+      { value: 'yes_-_clearly_similar__go_to_q', label: 'Yes - clearly similar  GO to Q41' },
+      { value: 'no_-_dissimilar__**stop_-_you_', label: 'No - dissimilar  **STOP - You need consent for dissimilar products/services**' },
+      { value: 'unsure__**if_in_doubt_get_con', label: 'Unsure  **If in doubt, get consent**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q56',
+    type: 'choice',
+    question: 'Q41. Did you provide a clear, simple, charge-free opt-out option when you first collected their details?',
+    tooltip: 'Must be simple, free and immediate',
+    options: [
+      { value: 'yes__go_to_q42', label: 'Yes  GO to Q42' },
+      { value: 'no__**stop_-_soft_opt-in_is_in', label: 'No  **STOP - Soft opt-in is invalid without initial oxpt-out**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q57',
+    type: 'choice',
+    question: 'Q42. Do you provide a clear, simple, charge-free opt-out option in EVERY subsequent marketing communication?',
+    tooltip: 'Must be simple, free and immediate',
+    options: [
+      { value: 'yes__go_to_q43', label: 'Yes  GO to Q43' },
+      { value: 'no__**stop_-_you_must_provide_', label: 'No  **STOP - You MUST provide opt-out in every communication**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q58',
+    type: 'choice',
+    question: 'Q43. Have you screened your proposed recipient list against your own customer preference/suppression list for electronic mail?',
+    options: [
+      { value: 'yes__go_to_q43a', label: 'Yes  GO to Q43a' },
+      { value: 'no__**stop_-_you_must_screen_a', label: 'No  **STOP - You MUST screen against your suppression list**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q59',
+    type: 'choice',
+    question: 'Q43a. Have you removed ALL individuals who have:',
+    options: [
+      { value: 'yes_-_all_removed__go_to_q44', label: 'Yes - all removed  GO to Q44' },
+      { value: 'no__**stop_-_remove_all_who_ha', label: 'No  **STOP - Remove all who have objected/unsubscribed before sending**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q60',
+    type: 'choice',
+    question: 'Q44. What lawful basis under UK GDPR are you using for processing personal data for this electronic mail marketing?',
+    tooltip: 'Under GDPR, you need a legal reason to process personal data',
+    options: [
+      { value: 'consent_same_as_pecr_consent', label: 'Consent (same as PECR consent)  **COMPLETE for Electronic Mail (Individual)**  Return to Q8 if other channels selected, otherwise GO to SECTION 12' },
+      { value: 'legitimate_interests_when_usi', label: 'Legitimate interests (when using soft opt-in for PECR)  Ensure you have documented LIA  **COMPLETE for Electronic Mail (Individual)**  Return to Q8 if other channels selected, otherwise GO to SECTION 12' },
+      { value: 'other__**warning_-_consent_or_', label: 'Other  **WARNING - Consent or legitimate interests are appropriate. Reconsider.**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q61',
+    type: 'choice',
+    question: 'Q44a. [For corporate subscribers] Under PECR, you generally do NOT need consent for electronic mail marketing to corporate subscribers.',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__go_to_q44b', label: 'Yes  GO to Q44b' },
+      { value: 'no__**implement_required_measu', label: 'No  **Implement required measures**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q62',
+    type: 'choice',
+    question: 'Q44b. Are you processing personal data of named individuals at the corporate entity?',
+    options: [
+      { value: 'yes__ensure_you_have_appropria', label: 'Yes  Ensure you have appropriate UK GDPR lawful basis (likely legitimate interests with LIA)  **COMPLETE for Electronic Mail (Corporate)**  Return to Q8 if other channels selected, otherwise GO to SECTION 12' },
+      { value: 'no__**complete_for_electronic_', label: 'No  **COMPLETE for Electronic Mail (Corporate)**  Return to Q8 if other channels selected, otherwise GO to SECTION 12' },
+    ],
+    required: true
+  },
+  {
+    id: 'q63',
+    type: 'choice',
+    question: 'Q45. Does your postal marketing involve processing personal data?',
+    options: [
+      { value: 'yes__go_to_q45a', label: 'Yes  GO to Q45a' },
+      { value: 'no__**complete_for_postal_mark', label: 'No  **COMPLETE for Postal Marketing**  Return to Q8 if other channels selected, otherwise GO to SECTION 12' },
+    ],
+    required: true
+  },
+  {
+    id: 'q64',
+    type: 'choice',
+    question: 'Q45a. What is your lawful basis under UK GDPR for postal marketing?',
+    tooltip: 'Under GDPR, you need a legal reason to process personal data',
+    options: [
+      { value: 'legitimate_interests_with_docu', label: 'Legitimate interests with documented LIA  GO to Q46' },
+      { value: 'consent__go_to_q46', label: 'Consent  GO to Q46' },
+      { value: 'other/unsure__**warning_-_legi', label: 'Other/Unsure  **WARNING - Legitimate interests or consent are appropriate**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q65',
+    type: 'choice',
+    question: 'Q46. Have you screened your mailing list against the Mailing Preference Service (MPS)?',
+    options: [
+      { value: 'yes__go_to_q47', label: 'Yes  GO to Q47' },
+      { value: 'no__**warning_-_you_should_scr', label: 'No  **WARNING - You SHOULD screen against MPS. It\'s industry best practice**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q66',
+    type: 'choice',
+    question: 'Q47. Have you screened your mailing list against your own suppression list for postal marketing?',
+    options: [
+      { value: 'yes__go_to_q47a', label: 'Yes  GO to Q47a' },
+      { value: 'no__**stop_-_you_must_maintain', label: 'No  **STOP - You MUST maintain and screen against your suppression list**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q67',
+    type: 'choice',
+    question: 'Q47a. Have you removed all individuals who have objected to postal marketing from you?',
+    options: [
+      { value: 'yes__**complete_for_postal_mar', label: 'Yes  **COMPLETE for Postal Marketing**  Return to Q8 if other channels selected, otherwise GO to SECTION 12' },
+      { value: 'no__**stop_-_remove_all_who_ha', label: 'No  **STOP - Remove all who have objected before mailing**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q68',
+    type: 'choice',
+    question: 'Q48. Have you screened against the Fax Preference Service (FPS)?',
+    options: [
+      { value: 'yes__go_to_q49', label: 'Yes  GO to Q49' },
+      { value: 'no__**stop_-_you_must_screen_a', label: 'No  **STOP - You MUST screen against FPS**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q69',
+    type: 'choice',
+    question: 'Q49. Are you sending fax marketing to individual subscribers or corporate subscribers?',
+    options: [
+      { value: 'individual_subscribers__go_to_', label: 'Individual subscribers  GO to Q50' },
+      { value: 'corporate_subscribers__go_to_q', label: 'Corporate subscribers  GO to Q50a' },
+      { value: 'both__go_to_q50', label: 'Both  GO to Q50' },
+    ],
+    required: true
+  },
+  {
+    id: 'q70',
+    type: 'choice',
+    question: 'Q50. For individual subscribers, do you have their consent for fax marketing?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__**complete_for_fax_indiv', label: 'Yes  **COMPLETE for Fax (Individual)**  If also sending to corporate, GO to Q50a, otherwise Return to Q8 or GO to SECTION 12' },
+      { value: 'no__**stop_-_you_need_consent_', label: 'No  **STOP - You need consent for fax marketing to individual subscribers**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q71',
+    type: 'choice',
+    question: 'Q50a. For corporate subscribers, have you:',
+    options: [
+      { value: 'yes_to_all__**complete_for_fax', label: 'Yes to all  **COMPLETE for Fax (Corporate)**  Return to Q8 if other channels selected, otherwise GO to SECTION 12' },
+      { value: 'no_to_any__**implement_require', label: 'No to any  **Implement required measures**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q72',
+    type: 'choice',
+    question: 'Q60. Are you uploading customer contact details to social media platforms to create custom/matched audiences?',
+    options: [
+      { value: 'yes__go_to_q61', label: 'Yes  GO to Q61' },
+      { value: 'no__go_to_q65', label: 'No  GO to Q65' },
+      { value: 'n/a__go_to_q65', label: 'N/A  GO to Q65' },
+    ],
+    required: true
+  },
+  {
+    id: 'q73',
+    type: 'choice',
+    question: 'Q61. Have you been transparent with individuals about sharing their data with the social media platform?',
+    options: [
+      { value: 'yes_-_fully_transparent__go_to', label: 'Yes - fully transparent  GO to Q62' },
+      { value: 'no__**stop_-_you_must_be_trans', label: 'No  **STOP - You must be transparent about this data sharing**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q74',
+    type: 'choice',
+    question: 'Q62. Do individuals reasonably expect their data to be used in this way based on your relationship and context?',
+    options: [
+      { value: 'yes__go_to_q63', label: 'Yes  GO to Q63' },
+      { value: 'no__**warning_-_if_unexpected', label: 'No  **WARNING - If unexpected, this may be unfair processing. Obtain consent**' },
+      { value: 'unsure__**conduct_assessment_o', label: 'Unsure  **Conduct assessment or obtain consent to be safe**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q75',
+    type: 'choice',
+    question: 'Q63. Did you offer individuals an opt-out when initially collecting their details for this purpose?',
+    tooltip: 'Must be simple, free and immediate',
+    options: [
+      { value: 'yes__go_to_q64', label: 'Yes  GO to Q64' },
+      { value: 'no__**stop_-_you_should_have_p', label: 'No  **STOP - You should have provided opt-out at collection. Provide opt-out now and consider refreshing consent**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q76',
+    type: 'choice',
+    question: 'Q64. Have you considered that you and the platform are likely joint controllers for this processing?',
+    options: [
+      { value: 'yes_-_joint_controller_arrange', label: 'Yes - joint controller arrangement in place  GO to Q65' },
+      { value: 'no__**implement_joint_controll', label: 'No  **Implement joint controller arrangement**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q77',
+    type: 'choice',
+    question: 'Q65. Are you using social media platforms to create lookalike or similar audiences based on your customer data?',
+    options: [
+      { value: 'yes__go_to_q66', label: 'Yes  GO to Q66' },
+      { value: 'no__go_to_q68', label: 'No  GO to Q68' },
+      { value: 'n/a__go_to_q68', label: 'N/A  GO to Q68' },
+    ],
+    required: true
+  },
+  {
+    id: 'q78',
+    type: 'choice',
+    question: 'Q66. Have you been transparent with your ORIGINAL customers about using their data to identify and target similar individuals?',
+    options: [
+      { value: 'yes__go_to_q67', label: 'Yes  GO to Q67' },
+      { value: 'no__**stop_-_you_must_inform_o', label: 'No  **STOP - You must inform original customers about this use**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q79',
+    type: 'choice',
+    question: 'Q67. Have you confirmed the platform provides appropriate transparency to individuals in the lookalike audience about:',
+    options: [
+      { value: 'yes_-_confirmed_platform_trans', label: 'Yes - confirmed platform transparency  GO to Q68' },
+      { value: 'no/unsure__**verify_platform_t', label: 'No/Unsure  **Verify platform transparency or reconsider this approach**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q80',
+    type: 'choice',
+    question: 'Q68. Are you sending direct messages via social media platforms for marketing purposes?',
+    options: [
+      { value: 'yes__**these_are_"electronic_m', label: 'Yes  **These are "electronic mail" under PECR**  GO to Q68a' },
+      { value: 'no__**complete_for_social_medi', label: 'No  **COMPLETE for Social Media**  Return to Q8 if other channels selected, otherwise GO to SECTION 12' },
+    ],
+    required: true
+  },
+  {
+    id: 'q81',
+    type: 'choice',
+    question: 'Q68a. Are you complying with PECR requirements for electronic mail (consent or soft opt-in)?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_following_section_7_requ', label: 'Yes - following SECTION 7 requirements  **COMPLETE for Social Media**  Return to Q8 if other channels selected, otherwise GO to SECTION 12' },
+      { value: 'no__**stop_-_direct_messages_o', label: 'No  **STOP - Direct messages on social media are subject to same rules as email/SMS. See SECTION 7**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q82',
+    type: 'choice',
+    question: 'Q80. Are you profiling or segmenting individuals for targeted direct marketing?',
+    options: [
+      { value: 'yes__go_to_q81', label: 'Yes  GO to Q81' },
+      { value: 'no__go_to_q85', label: 'No  GO to Q85' },
+    ],
+    required: true
+  },
+  {
+    id: 'q83',
+    type: 'choice',
+    question: 'Q81. Have you been transparent about this profiling activity in your privacy information?',
+    options: [
+      { value: 'yes_-_fully_transparent__go_to', label: 'Yes - fully transparent  GO to Q82' },
+      { value: 'no__**stop_-_you_must_be_trans', label: 'No  **STOP - You must be transparent about profiling**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q84',
+    type: 'choice',
+    question: 'Q82. Have you provided individuals with a clear right to object to profiling for direct marketing purposes?',
+    options: [
+      { value: 'yes_-_clear_right_to_object_pr', label: 'Yes - clear right to object provided  GO to Q83' },
+      { value: 'no__**stop_-_you_must_provide_', label: 'No  **STOP - You MUST provide the right to object**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q85',
+    type: 'choice',
+    question: 'Q83. Are you creating inferred data or predictions about individuals?',
+    options: [
+      { value: 'yes__go_to_q84', label: 'Yes  GO to Q84' },
+      { value: 'no__go_to_q85', label: 'No  GO to Q85' },
+    ],
+    required: true
+  },
+  {
+    id: 'q86',
+    type: 'choice',
+    question: 'Q84. Could any of these inferences constitute special category data?',
+    options: [
+      { value: 'yes_or_possibly__**stop_-_this', label: 'Yes or possibly  **STOP - This IS special category data. You need explicit consent (see Q13)**' },
+      { value: 'no_-_definitely_not_special_ca', label: 'No - definitely not special category  GO to Q85' },
+    ],
+    required: true
+  },
+  {
+    id: 'q87',
+    type: 'choice',
+    question: 'Q85. If using automated profiling, could it result in solely automated decisions with legal or similarly significant effects?',
+    options: [
+      { value: 'yes__**you_must:**_obtain_expl', label: 'Yes  **You must:** Obtain explicit consent, Conduct a DPIA, Provide information about the logic involved, Allow human intervention  **COMPLETE for Profiling**  GO to SECTION 13 (Q70)' },
+      { value: 'no__**complete_for_profiling**', label: 'No  **COMPLETE for Profiling**  GO to SECTION 13 (Q70)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q88',
+    type: 'choice',
+    question: 'Q70. Are you buying or renting contact details or marketing lists from third parties or data brokers?',
+    options: [
+      { value: 'yes__go_to_q71', label: 'Yes  GO to Q71' },
+      { value: 'no__go_to_q77', label: 'No  GO to Q77' },
+    ],
+    required: true
+  },
+  {
+    id: 'q89',
+    type: 'choice',
+    question: 'Q71. Have you conducted appropriate due diligence on the data source?',
+    options: [
+      { value: 'yes_-_full_due_diligence_compl', label: 'Yes - full due diligence completed  GO to Q72' },
+      { value: 'partial__**stop_-_complete_ful', label: 'Partial  **STOP - Complete full due diligence**' },
+      { value: 'no__**stop_-_you_must_conduct_', label: 'No  **STOP - You MUST conduct due diligence on third-party data sources**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q90',
+    type: 'choice',
+    question: 'Q72. Have you verified the following about the purchased/rented data:',
+    options: [
+      { value: 'yes_-_all_verified__go_to_q73', label: 'Yes - all verified  GO to Q73' },
+      { value: 'no_-_cannot_verify_all__**stop', label: 'No - cannot verify all  **STOP - Do not use data you cannot verify**' },
+      { value: 'partially_verified__**stop_-_y', label: 'Partially verified  **STOP - You need full verification**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q91',
+    type: 'choice',
+    question: 'Q73. What channel(s) will you use with this purchased/rented data?',
+    options: [
+      { value: 'electronic_mail_email_sms_e', label: 'Electronic mail (email, SMS, etc.) to individual subscribers  GO to Q74' },
+      { value: 'live_calls_to_individuals__go_', label: 'Live calls to individuals  GO to Q75' },
+      { value: 'postal_marketing__go_to_q76', label: 'Postal marketing  GO to Q76' },
+      { value: 'other/multiple__follow_relevan', label: 'Other/Multiple  Follow relevant pathway' },
+    ],
+    required: true
+  },
+  {
+    id: 'q92',
+    type: 'choice',
+    question: 'Q74. [Purchased data for electronic mail] Does the consent from the third party specifically name YOUR organization?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_consent_specifically_nam', label: 'Yes - consent specifically names my organization  GO to Q76' },
+      { value: 'no_-_generic/group_consent_or_', label: 'No - generic/group consent or no consent  **STOP - You CANNOT use this data for electronic mail to individual subscribers without consent naming your organization**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q93',
+    type: 'choice',
+    question: 'Q75. [Purchased data for calls] If relying on consent, does it specifically name your organization?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__go_to_q76', label: 'Yes  GO to Q76' },
+      { value: 'no_-_generic_consent__**warnin', label: 'No - generic consent  **WARNING - Generic consent is weak. Consider obtaining fresh consent or using legitimate interests if appropriate**  GO to Q76' },
+    ],
+    required: true
+  },
+  {
+    id: 'q94',
+    type: 'choice',
+    question: 'Q76. Do you have a process to handle complaints or inaccuracies from bought/rented lists?',
+    options: [
+      { value: 'yes__go_to_q77', label: 'Yes  GO to Q77' },
+      { value: 'no__**implement_complaint_hand', label: 'No  **Implement complaint handling process**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q95',
+    type: 'choice',
+    question: 'Q77. Are you using data brokers to append additional data to your existing customer records?',
+    options: [
+      { value: 'yes__go_to_q78', label: 'Yes  GO to Q78' },
+      { value: 'no__go_to_q80a', label: 'No  GO to Q80a' },
+    ],
+    required: true
+  },
+  {
+    id: 'q96',
+    type: 'choice',
+    question: 'Q78. Have individuals been informed (in privacy notice or at collection) that you may obtain additional data about them from third parties?',
+    options: [
+      { value: 'yes__go_to_q79', label: 'Yes  GO to Q79' },
+      { value: 'no__**stop_-_you_must_be_trans', label: 'No  **STOP - You must be transparent about data enrichment**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q97',
+    type: 'choice',
+    question: 'Q79. Is the appended data within individuals\' reasonable expectations based on your relationship?',
+    options: [
+      { value: 'yes__go_to_q80a', label: 'Yes  GO to Q80a' },
+      { value: 'no__**warning_-_unexpected_dat', label: 'No  **WARNING - Unexpected data enrichment may be unfair. Reconsider or obtain consent**' },
+      { value: 'unsure__**conduct_assessment_o', label: 'Unsure  **Conduct assessment or obtain consent**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q98',
+    type: 'choice',
+    question: 'Q80a. Are you buying contact details (phone numbers/email addresses) to add to postal addresses you already hold?',
+    options: [
+      { value: 'yes__go_to_q80b', label: 'Yes  GO to Q80b' },
+      { value: 'no__go_to_q80c', label: 'No  GO to Q80c' },
+    ],
+    required: true
+  },
+  {
+    id: 'q99',
+    type: 'choice',
+    question: 'Q80b. Do you have consent from individuals for obtaining and using these additional contact details?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_have_consent__go_to_q80c', label: 'Yes - have consent  GO to Q80c' },
+      { value: 'no_-_no_consent__**warning_-_c', label: 'No - no consent  **WARNING - Consider obtaining consent. Adding contact channels without permission may be unfair**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q100',
+    type: 'choice',
+    question: 'Q80c. Are you using data broker services for data cleansing, tracing, gone-away suppression, or screening against preference services?',
+    options: [
+      { value: 'yes__go_to_q80d', label: 'Yes  GO to Q80d' },
+      { value: 'no__**complete_for_third_party', label: 'No  **COMPLETE for Third Party Data**  GO to SECTION 14 (Q85a)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q101',
+    type: 'choice',
+    question: 'Q80d. Have you ensured these services comply with data protection law and have appropriate contracts in place?',
+    options: [
+      { value: 'yes__**complete_for_third_part', label: 'Yes  **COMPLETE for Third Party Data**  GO to SECTION 14 (Q85a)' },
+      { value: 'no__**implement_contracts_and_', label: 'No  **Implement contracts and ensure compliance**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q102',
+    type: 'choice',
+    question: 'Q85a. Are you conducting a "refer-a-friend", "tell-a-friend", or viral marketing campaign?',
+    options: [
+      { value: 'yes__go_to_q86', label: 'Yes  GO to Q86' },
+      { value: 'no__go_to_section_15_q89', label: 'No  GO to SECTION 15 (Q89)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q103',
+    type: 'choice',
+    question: 'Q86. Are you actively encouraging, incentivizing, or asking customers to forward marketing to their contacts?',
+    options: [
+      { value: 'yes__go_to_q87', label: 'Yes  GO to Q87' },
+      { value: 'no__go_to_q88', label: 'No  GO to Q88' },
+    ],
+    required: true
+  },
+  {
+    id: 'q104',
+    type: 'choice',
+    question: 'Q87. Do you have consent from the friends/family who will receive the forwarded marketing?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_have_consent_from_recipi', label: 'Yes - have consent from recipients  GO to Q88' },
+      { value: 'no_-_no_consent_from_recipient', label: 'No - no consent from recipients  **STOP - You are the "instigator" and need consent from recipients. Restructure campaign or obtain consent**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q105',
+    type: 'choice',
+    question: 'Q88. Have you structured the campaign to avoid being an "instigator"?',
+    options: [
+      { value: 'yes_-_not_actively_encouraging', label: 'Yes - not actively encouraging forwarding  **COMPLETE for Viral Marketing**  GO to SECTION 15 (Q89)' },
+      { value: 'no_-_still_encouraging_forward', label: 'No - still encouraging forwarding  **Return to Q87**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q106',
+    type: 'choice',
+    question: 'Q89. Are you conducting joint marketing campaigns with other organizations?',
+    options: [
+      { value: 'yes__go_to_q90', label: 'Yes  GO to Q90' },
+      { value: 'no__go_to_q92', label: 'No  GO to Q92' },
+    ],
+    required: true
+  },
+  {
+    id: 'q107',
+    type: 'choice',
+    question: 'Q90. Have you determined if you are joint controllers with the other organization(s)?',
+    options: [
+      { value: 'yes_-_we_are_joint_controllers', label: 'Yes - we are joint controllers  GO to Q91' },
+      { value: 'no_-_we_are_not_joint_controll', label: 'No - we are not joint controllers  GO to Q92' },
+      { value: 'unsure__**conduct_assessment._', label: 'Unsure  **Conduct assessment. If in doubt, treat as joint controllers**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q108',
+    type: 'choice',
+    question: 'Q91. Have you established a joint controller agreement setting out respective responsibilities?',
+    options: [
+      { value: 'yes_-_agreement_in_place__go_t', label: 'Yes - agreement in place  GO to Q92' },
+      { value: 'no__**stop_-_you_must_have_a_j', label: 'No  **STOP - You must have a joint controller agreement**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q109',
+    type: 'choice',
+    question: 'Q92. Are you using a third party to send marketing messages on your behalf?',
+    options: [
+      { value: 'yes__go_to_q93', label: 'Yes  GO to Q93' },
+      { value: 'no__go_to_section_16_q95', label: 'No  GO to SECTION 16 (Q95)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q110',
+    type: 'choice',
+    question: 'Q93. Do you have a written contract (Data Processing Agreement) setting out their responsibilities under PECR and UK GDPR?',
+    options: [
+      { value: 'yes_-_comprehensive_contract_i', label: 'Yes - comprehensive contract in place  GO to Q94' },
+      { value: 'no__**stop_-_you_must_have_a_w', label: 'No  **STOP - You must have a written contract with processors**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q111',
+    type: 'choice',
+    question: 'Q94. Have you conducted due diligence on the third party\'s compliance capabilities?',
+    options: [
+      { value: 'yes__**complete_for_joint_mark', label: 'Yes  **COMPLETE for Joint Marketing/Third Parties**  GO to SECTION 16 (Q95)' },
+      { value: 'no__**conduct_due_diligence_be', label: 'No  **Conduct due diligence before engaging**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q112',
+    type: 'choice',
+    question: 'Q95. Have you provided individuals with clear privacy information explaining your direct marketing activities?',
+    options: [
+      { value: 'yes__go_to_q96', label: 'Yes  GO to Q96' },
+      { value: 'no__**stop_-_you_must_provide_', label: 'No  **STOP - You must provide privacy information (transparency requirement)**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q113',
+    type: 'choice',
+    question: 'Q96. Does your privacy information cover:',
+    options: [
+      { value: 'yes_-_all_covered_comprehensiv', label: 'Yes - all covered comprehensively  GO to Q97' },
+      { value: 'partially_covered__**stop_-_up', label: 'Partially covered  **STOP - Update privacy information to cover all required elements**' },
+      { value: 'no__**stop_-_create_comprehens', label: 'No  **STOP - Create comprehensive privacy information**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q114',
+    type: 'choice',
+    question: 'Q97. If you collected data indirectly (from sources other than the individual), have you provided privacy information within one month of obtaining the data (or first communication if sooner)?',
+    options: [
+      { value: 'yes__go_to_q98', label: 'Yes  GO to Q98' },
+      { value: 'no__**stop_-_you_must_provide_', label: 'No  **STOP - You must provide privacy information within one month**' },
+      { value: 'n/a_-_collected_data_directly_', label: 'N/A - collected data directly  GO to Q98' },
+    ],
+    required: true
+  },
+  {
+    id: 'q115',
+    type: 'choice',
+    question: 'Q98. Have you made your privacy information:',
+    options: [
+      { value: 'yes_to_all__**complete_for_tra', label: 'Yes to all  **COMPLETE for Transparency**  GO to SECTION 17 (Q99)' },
+      { value: 'no_to_any__**improve_accessibi', label: 'No to any  **Improve accessibility and prominence of privacy information**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q116',
+    type: 'choice',
+    question: 'Q99. Do you have a clear and simple process for individuals to object to or opt-out of your direct marketing?',
+    tooltip: 'Must be simple, free and immediate',
+    options: [
+      { value: 'yes_-_comprehensive_opt-out_pr', label: 'Yes - comprehensive opt-out process  GO to Q100' },
+      { value: 'no__**stop_-_implement_clear_o', label: 'No  **STOP - Implement clear opt-out mechanisms**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q117',
+    type: 'choice',
+    question: 'Q100. Is the opt-out process free of charge (except for transmission costs)?',
+    tooltip: 'Must be simple, free and immediate',
+    options: [
+      { value: 'yes_-_completely_free__go_to_q', label: 'Yes - completely free  GO to Q101' },
+      { value: 'no__**stop_-_opt-out_must_be_f', label: 'No  **STOP - Opt-out must be free of charge**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q118',
+    type: 'choice',
+    question: 'Q101. Do you have a suppression list system to record and honor objections?',
+    options: [
+      { value: 'yes_-_comprehensive_suppressio', label: 'Yes - comprehensive suppression system  GO to Q102' },
+      { value: 'no__**stop_-_implement_suppres', label: 'No  **STOP - Implement suppression list system**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q119',
+    type: 'choice',
+    question: 'Q102. When someone objects to direct marketing, do you stop ALL marketing to them (not just the specific channel they objected through)?',
+    options: [
+      { value: 'yes_-_stop_all_marketing_when_', label: 'Yes - stop all marketing when individual objects  GO to Q103' },
+      { value: 'no_-_only_stop_the_channel_the', label: 'No - only stop the channel they objected to  **WARNING - You should stop ALL marketing unless individual specifically requests channel-specific opt-out**' },
+      { value: 'we_allow_channel-specific_opt-', label: 'We allow channel-specific opt-outs  Ensure this is clear to individuals  GO to Q103' },
+    ],
+    required: true
+  },
+  {
+    id: 'q120',
+    type: 'choice',
+    question: 'Q103. Do you action opt-out requests promptly?',
+    tooltip: 'Must be simple, free and immediate',
+    options: [
+      { value: 'yes_-_within_24-48_hours__go_t', label: 'Yes - within 24-48 hours  GO to Q104' },
+      { value: 'yes_-_within_30_days__**warnin', label: 'Yes - within 30 days  **WARNING - This is maximum allowable. Consider faster processing**' },
+      { value: 'no_-_takes_longer_than_30_days', label: 'No - takes longer than 30 days  **STOP - This is non-compliant. Must action within 30 days maximum**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q121',
+    type: 'choice',
+    question: 'Q104. If someone withdraws consent, do you stop processing immediately (or at next scheduled send)?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes__**complete_for_objections', label: 'Yes  **COMPLETE for Objections/Opt-outs**  GO to SECTION 18 (Q105)' },
+      { value: 'no__**stop_-_consent_withdrawa', label: 'No  **STOP - Consent withdrawal must be actioned immediately**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q122',
+    type: 'choice',
+    question: 'Q105. Have you documented when, how, and what individuals consented to?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_comprehensive_consent_re', label: 'Yes - comprehensive consent records  GO to Q106' },
+      { value: 'no__**stop_-_you_must_maintain', label: 'No  **STOP - You must maintain consent records to demonstrate compliance**' },
+      { value: 'n/a_-_not_relying_on_consent__', label: 'N/A - not relying on consent  GO to SECTION 19 or 20 (based on organization type)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q123',
+    type: 'choice',
+    question: 'Q106. Can you demonstrate that consent was freely given?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_consent_is_freely_given_', label: 'Yes - consent is freely given  GO to Q107' },
+      { value: 'no_-_consent_may_not_be_freely', label: 'No - consent may not be freely given  **STOP - Obtain fresh, freely-given consent**' },
+      { value: 'unsure__**review_consent_mecha', label: 'Unsure  **Review consent mechanism**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q124',
+    type: 'choice',
+    question: 'Q107. Is consent easy to withdraw (as easy as it was to give)?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_withdrawal_is_as_easy_as', label: 'Yes - withdrawal is as easy as giving  GO to Q108' },
+      { value: 'no_-_withdrawal_is_harder__**s', label: 'No - withdrawal is harder  **STOP - Make withdrawal as easy as giving consent**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q125',
+    type: 'choice',
+    question: 'Q108. Do you regularly review and refresh consent, especially if:',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_regular_consent_refresh_', label: 'Yes - regular consent refresh process  GO to Q109' },
+      { value: 'no_-_no_refresh_process__**war', label: 'No - no refresh process  **WARNING - Implement consent refresh process, especially for old or third-party consent**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q126',
+    type: 'choice',
+    question: 'Q109. If you previously relied on a third party\'s consent and now have a direct relationship with the individual, have you obtained fresh consent directly?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_obtained_fresh_consent__', label: 'Yes - obtained fresh consent  **COMPLETE for Consent Management**  GO to SECTION 19 or 20 (based on organization type)' },
+      { value: 'no_-_still_relying_on_third-pa', label: 'No - still relying on third-party consent  **WARNING - Best practice is to obtain fresh consent when you have direct relationship**' },
+      { value: 'n/a_-_no_direct_relationship_o', label: 'N/A - no direct relationship or didn\'t rely on third-party consent  **COMPLETE for Consent Management**  GO to SECTION 19 or 20' },
+    ],
+    required: true
+  },
+  {
+    id: 'q127',
+    type: 'choice',
+    question: 'Q110. Are you a public authority?',
+    options: [
+      { value: 'yes__go_to_q111', label: 'Yes  GO to Q111' },
+      { value: 'no__skip_to_section_20_q117', label: 'No  SKIP to SECTION 20 (Q117)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q128',
+    type: 'choice',
+    question: 'Q111. Can you identify a relevant task or function underlying the communication you wish to send?',
+    options: [
+      { value: 'yes_-_clear_task/function_iden', label: 'Yes - clear task/function identified  GO to Q112' },
+      { value: 'no_-_no_clear_task/function__*', label: 'No - no clear task/function  **Your marketing may not be for public task purposes**  GO to Q115' },
+    ],
+    required: true
+  },
+  {
+    id: 'q129',
+    type: 'choice',
+    question: 'Q112. Can you demonstrate that sending promotional messages is NECESSARY for your identified task or function?',
+    options: [
+      { value: 'yes_-_clearly_necessary__go_to', label: 'Yes - clearly necessary  GO to Q113' },
+      { value: 'no_-_not_truly_necessary__**th', label: 'No - not truly necessary  **This is direct marketing, not public task**  GO to Q115' },
+    ],
+    required: true
+  },
+  {
+    id: 'q130',
+    type: 'choice',
+    question: 'Q113. Is sending promotional messages PROPORTIONATE to your aim?',
+    options: [
+      { value: 'yes_-_proportionate__**this_is', label: 'Yes - proportionate  **This is NOT direct marketing. It is promotional communication necessary for public task**  GO to Q114' },
+      { value: 'no_-_not_proportionate__**this', label: 'No - not proportionate  **This may be direct marketing**  GO to Q115' },
+    ],
+    required: true
+  },
+  {
+    id: 'q131',
+    type: 'choice',
+    question: 'Q114. [Not direct marketing] However, you still must comply with:',
+    options: [
+      { value: 'yes__**complete_for_public_aut', label: 'Yes  **COMPLETE for Public Authority (Non-Marketing)**  **CAMPAIGN APPROVED**  GO to SECTION 22 (Q128)' },
+      { value: 'no__**implement_required_measu', label: 'No  **Implement required measures**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q132',
+    type: 'text',
+    question: 'Q115. [Is direct marketing] As your promotional message is direct marketing (not necessary for public task), you must comply with:',
+    required: true
+  },
+  {
+    id: 'q133',
+    type: 'choice',
+    question: 'Q116. What is your lawful basis as a public authority for processing personal data for direct marketing?',
+    tooltip: 'Under GDPR, you need a legal reason to process personal data',
+    options: [
+      { value: 'public_task__**warning_-_publi', label: 'Public task  **WARNING - Public task is rarely appropriate for direct marketing. Are you sure this is direct marketing?**  GO to Q111 to reconsider' },
+      { value: 'consent__go_to_q116a', label: 'Consent  GO to Q116a' },
+      { value: 'other__**reconsider_-_consent_', label: 'Other  **Reconsider - consent or public task are most appropriate**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q134',
+    type: 'choice',
+    question: 'Q116a. If relying on consent, have you ensured it is valid?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'yes_-_consent_is_valid__**comp', label: 'Yes - consent is valid  **COMPLETE for Public Authority (Direct Marketing)**  Return to applicable channel sections, then GO to SECTION 22' },
+      { value: 'no_-_consent_not_valid__**stop', label: 'No - consent not valid  **STOP - Obtain valid consent or reconsider approach**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q135',
+    type: 'choice',
+    question: 'Q117. Are you in a regulated private sector?',
+    options: [
+      { value: 'yes__go_to_q118', label: 'Yes  GO to Q118' },
+      { value: 'no__skip_to_section_21_q122', label: 'No  SKIP to SECTION 21 (Q122)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q136',
+    type: 'choice',
+    question: 'Q118. Are you sending communications that a regulator requires or encourages you to send?',
+    options: [
+      { value: 'yes__go_to_q119', label: 'Yes  GO to Q119' },
+      { value: 'no__skip_to_section_21_q122', label: 'No  SKIP to SECTION 21 (Q122)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q137',
+    type: 'choice',
+    question: 'Q119. Does the regulatory communication include promotional content that would make it direct marketing?',
+    options: [
+      { value: 'yes_-_includes_promotional_con', label: 'Yes - includes promotional content  **This IS direct marketing**  GO to Q121' },
+      { value: 'no_-_purely_factual_regulatory', label: 'No - purely factual regulatory information  GO to Q120' },
+      { value: 'unsure__**err_on_side_of_cauti', label: 'Unsure  **Err on side of caution and treat as direct marketing**  GO to Q121' },
+    ],
+    required: true
+  },
+  {
+    id: 'q138',
+    type: 'choice',
+    question: 'Q120. [Not direct marketing] If purely regulatory/factual, you still must:',
+    options: [
+      { value: 'yes__**complete_for_regulatory', label: 'Yes  **COMPLETE for Regulatory Communications (Non-Marketing)**  SKIP to SECTION 22 (Q128)' },
+      { value: 'no__**implement_required_measu', label: 'No  **Implement required measures**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q139',
+    type: 'choice',
+    question: 'Q121. [Is direct marketing] Have you considered sending regulatory communications via channels outside PECR scope?',
+    options: [
+      { value: 'yes_-_using_alternative_channe', label: 'Yes - using alternative channels where possible  **COMPLETE for Regulatory Communications (Marketing)**  Return to applicable channel sections, then GO to SECTION 22' },
+      { value: 'no_-_using_pecr_channels_emai', label: 'No - using PECR channels (email, SMS, calls)  **You must comply with full PECR requirements including consent/soft opt-in**  Return to applicable channel sections, then GO to SECTION 22' },
+    ],
+    required: true
+  },
+  {
+    id: 'q140',
+    type: 'choice',
+    question: 'Q122. Are you sending marketing to recipients outside the UK?',
+    options: [
+      { value: 'yes__go_to_q123', label: 'Yes  GO to Q123' },
+      { value: 'no__skip_to_section_22_q126', label: 'No  SKIP to SECTION 22 (Q126)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q141',
+    type: 'choice',
+    question: 'Q123. Have you reviewed and ensured compliance with the laws of the recipient countries?',
+    options: [
+      { value: 'yes_-_compliance_verified_for_', label: 'Yes - compliance verified for all target countries  GO to Q124' },
+      { value: 'no_-_not_verified__**stop_-_yo', label: 'No - not verified  **STOP - You must comply with local laws in recipient countries**' },
+      { value: 'partially_verified__**complete', label: 'Partially verified  **Complete verification before sending**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q142',
+    type: 'choice',
+    question: 'Q124. Are you transferring personal data outside the UK for marketing purposes?',
+    options: [
+      { value: 'yes__go_to_q125', label: 'Yes  GO to Q125' },
+      { value: 'no__**complete_for_internation', label: 'No  **COMPLETE for International Marketing**  GO to SECTION 22 (Q126)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q143',
+    type: 'choice',
+    question: 'Q125. Do you have an appropriate UK GDPR transfer mechanism in place?',
+    options: [
+      { value: 'yes_-_appropriate_mechanism_in', label: 'Yes - appropriate mechanism in place  **COMPLETE for International Marketing**  GO to SECTION 22 (Q126)' },
+      { value: 'no__**stop_-_you_cannot_transf', label: 'No  **STOP - You cannot transfer personal data outside UK without appropriate safeguards**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q144',
+    type: 'choice',
+    question: 'Q126. Have you considered whether your direct marketing activities require a Data Protection Impact Assessment (DPIA)?',
+    options: [
+      { value: 'yes_-_dpia_completed__go_to_q1', label: 'Yes - DPIA completed  GO to Q127' },
+      { value: 'yes_-_determined_dpia_not_requ', label: 'Yes - determined DPIA not required  GO to Q128' },
+      { value: 'no_-_not_considered__**stop_-_', label: 'No - not considered  **STOP - Conduct screening assessment to determine if DPIA required**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q145',
+    type: 'choice',
+    question: 'Q127. Does your DPIA adequately:',
+    options: [
+      { value: 'yes_-_comprehensive_dpia__go_t', label: 'Yes - comprehensive DPIA  GO to Q128' },
+      { value: 'no_-_inadequate_dpia__**revise', label: 'No - inadequate DPIA  **Revise DPIA before proceeding**' },
+      { value: 'n/a_-_dpia_not_required__go_to', label: 'N/A - DPIA not required  GO to Q128' },
+    ],
+    required: true
+  },
+  {
+    id: 'q146',
+    type: 'choice',
+    question: 'Q128. Have you documented your decisions regarding:',
+    options: [
+      { value: 'yes_-_comprehensive_documentat', label: 'Yes - comprehensive documentation  GO to Q129' },
+      { value: 'no_-_incomplete_documentation_', label: 'No - incomplete documentation  **STOP - Document all compliance decisions**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q147',
+    type: 'choice',
+    question: 'Q129. Do you have processes and systems to demonstrate compliance with UK GDPR and PECR?',
+    options: [
+      { value: 'yes_-_comprehensive_compliance', label: 'Yes - comprehensive compliance framework  GO to Q130' },
+      { value: 'no_-_incomplete_systems__**imp', label: 'No - incomplete systems  **Implement compliance systems**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q148',
+    type: 'choice',
+    question: 'Q130. Have you trained staff involved in direct marketing on data protection and PECR requirements?',
+    options: [
+      { value: 'yes_-_staff_fully_trained__go_', label: 'Yes - staff fully trained  GO to Q131' },
+      { value: 'no_-_staff_not_trained__**stop', label: 'No - staff not trained  **STOP - Train staff before launching campaign**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q149',
+    type: 'choice',
+    question: 'Q131. Do you regularly review and update your direct marketing practices to ensure ongoing compliance?',
+    options: [
+      { value: 'yes_-_regular_reviews_in_place', label: 'Yes - regular reviews in place  GO to SECTION 24 (Q132)' },
+      { value: 'no_-_no_review_process__**impl', label: 'No - no review process  **Implement regular compliance review process**  GO to SECTION 24 (Q132)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q150',
+    type: 'choice',
+    question: 'Q132. If including any promotional content in service messages (e.g., account notifications, delivery updates), have you treated the entire message as direct marketing?',
+    options: [
+      { value: 'yes_-_treating_as_direct_marke', label: 'Yes - treating as direct marketing and complying with all requirements  GO to Q133' },
+      { value: 'no_-_treating_as_service_messa', label: 'No - treating as service message  **STOP - Any promotional content makes it direct marketing**' },
+      { value: 'n/a_-_no_promotional_content_i', label: 'N/A - no promotional content in service messages  GO to Q133' },
+    ],
+    required: true
+  },
+  {
+    id: 'q151',
+    type: 'choice',
+    question: 'Q133. If conducting market research, does it include any promotional material?',
+    options: [
+      { value: 'no_-_genuine_research_only__go', label: 'No - genuine research only  GO to Q134' },
+      { value: 'yes_-_includes_promotional_mat', label: 'Yes - includes promotional material  **This IS direct marketing**  Ensure PECR compliance' },
+      { value: 'n/a_-_not_conducting_market_re', label: 'N/A - not conducting market research  GO to Q135' },
+    ],
+    required: true
+  },
+  {
+    id: 'q152',
+    type: 'choice',
+    question: 'Q134. Is the market research ultimately to enable sending direct marketing to participants ("sugging" - selling under guise of research)?',
+    options: [
+      { value: 'no_-_genuine_research_for_rese', label: 'No - genuine research for research purposes  GO to Q135' },
+      { value: 'yes_-_research_to_build_market', label: 'Yes - research to build marketing lists  **This IS direct marketing activity**  Ensure full compliance' },
+      { value: 'unclear_purpose__**clarify_pur', label: 'Unclear purpose  **Clarify purpose and treat as direct marketing if any doubt**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q153',
+    type: 'choice',
+    question: 'Q135. If you obtained data based on consent (via yourself or third party), are you attempting to switch to legitimate interests for subsequent processing?',
+    tooltip: 'Consent must be freely given, specific, informed and unambiguous',
+    options: [
+      { value: 'no_-_not_switching__go_to_q136', label: 'No - not switching  GO to Q136' },
+      { value: 'yes_-_switching_from_consent_t', label: 'Yes - switching from consent to legitimate interests  **STOP - This is generally not permitted and unfair. Cannot switch away from consent**' },
+      { value: 'n/a_-_didn\'t_obtain_via_consen', label: 'N/A - didn\'t obtain via consent  GO to Q136' },
+    ],
+    required: true
+  },
+  {
+    id: 'q154',
+    type: 'choice',
+    question: 'Q136. If you previously didn\'t rely on a lawful basis (processed unlawfully), are you now trying to retrospectively apply a lawful basis?',
+    tooltip: 'Under GDPR, you need a legal reason to process personal data',
+    options: [
+      { value: 'no__go_to_section_25_q137', label: 'No  GO to SECTION 25 (Q137)' },
+      { value: 'yes__**stop_-_you_cannot_retro', label: 'Yes  **STOP - You cannot retrospectively apply a lawful basis to unlawful processing**' },
+      { value: 'n/a__go_to_section_25_q137', label: 'N/A  GO to SECTION 25 (Q137)' },
+    ],
+    required: true
+  },
+  {
+    id: 'q155',
+    type: 'choice',
+    question: 'Q137. Have you completed all necessary screening against preference services relevant to your campaign?',
+    options: [
+      { value: 'yes_-_all_relevant_screening_c', label: 'Yes - all relevant screening completed  GO to Q138' },
+      { value: 'no_-_incomplete_screening__**s', label: 'No - incomplete screening  **STOP - Complete all required screening**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q156',
+    type: 'choice',
+    question: 'Q138. Have you tested your opt-out mechanisms to ensure they work properly?',
+    tooltip: 'Must be simple, free and immediate',
+    options: [
+      { value: 'yes_-_all_opt-out_mechanisms_t', label: 'Yes - all opt-out mechanisms tested and working  GO to Q139' },
+      { value: 'no_-_not_tested__**stop_-_test', label: 'No - not tested  **STOP - Test all opt-out mechanisms before sending**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q157',
+    type: 'choice',
+    question: 'Q139. Do you have adequate systems to handle data subject requests?',
+    options: [
+      { value: 'yes_-_comprehensive_systems_in', label: 'Yes - comprehensive systems in place  GO to Q140' },
+      { value: 'no_-_inadequate_systems__**imp', label: 'No - inadequate systems  **Implement data subject request handling procedures**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q158',
+    type: 'choice',
+    question: 'Q140. Are you confident your campaign complies with all applicable UK GDPR and PECR requirements?',
+    options: [
+      { value: 'yes_-_fully_compliant__**✅_cam', label: 'Yes - fully compliant  **✅ CAMPAIGN APPROVED - PROCEED WITH CONFIDENCE**' },
+      { value: 'no_-_issues_identified__**stop', label: 'No - issues identified  **STOP - Address all compliance issues before launching**' },
+      { value: 'unsure_-_need_legal_review__**', label: 'Unsure - need legal review  **STOP - Obtain legal advice before proceeding**' },
+    ],
+    required: true
+  },
+  {
+    id: 'q159',
+    type: 'text',
+    question: 'Question flow types:',
+    required: true
+  }
+];
+
+
+function getVisibleQuestions() {
+  return questions.filter(q => {
+    if (!q.showIf) return true;
+    return q.showIf(answers);
+  });
+}
+
+function renderQuestion() {
+  const visibleQs = getVisibleQuestions();
+  totalQuestions = visibleQs.length;
+  
+  if (currentIndex >= visibleQs.length) {
+    submit();
+    return;
+  }
+  
+  const q = visibleQs[currentIndex];
+  
+  let html = '<div class="question-container">';
+  html += `<div class="question-meta">Question ${currentIndex + 1} of ${totalQuestions}</div>`;
+  html += `<h2 class="question-text">${q.question}`;
+  
+  // Add tooltip if exists
+  if (q.tooltip) {
+    html += `
+      <span class="tooltip-trigger">?
+        <span class="tooltip">${q.tooltip}</span>
+      </span>
+    `;
+  }
+  
+  html += '</h2>';
+  
+  if (q.description) {
+    html += `<p class="question-description">${q.description}</p>`;
+  }
+  
+  if (q.type === 'text') {
+    html += `<input type="text" id="answer" value="${answers[q.id] || ''}" placeholder="Type here..." autofocus />`;
+  } else if (q.type === 'choice' || q.type === 'multiChoice') {
+    q.options.forEach((opt, idx) => {
+      const value = typeof opt === 'object' ? opt.value : opt;
+      const label = typeof opt === 'object' ? opt.label : opt;
+      const selected = q.type === 'multiChoice' 
+        ? (answers[q.id] && answers[q.id].includes(value))
+        : answers[q.id] === value;
+      html += `<div class="option ${selected ? 'selected' : ''}" onclick="selectOption('${q.id}', '${value}', ${q.type === 'multiChoice'})" data-index="${idx}">${label}</div>`;
+    });
+  }
+  
+  html += `
+    <div class="buttons">
+      ${currentIndex > 0 ? '<button class="btn-secondary" onclick="previous()">← Back</button>' : '<button class="btn-secondary" onclick="cancel()">Cancel</button>'}
+      <button class="btn-primary" id="nextBtn" onclick="next()" ${!answers[q.id] ? 'disabled' : ''}>
+        ${currentIndex === visibleQs.length - 1 ? 'Submit →' : 'Next →'}
+      </button>
+    </div>
+  `;
+  
+  html += '</div>';
+  
+  document.getElementById('formContent').innerHTML = html;
+  
+  if (q.type === 'text') {
+    const input = document.getElementById('answer');
+    input.oninput = (e) => {
+      answers[q.id] = e.target.value;
+      document.getElementById('nextBtn').disabled = !e.target.value.trim();
+    };
+    input.focus();
+  }
+  
+  // Check for stop conditions
+  if (q.stopIf && answers[q.id] && q.stopIf.includes(answers[q.id])) {
+    setTimeout(() => {
+      alert(q.stopMessage || 'This check cannot continue.');
+      backToDashboard();
+    }, 300);
+    return;
+  }
+  
+  updateProgress();
+}
+
+function selectOption(qId, value, isMulti) {
+  if (isMulti) {
+    if (!answers[qId]) answers[qId] = [];
+    const idx = answers[qId].indexOf(value);
+    if (idx > -1) {
+      answers[qId].splice(idx, 1);
+    } else {
+      answers[qId].push(value);
+    }
+  } else {
+    answers[qId] = value;
+  }
+  renderQuestion();
+}
+
+function updateProgress() {
+  const answered = Object.keys(answers).length;
+  const pct = totalQuestions > 0 ? Math.round((answered / totalQuestions) * 100) : 0;
+  
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${answered} of ${totalQuestions} completed`;
+  
+  // Animate score updates
+  const scoreElem = document.getElementById('headerScore');
+  const complianceElem = document.getElementById('complianceScore');
+  scoreElem.textContent = pct + '%';
+  complianceElem.textContent = pct + '%';
+  
+  // Add pulse animation
+  complianceElem.classList.add('pulse');
+  setTimeout(() => complianceElem.classList.remove('pulse'), 500);
+}
+
+function next() {
+  currentIndex++;
+  renderQuestion();
+}
+
+function previous() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    renderQuestion();
+  }
+}
+
+function cancel() {
+  if (confirm('Cancel this check? Progress will be lost.')) {
+    backToDashboard();
+  }
+}
+
+// CONFETTI FUNCTION
+function createConfetti() {
+  const colors = ['#f97316', '#ea580c', '#fb923c', '#fdba74', '#fed7aa'];
+  for (let i = 0; i < 100; i++) {
+    setTimeout(() => {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + 'vw';
+      confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+      confetti.style.animationDelay = Math.random() * 0.5 + 's';
+      document.body.appendChild(confetti);
       
-      if (q.type === 'text') {
-        html += `<input type="text" id="answer" placeholder="Type here..." />`;
-      } else {
-        q.options.forEach(opt => {
-          const sel = answers[q.id] === opt ? 'selected' : '';
-          html += `<div class="option ${sel}" onclick="select('${opt}')">${opt}</div>`;
-        });
-      }
-      
-      html += `<button id="nextBtn" onclick="next()" ${!answers[q.id] ? 'disabled' : ''}>
-        ${currentIndex === questions.length - 1 ? 'Finish' : 'Next'}
-      </button>`;
-      
-      document.getElementById('content').innerHTML = html;
-      
-      if (q.type === 'text') {
-        document.getElementById('answer').oninput = (e) => {
-          answers[q.id] = e.target.value;
-          document.getElementById('nextBtn').disabled = !e.target.value;
-        };
-      }
+      setTimeout(() => confetti.remove(), 3000);
+    }, i * 30);
+  }
+}
+
+async function submit() {
+  document.getElementById('formContent').style.display = 'none';
+  document.getElementById('loading').classList.add('active');
+  
+  try {
+    let member = null;
+    if (window.$memberstackDom) {
+      const result = await window.$memberstackDom.getCurrentMember();
+      member = result.data;
     }
     
-    function select(value) {
-      answers[questions[currentIndex].id] = value;
-      render();
+    if (!member) {
+      alert('Please log in to save your results.');
+      backToDashboard();
+      return;
     }
     
-    function next() {
-      if (currentIndex < questions.length - 1) {
-        currentIndex++;
-        render();
-      } else {
-        document.getElementById('content').innerHTML = '<h2>✅ Complete!</h2><p>Answers: ' + JSON.stringify(answers) + '</p>';
+    const complianceResult = calculateResult();
+    
+    await fetch('/.netlify/functions/submit-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        records: [{
+          fields: {
+            UserID: member.id,
+            CampaignName: answers.campaignName || 'Unnamed Campaign',
+            SubmissionDate: new Date().toISOString().split('T')[0],
+            Result: complianceResult,
+            Answers: JSON.stringify(answers)
+          }
+        }]
+      })
+    });
+    
+    showResult(complianceResult);
+    
+    // Trigger confetti on completion!
+    createConfetti();
+    
+  } catch (error) {
+    console.error('Submit error:', error);
+    alert('Error: ' + error.message);
+    document.getElementById('loading').classList.remove('active');
+    document.getElementById('formContent').style.display = 'block';
+  }
+}
+
+function calculateResult() {
+  if (answers.hasConsent === 'no' || answers.hasConsent === 'unsure') {
+    return 'STOP AND RE-THINK THIS CAMPAIGN';
+  }
+  
+  if (answers.consentMethod === 'purchased' || answers.consentMethod === 'pre-ticked' || answers.consentMethod === 'implied') {
+    return 'Not Wize to send';
+  }
+  
+  if (answers.hasOptOut === 'no' || answers.identifySender === 'no') {
+    return 'Not Wize to send';
+  }
+  
+  if (answers.dataProtection === 'no') {
+    return 'Not Wize to send';
+  }
+  
+  return 'Send this Wizely';
+}
+
+function showResult(result) {
+  document.getElementById('loading').classList.remove('active');
+  document.getElementById('result').classList.add('active');
+  
+  const icon = document.getElementById('resultIcon');
+  const title = document.getElementById('resultTitle');
+  const msg = document.getElementById('resultMessage');
+  
+  if (result === 'Send this Wizely') {
+    icon.textContent = '✅';
+    title.textContent = 'Looking Good!';
+    title.style.color = '#10b981';
+    msg.textContent = 'Your campaign appears to be PECR compliant. You can proceed with confidence.';
+  } else if (result === 'STOP AND RE-THINK THIS CAMPAIGN') {
+    icon.textContent = '⚠️';
+    title.textContent = 'Hold On!';
+    title.style.color = '#f59e0b';
+    msg.textContent = 'We\'ve identified some concerns. Please review your campaign before sending.';
+  } else {
+    icon.textContent = '❌';
+    title.textContent = 'Not Compliant';
+    title.style.color = '#ef4444';
+    msg.textContent = 'Your campaign does not meet PECR requirements. Please make changes before proceeding.';
+  }
+}
+
+function backToDashboard() {
+  window.location.href = redirectUrl;
+}
+
+// KEYBOARD SHORTCUTS
+document.addEventListener('keydown', (e) => {
+  const activeElement = document.activeElement;
+  
+  // Don't trigger if typing in input
+  if (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const nextBtn = document.getElementById('nextBtn');
+      if (nextBtn && !nextBtn.disabled) {
+        next();
       }
     }
-    
-    render();
-  </script>
+    return;
+  }
+  
+  // Enter = Next
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const nextBtn = document.getElementById('nextBtn');
+    if (nextBtn && !nextBtn.disabled) {
+      next();
+    }
+  }
+  
+  // Left Arrow = Back
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (currentIndex > 0) {
+      previous();
+    }
+  }
+  
+  // Escape = Cancel
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    cancel();
+  }
+  
+  // Number keys 1-9 to select options
+  if (e.key >= '1' && e.key <= '9') {
+    const optionIndex = parseInt(e.key) - 1;
+    const options = document.querySelectorAll('.option');
+    if (options[optionIndex]) {
+      options[optionIndex].click();
+    }
+  }
+});
+
+function init() {
+  console.log('🚀 Starting enhanced compliance checker...');
+  renderQuestion();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
 </body>
 </html>
