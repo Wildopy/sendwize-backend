@@ -870,7 +870,7 @@ async function submit() {
       finalResult = 'Not Wize to send';
     }
     
-    await fetch('/.netlify/functions/submit-check', {
+    await fetch('/api/submit-check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
