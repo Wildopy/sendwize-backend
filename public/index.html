@@ -848,16 +848,34 @@ async function submit() {
   
   try {
     let member = null;
-    if (window.$memberstackDom) {
-      const result = await window.$memberstackDom.getCurrentMember();
-      member = result.data;
+    
+    // Try to get Memberstack member
+    try {
+      if (window.$memberstackDom) {
+        const result = await window.$memberstackDom.getCurrentMember();
+        member = result.data;
+      }
+    } catch (msError) {
+      console.error('Memberstack error:', msError);
     }
     
-    if (!member) {
+    // If no member, try alternative method
+    if (!member && window.MemberStack) {
+      try {
+        member = await window.MemberStack.onReady.then(member => member);
+      } catch (err) {
+        console.error('MemberStack onReady error:', err);
+      }
+    }
+    
+    if (!member || !member.id) {
+      console.error('No member found. Member object:', member);
       alert('Please log in to save your results.');
       backToDashboard();
       return;
     }
+    
+    console.log('Member found:', member.id);
     
     const compliance = calculateCompliance();
     let finalResult;
