@@ -351,6 +351,7 @@ button:active::before { width: 300px; height: 300px; }
 <script>
 const urlParams = new URLSearchParams(window.location.search);
 const redirectUrl = urlParams.get('redirect') || 'https://new-mvp-v2.webflow.io';
+const userId = urlParams.get('userId'); // Get user ID from URL
 
 // COMPLETE QUESTION FLOW WITH CONDITIONAL LOGIC
 let currentQuestionId = 'q1';
@@ -847,35 +848,14 @@ async function submit() {
   document.getElementById('loading').classList.add('active');
   
   try {
-    let member = null;
-    
-    // Try to get Memberstack member
-    try {
-      if (window.$memberstackDom) {
-        const result = await window.$memberstackDom.getCurrentMember();
-        member = result.data;
-      }
-    } catch (msError) {
-      console.error('Memberstack error:', msError);
-    }
-    
-    // If no member, try alternative method
-    if (!member && window.MemberStack) {
-      try {
-        member = await window.MemberStack.onReady.then(member => member);
-      } catch (err) {
-        console.error('MemberStack onReady error:', err);
-      }
-    }
-    
-    if (!member || !member.id) {
-      console.error('No member found. Member object:', member);
+    // Get user ID from URL (passed from Webflow dashboard)
+    if (!userId) {
       alert('Please log in to save your results.');
       backToDashboard();
       return;
     }
     
-    console.log('Member found:', member.id);
+    console.log('User ID from URL:', userId);
     
     const compliance = calculateCompliance();
     let finalResult;
@@ -894,7 +874,7 @@ async function submit() {
       body: JSON.stringify({
         records: [{
           fields: {
-            UserID: member.id,
+            UserID: userId,
             CampaignName: answers.q1 || 'Unnamed Campaign',
             SubmissionDate: new Date().toISOString().split('T')[0],
             Result: finalResult,
