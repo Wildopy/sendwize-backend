@@ -1,1 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Compliance Checker - Sendwize</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fafafa;
+  line-height: 1.6;
+}
+
+.header {
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.container {
+  max-width: 900px;
+  margin: 60px auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 50px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 30px;
+}
+
+.section-title {
+  color: #f97316;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.main-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+
+.description {
+  font-size: 17px;
+  color: #666;
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+textarea {
+  width: 100%;
+  min-height: 250px;
+  padding: 18px 20px;
+  font-size: 16px;
+  border: 2px solid #e5e5e5;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  background: white;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 30px 0;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+select:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 40px;
+}
+
+button {
+  padding: 16px 32px;
+  font-size: 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: #f97316;
+  color: white;
+  flex: 1;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.btn-primary:hover {
+  background: #ea580c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+}
+
+.btn-primary:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: white;
+  color: #666;
+  border: 2px solid #e5e5e5;
+  min-width: 120px;
+}
+
+.btn-secondary:hover {
+  background: #f9f9f9;
+  border-color: #d1d5db;
+}
+
+.loading {
+  display: none;
+  text-align: center;
+  padding: 100px 40px;
+}
+
+.loading.active { display: block; }
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #f97316;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 25px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.result {
+  display: none;
+}
+
+.result.active { display: block; }
+
+.score-badge {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 30px;
+}
+
+.score-compliant {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.score-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.score-critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.issue-card {
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 8px;
+}
+
+.issue-card.warning {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+}
+
+.issue-card.good {
+  background: #f0fdf4;
+  border-left-color: #10b981;
+}
+
+.issue-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.issue-detail {
+  font-size: 14px;
+  color: #666;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.compliant-alt {
+  background: #dcfce7;
+  border: 1px solid #10b981;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #065f46;
+}
+
+.next-steps {
+  background: #fff7ed;
+  border: 2px solid #f97316;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 30px;
+}
+
+.next-steps h4 {
+  color: #9a3412;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.next-steps p {
+  color: #9a3412;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.upload-area {
+  border: 3px dashed #e5e5e5;
+  border-radius: 12px;
+  padding: 50px 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fafafa;
+  margin-bottom: 20px;
+}
+
+.upload-area:hover {
+  border-color: #f97316;
+  background: #fff7ed;
+}
+
+.upload-area.dragover {
+  border-color: #f97316;
+  background: #fff7ed;
+  transform: scale(1.02);
+}
+
+.upload-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.upload-text {
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.upload-hint {
+  font-size: 14px;
+  color: #999;
+}
+
+@media (max-width: 768px) {
+  .container {
+    margin: 30px auto;
+  }
+  .card {
+    padding: 30px 25px;
+  }
+  .main-title {
+    font-size: 28px;
+  }
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+  .buttons {
+    flex-direction: column;
+  }
+  .btn-primary, .btn-secondary {
+    width: 100%;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-container">
+    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 200 200">
+      <path d="M0 0 C163.02 0 326.04 0 494 0 C494 31.35 494 62.7 494 95 C330.98 95 167.96 95 0 95 C0 63.65 0 32.3 0 0 Z " fill="#FCFCFB" transform="translate(0,0)"/>
+      <path d="M0 0 C6.6 0 13.2 0 20 0 C20 25.41 20 50.82 20 77 C15.05 77 10.1 77 5 77 C4.67 75.35 4.34 73.7 4 72 C2.9275 72.61875 1.855 73.2375 0.75 73.875 C-0.49448778 74.59297372 -1.74478166 75.30095564 -3 76 C-3.57492188 76.36867188 -4.14984375 76.73734375 -4.7421875 77.1171875 C-8.07303885 78.4195619 -11.3530687 78.28877356 -14.875 78.25 C-15.56980469 78.25773437 -16.26460937 78.26546875 -16.98046875 78.2734375 C-25.28095239 78.24217391 -31.03397 75.58469612 -37 70 C-43.48568277 61.79896032 -44.97889703 53.28446139 -44 43 C-41.65526128 33.73511348 -37.00062432 27.87002512 -28.8671875 22.98046875 C-24.81918227 20.85484257 -21.32298392 20.80428867 -16.8125 20.75 C-15.54019531 20.72421875 -14.26789063 20.6984375 -12.95703125 20.671875 C-9 21 -9 21 -1 24 C-0.67 16.08 -0.34 8.16 0 0 Z " fill="#EE973F" transform="translate(226,10)"/>
+    </svg>
+    <span class="brand-name">sendwize</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card" id="formContent">
+    <p class="section-title">AI Compliance Checker</p>
+    <h1 class="main-title">Check Your Marketing Copy</h1>
+    <p class="description">Upload a file or paste your marketing copy below for AI-powered compliance analysis.</p>
+    
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">📄</div>
+      <div class="upload-text">Drop file here or click to upload</div>
+      <div class="upload-hint">Supports: PDF, Word, Images (PNG, JPG)</div>
+      <input type="file" id="fileInput" class="file-input" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg" style="display: none;">
+    </div>
+    
+    <div id="fileName" style="display: none; margin: 15px 0; padding: 12px; background: #f0fdf4; border: 1px solid #10b981; border-radius: 8px; color: #065f46; font-size: 14px;">
+      <span id="fileNameText"></span>
+      <button onclick="removeFile()" style="float: right; background: none; border: none; color: #065f46; cursor: pointer; font-weight: 600;">✕ Remove</button>
+    </div>
+    
+    <p style="text-align: center; margin: 20px 0; color: #999; font-size: 14px;">OR</p>
+    
+    <textarea id="marketingCopy" placeholder="Paste your email, ad, or marketing text here...
+
+Example:
+Subject: LAST CHANCE! 90% OFF
+
+Hi there, this is your final opportunity to save on our products! We're the UK's #1 provider. Click now!"></textarea>
+    
+    <div class="options-grid">
+      <div>
+        <label for="contentType">Content Type</label>
+        <select id="contentType">
+          <option value="email">Email</option>
+          <option value="advertisement">Advertisement</option>
+          <option value="website">Website Copy</option>
+          <option value="sms">SMS/Text</option>
+          <option value="social">Social Media</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label for="industry">Industry (Optional)</label>
+        <select id="industry">
+          <option value="">Select Industry</option>
+          <option value="Financial Services">Financial Services</option>
+          <option value="Healthcare">Healthcare</option>
+          <option value="Gambling">Gambling</option>
+          <option value="Food & Beverage">Food & Beverage</option>
+          <option value="Retail">Retail</option>
+          <option value="Technology">Technology</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="buttons">
+      <button class="btn-secondary" onclick="cancel()">Cancel</button>
+      <button class="btn-primary" id="analyzeBtn" disabled>Analyze Compliance →</button>
+    </div>
+  </div>
+  
+  <div class="card loading" id="loading">
+    <div class="spinner"></div>
+    <p style="font-size: 18px; color: #666;">Analyzing your marketing copy...</p>
+    <p style="font-size: 14px; color: #999; margin-top: 10px;">Using AI to check against ASA, PECR, and GDPR</p>
+  </div>
+  
+  <div class="card result" id="result">
+    <div id="resultsContent"></div>
+    <div class="buttons">
+      <button class="btn-secondary" onclick="startOver()">← Check Another</button>
+      <button class="btn-primary" onclick="backToDashboard()">Back to Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const redirectUrl = urlParams.get('redirect') || 'https://new-mvp-v2.webflow.io';
+const userId = urlParams.get('userId');
+
+const copyInput = document.getElementById('marketingCopy');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+let uploadedFile = null;
+
+// File upload handling
+uploadArea.addEventListener('click', () => fileInput.click());
+
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+  uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    handleFile(files[0]);
+  }
+});
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) {
+    handleFile(e.target.files[0]);
+  }
+});
+
+async function handleFile(file) {
+  const validTypes = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+    'image/png',
+    'image/jpeg',
+    'image/jpg'
+  ];
+  
+  if (!validTypes.includes(file.type)) {
+    alert('Please upload a PDF, Word document, or image file');
+    return;
+  }
+  
+  uploadedFile = file;
+  document.getElementById('fileName').style.display = 'block';
+  document.getElementById('fileNameText').textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+  analyzeBtn.disabled = false;
+  
+  // Clear textarea when file is uploaded
+  copyInput.value = '';
+}
+
+function removeFile() {
+  uploadedFile = null;
+  fileInput.value = '';
+  document.getElementById('fileName').style.display = 'none';
+  analyzeBtn.disabled = copyInput.value.trim().length === 0;
+}
+
+// Enable analyze button when text entered
+copyInput.addEventListener('input', () => {
+  if (!uploadedFile) {
+    analyzeBtn.disabled = copyInput.value.trim().length === 0;
+  }
+});
+
+// Analyze button click
+analyzeBtn.addEventListener('click', async () => {
+  let marketingCopy = copyInput.value.trim();
+  
+  // If file uploaded, extract text from it
+  if (uploadedFile) {
+    try {
+      document.getElementById('formContent').style.display = 'none';
+      document.getElementById('loading').classList.add('active');
+      
+      // Read file as base64
+      const reader = new FileReader();
+      const fileData = await new Promise((resolve, reject) => {
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(uploadedFile);
+      });
+      
+      // Send file to API
+      const response = await fetch('/api/analyze-copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileData: fileData,
+          fileName: uploadedFile.name,
+          fileType: uploadedFile.type,
+          contentType: document.getElementById('contentType').value,
+          industry: document.getElementById('industry').value,
+          userId: userId
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Analysis failed');
+      }
+      
+      const data = await response.json();
+      displayResults(data.analysis);
+      return;
+      
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error analyzing file. Please try again or paste text instead.');
+      document.getElementById('loading').classList.remove('active');
+      document.getElementById('formContent').style.display = 'block';
+      return;
+    }
+  }
+  
+  // Text-based analysis
+  if (!marketingCopy) {
+    alert('Please paste your marketing copy or upload a file');
+    return;
+  }
+  
+  // Show loading
+  document.getElementById('formContent').style.display = 'none';
+  document.getElementById('loading').classList.add('active');
+  
+  try {
+    const response = await fetch('/api/analyze-copy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        marketingCopy: marketingCopy,
+        contentType: document.getElementById('contentType').value,
+        industry: document.getElementById('industry').value,
+        userId: userId
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Analysis failed');
+    }
+    
+    const data = await response.json();
+    displayResults(data.analysis);
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error analyzing copy. Please try again.');
+    document.getElementById('loading').classList.remove('active');
+    document.getElementById('formContent').style.display = 'block';
+  }
+});
+
+function displayResults(analysis) {
+  document.getElementById('loading').classList.remove('active');
+  document.getElementById('result').classList.add('active');
+  
+  const score = analysis.riskScore || 50;
+  const verdict = analysis.overallVerdict || 'NEEDS REVIEW';
+  
+  let badgeClass = 'score-warning';
+  if (score >= 70) badgeClass = 'score-compliant';
+  else if (verdict.includes('CRITICAL') || score < 40) badgeClass = 'score-critical';
+  
+  let html = `
+    <p class="section-title">Analysis Complete</p>
+    <h2 class="main-title">${verdict}</h2>
+    <div class="score-badge ${badgeClass}">Compliance Score: ${score}/100</div>
+    <p class="description">${analysis.summary || 'Analysis complete'}</p>
+  `;
+  
+  // Critical issues
+  if (analysis.criticalIssues && analysis.criticalIssues.length > 0) {
+    html += `<h3 style="color: #ef4444; margin-top: 30px; font-size: 20px; font-weight: 700;">🚨 Critical Issues (${analysis.criticalIssues.length})</h3>`;
+    analysis.criticalIssues.forEach(issue => {
+      html += `
+        <div class="issue-card">
+          <div class="issue-title">${issue.issue}</div>
+          <div class="issue-detail"><strong>Regulation:</strong> ${issue.regulation}</div>
+          <div class="issue-detail"><strong>Penalty:</strong> ${issue.penalty}</div>
+          <div class="issue-detail"><strong>Fix:</strong> ${issue.fix}</div>
+          ${issue.compliantAlternative ? `<div class="compliant-alt">✅ Try this instead: "${issue.compliantAlternative}"</div>` : ''}
+        </div>
+      `;
+    });
+  }
+  
+  // Warnings
+  if (analysis.warnings && analysis.warnings.length > 0) {
+    html += `<h3 style="color: #f59e0b; margin-top: 30px; font-size: 20px; font-weight: 700;">⚠️ Warnings (${analysis.warnings.length})</h3>`;
+    analysis.warnings.forEach(warning => {
+      html += `
+        <div class="issue-card warning">
+          <div class="issue-title">${warning.issue}</div>
+          <div class="issue-detail"><strong>Regulation:</strong> ${warning.regulation}</div>
+          <div class="issue-detail"><strong>Recommendation:</strong> ${warning.recommendation}</div>
+        </div>
+      `;
+    });
+  }
+  
+  // Good practices
+  if (analysis.goodPractices && analysis.goodPractices.length > 0) {
+    html += `<h3 style="color: #10b981; margin-top: 30px; font-size: 20px; font-weight: 700;">✅ Good Practices (${analysis.goodPractices.length})</h3>`;
+    analysis.goodPractices.forEach(practice => {
+      html += `
+        <div class="issue-card good">
+          <div class="issue-detail">${practice}</div>
+        </div>
+      `;
+    });
+  }
+  
+  // Next steps
+  if (analysis.nextSteps) {
+    html += `
+      <div class="next-steps">
+        <h4>📋 Next Steps:</h4>
+        <p>${analysis.nextSteps}</p>
+      </div>
+    `;
+  }
+  
+  document.getElementById('resultsContent').innerHTML = html;
+}
+
+function startOver() {
+  document.getElementById('result').classList.remove('active');
+  document.getElementById('formContent').style.display = 'block';
+  copyInput.value = '';
+  removeFile();
+  analyzeBtn.disabled = true;
+}
+
+function cancel() {
+  if (confirm('Cancel and return to dashboard?')) {
+    backToDashboard();
+  }
+}
+
+function backToDashboard() {
+  window.location.href = redirectUrl;
+}
+
+console.log('🤖 AI Compliance Checker loaded');
+console.log('User ID:', userId || 'Not provided');
+</script>
+
+</body>
+</html>
