@@ -17,15 +17,76 @@ export default async function handler(req, res) {
   
   try {
     const { 
-      marketingCopy, 
+      marketingCopy,
+      fileData,
+      fileName,
+      fileType,
       contentType, 
       industry,
       userId,
       companyGuidelines 
     } = req.body;
     
-    if (!marketingCopy) {
-      return res.status(400).json({ error: 'Marketing copy required' });
+    let textToAnalyze = marketingCopy;
+    
+    // Handle file uploads
+    if (fileData && fileType) {
+      // For images, use Claude's vision capability
+      if (fileType.startsWith('image/')) {
+        const base64Data = fileData.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+        
+        const visionPrompt = `Extract all text from this marketing image and analyze it for UK compliance (ASA, PECR, GDPR).
+
+Return the extracted text first, then the compliance analysis.`;
+
+        const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 4000,
+            messages: [{
+              role: 'user',
+              content: [
+                {
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: fileType,
+                    data: base64Data
+                  }
+                },
+                {
+                  type: 'text',
+                  text: visionPrompt
+                }
+              ]
+            }]
+          })
+        });
+        
+        if (!claudeResponse.ok) {
+          throw new Error('Failed to analyze image');
+        }
+        
+        const visionData = await claudeResponse.json();
+        textToAnalyze = visionData.content[0].text;
+      }
+      // For PDFs and Word docs, we'll extract text on frontend for now
+      // (proper server-side extraction would need additional libraries)
+      else {
+        return res.status(400).json({ 
+          error: 'PDF and Word document processing coming soon. Please paste text for now.' 
+        });
+      }
+    }
+    
+    if (!textToAnalyze) {
+      return res.status(400).json({ error: 'Marketing copy or file required' });
     }
     
     // Build specialized compliance prompt
@@ -42,7 +103,7 @@ ${companyGuidelines ? `COMPANY-SPECIFIC RULES:\n${companyGuidelines}\n` : ''}
 Analyze this ${contentType || 'marketing material'} for compliance issues:
 
 """
-${marketingCopy}
+${textToAnalyze}
 """
 
 Provide a detailed compliance analysis in the following JSON format:
@@ -125,7 +186,9 @@ Be thorough, cite EXACT regulations with numbers, state SPECIFIC penalties, and 
         const BASE_ID = process.env.BASE_ID;
         const AI_CHECKS_TABLE = process.env.AI_CHECKS_TABLE || 'AI_Compliance_Checks';
         
-        await fetch(`https://api.airtable.com/v0/${BASE_ID}/${AI_CHECKS_TABLE}`, {
+        console.log('Attempting to save to Airtable:', { userId, AI_CHECKS_TABLE, BASE_ID });
+        
+        const airtableResponse = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${AI_CHECKS_TABLE}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
@@ -142,16 +205,27 @@ Be thorough, cite EXACT regulations with numbers, state SPECIFIC penalties, and 
                 Verdict: analysis.overallVerdict,
                 CriticalIssues: analysis.criticalIssues?.length || 0,
                 Warnings: analysis.warnings?.length || 0,
-                MarketingCopy: marketingCopy.substring(0, 5000), // First 5000 chars
+                MarketingCopy: textToAnalyze.substring(0, 5000), // First 5000 chars
+                FileName: fileName || 'Text input',
                 Analysis: JSON.stringify(analysis)
               }
             }]
           })
         });
+        
+        if (!airtableResponse.ok) {
+          const errorText = await airtableResponse.text();
+          console.error('Airtable save failed:', errorText);
+          // Still return success to user, but log the error
+        } else {
+          console.log('Successfully saved to Airtable');
+        }
       } catch (airtableError) {
-        console.error('Airtable save failed:', airtableError);
+        console.error('Airtable save error:', airtableError);
         // Don't fail the request if Airtable save fails
       }
+    } else {
+      console.log('No userId provided, skipping Airtable save');
     }
     
     return res.status(200).json({
