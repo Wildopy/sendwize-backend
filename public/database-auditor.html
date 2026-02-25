@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consent Database Auditor - Sendwize</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; line-height: 1.6; }
+.header { background: white; border-bottom: 1px solid #f0f0f0; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.brand-name { font-size: 24px; font-weight: 700; color: #1a1a1a; }
+.container { max-width: 1200px; margin: 60px auto; padding: 0 20px; }
+.card { background: white; border-radius: 12px; padding: 50px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 30px; }
+.main-title { font-size: 36px; font-weight: 700; color: #1a1a1a; margin-bottom: 20px; }
+.description { font-size: 17px; color: #666; margin-bottom: 40px; }
+.upload-area { border: 3px dashed #e5e5e5; border-radius: 12px; padding: 60px 30px; text-align: center; cursor: pointer; transition: all 0.3s; background: #fafafa; }
+.upload-area:hover { border-color: #f97316; background: #fff7ed; }
+.btn-primary { background: #f97316; color: white; padding: 16px 32px; font-size: 16px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); transition: all 0.3s; margin: 10px 5px; }
+.btn-primary:hover { background: #ea580c; transform: translateY(-2px); }
+.btn-primary:disabled { background: #d1d5db; cursor: not-allowed; transform: none; }
+.btn-secondary { background: white; color: #666; padding: 16px 32px; font-size: 16px; border: 2px solid #e5e5e5; border-radius: 10px; cursor: pointer; font-weight: 600; margin: 10px 5px; }
+.loading { display: none; text-align: center; padding: 100px 40px; }
+.loading.active { display: block; }
+.spinner { border: 4px solid #f3f3f3; border-top: 4px solid #f97316; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto 25px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.results { display: none; }
+.results.active { display: block; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 30px 0; }
+.stat-card { padding: 25px; border-radius: 12px; text-align: center; }
+.stat-number { font-size: 36px; font-weight: 700; color: #1a1a1a; }
+.stat-label { font-size: 14px; color: #666; margin-top: 5px; }
+.tier-safe { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
+.tier-probably { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+.tier-risky { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+.tier-danger { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); }
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
+.modal.active { display: flex; }
+.modal-content { background: white; padding: 40px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+.modal-title { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+.question-group { margin: 25px 0; padding: 20px; background: #f9f9f9; border-radius: 8px; }
+.question-label { font-size: 16px; font-weight: 600; margin-bottom: 15px; display: block; }
+.radio-option { display: block; padding: 12px 15px; margin: 8px 0; background: white; border: 2px solid #e5e5e5; border-radius: 8px; cursor: pointer; }
+.radio-option:hover { border-color: #f97316; background: #fff7ed; }
+.source-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+.source-table th, .source-table td { padding: 15px; text-align: left; border-bottom: 1px solid #e5e5e5; }
+.source-table th { background: #f9f9f9; font-weight: 600; text-transform: uppercase; font-size: 12px; }
+.quality-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.quality-excellent { background: #d1fae5; color: #065f46; }
+.quality-good { background: #dbeafe; color: #1e40af; }
+.quality-poor { background: #fef3c7; color: #92400e; }
+.quality-critical { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="brand-name">sendwize</span>
+</div>
+
+<!-- Questions Modal -->
+<div class="modal" id="questionsModal">
+  <div class="modal-content">
+    <h2 class="modal-title">Quick Questions</h2>
+    <p style="color: #666; margin-bottom: 30px;">Help us analyze your database accurately</p>
+    
+    <div class="question-group">
+      <label class="question-label">1. Are these contacts existing customers?</label>
+      <label class="radio-option">
+        <input type="radio" name="customerType" value="all" checked>
+        All are existing customers
+      </label>
+      <label class="radio-option">
+        <input type="radio" name="customerType" value="some">
+        Some are customers, some prospects
+      </label>
+      <label class="radio-option">
+        <input type="radio" name="customerType" value="none">
+        No - all prospects/subscribers only
+      </label>
+    </div>
+    
+    <div class="question-group">
+      <label class="question-label">2. What are you marketing?</label>
+      <label class="radio-option">
+        <input type="radio" name="productType" value="similar" checked>
+        Same/similar products they bought or signed up for
+      </label>
+      <label class="radio-option">
+        <input type="radio" name="productType" value="different">
+        Completely different products/services
+      </label>
+      <label class="radio-option">
+        <input type="radio" name="productType" value="mixed">
+        Mix of both
+      </label>
+    </div>
+    
+    <div class="question-group">
+      <label class="question-label">3. Email type:</label>
+      <label class="radio-option">
+        <input type="radio" name="emailType" value="b2c" checked>
+        B2C (Consumer emails)
+      </label>
+      <label class="radio-option">
+        <input type="radio" name="emailType" value="b2b">
+        B2B (Business emails)
+      </label>
+      <label class="radio-option">
+        <input type="radio" name="emailType" value="mixed">
+        Mixed
+      </label>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+      <button class="btn-primary" onclick="startAnalysis()">Analyze Database →</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card" id="uploadCard">
+    <h1 class="main-title">Consent Database Auditor</h1>
+    <p class="description">Upload your contact list for intelligent PECR compliance analysis with soft opt-in detection and B2B email recognition.</p>
+    
+    <div class="upload-area" id="uploadArea">
+      <div style="font-size: 48px; margin-bottom: 15px;">📊</div>
+      <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Drop CSV file here or click to upload</div>
+      <div style="font-size: 14px; color: #999;">Maximum 100,000 contacts</div>
+      <input type="file" id="fileInput" accept=".csv" style="display: none;">
+    </div>
+    
+    <p style="text-align: center; margin: 20px 0; color: #999;">Expected CSV format:</p>
+    <div style="background: #f9f9f9; border: 1px solid #e5e5e5; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; text-align: left; max-width: 600px; margin: 0 auto;">
+Email,ConsentDate,ConsentMethod,Source
+john@example.com,2024-01-15,Opt-in checkbox,Website purchase
+jane@acmecorp.com,2024-01-10,N/A,LinkedIn outreach
+bob@gmail.com,2021-06-20,Opt-in,Newsletter signup
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+      <button class="btn-secondary" onclick="downloadTemplate()">📥 Download CSV Template</button>
+      <button class="btn-secondary" onclick="cancel()">Cancel</button>
+    </div>
+  </div>
+  
+  <div class="card loading" id="loading">
+    <div class="spinner"></div>
+    <p style="font-size: 18px; color: #666;">Analyzing your database...</p>
+    <p style="font-size: 14px; color: #999; margin-top: 10px;">Applying PECR rules, detecting B2B emails, checking soft opt-in...</p>
+  </div>
+  
+  <div class="results" id="results">
+    <div class="card">
+      <h2 class="main-title">Compliance Analysis Complete</h2>
+      
+      <div class="stats-grid">
+        <div class="stat-card" style="background: #f0f0f0;">
+          <div class="stat-number" id="totalContacts">0</div>
+          <div class="stat-label">Total Contacts</div>
+        </div>
+        <div class="stat-card tier-safe">
+          <div class="stat-number" id="safeCount">0</div>
+          <div class="stat-label">✅ SAFE (90-100)</div>
+        </div>
+        <div class="stat-card tier-probably">
+          <div class="stat-number" id="probablyCount">0</div>
+          <div class="stat-label">✅ PROBABLY SAFE (70-89)</div>
+        </div>
+        <div class="stat-card tier-risky">
+          <div class="stat-number" id="riskyCount">0</div>
+          <div class="stat-label">⚠️ RISKY (40-69)</div>
+        </div>
+        <div class="stat-card tier-danger">
+          <div class="stat-number" id="dangerCount">0</div>
+          <div class="stat-label">❌ DO NOT CONTACT (0-39)</div>
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin: 40px 0;">
+        <h3 style="margin-bottom: 20px;">Compliance Distribution</h3>
+        <canvas id="scoreChart" style="max-width: 400px; margin: 0 auto;"></canvas>
+      </div>
+      
+      <div style="text-align: center; margin-top: 30px;">
+        <button class="btn-primary" id="downloadSafe">📥 Download Safe List</button>
+        <button class="btn-primary" id="downloadRisky">📥 Download Risky List</button>
+        <button class="btn-primary" id="downloadDanger">📥 Download Do-Not-Contact</button>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h3 style="margin-bottom: 20px;">📅 Consent Expiry Timeline</h3>
+      <p style="color: #666; margin-bottom: 30px;">Contacts aging out over the next 12 months</p>
+      <canvas id="expiryChart" style="max-height: 300px;"></canvas>
+    </div>
+    
+    <div class="card">
+      <h3 style="margin-bottom: 20px;">📊 Source Quality Ranking</h3>
+      <p style="color: #666; margin-bottom: 30px;">Which acquisition sources give you the best quality consents?</p>
+      <table class="source-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Total Contacts</th>
+            <th>Avg Score</th>
+            <th>Quality Rating</th>
+          </tr>
+        </thead>
+        <tbody id="sourceTableBody"></tbody>
+      </table>
+    </div>
+    
+    <div class="card" style="background: #fff7ed; border: 2px solid #f97316;">
+      <h3 style="margin-bottom: 15px; color: #9a3412;">✉️ Re-consent Campaign Generator</h3>
+      <p style="color: #78350f; margin-bottom: 20px;">Generate PECR-compliant re-permission email for aging/risky contacts</p>
+      
+      <div style="margin: 20px 0;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Company Name:</label>
+        <input type="text" id="companyName" placeholder="e.g., Acme Ltd" style="width: 100%; padding: 12px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 15px;">
+      </div>
+      
+      <div style="margin: 20px 0;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Industry:</label>
+        <select id="industry" style="width: 100%; padding: 12px; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 15px;">
+          <option value="">Select...</option>
+          <option value="Retail">Retail</option>
+          <option value="Technology">Technology</option>
+          <option value="Financial Services">Financial Services</option>
+          <option value="Healthcare">Healthcare</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      
+      <button class="btn-primary" onclick="generateEmail()" id="generateBtn">🤖 Generate Email</button>
+      
+      <div id="generatedEmailBox" style="display: none; margin-top: 30px;">
+        <h4 style="margin-bottom: 15px;">Generated Email:</h4>
+        <div id="generatedEmail" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e5e5; white-space: pre-wrap; font-family: inherit; line-height: 1.8;"></div>
+        <button class="btn-secondary" onclick="copyEmail()" style="margin-top: 15px;">📋 Copy to Clipboard</button>
+      </div>
+    </div>
+    
+    <div style="text-align: center; margin: 40px 0;">
+      <button class="btn-secondary" onclick="startOver()">← Audit Another Database</button>
+      <button class="btn-primary" onclick="backToDashboard()">Back to Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const redirectUrl = urlParams.get('redirect') || 'https://new-mvp-v2.webflow.io';
+const userId = urlParams.get('userId');
+
+let uploadedContacts = null;
+let analysisResults = null;
+
+// File upload
+document.getElementById('uploadArea').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  if (e.target.files.length > 0) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  if (!file.name.endsWith('.csv')) {
+    alert('Please upload a CSV file');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    parseCSV(e.target.result);
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(csvText) {
+  const lines = csvText.trim().split('\n');
+  const contacts = [];
+  
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',');
+    if (values.length >= 3) {
+      contacts.push({
+        email: values[0]?.trim() || '',
+        consentDate: values[1]?.trim() || '',
+        consentMethod: values[2]?.trim() || '',
+        source: values[3]?.trim() || ''
+      });
+    }
+  }
+  
+  if (contacts.length === 0) {
+    alert('No contacts found in CSV');
+    return;
+  }
+  
+  uploadedContacts = contacts;
+  document.getElementById('questionsModal').classList.add('active');
+}
+
+async function startAnalysis() {
+  document.getElementById('questionsModal').classList.remove('active');
+  document.getElementById('uploadCard').style.display = 'none';
+  document.getElementById('loading').classList.add('active');
+  
+  const customerType = document.querySelector('input[name="customerType"]:checked').value;
+  const productType = document.querySelector('input[name="productType"]:checked').value;
+  const emailType = document.querySelector('input[name="emailType"]:checked').value;
+  
+  try {
+    const response = await fetch('/api/audit-database-v2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contacts: uploadedContacts,
+        customerType,
+        productType,
+        emailType,
+        userId
+      })
+    });
+    
+    const results = await response.json();
+    analysisResults = results;
+    displayResults(results);
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Analysis failed. Please try again.');
+    document.getElementById('loading').classList.remove('active');
+    document.getElementById('uploadCard').style.display = 'block';
+  }
+}
+
+function displayResults(results) {
+  document.getElementById('loading').classList.remove('active');
+  document.getElementById('results').classList.add('active');
+  
+  document.getElementById('totalContacts').textContent = results.total.toLocaleString();
+  document.getElementById('safeCount').textContent = results.safe.length.toLocaleString();
+  document.getElementById('probablyCount').textContent = results.probably.length.toLocaleString();
+  document.getElementById('riskyCount').textContent = results.risky.length.toLocaleString();
+  document.getElementById('dangerCount').textContent = results.danger.length.toLocaleString();
+  
+  // Chart
+  new Chart(document.getElementById('scoreChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['SAFE', 'PROBABLY SAFE', 'RISKY', 'DANGER'],
+      datasets: [{
+        data: [results.safe.length, results.probably.length, results.risky.length, results.danger.length],
+        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
+      }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } } }
+  });
+  
+  // Expiry timeline
+  new Chart(document.getElementById('expiryChart'), {
+    type: 'bar',
+    data: {
+      labels: results.expiryTimeline.labels,
+      datasets: [{
+        label: 'Contacts Expiring',
+        data: results.expiryTimeline.data,
+        backgroundColor: '#f97316'
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+  
+  // Source quality table
+  let tableHTML = '';
+  results.sourceQuality.forEach(s => {
+    let badge = 'quality-critical';
+    if (s.avgScore >= 85) badge = 'quality-excellent';
+    else if (s.avgScore >= 70) badge = 'quality-good';
+    else if (s.avgScore >= 50) badge = 'quality-poor';
+    
+    tableHTML += `<tr>
+      <td>${s.source}</td>
+      <td>${s.total}</td>
+      <td>${s.avgScore}</td>
+      <td><span class="quality-badge ${badge}">${s.rating}</span></td>
+    </tr>`;
+  });
+  document.getElementById('sourceTableBody').innerHTML = tableHTML;
+  
+  // Download buttons
+  setupDownloads(results);
+}
+
+function setupDownloads(results) {
+  createDownload('downloadSafe', results.safe, 'safe-contacts.csv');
+  createDownload('downloadRisky', results.risky, 'risky-contacts.csv');
+  createDownload('downloadDanger', results.danger, 'DO-NOT-CONTACT.csv');
+}
+
+function createDownload(btnId, data, filename) {
+  if (data.length === 0) return;
+  
+  const csv = 'Email,ConsentDate,ConsentMethod,Source,Score,Category\n' + 
+    data.map(c => `${c.email},${c.consentDate},${c.consentMethod},${c.source},${c.score},${c.category}`).join('\n');
+  
+  const btn = document.getElementById(btnId);
+  btn.disabled = false;
+  btn.onclick = () => {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+  };
+}
+
+async function generateEmail() {
+  const company = document.getElementById('companyName').value.trim();
+  const industry = document.getElementById('industry').value;
+  
+  if (!company) return alert('Enter company name');
+  
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  
+  try {
+    const response = await fetch('/api/generate-reconsent-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        companyName: company,
+        industry: industry,
+        contactCount: analysisResults.risky.length + analysisResults.probably.length
+      })
+    });
+    
+    const data = await response.json();
+    document.getElementById('generatedEmail').textContent = data.email;
+    document.getElementById('generatedEmailBox').style.display = 'block';
+  } catch (error) {
+    alert('Generation failed');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🤖 Generate Email';
+  }
+}
+
+function copyEmail() {
+  navigator.clipboard.writeText(document.getElementById('generatedEmail').textContent);
+  alert('Copied!');
+}
+
+function downloadTemplate() {
+  const template = `Email,ConsentDate,ConsentMethod,Source
+example@email.com,2024-01-15,Opt-in checkbox,Website
+test@company.com,2023-06-20,N/A,LinkedIn
+sample@gmail.com,2025-02-01,Opt-in,Newsletter`;
+  
+  const blob = new Blob([template], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'template.csv';
+  a.click();
+}
+
+function startOver() {
+  document.getElementById('results').classList.remove('active');
+  document.getElementById('uploadCard').style.display = 'block';
+  uploadedContacts = null;
+  analysisResults = null;
+}
+
+function cancel() {
+  if (confirm('Return to dashboard?')) backToDashboard();
+}
+
+function backToDashboard() {
+  window.location.href = redirectUrl;
+}
+</script>
+</body>
+</html>
