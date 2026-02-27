@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Compliance Report - Sendwize</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #FAFAFA;
+      line-height: 1.6;
+      color: #000;
+    }
+    
+    .header {
+      background: white;
+      padding: 20px 40px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: #EA7317;
+      text-transform: lowercase;
+    }
+    
+    .btn-back {
+      background: transparent;
+      border: 1px solid #E5E5E5;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-back:hover {
+      border-color: #EA7317;
+      color: #EA7317;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    .report-header {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      margin-bottom: 30px;
+    }
+    
+    .report-label {
+      color: #EA7317;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    
+    .report-title {
+      font-size: 36px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 20px;
+    }
+    
+    .report-meta {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    
+    .score-badge {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 700;
+      margin: 10px 0;
+    }
+    
+    .badge-compliant { background: #D1FAE5; color: #065F46; }
+    .badge-warning { background: #FEF3C7; color: #92400E; }
+    .badge-danger { background: #FEE2E2; color: #991B1B; }
+    
+    .section {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      margin-bottom: 30px;
+    }
+    
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 20px;
+    }
+    
+    .marketing-copy {
+      background: #FAFAFA;
+      padding: 20px;
+      border-radius: 4px;
+      border: 1px solid #E5E5E5;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      color: #333;
+      line-height: 1.8;
+    }
+    
+    .issue-card {
+      padding: 20px;
+      border-radius: 4px;
+      margin: 15px 0;
+      border-left: 4px solid;
+    }
+    
+    .issue-critical {
+      background: #FEE2E2;
+      border-left-color: #EF4444;
+    }
+    
+    .issue-warning {
+      background: #FEF3C7;
+      border-left-color: #F59E0B;
+    }
+    
+    .issue-good {
+      background: #D1FAE5;
+      border-left-color: #10B981;
+    }
+    
+    .issue-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #000;
+    }
+    
+    .issue-desc {
+      color: #333;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    
+    .issue-fix {
+      color: #666;
+      font-style: italic;
+      font-size: 14px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 100px 40px;
+      color: #666;
+    }
+    
+    .btn-download {
+      background: #EA7317;
+      color: white;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 10px 5px;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-download:hover {
+      background: #d66614;
+    }
+    
+    @media print {
+      .header, .btn-back, .btn-download { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">sendwize</div>
+    <a href="#" class="btn-back" onclick="window.close(); return false;">← Back to Dashboard</a>
+  </div>
+  
+  <div class="container" id="content">
+    <p class="loading">Loading report...</p>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const recordId = urlParams.get('id');
+    
+    async function loadReport() {
+      if (!recordId) {
+        document.getElementById('content').innerHTML = '<p class="loading">Error: No report ID provided</p>';
+        return;
+      }
+      
+      try {
+        // Secure API call - no tokens in browser!
+        const response = await fetch(`/api/get-report?recordId=${recordId}&type=ai`);
+        
+        if (!response.ok) throw new Error('Failed to load report');
+        
+        const data = await response.json();
+        displayReport(data.fields);
+        
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('content').innerHTML = '<p class="loading">Error loading report. Please try again.</p>';
+      }
+    }
+    
+    function displayReport(fields) {
+      const fileName = fields.FileName || 'Marketing Copy';
+      const verdict = fields.Verdict || 'Pending';
+      const score = fields.RiskScore || 0;
+      const date = fields.CheckDate ? new Date(fields.CheckDate).toLocaleDateString() : 'Date not set';
+      const copy = fields.MarketingCopy || 'No marketing copy available';
+      
+      let badgeClass = score >= 70 ? 'badge-compliant' : score >= 40 ? 'badge-warning' : 'badge-danger';
+      
+      let analysis = {};
+      try {
+        analysis = JSON.parse(fields.Analysis || '{}');
+      } catch (e) {
+        console.error('Error parsing analysis:', e);
+      }
+      
+      const html = `
+        <div class="report-header">
+          <div class="report-label">AI Compliance Analysis</div>
+          <h1 class="report-title">${fileName}</h1>
+          <p class="report-meta">Analyzed: ${date}</p>
+          <div class="score-badge ${badgeClass}">${verdict} (${score}/100)</div>
+        </div>
+        
+        <div class="section">
+          <h2 class="section-title">Marketing Copy Analyzed</h2>
+          <div class="marketing-copy">${copy}</div>
+        </div>
+        
+        ${generateIssueSection('🚨 Critical Issues', analysis.criticalIssues, 'critical')}
+        ${generateIssueSection('⚠️ Warnings', analysis.warnings, 'warning')}
+        ${generateIssueSection('✅ Good Practices', analysis.goodPractices, 'good')}
+        
+        <div class="section">
+          <h2 class="section-title">Recommended Next Steps</h2>
+          ${generateNextSteps(analysis.nextSteps)}
+        </div>
+        
+        <div style="text-align: center; margin: 40px 0;">
+          <button class="btn-download" onclick="window.print()">📥 Download PDF Report</button>
+        </div>
+      `;
+      
+      document.getElementById('content').innerHTML = html;
+    }
+    
+    function generateIssueSection(title, issues, type) {
+      if (!issues || issues.length === 0) return '';
+      
+      const className = type === 'critical' ? 'issue-critical' : 
+                        type === 'warning' ? 'issue-warning' : 'issue-good';
+      
+      let html = `<div class="section"><h2 class="section-title">${title}</h2>`;
+      
+      issues.forEach(issue => {
+        html += `
+          <div class="issue-card ${className}">
+            <div class="issue-title">${issue.issue || issue}</div>
+            ${issue.description ? `<div class="issue-desc">${issue.description}</div>` : ''}
+            ${issue.fix ? `<div class="issue-fix">Fix: ${issue.fix}</div>` : ''}
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      return html;
+    }
+    
+    function generateNextSteps(steps) {
+      if (!steps || steps.length === 0) {
+        return '<p style="color: #666;">No specific recommendations available</p>';
+      }
+      
+      let html = '<ol style="padding-left: 20px; color: #666; line-height: 2;">';
+      steps.forEach(step => {
+        html += `<li>${step}</li>`;
+      });
+      html += '</ol>';
+      
+      return html;
+    }
+    
+    loadReport();
+  </script>
+
+</body>
+</html>
