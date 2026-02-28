@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Compliance Checker - Sendwize</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #FAFAFA;
+      line-height: 1.6;
+      color: #000;
+    }
+    
+    .header {
+      background: white;
+      padding: 20px 40px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: #EA7317;
+      text-transform: lowercase;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    .page-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .page-label {
+      color: #EA7317;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    
+    .page-title {
+      font-size: 42px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 15px;
+    }
+    
+    .page-description {
+      font-size: 16px;
+      color: #666;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .search-section {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      margin-bottom: 30px;
+    }
+    
+    .search-box {
+      position: relative;
+      margin-bottom: 30px;
+    }
+    
+    .search-input {
+      width: 100%;
+      padding: 15px 50px 15px 20px;
+      border: 2px solid #E5E5E5;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: all 0.2s ease;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: #EA7317;
+    }
+    
+    .search-icon {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      font-size: 20px;
+    }
+    
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #E5E5E5;
+      border-radius: 8px;
+      margin-top: 5px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: none;
+    }
+    
+    .suggestions.active {
+      display: block;
+    }
+    
+    .suggestion-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+    
+    .suggestion-item:hover {
+      background: #FFF7ED;
+    }
+    
+    .suggestion-name {
+      font-weight: 600;
+      color: #000;
+    }
+    
+    .suggestion-category {
+      font-size: 13px;
+      color: #999;
+      margin-top: 2px;
+    }
+    
+    .selected-vendors {
+      margin: 20px 0;
+    }
+    
+    .selected-vendor-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #D1FAE5;
+      color: #065F46;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin: 5px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .remove-vendor {
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      color: #065F46;
+    }
+    
+    .remove-vendor:hover {
+      color: #991B1B;
+    }
+    
+    .btn-primary {
+      background: #EA7317;
+      color: white;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 10px 5px;
+    }
+    
+    .btn-primary:hover {
+      background: #d66614;
+    }
+    
+    .btn-primary:disabled {
+      background: #d1d5db;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: #666;
+      padding: 14px 32px;
+      border: 1px solid #E5E5E5;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 10px 5px;
+    }
+    
+    .btn-secondary:hover {
+      border-color: #EA7317;
+      color: #EA7317;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #666;
+      display: none;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #EA7317;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .results {
+      display: none;
+    }
+    
+    .results.active {
+      display: block;
+    }
+    
+    .results-header {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .results-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .vendor-card {
+      background: white;
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    
+    .vendor-card:hover {
+      border-color: #EA7317;
+    }
+    
+    .vendor-header {
+      padding: 20px 30px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .vendor-title-section {
+      flex: 1;
+    }
+    
+    .vendor-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 5px;
+    }
+    
+    .vendor-score {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-right: 10px;
+    }
+    
+    .score-high { background: #D1FAE5; color: #065F46; }
+    .score-medium { background: #FEF3C7; color: #92400E; }
+    .score-low { background: #FEE2E2; color: #991B1B; }
+    
+    .vendor-meta {
+      font-size: 13px;
+      color: #999;
+      margin-top: 5px;
+    }
+    
+    .expand-icon {
+      font-size: 24px;
+      color: #999;
+      transition: transform 0.3s ease;
+    }
+    
+    .vendor-card.expanded .expand-icon {
+      transform: rotate(180deg);
+    }
+    
+    .vendor-details {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      border-top: 1px solid #f0f0f0;
+    }
+    
+    .vendor-card.expanded .vendor-details {
+      max-height: 1500px;
+    }
+    
+    .vendor-content {
+      padding: 30px;
+    }
+    
+    .detail-section {
+      margin: 20px 0;
+    }
+    
+    .detail-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .detail-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-icon {
+      font-size: 18px;
+      min-width: 20px;
+    }
+    
+    .detail-text {
+      flex: 1;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .detail-label {
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 4px;
+    }
+    
+    .action-items {
+      background: #FFF7ED;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    
+    .action-items ol {
+      margin-left: 20px;
+      color: #666;
+    }
+    
+    .action-items li {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+    
+    .ai-badge {
+      display: inline-block;
+      background: #DBEAFE;
+      color: #1E40AF;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    
+    .warning-box {
+      background: #FEF3C7;
+      border-left: 4px solid #F59E0B;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    
+    .warning-box p {
+      color: #92400E;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">sendwize</div>
+  </div>
+  
+  <div class="container">
+    <div class="page-header">
+      <div class="page-label">Vendor Compliance Checker</div>
+      <h1 class="page-title">Check Your Marketing Stack</h1>
+      <p class="page-description">Ensure all your marketing tools are GDPR and PECR compliant</p>
+    </div>
+    
+    <div class="search-section" id="searchSection">
+      <h2 style="margin-bottom: 20px; font-size: 20px;">Search for your marketing vendors</h2>
+      
+      <div class="search-box">
+        <input 
+          type="text" 
+          class="search-input" 
+          id="vendorSearch" 
+          placeholder="Type vendor name (e.g., Mailchimp, HubSpot)..."
+          autocomplete="off"
+        >
+        <span class="search-icon">🔍</span>
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+      
+      <div class="selected-vendors" id="selectedVendors"></div>
+      
+      <div style="text-align: center; margin-top: 30px;">
+        <button class="btn-primary" id="checkButton" disabled>Check Vendors</button>
+        <button class="btn-secondary" onclick="cancel()">Cancel</button>
+      </div>
+    </div>
+    
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Analyzing your vendors...</p>
+    </div>
+    
+    <div class="results" id="results"></div>
+    
+  </div>
+
+  <script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
+  
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect') || 'https://new-mvp-v2.webflow.io';
+    const userId = urlParams.get('userId');
+    
+    let selectedVendors = [];
+    let allVendors = [];
+    
+    // Fallback vendors in case API isn't ready yet
+    const fallbackVendors = [
+      { name: 'Mailchimp', category: 'Email Service Provider' },
+      { name: 'HubSpot', category: 'CRM' },
+      { name: 'Klaviyo', category: 'Email Service Provider' },
+      { name: 'ActiveCampaign', category: 'Email Service Provider' },
+      { name: 'Constant Contact', category: 'Email Service Provider' },
+      { name: 'SendGrid', category: 'Email Service Provider' },
+      { name: 'Brevo', category: 'Email Service Provider' },
+      { name: 'ConvertKit', category: 'Email Service Provider' },
+      { name: 'Salesforce', category: 'CRM' },
+      { name: 'Pipedrive', category: 'CRM' },
+      { name: 'Zoho CRM', category: 'CRM' },
+      { name: 'Google Analytics', category: 'Analytics' },
+      { name: 'Hotjar', category: 'Analytics' },
+      { name: 'Typeform', category: 'Forms' }
+    ];
+    
+    async function init() {
+      try {
+        const response = await fetch('/api/get-vendors');
+        
+        // Check if response is actually JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.warn('API not ready, using fallback vendors');
+          allVendors = fallbackVendors;
+          return;
+        }
+        
+        const data = await response.json();
+        allVendors = data.vendors || fallbackVendors;
+      } catch (error) {
+        console.warn('Error loading vendors, using fallback list:', error);
+        allVendors = fallbackVendors;
+      }
+    }
+    
+    document.getElementById('vendorSearch').addEventListener('input', function(e) {
+      const query = e.target.value.toLowerCase().trim();
+      const suggestions = document.getElementById('suggestions');
+      
+      if (query.length < 2) {
+        suggestions.classList.remove('active');
+        return;
+      }
+      
+      const matches = allVendors.filter(v => 
+        v.name.toLowerCase().includes(query) && 
+        !selectedVendors.find(sv => sv.name === v.name)
+      );
+      
+      if (matches.length === 0) {
+        suggestions.innerHTML = `
+          <div class="suggestion-item" onclick="addCustomVendor('${escapeHtml(query)}')">
+            <div class="suggestion-name">➕ Add "${escapeHtml(query)}" (Custom Vendor)</div>
+            <div class="suggestion-category">AI will analyze this vendor</div>
+          </div>
+        `;
+        suggestions.classList.add('active');
+      } else {
+        suggestions.innerHTML = matches.slice(0, 10).map(v => `
+          <div class="suggestion-item" onclick='selectVendor(${JSON.stringify(v.name)})'>
+            <div class="suggestion-name">${escapeHtml(v.name)}</div>
+            <div class="suggestion-category">${escapeHtml(v.category)}</div>
+          </div>
+        `).join('');
+        suggestions.classList.add('active');
+      }
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-box')) {
+        document.getElementById('suggestions').classList.remove('active');
+      }
+    });
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    function selectVendor(name) {
+      const vendor = allVendors.find(v => v.name === name);
+      if (vendor && !selectedVendors.find(v => v.name === name)) {
+        selectedVendors.push({ ...vendor, isCustom: false });
+        updateSelectedVendors();
+      }
+      document.getElementById('vendorSearch').value = '';
+      document.getElementById('suggestions').classList.remove('active');
+    }
+    
+    function addCustomVendor(name) {
+      const cleanName = name.trim();
+      if (cleanName && !selectedVendors.find(v => v.name.toLowerCase() === cleanName.toLowerCase())) {
+        selectedVendors.push({ 
+          name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1), 
+          category: 'Custom Vendor',
+          isCustom: true 
+        });
+        updateSelectedVendors();
+      }
+      document.getElementById('vendorSearch').value = '';
+      document.getElementById('suggestions').classList.remove('active');
+    }
+    
+    function removeVendor(name) {
+      selectedVendors = selectedVendors.filter(v => v.name !== name);
+      updateSelectedVendors();
+    }
+    
+    function updateSelectedVendors() {
+      const container = document.getElementById('selectedVendors');
+      
+      if (selectedVendors.length === 0) {
+        container.innerHTML = '';
+        document.getElementById('checkButton').disabled = true;
+        return;
+      }
+      
+      container.innerHTML = `
+        <p style="margin-bottom: 10px; font-weight: 600; color: #666;">
+          Selected Vendors (${selectedVendors.length}):
+        </p>
+        ${selectedVendors.map(v => `
+          <span class="selected-vendor-tag">
+            ${escapeHtml(v.name)}
+            ${v.isCustom ? '<span class="ai-badge">AI Analysis</span>' : ''}
+            <span class="remove-vendor" onclick='removeVendor(${JSON.stringify(v.name)})'>×</span>
+          </span>
+        `).join('')}
+      `;
+      
+      document.getElementById('checkButton').disabled = false;
+    }
+    
+    document.getElementById('checkButton').addEventListener('click', async function() {
+      if (selectedVendors.length === 0) return;
+      
+      document.getElementById('searchSection').style.display = 'none';
+      document.getElementById('loading').style.display = 'block';
+      
+      try {
+        const response = await fetch('/api/check-vendors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vendors: selectedVendors,
+            userId: userId
+          })
+        });
+        
+        const data = await response.json();
+        displayResults(data);
+        
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error checking vendors. Please try again.');
+        document.getElementById('searchSection').style.display = 'block';
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    });
+    
+    function displayResults(data) {
+      const avgScore = Math.round(data.results.reduce((sum, r) => sum + r.score, 0) / data.results.length);
+      
+      const html = `
+        <div class="results-header">
+          <h2 class="results-title">Vendor Stack Compliance Report</h2>
+          <p style="color: #666; margin: 10px 0;">${data.results.length} vendors checked</p>
+          <div style="font-size: 32px; font-weight: 700; color: #EA7317; margin: 20px 0;">
+            ${avgScore}/100
+          </div>
+          <p style="color: #666;">Average Compliance Score</p>
+        </div>
+        
+        ${data.results.map((vendor, idx) => createVendorCard(vendor, idx)).join('')}
+        
+        <div style="text-align: center; margin: 40px 0;">
+          <button class="btn-primary" onclick="window.location.href='${redirectUrl}'">Back to Dashboard</button>
+          <button class="btn-secondary" onclick="location.reload()">Check More Vendors</button>
+        </div>
+      `;
+      
+      document.getElementById('results').innerHTML = html;
+      document.getElementById('results').classList.add('active');
+    }
+    
+    function createVendorCard(vendor, idx) {
+      const scoreClass = vendor.score >= 80 ? 'score-high' : vendor.score >= 60 ? 'score-medium' : 'score-low';
+      
+      return `
+        <div class="vendor-card" id="vendor-${idx}">
+          <div class="vendor-header" onclick="toggleCard(${idx})">
+            <div class="vendor-title-section">
+              <div class="vendor-name">
+                ${escapeHtml(vendor.name)}
+                ${vendor.isAI ? '<span class="ai-badge">🤖 AI Analysis</span>' : ''}
+              </div>
+              <div>
+                <span class="vendor-score ${scoreClass}">${vendor.score}/100</span>
+                <span class="vendor-meta">${escapeHtml(vendor.category)}</span>
+              </div>
+            </div>
+            <div class="expand-icon">▼</div>
+          </div>
+          
+          <div class="vendor-details">
+            <div class="vendor-content">
+              ${vendor.isAI ? `
+                <div class="warning-box">
+                  <p><strong>⚠️ Automated Analysis</strong><br>
+                  This vendor isn't in our verified database. Claude AI analyzed their public information. 
+                  Manually verify with the vendor directly.</p>
+                </div>
+              ` : ''}
+              
+              <div class="detail-section">
+                <div class="detail-title">Compliance Status</div>
+                ${createDetailItems(vendor.details)}
+              </div>
+              
+              ${vendor.actionItems && vendor.actionItems.length > 0 ? `
+                <div class="action-items">
+                  <div class="detail-title">Action Items</div>
+                  <ol>
+                    ${vendor.actionItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                  </ol>
+                </div>
+              ` : ''}
+              
+              ${vendor.links && (vendor.links.dpa || vendor.links.privacy) ? `
+                <div style="margin-top: 20px;">
+                  ${vendor.links.dpa ? `<button class="btn-secondary" onclick="window.open('${escapeHtml(vendor.links.dpa)}', '_blank')">View DPA</button>` : ''}
+                  ${vendor.links.privacy ? `<button class="btn-secondary" onclick="window.open('${escapeHtml(vendor.links.privacy)}', '_blank')">Privacy Policy</button>` : ''}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    function createDetailItems(details) {
+      if (!details || details.length === 0) return '<p style="color: #666;">No details available</p>';
+      
+      return details.map(d => {
+        const icon = d.status === 'pass' ? '✅' : d.status === 'warning' ? '⚠️' : 'ℹ️';
+        return `
+          <div class="detail-item">
+            <div class="detail-icon">${icon}</div>
+            <div class="detail-text">
+              <div class="detail-label">${escapeHtml(d.label)}</div>
+              <div>${escapeHtml(d.description)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function toggleCard(idx) {
+      const card = document.getElementById(`vendor-${idx}`);
+      card.classList.toggle('expanded');
+    }
+    
+    function cancel() {
+      if (confirm('Cancel and return to dashboard?')) {
+        window.location.href = redirectUrl;
+      }
+    }
+    
+    init();
+  </script>
+
+</body>
+</html>
