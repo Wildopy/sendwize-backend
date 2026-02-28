@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Pre-Send Scanner - Sendwize</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #FAFAFA;
+      line-height: 1.6;
+      color: #000;
+    }
+    
+    .header {
+      background: white;
+      padding: 20px 40px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: #EA7317;
+      text-transform: lowercase;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    .page-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .page-label {
+      color: #EA7317;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    
+    .page-title {
+      font-size: 42px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 15px;
+    }
+    
+    .page-description {
+      font-size: 16px;
+      color: #666;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .tab {
+      padding: 15px 30px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+    
+    .tab.active {
+      color: #EA7317;
+      border-bottom-color: #EA7317;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      margin-bottom: 30px;
+    }
+    
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 20px;
+    }
+    
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 15px;
+      border: 1px solid #E5E5E5;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      resize: vertical;
+    }
+    
+    .input-label {
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 8px;
+      display: block;
+    }
+    
+    .file-upload {
+      border: 2px dashed #E5E5E5;
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 20px 0;
+    }
+    
+    .file-upload:hover {
+      border-color: #EA7317;
+      background: #FFF7ED;
+    }
+    
+    .btn-primary {
+      background: #EA7317;
+      color: white;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 10px 5px;
+    }
+    
+    .btn-primary:hover {
+      background: #d66614;
+    }
+    
+    .btn-primary:disabled {
+      background: #d1d5db;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: #666;
+      padding: 14px 28px;
+      border: 1px solid #E5E5E5;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 10px 5px;
+    }
+    
+    .btn-secondary:hover {
+      border-color: #EA7317;
+      color: #EA7317;
+    }
+    
+    .results {
+      display: none;
+    }
+    
+    .results.active {
+      display: block;
+    }
+    
+    .check-item {
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 4px;
+      border-left: 4px solid;
+    }
+    
+    .check-pass {
+      background: #D1FAE5;
+      border-left-color: #10B981;
+    }
+    
+    .check-warning {
+      background: #FEF3C7;
+      border-left-color: #F59E0B;
+    }
+    
+    .check-fail {
+      background: #FEE2E2;
+      border-left-color: #EF4444;
+    }
+    
+    .check-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #000;
+    }
+    
+    .check-desc {
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .score-display {
+      text-align: center;
+      padding: 40px;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      margin-bottom: 30px;
+    }
+    
+    .score-number {
+      font-size: 64px;
+      font-weight: 700;
+      color: #EA7317;
+    }
+    
+    .score-label {
+      font-size: 16px;
+      color: #666;
+      margin-top: 10px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #666;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #EA7317;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">sendwize</div>
+  </div>
+  
+  <div class="container">
+    <div class="page-header">
+      <div class="page-label">Email Pre-Send Scanner</div>
+      <h1 class="page-title">Check Before You Send</h1>
+      <p class="page-description">Final safety check for your email campaigns - catch compliance issues before they reach inboxes</p>
+    </div>
+    
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('email')">📧 Email Scanner</button>
+      <button class="tab" onclick="switchTab('suppression')">🚫 Suppression Checker</button>
+    </div>
+    
+    <!-- EMAIL SCANNER TAB -->
+    <div class="tab-content active" id="email-tab">
+      <div class="card">
+        <h2 class="section-title">Paste Your Email HTML</h2>
+        <p style="color: #666; margin-bottom: 20px;">Copy your email HTML from Mailchimp, HubSpot, or your email builder</p>
+        
+        <label class="input-label">Subject Line:</label>
+        <input type="text" id="subjectLine" placeholder="e.g., Summer Sale - 50% Off!" style="width: 100%; padding: 12px; border: 1px solid #E5E5E5; border-radius: 4px; margin-bottom: 20px; font-size: 15px;">
+        
+        <label class="input-label">Email HTML:</label>
+        <textarea id="emailHTML" placeholder="Paste your email HTML here..."></textarea>
+        
+        <div style="text-align: center; margin-top: 30px;">
+          <button class="btn-primary" onclick="scanEmail()">🔍 Scan Email</button>
+          <button class="btn-secondary" onclick="cancel()">Cancel</button>
+        </div>
+      </div>
+      
+      <div class="loading" id="email-loading">
+        <div class="spinner"></div>
+        <p>Scanning your email...</p>
+      </div>
+      
+      <div class="results" id="email-results"></div>
+    </div>
+    
+    <!-- SUPPRESSION CHECKER TAB -->
+    <div class="tab-content" id="suppression-tab">
+      <div class="card">
+        <h2 class="section-title">Upload Your Lists</h2>
+        <p style="color: #666; margin-bottom: 30px;">Cross-check your send list against suppression list to prevent sending to blocked contacts</p>
+        
+        <div style="margin: 30px 0;">
+          <label class="input-label">Send List (CSV):</label>
+          <div class="file-upload" onclick="document.getElementById('sendList').click()">
+            <div style="font-size: 40px; margin-bottom: 10px;">📤</div>
+            <div style="font-weight: 600; margin-bottom: 5px;">Upload Send List</div>
+            <div style="font-size: 14px; color: #999;">CSV with email addresses</div>
+            <input type="file" id="sendList" accept=".csv" style="display: none;">
+          </div>
+          <div id="sendListName" style="color: #666; font-size: 14px; margin-top: 10px;"></div>
+        </div>
+        
+        <div style="margin: 30px 0;">
+          <label class="input-label">Suppression List (CSV):</label>
+          <div class="file-upload" onclick="document.getElementById('suppressionList').click()">
+            <div style="font-size: 40px; margin-bottom: 10px;">🚫</div>
+            <div style="font-weight: 600; margin-bottom: 5px;">Upload Suppression List</div>
+            <div style="font-size: 14px; color: #999;">CSV with blocked emails</div>
+            <input type="file" id="suppressionList" accept=".csv" style="display: none;">
+          </div>
+          <div id="suppressionListName" style="color: #666; font-size: 14px; margin-top: 10px;"></div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+          <button class="btn-primary" onclick="checkSuppression()">✓ Check Lists</button>
+          <button class="btn-secondary" onclick="cancel()">Cancel</button>
+        </div>
+      </div>
+      
+      <div class="loading" id="suppression-loading">
+        <div class="spinner"></div>
+        <p>Checking suppression list...</p>
+      </div>
+      
+      <div class="results" id="suppression-results"></div>
+    </div>
+    
+  </div>
+
+  <script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
+  
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect') || 'https://new-mvp-v2.webflow.io';
+    const userId = urlParams.get('userId');
+    
+    let sendListData = null;
+    let suppressionListData = null;
+    
+    function switchTab(tab) {
+      // Update tab buttons
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      
+      if (tab === 'email') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('email-tab').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('suppression-tab').classList.add('active');
+      }
+    }
+    
+    // File upload handlers
+    document.getElementById('sendList').addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        document.getElementById('sendListName').textContent = `✓ ${file.name}`;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          sendListData = parseCSV(event.target.result);
+        };
+        reader.readAsText(file);
+      }
+    });
+    
+    document.getElementById('suppressionList').addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        document.getElementById('suppressionListName').textContent = `✓ ${file.name}`;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          suppressionListData = parseCSV(event.target.result);
+        };
+        reader.readAsText(file);
+      }
+    });
+    
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const emails = [];
+      lines.forEach(line => {
+        const email = line.split(',')[0].trim().toLowerCase();
+        if (email && email.includes('@')) {
+          emails.push(email);
+        }
+      });
+      return emails;
+    }
+    
+    async function scanEmail() {
+      const subject = document.getElementById('subjectLine').value.trim();
+      const html = document.getElementById('emailHTML').value.trim();
+      
+      if (!subject || !html) {
+        alert('Please fill in both subject line and email HTML');
+        return;
+      }
+      
+      document.getElementById('email-loading').style.display = 'block';
+      document.getElementById('email-results').classList.remove('active');
+      
+      try {
+        const response = await fetch('/api/scan-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject, html, userId })
+        });
+        
+        const data = await response.json();
+        displayEmailResults(data);
+        
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error scanning email. Please try again.');
+      } finally {
+        document.getElementById('email-loading').style.display = 'none';
+      }
+    }
+    
+    function displayEmailResults(data) {
+      const passedChecks = data.checks.filter(c => c.status === 'pass');
+      const warningChecks = data.checks.filter(c => c.status === 'warning');
+      const failedChecks = data.checks.filter(c => c.status === 'fail');
+      
+      let scoreColor = '#10B981';
+      if (data.score < 70) scoreColor = '#F59E0B';
+      if (data.score < 40) scoreColor = '#EF4444';
+      
+      const html = `
+        <div class="score-display">
+          <div class="score-number" style="color: ${scoreColor}">${data.score}/100</div>
+          <div class="score-label">Email Compliance Score</div>
+          <p style="margin-top: 15px; color: #666;">
+            ${data.summary.passed} passed • ${data.summary.warnings} warnings • ${data.summary.failed} critical
+          </p>
+        </div>
+        
+        ${failedChecks.length > 0 ? `
+        <div class="card">
+          <h2 class="section-title">🚨 Critical Issues (Fix Before Sending)</h2>
+          ${failedChecks.map(check => `
+            <div class="check-item check-fail">
+              <div class="check-title">❌ ${check.title}</div>
+              <div class="check-desc">${check.description}</div>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+        
+        ${warningChecks.length > 0 ? `
+        <div class="card">
+          <h2 class="section-title">⚠️ Warnings (Should Fix)</h2>
+          ${warningChecks.map(check => `
+            <div class="check-item check-warning">
+              <div class="check-title">⚠️ ${check.title}</div>
+              <div class="check-desc">${check.description}</div>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+        
+        <div class="card">
+          <h2 class="section-title">✅ Passed Checks (${passedChecks.length})</h2>
+          ${passedChecks.map(check => `
+            <div class="check-item check-pass">
+              <div class="check-title">✅ ${check.title}</div>
+              <div class="check-desc">${check.description}</div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div style="text-align: center; margin: 40px 0;">
+          <button class="btn-primary" onclick="window.location.href='${redirectUrl}'">Back to Dashboard</button>
+          <button class="btn-secondary" onclick="location.reload()">Scan Another Email</button>
+        </div>
+      `;
+      
+      document.getElementById('email-results').innerHTML = html;
+      document.getElementById('email-results').classList.add('active');
+    }
+    
+    async function checkSuppression() {
+      if (!sendListData || !suppressionListData) {
+        alert('Please upload both CSV files');
+        return;
+      }
+      
+      document.getElementById('suppression-loading').style.display = 'block';
+      document.getElementById('suppression-results').classList.remove('active');
+      
+      try {
+        const response = await fetch('/api/check-suppression', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sendList: sendListData,
+            suppressionList: suppressionListData,
+            userId
+          })
+        });
+        
+        const data = await response.json();
+        displaySuppressionResults(data);
+        
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error checking lists. Please try again.');
+      } finally {
+        document.getElementById('suppression-loading').style.display = 'none';
+      }
+    }
+    
+    function displaySuppressionResults(data) {
+      const html = `
+        <div class="card">
+          <h2 class="section-title">Suppression Check Results</h2>
+          
+          <div style="padding: 30px; background: #F9FAFB; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-bottom: 20px; color: #000;">📊 Summary</h3>
+            <p style="line-height: 2; color: #333;">
+              <strong>Original send list:</strong> ${data.sendListCount} emails<br>
+              <strong>Suppression list:</strong> ${data.suppressionListCount} emails<br>
+              <strong>Clean list:</strong> ${data.cleanListCount} emails<br>
+              <strong>Removed:</strong> ${data.removedCount} emails
+            </p>
+          </div>
+          
+          ${data.warnings.map(warning => {
+            const severityClass = warning.severity === 'critical' ? 'check-fail' : 
+                                 warning.severity === 'warning' ? 'check-warning' : 'check-pass';
+            const icon = warning.severity === 'critical' ? '❌' : 
+                        warning.severity === 'warning' ? '⚠️' : 'ℹ️';
+            return `
+              <div class="check-item ${severityClass}">
+                <div class="check-title">${icon} ${warning.severity.toUpperCase()}</div>
+                <div class="check-desc">${warning.message}</div>
+              </div>
+            `;
+          }).join('')}
+          
+          ${data.matchCount > 0 ? `
+            <div style="margin: 30px 0;">
+              <h3 style="margin-bottom: 15px; color: #991B1B;">🚫 Suppressed Emails (${data.matchCount})</h3>
+              <div style="max-height: 200px; overflow-y: auto; padding: 15px; background: #FEE2E2; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; color: #333;">
+                ${data.matches.slice(0, 50).join('<br>')}
+                ${data.matches.length > 50 ? `<br><br><em>... and ${data.matches.length - 50} more</em>` : ''}
+              </div>
+            </div>
+          ` : ''}
+          
+          ${data.duplicateCount > 0 ? `
+            <div style="margin: 30px 0;">
+              <h3 style="margin-bottom: 15px; color: #92400E;">📋 Duplicates Found (${data.duplicateCount})</h3>
+              <div style="max-height: 150px; overflow-y: auto; padding: 15px; background: #FEF3C7; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; color: #333;">
+                ${data.duplicates.join('<br>')}
+              </div>
+            </div>
+          ` : ''}
+          
+          ${data.invalidCount > 0 ? `
+            <div style="margin: 30px 0;">
+              <h3 style="margin-bottom: 15px; color: #92400E;">⚠️ Invalid Emails (${data.invalidCount})</h3>
+              <div style="max-height: 150px; overflow-y: auto; padding: 15px; background: #FEF3C7; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; color: #333;">
+                ${data.invalidEmails.join('<br>')}
+              </div>
+            </div>
+          ` : ''}
+          
+          ${data.roleEmailCount > 0 ? `
+            <div style="margin: 30px 0;">
+              <h3 style="margin-bottom: 15px; color: #1E40AF;">ℹ️ Role-Based Emails (${data.roleEmailCount})</h3>
+              <p style="color: #666; margin-bottom: 10px; font-size: 14px;">These emails (info@, sales@, etc.) typically have lower engagement. Consider removing.</p>
+              <div style="max-height: 150px; overflow-y: auto; padding: 15px; background: #DBEAFE; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; color: #333;">
+                ${data.roleEmails.join('<br>')}
+              </div>
+            </div>
+          ` : ''}
+          
+          <div style="background: ${data.matchCount === 0 ? '#D1FAE5' : '#FEE2E2'}; padding: 20px; border-radius: 8px; margin: 30px 0;">
+            <p style="font-size: 16px; font-weight: 600; color: #000; margin-bottom: 10px;">
+              ${data.matchCount === 0 ? '✅' : '⚠️'} Recommendation
+            </p>
+            <p style="color: #333; line-height: 1.8;">
+              ${data.recommendation}
+            </p>
+          </div>
+          
+          ${data.cleanListCount > 0 ? `
+            <div style="text-align: center; margin: 30px 0;">
+              <button class="btn-primary" onclick="downloadCleanList(${JSON.stringify(data.cleanList).replace(/"/g, '&quot;')})">
+                📥 Download Clean Send List (${data.cleanListCount} emails)
+              </button>
+            </div>
+          ` : ''}
+        </div>
+        
+        <div style="text-align: center; margin: 40px 0;">
+          <button class="btn-primary" onclick="window.location.href='${redirectUrl}'">Back to Dashboard</button>
+          <button class="btn-secondary" onclick="location.reload()">Check Another List</button>
+        </div>
+      `;
+      
+      document.getElementById('suppression-results').innerHTML = html;
+      document.getElementById('suppression-results').classList.add('active');
+    }
+    
+    function downloadCleanList(cleanList) {
+      const csv = 'Email\n' + cleanList.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'clean-send-list.csv';
+      a.click();
+    }
+    
+    function cancel() {
+      if (confirm('Cancel and return to dashboard?')) {
+        window.location.href = redirectUrl;
+      }
+    }
+  </script>
+
+</body>
+</html>
