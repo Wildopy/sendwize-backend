@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Stack Report - Sendwize</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #FAFAFA;
+      line-height: 1.6;
+      color: #000;
+    }
+    
+    .header {
+      background: white;
+      padding: 20px 40px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: #EA7317;
+      text-transform: lowercase;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    .report-header {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .report-title {
+      font-size: 14px;
+      color: #EA7317;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 15px;
+    }
+    
+    .report-heading {
+      font-size: 32px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 10px;
+    }
+    
+    .vendor-list {
+      font-size: 16px;
+      color: #666;
+      margin-top: 10px;
+    }
+    
+    .score-display {
+      font-size: 72px;
+      font-weight: 700;
+      margin: 30px 0;
+    }
+    
+    .score-high { color: #065F46; }
+    .score-medium { color: #EA7317; }
+    .score-low { color: #991B1B; }
+    
+    .report-meta {
+      color: #666;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+    
+    .vendor-card {
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    
+    .vendor-header {
+      padding: 25px 30px;
+      background: #FAFAFA;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .vendor-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 10px;
+    }
+    
+    .vendor-score {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+    }
+    
+    .score-badge-high { background: #D1FAE5; color: #065F46; }
+    .score-badge-medium { background: #FEF3C7; color: #92400E; }
+    .score-badge-low { background: #FEE2E2; color: #991B1B; }
+    
+    .vendor-category {
+      font-size: 13px;
+      color: #999;
+      margin-top: 5px;
+    }
+    
+    .ai-badge {
+      display: inline-block;
+      background: #DBEAFE;
+      color: #1E40AF;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    
+    .vendor-body {
+      padding: 30px;
+    }
+    
+    .detail-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 15px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-icon {
+      font-size: 20px;
+      min-width: 24px;
+    }
+    
+    .detail-content {
+      flex: 1;
+    }
+    
+    .detail-label {
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 4px;
+    }
+    
+    .detail-text {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    .action-items {
+      background: #FFF7ED;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    .action-items-title {
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    
+    .action-items ol {
+      margin-left: 20px;
+      color: #666;
+    }
+    
+    .action-items li {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+    
+    .warning-box {
+      background: #FEF3C7;
+      border-left: 4px solid #F59E0B;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    
+    .warning-box p {
+      color: #92400E;
+      line-height: 1.6;
+    }
+    
+    .btn-primary {
+      background: #EA7317;
+      color: white;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      margin: 10px 5px;
+    }
+    
+    .btn-primary:hover {
+      background: #d66614;
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: #666;
+      padding: 14px 32px;
+      border: 1px solid #E5E5E5;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      margin: 10px 5px;
+    }
+    
+    .btn-secondary:hover {
+      border-color: #EA7317;
+      color: #EA7317;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #666;
+    }
+    
+    .actions {
+      text-align: center;
+      margin: 40px 0;
+    }
+    
+    @media print {
+      .actions { display: none; }
+      .header { border: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">sendwize</div>
+  </div>
+  
+  <div class="container" id="report-container">
+    <p class="loading">Loading report...</p>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const recordId = urlParams.get('id');
+    
+    if (!recordId) {
+      document.getElementById('report-container').innerHTML = 
+        '<div class="vendor-card"><div class="vendor-body"><h2>No report ID provided</h2><p>Please access this page from your dashboard.</p></div></div>';
+    } else {
+      loadReport();
+    }
+    
+    async function loadReport() {
+      try {
+        const response = await fetch(`/api/get-report?recordId=${recordId}&type=vendor`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to load report');
+        }
+        
+        const data = await response.json();
+        displayReport(data);
+        
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('report-container').innerHTML = 
+          '<div class="vendor-card"><div class="vendor-body"><h2>Error loading report</h2><p>Please try again or contact support.</p></div></div>';
+      }
+    }
+    
+    function displayReport(data) {
+      const fields = data.fields;
+      const avgScore = fields.AverageScore || 0;
+      const vendorCount = fields.VendorCount || 0;
+      const vendorsChecked = fields.VendorsChecked || 'No vendors';
+      const checkDate = fields.CheckDate ? new Date(fields.CheckDate).toLocaleDateString() : 'Unknown';
+      
+      let results = [];
+      try {
+        results = JSON.parse(fields.Results || '[]');
+      } catch (e) {
+        console.error('Error parsing results:', e);
+      }
+      
+      let scoreClass = avgScore >= 80 ? 'score-high' : avgScore >= 60 ? 'score-medium' : 'score-low';
+      let scoreMessage = avgScore >= 85 ? 'Excellent Stack Compliance' : avgScore >= 70 ? 'Good Compliance' : avgScore >= 50 ? 'Needs Improvement' : 'Critical Issues';
+      
+      const html = `
+        <div class="report-header">
+          <div class="report-title">Vendor Stack Compliance Report</div>
+          <h1 class="report-heading">${vendorCount} Vendor${vendorCount !== 1 ? 's' : ''} Checked</h1>
+          <p class="vendor-list">${escapeHtml(vendorsChecked)}</p>
+          <div class="score-display ${scoreClass}">
+            ${avgScore}<span style="font-size: 40px; color: #999;">/100</span>
+          </div>
+          <p style="font-size: 18px; font-weight: 600; color: #666;">${scoreMessage}</p>
+          <div class="report-meta">Checked on ${checkDate}</div>
+        </div>
+        
+        ${results.map((vendor, idx) => createVendorCard(vendor, idx)).join('')}
+        
+        <div class="actions">
+          <button class="btn-primary" onclick="window.print()">📄 Download PDF</button>
+          <button class="btn-secondary" onclick="window.close()">Close</button>
+        </div>
+      `;
+      
+      document.getElementById('report-container').innerHTML = html;
+    }
+    
+    function createVendorCard(vendor, idx) {
+      const scoreClass = vendor.score >= 80 ? 'score-badge-high' : vendor.score >= 60 ? 'score-badge-medium' : 'score-badge-low';
+      
+      return `
+        <div class="vendor-card">
+          <div class="vendor-header">
+            <div class="vendor-name">
+              ${escapeHtml(vendor.name)}
+              ${vendor.isAI ? '<span class="ai-badge">🤖 AI Analysis</span>' : ''}
+            </div>
+            <div>
+              <span class="vendor-score ${scoreClass}">${vendor.score}/100</span>
+              <span class="vendor-category">${escapeHtml(vendor.category)}</span>
+            </div>
+          </div>
+          
+          <div class="vendor-body">
+            ${vendor.isAI ? `
+              <div class="warning-box">
+                <p><strong>⚠️ Automated Analysis</strong><br>
+                This vendor isn't in our verified database. Claude AI analyzed their public information. 
+                We recommend manually verifying this information with the vendor directly.</p>
+              </div>
+            ` : ''}
+            
+            <div style="margin: 20px 0;">
+              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 15px;">Compliance Status</h3>
+              ${(vendor.details || []).map(detail => {
+                const icon = detail.status === 'pass' ? '✅' : detail.status === 'warning' ? '⚠️' : 'ℹ️';
+                return `
+                  <div class="detail-item">
+                    <div class="detail-icon">${icon}</div>
+                    <div class="detail-content">
+                      <div class="detail-label">${escapeHtml(detail.label)}</div>
+                      <div class="detail-text">${escapeHtml(detail.description)}</div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            
+            ${vendor.actionItems && vendor.actionItems.length > 0 ? `
+              <div class="action-items">
+                <div class="action-items-title">📋 Recommended Actions</div>
+                <ol>
+                  ${vendor.actionItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                </ol>
+              </div>
+            ` : ''}
+            
+            ${vendor.links && (vendor.links.dpa || vendor.links.privacy) ? `
+              <div style="margin-top: 25px; padding-top: 25px; border-top: 1px solid #f0f0f0;">
+                ${vendor.links.dpa ? `<a href="${escapeHtml(vendor.links.dpa)}" target="_blank" class="btn-secondary" style="text-decoration: none;">View DPA →</a>` : ''}
+                ${vendor.links.privacy ? `<a href="${escapeHtml(vendor.links.privacy)}" target="_blank" class="btn-secondary" style="text-decoration: none;">Privacy Policy →</a>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    }
+  </script>
+
+</body>
+</html>
