@@ -23,7 +23,9 @@ export default async function handler(req, res) {
     const tables = {
       'pecr': 'Submissions',
       'ai': 'AI_Compliance_Checks',
-      'audit': 'Database_Audits'
+      'audit': 'Database_Audits',
+      'email': 'Email_Scans',
+      'vendor': 'Vendor_Checks'
     };
     
     const tableName = tables[type];
