@@ -19,7 +19,6 @@ export default async function handler(req, res) {
       apiKey: process.env.ANTHROPIC_API_KEY
     });
     
-    // UPGRADED PROMPT WITH AUTO-FIX
     const prompt = `You are a UK marketing compliance expert checking for PECR, GDPR, ASA CAP Code, and CMA violations.
 
 Analyze this marketing content and:
@@ -66,23 +65,18 @@ Respond in this JSON format:
       "regulation": "CAP Code 3.7",
       "severity": "high",
       "issue": "Time-limited offer without end date",
-      "location": "Subject line: 'LIMITED TIME OFFER'",
-      "recommendation": "Add specific end date e.g. 'Offer ends March 15th'"
+      "location": "Subject line",
+      "recommendation": "Add specific end date"
     }
   ],
   ${autoFix ? `"fixedVersion": "REWRITTEN COMPLIANT VERSION HERE",` : ''}
-  "summary": "Brief overall assessment"
-}
-
-Be specific about violations and provide actionable fixes.`;
+  "summary": "Brief assessment"
+}`;
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
+      messages: [{ role: 'user', content: prompt }]
     });
     
     const responseText = message.content[0].text;
@@ -92,17 +86,10 @@ Be specific about violations and provide actionable fixes.`;
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       analysis = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);
     } catch (e) {
-      console.error('JSON parse error:', e);
       analysis = {
         score: 50,
         verdict: "Analysis Error",
-        violations: [{ 
-          regulation: "System",
-          severity: "low",
-          issue: "Could not parse AI response",
-          location: "N/A",
-          recommendation: "Please try again"
-        }],
+        violations: [],
         summary: responseText
       };
     }
@@ -121,14 +108,12 @@ Be specific about violations and provide actionable fixes.`;
         
         if (firstViolation.regulation.includes('PECR')) {
           violationType = 'Unsolicited Marketing';
+        } else if (firstViolation.issue.toLowerCase().includes('price') || firstViolation.issue.toLowerCase().includes('cost')) {
+          violationType = 'Misleading Pricing';
+        } else if (firstViolation.issue.toLowerCase().includes('urgency') || firstViolation.issue.toLowerCase().includes('scarcity')) {
+          violationType = 'Misleading Urgency';
         } else if (firstViolation.regulation.includes('CAP') || firstViolation.regulation.includes('ASA')) {
-          if (firstViolation.issue.toLowerCase().includes('price') || firstViolation.issue.toLowerCase().includes('cost')) {
-            violationType = 'Misleading Pricing';
-          } else if (firstViolation.issue.toLowerCase().includes('urgency') || firstViolation.issue.toLowerCase().includes('scarcity')) {
-            violationType = 'Misleading Urgency';
-          } else {
-            violationType = 'Misleading Advertising';
-          }
+          violationType = 'Misleading Advertising';
         }
         
         if (violationType) {
@@ -152,39 +137,32 @@ Be specific about violations and provide actionable fixes.`;
     const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
     const BASE_ID = process.env.BASE_ID;
     
-    const saveResponse = await fetch(
-      `https://api.airtable.com/v0/${BASE_ID}/AI_Compliance_Checks`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          records: [{
-            fields: {
-              UserID: userId,
-              CheckDate: new Date().toISOString().split('T')[0],
-              FileName: 'Marketing Content',
-              RiskScore: analysis.score || 0,
-              Verdict: analysis.verdict || 'Unknown',
-              Violations: JSON.stringify(violations),
-              FixedVersion: analysis.fixedVersion || '',
-              RelatedCases: JSON.stringify(relatedCases.map(c => ({
-                company: c.fields.CompanyName,
-                fine: c.fields.FineAmount,
-                violation: c.fields.Violation
-              }))),
-              Results: JSON.stringify(analysis)
-            }
-          }]
-        })
-      }
-    );
-    
-    if (!saveResponse.ok) {
-      console.error('Airtable save failed:', saveResponse.status);
-    }
+    await fetch(`https://api.airtable.com/v0/${BASE_ID}/AI_Compliance_Checks`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        records: [{
+          fields: {
+            UserID: userId,
+            CheckDate: new Date().toISOString().split('T')[0],
+            FileName: 'Marketing Content',
+            RiskScore: analysis.score || 0,
+            Verdict: analysis.verdict || 'Unknown',
+            Violations: JSON.stringify(violations),
+            FixedVersion: analysis.fixedVersion || '',
+            RelatedCases: JSON.stringify(relatedCases.map(c => ({
+              company: c.fields.CompanyName,
+              fine: c.fields.FineAmount,
+              violation: c.fields.Violation
+            }))),
+            Results: JSON.stringify(analysis)
+          }
+        }]
+      })
+    });
     
     res.json({
       ...analysis,
