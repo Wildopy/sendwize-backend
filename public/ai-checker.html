@@ -311,7 +311,7 @@
       <h1 class="section-title">AI Compliance Scanner</h1>
       <p class="section-description">
         Paste your marketing content below. Our AI will scan for PECR, GDPR, ASA CAP Code, and CMA violations,
-        then automatically generate a compliant version.
+        show you real fines from similar cases, and automatically fix any issues.
       </p>
       
       <textarea 
@@ -328,8 +328,7 @@ This is your LAST CHANCE to claim your FREE gift! Only 2 items left in stock!
 
 We're the UK's #1 provider with the BEST prices guaranteed.
 
-Click here now before it's too late!
-        "
+Click here now before it's too late!"
       ></textarea>
       
       <div class="button-group">
@@ -383,7 +382,7 @@ Click here now before it's too late!
           throw new Error('Please log in to use this tool');
         }
         
-        const response = await fetch(`${VERCEL_URL}/api/check-marketing`, {
+        const response = await fetch(`${VERCEL_URL}/api/analyze-copy`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -472,18 +471,19 @@ Click here now before it's too late!
         html += '</div>';
       }
       
-      // Show related cases
+      // Show related cases from violation database
       if (relatedCases && relatedCases.length > 0) {
         const totalFines = relatedCases.reduce((sum, c) => sum + (c.fine || 0), 0);
-        const avgFine = totalFines / relatedCases.filter(c => c.fine > 0).length;
+        const finesCount = relatedCases.filter(c => c.fine > 0).length;
+        const avgFine = finesCount > 0 ? totalFines / finesCount : 0;
         
         html += `
           <div class="related-cases">
             <div class="related-cases-title">⚖️ Real Cases: Similar Violations</div>
             <p style="color: #92400E; margin-bottom: 20px;">
               <strong>${relatedCases.length} companies</strong> were penalized for similar violations.
-              Total fines: <strong>£${totalFines.toLocaleString()}</strong> 
-              ${avgFine > 0 ? `(Average: £${Math.round(avgFine).toLocaleString()})` : ''}
+              ${totalFines > 0 ? `Total fines: <strong>£${totalFines.toLocaleString()}</strong>` : ''}
+              ${avgFine > 0 ? ` (Average: £${Math.round(avgFine).toLocaleString()})` : ''}
             </p>
         `;
         
@@ -497,14 +497,7 @@ Click here now before it's too late!
           `;
         });
         
-        html += `
-          <a href="${VERCEL_URL}/violation-browser.html?violationType=${encodeURIComponent(relatedCases[0]?.violation || '')}" 
-             target="_blank" 
-             style="color: #EA7317; font-weight: 600; text-decoration: none; display: inline-block; margin-top: 15px;">
-            View All Similar Cases →
-          </a>
-        </div>
-        `;
+        html += `</div>`;
       }
       
       html += '</div>';
