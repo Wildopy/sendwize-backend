@@ -146,6 +146,11 @@
 
     /* ---- FREE TEXT ---- */
 
+
+    .audience-note { margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; font-size: 14px; line-height: 1.5; }
+    .btn-skip { background: #f97316; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-left: 8px; }
+    .btn-skip:hover { background: #ea580c; }
+
     .btn-next-channel {
       background: #1d4ed8;
       color: white;
@@ -402,7 +407,7 @@
       <button class="option-btn" onclick="go('q5')"><span class="opt-letter">d</span><span class="opt-text">Includes ANY promotional element alongside service information</span></button>
       <button class="option-btn" onclick="go('q5')"><span class="opt-letter">e</span><span class="opt-text">Uses people's information to build profiles to enable sending marketing</span></button>
       <button class="option-btn" onclick="go('q5')"><span class="opt-letter">f</span><span class="opt-text">Uses people's information for anything that supports sending direct marketing (e.g. targeting, segmentation)</span></button>
-      <button class="option-btn" onclick="go('q5')"><span class="opt-letter">g</span><span class="opt-text">No to all of the above — this looks like factual information only</span></button>
+      <button class="option-btn" onclick="showOutcome('stop-not-marketing')"><span class="opt-letter">g</span><span class="opt-text">No to all of the above — this looks like factual information only</span></button>
     </div>
   </div>
 
@@ -592,10 +597,12 @@
   <div class="question-card" id="q19">
     <div class="section-label">Section 4 — Live Calls: Lawful Basis</div>
     <div class="question-text">What is your lawful basis under UK GDPR for processing personal data for live telephone marketing?</div>
+    <div id="q19-prepopulate" style="display:none" class="audience-note question-hint"></div>
+    <div id="q19-consistency-warn" style="display:none" class="audience-note inline-warning">⚠️ <strong>Consistency check:</strong> Your Q16 campaign lawful basis differs from your selection here. Your UK GDPR lawful basis must be consistent across the campaign. Review before proceeding.</div>
     <div class="options">
-      <button class="option-btn" onclick="go('q21')"><span class="opt-letter">a</span><span class="opt-text">Legitimate interests with documented LIA</span></button>
-      <button class="option-btn" onclick="go('q21')"><span class="opt-letter">b</span><span class="opt-text">Consent</span></button>
-      <button class="option-btn" onclick="showOutcome('warn-phone-lawful-basis')"><span class="opt-letter">c</span><span class="opt-text">Other/Unsure — I need to review</span></button>
+      <button class="option-btn" onclick="state.callLawfulBasis='li'; checkCallLBConsistency('li')"><span class="opt-letter">a</span><span class="opt-text">Legitimate interests with documented LIA (covering live telephone calls specifically)</span></button>
+      <button class="option-btn" onclick="state.callLawfulBasis='consent'; checkCallLBConsistency('consent')"><span class="opt-letter">b</span><span class="opt-text">Consent</span></button>
+      <button class="option-btn" onclick="state.callLawfulBasis='other'; showOutcome('warn-phone-lawful-basis')"><span class="opt-letter">c</span><span class="opt-text">Other/Unsure — I need to review</span></button>
     </div>
   </div>
 
@@ -766,8 +773,8 @@
     <div class="section-label">Section 7 — Individual Subscribers</div>
     <div class="question-text">For individual subscribers, which of the following applies to your electronic mail marketing?</div>
     <div class="options">
-      <button class="option-btn" onclick="go('q34')"><span class="opt-letter">a</span><span class="opt-text">I have valid PECR consent</span></button>
-      <button class="option-btn" onclick="go('q38')"><span class="opt-letter">b</span><span class="opt-text">I am relying on soft opt-in (existing customer relationship)</span></button>
+      <button class="option-btn" onclick="state.emailPecrBasis='pecr-consent'; go('q34')"><span class="opt-letter">a</span><span class="opt-text">I have valid PECR consent</span></button>
+      <button class="option-btn" onclick="state.emailPecrBasis='soft-opt-in'; go('q38')"><span class="opt-letter">b</span><span class="opt-text">I am relying on soft opt-in (existing customer relationship)</span></button>
       <button class="option-btn" onclick="showOutcome('stop-no-email-basis')"><span class="opt-letter">c</span><span class="opt-text">Neither / Unsure</span></button>
     </div>
   </div>
@@ -886,11 +893,12 @@
   </div>
 
   <div class="question-card" id="q44">
+    <div id="q44-prepopulate" style="display:none" class="audience-note question-hint"></div>
     <div class="section-label">Section 7 — UK GDPR Lawful Basis (Email)</div>
     <div class="question-text">What lawful basis under UK GDPR are you using for processing personal data for this electronic mail marketing?</div>
     <div class="options">
-      <button class="option-btn" onclick="completeChannel('email')"><span class="opt-letter">a</span><span class="opt-text">Consent (same as PECR consent)</span></button>
-      <button class="option-btn" onclick="completeChannel('email')"><span class="opt-letter">b</span><span class="opt-text">Legitimate interests (when using soft opt-in for PECR) — LIA documented</span></button>
+      <button class="option-btn" onclick="checkEmailLBAlignment('consent')"><span class="opt-letter">a</span><span class="opt-text">Consent (same as PECR consent — only valid if you used PECR consent, not soft opt-in)</span></button>
+      <button class="option-btn" onclick="checkEmailLBAlignment('li')"><span class="opt-letter">b</span><span class="opt-text">Legitimate interests — LIA documented (required if you relied on soft opt-in for PECR)</span></button>
       <button class="option-btn" onclick="showOutcome('warn-email-gdpr-basis')"><span class="opt-letter">c</span><span class="opt-text">Other</span></button>
     </div>
   </div>
@@ -933,9 +941,9 @@
     <div class="section-label">Section 8 — Postal: Lawful Basis</div>
     <div class="question-text">What is your lawful basis under UK GDPR for postal marketing?</div>
     <div class="options">
-      <button class="option-btn" onclick="go('q46')"><span class="opt-letter">a</span><span class="opt-text">Legitimate interests with documented LIA</span></button>
-      <button class="option-btn" onclick="go('q46')"><span class="opt-letter">b</span><span class="opt-text">Consent</span></button>
-      <button class="option-btn" onclick="showOutcome('warn-postal-lawful-basis')"><span class="opt-letter">c</span><span class="opt-text">Other/Unsure</span></button>
+      <button class="option-btn" onclick="state.postalLawfulBasis='li'; checkPostalLBConsistency('li')"><span class="opt-letter">a</span><span class="opt-text">Legitimate interests — LIA documented (confirm it covers postal marketing specifically)</span></button>
+      <button class="option-btn" onclick="state.postalLawfulBasis='consent'; checkPostalLBConsistency('consent')"><span class="opt-letter">b</span><span class="opt-text">Consent</span></button>
+      <button class="option-btn" onclick="state.postalLawfulBasis='other'; showOutcome('warn-postal-lawful-basis')"><span class="opt-letter">c</span><span class="opt-text">Other/Unsure</span></button>
     </div>
   </div>
 
@@ -945,7 +953,7 @@
     <div class="question-hint">While not statutory, MPS screening is required under industry codes (e.g. DMA Code) and is best practice.</div>
     <div class="options">
       <button class="option-btn" onclick="go('q47')"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
-      <button class="option-btn" onclick="go('q47')"><span class="opt-letter">b</span><span class="opt-text">No — noted as best practice, continuing</span></button>
+      <button class="option-btn" onclick="deductScore('warn-tps-notification'); go('q47')"><span class="opt-letter">b</span><span class="opt-text">No — noted as best practice, continuing</span></button>
     </div>
   </div>
 
@@ -1304,7 +1312,7 @@
     <div class="question-text">If relying on consent for calls, does it specifically name your organisation?</div>
     <div class="options">
       <button class="option-btn" onclick="go('q76')"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
-      <button class="option-btn" onclick="go('q76')"><span class="opt-letter">b</span><span class="opt-text">No — using generic consent (weaker, consider obtaining fresh consent)</span></button>
+      <button class="option-btn" onclick="showOutcome('warn-bundled-consent')"><span class="opt-letter">b</span><span class="opt-text">No — using generic consent (weaker, consider obtaining fresh consent)</span></button>
     </div>
   </div>
 
@@ -1313,7 +1321,7 @@
     <div class="question-text">Do you have a process to handle complaints or inaccuracies from bought/rented lists?</div>
     <div class="options">
       <button class="option-btn" onclick="go('q77')"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
-      <button class="option-btn" onclick="go('q77')"><span class="opt-letter">b</span><span class="opt-text">No — I will implement this process</span></button>
+      <button class="option-btn" onclick="deductScore('warn-withdrawal-mechanism'); go('q77')"><span class="opt-letter">b</span><span class="opt-text">No — I will implement this process</span></button>
     </div>
   </div>
 
@@ -1361,7 +1369,7 @@
     <div class="question-hint">Adding contact channels that individuals didn't provide may be unexpected and unfair.</div>
     <div class="options">
       <button class="option-btn" onclick="go('q80c')"><span class="opt-letter">a</span><span class="opt-text">Yes — have consent</span></button>
-      <button class="option-btn" onclick="go('q80c')"><span class="opt-letter">b</span><span class="opt-text">No — I'll consider obtaining consent before proceeding</span></button>
+      <button class="option-btn" onclick="deductScore('warn-third-party-data-no-consent'); go('q80c')"><span class="opt-letter">b</span><span class="opt-text">No — I'll consider obtaining consent before proceeding</span></button>
     </div>
   </div>
 
@@ -1640,7 +1648,7 @@
     <div class="question-hint">Especially important if: obtained more than 6 months ago via a third party, obtained long ago and not used, your marketing practices have changed, or the individual hasn't engaged in a long time.</div>
     <div class="options">
       <button class="option-btn" onclick="go('q109')"><span class="opt-letter">a</span><span class="opt-text">Yes — regular consent refresh process in place</span></button>
-      <button class="option-btn" onclick="go('q109')"><span class="opt-letter">b</span><span class="opt-text">No — I will implement a consent refresh process</span></button>
+      <button class="option-btn" onclick="deductScore('warn-no-consent-refresh'); go('q109')"><span class="opt-letter">b</span><span class="opt-text">No — I will implement a consent refresh process</span></button>
     </div>
   </div>
 
@@ -1773,7 +1781,7 @@
     <div class="section-label">Section 20 — Purely Regulatory Communication</div>
     <div class="question-text">As a purely regulatory/factual communication, you still must comply with general UK GDPR requirements, be transparent, and provide a general right to object. Do you comply?</div>
     <div class="options">
-      <button class="option-btn" onclick="go('q126')"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
+      <button class="option-btn" onclick="state.transferMechanismConfirmed=true; go('q126')"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
       <button class="option-btn" onclick="showOutcome('stop-regulatory-gdpr')"><span class="opt-letter">b</span><span class="opt-text">No</span></button>
     </div>
   </div>
@@ -1784,7 +1792,7 @@
     <div class="question-hint">Alternatives: on your website when customer logs in, during inbound customer service calls, in-app notifications (not push), in billing communications already being sent.</div>
     <div class="options">
       <button class="option-btn" onclick="go('q126')"><span class="opt-letter">a</span><span class="opt-text">Yes — using alternative channels where possible</span></button>
-      <button class="option-btn" onclick="go('q126')"><span class="opt-letter">b</span><span class="opt-text">No — using PECR channels, and I will comply with full PECR requirements</span></button>
+      <button class="option-btn" onclick="checkInternationalTransferCompliance()"><span class="opt-letter">b</span><span class="opt-text">No — using PECR channels, and I will comply with full PECR requirements</span></button>
     </div>
   </div>
 
@@ -1877,7 +1885,7 @@
     <div class="question-hint">Including: privacy by design in campaigns, regular compliance audits, data protection policies, staff training records, vendor assessments, incident response procedures.</div>
     <div class="options">
       <button class="option-btn" onclick="go('q130')"><span class="opt-letter">a</span><span class="opt-text">Yes — comprehensive compliance framework</span></button>
-      <button class="option-btn" onclick="go('q130')"><span class="opt-letter">b</span><span class="opt-text">No — I need to implement compliance systems</span></button>
+      <button class="option-btn" onclick="deductScore('warn-no-compliance-framework'); go('q130')"><span class="opt-letter">b</span><span class="opt-text">No — I need to implement compliance systems</span></button>
     </div>
   </div>
 
@@ -1896,7 +1904,7 @@
     <div class="question-text">Do you regularly review and update your direct marketing practices to ensure ongoing compliance?</div>
     <div class="options">
       <button class="option-btn" onclick="go('q132')"><span class="opt-letter">a</span><span class="opt-text">Yes — regular reviews in place</span></button>
-      <button class="option-btn" onclick="go('q132')"><span class="opt-letter">b</span><span class="opt-text">No — I will implement a regular compliance review process</span></button>
+      <button class="option-btn" onclick="deductScore('warn-no-compliance-review'); go('q132')"><span class="opt-letter">b</span><span class="opt-text">No — I will implement a regular compliance review process</span></button>
     </div>
   </div>
 
@@ -3015,6 +3023,36 @@
     </div>
   </div>
 
+
+  <div class="outcome-card outcome-stop" id="out-stop-not-marketing">
+    <div class="outcome-icon">🛑</div>
+    <div class="outcome-title">Not Direct Marketing — Questionnaire Does Not Apply</div>
+    <div class="outcome-body">
+      Based on your answer, your communication does not appear to constitute direct marketing under PECR or UK GDPR. The Sendwize compliance checker is designed for direct marketing campaigns only.
+      <br><br>
+      <strong>If you're unsure:</strong> Review the ICO's definition of direct marketing at ico.org.uk. Activities that profile, segment, or build data for future marketing <em>do</em> count — go back and reconsider.
+      <br><br>
+      <strong>If you're certain it's not marketing:</strong> You do not need to complete this questionnaire. Standard data protection obligations still apply.
+    </div>
+    <div class="outcome-actions">
+      <button class="btn-restart" onclick="goBack()">← Go Back and Reconsider</button>
+      <button class="btn-restart" onclick="restart()">Start New Check</button>
+    </div>
+  </div>
+
+  <div class="outcome-card outcome-warning" id="out-warn-bundled-consent">
+    <div class="outcome-icon">⚠️</div>
+    <div class="outcome-title">Bundled Consent — Compliance Risk</div>
+    <div class="outcome-body">
+      The ICO is clear: consent bundled with terms and conditions, or as a condition of service, is not valid under UK GDPR. Each consent must be a separate, specific, freely given choice.
+      <br><br>
+      <strong>You must:</strong> Separate your consent request from any other terms. Obtain fresh granular consent before sending. Bundled consent is one of the ICO's most common enforcement findings.
+    </div>
+    <div class="outcome-actions">
+      <button class="btn-next-channel" onclick="deductScore('warn-bundled-consent'); go('q76')">Acknowledge &amp; Continue (score reduced) →</button>
+      <button class="btn-restart" onclick="goBack()">← Go Back</button>
+    </div>
+  </div>
 </div><!-- end questionnaire-wrap -->
 
 <script>
@@ -3164,7 +3202,18 @@
     'stop-screening-incomplete':     { points: 20, label: 'Preference service screening incomplete' },
     'stop-optout-untested':          { points: 15, label: 'Opt-out mechanisms not tested' },
     'stop-final-issues':             { points: 10, label: 'Final compliance issues identified' },
+    'stop-not-marketing':            { points:  0, label: 'Communication is not direct marketing' },
+    'warn-email-lb-mismatch':        { points: 10, label: 'PECR/UK GDPR lawful basis misalignment for email' },
+    'warn-postal-lb-mismatch':       { points:  5, label: 'UK GDPR lawful basis inconsistency for postal marketing' },
+    'warn-tps-notification':         { points:  5, label: 'TPS/CTPS number notification not completed' },
+    'warn-bundled-consent':          { points: 15, label: 'Bundled/generic consent used — not valid under ICO guidance' },
+    'warn-withdrawal-mechanism':     { points: 10, label: 'Easy consent withdrawal mechanism not in place (UK GDPR Art 7(3))' },
+    'warn-no-consent-refresh':       { points:  8, label: 'No consent refresh process — stale consent risk' },
+    'warn-no-compliance-framework':  { points:  8, label: 'No compliance framework in place — systemic risk' },
+    'warn-no-compliance-review':     { points:  5, label: 'No regular compliance review process' },
     'warn-legal-review':             { points:  5, label: 'Legal review recommended' },
+    'warn-third-party-data-no-consent': { points: 8, label: 'Third-party contact data used without confirmed consent' },
+    'warn-intl-transfer-unconfirmed': { points: 10, label: 'International transfer mechanism not confirmed before sending' },
   };
 
   // ================================================================
@@ -3427,33 +3476,145 @@
     nextChannel();
   }
 
-  // Use state.audience to update Q26 (CTPS) and Q32 (email sub) hints
+  // Apply B2B/B2C routing — called before each channel section starts
+  // This is where state.audience actually CHANGES routing, not just hints
   function applyAudienceContext(startQ) {
+
+    // ── LIVE CALLS (q18) ─────────────────────────────────────────────
     if (startQ === 'q18') {
-      const el = document.getElementById('q26hint');
-      if (el) {
-        if (state.audience === 'b2c') {
-          el.textContent = 'Your Q7 answer was B2C only — CTPS does not apply. Select N/A and continue.';
+      // Pre-populate Q19 based on Q16 answer
+      const q19hint = document.getElementById('q19-prepopulate');
+      if (q19hint) {
+        if (state.lawfulBasis === 'consent') {
+          q19hint.innerHTML = '📋 <strong>From your Q16 answer (Consent):</strong> Your UK GDPR basis for calls should also be consent. Select option b below.';
+          q19hint.style.display = 'block';
+        } else if (state.lawfulBasis === 'li') {
+          q19hint.innerHTML = '📋 <strong>From your Q16 answer (Legitimate Interests):</strong> Confirm your LIA specifically covers live telephone marketing calls.';
+          q19hint.style.display = 'block';
+        }
+      }
+
+      // Patch Q25 (TPS): B2B only → auto-skip TPS, go straight to Q26
+      // Q25 normally routes: yes→Q26, no→STOP
+      // For B2B only, TPS doesn't apply — auto-continue to Q26
+      const q25 = document.getElementById('q25');
+      if (q25) {
+        const existing = q25.querySelector('.audience-note');
+        if (existing) existing.remove();
+        if (state.audience === 'b2b') {
+          const note = document.createElement('div');
+          note.className = 'audience-note inline-warning';
+          note.innerHTML = '⚡ <strong>B2B only detected (your Q7 answer):</strong> TPS applies to individual subscribers only. As you are targeting corporate subscribers only, TPS does not apply — <button class="btn-skip" onclick="go(\'q26\')">Skip TPS → Go to CTPS →</button>';
+          q25.querySelector('.options').before(note);
         } else {
-          el.textContent = 'Your Q7 answer included B2B — CTPS screening is required for corporate subscribers.';
+          const note = document.createElement('div');
+          note.className = 'audience-note question-hint';
+          note.innerHTML = state.audience === 'b2c'
+            ? '📋 <strong>B2C detected:</strong> TPS screening required for individual subscribers.'
+            : '📋 <strong>B2B + B2C detected:</strong> TPS screening required for any individual subscribers in your list.';
+          q25.querySelector('.options').before(note);
+        }
+      }
+
+      // Patch Q26 (CTPS): B2C only → auto-skip CTPS, go straight to Q27
+      const q26 = document.getElementById('q26');
+      if (q26) {
+        const existing = q26.querySelector('.audience-note');
+        if (existing) existing.remove();
+        if (state.audience === 'b2c') {
+          const note = document.createElement('div');
+          note.className = 'audience-note inline-warning';
+          note.innerHTML = '⚡ <strong>B2C only detected (your Q7 answer):</strong> CTPS applies to corporate subscribers only. As you are targeting individuals only, CTPS does not apply — <button class="btn-skip" onclick="go(\'q27\')">Skip CTPS →</button>';
+          q26.querySelector('.options').before(note);
+        } else {
+          const hint = document.getElementById('q26hint');
+          if (hint) hint.textContent = 'Your Q7 answer included B2B — CTPS screening is required for any corporate subscribers in your list.';
+        }
+      }
+
+      // Patch Q21 (pension calls): B2B only → skip pension/claims questions
+      const q21 = document.getElementById('q21');
+      if (q21) {
+        const existing = q21.querySelector('.audience-note');
+        if (existing) existing.remove();
+        if (state.audience === 'b2b') {
+          const note = document.createElement('div');
+          note.className = 'audience-note inline-warning';
+          note.innerHTML = '⚡ <strong>B2B only detected:</strong> Pension scheme call rules (PECR Reg 21B) apply to calls to individuals only. <button class="btn-skip" onclick="go(\'q24\')">Skip to Claims Management Check →</button>';
+          q21.querySelector('.options').before(note);
+        }
+      }
+
+      // Patch Q24 (claims): B2B only → skip claims questions  
+      const q24 = document.getElementById('q24');
+      if (q24) {
+        const existing = q24.querySelector('.audience-note');
+        if (existing) existing.remove();
+        if (state.audience === 'b2b') {
+          const note = document.createElement('div');
+          note.className = 'audience-note inline-warning';
+          note.innerHTML = '⚡ <strong>B2B only detected:</strong> Claims management call rules apply to individuals only. <button class="btn-skip" onclick="go(\'q25\')">Skip to TPS/CTPS checks →</button>';
+          q24.querySelector('.options').before(note);
         }
       }
     }
+
+    // ── EMAIL / ELECTRONIC MAIL (q32) ────────────────────────────────
     if (startQ === 'q32') {
-      const el = document.getElementById('q32hint');
-      if (el) {
+      // Pre-populate Q44 hint based on Q16 and what they choose at Q33
+      const q44hint = document.getElementById('q44-prepopulate');
+      if (q44hint) {
+        if (state.lawfulBasis === 'consent') {
+          q44hint.innerHTML = '📋 <strong>From Q16 (Consent basis):</strong> If you used PECR consent at Q33, your UK GDPR basis should also be consent. If you used soft opt-in, you must use Legitimate Interests instead.';
+          q44hint.style.display = 'block';
+        } else if (state.lawfulBasis === 'li') {
+          q44hint.innerHTML = '📋 <strong>From Q16 (LI basis):</strong> If relying on soft opt-in for PECR, confirm LI is your UK GDPR basis here.';
+          q44hint.style.display = 'block';
+        }
+      }
+
+      const q32 = document.getElementById('q32');
+      if (q32) {
+        const existing = q32.querySelector('.audience-note');
+        if (existing) existing.remove();
+        const note = document.createElement('div');
+        note.className = 'audience-note inline-warning';
+
         if (state.audience === 'b2b') {
-          el.textContent = 'Your Q7 answer was B2B only — go to option b (Corporate subscriber path).';
+          note.innerHTML = '⚡ <strong>B2B only detected (your Q7 answer):</strong> Under PECR, you do not need consent for electronic mail to <em>corporate</em> subscribers — you need a legitimate basis under UK GDPR and must provide opt-out. Individual subscriber rules (consent/soft opt-in) do not apply. <button class="btn-skip" onclick="go(\'q44a\')">Go directly to Corporate Email path →</button>';
         } else if (state.audience === 'b2c') {
-          el.textContent = 'Your Q7 answer was B2C only — go to option a (Individual subscriber path).';
+          note.innerHTML = '📋 <strong>B2C detected (your Q7 answer):</strong> Individual subscriber rules apply — you need consent or soft opt-in under PECR Reg 22.';
         } else {
-          el.textContent = 'Your Q7 answer was Both — you must satisfy individual subscriber rules. Go to option a.';
+          note.innerHTML = '📋 <strong>B2B + B2C detected (your Q7 answer):</strong> You must satisfy individual subscriber rules (consent/soft opt-in) for the consumer portion of your list. Corporate subscribers can be emailed without consent but need opt-out.';
         }
-        // Show which sub-channels are being checked
-        if (state.currentChannelSiblings && state.currentChannelSiblings.length > 1) {
-          const names = state.currentChannelSiblings.join(', ');
-          el.textContent += ' (Covers all your selected electronic mail channels: ' + names + ')';
+        q32.querySelector('.options').before(note);
+
+        // For B2B, also update the hint
+        const hint = document.getElementById('q32hint');
+        if (hint) {
+          if (state.audience === 'b2b') hint.textContent = 'B2B only — use the Skip button above to go directly to corporate email requirements.';
+          else if (state.audience === 'b2c') hint.textContent = 'B2C only — individual subscriber rules apply. Answer option a.';
+          else hint.textContent = 'B2B + B2C — you must satisfy individual rules. Answer option a.';
         }
+      }
+    }
+
+    // ── FAX (q48 → q49) ──────────────────────────────────────────────
+    if (startQ === 'q48') {
+      const q49 = document.getElementById('q49');
+      if (q49) {
+        const existing = q49.querySelector('.audience-note');
+        if (existing) existing.remove();
+        const note = document.createElement('div');
+        note.className = 'audience-note inline-warning';
+        if (state.audience === 'b2b') {
+          note.innerHTML = '⚡ <strong>B2B only detected:</strong> Fax marketing to corporate subscribers does not require consent — screen against FPS and provide opt-out. <button class="btn-skip" onclick="go(\'q50a\')">Go directly to Corporate Fax path →</button>';
+        } else if (state.audience === 'b2c') {
+          note.innerHTML = '📋 <strong>B2C detected:</strong> Individual fax subscribers require consent under PECR.';
+        } else {
+          note.innerHTML = '📋 <strong>B2B + B2C detected:</strong> Consent required for individual subscribers. Corporate subscribers need FPS screening and opt-out only.';
+        }
+        q49.querySelector('.options').before(note);
       }
     }
   }
@@ -3506,6 +3667,53 @@
   function routeAfterLIA() { startChannelSections(); }
   function continueToOptionals() { go('q110'); }
 
+
+
+
+
+  // Q121: check international transfer compliance before proceeding
+  function checkInternationalTransferCompliance() {
+    // If they haven't confirmed a transfer mechanism, warn
+    if (!state.transferMechanismConfirmed) {
+      deductScore('warn-intl-transfer-unconfirmed');
+    }
+    go('q126');
+  }
+
+  // Q45a: postal LB consistency with Q16
+  function checkPostalLBConsistency(basis) {
+    if (state.lawfulBasis && state.lawfulBasis !== basis && basis !== 'other') {
+      deductScore('warn-postal-lb-mismatch');
+    }
+    go('q46');
+  }
+
+  // Q44: check email PECR/GDPR lawful basis alignment
+  function checkEmailLBAlignment(gdprBasis) {
+    const pecrBasis = state.emailPecrBasis || '';
+    if (pecrBasis === 'soft-opt-in' && gdprBasis === 'consent') {
+      // MISMATCH: soft opt-in requires LI as GDPR basis, not consent
+      deductScore('warn-email-lb-mismatch');
+      alert('⚠️ Alignment issue: Soft opt-in under PECR requires Legitimate Interests as your UK GDPR lawful basis — not consent. The ICO is clear on this. You should review your basis before sending.');
+    } else if (pecrBasis === 'pecr-consent' && gdprBasis === 'li') {
+      // Possible mismatch — warn
+      deductScore('warn-email-lb-mismatch');
+      alert('⚠️ Alignment check: If you obtained PECR consent, your UK GDPR basis is typically also consent. Using LI alongside PECR consent may create inconsistency. Review with your DPO.');
+    }
+    state.emailGdprBasis = gdprBasis;
+    completeChannel('email');
+  }
+
+  // Q19: check call LB is consistent with Q16 campaign LB
+  function checkCallLBConsistency(basis) {
+    if (state.lawfulBasis && state.lawfulBasis !== basis && basis !== 'other') {
+      // Mismatch — warn but allow continuation
+      const warn = document.getElementById('q19-consistency-warn');
+      if (warn) warn.style.display = 'block';
+    }
+    go('q21');
+  }
+
   // ================================================================
   // RESTART
   // ================================================================
@@ -3513,6 +3721,8 @@
     document.querySelectorAll('.question-card.active, .outcome-card.active').forEach(el => el.classList.remove('active'));
     state = {
       campaignName: '', audience: '', lawfulBasis: '',
+      callLawfulBasis: '', emailPecrBasis: '', emailGdprBasis: '',
+      postalLawfulBasis: '', transferMechanismConfirmed: false,
       selectedChannels: [], channelQueue: [], completedChannels: [],
       history: [], questionCount: 0,
       score: 100, warnings: [], hardFail: false, finalResult: ''
