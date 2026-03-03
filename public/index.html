@@ -145,6 +145,27 @@
     .option-btn .opt-text { flex: 1; }
 
     /* ---- FREE TEXT ---- */
+
+    .btn-next-channel {
+      background: #1d4ed8;
+      color: white;
+      padding: 12px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 6px;
+    }
+    .btn-next-channel:hover { background: #1e40af; }
+
+    .channel-chip { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: #e5e5e5; color: #555; display: inline-block; }
+    .channel-chip.current { background: #1d4ed8; color: white; }
+    .channel-chip.done { background: #16a34a; color: white; }
+    .channel-chip.stop { background: #d97706; color: white; }
+    #channelIndicators { padding: 8px 40px; background: white; border-bottom: 1px solid #f0f0f0; display: flex; gap: 6px; flex-wrap: wrap; min-height: 34px; }
+
     .text-input {
       width: 100%;
       padding: 14px 16px;
@@ -324,7 +345,8 @@
   </div>
 </div>
 
-<div class="progress-bar-wrap">
+<div id="channelIndicators"></div>
+  <div class="progress-bar-wrap">
   <div class="progress-bar-track">
     <div class="progress-bar-fill" id="progressFill"></div>
   </div>
@@ -387,7 +409,7 @@
   <div class="question-card" id="q5">
     <div class="section-label">Section 1 — Campaign Basics</div>
     <div class="question-text">Are you sending communications for direct marketing purposes?</div>
-    <div class="question-hint">This includes activities that lead up to, directly enable, or support sending direct marketing messages.</div>
+    <div class="question-hint">This includes activities that lead up to, directly enable, or support sending direct marketing messages (DUAA 2025, in force 5 Feb 2026). DUAA also upgraded PECR fines to match UK GDPR: up to £17.5m or 4% of global annual turnover. PECR now applies even if a marketing message is not successfully delivered.</div>
     <div class="options">
       <button class="option-btn" onclick="go('q6')"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
       <button class="option-btn" onclick="showOutcome('stop-return-q2')"><span class="opt-letter">b</span><span class="opt-text">No</span></button>
@@ -435,7 +457,7 @@
       <div class="multi-option" onclick="toggleChannel(this, 'online-ads')" data-channel="online-ads"><span class="check-box"></span>Online behavioural advertising</div>
       <div class="multi-option" onclick="toggleChannel(this, 'social-ads')" data-channel="social-ads"><span class="check-box"></span>Social media advertising (NOT direct messages)</div>
     </div>
-    <button class="btn-continue" onclick="startChannelSections()">Continue →</button>
+    <button class="btn-continue" onclick="confirmChannels()">Continue to Section 3: Data &amp; Lawful Basis →</button>
   </div>
 
   <!-- ================================================================
@@ -526,7 +548,7 @@
     <div class="section-label">Section 3 — Lawful Basis</div>
     <div class="question-text">What is your lawful basis for processing personal data for this marketing campaign under UK GDPR?</div>
     <div class="options">
-      <button class="option-btn" onclick="setLawfulBasis('consent'); go('q105consent')"><span class="opt-letter">a</span><span class="opt-text">Consent</span></button>
+      <button class="option-btn" onclick="setLawfulBasis('consent'); go('q17')"><span class="opt-letter">a</span><span class="opt-text">Consent</span></button>
       <button class="option-btn" onclick="setLawfulBasis('li'); go('q17')"><span class="opt-letter">b</span><span class="opt-text">Legitimate interests</span></button>
       <button class="option-btn" onclick="setLawfulBasis('public'); go('q110')"><span class="opt-letter">c</span><span class="opt-text">Public task (public authorities only)</span></button>
       <button class="option-btn" onclick="showOutcome('warn-lawful-basis')"><span class="opt-letter">d</span><span class="opt-text">Other</span></button>
@@ -538,8 +560,9 @@
     <div class="section-label">Section 3 — Legitimate Interests</div>
     <div class="question-text">Do you have a properly documented Legitimate Interests Assessment (LIA)?</div>
     <div class="options">
-      <button class="option-btn" onclick="go('q17a')"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
-      <button class="option-btn" onclick="showOutcome('stop-no-lia')"><span class="opt-letter">b</span><span class="opt-text">No — I have not completed an LIA</span></button>
+      <button class="option-btn" onclick="go('q17a')"><span class="opt-letter">a</span><span class="opt-text">Yes — LIA documented</span></button>
+      <button class="option-btn" onclick="showOutcome('stop-no-lia')"><span class="opt-letter">b</span><span class="opt-text">No — LIA not completed</span></button>
+      <button class="option-btn" onclick="go('q17a')"><span class="opt-letter">c</span><span class="opt-text">N/A — relying on consent, not legitimate interests</span></button>
     </div>
   </div>
 
@@ -548,7 +571,7 @@
     <div class="question-text">Does your LIA demonstrate all of the following?</div>
     <div class="question-hint">• Your legitimate interest in the marketing<br>• Necessity (no less intrusive way to achieve your aim)<br>• A proper balancing test showing your interests don't override individuals' rights<br>• Consideration of individuals' expectations based on your relationship<br>• Appropriate safeguards</div>
     <div class="options">
-      <button class="option-btn" onclick="routeAfterLIA()"><span class="opt-letter">a</span><span class="opt-text">Yes to all</span></button>
+      <button class="option-btn" onclick="startChannelSections()"><span class="opt-letter">a</span><span class="opt-text">Yes to all</span></button>
       <button class="option-btn" onclick="showOutcome('stop-lia-insufficient')"><span class="opt-letter">b</span><span class="opt-text">No to one or more</span></button>
     </div>
   </div>
@@ -631,8 +654,9 @@
   </div>
 
   <div class="question-card" id="q26">
-    <div class="section-label">Section 4 — Corporate TPS</div>
-    <div class="question-text">If making B2B calls, have you screened against the Corporate Telephone Preference Service (CTPS)?</div>
+    <div class="section-label">Section 4 — Live Telephone Calls</div>
+    <div class="question-text">Have you screened your proposed recipient list against the Corporate Telephone Preference Service (CTPS)?</div>
+    <div class="question-hint" id="q26hint">Required if your Q7 answer included B2B. Not applicable if B2C only — select N/A.</div>
     <div class="options">
       <button class="option-btn" onclick="go('q27')"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
       <button class="option-btn" onclick="showOutcome('stop-ctps')"><span class="opt-letter">b</span><span class="opt-text">No</span></button>
@@ -726,7 +750,7 @@
   <div class="question-card" id="q32">
     <div class="section-label">Section 7 — Electronic Mail Marketing</div>
     <div class="question-text">Is the intended recipient an individual subscriber or a corporate subscriber?</div>
-    <div class="question-hint">
+    <div id="q32hint" class="question-hint">
       <strong>Individual subscriber:</strong> consumers, sole traders, some partnerships<br>
       <strong>Corporate subscriber:</strong> limited companies (Ltd/PLC), LLPs, Scottish partnerships, some government bodies
     </div>
@@ -793,7 +817,7 @@
     <div class="question-text">Do you satisfy ALL three PECR soft opt-in conditions?</div>
     <div class="question-hint">
       <strong>Condition 1:</strong> You obtained contact details during a sale or negotiation of sale of a product/service to that recipient (NOT via third party)<br>
-      <strong>Condition 2:</strong> The marketing is for YOUR similar products or services only<br>
+      <strong>Condition 2:</strong> The marketing is for YOUR similar products or services only — or, from 5 Feb 2026 (DUAA 2025), charities, non-profits and political parties may also use soft opt-in when promoting their aims and ideals<br>
       <strong>Condition 3:</strong> The recipient was given a simple, charge-free opt-out when details were collected AND in each subsequent communication
     </div>
     <div class="options">
@@ -1214,7 +1238,8 @@
   <div class="question-card" id="q85">
     <div class="section-label">Section 12 — Automated Decisions</div>
     <div class="question-text">If using automated profiling, could it result in solely automated decisions with legal or similarly significant effects on individuals?</div>
-    <div class="options">
+        <div class="question-hint">DUAA 2025 (in force 5 Feb 2026): Solely automated decisions on non-special-category data may now be permitted with safeguards — transparency about the logic, a right to contest the decision, human review on request, and a DPIA where required. For special category data, explicit consent or substantial public interest still required.</div>
+<div class="options">
       <button class="option-btn" onclick="showOutcome('warn-automated-decisions')"><span class="opt-letter">a</span><span class="opt-text">Yes — automated decisions with significant effects</span></button>
       <button class="option-btn" onclick="go('q70')"><span class="opt-letter">b</span><span class="opt-text">No / Not applicable</span></button>
     </div>
@@ -1568,7 +1593,7 @@
     <div class="section-label">Section 17 — Consent Withdrawal</div>
     <div class="question-text">If someone withdraws consent, do you stop processing immediately (or at the next scheduled send)?</div>
     <div class="options">
-      <button class="option-btn" onclick="go('q105')"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
+      <button class="option-btn" onclick="routeAfterOptOuts()"><span class="opt-letter">a</span><span class="opt-text">Yes</span></button>
       <button class="option-btn" onclick="showOutcome('stop-withdrawal-delay')"><span class="opt-letter">b</span><span class="opt-text">No</span></button>
     </div>
   </div>
@@ -1584,7 +1609,7 @@
     <div class="options">
       <button class="option-btn" onclick="go('q106')"><span class="opt-letter">a</span><span class="opt-text">Yes — comprehensive consent records</span></button>
       <button class="option-btn" onclick="showOutcome('stop-no-consent-records')"><span class="opt-letter">b</span><span class="opt-text">No</span></button>
-      <button class="option-btn" onclick="continueSpine()"><span class="opt-letter">c</span><span class="opt-text">N/A — not relying on consent</span></button>
+      <button class="option-btn" onclick="routeAfterConsent()"><span class="opt-letter">c</span><span class="opt-text">N/A — not relying on consent</span></button>
     </div>
   </div>
 
@@ -1623,9 +1648,9 @@
     <div class="section-label">Section 18 — Fresh Consent (Direct Relationship)</div>
     <div class="question-text">If you previously relied on a third party's consent and now have a direct relationship with the individual, have you obtained fresh consent directly?</div>
     <div class="options">
-      <button class="option-btn" onclick="continueSpine()"><span class="opt-letter">a</span><span class="opt-text">Yes — obtained fresh consent</span></button>
-      <button class="option-btn" onclick="continueSpine()"><span class="opt-letter">b</span><span class="opt-text">No — still relying on third-party consent (best practice is to refresh)</span></button>
-      <button class="option-btn" onclick="continueSpine()"><span class="opt-letter">c</span><span class="opt-text">N/A — no direct relationship or didn't rely on third-party consent</span></button>
+      <button class="option-btn" onclick="routeAfterConsent()"><span class="opt-letter">a</span><span class="opt-text">Yes — obtained fresh consent</span></button>
+      <button class="option-btn" onclick="routeAfterConsent()"><span class="opt-letter">b</span><span class="opt-text">No — still relying on third-party consent (best practice is to refresh)</span></button>
+      <button class="option-btn" onclick="routeAfterConsent()"><span class="opt-letter">c</span><span class="opt-text">N/A — no direct relationship or didn't rely on third-party consent</span></button>
     </div>
   </div>
 
@@ -1704,7 +1729,7 @@
     <div class="question-text">Is your consent valid for a public authority context?</div>
     <div class="question-hint">Consider: fully informed about how data will be used, specific to the marketing purpose, easy to withdraw, and freely given (be cautious about power imbalance — can individuals truly give free consent to a public authority?).</div>
     <div class="options">
-      <button class="option-btn" onclick="continueSpine()"><span class="opt-letter">a</span><span class="opt-text">Yes — consent is valid</span></button>
+      <button class="option-btn" onclick="go('q117')"><span class="opt-letter">a</span><span class="opt-text">Yes — consent is valid</span></button>
       <button class="option-btn" onclick="showOutcome('stop-public-consent')"><span class="opt-letter">b</span><span class="opt-text">No — consent not valid</span></button>
     </div>
   </div>
@@ -1800,7 +1825,7 @@
   <div class="question-card" id="q125">
     <div class="section-label">Section 21 — Transfer Mechanism</div>
     <div class="question-text">Do you have an appropriate UK GDPR transfer mechanism in place?</div>
-    <div class="question-hint">Valid mechanisms: adequacy decision for the country, Standard Contractual Clauses (SCCs), Binding Corporate Rules (BCRs), or derogations (rarely appropriate for marketing).</div>
+    <div class="question-hint">Valid mechanisms: adequacy decision for the country, Standard Contractual Clauses (SCCs), Binding Corporate Rules (BCRs), or derogations (rarely appropriate for marketing). Note: DUAA 2025 updated the test — protection must be "not materially lower" than UK standards.</div>
     <div class="options">
       <button class="option-btn" onclick="go('q126')"><span class="opt-letter">a</span><span class="opt-text">Yes — appropriate mechanism in place</span></button>
       <button class="option-btn" onclick="showOutcome('stop-transfer-mechanism')"><span class="opt-letter">b</span><span class="opt-text">No</span></button>
@@ -2085,6 +2110,8 @@
     <div class="outcome-body">You cannot make live marketing calls about pension schemes unless you are a trustee/manager of the pension scheme or are authorised by the Financial Conduct Authority (FCA).</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="restart()">Start New Check</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2094,6 +2121,8 @@
     <div class="outcome-body">You cannot make pension scheme marketing calls without either consent from the individual, or an existing customer relationship where they would reasonably expect the calls and were offered an opt-out when their details were collected.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="restart()">Start New Check</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2103,6 +2132,8 @@
     <div class="outcome-body">You must have the individual's explicit consent specifically for claims management marketing calls before making them. This is a PECR requirement.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="restart()">Start New Check</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2112,6 +2143,8 @@
     <div class="outcome-body">Screening against the Telephone Preference Service (TPS) before making marketing calls to individual subscribers is a PECR legal requirement. You must do this before proceeding.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q25')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2121,6 +2154,8 @@
     <div class="outcome-body">You should screen against the Corporate Telephone Preference Service (CTPS) before making B2B marketing calls. This is required for calls to corporate subscribers.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q26')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2130,6 +2165,8 @@
     <div class="outcome-body">You are legally required to maintain a suppression list and screen it before every campaign. This applies to all direct marketing channels.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q27')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2139,6 +2176,8 @@
     <div class="outcome-body">Withholding your telephone number when making marketing calls is a breach of PECR. You must display your number (or an alternative contact number) to recipients.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q28')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2148,6 +2187,8 @@
     <div class="outcome-body">During a marketing call, you must provide your name and, if asked, a contact address or freephone number. This is a PECR requirement.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q28a')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2157,6 +2198,8 @@
     <div class="outcome-body">You must implement measures to avoid anti-social hours, prevent undue distress to vulnerable individuals, respect time zones, and limit call frequency before proceeding with your campaign.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q28b')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2175,6 +2218,8 @@
     <div class="outcome-body">You MUST have explicit consent specifically covering automated calls before making them. General marketing consent is not sufficient. This is a PECR requirement — there is no soft opt-in or legitimate interests route for automated calls.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="restart()">Start New Check</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2184,6 +2229,8 @@
     <div class="outcome-body">Your consent for automated calls does not meet the required standard. It must specifically mention automated/pre-recorded calls, name your organisation, allow easy withdrawal, and have been freely given.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q29a')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2193,6 +2240,8 @@
     <div class="outcome-body">Your automated call message must include your name and a contact address or freephone number. This is a PECR requirement.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q30')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2202,6 +2251,8 @@
     <div class="outcome-body">You must allow your telephone number (or an alternative contact number) to be displayed when making automated marketing calls. Withholding your number is a breach of PECR.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q31')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2211,6 +2262,8 @@
     <div class="outcome-body">For electronic mail marketing to individual subscribers, you MUST have either valid PECR consent or meet ALL conditions for soft opt-in. You cannot proceed without one of these.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q33')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2220,6 +2273,8 @@
     <div class="outcome-body">Your consent does not meet PECR requirements. For electronic mail marketing, consent must specifically name your organisation, cover the type of communication, be freely given with a clear opt-in, and allow easy withdrawal.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q34')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2229,6 +2284,8 @@
     <div class="outcome-body">You cannot use this third-party consent for electronic mail marketing to individual subscribers. Either you cannot verify it meets requirements, or it does not specifically name your organisation. You must obtain consent directly or not send.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="restart()">Start New Check</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2238,6 +2295,8 @@
     <div class="outcome-body">Third-party consent over 6 months old should not be used for electronic mail marketing. You must obtain fresh consent directly from the individuals before sending.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="restart()">Start New Check</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2247,6 +2306,8 @@
     <div class="outcome-body">You cannot rely on soft opt-in. All three conditions must be met: (1) details obtained during your own sale/negotiation, (2) marketing is for similar products/services, (3) opt-out provided at collection and in every subsequent message. You need to obtain consent.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q33')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2256,6 +2317,8 @@
     <div class="outcome-body">Soft opt-in only applies where YOU obtained contact details directly during your own sale or negotiation. Third-party data does not qualify — you need PECR consent.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q33')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2265,6 +2328,8 @@
     <div class="outcome-body">Soft opt-in only allows marketing about similar products or services to what the recipient purchased or negotiated. For dissimilar products, you need PECR consent.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q33')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2274,6 +2339,8 @@
     <div class="outcome-body">For soft opt-in to be valid, you must have provided a clear, simple, charge-free opt-out at the point of collecting contact details. Without this, soft opt-in is invalid and you need consent.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q33')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2283,6 +2350,8 @@
     <div class="outcome-body">For soft opt-in, you must provide a clear, simple, charge-free opt-out in every marketing communication. Without this, soft opt-in is invalid.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q42')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2292,6 +2361,8 @@
     <div class="outcome-body">You must maintain a suppression list and screen it before sending any electronic mail marketing. All individuals who have previously objected, unsubscribed, or opted out must be removed.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q43')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2310,6 +2381,8 @@
     <div class="outcome-body">Even for corporate subscribers, you must include clear sender identification, provide a valid opt-out mechanism, screen against your suppression list, and honour opt-out requests. Implement these before sending.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q44a')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2319,6 +2392,8 @@
     <div class="outcome-body">You must maintain and screen against your own suppression list for postal marketing before sending.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q47')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2328,6 +2403,8 @@
     <div class="outcome-body">You must remove all individuals who have previously objected to postal marketing from you before sending.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q47a')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2346,6 +2423,8 @@
     <div class="outcome-body">You must screen your fax marketing list against the Fax Preference Service (FPS) before sending. This is a legal requirement.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q48')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2355,6 +2434,8 @@
     <div class="outcome-body">You need consent from individual subscribers for fax marketing. You cannot send fax marketing to individual subscribers without their consent.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q50')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2364,6 +2445,8 @@
     <div class="outcome-body">For corporate fax marketing, you must screen against FPS, provide clear sender identification, and include a valid opt-out mechanism.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q50a')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2373,6 +2456,8 @@
     <div class="outcome-body">You must identify and fully classify all cookies and tracking technologies you use before deploying them. This is required under PECR.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q52')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2382,6 +2467,8 @@
     <div class="outcome-body">You must obtain valid PECR consent BEFORE placing or activating non-exempt cookies or tracking technologies. This is a legal requirement — you cannot ask for consent after the fact for cookies already placed.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q53')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2391,6 +2478,8 @@
     <div class="outcome-body">Your cookie consent mechanism does not meet PECR requirements. Key failures may include: pre-ticked boxes, "Reject all" less prominent than "Accept all", no granular control, cookie walls, or loading tracking before consent is given. Revise before proceeding.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q54')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2400,6 +2489,8 @@
     <div class="outcome-body">Tracking pixels in marketing emails store or access information on recipients' devices and require PECR consent. You must either obtain consent or remove the tracking pixels.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q55a')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2418,6 +2509,8 @@
     <div class="outcome-body">You must inform individuals (in your privacy notice or at the point of data collection) that you will share their data with the social media platform for targeted advertising, and that they can opt-out.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q61')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2436,6 +2529,8 @@
     <div class="outcome-body">You should have provided an opt-out when initially collecting individuals' details for this purpose. Provide an opt-out now and consider whether you need to refresh consent for those already collected.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q63')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2445,6 +2540,8 @@
     <div class="outcome-body">As joint controllers with the social media platform, you must have a written joint controller arrangement clearly allocating responsibilities and ensuring individuals can exercise their rights.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q64')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2454,6 +2551,8 @@
     <div class="outcome-body">You must inform your original customers (in your privacy notice or otherwise) that their data will be used to identify and target similar individuals.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q66')">Go Back</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2472,6 +2571,8 @@
     <div class="outcome-body">Direct messages on social media platforms are classified as "electronic mail" under PECR and are subject to the same consent/soft opt-in requirements as email and SMS. See Section 7.</div>
     <div class="outcome-actions">
       <button class="btn-restart" onclick="go('q32')">Go to Section 7</button>
+    
+      <button class="btn-next-channel" onclick="skipToNextChannel()">Acknowledge &amp; Continue to Next Channel →</button>
     </div>
   </div>
 
@@ -2891,11 +2992,15 @@
 
   <!-- APPROVED -->
   <div class="outcome-card outcome-approved" id="out-approved">
-    <div class="outcome-icon">✅</div>
-    <div class="outcome-title">Campaign Approved — Send with Confidence!</div>
-    <div class="outcome-body" id="approvedBody">
-      Congratulations! Your campaign <strong id="approvedCampaignName"></strong> has passed all applicable PECR and UK GDPR compliance checks.
+    <div class="outcome-icon" id="finalIcon">✅</div>
+    <div class="outcome-title" id="finalVerdict">Campaign Approved</div>
+    <div class="outcome-body">
+      Campaign: <strong id="approvedCampaignName"></strong>
+      <br>Compliance score: <strong id="finalScore"></strong>/100
       <br><br>
+      <span id="finalSummary"></span>
+      <br><br>
+      <div id="finalWarnings"></div>
       <strong>Remember to:</strong>
       <ul>
         <li>Keep records of this compliance check</li>
@@ -3070,17 +3175,12 @@
     if (d) {
       state.score = Math.max(0, state.score - d.points);
       state.warnings.push(d.label);
+      if (d.points >= 25) state.hardFail = true;
     }
   }
 
   function getVerdict() {
-    // Hard disqualifiers: any CRITICAL issue (25pt deduction) = red
-    // Score >= 75 and no single CRITICAL issue = green
-    // Everything else = amber
-    const hasCritical = state.warnings.some(w => {
-      return Object.entries(SCORE_DEDUCTIONS).some(([k, v]) => v.label === w && v.points >= 25);
-    });
-    if (hasCritical || state.score < 50) return 'red';
+    if (state.hardFail || state.score < 50) return 'red';
     if (state.score >= 75) return 'green';
     return 'amber';
   }
@@ -3257,83 +3357,154 @@
     'social-ads':  'q60'
   };
 
+  // dedupe: email/sms/mms/voicemail/in-app/social-dm all share q32 start
+  // so we group them into ONE queue entry labelled 'email' (covers all electronic mail)
+  // and track which sub-channels were selected separately for the save payload
   function dedupeChannels(channels) {
+    const CHANNEL_START = {
+      'live-calls': 'q18', 'auto-calls': 'q29', 'fax': 'q48', 'post': 'q45',
+      'email': 'q32', 'sms': 'q32', 'mms': 'q32', 'voicemail': 'q32',
+      'in-app': 'q32', 'social-dm': 'q32',
+      'online-ads': 'q51', 'social-ads': 'q60'
+    };
     let seen = new Set();
     let queue = [];
     for (const ch of channels) {
       const start = CHANNEL_START[ch];
       if (!seen.has(start)) {
         seen.add(start);
-        queue.push({ channel: ch, start });
+        // Use first matching channel as label, but note all that share this start
+        const siblings = channels.filter(c => CHANNEL_START[c] === start);
+        queue.push({ channel: ch, siblings, start });
       }
     }
     return queue;
   }
 
-  function startChannelSections() {
+  // Q8 button — store selections, go to Section 3 (lawful basis FIRST)
+  function confirmChannels() {
     if (state.selectedChannels.length === 0) {
       alert('Please select at least one channel.');
       return;
     }
+    go('q9');
+  }
+
+  // Q17a Yes — lawful basis confirmed, NOW start channel sections
+  function startChannelSections() {
     state.channelQueue = dedupeChannels(state.selectedChannels);
     state.completedChannels = [];
-    // After Q8, go into channel sections first, THEN Section 3 (data foundations)
+    updateChannelIndicators();
     nextChannel();
   }
 
   function nextChannel() {
+    updateChannelIndicators();
     if (state.channelQueue.length > 0) {
-      const { channel, start } = state.channelQueue.shift();
-      state.currentChannel = channel;
-      go(start);
+      const entry = state.channelQueue.shift();
+      state.currentChannel = entry.channel;
+      state.currentChannelSiblings = entry.siblings || [entry.channel];
+      applyAudienceContext(entry.start);
+      go(entry.start);
     } else {
-      // All channel sections done — now enter Section 3: data foundations
-      go('q9');
+      // All channel sections done → spine (Section 12: profiling)
+      go('q80');
     }
   }
 
   function completeChannel(channel) {
     state.completedChannels.push(channel);
+    updateChannelIndicators();
     nextChannel();
   }
 
+  // "Acknowledge & Continue to Next Channel" on channel STOP cards
+  function skipToNextChannel() {
+    if (state.currentChannel) {
+      state.completedChannels.push(state.currentChannel + ':stop');
+    }
+    updateChannelIndicators();
+    nextChannel();
+  }
+
+  // Use state.audience to update Q26 (CTPS) and Q32 (email sub) hints
+  function applyAudienceContext(startQ) {
+    if (startQ === 'q18') {
+      const el = document.getElementById('q26hint');
+      if (el) {
+        if (state.audience === 'b2c') {
+          el.textContent = 'Your Q7 answer was B2C only — CTPS does not apply. Select N/A and continue.';
+        } else {
+          el.textContent = 'Your Q7 answer included B2B — CTPS screening is required for corporate subscribers.';
+        }
+      }
+    }
+    if (startQ === 'q32') {
+      const el = document.getElementById('q32hint');
+      if (el) {
+        if (state.audience === 'b2b') {
+          el.textContent = 'Your Q7 answer was B2B only — go to option b (Corporate subscriber path).';
+        } else if (state.audience === 'b2c') {
+          el.textContent = 'Your Q7 answer was B2C only — go to option a (Individual subscriber path).';
+        } else {
+          el.textContent = 'Your Q7 answer was Both — you must satisfy individual subscriber rules. Go to option a.';
+        }
+        // Show which sub-channels are being checked
+        if (state.currentChannelSiblings && state.currentChannelSiblings.length > 1) {
+          const names = state.currentChannelSiblings.join(', ');
+          el.textContent += ' (Covers all your selected electronic mail channels: ' + names + ')';
+        }
+      }
+    }
+  }
+
+  function updateChannelIndicators() {
+    const container = document.getElementById('channelIndicators');
+    if (!container) return;
+    const labels = {
+      'live-calls':'Live Calls','auto-calls':'Auto Calls','fax':'Fax',
+      'post':'Post','email':'Email','sms':'SMS','mms':'MMS',
+      'voicemail':'Voicemail','in-app':'In-App','social-dm':'Social DMs',
+      'online-ads':'Online Ads','social-ads':'Social Ads'
+    };
+    container.innerHTML = state.selectedChannels.map(ch => {
+      const isDone = state.completedChannels.some(c => c === ch || c === ch + ':stop');
+      const isStop = state.completedChannels.includes(ch + ':stop');
+      const isCurrent = state.currentChannel === ch;
+      const cls = isStop ? 'stop' : isDone ? 'done' : isCurrent ? 'current' : '';
+      return `<span class="channel-chip ${cls}" title="${isStop ? 'Compliance issue recorded' : ''}">${labels[ch] || ch}${isStop ? ' ⚠️' : isDone ? ' ✓' : ''}</span>`;
+    }).join('');
+  }
+
   // ================================================================
-  // SPINE AFTER LAWFUL BASIS
-  // Correct order (per spec):
-  //   Q16 = Consent     → Q105 (Section 18), then continueSpine()
-  //   Q16 = LegitInt    → Q17 → Q17a, then continueSpine()
-  //   Q16 = PublicTask  → Q110 (Section 19), then continueSpine()
-  //
-  // continueSpine() picks up at Section 12 and walks through:
-  //   Q80 (profiling) → Q70 (third party) → Q85a (viral)
-  //   → Q89 (joint marketing) → Q95 (transparency)
-  //   → Q99 (opt-outs) → Q126 (DPIA) → Q128 (records)
-  //   → Q132 (specific checks) → Q137 (final)
+  // SPINE ROUTING
+  // Q17a → startChannelSections() → nextChannel() → ... → go('q80')
+  // Q80→Q85→Q70→Q77→Q80a→Q80d→Q85a→Q89→Q95→Q99→Q104
+  // Q104 Yes → routeAfterOptOuts()
+  //   consent → Q105 (Section 18)
+  //   li/other → routeAfterConsent() → Q110 (public auth optional)
+  // Q109/Q105-NA → routeAfterConsent() → Q110 → Q117 → Q122 → Q126 → Q128 → Q137
   // ================================================================
-  function continueSpine() {
-    // After lawful basis confirmed (LI path), proceed to Section 12 (profiling)
-    go('q80');
+
+  // Q104 yes: route consent users to Section 18, others skip it
+  function routeAfterOptOuts() {
+    if (state.lawfulBasis === 'consent') {
+      go('q105');
+    } else {
+      routeAfterConsent();
+    }
   }
 
-  // After Q109 (consent section done) or Q116a (public authority consent done)
-  // — these feed into profiling/rest of spine, NOT directly to optionals
-  // The optionals (public authority Q110, regulated Q117, international Q122)
-  // are visited as part of the spine AFTER profiling, third party, viral etc.
-  // So continueFromConsent = continueSpine
-  function continueFromConsent() {
-    go('q80');
+  // Q109 complete / Q105 N/A: route to optional sections
+  function routeAfterConsent() {
+    go('q110'); // Section 19: Public authority (has its own skip if not applicable)
   }
 
-  // Called from Q17a "Yes to all" — LIA confirmed, enter spine at profiling
-  function routeAfterLIA() {
-    go('q80');
-  }
-
-  // After Section 17 opt-outs complete (Q109 already done or N/A path)
-  // proceed to optional conditional sections: public auth → regulated → international → DPIA
-  function continueToOptionals() {
-    go('q110');
-  }
+  // Legacy aliases — kept in case any HTML still references them
+  function continueSpine() { go('q80'); }
+  function continueFromConsent() { routeAfterConsent(); }
+  function routeAfterLIA() { startChannelSections(); }
+  function continueToOptionals() { go('q110'); }
 
   // ================================================================
   // RESTART
