@@ -3757,7 +3757,7 @@
         issues: state.warnings.join('; ')
       };
 
-      const res = await fetch(`${VERCEL_URL}/submit`, {
+      const res = await fetch(`${VERCEL_URL}/api/submit-check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
