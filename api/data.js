@@ -3,7 +3,7 @@
 // Merged: get-report + get-vendors + get-violations + load-results
 // Router: ?action=report | vendors | violations | load
 //
-// GET  /api/data?action=report&recordId=x&type=pecr|ai|audit|email|vendor
+// GET  /api/data?action=report&recordId=x&type=pecr|ai|audit|email|vendor|suppression
 // GET  /api/data?action=vendors
 // GET  /api/data?action=violations&violationType=x&keyword=x
 // POST /api/data?action=load  { userId }
@@ -18,11 +18,12 @@ async function handleReport(req, res) {
   }
 
   const tables = {
-    pecr:   'Submissions',
-    ai:     'AI_Compliance_Checks',
-    audit:  'Database_Audits',
-    email:  'Email_Scans',
-    vendor: 'Vendor_Checks',
+    pecr:        'Submissions',
+    ai:          'AI_Compliance_Checks',
+    audit:       'Database_Audits',
+    email:       'Email_Scans',
+    vendor:      'Vendor_Checks',
+    suppression: 'Suppression_Checks',
   };
 
   const tableName = tables[type];
