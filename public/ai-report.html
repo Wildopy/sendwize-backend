@@ -1,315 +1,295 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Compliance Report - Sendwize</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Compliance Report — Sendwize</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: #FAFAFA;
-      line-height: 1.6;
-      color: #000;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange:#EA7317; --orange-light:#FFF4EA;
+      --bg:#FAFAFA; --white:#fff; --border:#f0f0f0; --border-mid:#e5e5e5;
+      --text:#1a1a1a; --muted:#6b7280;
+      --green:#16a34a; --green-bg:#f0fdf4; --green-bd:#bbf7d0;
+      --yellow:#d97706; --yellow-bg:#fffbeb; --yellow-bd:#fde68a;
+      --red:#dc2626; --red-bg:#fef2f2; --red-bd:#fecaca;
+      --blue:#1d4ed8; --blue-bg:#eff6ff; --blue-bd:#bfdbfe;
+      --radius:8px;
     }
-    
-    .header {
-      background: white;
-      padding: 20px 40px;
-      border-bottom: 1px solid #f0f0f0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .logo {
-      font-size: 24px;
-      font-weight: 700;
-      color: #EA7317;
-      text-transform: lowercase;
-    }
-    
-    .btn-back {
-      background: transparent;
-      border: 1px solid #E5E5E5;
-      padding: 10px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-      color: #666;
-      text-decoration: none;
-      transition: all 0.2s ease;
-    }
-    
-    .btn-back:hover {
-      border-color: #EA7317;
-      color: #EA7317;
-    }
-    
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 40px 20px;
-    }
-    
-    .report-header {
-      background: white;
-      padding: 40px;
-      border-radius: 8px;
-      border: 1px solid #f0f0f0;
-      margin-bottom: 30px;
-    }
-    
-    .report-label {
-      color: #EA7317;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 10px;
-    }
-    
-    .report-title {
-      font-size: 36px;
-      font-weight: 700;
-      color: #000;
-      margin-bottom: 20px;
-    }
-    
-    .report-meta {
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 30px;
-    }
-    
-    .score-badge {
-      display: inline-block;
-      padding: 12px 24px;
-      border-radius: 4px;
-      font-size: 16px;
-      font-weight: 700;
-      margin: 10px 0;
-    }
-    
-    .badge-compliant { background: #D1FAE5; color: #065F46; }
-    .badge-warning { background: #FEF3C7; color: #92400E; }
-    .badge-danger { background: #FEE2E2; color: #991B1B; }
-    
-    .section {
-      background: white;
-      padding: 40px;
-      border-radius: 8px;
-      border: 1px solid #f0f0f0;
-      margin-bottom: 30px;
-    }
-    
-    .section-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: #000;
-      margin-bottom: 20px;
-    }
-    
-    .marketing-copy {
-      background: #FAFAFA;
-      padding: 20px;
-      border-radius: 4px;
-      border: 1px solid #E5E5E5;
-      font-family: 'Courier New', monospace;
-      white-space: pre-wrap;
-      color: #333;
-      line-height: 1.8;
-    }
-    
-    .issue-card {
-      padding: 20px;
-      border-radius: 4px;
-      margin: 15px 0;
-      border-left: 4px solid;
-    }
-    
-    .issue-critical {
-      background: #FEE2E2;
-      border-left-color: #EF4444;
-    }
-    
-    .issue-warning {
-      background: #FEF3C7;
-      border-left-color: #F59E0B;
-    }
-    
-    .issue-good {
-      background: #D1FAE5;
-      border-left-color: #10B981;
-    }
-    
-    .issue-title {
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: #000;
-    }
-    
-    .issue-desc {
-      color: #333;
-      line-height: 1.6;
-      margin-bottom: 8px;
-    }
-    
-    .issue-fix {
-      color: #666;
-      font-style: italic;
-      font-size: 14px;
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 100px 40px;
-      color: #666;
-    }
-    
-    .btn-download {
-      background: #EA7317;
-      color: white;
-      padding: 14px 28px;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin: 10px 5px;
-      transition: all 0.2s ease;
-    }
-    
-    .btn-download:hover {
-      background: #d66614;
-    }
-    
-    @media print {
-      .header, .btn-back, .btn-download { display: none; }
-    }
+    body { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    .topnav { background:var(--white); border-bottom:1px solid var(--border); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+    .topnav-logo { font-size:18px; font-weight:800; color:var(--orange); letter-spacing:-.5px; }
+    .nav-actions { display:flex; gap:8px; align-items:center; }
+    .btn-ghost { padding:7px 14px; border:1px solid var(--border-mid); border-radius:var(--radius); font-size:13px; font-weight:500; background:var(--white); color:var(--muted); cursor:pointer; font-family:inherit; transition:all .15s; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+    .btn-ghost:hover { border-color:var(--orange); color:var(--orange); }
+    .btn-primary { padding:7px 16px; border-radius:var(--radius); font-size:13px; font-weight:600; background:var(--orange); color:var(--white); border:none; cursor:pointer; font-family:inherit; transition:background .15s; }
+    .btn-primary:hover { background:#d4660f; }
+
+    .container { max-width:860px; margin:0 auto; padding:36px 20px 80px; }
+
+    .state-box { text-align:center; padding:100px 20px; }
+    .spinner { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 14px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .state-text { font-size:14px; color:var(--muted); }
+
+    /* Hero */
+    .hero { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:32px; margin-bottom:16px; }
+    .hero-eyebrow { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:10px; }
+    .hero-title { font-size:28px; font-weight:800; line-height:1.2; margin-bottom:8px; }
+    .hero-meta { font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:16px; flex-wrap:wrap; }
+    .verdict-badge { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:6px; font-size:14px; font-weight:700; border:1px solid; }
+    .verdict-pass { background:var(--green-bg); color:var(--green); border-color:var(--green-bd); }
+    .verdict-warn { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow-bd); }
+    .verdict-fail { background:var(--red-bg); color:var(--red); border-color:var(--red-bd); }
+
+    /* Score ring */
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    @media(max-width:580px){ .metrics { grid-template-columns:repeat(2,1fr); } }
+    .metric { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:18px 16px; text-align:center; }
+    .metric-val { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .metric-lbl { font-size:11px; color:var(--muted); font-weight:500; }
+
+    .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
+    .card-label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; }
+
+    /* Violations */
+    .violation-list { display:flex; flex-direction:column; gap:10px; }
+    .violation-item { padding:14px 16px; border-radius:var(--radius); border-left:3px solid; }
+    .violation-item.critical { background:var(--red-bg);    border-color:var(--red); }
+    .violation-item.high     { background:var(--yellow-bg); border-color:var(--yellow); }
+    .violation-item.medium   { background:#fff7ed;           border-color:#fb923c; }
+    .violation-item.low      { background:var(--bg);         border-color:var(--border-mid); }
+    .violation-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+    .v-sev { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:3px; }
+    .violation-item.critical .v-sev { background:var(--red);    color:#fff; }
+    .violation-item.high     .v-sev { background:var(--yellow); color:#fff; }
+    .violation-item.medium   .v-sev { background:#fb923c;       color:#fff; }
+    .violation-item.low      .v-sev { background:var(--muted);  color:#fff; }
+    .v-reg  { font-size:11px; color:var(--muted); }
+    .v-issue { font-size:13px; font-weight:600; margin-bottom:4px; }
+    .v-location { font-size:12px; color:var(--muted); margin-bottom:4px; font-style:italic; }
+    .v-rec   { font-size:12px; color:var(--text); line-height:1.5; }
+    .v-rec::before { content:'→ '; font-weight:600; }
+
+    /* Fixed version */
+    .fixed-copy { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:16px; font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word; max-height:320px; overflow-y:auto; }
+    .copy-actions { display:flex; gap:8px; margin-top:10px; }
+    .copy-success { font-size:12px; color:var(--green); display:none; }
+    .copy-success.show { display:inline; }
+
+    /* Enforcement cases */
+    .case-list { display:flex; flex-direction:column; gap:8px; }
+    .case-item { padding:14px; border:1px solid var(--border); border-radius:var(--radius); }
+    .case-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:6px; flex-wrap:wrap; }
+    .case-company { font-size:13px; font-weight:700; }
+    .case-fine    { font-size:13px; font-weight:700; color:var(--red); }
+    .case-meta    { font-size:12px; color:var(--muted); margin-bottom:5px; }
+    .case-desc    { font-size:12px; color:var(--text); line-height:1.5; }
+
+    /* Fixes */
+    .fix-list { display:flex; flex-direction:column; gap:8px; }
+    .fix-item { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid var(--border); border-radius:var(--radius); }
+    .fix-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+    .fix-dot.pending   { background:var(--yellow); }
+    .fix-dot.completed { background:var(--green); }
+    .fix-dot.dismissed { background:#d1d5db; }
+    .fix-body { flex:1; }
+    .fix-title { font-size:13px; font-weight:600; margin-bottom:3px; }
+    .fix-desc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
+    .fix-pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .pill { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:500; }
+    .pill-critical { background:var(--red-bg);    color:var(--red); }
+    .pill-high     { background:var(--yellow-bg); color:var(--yellow); }
+    .pill-medium   { background:#fff7ed;           color:#ea580c; }
+    .pill-low      { background:var(--bg);         color:var(--muted); border:1px solid var(--border-mid); }
+    .pill-exposure { background:var(--orange-light); color:var(--orange); }
+    .pill-pending  { background:var(--yellow-bg); color:var(--yellow); }
+    .pill-completed{ background:var(--green-bg);  color:var(--green); }
+    .pill-dismissed{ background:var(--bg); color:var(--muted); border:1px solid var(--border-mid); }
+
+    .empty-state { text-align:center; padding:28px 20px; color:var(--muted); font-size:13px; }
+    .empty-icon  { font-size:24px; margin-bottom:8px; }
+
+    @media print { .topnav { display:none; } .container { padding:20px; } }
   </style>
 </head>
 <body>
+  <nav class="topnav">
+    <div class="topnav-logo">sendwize</div>
+    <div class="nav-actions">
+      <a href="javascript:history.back()" class="btn-ghost">← Dashboard</a>
+      <button class="btn-primary" onclick="window.print()">Export PDF</button>
+    </div>
+  </nav>
 
-  <div class="header">
-    <div class="logo">sendwize</div>
-    <a href="#" class="btn-back" onclick="window.close(); return false;">← Back to Dashboard</a>
+  <div class="container">
+    <div class="state-box" id="stateBox">
+      <div class="spinner"></div>
+      <div class="state-text">Loading report…</div>
+    </div>
+    <div id="report" style="display:none;"></div>
   </div>
-  
-  <div class="container" id="content">
-    <p class="loading">Loading report...</p>
-  </div>
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const recordId = urlParams.get('id');
-    
-    async function loadReport() {
-      if (!recordId) {
-        document.getElementById('content').innerHTML = '<p class="loading">Error: No report ID provided</p>';
-        return;
-      }
-      
-      try {
-        // Secure API call - no tokens in browser!
-        const response = await fetch(`/api/get-report?recordId=${recordId}&type=ai`);
-        
-        if (!response.ok) throw new Error('Failed to load report');
-        
-        const data = await response.json();
-        displayReport(data.fields);
-        
-      } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('content').innerHTML = '<p class="loading">Error loading report. Please try again.</p>';
-      }
-    }
-    
-    function displayReport(fields) {
-      const fileName = fields.FileName || 'Marketing Copy';
-      const verdict = fields.Verdict || 'Pending';
-      const score = fields.RiskScore || 0;
-      const date = fields.CheckDate ? new Date(fields.CheckDate).toLocaleDateString() : 'Date not set';
-      const copy = fields.MarketingCopy || 'No marketing copy available';
-      
-      let badgeClass = score >= 70 ? 'badge-compliant' : score >= 40 ? 'badge-warning' : 'badge-danger';
-      
-      let analysis = {};
-      try {
-        analysis = JSON.parse(fields.Analysis || '{}');
-      } catch (e) {
-        console.error('Error parsing analysis:', e);
-      }
-      
-      const html = `
-        <div class="report-header">
-          <div class="report-label">AI Compliance Analysis</div>
-          <h1 class="report-title">${fileName}</h1>
-          <p class="report-meta">Analyzed: ${date}</p>
-          <div class="score-badge ${badgeClass}">${verdict} (${score}/100)</div>
-        </div>
-        
-        <div class="section">
-          <h2 class="section-title">Marketing Copy Analyzed</h2>
-          <div class="marketing-copy">${copy}</div>
-        </div>
-        
-        ${generateIssueSection('🚨 Critical Issues', analysis.criticalIssues, 'critical')}
-        ${generateIssueSection('⚠️ Warnings', analysis.warnings, 'warning')}
-        ${generateIssueSection('✅ Good Practices', analysis.goodPractices, 'good')}
-        
-        <div class="section">
-          <h2 class="section-title">Recommended Next Steps</h2>
-          ${generateNextSteps(analysis.nextSteps)}
-        </div>
-        
-        <div style="text-align: center; margin: 40px 0;">
-          <button class="btn-download" onclick="window.print()">📥 Download PDF Report</button>
-        </div>
-      `;
-      
-      document.getElementById('content').innerHTML = html;
-    }
-    
-    function generateIssueSection(title, issues, type) {
-      if (!issues || issues.length === 0) return '';
-      
-      const className = type === 'critical' ? 'issue-critical' : 
-                        type === 'warning' ? 'issue-warning' : 'issue-good';
-      
-      let html = `<div class="section"><h2 class="section-title">${title}</h2>`;
-      
-      issues.forEach(issue => {
-        html += `
-          <div class="issue-card ${className}">
-            <div class="issue-title">${issue.issue || issue}</div>
-            ${issue.description ? `<div class="issue-desc">${issue.description}</div>` : ''}
-            ${issue.fix ? `<div class="issue-fix">Fix: ${issue.fix}</div>` : ''}
-          </div>
-        `;
-      });
-      
-      html += '</div>';
-      return html;
-    }
-    
-    function generateNextSteps(steps) {
-      if (!steps || steps.length === 0) {
-        return '<p style="color: #666;">No specific recommendations available</p>';
-      }
-      
-      let html = '<ol style="padding-left: 20px; color: #666; line-height: 2;">';
-      steps.forEach(step => {
-        html += `<li>${step}</li>`;
-      });
-      html += '</ol>';
-      
-      return html;
-    }
-    
-    loadReport();
-  </script>
+<script>
+  const p        = new URLSearchParams(window.location.search);
+  const recordId = p.get('id') || p.get('recordId');
+  const userId   = p.get('userId');
+  const BASE     = window.location.origin;
 
+  async function load() {
+    if (!recordId) { return showError('No report ID provided.'); }
+    try {
+      const [rr, fr] = await Promise.all([
+        fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=ai`),
+        userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
+      ]);
+      if (!rr.ok) throw new Error('Report not found');
+      const rd = await rr.json();
+      const fd = fr && fr.ok ? await fr.json() : null;
+      render(rd.fields || rd, fd);
+    } catch(e) { showError(e.message); }
+  }
+
+  function render(f, fd) {
+    const date       = fmtDate(f.CheckDate);
+    const score      = f.RiskScore ?? 0;
+    const verdict    = f.Verdict || '';
+    const violations = parseJ(f.Violations) || [];
+    const cases      = parseJ(f.RelatedCases) || [];
+    const fixed      = f.FixedVersion || '';
+    const fileName   = f.FileName || 'Copy Check';
+
+    // risk score: 100 = compliant, 0 = all violations. Invert for risk display.
+    const riskDisplay = 100 - score;
+    const sc = riskDisplay <= 25 ? 'var(--green)' : riskDisplay <= 60 ? 'var(--yellow)' : 'var(--red)';
+    const vc = riskDisplay <= 25 ? 'pass' : riskDisplay <= 60 ? 'warn' : 'fail';
+    const vi = vc==='pass' ? '✅' : vc==='warn' ? '⚠️' : '🚫';
+
+    const allFixes = fd?.fixes || fd?.records || [];
+    const fixes = allFixes.filter(x => {
+      const xf = x.fields||x;
+      return xf.SourceRecordID === recordId || xf.Tool === 'AI Checker';
+    });
+    const pending   = fixes.filter(x=>(x.fields||x).Status==='pending').length;
+    const completed = fixes.filter(x=>(x.fields||x).Status==='completed').length;
+
+    document.getElementById('report').innerHTML = `
+      <div class="hero">
+        <div class="hero-eyebrow">AI Compliance Check Report</div>
+        <div class="hero-title">${esc(fileName)}</div>
+        <div class="hero-meta">
+          <span>${date}</span>
+          ${violations.length ? `<span>${violations.length} violation${violations.length!==1?'s':''} found</span>` : ''}
+        </div>
+        <div class="verdict-badge verdict-${vc}">${vi} ${esc(verdict || (vc==='pass'?'Compliant':'Non-Compliant'))}</div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric"><div class="metric-val" style="color:${sc}">${score}/100</div><div class="metric-lbl">Compliance Score</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--red)">${violations.length}</div><div class="metric-lbl">Violations</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--yellow)">${pending}</div><div class="metric-lbl">Fixes Pending</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--green)">${completed}</div><div class="metric-lbl">Fixes Done</div></div>
+      </div>
+
+      ${violations.length ? `
+      <div class="card">
+        <div class="card-label">Violations Found (${violations.length})</div>
+        <div class="violation-list">${violations.map(renderViolation).join('')}</div>
+      </div>` : `
+      <div class="card">
+        <div class="card-label">Violations</div>
+        <div class="empty-state"><div class="empty-icon">✅</div>No violations found</div>
+      </div>`}
+
+      ${fixed ? `
+      <div class="card">
+        <div class="card-label">AI-Fixed Version</div>
+        <div class="fixed-copy" id="fixedCopy">${esc(fixed)}</div>
+        <div class="copy-actions">
+          <button class="btn-ghost" onclick="copyFixed()">Copy to clipboard</button>
+          <span class="copy-success" id="copyOk">✓ Copied!</span>
+        </div>
+      </div>` : ''}
+
+      ${cases.length ? `
+      <div class="card">
+        <div class="card-label">Related ICO Enforcement Cases</div>
+        <div class="case-list">${cases.map(renderCase).join('')}</div>
+      </div>` : ''}
+
+      ${fixes.length ? `
+      <div class="card">
+        <div class="card-label">Compliance Fixes</div>
+        <div class="fix-list">${fixes.map(renderFix).join('')}</div>
+      </div>` : ''}
+    `;
+
+    document.getElementById('stateBox').style.display = 'none';
+    document.getElementById('report').style.display   = 'block';
+  }
+
+  function renderViolation(v) {
+    const sev = (v.severity||'').toLowerCase();
+    return `<div class="violation-item ${sev||'low'}">
+      <div class="violation-header">
+        ${sev ? `<span class="v-sev">${sev}</span>` : ''}
+        ${v.regulation ? `<span class="v-reg">${esc(v.regulation)}</span>` : ''}
+      </div>
+      <div class="v-issue">${esc(v.issue||'')}</div>
+      ${v.location ? `<div class="v-location">${esc(v.location)}</div>` : ''}
+      ${v.recommendation ? `<div class="v-rec">${esc(v.recommendation)}</div>` : ''}
+    </div>`;
+  }
+
+  function renderCase(c) {
+    return `<div class="case-item">
+      <div class="case-header">
+        <span class="case-company">${esc(c.company||c.CompanyName||'')}</span>
+        ${c.fine||c.FineAmount ? `<span class="case-fine">${fmtMoney(c.fine||c.FineAmount)}</span>` : ''}
+      </div>
+      <div class="case-meta">${esc(c.regulator||'')}${c.date ? ` · ${esc(c.date)}` : ''}</div>
+      ${c.description ? `<div class="case-desc">${esc(c.description)}</div>` : ''}
+    </div>`;
+  }
+
+  function renderFix(fx) {
+    const f  = fx.fields||fx;
+    const st = f.Status||'pending';
+    const el = f.ExposureLow||0, eh = f.ExposureHigh||0;
+    return `<div class="fix-item">
+      <div class="fix-dot ${st}"></div>
+      <div class="fix-body">
+        <div class="fix-title">${esc(fmtFixType(f.FixType||''))}</div>
+        <div class="fix-desc">${esc(f.Description||'')}</div>
+        <div class="fix-pills">
+          ${f.Severity ? `<span class="pill pill-${f.Severity}">${f.Severity}</span>` : ''}
+          <span class="pill pill-${st}">${st}</span>
+          ${el||eh ? `<span class="pill pill-exposure">${fmtMoney(el)}–${fmtMoney(eh)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  async function copyFixed() {
+    const el = document.getElementById('fixedCopy');
+    if (!el) return;
+    try {
+      await navigator.clipboard.writeText(el.textContent);
+      const ok = document.getElementById('copyOk');
+      ok.classList.add('show');
+      setTimeout(()=>ok.classList.remove('show'), 2200);
+    } catch {}
+  }
+
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '—'; }
+  function fmtFixType(s) { return s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
+  function fmtMoney(n) { if(!n&&n!==0)return'—'; if(typeof n==='string'&&n.startsWith('£'))return n; if(n>=1000000)return`£${(n/1e6).toFixed(1)}m`; if(n>=1000)return`£${(n/1000).toFixed(0)}k`; return`£${n}`; }
+  function parseJ(v) { if(!v)return null; if(typeof v==='object')return v; try{return JSON.parse(v);}catch{return null;} }
+  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function showError(msg) { document.getElementById('stateBox').innerHTML=`<div class="state-text" style="color:var(--red)">⚠️ ${esc(msg)}</div>`; }
+
+  load();
+</script>
 </body>
 </html>
