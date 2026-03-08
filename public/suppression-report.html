@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suppression Check Report — Sendwize</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange:#EA7317; --orange-light:#FFF4EA;
+      --bg:#FAFAFA; --white:#fff; --border:#f0f0f0; --border-mid:#e5e5e5;
+      --text:#1a1a1a; --muted:#6b7280;
+      --green:#16a34a; --green-bg:#f0fdf4; --green-bd:#bbf7d0;
+      --yellow:#d97706; --yellow-bg:#fffbeb; --yellow-bd:#fde68a;
+      --red:#dc2626; --red-bg:#fef2f2; --red-bd:#fecaca;
+      --blue:#1d4ed8; --blue-bg:#eff6ff; --blue-bd:#bfdbfe;
+      --radius:8px;
+    }
+    body { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    .topnav { background:var(--white); border-bottom:1px solid var(--border); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+    .topnav-logo { font-size:18px; font-weight:800; color:var(--orange); letter-spacing:-.5px; }
+    .nav-actions { display:flex; gap:8px; align-items:center; }
+    .btn-ghost { padding:7px 14px; border:1px solid var(--border-mid); border-radius:var(--radius); font-size:13px; font-weight:500; background:var(--white); color:var(--muted); cursor:pointer; font-family:inherit; transition:all .15s; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+    .btn-ghost:hover { border-color:var(--orange); color:var(--orange); }
+    .btn-primary { padding:7px 16px; border-radius:var(--radius); font-size:13px; font-weight:600; background:var(--orange); color:var(--white); border:none; cursor:pointer; font-family:inherit; transition:background .15s; }
+    .btn-primary:hover { background:#d4660f; }
+
+    .container { max-width:860px; margin:0 auto; padding:36px 20px 80px; }
+
+    .state-box { text-align:center; padding:100px 20px; }
+    .spinner { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 14px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .state-text { font-size:14px; color:var(--muted); }
+
+    .hero { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:32px; margin-bottom:16px; }
+    .hero-eyebrow { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:10px; }
+    .hero-title { font-size:28px; font-weight:800; line-height:1.2; margin-bottom:8px; }
+    .hero-meta { font-size:13px; color:var(--muted); margin-bottom:22px; }
+    .verdict-badge { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:6px; font-size:14px; font-weight:700; border:1px solid; }
+    .verdict-pass { background:var(--green-bg); color:var(--green); border-color:var(--green-bd); }
+    .verdict-warn { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow-bd); }
+    .verdict-fail { background:var(--red-bg); color:var(--red); border-color:var(--red-bd); }
+
+    /* Score + exposure */
+    .metrics-top { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    @media(max-width:480px){ .metrics-top { grid-template-columns:1fr; } }
+    .metric-big { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px 20px; }
+    .metric-big-label { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+    .metric-big-val { font-size:32px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .metric-big-sub { font-size:12px; color:var(--muted); }
+
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    @media(max-width:580px){ .metrics { grid-template-columns:repeat(2,1fr); } }
+    .metric { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:16px; text-align:center; }
+    .metric-val { font-size:22px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .metric-lbl { font-size:11px; color:var(--muted); font-weight:500; }
+
+    .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
+    .card-label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; }
+
+    /* Warnings */
+    .warning-list { display:flex; flex-direction:column; gap:8px; }
+    .warning-item { padding:12px 14px 12px 16px; border-radius:var(--radius); border-left:3px solid; }
+    .warning-item.critical { background:var(--red-bg);    border-color:var(--red); }
+    .warning-item.high     { background:var(--yellow-bg); border-color:var(--yellow); }
+    .warning-item.medium   { background:#fff7ed;           border-color:#fb923c; }
+    .warning-item.low      { background:var(--bg);         border-color:var(--border-mid); }
+    .warning-item.info     { background:var(--blue-bg);    border-color:var(--blue); }
+    .warning-header { display:flex; align-items:center; gap:8px; margin-bottom:5px; flex-wrap:wrap; }
+    .w-sev { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:3px; }
+    .warning-item.critical .w-sev { background:var(--red);    color:#fff; }
+    .warning-item.high     .w-sev { background:var(--yellow); color:#fff; }
+    .warning-item.medium   .w-sev { background:#fb923c;       color:#fff; }
+    .warning-item.low      .w-sev { background:var(--muted);  color:#fff; }
+    .warning-item.info     .w-sev { background:var(--blue);   color:#fff; }
+    .w-reg  { font-size:11px; color:var(--muted); }
+    .w-msg  { font-size:13px; color:var(--text); line-height:1.5; margin-bottom:5px; }
+    .w-action { font-size:12px; font-weight:600; color:var(--text); }
+    .w-action::before { content:'→ '; }
+
+    /* List display */
+    .email-list { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; font-size:12px; font-family:monospace; max-height:160px; overflow-y:auto; line-height:1.9; color:var(--text); }
+
+    /* Stat row */
+    .stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+    @media(max-width:480px){ .stat-row { grid-template-columns:repeat(2,1fr); } }
+    .stat-box { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:12px; text-align:center; }
+    .stat-val { font-size:18px; font-weight:800; margin-bottom:3px; }
+    .stat-lbl { font-size:11px; color:var(--muted); }
+
+    /* Fixes */
+    .fix-list { display:flex; flex-direction:column; gap:8px; }
+    .fix-item { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid var(--border); border-radius:var(--radius); }
+    .fix-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+    .fix-dot.pending   { background:var(--yellow); }
+    .fix-dot.completed { background:var(--green); }
+    .fix-dot.dismissed { background:#d1d5db; }
+    .fix-body { flex:1; }
+    .fix-title { font-size:13px; font-weight:600; margin-bottom:3px; }
+    .fix-desc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
+    .fix-pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .pill { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:500; }
+    .pill-critical { background:var(--red-bg);    color:var(--red); }
+    .pill-high     { background:var(--yellow-bg); color:var(--yellow); }
+    .pill-medium   { background:#fff7ed;           color:#ea580c; }
+    .pill-low      { background:var(--bg);         color:var(--muted); border:1px solid var(--border-mid); }
+    .pill-exposure { background:var(--orange-light); color:var(--orange); }
+    .pill-pending  { background:var(--yellow-bg); color:var(--yellow); }
+    .pill-completed{ background:var(--green-bg);  color:var(--green); }
+    .pill-dismissed{ background:var(--bg); color:var(--muted); border:1px solid var(--border-mid); }
+
+    .empty-state { text-align:center; padding:28px 20px; color:var(--muted); font-size:13px; }
+    .empty-icon  { font-size:24px; margin-bottom:8px; }
+
+    @media print { .topnav { display:none; } .container { padding:20px; } }
+  </style>
+</head>
+<body>
+  <nav class="topnav">
+    <div class="topnav-logo">sendwize</div>
+    <div class="nav-actions">
+      <a href="javascript:history.back()" class="btn-ghost">← Dashboard</a>
+      <button class="btn-primary" onclick="window.print()">Export PDF</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="state-box" id="stateBox">
+      <div class="spinner"></div>
+      <div class="state-text">Loading report…</div>
+    </div>
+    <div id="report" style="display:none;"></div>
+  </div>
+
+<script>
+  const p        = new URLSearchParams(window.location.search);
+  const recordId = p.get('id') || p.get('recordId');
+  const userId   = p.get('userId');
+  const BASE     = window.location.origin;
+
+  async function load() {
+    if (!recordId) { return showError('No report ID provided.'); }
+    try {
+      // Note: data.js doesn't have a 'suppression' type yet — uses Results JSON from Suppression_Checks
+      // For now we call with type=pecr and handle gracefully, or fetch direct
+      // TODO: add type=suppression to data.js tables map when ready
+      const [rr, fr] = await Promise.all([
+        fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=suppression`),
+        userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
+      ]);
+      if (!rr.ok) throw new Error('Report not found');
+      const rd = await rr.json();
+      const fd = fr && fr.ok ? await fr.json() : null;
+      render(rd.fields || rd, fd);
+    } catch(e) { showError(e.message); }
+  }
+
+  function render(f, fd) {
+    const date         = fmtDate(f.CheckDate);
+    const sendCount    = f.SendListSize       || 0;
+    const suppCount    = f.SuppressionListSize || 0;
+    const matchCount   = f.MatchesFound       || 0;
+    const dupCount     = f.DuplicatesFound    || 0;
+    const invalidCount = f.InvalidEmailsFound || 0;
+    const cleanCount   = f.CleanListSize      || 0;
+    const score        = f.RiskScore          || 0;
+    const expLow       = f.ExposureLow        || 0;
+    const expHigh      = f.ExposureHigh       || 0;
+    const results      = parseJ(f.Results)    || {};
+    const warnings     = results.warnings     || [];
+
+    const isClean = matchCount === 0 && dupCount === 0 && invalidCount === 0;
+    const vc = isClean && score >= 80 ? 'pass' : matchCount > 0 || score < 50 ? 'fail' : 'warn';
+    const vi = vc==='pass'?'✅':vc==='warn'?'⚠️':'🚫';
+    const verdictText = vc==='pass' ? 'List Clean — Safe to Send' : matchCount > 0 ? 'Do Not Send' : 'Review Required';
+    const sc = score>=80?'var(--green)':score>=50?'var(--yellow)':'var(--red)';
+
+    const allFixes = fd?.fixes || fd?.records || [];
+    const fixes = allFixes.filter(x => {
+      const xf = x.fields||x;
+      return xf.SourceRecordID === recordId || xf.Tool === 'Suppression Checker';
+    });
+    const pending   = fixes.filter(x=>(x.fields||x).Status==='pending').length;
+    const completed = fixes.filter(x=>(x.fields||x).Status==='completed').length;
+
+    const suppressionHealth = results.suppressionHealth || {};
+    const healthIssues = [
+      suppressionHealth.tooSmall ? 'Suppression list appears too small relative to send volume' : null,
+      suppressionHealth.stale    ? `Suppression list is stale (${suppressionHealth.listAge || 'unknown age'})` : null,
+      suppressionHealth.aged     ? 'Suppression list is approximately 1 year old' : null,
+    ].filter(Boolean);
+
+    document.getElementById('report').innerHTML = `
+      <div class="hero">
+        <div class="hero-eyebrow">Suppression Check Report</div>
+        <div class="hero-title">${sendCount.toLocaleString()} Contacts Checked</div>
+        <div class="hero-meta">${date} · PECR Regulation 22</div>
+        <div class="verdict-badge verdict-${vc}">${vi} ${verdictText}</div>
+      </div>
+
+      <div class="metrics-top">
+        <div class="metric-big">
+          <div class="metric-big-label">PECR Risk Score</div>
+          <div class="metric-big-val" style="color:${sc}">${score}/100</div>
+          <div class="metric-big-sub">${scoreLabel(score)}</div>
+        </div>
+        <div class="metric-big">
+          <div class="metric-big-label">Financial Exposure</div>
+          <div class="metric-big-val" style="color:${expLow>0?'var(--red)':'var(--green)'}">${expLow>0?`${fmtMoney(expLow)}–${fmtMoney(expHigh)}`:'£0'}</div>
+          <div class="metric-big-sub">${expLow>0 ? 'Estimated PECR Reg 22 exposure' : 'No suppressed contacts found'}</div>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric"><div class="metric-val">${sendCount.toLocaleString()}</div><div class="metric-lbl">Send List</div></div>
+        <div class="metric"><div class="metric-val" style="color:${matchCount>0?'var(--red)':'var(--green)'}">${matchCount.toLocaleString()}</div><div class="metric-lbl">Suppressed Matches</div></div>
+        <div class="metric"><div class="metric-val" style="color:${dupCount>0?'var(--yellow)':'inherit'}">${dupCount.toLocaleString()}</div><div class="metric-lbl">Duplicates</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--green)">${cleanCount.toLocaleString()}</div><div class="metric-lbl">Clean</div></div>
+      </div>
+
+      ${warnings.length ? `
+      <div class="card">
+        <div class="card-label">PECR & ICO Warnings</div>
+        <div class="warning-list">${warnings.map(renderWarning).join('')}</div>
+      </div>` : ''}
+
+      ${healthIssues.length ? `
+      <div class="card">
+        <div class="card-label">Suppression List Health</div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-val">${suppCount.toLocaleString()}</div><div class="stat-lbl">Suppression List Size</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:var(--muted)">${esc(suppressionHealth.listAge||'—')}</div><div class="stat-lbl">Last Updated</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:${suppressionHealth.tooSmall?'var(--red)':'var(--green)'}">${suppressionHealth.tooSmall?'⚠ Small':'✓ OK'}</div><div class="stat-lbl">List Size Check</div></div>
+        </div>
+        ${healthIssues.map(i=>`<p style="font-size:13px;color:var(--muted);margin-top:8px;">⚠ ${esc(i)}</p>`).join('')}
+      </div>` : `
+      <div class="card">
+        <div class="card-label">Suppression List Health</div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-val">${suppCount.toLocaleString()}</div><div class="stat-lbl">Suppression List Size</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:var(--muted)">${esc(suppressionHealth.listAge||'—')}</div><div class="stat-lbl">Last Updated</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:var(--green)">✓ OK</div><div class="stat-lbl">List Size Check</div></div>
+        </div>
+      </div>`}
+
+      ${matchCount > 0 && results.matches?.length ? `
+      <div class="card">
+        <div class="card-label">Suppressed Contacts (${matchCount})</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">These contacts must not be emailed. Sending to them is a PECR Regulation 22 breach.</p>
+        <div class="email-list">${esc((results.matches||[]).join('\n'))}</div>
+      </div>` : ''}
+
+      ${invalidCount > 0 && results.invalidEmails?.length ? `
+      <div class="card">
+        <div class="card-label">Invalid Emails (${invalidCount})</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Invalid email syntax — these will hard bounce and should be added to your suppression list.</p>
+        <div class="email-list">${esc((results.invalidEmails||[]).join('\n'))}</div>
+      </div>` : ''}
+
+      ${fixes.length ? `
+      <div class="card">
+        <div class="card-label">Compliance Fixes</div>
+        <div class="fix-list">${fixes.map(renderFix).join('')}</div>
+      </div>` : ''}
+    `;
+
+    document.getElementById('stateBox').style.display = 'none';
+    document.getElementById('report').style.display   = 'block';
+  }
+
+  function renderWarning(w) {
+    const sev = (w.severity||'info').toLowerCase();
+    return `<div class="warning-item ${sev}">
+      <div class="warning-header">
+        <span class="w-sev">${sev}</span>
+        ${w.regulation ? `<span class="w-reg">${esc(w.regulation)}</span>` : ''}
+      </div>
+      <div class="w-msg">${esc(w.message||'')}</div>
+      ${w.action ? `<div class="w-action">${esc(w.action)}</div>` : ''}
+    </div>`;
+  }
+
+  function renderFix(fx) {
+    const f  = fx.fields||fx;
+    const st = f.Status||'pending';
+    const el = f.ExposureLow||0, eh = f.ExposureHigh||0;
+    return `<div class="fix-item">
+      <div class="fix-dot ${st}"></div>
+      <div class="fix-body">
+        <div class="fix-title">${esc(fmtFixType(f.FixType||''))}</div>
+        <div class="fix-desc">${esc(f.Description||'')}</div>
+        <div class="fix-pills">
+          ${f.Severity ? `<span class="pill pill-${f.Severity}">${f.Severity}</span>` : ''}
+          <span class="pill pill-${st}">${st}</span>
+          ${el||eh ? `<span class="pill pill-exposure">${fmtMoney(el)}–${fmtMoney(eh)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function scoreLabel(s) { return s>=90?'Compliant — safe to send':s>=70?'Minor issues — review warnings':s>=50?'Moderate risk — action required':'High risk — do not send'; }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '—'; }
+  function fmtFixType(s) { return s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
+  function fmtMoney(n) { if(!n)return'£0'; if(n>=1000000)return`£${(n/1e6).toFixed(1)}m`; if(n>=1000)return`£${(n/1000).toFixed(0)}k`; return`£${n}`; }
+  function parseJ(v) { if(!v)return null; if(typeof v==='object')return v; try{return JSON.parse(v);}catch{return null;} }
+  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function showError(msg) { document.getElementById('stateBox').innerHTML=`<div class="state-text" style="color:var(--red)">⚠️ ${esc(msg)}</div>`; }
+
+  load();
+</script>
+</body>
+</html>
