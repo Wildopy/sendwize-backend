@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Re-consent Builder — Sendwize</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #EA7317;
+      --orange-light: #FFF4EA;
+      --bg: #FAFAFA;
+      --white: #ffffff;
+      --border: #f0f0f0;
+      --border-mid: #e5e5e5;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --green: #16a34a;
+      --green-bg: #f0fdf4;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --red-bd: #fecaca;
+      --yellow: #d97706;
+      --yellow-bg: #fffbeb;
+      --yellow-bd: #fde68a;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 32px 20px 60px;
+    }
+
+    .container { max-width: 720px; margin: 0 auto; }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--muted); text-decoration: none;
+      margin-bottom: 20px; transition: color .15s;
+    }
+    .back-link:hover { color: var(--orange); }
+
+    .page-title    { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .page-subtitle { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 32px; }
+
+    /* Card */
+    .card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+    }
+    .card-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--orange); margin-bottom: 16px;
+    }
+
+    /* Audit banner */
+    .audit-banner {
+      display: none; align-items: center; gap: 14px;
+      background: var(--yellow-bg); border: 1px solid var(--yellow-bd);
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 20px;
+    }
+    .audit-banner.show { display: flex; }
+    .audit-banner-icon { font-size: 22px; flex-shrink: 0; }
+    .audit-banner-text { flex: 1; font-size: 13px; color: #78350f; line-height: 1.5; }
+    .audit-banner-text strong { font-weight: 700; }
+    .audit-use-btn {
+      background: var(--yellow); color: var(--white); border: none;
+      border-radius: var(--radius); padding: 8px 14px; font-size: 12px;
+      font-weight: 600; cursor: pointer; font-family: inherit;
+      white-space: nowrap; transition: background .15s;
+    }
+    .audit-use-btn:hover { background: #b45309; }
+
+    /* Form */
+    .form-group { margin-bottom: 18px; }
+    .form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    @media(max-width:500px){ .form-row { grid-template-columns: 1fr; } }
+
+    label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    .form-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 14px; font-family: inherit;
+      background: var(--white); color: var(--text); transition: border-color .15s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--orange); }
+    textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+    /* Tone selector */
+    .tone-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    @media(max-width:480px){ .tone-grid { grid-template-columns: 1fr 1fr; } }
+    .tone-opt {
+      border: 1px solid var(--border-mid); border-radius: var(--radius);
+      padding: 10px 8px; text-align: center; cursor: pointer;
+      transition: all .15s; background: var(--white);
+    }
+    .tone-opt:hover { border-color: var(--orange); }
+    .tone-opt.selected { border-color: var(--orange); background: var(--orange-light); }
+    .tone-opt input { display: none; }
+    .tone-emoji { font-size: 20px; display: block; margin-bottom: 4px; }
+    .tone-label { font-size: 12px; font-weight: 600; color: var(--text); }
+    .tone-desc  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%; padding: 13px 20px; background: var(--orange); color: var(--white);
+      border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background .15s; font-family: inherit;
+    }
+    .btn-primary:hover:not(:disabled) { background: #d4660f; }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+
+    .btn-secondary {
+      padding: 9px 18px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 13px; font-weight: 500;
+      background: var(--white); color: var(--text); cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Error */
+    .error-box {
+      display: none; background: var(--red-bg); border: 1px solid var(--red-bd);
+      border-radius: var(--radius); padding: 14px; margin-bottom: 18px;
+      font-size: 13px; color: var(--red);
+    }
+    .error-box.show { display: block; }
+
+    /* Loading */
+    .loading { display: none; text-align: center; padding: 56px 20px; }
+    .loading.show { display: block; }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid var(--border);
+      border-top-color: var(--orange); border-radius: 50%;
+      animation: spin .8s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: var(--muted); }
+    .loading-sub  { font-size: 12px; color: var(--muted); margin-top: 5px; opacity: .7; }
+
+    /* Results */
+    .results { display: none; }
+    .results.show { display: block; }
+
+    .new-build-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 18px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 13px; font-weight: 500;
+      background: var(--white); color: var(--text); cursor: pointer;
+      font-family: inherit; transition: all .15s; margin-bottom: 24px;
+    }
+    .new-build-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Email output */
+    .email-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; flex-wrap: wrap; gap: 10px;
+    }
+    .email-meta-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--orange); }
+    .email-actions { display: flex; gap: 8px; }
+
+    .email-subject {
+      font-size: 14px; font-weight: 700; padding: 12px 14px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius) var(--radius) 0 0;
+      border-bottom: none; color: var(--text);
+    }
+    .email-subject-label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+
+    .email-body {
+      white-space: pre-wrap; font-size: 14px; line-height: 1.8;
+      padding: 16px; background: var(--white);
+      border: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius);
+      color: var(--text); min-height: 200px;
+    }
+
+    /* PECR checklist */
+    .checklist { display: flex; flex-direction: column; gap: 8px; }
+    .check-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 13px; color: var(--text); line-height: 1.4;
+    }
+    .check-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    /* Regenerate options */
+    .regen-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+    /* Copy success */
+    .copy-success { font-size: 12px; color: var(--green); display: none; }
+    .copy-success.show { display: inline; }
+
+    /* Contact count display */
+    .contact-count-display {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--orange-light); border: 1px solid #fde5c7;
+      border-radius: 4px; padding: 3px 10px; font-size: 12px;
+      font-weight: 600; color: var(--orange);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <a href="javascript:history.back()" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+    Dashboard
+  </a>
+
+  <h1 class="page-title">Re-consent Builder</h1>
+  <p class="page-subtitle">Generate a PECR-compliant re-consent email for contacts whose consent is expiring or expired. Claude writes it — you send it.</p>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Audit banner — shown if we detect a recent audit with risky contacts -->
+  <div class="audit-banner" id="auditBanner">
+    <div class="audit-banner-icon">⚠️</div>
+    <div class="audit-banner-text">
+      Your last database audit found <strong id="auditRiskyCount">0</strong> contacts needing re-consent.
+      <br>Use that number as your contact count below.
+    </div>
+    <button class="audit-use-btn" onclick="useAuditCount()">Use this count</button>
+  </div>
+
+  <!-- Form -->
+  <div id="formSection">
+
+    <div class="card">
+      <div class="card-label">Your Details</div>
+      <div class="form-row">
+        <div class="form-group" style="margin:0">
+          <label for="companyName">Company Name <span style="color:var(--orange)">*</span></label>
+          <input type="text" id="companyName" placeholder="e.g. Acme Ltd" />
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="industry">Industry</label>
+          <select id="industry">
+            <option value="">— Select —</option>
+            <option>Retail &amp; E-commerce</option>
+            <option>Financial Services</option>
+            <option>Healthcare</option>
+            <option>Travel &amp; Hospitality</option>
+            <option>Technology &amp; SaaS</option>
+            <option>Professional Services</option>
+            <option>Charity &amp; Non-profit</option>
+            <option>Education</option>
+            <option>Property &amp; Real Estate</option>
+            <option>Food &amp; Beverage</option>
+            <option>General Business</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="margin:0">
+          <label for="contactCount">Number of Contacts</label>
+          <input type="number" id="contactCount" placeholder="e.g. 1200" min="1" />
+          <div class="form-hint">How many contacts are you re-consenting?</div>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="consentAge">Why are you re-consenting?</label>
+          <select id="consentAge">
+            <option value="2+ years old">Consent is 2+ years old</option>
+            <option value="source unclear">Source or method unclear</option>
+            <option value="GDPR refresh">General GDPR/PECR refresh</option>
+            <option value="new product">Marketing new products/services</option>
+            <option value="business change">Business name or ownership change</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="whatYouOffer">What do you offer? <span style="font-weight:400;color:var(--muted)">(optional — helps Claude personalise)</span></label>
+        <textarea id="whatYouOffer" placeholder="e.g. We sell eco-friendly homeware and send monthly offers and inspiration to our customers…" style="min-height:60px;"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Email Tone</div>
+      <div class="tone-grid">
+        <label class="tone-opt selected" onclick="selectTone(this)">
+          <input type="radio" name="tone" value="professional" checked />
+          <span class="tone-emoji">💼</span>
+          <span class="tone-label">Professional</span>
+          <span class="tone-desc">Formal, clear</span>
+        </label>
+        <label class="tone-opt" onclick="selectTone(this)">
+          <input type="radio" name="tone" value="friendly" />
+          <span class="tone-emoji">😊</span>
+          <span class="tone-label">Friendly</span>
+          <span class="tone-desc">Warm, approachable</span>
+        </label>
+        <label class="tone-opt" onclick="selectTone(this)">
+          <input type="radio" name="tone" value="concise" />
+          <span class="tone-emoji">⚡</span>
+          <span class="tone-label">Concise</span>
+          <span class="tone-desc">Short, direct</span>
+        </label>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="submitBtn" onclick="generate()">
+      Generate Re-consent Email
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loadingSection">
+    <div class="spinner"></div>
+    <div class="loading-text">Claude is writing your re-consent email…</div>
+    <div class="loading-sub">Checking PECR requirements and generating compliant copy</div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="resultsSection">
+
+    <button class="new-build-btn" onclick="resetForm()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
+      Start Over
+    </button>
+
+    <!-- Email output -->
+    <div class="card">
+      <div class="email-meta">
+        <div class="email-meta-label">Generated Email</div>
+        <div class="email-actions">
+          <button class="btn-secondary" onclick="copyEmail()">Copy to clipboard</button>
+          <span class="copy-success" id="copySuccess">✓ Copied!</span>
+        </div>
+      </div>
+      <div class="email-subject" id="emailSubjectBlock">
+        <div class="email-subject-label">SUBJECT</div>
+        <div id="emailSubjectText"></div>
+      </div>
+      <div class="email-body" id="emailBody"></div>
+
+      <div class="regen-row">
+        <button class="btn-secondary" onclick="regenerate('more formal')">Make more formal</button>
+        <button class="btn-secondary" onclick="regenerate('more friendly')">Make friendlier</button>
+        <button class="btn-secondary" onclick="regenerate('shorter')">Make shorter</button>
+        <button class="btn-secondary" onclick="regenerate('different subject line')">New subject line</button>
+      </div>
+    </div>
+
+    <!-- PECR compliance checklist -->
+    <div class="card">
+      <div class="card-label">PECR Compliance Checklist</div>
+      <div class="checklist">
+        <div class="check-item"><span class="check-icon">✅</span><span>Explains why contact is receiving this email (consent refresh, not new marketing)</span></div>
+        <div class="check-item"><span class="check-icon">✅</span><span>Clear opt-in mechanism described — cannot be pre-ticked or assumed</span></div>
+        <div class="check-item"><span class="check-icon">✅</span><span>Easy opt-out / unsubscribe option included</span></div>
+        <div class="check-item"><span class="check-icon">✅</span><span>Privacy policy link placeholder included</span></div>
+        <div class="check-item"><span class="check-icon">✅</span><span>Sender identity clearly stated</span></div>
+        <div class="check-item"><span class="check-icon">⚠️</span><span>Replace all <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:12px;">[PLACEHOLDER]</code> text before sending</span></div>
+        <div class="check-item"><span class="check-icon">⚠️</span><span>Add your registered postal address to the email footer before sending</span></div>
+        <div class="check-item"><span class="check-icon">⚠️</span><span>Contacts who don't respond should be suppressed after your deadline passes</span></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const userId     = new URLSearchParams(window.location.search).get('userId') || '';
+  const VERCEL_URL = window.location.origin;
+
+  let lastParams = null;   // store for regenerate calls
+  let fullEmailText = '';  // store full text for clipboard
+
+  // ─── Check for recent audit data ──────────────────────────────────
+  // Tries to pull the last audit for this user to pre-fill contact count
+  async function checkRecentAudit() {
+    if (!userId) return;
+    try {
+      const resp = await fetch(`${VERCEL_URL}/api/data?action=report&type=audit&recordId=latest&userId=${encodeURIComponent(userId)}`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const risky  = data.Risky  || data.risky  || 0;
+      const danger = data.Danger || data.danger || 0;
+      const total  = risky + danger;
+      if (total > 0) {
+        document.getElementById('auditRiskyCount').textContent = total.toLocaleString();
+        document.getElementById('auditBanner').classList.add('show');
+      }
+    } catch { /* silent — banner is optional */ }
+  }
+
+  function useAuditCount() {
+    const count = document.getElementById('auditRiskyCount').textContent.replace(/,/g, '');
+    document.getElementById('contactCount').value = count;
+    document.getElementById('auditBanner').classList.remove('show');
+  }
+
+  // ─── Tone selector ────────────────────────────────────────────────
+  function selectTone(el) {
+    document.querySelectorAll('.tone-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function getSelectedTone() {
+    const checked = document.querySelector('.tone-opt.selected input');
+    return checked ? checked.value : 'professional';
+  }
+
+  // ─── Generate ─────────────────────────────────────────────────────
+  async function generate(modifier) {
+    clearError();
+
+    const companyName  = document.getElementById('companyName').value.trim();
+    const industry     = document.getElementById('industry').value;
+    const contactCount = document.getElementById('contactCount').value.trim();
+    const consentAge   = document.getElementById('consentAge').value;
+    const whatYouOffer = document.getElementById('whatYouOffer').value.trim();
+    const tone         = getSelectedTone();
+
+    if (!companyName) { showError('Please enter your company name.'); return; }
+
+    // Build industry string
+    const industryStr = [
+      industry || 'General business',
+      whatYouOffer ? `— ${whatYouOffer}` : ''
+    ].filter(Boolean).join(' ');
+
+    lastParams = { companyName, industry: industryStr, contactCount: contactCount || null, consentAge, tone, modifier };
+
+    document.getElementById('formSection').style.display  = 'none';
+    document.getElementById('resultsSection').classList.remove('show');
+    document.getElementById('loadingSection').classList.add('show');
+
+    try {
+      // The API accepts: companyName, industry, contactCount
+      // We enrich industry with tone, reason and offer details so Claude gets full context
+      const enrichedIndustry = [
+        industryStr,
+        `Reason for re-consent: ${consentAge}`,
+        `Tone: ${tone}`,
+        modifier ? `Please ${modifier}` : ''
+      ].filter(Boolean).join('. ');
+
+      const resp = await fetch(`${VERCEL_URL}/api/generate-reconsent-email`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          companyName,
+          industry: enrichedIndustry,
+          contactCount: contactCount || 'multiple'
+        })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      renderEmail(data.email || '');
+
+    } catch (err) {
+      showError('Generation failed: ' + err.message);
+      document.getElementById('formSection').style.display = 'block';
+      document.getElementById('loadingSection').classList.remove('show');
+    }
+  }
+
+  function regenerate(modifier) {
+    generate(modifier);
+  }
+
+  // ─── Render email ─────────────────────────────────────────────────
+  function renderEmail(text) {
+    fullEmailText = text;
+
+    // Split subject from body — API returns "Subject: ...\n\nBody..."
+    let subject = '';
+    let body    = text;
+
+    const subjectMatch = text.match(/^Subject:\s*(.+?)(?:\n|$)/i);
+    if (subjectMatch) {
+      subject = subjectMatch[1].trim();
+      body    = text.replace(/^Subject:\s*.+?(\n+)/i, '').trim();
+    }
+
+    document.getElementById('emailSubjectText').textContent = subject || '(No subject line generated)';
+    document.getElementById('emailBody').textContent        = body;
+
+    document.getElementById('loadingSection').classList.remove('show');
+    document.getElementById('resultsSection').classList.add('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ─── Copy ─────────────────────────────────────────────────────────
+  async function copyEmail() {
+    try {
+      await navigator.clipboard.writeText(fullEmailText);
+      const el = document.getElementById('copySuccess');
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2200);
+    } catch {}
+  }
+
+  // ─── Reset ────────────────────────────────────────────────────────
+  function resetForm() {
+    document.getElementById('resultsSection').classList.remove('show');
+    document.getElementById('formSection').style.display = 'block';
+    clearError();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ─── Helpers ──────────────────────────────────────────────────────
+  function showError(msg) { const e = document.getElementById('errorBox'); e.textContent = msg; e.classList.add('show'); }
+  function clearError()   { document.getElementById('errorBox').classList.remove('show'); }
+
+  // ─── Init ─────────────────────────────────────────────────────────
+  checkRecentAudit();
+</script>
+</body>
+</html>
