@@ -1,416 +1,269 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vendor Stack Report - Sendwize</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vendor Check Report — Sendwize</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange:#EA7317; --orange-light:#FFF4EA;
+      --bg:#FAFAFA; --white:#fff; --border:#f0f0f0; --border-mid:#e5e5e5;
+      --text:#1a1a1a; --muted:#6b7280;
+      --green:#16a34a; --green-bg:#f0fdf4; --green-bd:#bbf7d0;
+      --yellow:#d97706; --yellow-bg:#fffbeb; --yellow-bd:#fde68a;
+      --red:#dc2626; --red-bg:#fef2f2; --red-bd:#fecaca;
+      --blue:#1d4ed8; --blue-bg:#eff6ff; --blue-bd:#bfdbfe;
+      --radius:8px;
     }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: #FAFAFA;
-      line-height: 1.6;
-      color: #000;
-    }
-    
-    .header {
-      background: white;
-      padding: 20px 40px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    
-    .logo {
-      font-size: 24px;
-      font-weight: 700;
-      color: #EA7317;
-      text-transform: lowercase;
-    }
-    
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 40px 20px;
-    }
-    
-    .report-header {
-      background: white;
-      padding: 40px;
-      border-radius: 8px;
-      border: 1px solid #f0f0f0;
-      margin-bottom: 30px;
-      text-align: center;
-    }
-    
-    .report-title {
-      font-size: 14px;
-      color: #EA7317;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 15px;
-    }
-    
-    .report-heading {
-      font-size: 32px;
-      font-weight: 700;
-      color: #000;
-      margin-bottom: 10px;
-    }
-    
-    .vendor-list {
-      font-size: 16px;
-      color: #666;
-      margin-top: 10px;
-    }
-    
-    .score-display {
-      font-size: 72px;
-      font-weight: 700;
-      margin: 30px 0;
-    }
-    
-    .score-high { color: #065F46; }
-    .score-medium { color: #EA7317; }
-    .score-low { color: #991B1B; }
-    
-    .report-meta {
-      color: #666;
-      font-size: 14px;
-      margin-top: 20px;
-    }
-    
-    .vendor-card {
-      background: white;
-      border-radius: 8px;
-      border: 1px solid #f0f0f0;
-      margin-bottom: 20px;
-      overflow: hidden;
-    }
-    
-    .vendor-header {
-      padding: 25px 30px;
-      background: #FAFAFA;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    
-    .vendor-name {
-      font-size: 24px;
-      font-weight: 700;
-      color: #000;
-      margin-bottom: 10px;
-    }
-    
-    .vendor-score {
-      display: inline-block;
-      padding: 6px 14px;
-      border-radius: 4px;
-      font-size: 14px;
-      font-weight: 600;
-      margin-right: 10px;
-    }
-    
-    .score-badge-high { background: #D1FAE5; color: #065F46; }
-    .score-badge-medium { background: #FEF3C7; color: #92400E; }
-    .score-badge-low { background: #FEE2E2; color: #991B1B; }
-    
-    .vendor-category {
-      font-size: 13px;
-      color: #999;
-      margin-top: 5px;
-    }
-    
-    .ai-badge {
-      display: inline-block;
-      background: #DBEAFE;
-      color: #1E40AF;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-left: 10px;
-    }
-    
-    .vendor-body {
-      padding: 30px;
-    }
-    
-    .detail-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 15px 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    
-    .detail-item:last-child {
-      border-bottom: none;
-    }
-    
-    .detail-icon {
-      font-size: 20px;
-      min-width: 24px;
-    }
-    
-    .detail-content {
-      flex: 1;
-    }
-    
-    .detail-label {
-      font-weight: 600;
-      color: #000;
-      margin-bottom: 4px;
-    }
-    
-    .detail-text {
-      color: #666;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    
-    .action-items {
-      background: #FFF7ED;
-      padding: 20px;
-      border-radius: 8px;
-      margin-top: 20px;
-    }
-    
-    .action-items-title {
-      font-weight: 700;
-      color: #000;
-      margin-bottom: 15px;
-      font-size: 16px;
-    }
-    
-    .action-items ol {
-      margin-left: 20px;
-      color: #666;
-    }
-    
-    .action-items li {
-      margin: 8px 0;
-      line-height: 1.6;
-    }
-    
-    .warning-box {
-      background: #FEF3C7;
-      border-left: 4px solid #F59E0B;
-      padding: 20px;
-      margin: 20px 0;
-      border-radius: 4px;
-    }
-    
-    .warning-box p {
-      color: #92400E;
-      line-height: 1.6;
-    }
-    
-    .btn-primary {
-      background: #EA7317;
-      color: white;
-      padding: 14px 32px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      display: inline-block;
-      margin: 10px 5px;
-    }
-    
-    .btn-primary:hover {
-      background: #d66614;
-    }
-    
-    .btn-secondary {
-      background: white;
-      color: #666;
-      padding: 14px 32px;
-      border: 1px solid #E5E5E5;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      display: inline-block;
-      margin: 10px 5px;
-    }
-    
-    .btn-secondary:hover {
-      border-color: #EA7317;
-      color: #EA7317;
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 60px;
-      color: #666;
-    }
-    
-    .actions {
-      text-align: center;
-      margin: 40px 0;
-    }
-    
-    @media print {
-      .actions { display: none; }
-      .header { border: none; }
-    }
+    body { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    .topnav { background:var(--white); border-bottom:1px solid var(--border); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+    .topnav-logo { font-size:18px; font-weight:800; color:var(--orange); letter-spacing:-.5px; }
+    .nav-actions { display:flex; gap:8px; align-items:center; }
+    .btn-ghost { padding:7px 14px; border:1px solid var(--border-mid); border-radius:var(--radius); font-size:13px; font-weight:500; background:var(--white); color:var(--muted); cursor:pointer; font-family:inherit; transition:all .15s; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+    .btn-ghost:hover { border-color:var(--orange); color:var(--orange); }
+    .btn-primary { padding:7px 16px; border-radius:var(--radius); font-size:13px; font-weight:600; background:var(--orange); color:var(--white); border:none; cursor:pointer; font-family:inherit; transition:background .15s; }
+    .btn-primary:hover { background:#d4660f; }
+
+    .container { max-width:860px; margin:0 auto; padding:36px 20px 80px; }
+
+    .state-box { text-align:center; padding:100px 20px; }
+    .spinner { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 14px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .state-text { font-size:14px; color:var(--muted); }
+
+    .hero { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:32px; margin-bottom:16px; }
+    .hero-eyebrow { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:10px; }
+    .hero-title { font-size:28px; font-weight:800; line-height:1.2; margin-bottom:8px; }
+    .hero-meta { font-size:13px; color:var(--muted); margin-bottom:22px; }
+    .verdict-badge { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:6px; font-size:14px; font-weight:700; border:1px solid; }
+    .verdict-pass { background:var(--green-bg); color:var(--green); border-color:var(--green-bd); }
+    .verdict-warn { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow-bd); }
+    .verdict-fail { background:var(--red-bg); color:var(--red); border-color:var(--red-bd); }
+
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    @media(max-width:580px){ .metrics { grid-template-columns:repeat(2,1fr); } }
+    .metric { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:18px 16px; text-align:center; }
+    .metric-val { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .metric-lbl { font-size:11px; color:var(--muted); font-weight:500; }
+
+    .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
+    .card-label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; }
+
+    /* Vendor cards */
+    .vendor-list { display:flex; flex-direction:column; gap:12px; }
+    .vendor-card { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .vendor-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:var(--bg); border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap; }
+    .vendor-name-row { display:flex; align-items:center; gap:8px; }
+    .vendor-name { font-size:14px; font-weight:700; }
+    .vendor-ai-badge { font-size:10px; padding:2px 7px; border-radius:3px; font-weight:600; background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue-bd); }
+    .vendor-cat { font-size:12px; color:var(--muted); }
+    .vendor-score { display:flex; align-items:center; gap:8px; }
+    .score-num { font-size:18px; font-weight:800; }
+    .score-label { font-size:11px; color:var(--muted); }
+    .vendor-body { padding:14px 16px; }
+    .detail-list { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    .detail-item { display:flex; align-items:flex-start; gap:8px; font-size:13px; }
+    .detail-icon { flex-shrink:0; margin-top:1px; }
+    .detail-icon.pass { color:var(--green); }
+    .detail-icon.warn { color:var(--yellow); }
+    .detail-icon.info { color:var(--muted); }
+    .detail-text { line-height:1.4; }
+    .detail-text strong { color:var(--text); }
+    .detail-text span { color:var(--muted); }
+    .action-list { display:flex; flex-direction:column; gap:4px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+    .action-item { font-size:12px; color:var(--text); display:flex; gap:6px; line-height:1.4; }
+    .action-item::before { content:'→'; color:var(--orange); font-weight:700; flex-shrink:0; }
+    .vendor-links { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .vendor-link { font-size:12px; color:var(--orange); text-decoration:none; border:1px solid var(--orange-light); border-radius:4px; padding:3px 10px; background:var(--orange-light); transition:all .15s; }
+    .vendor-link:hover { background:var(--orange); color:var(--white); }
+
+    /* Fixes */
+    .fix-list { display:flex; flex-direction:column; gap:8px; }
+    .fix-item { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid var(--border); border-radius:var(--radius); }
+    .fix-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+    .fix-dot.pending   { background:var(--yellow); }
+    .fix-dot.completed { background:var(--green); }
+    .fix-dot.dismissed { background:#d1d5db; }
+    .fix-body { flex:1; }
+    .fix-title { font-size:13px; font-weight:600; margin-bottom:3px; }
+    .fix-desc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
+    .fix-pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .pill { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:500; }
+    .pill-critical { background:var(--red-bg);    color:var(--red); }
+    .pill-high     { background:var(--yellow-bg); color:var(--yellow); }
+    .pill-medium   { background:#fff7ed;           color:#ea580c; }
+    .pill-low      { background:var(--bg);         color:var(--muted); border:1px solid var(--border-mid); }
+    .pill-exposure { background:var(--orange-light); color:var(--orange); }
+    .pill-pending  { background:var(--yellow-bg); color:var(--yellow); }
+    .pill-completed{ background:var(--green-bg);  color:var(--green); }
+    .pill-dismissed{ background:var(--bg); color:var(--muted); border:1px solid var(--border-mid); }
+
+    .empty-state { text-align:center; padding:28px 20px; color:var(--muted); font-size:13px; }
+    .empty-icon  { font-size:24px; margin-bottom:8px; }
+
+    @media print { .topnav { display:none; } .container { padding:20px; } }
   </style>
 </head>
 <body>
+  <nav class="topnav">
+    <div class="topnav-logo">sendwize</div>
+    <div class="nav-actions">
+      <a href="javascript:history.back()" class="btn-ghost">← Dashboard</a>
+      <button class="btn-primary" onclick="window.print()">Export PDF</button>
+    </div>
+  </nav>
 
-  <div class="header">
-    <div class="logo">sendwize</div>
+  <div class="container">
+    <div class="state-box" id="stateBox">
+      <div class="spinner"></div>
+      <div class="state-text">Loading report…</div>
+    </div>
+    <div id="report" style="display:none;"></div>
   </div>
-  
-  <div class="container" id="report-container">
-    <p class="loading">Loading report...</p>
-  </div>
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const recordId = urlParams.get('id');
-    
-    if (!recordId) {
-      document.getElementById('report-container').innerHTML = 
-        '<div class="vendor-card"><div class="vendor-body"><h2>No report ID provided</h2><p>Please access this page from your dashboard.</p></div></div>';
-    } else {
-      loadReport();
-    }
-    
-    async function loadReport() {
-      try {
-        const response = await fetch(`/api/get-report?recordId=${recordId}&type=vendor`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to load report');
-        }
-        
-        const data = await response.json();
-        displayReport(data);
-        
-      } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('report-container').innerHTML = 
-          '<div class="vendor-card"><div class="vendor-body"><h2>Error loading report</h2><p>Please try again or contact support.</p></div></div>';
-      }
-    }
-    
-    function displayReport(data) {
-      const fields = data.fields;
-      const avgScore = fields.AverageScore || 0;
-      const vendorCount = fields.VendorCount || 0;
-      const vendorsChecked = fields.VendorsChecked || 'No vendors';
-      const checkDate = fields.CheckDate ? new Date(fields.CheckDate).toLocaleDateString() : 'Unknown';
-      
-      let results = [];
-      try {
-        results = JSON.parse(fields.Results || '[]');
-      } catch (e) {
-        console.error('Error parsing results:', e);
-      }
-      
-      let scoreClass = avgScore >= 80 ? 'score-high' : avgScore >= 60 ? 'score-medium' : 'score-low';
-      let scoreMessage = avgScore >= 85 ? 'Excellent Stack Compliance' : avgScore >= 70 ? 'Good Compliance' : avgScore >= 50 ? 'Needs Improvement' : 'Critical Issues';
-      
-      const html = `
-        <div class="report-header">
-          <div class="report-title">Vendor Stack Compliance Report</div>
-          <h1 class="report-heading">${vendorCount} Vendor${vendorCount !== 1 ? 's' : ''} Checked</h1>
-          <p class="vendor-list">${escapeHtml(vendorsChecked)}</p>
-          <div class="score-display ${scoreClass}">
-            ${avgScore}<span style="font-size: 40px; color: #999;">/100</span>
-          </div>
-          <p style="font-size: 18px; font-weight: 600; color: #666;">${scoreMessage}</p>
-          <div class="report-meta">Checked on ${checkDate}</div>
-        </div>
-        
-        ${results.map((vendor, idx) => createVendorCard(vendor, idx)).join('')}
-        
-        <div class="actions">
-          <button class="btn-primary" onclick="window.print()">📄 Download PDF</button>
-          <button class="btn-secondary" onclick="window.close()">Close</button>
-        </div>
-      `;
-      
-      document.getElementById('report-container').innerHTML = html;
-    }
-    
-    function createVendorCard(vendor, idx) {
-      const scoreClass = vendor.score >= 80 ? 'score-badge-high' : vendor.score >= 60 ? 'score-badge-medium' : 'score-badge-low';
-      
-      return `
-        <div class="vendor-card">
-          <div class="vendor-header">
-            <div class="vendor-name">
-              ${escapeHtml(vendor.name)}
-              ${vendor.isAI ? '<span class="ai-badge">🤖 AI Analysis</span>' : ''}
-            </div>
-            <div>
-              <span class="vendor-score ${scoreClass}">${vendor.score}/100</span>
-              <span class="vendor-category">${escapeHtml(vendor.category)}</span>
-            </div>
-          </div>
-          
-          <div class="vendor-body">
-            ${vendor.isAI ? `
-              <div class="warning-box">
-                <p><strong>⚠️ Automated Analysis</strong><br>
-                This vendor isn't in our verified database. Claude AI analyzed their public information. 
-                We recommend manually verifying this information with the vendor directly.</p>
-              </div>
-            ` : ''}
-            
-            <div style="margin: 20px 0;">
-              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 15px;">Compliance Status</h3>
-              ${(vendor.details || []).map(detail => {
-                const icon = detail.status === 'pass' ? '✅' : detail.status === 'warning' ? '⚠️' : 'ℹ️';
-                return `
-                  <div class="detail-item">
-                    <div class="detail-icon">${icon}</div>
-                    <div class="detail-content">
-                      <div class="detail-label">${escapeHtml(detail.label)}</div>
-                      <div class="detail-text">${escapeHtml(detail.description)}</div>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-            
-            ${vendor.actionItems && vendor.actionItems.length > 0 ? `
-              <div class="action-items">
-                <div class="action-items-title">📋 Recommended Actions</div>
-                <ol>
-                  ${vendor.actionItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
-                </ol>
-              </div>
-            ` : ''}
-            
-            ${vendor.links && (vendor.links.dpa || vendor.links.privacy) ? `
-              <div style="margin-top: 25px; padding-top: 25px; border-top: 1px solid #f0f0f0;">
-                ${vendor.links.dpa ? `<a href="${escapeHtml(vendor.links.dpa)}" target="_blank" class="btn-secondary" style="text-decoration: none;">View DPA →</a>` : ''}
-                ${vendor.links.privacy ? `<a href="${escapeHtml(vendor.links.privacy)}" target="_blank" class="btn-secondary" style="text-decoration: none;">Privacy Policy →</a>` : ''}
-              </div>
-            ` : ''}
-          </div>
-        </div>
-      `;
-    }
-    
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text || '';
-      return div.innerHTML;
-    }
-  </script>
+<script>
+  const p        = new URLSearchParams(window.location.search);
+  const recordId = p.get('id') || p.get('recordId');
+  const userId   = p.get('userId');
+  const BASE     = window.location.origin;
 
+  async function load() {
+    if (!recordId) { return showError('No report ID provided.'); }
+    try {
+      const [rr, fr] = await Promise.all([
+        fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=vendor`),
+        userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
+      ]);
+      if (!rr.ok) throw new Error('Report not found');
+      const rd = await rr.json();
+      const fd = fr && fr.ok ? await fr.json() : null;
+      render(rd.fields || rd, fd);
+    } catch(e) { showError(e.message); }
+  }
+
+  function render(f, fd) {
+    const date    = fmtDate(f.CheckDate);
+    const results = parseJ(f.Results) || {};
+    const vendors = results.results || parseJ(f.Vendors) || [];
+
+    const total      = vendors.length;
+    const noDpa      = vendors.filter(v => !v.links?.dpa && !(v.details||[]).some(d=>d.status==='pass'&&d.label?.toLowerCase().includes('dpa'))).length;
+    const highRisk   = vendors.filter(v => (v.score||0) < 50).length;
+    const avgScore   = total ? Math.round(vendors.reduce((s,v)=>s+(v.score||0),0)/total) : 0;
+
+    const vc = highRisk === 0 && noDpa === 0 ? 'pass' : highRisk <= 1 || noDpa <= 1 ? 'warn' : 'fail';
+    const vi = vc==='pass'?'✅':vc==='warn'?'⚠️':'🚫';
+    const verdictText = vc==='pass' ? 'All Vendors Compliant' : vc==='warn' ? 'Issues Found' : 'Urgent Action Required';
+    const sc = avgScore >= 70 ? 'var(--green)' : avgScore >= 50 ? 'var(--yellow)' : 'var(--red)';
+
+    const allFixes = fd?.fixes || fd?.records || [];
+    const fixes = allFixes.filter(x => {
+      const xf = x.fields||x;
+      return xf.SourceRecordID === recordId || xf.Tool === 'Vendor Checker';
+    });
+    const pending   = fixes.filter(x=>(x.fields||x).Status==='pending').length;
+    const completed = fixes.filter(x=>(x.fields||x).Status==='completed').length;
+
+    document.getElementById('report').innerHTML = `
+      <div class="hero">
+        <div class="hero-eyebrow">Vendor Check Report</div>
+        <div class="hero-title">${total} Vendor${total!==1?'s':''} Checked</div>
+        <div class="hero-meta">${date}</div>
+        <div class="verdict-badge verdict-${vc}">${vi} ${verdictText}</div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric"><div class="metric-val" style="color:${sc}">${avgScore}/100</div><div class="metric-lbl">Avg Compliance Score</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--red)">${noDpa}</div><div class="metric-lbl">Missing DPA</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--yellow)">${pending}</div><div class="metric-lbl">Fixes Pending</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--green)">${completed}</div><div class="metric-lbl">Fixes Done</div></div>
+      </div>
+
+      ${vendors.length ? `
+      <div class="card">
+        <div class="card-label">Vendor Results (${vendors.length})</div>
+        <div class="vendor-list">${vendors.map(renderVendor).join('')}</div>
+      </div>` : `
+      <div class="card">
+        <div class="card-label">Vendors</div>
+        <div class="empty-state"><div class="empty-icon">📋</div>No vendor data available</div>
+      </div>`}
+
+      ${fixes.length ? `
+      <div class="card">
+        <div class="card-label">Compliance Fixes</div>
+        <div class="fix-list">${fixes.map(renderFix).join('')}</div>
+      </div>` : ''}
+    `;
+
+    document.getElementById('stateBox').style.display = 'none';
+    document.getElementById('report').style.display   = 'block';
+  }
+
+  function renderVendor(v) {
+    const score = v.score || 0;
+    const sc = score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+    const details     = v.details     || [];
+    const actionItems = v.actionItems || [];
+
+    return `<div class="vendor-card">
+      <div class="vendor-header">
+        <div>
+          <div class="vendor-name-row">
+            <span class="vendor-name">${esc(v.name||'')}</span>
+            ${v.isAI ? `<span class="vendor-ai-badge">AI tool</span>` : ''}
+          </div>
+          <div class="vendor-cat">${esc(v.category||'')}</div>
+        </div>
+        <div class="vendor-score">
+          <span class="score-num" style="color:${sc}">${score}</span>
+          <span class="score-label">/ 100</span>
+        </div>
+      </div>
+      <div class="vendor-body">
+        ${details.length ? `<div class="detail-list">${details.map(d=>`
+          <div class="detail-item">
+            <span class="detail-icon ${d.status||'info'}">${d.status==='pass'?'✓':d.status==='warning'?'⚠':'ℹ'}</span>
+            <div class="detail-text"><strong>${esc(d.label||'')}</strong>${d.description?` — <span>${esc(d.description)}</span>`:''}</div>
+          </div>`).join('')}
+        </div>` : ''}
+        ${actionItems.length ? `<div class="action-list">${actionItems.map(a=>`<div class="action-item">${esc(a)}</div>`).join('')}</div>` : ''}
+        ${(v.links?.dpa||v.links?.privacy) ? `<div class="vendor-links">
+          ${v.links.dpa     ? `<a href="${esc(v.links.dpa)}"     target="_blank" rel="noopener" class="vendor-link">View DPA</a>` : ''}
+          ${v.links.privacy ? `<a href="${esc(v.links.privacy)}" target="_blank" rel="noopener" class="vendor-link">Privacy Policy</a>` : ''}
+        </div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function renderFix(fx) {
+    const f  = fx.fields||fx;
+    const st = f.Status||'pending';
+    const el = f.ExposureLow||0, eh = f.ExposureHigh||0;
+    return `<div class="fix-item">
+      <div class="fix-dot ${st}"></div>
+      <div class="fix-body">
+        <div class="fix-title">${esc(fmtFixType(f.FixType||''))}</div>
+        <div class="fix-desc">${esc(f.Description||'')}</div>
+        <div class="fix-pills">
+          ${f.Severity ? `<span class="pill pill-${f.Severity}">${f.Severity}</span>` : ''}
+          <span class="pill pill-${st}">${st}</span>
+          ${el||eh ? `<span class="pill pill-exposure">${fmtMoney(el)}–${fmtMoney(eh)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '—'; }
+  function fmtFixType(s) { return s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
+  function fmtMoney(n) { if(!n)return'£0'; if(n>=1000000)return`£${(n/1e6).toFixed(1)}m`; if(n>=1000)return`£${(n/1000).toFixed(0)}k`; return`£${n}`; }
+  function parseJ(v) { if(!v)return null; if(typeof v==='object')return v; try{return JSON.parse(v);}catch{return null;} }
+  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function showError(msg) { document.getElementById('stateBox').innerHTML=`<div class="state-text" style="color:var(--red)">⚠️ ${esc(msg)}</div>`; }
+
+  load();
+</script>
 </body>
 </html>
