@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Compliance Report — Sendwize</title>
+  <title>Database Audit Report — Sendwize</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -13,7 +13,7 @@
       --green:#16a34a; --green-bg:#f0fdf4; --green-bd:#bbf7d0;
       --yellow:#d97706; --yellow-bg:#fffbeb; --yellow-bd:#fde68a;
       --red:#dc2626; --red-bg:#fef2f2; --red-bd:#fecaca;
-      --blue:#1d4ed8; --blue-bg:#eff6ff; --blue-bd:#bfdbfe;
+      --teal:#0d9488; --teal-bg:#f0fdfa; --teal-bd:#99f6e4;
       --radius:8px;
     }
     body { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
@@ -33,59 +33,65 @@
     @keyframes spin { to { transform:rotate(360deg); } }
     .state-text { font-size:14px; color:var(--muted); }
 
-    /* Hero */
     .hero { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:32px; margin-bottom:16px; }
     .hero-eyebrow { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:10px; }
     .hero-title { font-size:28px; font-weight:800; line-height:1.2; margin-bottom:8px; }
-    .hero-meta { font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:16px; flex-wrap:wrap; }
+    .hero-meta { font-size:13px; color:var(--muted); margin-bottom:22px; }
     .verdict-badge { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:6px; font-size:14px; font-weight:700; border:1px solid; }
     .verdict-pass { background:var(--green-bg); color:var(--green); border-color:var(--green-bd); }
     .verdict-warn { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow-bd); }
     .verdict-fail { background:var(--red-bg); color:var(--red); border-color:var(--red-bd); }
 
-    /* Score ring */
-    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
-    @media(max-width:580px){ .metrics { grid-template-columns:repeat(2,1fr); } }
-    .metric { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:18px 16px; text-align:center; }
-    .metric-val { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; }
-    .metric-lbl { font-size:11px; color:var(--muted); font-weight:500; }
+    /* Consent breakdown - 4 coloured tiles */
+    .consent-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    @media(max-width:580px){ .consent-grid { grid-template-columns:repeat(2,1fr); } }
+    .consent-tile { border-radius:var(--radius); padding:18px 16px; text-align:center; border:1px solid; }
+    .consent-tile.safe   { background:var(--green-bg);  border-color:var(--green-bd); }
+    .consent-tile.prob   { background:var(--teal-bg);   border-color:var(--teal-bd);  }
+    .consent-tile.risky  { background:var(--yellow-bg); border-color:var(--yellow-bd); }
+    .consent-tile.danger { background:var(--red-bg);    border-color:var(--red-bd);   }
+    .consent-val { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .consent-tile.safe   .consent-val { color:var(--green); }
+    .consent-tile.prob   .consent-val { color:var(--teal);  }
+    .consent-tile.risky  .consent-val { color:var(--yellow); }
+    .consent-tile.danger .consent-val { color:var(--red);   }
+    .consent-lbl  { font-size:11px; font-weight:500; }
+    .consent-tile.safe   .consent-lbl { color:#166534; }
+    .consent-tile.prob   .consent-lbl { color:#134e4a; }
+    .consent-tile.risky  .consent-lbl { color:#78350f; }
+    .consent-tile.danger .consent-lbl { color:#7f1d1d; }
+    .consent-pct { font-size:11px; margin-top:3px; opacity:.7; }
 
     .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
     .card-label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; }
 
-    /* Violations */
-    .violation-list { display:flex; flex-direction:column; gap:10px; }
-    .violation-item { padding:14px 16px; border-radius:var(--radius); border-left:3px solid; }
-    .violation-item.critical { background:var(--red-bg);    border-color:var(--red); }
-    .violation-item.high     { background:var(--yellow-bg); border-color:var(--yellow); }
-    .violation-item.medium   { background:#fff7ed;           border-color:#fb923c; }
-    .violation-item.low      { background:var(--bg);         border-color:var(--border-mid); }
-    .violation-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
-    .v-sev { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:3px; }
-    .violation-item.critical .v-sev { background:var(--red);    color:#fff; }
-    .violation-item.high     .v-sev { background:var(--yellow); color:#fff; }
-    .violation-item.medium   .v-sev { background:#fb923c;       color:#fff; }
-    .violation-item.low      .v-sev { background:var(--muted);  color:#fff; }
-    .v-reg  { font-size:11px; color:var(--muted); }
-    .v-issue { font-size:13px; font-weight:600; margin-bottom:4px; }
-    .v-location { font-size:12px; color:var(--muted); margin-bottom:4px; font-style:italic; }
-    .v-rec   { font-size:12px; color:var(--text); line-height:1.5; }
-    .v-rec::before { content:'→ '; font-weight:600; }
+    /* Progress bar */
+    .bar-wrap { margin-bottom:14px; }
+    .bar-label-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+    .bar-name  { font-size:13px; font-weight:500; }
+    .bar-count { font-size:12px; color:var(--muted); }
+    .bar-track { height:8px; background:var(--bg); border-radius:4px; overflow:hidden; border:1px solid var(--border); }
+    .bar-fill  { height:100%; border-radius:4px; transition:width .4s ease; }
+    .bar-fill.safe   { background:var(--green); }
+    .bar-fill.prob   { background:var(--teal);  }
+    .bar-fill.risky  { background:var(--yellow); }
+    .bar-fill.danger { background:var(--red);   }
 
-    /* Fixed version */
-    .fixed-copy { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:16px; font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word; max-height:320px; overflow-y:auto; }
-    .copy-actions { display:flex; gap:8px; margin-top:10px; }
-    .copy-success { font-size:12px; color:var(--green); display:none; }
-    .copy-success.show { display:inline; }
+    /* Expiry timeline */
+    .timeline-list { display:flex; flex-direction:column; gap:8px; }
+    .timeline-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); }
+    .timeline-period { font-size:13px; font-weight:600; }
+    .timeline-count  { font-size:13px; font-weight:700; color:var(--red); }
+    .timeline-note   { font-size:11px; color:var(--muted); }
 
-    /* Enforcement cases */
-    .case-list { display:flex; flex-direction:column; gap:8px; }
-    .case-item { padding:14px; border:1px solid var(--border); border-radius:var(--radius); }
-    .case-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:6px; flex-wrap:wrap; }
-    .case-company { font-size:13px; font-weight:700; }
-    .case-fine    { font-size:13px; font-weight:700; color:var(--red); }
-    .case-meta    { font-size:12px; color:var(--muted); margin-bottom:5px; }
-    .case-desc    { font-size:12px; color:var(--text); line-height:1.5; }
+    /* Source quality */
+    .source-list { display:flex; flex-direction:column; gap:8px; }
+    .source-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); }
+    .source-name  { font-size:13px; font-weight:500; }
+    .source-badge { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:600; }
+    .source-good { background:var(--green-bg); color:var(--green); }
+    .source-warn { background:var(--yellow-bg); color:var(--yellow); }
+    .source-bad  { background:var(--red-bg); color:var(--red); }
 
     /* Fixes */
     .fix-list { display:flex; flex-direction:column; gap:8px; }
@@ -141,7 +147,7 @@
     if (!recordId) { return showError('No report ID provided.'); }
     try {
       const [rr, fr] = await Promise.all([
-        fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=ai`),
+        fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=audit`),
         userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
       ]);
       if (!rr.ok) throw new Error('Report not found');
@@ -152,70 +158,96 @@
   }
 
   function render(f, fd) {
-    const date       = fmtDate(f.CheckDate);
-    const score      = f.RiskScore ?? 0;
-    const verdict    = f.Verdict || '';
-    const violations = parseJ(f.Violations) || [];
-    const cases      = parseJ(f.RelatedCases) || [];
-    const fixed      = f.FixedVersion || '';
-    const fileName   = f.FileName || 'Copy Check';
+    const date    = fmtDate(f.AuditDate);
+    const total   = f.Total || 0;
+    const safe    = f.Safe    || 0;
+    const prob    = f.Probably || 0;
+    const risky   = f.Risky  || 0;
+    const danger  = f.Danger || 0;
+    const results = parseJ(f.Results) || {};
 
-    // risk score: 100 = compliant, 0 = all violations. Invert for risk display.
-    const riskDisplay = 100 - score;
-    const sc = riskDisplay <= 25 ? 'var(--green)' : riskDisplay <= 60 ? 'var(--yellow)' : 'var(--red)';
-    const vc = riskDisplay <= 25 ? 'pass' : riskDisplay <= 60 ? 'warn' : 'fail';
+    const pct = n => total ? Math.round(n/total*100) : 0;
+    const dangerPct = pct(danger + risky);
+    const vc = dangerPct === 0 ? 'pass' : dangerPct <= 20 ? 'warn' : 'fail';
     const vi = vc==='pass' ? '✅' : vc==='warn' ? '⚠️' : '🚫';
+    const verdictText = vc==='pass' ? 'Database Healthy' : vc==='warn' ? 'Issues Detected' : 'Urgent Action Required';
+
+    const expiryTimeline = results.expiryTimeline || [];
+    const sourceQuality  = results.sourceQuality  || [];
 
     const allFixes = fd?.fixes || fd?.records || [];
     const fixes = allFixes.filter(x => {
       const xf = x.fields||x;
-      return xf.SourceRecordID === recordId || xf.Tool === 'AI Checker';
+      return xf.SourceRecordID === recordId || xf.Tool === 'Database Auditor';
     });
     const pending   = fixes.filter(x=>(x.fields||x).Status==='pending').length;
     const completed = fixes.filter(x=>(x.fields||x).Status==='completed').length;
 
     document.getElementById('report').innerHTML = `
       <div class="hero">
-        <div class="hero-eyebrow">AI Compliance Check Report</div>
-        <div class="hero-title">${esc(fileName)}</div>
-        <div class="hero-meta">
-          <span>${date}</span>
-          ${violations.length ? `<span>${violations.length} violation${violations.length!==1?'s':''} found</span>` : ''}
+        <div class="hero-eyebrow">Database Audit Report</div>
+        <div class="hero-title">${total.toLocaleString()} Contacts Audited</div>
+        <div class="hero-meta">${date}${f.CustomerType ? ` · ${esc(f.CustomerType)}` : ''}${f.ProductType ? ` · ${esc(f.ProductType)}` : ''}</div>
+        <div class="verdict-badge verdict-${vc}">${vi} ${verdictText}</div>
+      </div>
+
+      <div class="consent-grid">
+        <div class="consent-tile safe">
+          <div class="consent-val">${safe.toLocaleString()}</div>
+          <div class="consent-lbl">Safe to send</div>
+          <div class="consent-pct">${pct(safe)}%</div>
         </div>
-        <div class="verdict-badge verdict-${vc}">${vi} ${esc(verdict || (vc==='pass'?'Compliant':'Non-Compliant'))}</div>
+        <div class="consent-tile prob">
+          <div class="consent-val">${prob.toLocaleString()}</div>
+          <div class="consent-lbl">Probably OK</div>
+          <div class="consent-pct">${pct(prob)}%</div>
+        </div>
+        <div class="consent-tile risky">
+          <div class="consent-val">${risky.toLocaleString()}</div>
+          <div class="consent-lbl">Risky</div>
+          <div class="consent-pct">${pct(risky)}%</div>
+        </div>
+        <div class="consent-tile danger">
+          <div class="consent-val">${danger.toLocaleString()}</div>
+          <div class="consent-lbl">Do not send</div>
+          <div class="consent-pct">${pct(danger)}%</div>
+        </div>
       </div>
 
-      <div class="metrics">
-        <div class="metric"><div class="metric-val" style="color:${sc}">${score}/100</div><div class="metric-lbl">Compliance Score</div></div>
-        <div class="metric"><div class="metric-val" style="color:var(--red)">${violations.length}</div><div class="metric-lbl">Violations</div></div>
-        <div class="metric"><div class="metric-val" style="color:var(--yellow)">${pending}</div><div class="metric-lbl">Fixes Pending</div></div>
-        <div class="metric"><div class="metric-val" style="color:var(--green)">${completed}</div><div class="metric-lbl">Fixes Done</div></div>
+      <div class="card">
+        <div class="card-label">Consent Breakdown</div>
+        ${renderBar('Safe to send', safe, total, 'safe')}
+        ${renderBar('Probably OK', prob, total, 'prob')}
+        ${renderBar('Risky', risky, total, 'risky')}
+        ${renderBar('Danger — do not send', danger, total, 'danger')}
       </div>
 
-      ${violations.length ? `
+      ${expiryTimeline.length ? `
       <div class="card">
-        <div class="card-label">Violations Found (${violations.length})</div>
-        <div class="violation-list">${violations.map(renderViolation).join('')}</div>
-      </div>` : `
-      <div class="card">
-        <div class="card-label">Violations</div>
-        <div class="empty-state"><div class="empty-icon">✅</div>No violations found</div>
-      </div>`}
-
-      ${fixed ? `
-      <div class="card">
-        <div class="card-label">AI-Fixed Version</div>
-        <div class="fixed-copy" id="fixedCopy">${esc(fixed)}</div>
-        <div class="copy-actions">
-          <button class="btn-ghost" onclick="copyFixed()">Copy to clipboard</button>
-          <span class="copy-success" id="copyOk">✓ Copied!</span>
+        <div class="card-label">Consent Expiry Timeline</div>
+        <div class="timeline-list">${expiryTimeline.map(t=>`
+          <div class="timeline-item">
+            <div>
+              <div class="timeline-period">${esc(t.period||t.label||'')}</div>
+              ${t.description ? `<div class="timeline-note">${esc(t.description)}</div>` : ''}
+            </div>
+            <div class="timeline-count">${(t.count||0).toLocaleString()} contacts</div>
+          </div>`).join('')}
         </div>
       </div>` : ''}
 
-      ${cases.length ? `
+      ${sourceQuality.length ? `
       <div class="card">
-        <div class="card-label">Related ICO Enforcement Cases</div>
-        <div class="case-list">${cases.map(renderCase).join('')}</div>
+        <div class="card-label">Source Quality</div>
+        <div class="source-list">${sourceQuality.map(s=>{
+          const q = (s.quality||s.score||'').toString().toLowerCase();
+          const cls = q.includes('good')||q.includes('high') ? 'source-good' : q.includes('poor')||q.includes('low')||q.includes('bad') ? 'source-bad' : 'source-warn';
+          return `<div class="source-item">
+            <span class="source-name">${esc(s.source||s.name||'')}</span>
+            <span class="source-badge ${cls}">${esc(s.quality||s.score||'Unknown')}</span>
+          </div>`;
+        }).join('')}
+        </div>
       </div>` : ''}
 
       ${fixes.length ? `
@@ -229,27 +261,14 @@
     document.getElementById('report').style.display   = 'block';
   }
 
-  function renderViolation(v) {
-    const sev = (v.severity||'').toLowerCase();
-    return `<div class="violation-item ${sev||'low'}">
-      <div class="violation-header">
-        ${sev ? `<span class="v-sev">${sev}</span>` : ''}
-        ${v.regulation ? `<span class="v-reg">${esc(v.regulation)}</span>` : ''}
+  function renderBar(label, count, total, cls) {
+    const pct = total ? Math.round(count/total*100) : 0;
+    return `<div class="bar-wrap">
+      <div class="bar-label-row">
+        <span class="bar-name">${label}</span>
+        <span class="bar-count">${count.toLocaleString()} (${pct}%)</span>
       </div>
-      <div class="v-issue">${esc(v.issue||'')}</div>
-      ${v.location ? `<div class="v-location">${esc(v.location)}</div>` : ''}
-      ${v.recommendation ? `<div class="v-rec">${esc(v.recommendation)}</div>` : ''}
-    </div>`;
-  }
-
-  function renderCase(c) {
-    return `<div class="case-item">
-      <div class="case-header">
-        <span class="case-company">${esc(c.company||c.CompanyName||'')}</span>
-        ${c.fine||c.FineAmount ? `<span class="case-fine">${fmtMoney(c.fine||c.FineAmount)}</span>` : ''}
-      </div>
-      <div class="case-meta">${esc(c.regulator||'')}${c.date ? ` · ${esc(c.date)}` : ''}</div>
-      ${c.description ? `<div class="case-desc">${esc(c.description)}</div>` : ''}
+      <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
     </div>`;
   }
 
@@ -271,20 +290,9 @@
     </div>`;
   }
 
-  async function copyFixed() {
-    const el = document.getElementById('fixedCopy');
-    if (!el) return;
-    try {
-      await navigator.clipboard.writeText(el.textContent);
-      const ok = document.getElementById('copyOk');
-      ok.classList.add('show');
-      setTimeout(()=>ok.classList.remove('show'), 2200);
-    } catch {}
-  }
-
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '—'; }
   function fmtFixType(s) { return s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
-  function fmtMoney(n) { if(!n&&n!==0)return'—'; if(typeof n==='string'&&n.startsWith('£'))return n; if(n>=1000000)return`£${(n/1e6).toFixed(1)}m`; if(n>=1000)return`£${(n/1000).toFixed(0)}k`; return`£${n}`; }
+  function fmtMoney(n) { if(!n)return'£0'; if(n>=1000000)return`£${(n/1e6).toFixed(1)}m`; if(n>=1000)return`£${(n/1000).toFixed(0)}k`; return`£${n}`; }
   function parseJ(v) { if(!v)return null; if(typeof v==='object')return v; try{return JSON.parse(v);}catch{return null;} }
   function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function showError(msg) { document.getElementById('stateBox').innerHTML=`<div class="state-text" style="color:var(--red)">⚠️ ${esc(msg)}</div>`; }
