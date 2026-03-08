@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suppression Checker — Sendwize</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #EA7317;
+      --orange-light: #FFF4EA;
+      --bg: #FAFAFA;
+      --white: #ffffff;
+      --border: #f0f0f0;
+      --border-mid: #e5e5e5;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --green: #16a34a;
+      --green-bg: #f0fdf4;
+      --green-bd: #bbf7d0;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --red-bd: #fecaca;
+      --yellow: #d97706;
+      --yellow-bg: #fffbeb;
+      --yellow-bd: #fde68a;
+      --blue: #1d4ed8;
+      --blue-bg: #eff6ff;
+      --blue-bd: #bfdbfe;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 32px 20px 60px;
+    }
+
+    .container { max-width: 780px; margin: 0 auto; }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--muted); text-decoration: none;
+      margin-bottom: 20px; transition: color .15s;
+    }
+    .back-link:hover { color: var(--orange); }
+
+    .page-title    { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .page-subtitle { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+
+    .pecr-note {
+      font-size: 12px; color: var(--muted); background: var(--orange-light);
+      border: 1px solid #fde5c7; border-radius: var(--radius);
+      padding: 10px 14px; margin-bottom: 28px; line-height: 1.5;
+    }
+    .pecr-note strong { color: var(--orange); }
+
+    .card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+    }
+    .card-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--orange); margin-bottom: 16px;
+    }
+
+    /* Upload grid */
+    .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 0; }
+    @media(max-width:560px){ .upload-grid { grid-template-columns: 1fr; } }
+
+    .upload-slot label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px; }
+    .upload-slot-desc  { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
+
+    .file-drop {
+      border: 2px dashed var(--border-mid); border-radius: var(--radius);
+      padding: 22px 14px; text-align: center; cursor: pointer;
+      transition: all .15s; background: var(--bg);
+    }
+    .file-drop:hover, .file-drop.dragover { border-color: var(--orange); background: var(--orange-light); }
+    .file-drop.loaded { border-color: var(--green); border-style: solid; background: var(--green-bg); }
+    .file-drop-icon { font-size: 22px; margin-bottom: 6px; }
+    .file-drop-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .file-drop-text strong { color: var(--orange); }
+    .file-loaded-name  { font-size: 12px; font-weight: 600; color: var(--green); }
+    .file-loaded-count { font-size: 11px; color: var(--green); opacity: .8; }
+    .file-clear {
+      font-size: 11px; color: var(--muted); background: none; border: none;
+      cursor: pointer; margin-top: 4px; text-decoration: underline; font-family: inherit;
+    }
+    .file-clear:hover { color: var(--red); }
+    .file-input { display: none; }
+
+    /* Or paste */
+    .paste-toggle {
+      font-size: 12px; color: var(--orange); background: none; border: none;
+      cursor: pointer; font-family: inherit; padding: 0; margin-top: 8px;
+      display: block; text-decoration: underline;
+    }
+    .paste-wrap { display: none; margin-top: 8px; }
+    .paste-wrap.show { display: block; }
+    .paste-wrap textarea {
+      width: 100%; padding: 9px 10px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 12px; font-family: monospace;
+      min-height: 90px; resize: vertical; line-height: 1.5; transition: border-color .15s;
+    }
+    .paste-wrap textarea:focus { outline: none; border-color: var(--orange); }
+    .paste-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* Suppression age */
+    .form-group { margin-bottom: 0; }
+    label.field-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    select {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 14px; font-family: inherit;
+      background: var(--white); color: var(--text); transition: border-color .15s;
+    }
+    select:focus { outline: none; border-color: var(--orange); }
+    .field-hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%; padding: 13px 20px; background: var(--orange); color: var(--white);
+      border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background .15s; font-family: inherit;
+    }
+    .btn-primary:hover:not(:disabled) { background: #d4660f; }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+
+    .btn-secondary {
+      padding: 9px 18px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 13px; font-weight: 500;
+      background: var(--white); color: var(--text); cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Error */
+    .error-box {
+      display: none; background: var(--red-bg); border: 1px solid var(--red-bd);
+      border-radius: var(--radius); padding: 14px; margin-bottom: 18px;
+      font-size: 13px; color: var(--red);
+    }
+    .error-box.show { display: block; }
+
+    /* Loading */
+    .loading { display: none; text-align: center; padding: 56px 20px; }
+    .loading.show { display: block; }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid var(--border);
+      border-top-color: var(--orange); border-radius: 50%;
+      animation: spin .8s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: var(--muted); }
+
+    /* Results */
+    .results { display: none; }
+    .results.show { display: block; }
+
+    .new-check-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 18px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 13px; font-weight: 500;
+      background: var(--white); color: var(--text); cursor: pointer;
+      font-family: inherit; transition: all .15s; margin-bottom: 24px;
+    }
+    .new-check-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Verdict */
+    .verdict {
+      border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px;
+      border: 1px solid; display: flex; align-items: flex-start; gap: 16px;
+    }
+    .verdict.clean    { background: var(--green-bg); border-color: var(--green-bd); }
+    .verdict.critical { background: var(--red-bg);   border-color: var(--red-bd); }
+    .verdict.warning  { background: var(--yellow-bg); border-color: var(--yellow-bd); }
+    .verdict-icon  { font-size: 26px; flex-shrink: 0; }
+    .verdict-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .verdict-sub   { font-size: 13px; line-height: 1.5; }
+    .verdict.clean    .verdict-title { color: var(--green); }
+    .verdict.critical .verdict-title { color: var(--red); }
+    .verdict.warning  .verdict-title { color: var(--yellow); }
+    .verdict.clean    .verdict-sub   { color: #166534; }
+    .verdict.critical .verdict-sub   { color: #7f1d1d; }
+    .verdict.warning  .verdict-sub   { color: #78350f; }
+
+    /* Score + exposure row */
+    .metrics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+    @media(max-width:480px){ .metrics-row { grid-template-columns: 1fr; } }
+
+    .metric-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+    }
+    .metric-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .metric-value { font-size: 28px; font-weight: 800; line-height: 1; }
+    .metric-sub   { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+    .score-high   { color: var(--green); }
+    .score-medium { color: var(--yellow); }
+    .score-low    { color: var(--red); }
+    .exposure-val { color: var(--red); }
+
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+    @media(max-width:520px){ .stats-grid { grid-template-columns: repeat(2,1fr); } }
+
+    .stat-box {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 12px; text-align: center;
+    }
+    .stat-num   { font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .stat-lbl   { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .stat-box.danger .stat-num { color: var(--red); }
+    .stat-box.warn   .stat-num { color: var(--yellow); }
+    .stat-box.info   .stat-num { color: var(--blue); }
+    .stat-box.good   .stat-num { color: var(--green); }
+
+    /* Warnings */
+    .warning-list { display: flex; flex-direction: column; gap: 10px; }
+    .warning-item {
+      border-radius: var(--radius); padding: 14px 16px;
+      border-left: 3px solid; font-size: 13px; line-height: 1.5;
+    }
+    .warning-item.critical { background: var(--red-bg);    border-color: var(--red); }
+    .warning-item.high     { background: var(--yellow-bg); border-color: var(--yellow); }
+    .warning-item.medium   { background: var(--yellow-bg); border-color: #fbbf24; }
+    .warning-item.low      { background: var(--bg);        border-color: var(--border-mid); }
+    .warning-item.info     { background: var(--blue-bg);   border-color: var(--blue); }
+
+    .warning-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+    .warning-sev {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; padding: 2px 7px; border-radius: 3px;
+    }
+    .warning-item.critical .warning-sev { background: var(--red);    color: var(--white); }
+    .warning-item.high     .warning-sev { background: var(--yellow); color: var(--white); }
+    .warning-item.medium   .warning-sev { background: #fbbf24;       color: var(--white); }
+    .warning-item.low      .warning-sev { background: var(--muted);  color: var(--white); }
+    .warning-item.info     .warning-sev { background: var(--blue);   color: var(--white); }
+
+    .warning-reg  { font-size: 11px; color: var(--muted); }
+    .warning-msg  { color: var(--text); margin-bottom: 6px; }
+    .warning-action { font-size: 12px; font-weight: 600; color: var(--text); }
+    .warning-action::before { content: '→ '; }
+
+    /* Email list display */
+    .email-list-wrap { margin-top: 10px; }
+    .email-list {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 12px;
+      font-size: 12px; font-family: monospace; max-height: 140px;
+      overflow-y: auto; line-height: 1.8; color: var(--text);
+    }
+    .list-toggle {
+      font-size: 12px; color: var(--orange); background: none; border: none;
+      cursor: pointer; font-family: inherit; padding: 0; margin-top: 6px;
+      text-decoration: underline;
+    }
+
+    /* Download */
+    .download-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--orange); margin-bottom: 14px;
+    }
+
+    .copy-success { font-size: 12px; color: var(--green); display: none; }
+    .copy-success.show { display: inline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <a href="javascript:history.back()" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+    Dashboard
+  </a>
+
+  <h1 class="page-title">Suppression Checker</h1>
+  <p class="page-subtitle">Check your send list against your suppression list before every campaign send.</p>
+  <div class="pecr-note">
+    <strong>PECR Regulation 22</strong> — You must not send marketing emails to anyone who has previously opted out or unsubscribed. The ICO requires you to maintain an up-to-date suppression list and check it before every send. Failure to do so can result in fines and enforcement notices.
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Form -->
+  <div id="formSection">
+
+    <div class="card">
+      <div class="card-label">Upload Your Lists</div>
+      <div class="upload-grid">
+
+        <!-- Send list -->
+        <div class="upload-slot">
+          <label>Send List <span style="color:var(--orange)">*</span></label>
+          <div class="upload-slot-desc">The contacts you plan to email for this campaign.</div>
+          <div class="file-drop" id="sendDrop"
+               onclick="document.getElementById('sendInput').click()"
+               ondragover="onDrag(event,'sendDrop')" ondragleave="offDrag('sendDrop')" ondrop="onDrop(event,'send')">
+            <div class="file-drop-icon">📤</div>
+            <div class="file-drop-text" id="sendDropText">
+              Drop CSV here or <strong>browse</strong><br>
+              <span style="font-size:11px;">One email per row, or a CSV with an email column</span>
+            </div>
+          </div>
+          <input type="file" id="sendInput" class="file-input" accept=".csv,.txt" onchange="onFile(event,'send')" />
+          <button class="paste-toggle" onclick="togglePaste('send')">Or paste emails instead</button>
+          <div class="paste-wrap" id="sendPasteWrap">
+            <textarea id="sendPaste" placeholder="paste@example.com&#10;another@example.com&#10;…" oninput="onPaste('send')"></textarea>
+            <div class="paste-hint">One email per line</div>
+          </div>
+        </div>
+
+        <!-- Suppression list -->
+        <div class="upload-slot">
+          <label>Suppression List <span style="color:var(--orange)">*</span></label>
+          <div class="upload-slot-desc">All contacts who have previously unsubscribed or opted out.</div>
+          <div class="file-drop" id="suppDrop"
+               onclick="document.getElementById('suppInput').click()"
+               ondragover="onDrag(event,'suppDrop')" ondragleave="offDrag('suppDrop')" ondrop="onDrop(event,'supp')">
+            <div class="file-drop-icon">🚫</div>
+            <div class="file-drop-text" id="suppDropText">
+              Drop CSV here or <strong>browse</strong><br>
+              <span style="font-size:11px;">One email per row, or a CSV with an email column</span>
+            </div>
+          </div>
+          <input type="file" id="suppInput" class="file-input" accept=".csv,.txt" onchange="onFile(event,'supp')" />
+          <button class="paste-toggle" onclick="togglePaste('supp')">Or paste emails instead</button>
+          <div class="paste-wrap" id="suppPasteWrap">
+            <textarea id="suppPaste" placeholder="unsubscribed@example.com&#10;optedout@example.com&#10;…" oninput="onPaste('supp')"></textarea>
+            <div class="paste-hint">One email per line</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Suppression List Health</div>
+      <div class="form-group">
+        <label class="field-label" for="listAge">When was your suppression list last updated?</label>
+        <select id="listAge">
+          <option value="current">Within the last month — fully up to date</option>
+          <option value="6months">1–6 months ago</option>
+          <option value="1year">6–12 months ago</option>
+          <option value="2years+">Over a year ago</option>
+          <option value="unknown">Not sure</option>
+        </select>
+        <div class="field-hint">ICO guidance requires suppression lists to be kept current. Stale lists mean recent opt-outs may not be captured.</div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="submitBtn" disabled onclick="runCheck()">
+      Run Suppression Check
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loadingSection">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Checking your lists…</div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="resultsSection">
+
+    <button class="new-check-btn" onclick="resetForm()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
+      New Check
+    </button>
+
+    <!-- Verdict -->
+    <div class="verdict" id="verdictBox">
+      <div class="verdict-icon" id="verdictIcon"></div>
+      <div>
+        <div class="verdict-title" id="verdictTitle"></div>
+        <div class="verdict-sub"   id="verdictSub"></div>
+      </div>
+    </div>
+
+    <!-- Score + exposure -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-label">PECR Risk Score</div>
+        <div class="metric-value" id="scoreVal"></div>
+        <div class="metric-sub"   id="scoreSub"></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Financial Exposure</div>
+        <div class="metric-value exposure-val" id="exposureVal"></div>
+        <div class="metric-sub" id="exposureSub"></div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- Warnings -->
+    <div class="card" id="warningsCard" style="display:none;">
+      <div class="section-label">PECR & ICO Warnings</div>
+      <div class="warning-list" id="warningList"></div>
+    </div>
+
+    <!-- Suppressed contacts detail -->
+    <div class="card" id="matchesCard" style="display:none;">
+      <div class="section-label">Suppressed Contacts Found</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">These contacts must be removed from your send list. Do not email them.</p>
+      <div class="email-list-wrap">
+        <div class="email-list" id="matchesList"></div>
+      </div>
+      <div class="download-row">
+        <button class="btn-secondary" onclick="downloadList('matches')">Download suppressed contacts</button>
+        <span class="copy-success" id="matchCopySuccess">✓ Downloaded</span>
+      </div>
+    </div>
+
+    <!-- Clean list download -->
+    <div class="card" id="cleanCard">
+      <div class="section-label">Clean Send List</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;" id="cleanDesc"></p>
+      <div class="download-row">
+        <button class="btn-secondary" onclick="downloadList('clean')">Download clean list</button>
+        <button class="btn-secondary" onclick="copyClean()">Copy to clipboard</button>
+        <span class="copy-success" id="cleanCopySuccess">✓ Copied!</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const userId     = new URLSearchParams(window.location.search).get('userId') || '';
+  const VERCEL_URL = window.location.origin;
+
+  let sendEmails = [];
+  let suppEmails = [];
+  let lastResults = null;
+
+  // ─── CSV / text parsing ────────────────────────────────────────────
+  function extractEmails(text) {
+    // Handles: one per line, CSV with header, comma-separated
+    const lines = text.split(/[\r\n,;]+/).map(l => l.trim().replace(/^"|"$/g, '').toLowerCase());
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return lines.filter(l => emailRe.test(l));
+  }
+
+  // ─── File handling ────────────────────────────────────────────────
+  function onDrag(e, id)  { e.preventDefault(); document.getElementById(id).classList.add('dragover'); }
+  function offDrag(id)    { document.getElementById(id).classList.remove('dragover'); }
+  function onDrop(e, key) { e.preventDefault(); offDrag(key === 'send' ? 'sendDrop' : 'suppDrop'); readFile(e.dataTransfer.files[0], key); }
+  function onFile(e, key) { readFile(e.target.files[0], key); }
+
+  function readFile(file, key) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => setEmails(key, e.target.result, file.name);
+    reader.readAsText(file);
+  }
+
+  function onPaste(key) {
+    const text = document.getElementById(key === 'send' ? 'sendPaste' : 'suppPaste').value;
+    setEmails(key, text, 'pasted');
+  }
+
+  function setEmails(key, text, source) {
+    const emails = extractEmails(text);
+    if (key === 'send') sendEmails = emails;
+    else               suppEmails = emails;
+    updateDropUI(key, source, emails.length);
+    updateSubmitBtn();
+  }
+
+  function updateDropUI(key, source, count) {
+    const dropId   = key === 'send' ? 'sendDrop' : 'suppDrop';
+    const textId   = key === 'send' ? 'sendDropText' : 'suppDropText';
+    const drop     = document.getElementById(dropId);
+    const textEl   = document.getElementById(textId);
+
+    if (count === 0) {
+      drop.classList.remove('loaded');
+      return;
+    }
+    drop.classList.add('loaded');
+    textEl.innerHTML = `<div class="file-loaded-name">✓ ${source === 'pasted' ? 'Pasted' : source}</div>
+      <div class="file-loaded-count">${count.toLocaleString()} email${count !== 1 ? 's' : ''} loaded</div>
+      <button class="file-clear" onclick="clearList('${key}',event)">Clear</button>`;
+  }
+
+  function clearList(key, e) {
+    e.stopPropagation();
+    if (key === 'send') { sendEmails = []; document.getElementById('sendInput').value = ''; document.getElementById('sendPaste').value = ''; }
+    else               { suppEmails = []; document.getElementById('suppInput').value = ''; document.getElementById('suppPaste').value = ''; }
+    updateDropUI(key, '', 0);
+    const dropId = key === 'send' ? 'sendDrop' : 'suppDrop';
+    const textId = key === 'send' ? 'sendDropText' : 'suppDropText';
+    document.getElementById(dropId).classList.remove('loaded');
+    document.getElementById(textId).innerHTML = key === 'send'
+      ? 'Drop CSV here or <strong>browse</strong><br><span style="font-size:11px;">One email per row, or a CSV with an email column</span>'
+      : 'Drop CSV here or <strong>browse</strong><br><span style="font-size:11px;">One email per row, or a CSV with an email column</span>';
+    updateSubmitBtn();
+  }
+
+  function togglePaste(key) {
+    const wrap = document.getElementById(key === 'send' ? 'sendPasteWrap' : 'suppPasteWrap');
+    wrap.classList.toggle('show');
+  }
+
+  function updateSubmitBtn() {
+    document.getElementById('submitBtn').disabled = sendEmails.length === 0 || suppEmails.length === 0;
+  }
+
+  // ─── Run check ────────────────────────────────────────────────────
+  async function runCheck() {
+    clearError();
+    if (!userId) { showError('Missing userId. Please access this tool via your Sendwize dashboard.'); return; }
+
+    const suppressionListAge = document.getElementById('listAge').value;
+
+    document.getElementById('loadingText').textContent =
+      `Checking ${sendEmails.length.toLocaleString()} contacts against ${suppEmails.length.toLocaleString()} suppressed addresses…`;
+    document.getElementById('formSection').style.display = 'none';
+    document.getElementById('loadingSection').classList.add('show');
+
+    try {
+      const resp = await fetch(`${VERCEL_URL}/api/check-suppression`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          sendList:        sendEmails,
+          suppressionList: suppEmails,
+          userId,
+          suppressionListAge
+        })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${resp.status}`);
+      }
+
+      lastResults = await resp.json();
+      renderResults(lastResults);
+
+    } catch (err) {
+      showError('Check failed: ' + err.message);
+      document.getElementById('formSection').style.display = 'block';
+      document.getElementById('loadingSection').classList.remove('show');
+    }
+  }
+
+  // ─── Render results ───────────────────────────────────────────────
+  function renderResults(d) {
+    // Verdict
+    const hasMatches = d.matchCount > 0;
+    const hasWarnings = d.warnings?.some(w => ['critical','high'].includes(w.severity));
+    const verdictBox = document.getElementById('verdictBox');
+    verdictBox.className = `verdict ${hasMatches ? 'critical' : hasWarnings ? 'warning' : 'clean'}`;
+    document.getElementById('verdictIcon').textContent  = hasMatches ? '🚫' : hasWarnings ? '⚠️' : '✅';
+    document.getElementById('verdictTitle').textContent = hasMatches ? 'Do Not Send' : hasWarnings ? 'Review Required' : 'List is Clean';
+    document.getElementById('verdictSub').textContent   = d.recommendation || '';
+
+    // Score
+    const score    = d.score ?? 100;
+    const scoreCls = score >= 80 ? 'score-high' : score >= 50 ? 'score-medium' : 'score-low';
+    const scoreEl  = document.getElementById('scoreVal');
+    scoreEl.textContent = score + '/100';
+    scoreEl.className   = `metric-value ${scoreCls}`;
+    document.getElementById('scoreSub').textContent = scoreLabel(score);
+
+    // Exposure
+    const expEl = document.getElementById('exposureVal');
+    if (d.exposureLow > 0) {
+      expEl.textContent = `${formatMoney(d.exposureLow)}–${formatMoney(d.exposureHigh)}`;
+      document.getElementById('exposureSub').textContent = 'Estimated regulatory exposure (PECR Reg 22)';
+    } else {
+      expEl.textContent = '£0';
+      expEl.className   = 'metric-value score-high';
+      document.getElementById('exposureSub').textContent = 'No suppressed contacts found';
+    }
+
+    // Stats
+    document.getElementById('statsGrid').innerHTML = [
+      { num: d.sendListCount.toLocaleString(),      lbl: 'Send List',         cls: '' },
+      { num: d.matchCount.toLocaleString(),          lbl: 'Suppressed',        cls: d.matchCount > 0 ? 'danger' : 'good' },
+      { num: d.duplicateCount.toLocaleString(),      lbl: 'Duplicates',        cls: d.duplicateCount > 0 ? 'warn' : '' },
+      { num: d.cleanListCount.toLocaleString(),      lbl: 'Clean',             cls: 'good' },
+    ].map(s => `<div class="stat-box ${s.cls}">
+      <div class="stat-num">${s.num}</div>
+      <div class="stat-lbl">${s.lbl}</div>
+    </div>`).join('');
+
+    // Warnings
+    if (d.warnings?.length) {
+      document.getElementById('warningList').innerHTML = d.warnings.map(w => `
+        <div class="warning-item ${w.severity}">
+          <div class="warning-header">
+            <span class="warning-sev">${w.severity}</span>
+            ${w.regulation ? `<span class="warning-reg">${escHtml(w.regulation)}</span>` : ''}
+          </div>
+          <div class="warning-msg">${escHtml(w.message)}</div>
+          ${w.action ? `<div class="warning-action">${escHtml(w.action)}</div>` : ''}
+        </div>`).join('');
+      document.getElementById('warningsCard').style.display = 'block';
+    }
+
+    // Suppressed contacts list
+    if (d.matchCount > 0 && d.matches?.length) {
+      document.getElementById('matchesList').textContent = d.matches.join('\n');
+      document.getElementById('matchesCard').style.display = 'block';
+    }
+
+    // Clean list
+    document.getElementById('cleanDesc').textContent =
+      `${d.cleanListCount.toLocaleString()} contacts ready to send to after removing ${d.removedCount} problematic email${d.removedCount !== 1 ? 's' : ''}.`;
+
+    document.getElementById('loadingSection').classList.remove('show');
+    document.getElementById('resultsSection').classList.add('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ─── Download / copy ──────────────────────────────────────────────
+  function downloadList(type) {
+    if (!lastResults) return;
+    const emails = type === 'clean' ? lastResults.cleanList : lastResults.matches;
+    if (!emails?.length) return;
+    const blob = new Blob([emails.join('\n')], { type: 'text/plain' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = type === 'clean' ? 'sendwize-clean-list.csv' : 'sendwize-suppressed-matches.csv';
+    a.click();
+  }
+
+  async function copyClean() {
+    if (!lastResults?.cleanList) return;
+    try {
+      await navigator.clipboard.writeText(lastResults.cleanList.join('\n'));
+      const el = document.getElementById('cleanCopySuccess');
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2200);
+    } catch {}
+  }
+
+  // ─── Reset ────────────────────────────────────────────────────────
+  function resetForm() {
+    sendEmails = []; suppEmails = []; lastResults = null;
+    document.getElementById('resultsSection').classList.remove('show');
+    document.getElementById('warningsCard').style.display = 'none';
+    document.getElementById('matchesCard').style.display  = 'none';
+    document.getElementById('formSection').style.display  = 'block';
+    clearError();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ─── Helpers ──────────────────────────────────────────────────────
+  function showError(msg) { const e = document.getElementById('errorBox'); e.textContent = msg; e.classList.add('show'); }
+  function clearError()   { document.getElementById('errorBox').classList.remove('show'); }
+  function escHtml(s)     { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function formatMoney(n) {
+    if (!n) return '£0';
+    if (n >= 1000000) return `£${(n/1000000).toFixed(1)}m`;
+    if (n >= 1000)    return `£${(n/1000).toFixed(0)}k`;
+    return `£${n.toLocaleString()}`;
+  }
+  function scoreLabel(s) {
+    if (s >= 90) return 'Compliant — safe to send';
+    if (s >= 70) return 'Minor issues — review warnings';
+    if (s >= 50) return 'Moderate risk — action required';
+    return 'High risk — do not send';
+  }
+</script>
+</body>
+</html>
