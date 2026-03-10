@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
     const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
     const BASE_ID        = process.env.BASE_ID;
-    const VERCEL_URL     = process.env.VERCEL_URL;
+    const APP_URL = process.env.APP_URL || 'https://sendwize-backend.vercel.app';
 
     // Process each vendor
     const results = [];
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
         const hasDpa = result.links?.dpa || result.details?.some(d => d.label === 'DPA Available' && d.status === 'pass');
         if (!hasDpa) {
           try {
-            await fetch(`${VERCEL_URL}/api/generate-fix`, {
+            await fetch(`${APP_URL}/api/generate-fix`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
