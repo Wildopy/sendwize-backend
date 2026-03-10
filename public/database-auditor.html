@@ -49,7 +49,24 @@
     .back-link:hover { color: var(--orange); }
 
     .page-title   { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
-    .page-subtitle{ font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 32px; }
+    .page-subtitle{ font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; }
+
+    /* ── Tabs ─────────────────────────────────────────────────────── */
+    .tabs {
+      display: flex; gap: 0; border-bottom: 2px solid var(--border);
+      margin-bottom: 28px;
+    }
+    .tab-btn {
+      padding: 10px 20px; font-size: 14px; font-weight: 500;
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      color: var(--muted); border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: color .15s, border-color .15s;
+    }
+    .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); font-weight: 600; }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
     /* Cards */
     .card {
@@ -278,6 +295,93 @@
       font-size: 11px; font-weight: 600; letter-spacing: .08em;
       text-transform: uppercase; color: var(--orange); margin-bottom: 14px;
     }
+
+    /* ── TAB 2: Consent Health ──────────────────────────────────── */
+
+    /* Loading / empty states for tab 2 */
+    .ch-loading { text-align: center; padding: 56px 20px; }
+    .ch-empty   { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
+
+    /* Stacked bar chart */
+    .stacked-chart-wrap { overflow-x: auto; }
+    .stacked-chart {
+      display: flex; align-items: flex-end; gap: 10px;
+      height: 140px; min-width: 360px; padding-bottom: 28px; position: relative;
+    }
+    .stacked-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 0; }
+    .stacked-bars { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 3px 3px 0 0; overflow: hidden; }
+    .stacked-seg  { width: 100%; min-height: 1px; transition: height .5s ease; }
+    .stacked-seg.safe   { background: var(--safe); }
+    .stacked-seg.probably { background: var(--prob); }
+    .stacked-seg.risky  { background: var(--risky); }
+    .stacked-seg.danger { background: var(--danger); }
+    .stacked-date { font-size: 10px; color: var(--muted); margin-top: 6px; white-space: nowrap; }
+
+    .chart-legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+    .legend-item  { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+    .legend-dot   { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .legend-dot.safe    { background: var(--safe); }
+    .legend-dot.probably{ background: var(--prob); }
+    .legend-dot.risky   { background: var(--risky); }
+    .legend-dot.danger  { background: var(--danger); }
+
+    /* Expiry countdown cards */
+    .expiry-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+    @media(max-width:560px){ .expiry-grid { grid-template-columns: 1fr; } }
+    .expiry-card {
+      border-radius: var(--radius); padding: 18px 16px; text-align: center; border: 1px solid;
+    }
+    .expiry-card.red    { background: var(--danger-bg); border-color: var(--danger-bd); }
+    .expiry-card.amber  { background: var(--risky-bg);  border-color: var(--risky-bd); }
+    .expiry-card.grey   { background: var(--bg);        border-color: var(--border-mid); }
+    .expiry-count { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .expiry-card.red   .expiry-count { color: var(--danger); }
+    .expiry-card.amber .expiry-count { color: var(--risky); }
+    .expiry-card.grey  .expiry-count { color: var(--muted); }
+    .expiry-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+    /* Action cards */
+    .action-card {
+      border-radius: var(--radius); padding: 20px; margin-bottom: 14px; border: 1px solid;
+    }
+    .action-card.danger { background: var(--danger-bg); border-color: var(--danger-bd); }
+    .action-card.amber  { background: var(--risky-bg);  border-color: var(--risky-bd); }
+    .action-card.orange { background: var(--orange-light); border-color: #fcd9b0; }
+
+    .action-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+    .action-card-title  { font-size: 14px; font-weight: 600; }
+    .action-card.danger .action-card-title { color: var(--danger); }
+    .action-card.amber  .action-card-title { color: var(--risky); }
+    .action-card.orange .action-card-title { color: var(--orange); }
+
+    .action-card-body { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+    .action-card-plain { font-size: 12px; color: var(--muted); line-height: 1.5; font-style: italic; margin-bottom: 14px; }
+
+    .btn-action {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: var(--radius); font-size: 13px;
+      font-weight: 500; cursor: pointer; font-family: inherit; border: none;
+      transition: opacity .15s;
+    }
+    .btn-action:hover { opacity: .85; }
+    .btn-action.danger { background: var(--danger); color: #fff; }
+    .btn-action.amber  { background: var(--risky);  color: #fff; }
+    .btn-action.orange { background: var(--orange); color: #fff; }
+
+    /* Last audit summary */
+    .audit-summary-row {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .audit-summary-meta { font-size: 13px; color: var(--muted); }
+    .audit-summary-meta strong { color: var(--text); }
+    .audit-totals { display: flex; gap: 16px; flex-wrap: wrap; }
+    .audit-total-item { font-size: 12px; }
+
+    .disclaimer-info {
+      font-size: 11px; color: var(--muted); background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 14px; margin-bottom: 20px; line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -291,136 +395,219 @@
   <h1 class="page-title">Database Auditor</h1>
   <p class="page-subtitle">Upload your contact database to audit consent status, identify PECR risks and see which contacts can be legally emailed.</p>
 
-  <div class="error-box" id="errorBox"></div>
-
-  <!-- Form -->
-  <div id="formSection">
-
-    <div class="card">
-      <div class="card-label">Campaign Context</div>
-      <p class="form-hint" style="margin-bottom:16px;">Tell us about your contacts and what you're sending so we can apply the right PECR rules.</p>
-      <div class="context-grid">
-        <div class="form-group">
-          <label for="customerType">Are these customers?</label>
-          <select id="customerType">
-            <option value="">— Select —</option>
-            <option value="all">All existing customers</option>
-            <option value="some">Mix of customers + prospects</option>
-            <option value="none">Prospects only</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="productType">Products being marketed</label>
-          <select id="productType">
-            <option value="">— Select —</option>
-            <option value="similar">Similar to what they bought</option>
-            <option value="different">Different products/services</option>
-            <option value="unknown">Not sure</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="emailType">Contact type</label>
-          <select id="emailType">
-            <option value="">— Select —</option>
-            <option value="b2c">B2C (consumers)</option>
-            <option value="b2b">B2B (business emails)</option>
-            <option value="mixed">Mixed</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-label">Upload CSV</div>
-
-      <div class="file-drop" id="fileDrop"
-           onclick="document.getElementById('fileInput').click()"
-           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-        <div class="file-drop-icon">📊</div>
-        <div class="file-drop-text">Drag and drop your CSV here, or <strong>browse to upload</strong></div>
-        <div class="file-drop-sub">Required columns: email, consentDate — Optional: consentMethod, source, firstName, lastName</div>
-      </div>
-      <input type="file" id="fileInput" class="file-input" accept=".csv" onchange="onFileSelect(event)" />
-
-      <div class="file-selected" id="fileSelected">
-        <span>📎</span>
-        <span class="file-name" id="fileName"></span>
-        <button class="file-remove" onclick="clearFile()">✕</button>
-      </div>
-    </div>
-
-    <!-- Column mapper -->
-    <div class="card mapper" id="mapperCard">
-      <div class="card-label">Map Your Columns</div>
-      <p class="form-hint" style="margin-bottom:16px;">Match your CSV columns to the fields Sendwize needs. We've pre-filled where column names match.</p>
-      <div class="mapper-grid" id="mapperGrid"></div>
-
-      <div class="preview-wrap" id="previewWrap"></div>
-    </div>
-
-    <button class="btn-primary" id="submitBtn" onclick="runAudit()">Run Audit</button>
-
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('audit')">Database Audit</button>
+    <button class="tab-btn" onclick="switchTab('health')">Consent Health</button>
   </div>
 
-  <!-- Loading -->
-  <div class="loading" id="loadingSection">
-    <div class="spinner"></div>
-    <div class="loading-text">Auditing your database…</div>
-    <div class="loading-count" id="loadingCount"></div>
-  </div>
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- TAB 1 — Database Audit (pixel-identical to deployed version)  -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel active" id="panel-audit">
 
-  <!-- Results -->
-  <div class="results" id="resultsSection">
+    <div class="error-box" id="errorBox"></div>
 
-    <button class="new-audit-btn" onclick="resetForm()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
-      New Audit
-    </button>
+    <!-- Form -->
+    <div id="formSection">
 
-    <!-- Bucket summary -->
-    <div class="buckets" id="bucketsRow"></div>
-
-    <!-- Breakdown bar -->
-    <div class="card">
-      <div class="section-label">Consent Breakdown</div>
-      <div id="breakdownBars"></div>
-    </div>
-
-    <!-- Expiry timeline -->
-    <div class="card" id="timelineCard" style="display:none;">
-      <div class="section-label">Consent Expiry — Next 12 Months</div>
-      <div class="timeline-wrap">
-        <div class="timeline-chart" id="timelineChart"></div>
+      <div class="card">
+        <div class="card-label">Campaign Context</div>
+        <p class="form-hint" style="margin-bottom:16px;">Tell us about your contacts and what you're sending so we can apply the right PECR rules.</p>
+        <div class="context-grid">
+          <div class="form-group">
+            <label for="customerType">Are these customers?</label>
+            <select id="customerType">
+              <option value="">— Select —</option>
+              <option value="all">All existing customers</option>
+              <option value="some">Mix of customers + prospects</option>
+              <option value="none">Prospects only</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="productType">Products being marketed</label>
+            <select id="productType">
+              <option value="">— Select —</option>
+              <option value="similar">Similar to what they bought</option>
+              <option value="different">Different products/services</option>
+              <option value="unknown">Not sure</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="emailType">Contact type</label>
+            <select id="emailType">
+              <option value="">— Select —</option>
+              <option value="b2c">B2C (consumers)</option>
+              <option value="b2b">B2B (business emails)</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <p style="font-size:11px;color:var(--muted);margin-top:10px;">Contacts whose consent reaches 2 years old each month. Re-consent before expiry.</p>
+
+      <div class="card">
+        <div class="card-label">Upload CSV</div>
+        <div class="file-drop" id="fileDrop"
+             onclick="document.getElementById('fileInput').click()"
+             ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <div class="file-drop-icon">📊</div>
+          <div class="file-drop-text">Drag and drop your CSV here, or <strong>browse to upload</strong></div>
+          <div class="file-drop-sub">Required columns: email, consentDate — Optional: consentMethod, source, firstName, lastName</div>
+        </div>
+        <input type="file" id="fileInput" class="file-input" accept=".csv" onchange="onFileSelect(event)" />
+
+        <div class="file-selected" id="fileSelected">
+          <span>📎</span>
+          <span class="file-name" id="fileName"></span>
+          <button class="file-remove" onclick="clearFile()">✕</button>
+        </div>
+      </div>
+
+      <!-- Column mapper -->
+      <div class="card mapper" id="mapperCard">
+        <div class="card-label">Map Your Columns</div>
+        <p class="form-hint" style="margin-bottom:16px;">Match your CSV columns to the fields Sendwize needs. We've pre-filled where column names match.</p>
+        <div class="mapper-grid" id="mapperGrid"></div>
+        <div class="preview-wrap" id="previewWrap"></div>
+      </div>
+
+      <button class="btn-primary" id="submitBtn" onclick="runAudit()">Run Audit</button>
+
     </div>
 
-    <!-- Source quality -->
-    <div class="card" id="sourceCard" style="display:none;">
-      <div class="section-label">Source Quality</div>
-      <table class="source-table">
-        <thead><tr><th>Source</th><th>Contacts</th><th>Avg Score</th><th>Rating</th></tr></thead>
-        <tbody id="sourceBody"></tbody>
-      </table>
+    <!-- Loading -->
+    <div class="loading" id="loadingSection">
+      <div class="spinner"></div>
+      <div class="loading-text">Auditing your database…</div>
+      <div class="loading-count" id="loadingCount"></div>
     </div>
 
-    <!-- Contact tables per bucket -->
-    <div id="contactTables"></div>
+    <!-- Results -->
+    <div class="results" id="resultsSection">
 
-  </div>
+      <button class="new-audit-btn" onclick="resetForm()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
+        New Audit
+      </button>
 
-</div>
+      <div class="buckets" id="bucketsRow"></div>
+
+      <div class="card">
+        <div class="section-label">Consent Breakdown</div>
+        <div id="breakdownBars"></div>
+      </div>
+
+      <div class="card" id="timelineCard" style="display:none;">
+        <div class="section-label">Consent Expiry — Next 12 Months</div>
+        <div class="timeline-wrap">
+          <div class="timeline-chart" id="timelineChart"></div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px;">Contacts whose consent reaches 2 years old each month. Re-consent before expiry.</p>
+      </div>
+
+      <div class="card" id="sourceCard" style="display:none;">
+        <div class="section-label">Source Quality</div>
+        <table class="source-table">
+          <thead><tr><th>Source</th><th>Contacts</th><th>Avg Score</th><th>Rating</th></tr></thead>
+          <tbody id="sourceBody"></tbody>
+        </table>
+      </div>
+
+      <div id="contactTables"></div>
+
+    </div>
+
+  </div><!-- /panel-audit -->
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- TAB 2 — Consent Health                                        -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-health">
+
+    <div class="disclaimer-info">
+      Information only — not legal advice. Your compliance score is based on the information you've provided and is for guidance only.
+    </div>
+
+    <!-- Loading state -->
+    <div id="ch-loading" class="ch-loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading consent health data…</div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="ch-empty" style="display:none;" class="ch-empty">
+      <p style="font-size:32px;margin-bottom:12px;">📊</p>
+      <p style="font-weight:600;margin-bottom:8px;">No audit history yet</p>
+      <p>Run your first database audit to see consent health trends here.</p>
+      <button class="btn-secondary" style="margin-top:16px;" onclick="switchTab('audit')">Run an Audit</button>
+    </div>
+
+    <!-- Content (shown when data available) -->
+    <div id="ch-content" style="display:none;">
+
+      <!-- Database Health Trend -->
+      <div class="card">
+        <div class="card-label">Database Health Trend</div>
+        <div class="stacked-chart-wrap">
+          <div class="stacked-chart" id="ch-trend-chart"></div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot safe"></div>Safe</div>
+          <div class="legend-item"><div class="legend-dot probably"></div>Probably</div>
+          <div class="legend-item"><div class="legend-dot risky"></div>Risky</div>
+          <div class="legend-item"><div class="legend-dot danger"></div>Danger</div>
+        </div>
+      </div>
+
+      <!-- Consent Expiry Countdown -->
+      <div class="card">
+        <div class="card-label">Consent Expiry Countdown</div>
+        <div class="expiry-grid" id="ch-expiry-cards"></div>
+      </div>
+
+      <!-- Source Quality Tracker -->
+      <div class="card" id="ch-source-card" style="display:none;">
+        <div class="card-label">Source Quality Tracker</div>
+        <table class="source-table">
+          <thead><tr><th>Source</th><th>Contacts</th><th>Avg Score</th><th>Rating</th></tr></thead>
+          <tbody id="ch-source-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Loop Closure Action Cards -->
+      <div class="card">
+        <div class="card-label">Loop Closure</div>
+        <div id="ch-action-cards"></div>
+      </div>
+
+      <!-- Last Audit Summary -->
+      <div class="card">
+        <div class="card-label">Last Audit Summary</div>
+        <div class="audit-summary-row">
+          <div>
+            <div class="audit-summary-meta" id="ch-last-date"></div>
+            <div class="audit-totals" id="ch-last-totals" style="margin-top:8px;"></div>
+          </div>
+          <button class="btn-secondary" onclick="switchTab('audit')">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
+            Re-run Audit
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /ch-content -->
+  </div><!-- /panel-health -->
+
+</div><!-- /container -->
 
 <script>
   // ─── State ──────────────────────────────────────────────────────────
-  const userId   = new URLSearchParams(window.location.search).get('userId') || '';
+  const userId     = new URLSearchParams(window.location.search).get('userId') || '';
   const VERCEL_URL = window.location.origin;
 
-  let csvHeaders  = [];
-  let csvRows     = [];   // array of objects (header→value)
-  let rawCsvRows  = [];   // array of arrays
+  let csvHeaders = [];
+  let csvRows    = [];
 
-  // Field definitions — label, internal key, required
   const FIELDS = [
     { key: 'email',         label: 'Email',          required: true  },
     { key: 'consentDate',   label: 'Consent Date',   required: true  },
@@ -430,11 +617,206 @@
     { key: 'lastName',      label: 'Last Name',      required: false },
   ];
 
-  // ─── CSV parsing ──────────────────────────────────────────────────
+  // ─── Tab switching ────────────────────────────────────────────────
+  let healthLoaded = false;
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'audit') || (i === 1 && tab === 'health'));
+    });
+    document.getElementById('panel-audit').classList.toggle('active', tab === 'audit');
+    document.getElementById('panel-health').classList.toggle('active', tab === 'health');
+
+    if (tab === 'health' && !healthLoaded) {
+      healthLoaded = true;
+      loadConsentHealth();
+    }
+  }
+
+  // ─── Consent Health — data loading ───────────────────────────────
+  async function loadConsentHealth() {
+    if (!userId) {
+      document.getElementById('ch-loading').style.display = 'none';
+      document.getElementById('ch-empty').style.display   = 'block';
+      return;
+    }
+
+    try {
+      const resp = await fetch(`${VERCEL_URL}/api/data?action=history&type=audit&userId=${encodeURIComponent(userId)}`);
+      if (!resp.ok) throw new Error('Failed to load');
+      const { records } = await resp.json();
+
+      document.getElementById('ch-loading').style.display = 'none';
+
+      if (!records || records.length === 0) {
+        document.getElementById('ch-empty').style.display = 'block';
+        return;
+      }
+
+      renderConsentHealth(records);
+      document.getElementById('ch-content').style.display = 'block';
+
+    } catch (err) {
+      document.getElementById('ch-loading').style.display = 'none';
+      document.getElementById('ch-empty').style.display   = 'block';
+      console.error('Consent health load error:', err);
+    }
+  }
+
+  // ─── Consent Health — render ──────────────────────────────────────
+  function renderConsentHealth(records) {
+    // Latest record is first (sorted desc)
+    const latest     = records[0];
+    const latestDate = latest.fields.AuditDate || '';
+    let   latestResults = null;
+    try { latestResults = JSON.parse(latest.fields.Results || '{}'); } catch { latestResults = {}; }
+
+    // ── 1. Stacked bar trend chart ───────────────────────────────────
+    const trendData = records.slice(0, 6).reverse(); // oldest → newest, max 6
+    const maxTotal  = Math.max(...trendData.map(r => (r.fields.Safe||0)+(r.fields.Probably||0)+(r.fields.Risky||0)+(r.fields.Danger||0)), 1);
+
+    document.getElementById('ch-trend-chart').innerHTML = trendData.map(r => {
+      const safe    = r.fields.Safe    || 0;
+      const prob    = r.fields.Probably|| 0;
+      const risky   = r.fields.Risky   || 0;
+      const danger  = r.fields.Danger  || 0;
+      const total   = safe + prob + risky + danger || 1;
+      const barH    = Math.round((total / maxTotal) * 100); // % of max height
+      const label   = (r.fields.AuditDate || '').slice(0, 7); // YYYY-MM
+      return `
+        <div class="stacked-col">
+          <div class="stacked-bars" style="height:${barH}%">
+            <div class="stacked-seg danger"  style="height:${(danger/total*100).toFixed(1)}%"  title="Danger: ${danger}"></div>
+            <div class="stacked-seg risky"   style="height:${(risky/total*100).toFixed(1)}%"   title="Risky: ${risky}"></div>
+            <div class="stacked-seg probably"style="height:${(prob/total*100).toFixed(1)}%"   title="Probably: ${prob}"></div>
+            <div class="stacked-seg safe"    style="height:${(safe/total*100).toFixed(1)}%"    title="Safe: ${safe}"></div>
+          </div>
+          <div class="stacked-date">${escHtml(label)}</div>
+        </div>`;
+    }).join('');
+
+    // ── 2. Consent Expiry Countdown ──────────────────────────────────
+    const expiry = latestResults.expiryTimeline || {};
+    const d0 = (expiry.data || [])[0] || 0;
+    const d1 = (expiry.data || [])[1] || 0;
+    const d2 = (expiry.data || [])[2] || 0;
+
+    document.getElementById('ch-expiry-cards').innerHTML = `
+      <div class="expiry-card ${d0 > 0 ? 'red' : 'grey'}">
+        <div class="expiry-count">${d0.toLocaleString()}</div>
+        <div class="expiry-label">Next 30 days</div>
+      </div>
+      <div class="expiry-card ${d1 > 0 ? 'amber' : 'grey'}">
+        <div class="expiry-count">${d1.toLocaleString()}</div>
+        <div class="expiry-label">31–60 days</div>
+      </div>
+      <div class="expiry-card grey">
+        <div class="expiry-count">${d2.toLocaleString()}</div>
+        <div class="expiry-label">61–90 days</div>
+      </div>`;
+
+    // ── 3. Source Quality Tracker ────────────────────────────────────
+    const sourceQuality = latestResults.sourceQuality || [];
+    if (sourceQuality.length) {
+      document.getElementById('ch-source-body').innerHTML = sourceQuality.map(s => `
+        <tr>
+          <td>${escHtml(s.source)}</td>
+          <td>${(s.total||0).toLocaleString()}</td>
+          <td>${s.avgScore ?? '—'}</td>
+          <td><span class="rating-pill rating-${s.rating}">${escHtml(s.rating)}</span></td>
+        </tr>`).join('');
+      document.getElementById('ch-source-card').style.display = 'block';
+    }
+
+    // ── 4. Loop Closure Action Cards ─────────────────────────────────
+    const dangerContacts  = latestResults.danger  || [];
+    const probContacts    = latestResults.probably || [];
+    const recosentUrl     = `reconsent-builder.html?userId=${encodeURIComponent(userId)}`;
+    let actionHTML        = '';
+
+    // DANGER card
+    if (dangerContacts.length > 0) {
+      actionHTML += `
+        <div class="action-card danger">
+          <div class="action-card-header">
+            <div class="action-card-title">⛔ ${dangerContacts.length.toLocaleString()} contacts have invalid or no consent — cannot be re-consented, should be removed.</div>
+          </div>
+          <div class="action-card-plain">Pre-ticked boxes, purchased lists and undocumented consent do not meet PECR requirements.</div>
+          <button class="btn-action danger" onclick="downloadDangerCSV()">
+            ↓ Download danger contacts
+          </button>
+        </div>`;
+    }
+
+    // PROBABLY card
+    if (probContacts.length > 0) {
+      actionHTML += `
+        <div class="action-card amber">
+          <div class="action-card-header">
+            <div class="action-card-title">⚠️ ${probContacts.length.toLocaleString()} contacts have consent that may not fully meet current requirements.</div>
+          </div>
+          <div class="action-card-plain">These contacts opted in but their consent is older or the method may not be robust enough. You can continue to email them for now but should prioritise re-consent.</div>
+          <a class="btn-action amber" href="${recosentUrl}">Build re-consent email →</a>
+        </div>`;
+    }
+
+    // EXPIRING card
+    if (d0 > 0) {
+      actionHTML += `
+        <div class="action-card orange">
+          <div class="action-card-header">
+            <div class="action-card-title">🕐 ${d0.toLocaleString()} contacts' consent expires in the next 30 days.</div>
+          </div>
+          <div class="action-card-plain">Re-consent these contacts before their consent expires to avoid having to remove them from your list.</div>
+          <a class="btn-action orange" href="${recosentUrl}">Build re-consent email →</a>
+        </div>`;
+    }
+
+    if (!actionHTML) {
+      actionHTML = `<p style="font-size:13px;color:var(--muted);">No immediate actions required based on your latest audit.</p>`;
+    }
+
+    document.getElementById('ch-action-cards').innerHTML = actionHTML;
+
+    // Store danger contacts for CSV download
+    window._dangerContacts = dangerContacts;
+
+    // ── 5. Last Audit Summary ────────────────────────────────────────
+    const lSafe   = latest.fields.Safe    || 0;
+    const lProb   = latest.fields.Probably|| 0;
+    const lRisky  = latest.fields.Risky   || 0;
+    const lDanger = latest.fields.Danger  || 0;
+    const lTotal  = lSafe + lProb + lRisky + lDanger;
+
+    document.getElementById('ch-last-date').innerHTML = `Last audit: <strong>${escHtml(latestDate)}</strong> — ${lTotal.toLocaleString()} contacts`;
+    document.getElementById('ch-last-totals').innerHTML = `
+      <span class="audit-total-item" style="color:var(--safe)">✓ ${lSafe.toLocaleString()} safe</span>
+      <span class="audit-total-item" style="color:var(--prob)">~ ${lProb.toLocaleString()} probably</span>
+      <span class="audit-total-item" style="color:var(--risky)">⚠ ${lRisky.toLocaleString()} risky</span>
+      <span class="audit-total-item" style="color:var(--danger)">✕ ${lDanger.toLocaleString()} danger</span>`;
+  }
+
+  // ─── Download danger contacts as CSV ─────────────────────────────
+  function downloadDangerCSV() {
+    const contacts = window._dangerContacts || [];
+    if (!contacts.length) return;
+
+    const disclaimer = 'This document is provided for informational purposes only and does not constitute legal advice or confirm legal compliance.';
+    const headers    = ['email','consentDate','consentMethod','source','score','category'];
+    const rows       = contacts.map(c => headers.map(h => `"${String(c[h]||'').replace(/"/g,'""')}"`).join(','));
+    const csv        = [disclaimer, headers.join(','), ...rows].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `danger-contacts-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  }
+
+  // ─── CSV parsing (Tab 1) ──────────────────────────────────────────
   function parseCSV(text) {
     const lines = text.trim().split(/\r?\n/);
     if (lines.length < 2) return null;
-
     const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
     const rows = [];
     for (let i = 1; i < lines.length; i++) {
@@ -469,7 +851,6 @@
     if (!file.name.endsWith('.csv')) { showError('Please upload a CSV file.'); return; }
     document.getElementById('fileName').textContent = file.name;
     document.getElementById('fileSelected').classList.add('show');
-
     const reader = new FileReader();
     reader.onload = e => {
       const parsed = parseCSV(e.target.result);
@@ -518,7 +899,6 @@
         </select>`;
       grid.appendChild(row);
     });
-
     document.getElementById('mapperCard').classList.add('show');
     updatePreview();
   }
@@ -534,10 +914,8 @@
     const wrap    = document.getElementById('previewWrap');
     const sample  = csvRows.slice(0, 3);
     if (!sample.length) return;
-
     const mappedFields = FIELDS.filter(f => mapping[f.key]);
     if (!mappedFields.length) { wrap.innerHTML = ''; return; }
-
     wrap.innerHTML = `
       <p style="font-size:12px;color:var(--muted);margin:14px 0 8px;">Preview (first 3 rows):</p>
       <table class="preview-table">
@@ -551,7 +929,6 @@
   // ─── Run audit ────────────────────────────────────────────────────
   async function runAudit() {
     clearError();
-
     const customerType = document.getElementById('customerType').value;
     const productType  = document.getElementById('productType').value;
     const emailType    = document.getElementById('emailType').value;
@@ -567,7 +944,6 @@
       showError('Please map at least the Email and Consent Date columns.'); return;
     }
 
-    // Build contacts array using mapping
     const contacts = csvRows.map(row => ({
       email:         row[mapping.email]         || '',
       consentDate:   row[mapping.consentDate]   || '',
@@ -589,15 +965,14 @@
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ contacts, customerType, productType, emailType, userId })
       });
-
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
         throw new Error(err.error || `Server error ${resp.status}`);
       }
-
       const data = await resp.json();
       renderResults(data);
-
+      // Invalidate health tab cache so it refreshes on next switch
+      healthLoaded = false;
     } catch (err) {
       showError('Audit failed: ' + err.message);
       document.getElementById('formSection').style.display = 'block';
@@ -605,16 +980,15 @@
     }
   }
 
-  // ─── Render results ───────────────────────────────────────────────
+  // ─── Render results (Tab 1) ───────────────────────────────────────
   function renderResults(data) {
     const { total, safe, probably, risky, danger, expiryTimeline, sourceQuality } = data;
 
-    // Buckets
     const buckets = [
-      { key: 'safe',     label: 'Safe',      count: safe.length,     cls: 'safe'     },
-      { key: 'probably', label: 'Probably',  count: probably.length, cls: 'probably' },
-      { key: 'risky',    label: 'Risky',     count: risky.length,    cls: 'risky'    },
-      { key: 'danger',   label: 'Danger',    count: danger.length,   cls: 'danger'   },
+      { key: 'safe',     label: 'Safe',     count: safe.length,     cls: 'safe'     },
+      { key: 'probably', label: 'Probably', count: probably.length, cls: 'probably' },
+      { key: 'risky',    label: 'Risky',    count: risky.length,    cls: 'risky'    },
+      { key: 'danger',   label: 'Danger',   count: danger.length,   cls: 'danger'   },
     ];
 
     document.getElementById('bucketsRow').innerHTML = buckets.map(b => `
@@ -624,7 +998,6 @@
         <div class="bucket-pct">${total ? Math.round(b.count / total * 100) : 0}%</div>
       </div>`).join('');
 
-    // Breakdown bars
     document.getElementById('breakdownBars').innerHTML = buckets.map(b => `
       <div class="bar-row">
         <div class="bar-seg-label">${b.label}</div>
@@ -634,7 +1007,6 @@
         <div class="bar-count">${b.count.toLocaleString()}</div>
       </div>`).join('');
 
-    // Expiry timeline
     if (expiryTimeline?.labels?.length) {
       const maxVal = Math.max(...expiryTimeline.data, 1);
       document.getElementById('timelineChart').innerHTML = expiryTimeline.labels.map((label, i) => {
@@ -648,7 +1020,6 @@
       document.getElementById('timelineCard').style.display = 'block';
     }
 
-    // Source quality
     if (sourceQuality?.length) {
       document.getElementById('sourceBody').innerHTML = sourceQuality.map(s => `
         <tr>
@@ -660,7 +1031,6 @@
       document.getElementById('sourceCard').style.display = 'block';
     }
 
-    // Contact tables per bucket
     const tablesEl = document.getElementById('contactTables');
     tablesEl.innerHTML = '';
     buckets.forEach(b => {
