@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     }
 
     // Fire generate-fix for each vendor missing a DPA
-    if (userId && VERCEL_URL) {
+    if (userId) {
       for (const result of results) {
         const hasDpa = result.links?.dpa || result.details?.some(d => d.label === 'DPA Available' && d.status === 'pass');
         if (!hasDpa) {
