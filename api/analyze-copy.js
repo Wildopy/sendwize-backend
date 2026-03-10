@@ -381,7 +381,7 @@ Respond ONLY in this exact JSON format — no preamble, no markdown fences:
 
     // ── 5. Generate Compliance_Fixes ──────────────────────────────────
     if (violations.length > 0 || emailResult?.checks.some(c => c.fixType)) {
-      await generateFixes(userId, violations, emailResult?.checks || [], savedRecordId, VERCEL_URL);
+      await generateFixes(userId, violations, emailResult?.checks || [], savedRecordId, APP_URL);
     }
 
     // ── 6. Return unified response ────────────────────────────────────
