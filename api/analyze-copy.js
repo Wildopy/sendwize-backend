@@ -260,9 +260,7 @@ export default async function handler(req, res) {
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
-  const VERCEL_URL     = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'https://sendwize-backend.vercel.app';
+  const APP_URL = process.env.APP_URL || 'https://sendwize-backend.vercel.app';
 
   try {
     const { content, subject, html, userId, autoFix } = req.body;
