@@ -161,16 +161,14 @@ export default async function handler(req, res) {
       : [];
 
     const fixResults = [];
-    const VERCEL_URL = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'https://sendwize-backend.vercel.app';
+    const APP_URL = process.env.APP_URL || 'https://sendwize-backend.vercel.app';
 
     for (const issue of issueList) {
       const mapping = ISSUE_TO_FIX[issue];
       if (!mapping) continue; // advisory only — skip
 
       try {
-        const fixRes = await fetch(`${VERCEL_URL}/api/generate-fix`, {
+        const fixRes = await fetch(`${APP_URL}/api/generate-fix`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
