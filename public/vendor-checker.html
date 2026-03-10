@@ -28,6 +28,8 @@
       --blue: #1d4ed8;
       --blue-bg: #eff6ff;
       --blue-bd: #bfdbfe;
+      --grey-bg: #f3f4f6;
+      --grey-bd: #d1d5db;
       --radius: 8px;
     }
 
@@ -49,7 +51,24 @@
     .back-link:hover { color: var(--orange); }
 
     .page-title    { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
-    .page-subtitle { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 32px; }
+    .page-subtitle { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; }
+
+    /* ── Tabs ──────────────────────────────────────────────────────── */
+    .tabs {
+      display: flex; gap: 0; border-bottom: 2px solid var(--border);
+      margin-bottom: 28px;
+    }
+    .tab-btn {
+      padding: 10px 20px; font-size: 14px; font-weight: 500;
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      color: var(--muted); border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: color .15s, border-color .15s;
+    }
+    .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); font-weight: 600; }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
     /* Card */
     .card {
@@ -263,6 +282,172 @@
     .links-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 
     @media(max-width:500px){ .summary-stats { gap: 12px; } }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* TAB 2 — Data Processor Register                                */
+    /* ═══════════════════════════════════════════════════════════════ */
+
+    .disclaimer-info {
+      font-size: 11px; color: var(--muted); background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 14px; margin-bottom: 20px; line-height: 1.5;
+    }
+
+    /* Stack health summary */
+    .health-grid {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px;
+    }
+    @media(max-width:580px){ .health-grid { grid-template-columns: repeat(2,1fr); } }
+    .health-tile {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; text-align: center;
+    }
+    .health-num   { font-size: 24px; font-weight: 800; color: var(--text); }
+    .health-num.warn { color: var(--yellow); }
+    .health-num.bad  { color: var(--red); }
+    .health-lbl   { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* Onboarding */
+    .onboarding-card { text-align: center; padding: 40px 24px; }
+    .onboarding-icon { font-size: 40px; margin-bottom: 14px; }
+    .onboarding-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .onboarding-sub   { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
+
+    .ob-category { margin-bottom: 20px; text-align: left; }
+    .ob-cat-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .07em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+    }
+    .ob-vendor-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ob-vendor-btn {
+      padding: 7px 14px; border: 1px solid var(--border-mid);
+      border-radius: 20px; font-size: 13px; font-weight: 500;
+      background: var(--white); color: var(--text); cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    .ob-vendor-btn:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-light); }
+    .ob-vendor-btn.added { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+
+    .ob-skip {
+      font-size: 13px; color: var(--muted); cursor: pointer;
+      background: none; border: none; font-family: inherit;
+      text-decoration: underline; margin-top: 16px;
+    }
+
+    /* Register table */
+    .register-wrap { overflow-x: auto; }
+    .register-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+    .register-table th {
+      text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 600;
+      letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+      border-bottom: 2px solid var(--border); white-space: nowrap; background: var(--bg);
+    }
+    .register-table td { padding: 12px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .register-table tr:last-child td { border-bottom: none; }
+    .register-table tr:hover td { background: var(--bg); }
+
+    .reg-vendor-name { font-weight: 600; font-size: 13px; }
+    .reg-vendor-cat  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .stale-badge {
+      display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 10px;
+      font-weight: 600; background: var(--yellow-bg); color: var(--yellow);
+      margin-left: 6px;
+    }
+
+    .agreement-pill {
+      display: inline-block; padding: 2px 9px; border-radius: 12px;
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+    .ap-green  { background: var(--green-bg);  color: var(--green); }
+    .ap-amber  { background: var(--yellow-bg); color: var(--yellow); }
+    .ap-red    { background: var(--red-bg);    color: var(--red); }
+    .ap-grey   { background: var(--grey-bg);   color: var(--muted); }
+
+    .reg-score { font-size: 13px; font-weight: 700; }
+    .reg-score.high { color: var(--green); }
+    .reg-score.mid  { color: var(--yellow); }
+    .reg-score.low  { color: var(--red); }
+
+    .reg-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .reg-action-btn {
+      padding: 4px 10px; font-size: 11px; font-weight: 500;
+      border: 1px solid var(--border-mid); border-radius: var(--radius);
+      background: var(--white); color: var(--muted); cursor: pointer;
+      font-family: inherit; transition: all .15s; white-space: nowrap;
+    }
+    .reg-action-btn:hover { border-color: var(--orange); color: var(--orange); }
+    .reg-action-btn.remove:hover { border-color: var(--red); color: var(--red); }
+
+    .subprocessors-row { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* Add vendor panel */
+    .add-vendor-panel { display: none; }
+    .add-vendor-panel.show { display: block; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    @media(max-width:500px){ .form-row { grid-template-columns: 1fr; } }
+    .form-group-reg { margin-bottom: 14px; }
+    .form-group-reg label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--text); }
+    .form-group-reg select,
+    .form-group-reg input[type="text"],
+    .form-group-reg input[type="url"],
+    .form-group-reg input[type="date"],
+    .form-group-reg textarea {
+      width: 100%; padding: 9px 11px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 13px; font-family: inherit;
+      background: var(--white); color: var(--text); transition: border-color .15s;
+    }
+    .form-group-reg select:focus,
+    .form-group-reg input:focus,
+    .form-group-reg textarea:focus { outline: none; border-color: var(--orange); }
+    .form-group-reg textarea { resize: vertical; min-height: 70px; }
+
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .checkbox-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; cursor: pointer; padding: 5px 10px;
+      border: 1px solid var(--border-mid); border-radius: var(--radius);
+      background: var(--white); transition: all .15s;
+    }
+    .checkbox-label:hover { border-color: var(--orange); }
+    .checkbox-label input[type="checkbox"] { accent-color: var(--orange); }
+
+    .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+    .btn-save {
+      flex: 1; padding: 11px; background: var(--orange); color: var(--white);
+      border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: background .15s;
+    }
+    .btn-save:hover { background: #d4660f; }
+    .btn-cancel {
+      padding: 11px 20px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 14px; font-weight: 500;
+      background: var(--white); color: var(--text); cursor: pointer; font-family: inherit;
+    }
+    .btn-cancel:hover { border-color: var(--muted); }
+
+    /* Register header row */
+    .register-header-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+
+    /* Export */
+    .export-btn {
+      padding: 7px 14px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 12px; font-weight: 500;
+      background: var(--white); color: var(--muted); cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    .export-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Register loading/empty */
+    .reg-loading { text-align: center; padding: 48px 20px; }
+    .reg-empty   { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 14px; }
+
+    /* Search wrap for register */
+    .reg-search-wrap { position: relative; }
+    .reg-search-wrap .dropdown { z-index: 30; }
   </style>
 </head>
 <body>
@@ -276,61 +461,644 @@
   <h1 class="page-title">Vendor Checker</h1>
   <p class="page-subtitle">Check your marketing tools for UK GDPR compliance — DPAs, data location, certifications and breach history. Custom vendors are analysed by Claude AI.</p>
 
-  <div class="error-box" id="errorBox"></div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('checker')">Vendor Checker</button>
+    <button class="tab-btn" onclick="switchTab('register')">Data Processor Register</button>
+  </div>
 
-  <!-- Form -->
-  <div id="formSection">
-    <div class="card">
-      <div class="card-label">Search Vendors</div>
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 1 — Vendor Checker (pixel-identical to deployed version)    -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel active" id="panel-checker">
 
-      <div class="search-wrap" id="searchWrap">
-        <input type="text" class="search-input" id="searchInput"
-               placeholder="Type vendor name e.g. Mailchimp, HubSpot…"
-               autocomplete="off"
-               oninput="onSearch(this.value)" />
-        <span class="search-icon">🔍</span>
-        <div class="dropdown" id="dropdown"></div>
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- Form -->
+    <div id="formSection">
+      <div class="card">
+        <div class="card-label">Search Vendors</div>
+        <div class="search-wrap" id="searchWrap">
+          <input type="text" class="search-input" id="searchInput"
+                 placeholder="Type vendor name e.g. Mailchimp, HubSpot…"
+                 autocomplete="off"
+                 oninput="onSearch(this.value)" />
+          <span class="search-icon">🔍</span>
+          <div class="dropdown" id="dropdown"></div>
+        </div>
+        <div class="selected-list" id="selectedList"></div>
+        <div class="selected-hint" id="selectedHint" style="display:none;"></div>
       </div>
-
-      <div class="selected-list" id="selectedList"></div>
-      <div class="selected-hint" id="selectedHint" style="display:none;"></div>
+      <button class="btn-primary" id="submitBtn" disabled onclick="runCheck()">
+        Check Vendors
+      </button>
     </div>
 
-    <button class="btn-primary" id="submitBtn" disabled onclick="runCheck()">
-      Check Vendors
-    </button>
-  </div>
+    <!-- Loading -->
+    <div class="loading" id="loadingSection">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loadingText">Checking vendors…</div>
+    </div>
 
-  <!-- Loading -->
-  <div class="loading" id="loadingSection">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">Checking vendors…</div>
-  </div>
+    <!-- Results -->
+    <div class="results" id="resultsSection">
+      <button class="new-check-btn" onclick="resetForm()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
+        New Check
+      </button>
+      <div class="summary-bar" id="summaryBar"></div>
+      <div id="vendorCards"></div>
+    </div>
 
-  <!-- Results -->
-  <div class="results" id="resultsSection">
-    <button class="new-check-btn" onclick="resetForm()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
-      New Check
-    </button>
+  </div><!-- /panel-checker -->
 
-    <!-- Summary -->
-    <div class="summary-bar" id="summaryBar"></div>
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 2 — Data Processor Register                                 -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-register">
 
-    <!-- Vendor cards -->
-    <div id="vendorCards"></div>
-  </div>
+    <div class="disclaimer-info">
+      Information only — not legal advice. Sendwize surfaces publicly available compliance information to support your data processor obligations. It does not constitute legal advice. Always verify directly with your vendor and seek independent legal advice if unsure.
+    </div>
 
-</div>
+    <!-- Loading -->
+    <div id="reg-loading" class="reg-loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading your register…</div>
+    </div>
+
+    <!-- Onboarding (empty register, first load) -->
+    <div id="reg-onboarding" style="display:none;">
+      <div class="card onboarding-card">
+        <div class="onboarding-icon">🗂️</div>
+        <div class="onboarding-title">Let's build your data processor register.</div>
+        <div class="onboarding-sub">UK GDPR Article 28 requires you to maintain a record of all processors you share personal data with. Add your tools below to get started.</div>
+
+        <div id="ob-categories"></div>
+
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;">
+          <button class="btn-secondary" onclick="showAddForm(null, true)">+ Add vendor manually</button>
+          <button class="ob-skip" onclick="skipOnboarding()">Skip for now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Register view -->
+    <div id="reg-main" style="display:none;">
+
+      <!-- Stack health summary -->
+      <div class="health-grid" id="reg-health"></div>
+
+      <!-- Register table + controls -->
+      <div class="card">
+        <div class="register-header-row">
+          <div class="card-label" style="margin:0">Data Processors</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="export-btn" onclick="exportRegisterCSV()">↓ Export CSV</button>
+            <button class="btn-secondary" onclick="showAddForm()">+ Add vendor</button>
+          </div>
+        </div>
+
+        <div class="register-wrap">
+          <table class="register-table" id="reg-table">
+            <thead>
+              <tr>
+                <th>Vendor</th>
+                <th>Data Processed</th>
+                <th>Agreement</th>
+                <th>Data Location</th>
+                <th>Score</th>
+                <th>Last Checked</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reg-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add / Edit vendor form (hidden by default) -->
+      <div class="card add-vendor-panel" id="reg-add-panel">
+        <div class="card-label" id="reg-form-title">Add Vendor</div>
+
+        <div class="reg-search-wrap" id="reg-form-search-wrap" style="margin-bottom:14px;">
+          <input type="text" class="search-input" id="reg-search-input"
+                 placeholder="Search vendor name or type a custom one…"
+                 autocomplete="off"
+                 oninput="onRegSearch(this.value)" />
+          <span class="search-icon">🔍</span>
+          <div class="dropdown" id="reg-dropdown"></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group-reg">
+            <label>Category</label>
+            <select id="reg-category">
+              <option value="">— Select —</option>
+              <option>Email Service Provider</option>
+              <option>CRM</option>
+              <option>Analytics</option>
+              <option>Forms</option>
+              <option>Advertising</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group-reg">
+            <label>Data Location</label>
+            <input type="text" id="reg-data-location" placeholder="e.g. EU, UK, US" />
+          </div>
+        </div>
+
+        <div class="form-group-reg">
+          <label>Data Processed</label>
+          <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" value="Email addresses"> Email addresses</label>
+            <label class="checkbox-label"><input type="checkbox" value="Contact details"> Contact details</label>
+            <label class="checkbox-label"><input type="checkbox" value="Behavioural data"> Behavioural data</label>
+            <label class="checkbox-label"><input type="checkbox" value="Purchase history"> Purchase history</label>
+            <label class="checkbox-label"><input type="checkbox" value="Special category data"> Special category data</label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group-reg">
+            <label>Agreement Type</label>
+            <select id="reg-agreement-type">
+              <option value="">— Select —</option>
+              <option>Standalone DPA</option>
+              <option>Data Processing Addendum</option>
+              <option>Article 28 terms in ToS</option>
+              <option>Article 28 terms in Privacy Policy</option>
+              <option>Master Service Agreement</option>
+              <option>None in place</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+          <div class="form-group-reg">
+            <label>Agreement Status</label>
+            <select id="reg-agreement-status">
+              <option value="">— Select —</option>
+              <option>In place</option>
+              <option>Requested</option>
+              <option>Not yet</option>
+              <option>N/A</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group-reg">
+            <label>Agreement Link <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+            <input type="url" id="reg-agreement-link" placeholder="https://…" />
+          </div>
+          <div class="form-group-reg">
+            <label>Agreement Date <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+            <input type="date" id="reg-agreement-date" />
+          </div>
+        </div>
+
+        <div class="form-group-reg">
+          <label>Notes <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <textarea id="reg-notes" placeholder="Any additional notes…"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-save" onclick="saveVendor()">Save Vendor</button>
+          <button class="btn-cancel" onclick="hideAddForm()">Cancel</button>
+        </div>
+      </div>
+
+    </div><!-- /reg-main -->
+
+  </div><!-- /panel-register -->
+
+</div><!-- /container -->
 
 <script>
   const userId     = new URLSearchParams(window.location.search).get('userId') || '';
   const VERCEL_URL = window.location.origin;
 
   let allVendors      = [];
-  let selectedVendors = [];   // { name, category, isCustom, ...airtable fields }
+  let selectedVendors = [];
+  let registerLoaded  = false;
+  let registerRecords = [];   // Vendor_Register rows
+  let editingRecordId = null; // null = new, string = editing existing
 
-  // ─── Load vendors from Airtable via data.js ───────────────────────
+  // ─── Tab switching ────────────────────────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'checker') || (i === 1 && tab === 'register'));
+    });
+    document.getElementById('panel-checker').classList.toggle('active', tab === 'checker');
+    document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+
+    if (tab === 'register' && !registerLoaded) {
+      registerLoaded = true;
+      loadRegister();
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // TAB 2 — Data Processor Register
+  // ═══════════════════════════════════════════════════════════════════
+
+  async function loadRegister() {
+    if (!userId) {
+      document.getElementById('reg-loading').style.display = 'none';
+      showRegOnboarding();
+      return;
+    }
+    try {
+      const resp = await fetch(`${VERCEL_URL}/api/data?action=history&type=vendor&userId=${encodeURIComponent(userId)}`);
+      if (!resp.ok) throw new Error();
+      const { records } = await resp.json();
+      registerRecords = records || [];
+      document.getElementById('reg-loading').style.display = 'none';
+
+      if (registerRecords.length === 0) {
+        showRegOnboarding();
+      } else {
+        renderRegisterMain();
+      }
+    } catch {
+      document.getElementById('reg-loading').style.display = 'none';
+      showRegOnboarding();
+    }
+  }
+
+  // ── Onboarding ────────────────────────────────────────────────────
+  const OB_CATEGORIES = [
+    { label: 'Email marketing', vendors: ['Mailchimp','Klaviyo','Brevo','HubSpot','ActiveCampaign','SendGrid'] },
+    { label: 'CRM',             vendors: ['HubSpot','Salesforce','Pipedrive','Zoho'] },
+    { label: 'Analytics',       vendors: ['Google Analytics','Hotjar'] },
+    { label: 'Forms',           vendors: ['Typeform','Gravity Forms'] },
+    { label: 'Advertising',     vendors: ['Google Ads','Meta Ads'] },
+  ];
+
+  function showRegOnboarding() {
+    const wrap = document.getElementById('ob-categories');
+    wrap.innerHTML = OB_CATEGORIES.map(cat => `
+      <div class="ob-category">
+        <div class="ob-cat-label">${escHtml(cat.label)}</div>
+        <div class="ob-vendor-btns">
+          ${cat.vendors.map(v => `
+            <button class="ob-vendor-btn" id="ob_${slugify(v)}" onclick="obAddVendor(${JSON.stringify(v)}, ${JSON.stringify(cat.label)}, this)">
+              ${escHtml(v)}
+            </button>`).join('')}
+          <button class="ob-vendor-btn" onclick="showAddForm({category:'${escHtml(cat.label)}'}, true)">+ Other</button>
+        </div>
+      </div>`).join('');
+    document.getElementById('reg-onboarding').style.display = 'block';
+  }
+
+  function slugify(s) { return s.replace(/[^a-z0-9]/gi, '_').toLowerCase(); }
+
+  async function obAddVendor(name, category, btn) {
+    btn.classList.add('added');
+    btn.textContent = '✓ ' + name;
+    btn.disabled = true;
+
+    // Quick-save with minimal fields; user can edit later
+    const vendor = allVendors.find(v => v.name === name) || {};
+    await saveVendorDirect({
+      VendorName: name,
+      Category: category,
+      DataLocation: vendor.dataLocation || '',
+      AgreementType: vendor.dpaLink ? 'Data Processing Addendum' : 'Unknown',
+      AgreementStatus: vendor.dpaLink ? 'In place' : 'Not yet',
+      AgreementLink: vendor.dpaLink || '',
+    });
+
+    // Once at least one added, transition to register view
+    setTimeout(() => {
+      document.getElementById('reg-onboarding').style.display = 'none';
+      registerLoaded = false; // force reload
+      loadRegister();
+    }, 600);
+  }
+
+  function skipOnboarding() {
+    document.getElementById('reg-onboarding').style.display = 'none';
+    registerLoaded = true;
+    registerRecords = [];
+    renderRegisterMain();
+  }
+
+  // ── Register main view ────────────────────────────────────────────
+  function renderRegisterMain() {
+    document.getElementById('reg-main').style.display = 'block';
+    renderHealthSummary();
+    renderRegisterTable();
+  }
+
+  function renderHealthSummary() {
+    const total   = registerRecords.length;
+    const noAgrmt = registerRecords.filter(r => {
+      const s = r.fields.AgreementStatus || '';
+      return s === 'Not yet' || s === 'None in place' || !s;
+    }).length;
+    const stale   = registerRecords.filter(r => isStale(r.fields.LastChecked)).length;
+    const scores  = registerRecords.map(r => r.fields.ComplianceScore || 0).filter(Boolean);
+    const avg     = scores.length ? Math.round(scores.reduce((a,b) => a+b,0) / scores.length) : '—';
+
+    document.getElementById('reg-health').innerHTML = `
+      <div class="health-tile"><div class="health-num">${total}</div><div class="health-lbl">Total vendors</div></div>
+      <div class="health-tile"><div class="health-num ${noAgrmt > 0 ? 'bad' : ''}">${noAgrmt}</div><div class="health-lbl">No written agreement</div></div>
+      <div class="health-tile"><div class="health-num ${stale > 0 ? 'warn' : ''}">${stale}</div><div class="health-lbl">Stale (>90 days)</div></div>
+      <div class="health-tile"><div class="health-num">${avg}${typeof avg === 'number' ? '/100' : ''}</div><div class="health-lbl">Avg compliance score</div></div>`;
+  }
+
+  function isStale(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return (Date.now() - d.getTime()) > 90 * 24 * 60 * 60 * 1000;
+  }
+
+  function renderRegisterTable() {
+    const tbody = document.getElementById('reg-tbody');
+    if (!registerRecords.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">No vendors added yet. Click "+ Add vendor" to get started.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = registerRecords.map(r => {
+      const f      = r.fields;
+      const stale  = isStale(f.LastChecked);
+      const agPill = agreementPill(f.AgreementStatus);
+      const score  = f.ComplianceScore;
+      const scoreCls = score >= 80 ? 'high' : score >= 60 ? 'mid' : 'low';
+
+      let dataProcessed = '';
+      try { dataProcessed = JSON.parse(f.DataProcessed || '[]').join(', '); } catch { dataProcessed = f.DataProcessed || ''; }
+
+      // Subprocessors from Marketing_Vendors (surfaced via allVendors)
+      const vendorData = allVendors.find(v => v.name === f.VendorName);
+      const subprocessors = vendorData?.subprocessors || '';
+
+      return `<tr>
+        <td>
+          <div class="reg-vendor-name">${escHtml(f.VendorName || '')}${stale ? '<span class="stale-badge">Stale</span>' : ''}</div>
+          <div class="reg-vendor-cat">${escHtml(f.Category || '')}</div>
+          ${subprocessors ? `<div class="subprocessors-row">▸ Known subprocessors: ${escHtml(subprocessors)}</div>` : ''}
+        </td>
+        <td style="color:var(--muted);font-size:12px;">${escHtml(dataProcessed || '—')}</td>
+        <td>${agPill}</td>
+        <td style="font-size:12px;color:var(--muted);">${escHtml(f.DataLocation || '—')}</td>
+        <td>${score != null ? `<span class="reg-score ${scoreCls}">${score}/100</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+        <td style="font-size:12px;color:var(--muted);">${escHtml(f.LastChecked || '—')}</td>
+        <td>
+          <div class="reg-actions">
+            <button class="reg-action-btn" onclick="reCheckVendor(${JSON.stringify(r.id)}, ${JSON.stringify(f.VendorName)})">Re-check</button>
+            <button class="reg-action-btn" onclick="showEditForm(${JSON.stringify(r.id)})">Edit</button>
+            <button class="reg-action-btn remove" onclick="removeVendorReg(${JSON.stringify(r.id)}, ${JSON.stringify(f.VendorName)})">Remove</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function agreementPill(status) {
+    if (!status) return `<span class="agreement-pill ap-grey">Unknown</span>`;
+    if (status === 'In place') return `<span class="agreement-pill ap-green">In place</span>`;
+    if (status === 'Requested') return `<span class="agreement-pill ap-amber">Requested</span>`;
+    if (status === 'N/A') return `<span class="agreement-pill ap-grey">N/A</span>`;
+    return `<span class="agreement-pill ap-red">Not in place</span>`;
+  }
+
+  // ── Add / Edit form ───────────────────────────────────────────────
+  function showAddForm(defaults, scrollTo) {
+    editingRecordId = null;
+    clearRegForm();
+    document.getElementById('reg-form-title').textContent = 'Add Vendor';
+    if (defaults?.category) {
+      document.getElementById('reg-category').value = defaults.category;
+    }
+    if (defaults?.name) {
+      document.getElementById('reg-search-input').value = defaults.name;
+    }
+    document.getElementById('reg-add-panel').classList.add('show');
+    if (scrollTo) document.getElementById('reg-add-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function showEditForm(recordId) {
+    const record = registerRecords.find(r => r.id === recordId);
+    if (!record) return;
+    editingRecordId = recordId;
+    const f = record.fields;
+
+    clearRegForm();
+    document.getElementById('reg-form-title').textContent = 'Edit Vendor';
+    document.getElementById('reg-search-input').value      = f.VendorName || '';
+    document.getElementById('reg-category').value          = f.Category || '';
+    document.getElementById('reg-data-location').value     = f.DataLocation || '';
+    document.getElementById('reg-agreement-type').value    = f.AgreementType || '';
+    document.getElementById('reg-agreement-status').value  = f.AgreementStatus || '';
+    document.getElementById('reg-agreement-link').value    = f.AgreementLink || '';
+    document.getElementById('reg-agreement-date').value    = f.AgreementDate || '';
+    document.getElementById('reg-notes').value             = f.Notes || '';
+
+    // Checkboxes
+    let dp = [];
+    try { dp = JSON.parse(f.DataProcessed || '[]'); } catch { dp = []; }
+    document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]').forEach(cb => {
+      cb.checked = dp.includes(cb.value);
+    });
+
+    document.getElementById('reg-add-panel').classList.add('show');
+    document.getElementById('reg-add-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function hideAddForm() {
+    document.getElementById('reg-add-panel').classList.remove('show');
+    clearRegForm();
+    editingRecordId = null;
+  }
+
+  function clearRegForm() {
+    document.getElementById('reg-search-input').value     = '';
+    document.getElementById('reg-category').value         = '';
+    document.getElementById('reg-data-location').value    = '';
+    document.getElementById('reg-agreement-type').value   = '';
+    document.getElementById('reg-agreement-status').value = '';
+    document.getElementById('reg-agreement-link').value   = '';
+    document.getElementById('reg-agreement-date').value   = '';
+    document.getElementById('reg-notes').value            = '';
+    document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]').forEach(cb => cb.checked = false);
+  }
+
+  // ── Save vendor ───────────────────────────────────────────────────
+  async function saveVendor() {
+    const name   = document.getElementById('reg-search-input').value.trim();
+    const status = document.getElementById('reg-agreement-status').value;
+
+    if (!name)   { alert('Please enter a vendor name.'); return; }
+    if (!status) { alert('Please select an agreement status.'); return; }
+
+    const dataProcessed = Array.from(
+      document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]:checked')
+    ).map(cb => cb.value);
+
+    const vendor = {
+      VendorName:      name,
+      Category:        document.getElementById('reg-category').value,
+      DataProcessed:   dataProcessed,
+      AgreementType:   document.getElementById('reg-agreement-type').value,
+      AgreementStatus: status,
+      AgreementLink:   document.getElementById('reg-agreement-link').value,
+      AgreementDate:   document.getElementById('reg-agreement-date').value,
+      DataLocation:    document.getElementById('reg-data-location').value,
+      Notes:           document.getElementById('reg-notes').value,
+    };
+
+    await saveVendorDirect(vendor, editingRecordId);
+    hideAddForm();
+    registerLoaded = false;
+    loadRegister();
+
+    // Fire no_dpa fix if agreement not in place
+    if (['Requested','Not yet','None in place'].includes(status) && userId) {
+      try {
+        await fetch(`${VERCEL_URL}/api/generate-fix`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            fixType:     'no_dpa',
+            description: `Data Processor Register: No written agreement in place for ${name}. A written contract under UK GDPR Article 28 is required before sharing personal data with this processor.`,
+            tool:        'Vendor Register',
+            severity:    'high',
+            volume:      null,
+            sourceRecordId: null,
+          })
+        });
+      } catch { /* non-blocking */ }
+    }
+  }
+
+  async function saveVendorDirect(vendor, recordId) {
+    try {
+      const body = { userId, vendor };
+      if (recordId) body.recordId = recordId;
+      await fetch(`${VERCEL_URL}/api/data?action=register`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body)
+      });
+    } catch (e) { console.error('Save vendor error:', e); }
+  }
+
+  // ── Re-check vendor ───────────────────────────────────────────────
+  async function reCheckVendor(recordId, vendorName) {
+    if (!confirm(`Re-check compliance data for ${vendorName}?`)) return;
+    try {
+      const resp = await fetch(`${VERCEL_URL}/api/check-vendors`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ vendors: [{ name: vendorName, isCustom: !allVendors.find(v => v.name === vendorName) }], userId })
+      });
+      if (!resp.ok) throw new Error();
+      const data = await resp.json();
+      const result = data.results?.[0];
+      if (result) {
+        await saveVendorDirect({
+          VendorName:      vendorName,
+          ComplianceScore: result.score,
+          LastChecked:     new Date().toISOString().split('T')[0],
+          CheckResults:    JSON.stringify(result),
+        }, recordId);
+        registerLoaded = false;
+        loadRegister();
+      }
+    } catch { alert('Re-check failed. Please try again.'); }
+  }
+
+  // ── Remove vendor ─────────────────────────────────────────────────
+  async function removeVendorReg(recordId, name) {
+    if (!confirm(`Remove ${name} from your register?`)) return;
+    try {
+      await fetch(`${VERCEL_URL}/api/data?action=register&recordId=${encodeURIComponent(recordId)}`, {
+        method: 'DELETE'
+      });
+      registerLoaded = false;
+      loadRegister();
+    } catch { alert('Remove failed. Please try again.'); }
+  }
+
+  // ── Export CSV ────────────────────────────────────────────────────
+  function exportRegisterCSV() {
+    if (!registerRecords.length) return;
+    const disclaimer = 'This document is provided for informational purposes only and does not constitute legal advice or confirm legal compliance.';
+    const headers = ['Vendor','Category','Data Processed','Agreement Type','Agreement Status','Agreement Link','Data Location','Compliance Score','Last Checked','Notes','Added Date'];
+    const rows = registerRecords.map(r => {
+      const f = r.fields;
+      let dp = '';
+      try { dp = JSON.parse(f.DataProcessed || '[]').join('; '); } catch { dp = f.DataProcessed || ''; }
+      return [
+        f.VendorName, f.Category, dp,
+        f.AgreementType, f.AgreementStatus, f.AgreementLink,
+        f.DataLocation, f.ComplianceScore, f.LastChecked,
+        f.Notes, f.AddedDate
+      ].map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',');
+    });
+    const csv = [disclaimer, headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `data-processor-register-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  }
+
+  // ── Register search (add form autocomplete) ───────────────────────
+  function onRegSearch(val) {
+    const q  = val.trim().toLowerCase();
+    const dd = document.getElementById('reg-dropdown');
+    if (q.length < 2) { dd.classList.remove('show'); return; }
+
+    const matches = allVendors.filter(v => v.name.toLowerCase().includes(q));
+    let html = matches.slice(0, 8).map(v => `
+      <div class="dropdown-item" onclick="selectRegVendor(${JSON.stringify(v.name)}, ${JSON.stringify(v.category || '')}, ${JSON.stringify(v.dataLocation || '')})">
+        <div class="dropdown-name">${escHtml(v.name)}</div>
+        <div class="dropdown-cat">${escHtml(v.category || '')}</div>
+      </div>`).join('');
+
+    const exact = allVendors.find(v => v.name.toLowerCase() === q);
+    if (!exact) {
+      const display = val.trim().charAt(0).toUpperCase() + val.trim().slice(1);
+      html += `<div class="dropdown-item" onclick="selectRegVendor(${JSON.stringify(display)}, '', '')">
+        <div class="dropdown-name dropdown-custom">➕ Use "${escHtml(display)}"</div>
+      </div>`;
+    }
+
+    dd.innerHTML = html;
+    dd.classList.add('show');
+  }
+
+  function selectRegVendor(name, category, dataLocation) {
+    document.getElementById('reg-search-input').value = name;
+    document.getElementById('reg-dropdown').classList.remove('show');
+    if (category && !document.getElementById('reg-category').value) {
+      document.getElementById('reg-category').value = category;
+    }
+    if (dataLocation && !document.getElementById('reg-data-location').value) {
+      document.getElementById('reg-data-location').value = dataLocation;
+    }
+    // Pre-fill DPA link if known
+    const vendor = allVendors.find(v => v.name === name);
+    if (vendor?.dpaLink && !document.getElementById('reg-agreement-link').value) {
+      document.getElementById('reg-agreement-link').value = vendor.dpaLink;
+    }
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#reg-form-search-wrap')) {
+      document.getElementById('reg-dropdown').classList.remove('show');
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // TAB 1 — Vendor Checker (unchanged logic)
+  // ═══════════════════════════════════════════════════════════════════
+
   async function loadVendors() {
     try {
       const resp = await fetch(`${VERCEL_URL}/api/data?action=vendors`);
@@ -338,7 +1106,6 @@
       const data = await resp.json();
       allVendors = data.vendors || [];
     } catch {
-      // Fallback so search still works with common names
       allVendors = [
         { name: 'Mailchimp',        category: 'Email Service Provider' },
         { name: 'HubSpot',          category: 'CRM' },
@@ -356,11 +1123,9 @@
     }
   }
 
-  // ─── Search ────────────────────────────────────────────────────────
   function onSearch(val) {
     const q  = val.trim().toLowerCase();
     const dd = document.getElementById('dropdown');
-
     if (q.length < 2) { dd.classList.remove('show'); return; }
 
     const matches = allVendors.filter(v =>
@@ -374,7 +1139,6 @@
         <div class="dropdown-cat">${escHtml(v.category || '')}</div>
       </div>`).join('');
 
-    // Always offer custom entry if typed name not exact match
     const exactMatch = allVendors.find(v => v.name.toLowerCase() === q);
     if (!exactMatch) {
       const display = val.trim().charAt(0).toUpperCase() + val.trim().slice(1);
@@ -440,7 +1204,6 @@
     btn.disabled = false;
   }
 
-  // ─── Run check ────────────────────────────────────────────────────
   async function runCheck() {
     clearError();
     if (!selectedVendors.length) return;
@@ -475,14 +1238,13 @@
     }
   }
 
-  // ─── Render results ───────────────────────────────────────────────
   function renderResults(results) {
     if (!results?.length) { showError('No results returned.'); return; }
 
-    const avg      = Math.round(results.reduce((s, r) => s + (r.score || 0), 0) / results.length);
-    const highCount= results.filter(r => (r.score || 0) >= 80).length;
-    const midCount = results.filter(r => (r.score || 0) >= 60 && (r.score || 0) < 80).length;
-    const lowCount = results.filter(r => (r.score || 0) < 60).length;
+    const avg       = Math.round(results.reduce((s, r) => s + (r.score || 0), 0) / results.length);
+    const highCount = results.filter(r => (r.score || 0) >= 80).length;
+    const midCount  = results.filter(r => (r.score || 0) >= 60 && (r.score || 0) < 80).length;
+    const lowCount  = results.filter(r => (r.score || 0) < 60).length;
 
     document.getElementById('summaryBar').innerHTML = `
       <div>
@@ -496,7 +1258,7 @@
       </div>`;
 
     document.getElementById('vendorCards').innerHTML = results
-      .sort((a, b) => (a.score || 0) - (b.score || 0))   // worst first
+      .sort((a, b) => (a.score || 0) - (b.score || 0))
       .map((v, i) => renderVendorCard(v, i)).join('');
 
     document.getElementById('loadingSection').classList.remove('show');
@@ -567,7 +1329,6 @@
     document.getElementById(id).classList.toggle('open');
   }
 
-  // ─── Reset ────────────────────────────────────────────────────────
   function resetForm() {
     selectedVendors = [];
     renderTags();
