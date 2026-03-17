@@ -384,6 +384,13 @@ Respond ONLY in this exact JSON format — no preamble, no markdown fences:
       await generateFixes(userId, violations, emailResult?.checks || [], savedRecordId, APP_URL);
     }
 
+    // ── 5a. Update compliance streak ──────────────────────────────────
+    fetch(`${APP_URL}/api/profile?action=streak`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    }).catch(e => console.error('Streak update failed:', e));
+
     // ── 6. Return unified response ────────────────────────────────────
     return res.status(200).json({
       ...(aiAnalysis || {}),
