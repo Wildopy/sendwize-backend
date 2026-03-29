@@ -687,10 +687,56 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
 
     const violations = aiAnalysis?.violations || [];
 
-    // ── 4. Generate Compliance_Fixes ──────────────────────────────────
+    // ── 4. Save to AI_Compliance_Checks ───────────────────────────────
+    // Fields confirmed against actual Airtable schema (screenshot 29 Mar 2026):
+    // UserID, CheckDate, ContentType, Industry, RiskScore, Verdict,
+    // CriticalIssues, Warnings, MarketingCopy, FileName, Analysis,
+    // FixedVersion, RelatedCases
+    let savedRecordId = null;
+    try {
+      const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+      const BASE_ID        = process.env.BASE_ID;
+
+      const criticalCount = violations.filter(v => v.severity === 'critical').length;
+      const warningCount  = violations.filter(v => v.severity === 'high' || v.severity === 'medium').length;
+
+      const saveRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/AI_Compliance_Checks`, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          records: [{
+            fields: {
+              UserID:         userId,
+              CheckDate:      new Date().toISOString().split('T')[0],
+              ContentType:    contentType,
+              RiskScore:      aiAnalysis?.score ?? (emailResult?.emailScore ?? 0),
+              Verdict:        aiAnalysis?.verdict ?? '',
+              CriticalIssues: criticalCount,
+              Warnings:       warningCount,
+              MarketingCopy:  analysisContent?.slice(0, 10000) ?? '',
+              FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
+              Analysis:       JSON.stringify({ violations, summary: aiAnalysis?.summary ?? '' }),
+              FixedVersion:   aiAnalysis?.fixedVersion ?? '',
+              RelatedCases:   '',
+            }
+          }]
+        })
+      });
+
+      if (saveRes.ok) {
+        const saved = await saveRes.json();
+        savedRecordId = saved.records?.[0]?.id ?? null;
+      } else {
+        console.error('AI_Compliance_Checks save failed:', saveRes.status);
+      }
+    } catch (err) {
+      console.error('AI_Compliance_Checks save error:', err);
+    }
+
+    // ── 5. Generate Compliance_Fixes ──────────────────────────────────
     if (violations.length > 0 || emailResult?.checks.some(c => c.fixType)) {
-      // Fire-and-forget — don't block the response
-      generateFixes(userId, violations, emailResult?.checks || [], null)
+      // Pass savedRecordId as sourceRecordId for deduplication in generate-fix.js
+      generateFixes(userId, violations, emailResult?.checks || [], savedRecordId)
         .catch(e => console.error('generateFixes error:', e));
     }
 
