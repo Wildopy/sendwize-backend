@@ -1,481 +1,500 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v4.8
-// Saves PECR questionnaire results to Airtable Submissions table
-// and generates Compliance_Fixes for any critical issues found.
+// SENDWIZE — submit-check.js v4.19
+// Campaign Compliance Dossier (Tool 5) + Campaign Brief Checker (Tool 7).
+// PECR questionnaire removed. Submissions table no longer written.
 //
-// v4.8 changes:
-//   - refineSeverity() added (Option A — spec §5.4)
-//     Adjusts severity based on emailVolume before each
-//     generate-fix call. Returns null if no rule applies —
-//     generate-fix falls back to ISSUE_TO_FIX default.
-//   - New fix type mappings: misleading_pricing, dark_pattern,
-//     unlawful_incentive, missing_terms (added in v4.5)
-//   - Tier 3 fix types (missing_address, no_sender_identification,
-//     no_privacy_policy, no_dpa, no_legitimate_interest,
-//     frequency_abuse, unlawful_incentive, missing_terms) still
-//     map here — generate-fix will write 0/0 exposure and
-//     exposureBasis='reputational'. Dashboard shows risk indicator.
+// POST ?action=dossier-save    { userId, dossierId, module, evidenceJson, evidenceFiles? }
+// GET  ?action=dossier-get&dossierId=x&userId=x
+// POST ?action=dossier-submit  { userId, dossierId }
+// POST ?action=brief-check     { userId, campaignName, ...8 brief fields }
+//
+// CRITICAL: ISSUE_TO_FIX map and refineSeverity() preserved from v4.8.
 // ─────────────────────────────────────────────────────────────
 
-const APP_URL = process.env.APP_URL || 'https://sendwize-backend.vercel.app';
+const APP_URL = 'https://sendwize-backend.vercel.app';
 
-// ── Option A: Dynamic severity refinement ────────────────────────────────
-// Called before each generate-fix POST. Reads emailVolume from the
-// user profile (passed in from the profile fetch below) and returns
-// a refined severity string, or null to use the ISSUE_TO_FIX default.
-// Rules documented in spec §5.4.
+const DOSSIER_MODULES = ['list_provenance', 'consent_mechanism', 'content_check', 'suppression', 'sender_identity'];
+
+// ── Option A: Dynamic severity refinement ────────────────────
+// Returns refined severity string or null (use ISSUE_TO_FIX default).
 function refineSeverity(fixType, emailVolume) {
-  const isLarge  = ['large_send', 'enterprise_send'].includes(emailVolume);
-  const isMicro  = ['micro_send', 'small_send'].includes(emailVolume);
+  const isLarge = ['large_send', 'enterprise_send'].includes(emailVolume);
+  const isMicro = ['micro_send', 'small_send'].includes(emailVolume);
 
   const rules = {
-    // Always critical regardless of volume — no safe volume for these
     invalid_consent_mechanism: 'critical',
-
-    // Scale with volume
     missing_unsubscribe:       isLarge ? 'critical' : 'high',
     expired_consent:           isLarge ? 'critical' : isMicro ? 'medium' : 'high',
     suppressed_contact:        isLarge ? 'critical' : 'high',
     no_soft_optin:             isLarge ? 'critical' : 'high',
-
-    // Frequency: higher risk at scale or in regulated sectors
     frequency_abuse:           isLarge ? 'high' : 'medium',
-
-    // CMA/ASA — volume matters for CMA enforcement trajectory
     dark_pattern:              isLarge ? 'critical' : 'high',
-    misleading_pricing:        'high',   // systematic by definition at questionnaire stage
+    misleading_pricing:        'high',
     misleading_claim:          'high',
     fake_urgency:              'medium',
-
-    // Third party — high regardless (ICO treats sender as fully liable)
     third_party_list:          'high',
   };
 
   return rules[fixType] || null;
 }
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+// ── ISSUE_TO_FIX — preserved from v4.8 ───────────────────────
+// Maps dossier issue labels to fixType + default severity.
+// Used by dossier-submit action.
+const ISSUE_TO_FIX = {
 
+  // ── List provenance ───────────────────────────────────────
+  'No suppression list system': { fixType: 'missing_unsubscribe', severity: 'critical', description: 'Dossier: No suppression list system in place. Implement and screen before every campaign.' },
+  'No suppression list screening (email)': { fixType: 'missing_unsubscribe', severity: 'critical', description: 'Dossier: Suppression list not screened before email campaign.' },
+  'Purchased email data lacks named consent': { fixType: 'third_party_list', severity: 'high', description: 'Dossier: Purchased email list lacks consent naming this organisation.' },
+  'Third-party data due diligence incomplete': { fixType: 'no_dpa', severity: 'high', description: 'Dossier: Due diligence on third-party data source not completed before use.' },
+  'Third-party data provenance unverifiable': { fixType: 'no_dpa', severity: 'high', description: 'Dossier: Cannot verify provenance of purchased/rented data — must not use.' },
+
+  // ── Consent mechanism ─────────────────────────────────────
+  'Consent not freely given': { fixType: 'invalid_consent_mechanism', severity: 'critical', description: 'Dossier: Consent was not freely given — bundled, conditioned, or pre-ticked.' },
+  'No opt-out mechanism': { fixType: 'missing_unsubscribe', severity: 'critical', description: 'Dossier: No opt-out mechanism included in marketing communications.' },
+  'No opt-out at point of collection': { fixType: 'missing_unsubscribe', severity: 'high', description: 'Dossier: No opt-out offered when contact details were first collected.' },
+  'No opt-out in every communication': { fixType: 'missing_unsubscribe', severity: 'critical', description: 'Dossier: Opt-out not included in every communication (soft opt-in condition).' },
+  'PECR consent invalid': { fixType: 'missing_unsubscribe', severity: 'critical', description: 'Dossier: PECR consent does not meet the required standard for electronic mail marketing.' },
+  'Soft opt-in for different products': { fixType: 'no_soft_optin', severity: 'high', description: 'Dossier: Soft opt-in applied to marketing for different products/services — express consent required.' },
+  'Third-party consent unusable for email': { fixType: 'missing_unsubscribe', severity: 'critical', description: 'Dossier: Third-party consent cannot be used for email — does not specifically name this organisation.' },
+
+  // ── Content check ─────────────────────────────────────────
+  'Misleading claim in content': { fixType: 'misleading_claim', severity: 'high', description: 'Dossier: Content contains a misleading claim that requires evidence or correction.' },
+  'Fake urgency or scarcity': { fixType: 'fake_urgency', severity: 'medium', description: 'Dossier: Content uses urgency or scarcity language that may not reflect genuine constraints.' },
+  'Misleading pricing': { fixType: 'misleading_pricing', severity: 'high', description: 'Dossier: Content contains reference pricing or fee presentation that does not comply with DMCCA 2024.' },
+  'Health claim not authorised': { fixType: 'unauthorised_health_claim', severity: 'high', description: 'Dossier: Content includes a health claim not on the UK authorised health claims register.' },
+  'No T&Cs linked in promotion': { fixType: 'missing_terms', severity: 'low', description: 'Dossier: Promotional content does not link to terms and conditions.' },
+  'Dark pattern in content': { fixType: 'dark_pattern', severity: 'high', description: 'Dossier: Content uses a dark pattern that may constitute an unfair commercial practice under DMCCA 2024.' },
+
+  // ── Suppression ───────────────────────────────────────────
+  'Suppressed contacts not excluded': { fixType: 'suppressed_contact', severity: 'critical', description: 'Dossier: Suppressed contacts (opted-out or TPS-registered) not excluded from send list.' },
+  'No TPS screening': { fixType: 'suppressed_contact', severity: 'high', description: 'Dossier: TPS not screened before telephone marketing.' },
+  'Opt-outs not processed': { fixType: 'missing_unsubscribe', severity: 'high', description: 'Dossier: Previous opt-out requests not processed before this campaign.' },
+
+  // ── Sender identity ───────────────────────────────────────
+  'Sender not clearly identified': { fixType: 'concealed_sender', severity: 'high', description: 'Dossier: Sender identity not clearly disclosed in marketing communication — PECR Reg 23 requirement.' },
+  'No postal address in email': { fixType: 'missing_address', severity: 'medium', description: 'Dossier: Email does not include a postal address for the sender.' },
+  'No privacy policy link': { fixType: 'no_privacy_policy', severity: 'medium', description: 'Dossier: Email does not link to a privacy policy.' },
+  'No Data Processing Agreement': { fixType: 'no_dpa', severity: 'high', description: 'Dossier: No written DPA with ESP or other processors used in this campaign — UK GDPR Article 28 breach.' },
+};
+
+// ─────────────────────────────────────────────────────────────
+// BRIEF CHECKER — 8 field deterministic cross-reference
+// ─────────────────────────────────────────────────────────────
+
+// Maps brief field values to issues + severity + exposure estimate basis.
+// Returns { redCount, amberCount, greenCount, issues[], resultStatus }.
+function runBriefCheck(fields) {
+  const issues = [];
+
+  const {
+    channel,        // 'email' | 'sms' | 'push' | 'social' | 'directmail'
+    audience,       // 'b2b' | 'b2c' | 'mixed'
+    lawfulBasis,    // 'consent' | 'soft_optin' | 'legitimate_interests' | 'other'
+    listSource,     // 'own_organic' | 'own_purchased' | 'third_party' | 'mixed'
+    suppressionDone, // boolean
+    contentType,    // 'promotional' | 'newsletter' | 'service' | 'mixed'
+    hasUnsubscribe, // boolean
+    senderClear,    // boolean
+  } = fields;
+
+  // Field 1 — Channel + Lawful Basis
+  if (['email','sms','push'].includes(channel) && lawfulBasis === 'legitimate_interests') {
+    issues.push({ field: 'lawfulBasis', severity: 'red', issue: 'Legitimate interests cannot be used as a lawful basis for electronic direct marketing under PECR. Express consent or soft opt-in required.', fixType: 'no_consent' });
+  }
+  if (lawfulBasis === 'other') {
+    issues.push({ field: 'lawfulBasis', severity: 'amber', issue: 'Non-standard lawful basis selected. Verify this basis is valid for direct marketing to this audience and channel.', fixType: 'misleading_claim' });
+  }
+
+  // Field 2 — List Source
+  if (listSource === 'own_purchased' || listSource === 'third_party') {
+    issues.push({ field: 'listSource', severity: 'red', issue: 'Purchased or third-party lists are only lawful if recipients specifically consented to receive marketing from this organisation by name. This is rarely the case with bought data.', fixType: 'third_party_list' });
+  }
+  if (listSource === 'mixed') {
+    issues.push({ field: 'listSource', severity: 'amber', issue: 'Mixed list sources detected. Verify consent or soft opt-in validity separately for each segment.', fixType: 'third_party_list' });
+  }
+
+  // Field 3 — Soft opt-in check
+  if (lawfulBasis === 'soft_optin' && listSource !== 'own_organic') {
+    issues.push({ field: 'lawfulBasis', severity: 'red', issue: 'Soft opt-in only applies to contacts who purchased or negotiated to purchase from this organisation directly. It cannot be applied to third-party or purchased data.', fixType: 'no_soft_optin' });
+  }
+
+  // Field 4 — Suppression
+  if (!suppressionDone) {
+    issues.push({ field: 'suppressionDone', severity: 'red', issue: 'Suppression list not confirmed as screened. Sending to opted-out contacts is a PECR breach.', fixType: 'suppressed_contact' });
+  }
+
+  // Field 5 — Unsubscribe mechanism
+  if (!hasUnsubscribe && ['email','sms'].includes(channel)) {
+    issues.push({ field: 'hasUnsubscribe', severity: 'red', issue: 'No unsubscribe mechanism confirmed. PECR Regulation 22 requires a simple, free opt-out in every marketing message.', fixType: 'missing_unsubscribe' });
+  }
+
+  // Field 6 — Sender identification
+  if (!senderClear) {
+    issues.push({ field: 'senderClear', severity: 'amber', issue: 'Sender identity not confirmed as clearly disclosed. PECR Regulation 23 requires the sender to be identifiable.', fixType: 'concealed_sender' });
+  }
+
+  // Field 7 — Content type vs channel
+  if (contentType === 'service' && ['promotional'].includes(contentType)) {
+    issues.push({ field: 'contentType', severity: 'amber', issue: 'Service messages containing promotional content must be treated as direct marketing in their entirety.', fixType: 'misleading_claim' });
+  }
+
+  // Field 8 — B2C + no consent
+  if (audience === 'b2c' && lawfulBasis === 'legitimate_interests' && ['email','sms'].includes(channel)) {
+    issues.push({ field: 'audience', severity: 'red', issue: 'B2C electronic marketing requires PECR consent or soft opt-in. Legitimate interests does not apply.', fixType: 'no_consent' });
+  }
+
+  const redCount   = issues.filter(i => i.severity === 'red').length;
+  const amberCount = issues.filter(i => i.severity === 'amber').length;
+  const greenCount = 8 - redCount - amberCount;
+
+  let resultStatus;
+  if (redCount > 0)        resultStatus = 'Red';
+  else if (amberCount > 0) resultStatus = 'Amber';
+  else                     resultStatus = 'Green';
+
+  return { redCount, amberCount, greenCount: Math.max(0, greenCount), issues, resultStatus };
+}
+
+// ─────────────────────────────────────────────────────────────
+// HANDLER
+// ─────────────────────────────────────────────────────────────
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin',  '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const action = req.query.action;
+
+  try {
+    if (req.method === 'POST' && action === 'dossier-save')   return await handleDossierSave(req, res);
+    if (req.method === 'GET'  && action === 'dossier-get')    return await handleDossierGet(req, res);
+    if (req.method === 'POST' && action === 'dossier-submit') return await handleDossierSubmit(req, res);
+    if (req.method === 'POST' && action === 'brief-check')    return await handleBriefCheck(req, res);
+
+    return res.status(400).json({ error: 'Unknown action. Use ?action=dossier-save|dossier-get|dossier-submit|brief-check' });
+  } catch (error) {
+    console.error('submit-check error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// dossier-save
+// Saves/updates a single evidence module for a dossierId.
+// Writes to Campaign_Dossiers.
+// ─────────────────────────────────────────────────────────────
+async function handleDossierSave(req, res) {
+  const { userId, dossierId, module, evidenceJson } = req.body ?? {};
+
+  if (!userId)     return res.status(400).json({ error: 'Missing userId' });
+  if (!dossierId)  return res.status(400).json({ error: 'Missing dossierId' });
+  if (!module)     return res.status(400).json({ error: 'Missing module' });
+  if (!DOSSIER_MODULES.includes(module)) {
+    return res.status(400).json({ error: `Invalid module. Must be one of: ${DOSSIER_MODULES.join(', ')}` });
+  }
+
+  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+  const BASE_ID        = process.env.BASE_ID;
+  const base           = `https://api.airtable.com/v0/${BASE_ID}`;
+  const authH          = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
+
+  // Check if a record already exists for this dossier+module
+  const existing = await fetch(
+    `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}',{Module}='${module}')&maxRecords=1`,
+    { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+  );
+
+  const existingData = existing.ok ? await existing.json() : { records: [] };
+  const existingRecord = existingData.records?.[0];
+
+  const fields = {
+    UserID:       userId,
+    CampaignID:   dossierId,
+    Module:       module,
+    EvidenceJson: typeof evidenceJson === 'string' ? evidenceJson : JSON.stringify(evidenceJson || {}),
+    CompletedAt:  new Date().toISOString(),
+  };
+
+  let result;
+  if (existingRecord) {
+    const r = await fetch(`${base}/Campaign_Dossiers/${existingRecord.id}`, {
+      method: 'PATCH', headers: authH, body: JSON.stringify({ fields }),
+    });
+    if (!r.ok) { console.error('Campaign_Dossiers patch failed:', r.status); return res.status(r.status).json({ error: 'Failed to save module' }); }
+    result = await r.json();
+  } else {
+    const r = await fetch(`${base}/Campaign_Dossiers`, {
+      method: 'POST', headers: authH, body: JSON.stringify({ records: [{ fields }] }),
+    });
+    if (!r.ok) { console.error('Campaign_Dossiers create failed:', r.status); return res.status(r.status).json({ error: 'Failed to save module' }); }
+    result = (await r.json()).records?.[0];
+  }
+
+  return res.json({ success: true, recordId: result?.id, module });
+}
+
+// ─────────────────────────────────────────────────────────────
+// dossier-get
+// Returns full dossier state — all five modules, completion %.
+// ─────────────────────────────────────────────────────────────
+async function handleDossierGet(req, res) {
+  const { userId, dossierId } = req.query;
+  if (!userId)    return res.status(400).json({ error: 'Missing userId' });
+  if (!dossierId) return res.status(400).json({ error: 'Missing dossierId' });
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
 
-  if (!AIRTABLE_TOKEN || !BASE_ID) {
-    return res.status(500).json({ error: 'Missing Airtable configuration' });
+  const r = await fetch(
+    `https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')`,
+    { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+  );
+
+  if (!r.ok) { console.error('Campaign_Dossiers fetch failed:', r.status); return res.status(r.status).json({ error: 'Failed to fetch dossier' }); }
+
+  const records  = (await r.json()).records || [];
+  const modules  = {};
+
+  for (const record of records) {
+    const mod = record.fields.Module;
+    if (mod) {
+      modules[mod] = {
+        recordId:    record.id,
+        evidenceJson: (() => { try { return JSON.parse(record.fields.EvidenceJson || '{}'); } catch { return {}; } })(),
+        completedAt: record.fields.CompletedAt || null,
+        issuesFound: record.fields.IssuesFound || 0,
+      };
+    }
   }
+
+  const completedModules  = DOSSIER_MODULES.filter(m => modules[m]);
+  const dossierComplete   = completedModules.length === DOSSIER_MODULES.length;
+
+  return res.json({
+    dossierId,
+    modules,
+    completedModules: completedModules.length,
+    totalModules:     DOSSIER_MODULES.length,
+    dossierComplete,
+    missingModules:   DOSSIER_MODULES.filter(m => !modules[m]),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// dossier-submit
+// Runs ISSUE_TO_FIX logic across submitted dossier evidence.
+// Calls refineSeverity() and generate-fix.js per issue.
+// Updates Campaign_Dossiers IssuesFound.
+// Fires streak call.
+// ─────────────────────────────────────────────────────────────
+async function handleDossierSubmit(req, res) {
+  const { userId, dossierId, issues } = req.body ?? {};
+  if (!userId)    return res.status(400).json({ error: 'Missing userId' });
+  if (!dossierId) return res.status(400).json({ error: 'Missing dossierId' });
+
+  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+  const BASE_ID        = process.env.BASE_ID;
+
+  // Fetch emailVolume for refineSeverity
+  let emailVolume = 'medium_send';
+  try {
+    const pr = await fetch(
+      `https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
+      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+    );
+    if (pr.ok) {
+      const pd = await pr.json();
+      emailVolume = pd.records?.[0]?.fields?.EmailVolume || 'medium_send';
+    }
+  } catch (e) { console.error('Profile fetch failed, using default:', e); }
+
+  const issueList  = Array.isArray(issues) ? issues : (issues ? String(issues).split(';').map(i => i.trim()).filter(Boolean) : []);
+  const fixResults = [];
+
+  for (const issue of issueList) {
+    const mapping = ISSUE_TO_FIX[issue];
+    if (!mapping) continue;
+
+    const finalSeverity = refineSeverity(mapping.fixType, emailVolume) || mapping.severity;
+
+    try {
+      const fixRes  = await fetch(`${APP_URL}/api/generate-fix`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId, fixType: mapping.fixType, description: mapping.description,
+          tool: 'Campaign Dossier', severity: finalSeverity, volume: null, sourceRecordId: dossierId,
+        })
+      });
+      const fixData = await fixRes.json();
+      fixResults.push({ issue, status: fixData.skipped ? 'duplicate_skipped' : 'created', fixId: fixData.fixId });
+    } catch (e) {
+      console.error(`generate-fix failed for "${issue}":`, e);
+      fixResults.push({ issue, status: 'error' });
+    }
+  }
+
+  // Update IssuesFound on all module records for this dossier
+  const issuesFound = issueList.length;
+  try {
+    const dr = await fetch(
+      `https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')`,
+      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+    );
+    if (dr.ok) {
+      const dRecords = (await dr.json()).records || [];
+      await Promise.allSettled(dRecords.map(r =>
+        fetch(`https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers/${r.id}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { IssuesFound: issuesFound, DossierCheckedAt: new Date().toISOString() } }),
+        })
+      ));
+    }
+  } catch (e) { console.error('IssuesFound update failed (non-fatal):', e); }
+
+  // Streak call
+  fetch(`${APP_URL}/api/profile?action=streak`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
+  }).catch(e => console.error('Streak failed:', e));
+
+  return res.json({
+    success:        true,
+    dossierId,
+    issuesFound,
+    fixesGenerated: fixResults.filter(f => f.status === 'created').length,
+    fixResults,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// brief-check
+// Deterministic cross-reference of 8 campaign brief fields.
+// Calls generate-fix.js per issue found.
+// On non-Red result: creates Campaign_Dossiers skeleton, returns dossierId.
+// ─────────────────────────────────────────────────────────────
+async function handleBriefCheck(req, res) {
+  const {
+    userId, campaignName,
+    channel, audience, lawfulBasis, listSource,
+    suppressionDone, contentType, hasUnsubscribe, senderClear,
+  } = req.body ?? {};
+
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+
+  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+  const BASE_ID        = process.env.BASE_ID;
+
+  const briefFields = { channel, audience, lawfulBasis, listSource, suppressionDone, contentType, hasUnsubscribe, senderClear };
+  const { redCount, amberCount, greenCount, issues, resultStatus } = runBriefCheck(briefFields);
+
+  // Save Brief_Checks record
+  let briefCheckId = null;
+  let totalExposureEstimate = 0;
 
   try {
-    const {
-      userId,
-      campaignName,
-      result,       // 'Send this Wizely' | 'STOP AND RE-THINK THIS CAMPAIGN' | 'Not Wize to send'
-      score,        // 0–100
-      channels,     // comma-separated string e.g. 'email, sms'
-      audience,     // 'b2b' | 'b2c' | 'both'
-      lawfulBasis,  // 'consent' | 'li' | 'public'
-      issues,       // semicolon-separated string of warning labels
-    } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
-    }
-
-    // ── 0. Fetch user profile for refineSeverity ──────────────────────
-    // We need emailVolume before the fix generation loop.
-    let emailVolume = 'medium_send';
-    try {
-      const profileRes = await fetch(
-        `https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}="${userId}"&maxRecords=1`,
-        { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
-      );
-      const profileData = await profileRes.json();
-      if (profileData.records?.length > 0) {
-        emailVolume = profileData.records[0].fields.EmailVolume || 'medium_send';
-      }
-    } catch (e) {
-      console.error('Profile fetch failed, using medium_send default:', e);
-    }
-
-    // ── 1. Save to Submissions table ──────────────────────────────────
-    const submissionRecord = {
-      fields: {
-        UserID:         userId,
-        CampaignName:   campaignName || 'Unnamed Campaign',
-        SubmissionDate: new Date().toISOString().split('T')[0],
-        Result:         result || 'Unknown',
-        Answers:        JSON.stringify({ audience, lawfulBasis, channels, score }),
-        Recommendations: JSON.stringify(
-          issues ? issues.split(';').map(i => i.trim()).filter(Boolean) : []
-        ),
-      },
-    };
-
-    const airtableRes = await fetch(
-      `https://api.airtable.com/v0/${BASE_ID}/Submissions`,
-      {
-        method:  'POST',
-        headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
-        body:    JSON.stringify(submissionRecord),
-      }
-    );
-
-    if (!airtableRes.ok) {
-      const err = await airtableRes.json();
-      console.error('Airtable Submissions error:', err);
-      throw new Error(`Airtable error: ${JSON.stringify(err)}`);
-    }
-
-    const saved        = await airtableRes.json();
-    const submissionId = saved.id;
-
-    // ── 2. Generate fixes for mapped issues ───────────────────────────
-    // ISSUE_TO_FIX maps questionnaire warning labels to fixType + default severity.
-    // refineSeverity() may override the default severity based on emailVolume.
-    // Tier 3 fix types are still mapped — generate-fix writes 0/0 exposure
-    // with exposureBasis='reputational'; the dashboard shows a risk indicator.
-
-    const ISSUE_TO_FIX = {
-
-      // ── Suppression / unsubscribe ─────────────────────────────────
-      'No suppression list system': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: No suppression list system in place. You must implement a suppression list and screen it before every campaign.',
-      },
-      'No suppression list screening (email)': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: Suppression list not screened before email campaign.',
-      },
-      'No suppression list screening (calls)': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: Suppression list not screened before telephone campaign.',
-      },
-      'No opt-out mechanism': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: No opt-out mechanism included in marketing communications.',
-      },
-      'Opt-out is not free': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: Opt-out process is not free of charge — this is a PECR breach.',
-      },
-      'Opt-outs not processed within 30 days': {
-        fixType: 'missing_unsubscribe', severity: 'high',
-        description: 'PECR Questionnaire: Opt-out requests are not being actioned within 30 days.',
-      },
-      'Objectors not removed from mailing list': {
-        fixType: 'missing_unsubscribe', severity: 'high',
-        description: 'PECR Questionnaire: Previous objectors have not been removed from the mailing list.',
-      },
-      'No opt-out in every communication': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: Opt-out not included in every marketing communication (soft opt-in condition).',
-      },
-      'No opt-out at point of collection': {
-        fixType: 'missing_unsubscribe', severity: 'high',
-        description: 'PECR Questionnaire: No opt-out was offered when contact details were first collected.',
-      },
-
-      // ── Missing address / sender ID (Tier 3) ─────────────────────
-      'Caller ID withheld': {
-        fixType: 'missing_address', severity: 'high',
-        description: 'PECR Questionnaire: Telephone number withheld during marketing calls — must be displayed.',
-      },
-      'No identification info provided on call': {
-        fixType: 'missing_address', severity: 'high',
-        description: 'PECR Questionnaire: Name and contact details not provided during marketing calls.',
-      },
-      'No ID info in automated call message': {
-        fixType: 'missing_address', severity: 'high',
-        description: 'PECR Questionnaire: Automated call message does not include sender name and contact details.',
-      },
-
-      // ── Privacy policy / transparency (Tier 3) ───────────────────
-      'No privacy information provided': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: No privacy information provided to individuals — UK GDPR transparency requirement not met.',
-      },
-      'Privacy information incomplete': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: Privacy information does not cover all required UK GDPR elements.',
-      },
-      'Privacy info not provided within one month': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: Privacy information not provided within one month of indirect data collection.',
-      },
-      'Profiling not disclosed in privacy info': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: Profiling activity not disclosed in privacy information.',
-      },
-      'Data enrichment not disclosed': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: Data enrichment from third parties not disclosed to individuals.',
-      },
-
-      // ── Data Processing Agreement (Tier 3) ───────────────────────
-      'No Data Processing Agreement with processor': {
-        fixType: 'no_dpa', severity: 'high',
-        description: 'PECR Questionnaire: No written Data Processing Agreement with third-party sender — UK GDPR Article 28 breach.',
-      },
-      'No joint controller agreement': {
-        fixType: 'no_dpa', severity: 'high',
-        description: 'PECR Questionnaire: No joint controller arrangement in place with social media platform or co-marketing partner.',
-      },
-      'No contracts for data cleansing services': {
-        fixType: 'no_dpa', severity: 'high',
-        description: 'PECR Questionnaire: No data processing contracts with data cleansing/suppression service providers.',
-      },
-
-      // ── Misleading claims ─────────────────────────────────────────
-      'Attempting to switch from consent to LI': {
-        fixType: 'misleading_claim', severity: 'high',
-        description: 'PECR Questionnaire: Attempting to switch lawful basis from consent to legitimate interests — this is not permitted.',
-      },
-      'Retrospective lawful basis attempted': {
-        fixType: 'misleading_claim', severity: 'high',
-        description: 'PECR Questionnaire: Attempting to retrospectively apply a lawful basis to previously unlawful processing.',
-      },
-      'Market research is actually marketing': {
-        fixType: 'misleading_claim', severity: 'high',
-        description: 'PECR Questionnaire: Market research contains promotional content — this constitutes direct marketing (sugging).',
-      },
-      'Promotional content in service message': {
-        fixType: 'misleading_claim', severity: 'medium',
-        description: 'PECR Questionnaire: Service message contains promotional content — the entire message must be treated as direct marketing.',
-      },
-
-      // ── Consent failures ──────────────────────────────────────────
-      'Consent not freely given': {
-        fixType: 'invalid_consent_mechanism', severity: 'critical',
-        description: 'PECR Questionnaire: Consent was not freely given — bundled, conditioned, or obtained via pre-ticked boxes.',
-      },
-      'Consent harder to withdraw than to give': {
-        fixType: 'missing_unsubscribe', severity: 'high',
-        description: 'PECR Questionnaire: Withdrawing consent is harder than giving it — must be equalised.',
-      },
-      'PECR consent invalid': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: PECR consent does not meet the required standard for electronic mail marketing.',
-      },
-      'No consent records maintained': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: No records of consent maintained — accountability principle breach.',
-      },
-
-      // ── Third-party data ──────────────────────────────────────────
-      'Third-party consent unusable for email': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: Third-party consent cannot be used for email — does not specifically name your organisation.',
-      },
-      'Third-party consent over 6 months old': {
-        fixType: 'missing_unsubscribe', severity: 'high',
-        description: 'PECR Questionnaire: Third-party consent is over 6 months old and should not be used.',
-      },
-      'Third-party data due diligence incomplete': {
-        fixType: 'no_dpa', severity: 'high',
-        description: 'PECR Questionnaire: Due diligence on third-party data source not completed before use.',
-      },
-      'Third-party data provenance unverifiable': {
-        fixType: 'no_dpa', severity: 'high',
-        description: 'PECR Questionnaire: Cannot verify provenance of purchased/rented data — must not use.',
-      },
-      'Purchased email data lacks named consent': {
-        fixType: 'third_party_list', severity: 'high',
-        description: 'PECR Questionnaire: Purchased email list lacks consent naming your organisation — cannot email individual subscribers.',
-      },
-
-      // ── Preference services ───────────────────────────────────────
-      'No TPS screening': {
-        fixType: 'suppressed_contact', severity: 'high',
-        description: 'PECR Questionnaire: TPS not screened before telephone marketing to individual subscribers.',
-      },
-      'No CTPS screening for B2B calls': {
-        fixType: 'suppressed_contact', severity: 'high',
-        description: 'PECR Questionnaire: CTPS not screened before B2B telephone marketing.',
-      },
-      'No FPS screening': {
-        fixType: 'suppressed_contact', severity: 'high',
-        description: 'PECR Questionnaire: FPS not screened before fax marketing.',
-      },
-      'Preference service screening incomplete': {
-        fixType: 'suppressed_contact', severity: 'high',
-        description: 'PECR Questionnaire: One or more required preference service screenings not completed.',
-      },
-
-      // ── Cookie / tracking ─────────────────────────────────────────
-      'Cookie consent not obtained before placing': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: Non-exempt cookies placed before PECR consent obtained.',
-      },
-      'Cookie consent mechanism non-compliant': {
-        fixType: 'missing_unsubscribe', severity: 'high',
-        description: 'PECR Questionnaire: Cookie consent mechanism does not meet PECR/ICO requirements.',
-      },
-      'No consent for tracking pixels': {
-        fixType: 'missing_unsubscribe', severity: 'high',
-        description: 'PECR Questionnaire: Tracking pixels in marketing emails used without PECR consent.',
-      },
-
-      // ── DPIA / documentation ──────────────────────────────────────
-      'DPIA screening not conducted': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: No DPIA screening conducted — required for high-risk marketing processing.',
-      },
-      'Compliance decisions not documented': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: Key compliance decisions not documented — UK GDPR accountability principle breach.',
-      },
-      'Staff not trained on PECR/GDPR': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: Staff involved in direct marketing not trained on PECR and UK GDPR requirements.',
-      },
-
-      // ── International ─────────────────────────────────────────────
-      'International law compliance not verified': {
-        fixType: 'no_privacy_policy', severity: 'medium',
-        description: 'PECR Questionnaire: Compliance with laws of recipient countries not verified for international marketing.',
-      },
-      'No international transfer mechanism': {
-        fixType: 'no_dpa', severity: 'high',
-        description: 'PECR Questionnaire: No UK GDPR transfer mechanism for international data transfer — must be in place before sending.',
-      },
-
-      // ── Special category / children ───────────────────────────────
-      'Special category data without explicit consent': {
-        fixType: 'misleading_claim', severity: 'high',
-        description: 'PECR Questionnaire: Processing special category data for marketing without explicit consent.',
-      },
-      'Inferred special category data without consent': {
-        fixType: 'misleading_claim', severity: 'high',
-        description: 'PECR Questionnaire: Profiling may produce special category inferences — explicit consent required.',
-      },
-      'No right to object to profiling provided': {
-        fixType: 'missing_unsubscribe', severity: 'critical',
-        description: 'PECR Questionnaire: Right to object to profiling for direct marketing not provided — this is an absolute right.',
-      },
-
-      // ── Viral / joint marketing ───────────────────────────────────
-      'No recipient consent for viral/refer-a-friend': {
-        fixType: 'missing_unsubscribe', severity: 'high',
-        description: 'PECR Questionnaire: Acting as viral marketing instigator without consent from forwarded recipients.',
-      },
-
-      // ── New fix types (v4.5) ──────────────────────────────────────
-      // misleading_pricing — Tier 2
-      'Hidden fees in email promotion': {
-        fixType: 'misleading_pricing', severity: 'high',
-        description: 'PECR Questionnaire: Email promotion does not disclose mandatory fees upfront — DMCCA 2024 pricing transparency breach.',
-      },
-      'Drip pricing in campaign': {
-        fixType: 'misleading_pricing', severity: 'high',
-        description: 'PECR Questionnaire: Additional mandatory charges introduced after initial price shown — drip pricing breach under DMCCA 2024.',
-      },
-      'Fake was/now pricing in email': {
-        fixType: 'misleading_pricing', severity: 'high',
-        description: 'PECR Questionnaire: Promotional email uses inflated reference price that does not reflect genuine previous selling price.',
-      },
-
-      // dark_pattern — Tier 2
-      'Pre-ticked box for additional service': {
-        fixType: 'dark_pattern', severity: 'high',
-        description: 'PECR Questionnaire: Email or landing page uses pre-ticked box to opt contacts into additional services without explicit consent.',
-      },
-      'Misleading countdown timer in email': {
-        fixType: 'dark_pattern', severity: 'medium',
-        description: 'PECR Questionnaire: Countdown timer in email does not reflect genuine offer expiry — CMA enforcement priority.',
-      },
-      'Difficult cancellation process': {
-        fixType: 'dark_pattern', severity: 'high',
-        description: 'PECR Questionnaire: Subscription cancellation process is disproportionately difficult compared to sign-up — DMCCA 2024 breach.',
-      },
-
-      // unlawful_incentive — Tier 3
-      'Prize promotion non-compliant': {
-        fixType: 'unlawful_incentive', severity: 'medium',
-        description: 'PECR Questionnaire: Prize draw or competition promoted in email does not comply with ASA CAP Code Section 8 or Gambling Act 2005.',
-      },
-      'No free entry route for prize draw': {
-        fixType: 'unlawful_incentive', severity: 'medium',
-        description: 'PECR Questionnaire: Paid-entry prize draw lacks a free entry route — may constitute an unlawful lottery.',
-      },
-
-      // missing_terms — Tier 3
-      'No T&Cs linked in promotional email': {
-        fixType: 'missing_terms', severity: 'low',
-        description: 'PECR Questionnaire: Promotional email does not include or link to offer terms and conditions — ASA CAP Code Rule 8.17 breach.',
-      },
-      'Significant conditions missing from email': {
-        fixType: 'missing_terms', severity: 'low',
-        description: 'PECR Questionnaire: Promotional email omits significant conditions (closing date, eligibility, prize details) — ASA CAP Code breach.',
-      },
-    };
-
-    // ── 3. Run fix generation loop ────────────────────────────────────
-    const issueList = issues
-      ? issues.split(';').map(i => i.trim()).filter(Boolean)
-      : [];
-
-    const fixResults = [];
-
-    for (const issue of issueList) {
-      const mapping = ISSUE_TO_FIX[issue];
-      if (!mapping) continue; // advisory only — skip
-
-      // Apply Option A severity refinement
-      const refinedSeverity = refineSeverity(mapping.fixType, emailVolume);
-      const finalSeverity   = refinedSeverity || mapping.severity;
-
-      try {
-        const fixRes = await fetch(`${APP_URL}/api/generate-fix`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({
-            userId,
-            fixType:        mapping.fixType,
-            description:    mapping.description,
-            tool:           'PECR Questionnaire',
-            severity:       finalSeverity,
-            volume:         null,
-            sourceRecordId: submissionId,
-          }),
-        });
-
-        const fixData = await fixRes.json();
-        if (fixData.skipped) {
-          fixResults.push({ issue, status: 'duplicate_skipped' });
-        } else {
-          fixResults.push({ issue, status: 'created', fixId: fixData.fixId });
-        }
-      } catch (fixErr) {
-        console.error(`generate-fix failed for issue "${issue}":`, fixErr);
-        fixResults.push({ issue, status: 'error' });
-      }
-    }
-
-    // ── 4. Update compliance streak ───────────────────────────────────
-    fetch(`${APP_URL}/api/profile?action=streak`, {
+    const briefRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks`, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ userId }),
-    }).catch(e => console.error('Streak update failed:', e));
-
-    // ── 5. Return success ─────────────────────────────────────────────
-    return res.status(200).json({
-      success:        true,
-      submissionId,
-      campaignName:   campaignName || 'Unnamed Campaign',
-      result,
-      score,
-      issuesFound:    issueList.length,
-      fixesGenerated: fixResults.filter(f => f.status === 'created').length,
-      fixResults,
+      headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: [{ fields: {
+        UserID:          userId,
+        BriefName:       campaignName || `Brief ${new Date().toLocaleDateString('en-GB')}`,
+        CheckDate:       new Date().toISOString().split('T')[0],
+        BriefFieldsJson: JSON.stringify(briefFields),
+        RedCount:        redCount,
+        AmberCount:      amberCount,
+        GreenCount:      greenCount,
+        IssuesJson:      JSON.stringify(issues),
+        ResultStatus:    resultStatus,
+      }}]})
     });
+    if (briefRes.ok) briefCheckId = (await briefRes.json()).records?.[0]?.id ?? null;
+  } catch (e) { console.error('Brief_Checks save failed (non-fatal):', e); }
 
-  } catch (error) {
-    console.error('submit-check error:', error);
-    return res.status(500).json({ error: error.message });
+  // Generate fix records for each issue
+  let emailVolume = 'medium_send';
+  try {
+    const pr = await fetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    if (pr.ok) emailVolume = (await pr.json()).records?.[0]?.fields?.EmailVolume || 'medium_send';
+  } catch (e) {}
+
+  for (const issue of issues) {
+    const mapping = ISSUE_TO_FIX[issue.issue];
+    if (!mapping) continue;
+    const finalSeverity = refineSeverity(mapping.fixType, emailVolume) || mapping.severity;
+    try {
+      const fr = await fetch(`${APP_URL}/api/generate-fix`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, fixType: mapping.fixType, description: mapping.description, tool: 'Campaign Brief Checker', severity: finalSeverity, volume: null, sourceRecordId: briefCheckId }),
+      });
+      const fd = await fr.json();
+      if (!fd.skipped) totalExposureEstimate += fd.exposureEstimate || 0;
+    } catch (e) { console.error(`generate-fix failed for brief issue:`, e); }
   }
+
+  // Update TotalExposureEstimate on Brief_Checks
+  if (briefCheckId && totalExposureEstimate > 0) {
+    fetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks/${briefCheckId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { TotalExposureEstimate: totalExposureEstimate } }),
+    }).catch(e => console.error('TotalExposureEstimate update failed (non-fatal):', e));
+  }
+
+  // On non-Red: create Campaign_Dossiers skeleton + lightweight Campaigns record
+  let dossierId = null;
+  if (resultStatus !== 'Red') {
+    try {
+      // Create lightweight Campaigns record
+      const campRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Campaigns`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: [{ fields: {
+          UserID:       userId,
+          CampaignName: campaignName || `Campaign ${new Date().toLocaleDateString('en-GB')}`,
+          CampaignType: channel || 'email',
+          BriefCheckID: briefCheckId,
+          Status:       'Active',
+          CreatedDate:  new Date().toISOString().split('T')[0],
+        }}]})
+      });
+
+      if (campRes.ok) {
+        const campaignId = (await campRes.json()).records?.[0]?.id ?? null;
+
+        // Create one Campaign_Dossiers skeleton record (no module yet — user fills in)
+        if (campaignId) {
+          const dossierRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ records: [{ fields: {
+              UserID:        userId,
+              CampaignID:    campaignId,
+              CampaignTitle: campaignName || 'Unnamed Campaign',
+              OwnerName:     '',
+            }}]})
+          });
+          if (dossierRes.ok) dossierId = campaignId; // use campaignId as the dossierId ref
+        }
+      }
+    } catch (e) { console.error('Dossier skeleton creation failed (non-fatal):', e); }
+  }
+
+  // Streak call
+  fetch(`${APP_URL}/api/profile?action=streak`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
+  }).catch(e => console.error('Streak failed:', e));
+
+  return res.json({
+    briefCheckId,
+    redCount, amberCount, greenCount,
+    issues,
+    totalExposureEstimate,
+    resultStatus,
+    dossierId: resultStatus !== 'Red' ? dossierId : null,
+  });
 }
