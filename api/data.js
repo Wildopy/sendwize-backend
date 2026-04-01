@@ -185,7 +185,11 @@ async function handleHistory(req, res) {
 
 // ── REGISTER handler ──────────────────────────────────────────
 // Manages per-user Vendor_Register records.
-// Seven-dimension schema per spec 8.9.
+// Vendor_Register stores only what the USER manages:
+//   VendorName, VendorType, DPASigned, DPALink, LastChecked, Notes.
+// The 7-dimension research data (ICO status, breach history etc.)
+// lives in Marketing_Vendors (Sendwize-maintained) and is read at
+// query time — it is NOT duplicated into Vendor_Register per user.
 async function handleRegister(req, res) {
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
@@ -211,17 +215,16 @@ async function handleRegister(req, res) {
     if (!userId) return res.status(400).json({ error: 'userId required' });
     if (!vendor) return res.status(400).json({ error: 'vendor data required' });
 
+    // Only user-managed fields written here.
+    // Research dimensions (ICO status, breach history etc.) are read
+    // from Marketing_Vendors at query time, not stored per user.
     const fields = {
-      UserID:                         userId,
-      VendorName:                     vendor.VendorName                     || '',
-      VendorType:                     vendor.VendorType                     || '',
-      ICORegistrationStatus:          vendor.ICORegistrationStatus          || '',
-      DPASigned:                      vendor.DPASigned                      || '',
-      InternationalTransferMechanism: vendor.InternationalTransferMechanism || '',
-      BreachHistoryNote:              vendor.BreachHistoryNote              || '',
-      DPOPresence:                    vendor.DPOPresence                    || '',
-      ISOAccreditation:               vendor.ISOAccreditation               || '',
-      PrivacyPolicyNote:              vendor.PrivacyPolicyNote              || '',
+      UserID:     userId,
+      VendorName: vendor.VendorName  || '',
+      VendorType: vendor.VendorType  || '',
+      DPASigned:  vendor.DPASigned   || '',
+      DPALink:    vendor.DPALink     || '',
+      Notes:      vendor.Notes       || '',
     };
 
     Object.keys(fields).forEach(k => { if (!fields[k]) delete fields[k]; });
