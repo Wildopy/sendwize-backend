@@ -97,9 +97,48 @@ export default async function handler(req, res) {
       }
     } catch (e) { console.error('Vendor_Checks save error:', e); }
 
-    // ── 4. Generate fix records ───────────────────────────────────────
-    // no_dpa: for each vendor without a confirmed signed DPA.
-    // Only one fix per vendor per check (sourceRecordId = Vendor_Checks record).
+    // ── 4. Upsert Vendor_Register — user-managed fields only ─────────
+    // Vendor_Register stores what the USER manages: VendorName, VendorType,
+    // DPASigned, DPALink, LastChecked, Notes.
+    // The 7-dimension research data lives in Marketing_Vendors only
+    // and is read at query time — not duplicated per user.
+    const today = new Date().toISOString().split('T')[0];
+    for (const result of results) {
+      try {
+        const existingRes = await fetch(
+          `https://api.airtable.com/v0/${BASE_ID}/Vendor_Register?filterByFormula=AND({UserID}='${userId}',{VendorName}='${result.name}')&maxRecords=1`,
+          { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+        );
+        const existingData = existingRes.ok ? await existingRes.json() : { records: [] };
+        const existing     = existingData.records?.[0];
+
+        if (existing) {
+          // Only update LastChecked and VendorType — never overwrite user's DPASigned/DPALink/Notes
+          await fetch(`https://api.airtable.com/v0/${BASE_ID}/Vendor_Register/${existing.id}`, {
+            method:  'PATCH',
+            headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ fields: { LastChecked: today, VendorType: result.vendorType || '' } })
+          });
+        } else {
+          // First time this vendor has been checked — create a minimal record
+          await fetch(`https://api.airtable.com/v0/${BASE_ID}/Vendor_Register`, {
+            method:  'POST',
+            headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ records: [{ fields: {
+              UserID:      userId,
+              VendorName:  result.name,
+              VendorType:  result.vendorType || '',
+              LastChecked: today,
+            }}]})
+          });
+        }
+      } catch (e) { console.error(`Vendor_Register upsert failed for ${result.name} (non-fatal):`, e); }
+    }
+
+    // ── 5. Generate fix records ───────────────────────────────────────
+    // no_dpa: fired when Marketing_Vendors library shows DPA not available
+    // or vendor not in library. User can resolve by adding DPASigned to
+    // their Vendor_Register via the vendor-checker UI.
     for (const result of results) {
       if (!result.dpaConfirmed) {
         try {
