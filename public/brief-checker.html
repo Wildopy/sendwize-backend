@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brief Checker — Sendwize</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --orange: #EA7317;
+    --orange-light: #fff4ec;
+    --orange-mid: #fde8d4;
+    --bg: #FAFAFA;
+    --card-bg: #ffffff;
+    --border: #f0f0f0;
+    --border-mid: #e5e5e5;
+    --text: #1a1a1a;
+    --text-mid: #555;
+    --text-light: #9ca3af;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --red-text: #dc2626;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --amber-text: #92400e;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --green-text: #15803d;
+    --label: 11px;
+  }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── NAV ── */
+  nav {
+    background: #fff;
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--orange);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+  }
+  .nav-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .nav-link {
+    font-size: 13px;
+    color: var(--text-mid);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .nav-link:hover { background: var(--bg); }
+
+  /* ── MAIN LAYOUT ── */
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .page-header {
+    margin-bottom: 32px;
+  }
+  .page-label {
+    font-size: var(--label);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 8px;
+  }
+  .page-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .page-desc {
+    font-size: 14px;
+    color: var(--text-mid);
+    line-height: 1.6;
+    max-width: 560px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  /* ── FORM ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: var(--label);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--orange);
+  }
+  label .req { color: var(--red-text); margin-left: 2px; }
+
+  input[type="text"],
+  input[type="number"],
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+    border: 1px solid var(--border-mid);
+    border-radius: 6px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(234,115,23,0.12);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  select { appearance: none; cursor: pointer; }
+
+  .field-hint {
+    font-size: 12px;
+    color: var(--text-light);
+    line-height: 1.4;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    background: var(--orange);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 28px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-secondary {
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border-mid);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-secondary:hover { background: var(--bg); }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-size: var(--label);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── SOFT OPT-IN PANEL ── */
+  #soft-optin-panel {
+    display: none;
+    background: var(--orange-light);
+    border: 1px solid var(--orange-mid);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  #soft-optin-panel h3 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--orange);
+    margin-bottom: 14px;
+  }
+  .soft-question {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--orange-mid);
+  }
+  .soft-question:last-child { border-bottom: none; }
+  .soft-question-text { font-size: 13px; color: var(--text); line-height: 1.4; flex: 1; }
+  .soft-toggle { display: flex; gap: 6px; flex-shrink: 0; }
+  .toggle-btn {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border-mid);
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-mid);
+  }
+  .toggle-btn.active-yes { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+  .toggle-btn.active-no { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
+
+  /* ── CONSENT TIMELINE ── */
+  #consent-timeline {
+    display: none;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 12px;
+  }
+  #consent-timeline h4 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #0369a1; margin-bottom: 8px; }
+  #consent-timeline p { font-size: 13px; color: #0c4a6e; line-height: 1.5; }
+  #consent-timeline strong { font-weight: 700; }
+
+  /* ── LOADING ── */
+  #loading-state {
+    display: none;
+    text-align: center;
+    padding: 40px 24px;
+  }
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border-mid);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading-state p { font-size: 13px; color: var(--text-mid); }
+
+  /* ── ERROR ── */
+  #error-state {
+    display: none;
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 13px;
+    color: var(--red-text);
+  }
+
+  /* ── AUTH ERROR ── */
+  #auth-error {
+    display: none;
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--red-text);
+  }
+
+  /* ── RESULTS ── */
+  #results-section { display: none; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .results-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+
+  .result-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+  }
+  .pill-red { background: var(--red-bg); color: var(--red-text); border: 1px solid var(--red-border); }
+  .pill-amber { background: var(--amber-bg); color: var(--amber-text); border: 1px solid var(--amber-border); }
+  .pill-green { background: var(--green-bg); color: var(--green-text); border: 1px solid var(--green-border); }
+
+  /* ── ISSUE CARDS ── */
+  .issue-card {
+    border-radius: 8px;
+    border-left: 4px solid transparent;
+    padding: 18px 20px;
+    margin-bottom: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+  }
+  .issue-card.red { border-left-color: var(--red-text); background: var(--red-bg); border-color: var(--red-border); }
+  .issue-card.amber { border-left-color: #f59e0b; background: var(--amber-bg); border-color: var(--amber-border); }
+  .issue-card.green { border-left-color: #22c55e; background: var(--green-bg); border-color: var(--green-border); }
+
+  .issue-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .issue-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .badge-red { background: var(--red-text); color: #fff; }
+  .badge-amber { background: #f59e0b; color: #fff; }
+  .badge-green { background: #22c55e; color: #fff; }
+
+  .issue-regulation {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-light);
+  }
+  .issue-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .issue-desc { font-size: 13px; color: var(--text-mid); line-height: 1.5; margin-bottom: 10px; }
+
+  .issue-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+  .issue-meta-item { }
+  .issue-meta-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-light);
+    margin-bottom: 2px;
+  }
+  .issue-meta-value { font-size: 13px; font-weight: 600; color: var(--text); }
+
+  .exposure-note {
+    font-size: 11px;
+    color: var(--text-light);
+    font-style: italic;
+    margin-top: 4px;
+  }
+
+  /* ── EXPOSURE SUMMARY ── */
+  .exposure-summary {
+    background: #fff7f0;
+    border: 1px solid var(--orange-mid);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .exposure-label {
+    font-size: var(--label);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--orange);
+    margin-bottom: 4px;
+  }
+  .exposure-amount { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
+
+  /* ── DOSSIER CTA ── */
+  #dossier-cta {
+    display: none;
+    background: linear-gradient(135deg, #fff4ec 0%, #fff 100%);
+    border: 2px solid var(--orange);
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    margin-top: 20px;
+  }
+  #dossier-cta h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  #dossier-cta p { font-size: 13px; color: var(--text-mid); margin-bottom: 16px; }
+
+  /* ── DISCLAIMER ── */
+  .disclaimer {
+    font-size: 11px;
+    color: var(--text-light);
+    font-style: italic;
+    text-align: center;
+    margin-top: 24px;
+    line-height: 1.5;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 18px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-light);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s;
+  }
+  .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); font-weight: 600; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── CMA NOTE ── */
+  .cma-note {
+    font-size: 11px;
+    color: #92400e;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin-top: 6px;
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/">Sendwize</a>
+  <div class="nav-actions">
+    <a class="nav-link" href="/">Dashboard</a>
+    <a class="nav-link" href="/vendor-checker.html">Vendors</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-label">Tool 7</div>
+    <h1 class="page-title">Brief Checker</h1>
+    <p class="page-desc">Check your campaign brief before launch. We'll flag consent, suppression, and copy issues against PECR, UK GDPR, ASA CAP Code, and CMA rules.</p>
+  </div>
+
+  <!-- AUTH ERROR -->
+  <div id="auth-error">
+    You need to be signed in to use this tool. <a href="/login" style="color:var(--red-text);font-weight:600;">Sign in</a>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="card" id="form-card">
+    <div class="section-title">Campaign details</div>
+
+    <div class="form-grid">
+
+      <div class="field-group full">
+        <label for="campaignName">What are you promoting? <span class="req">*</span></label>
+        <input type="text" id="campaignName" placeholder="e.g. Summer sale — 30% off all products" />
+      </div>
+
+      <div class="field-group">
+        <label for="audience">Who are you targeting? <span class="req">*</span></label>
+        <input type="text" id="audience" placeholder="e.g. UK subscribers, lapsed customers" />
+      </div>
+
+      <div class="field-group">
+        <label for="channel">What channel? <span class="req">*</span></label>
+        <select id="channel">
+          <option value="">— Select —</option>
+          <option value="email">Email</option>
+          <option value="sms">SMS</option>
+          <option value="push">Push notification</option>
+          <option value="direct_mail">Direct mail</option>
+          <option value="social_ad">Social ad (paid)</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="listSource">Where is your list from? <span class="req">*</span></label>
+        <input type="text" id="listSource" placeholder="e.g. Website sign-up form, purchased list" />
+      </div>
+
+      <div class="field-group">
+        <label for="lawfulBasis">Consent / lawful basis <span class="req">*</span></label>
+        <select id="lawfulBasis">
+          <option value="">— Select —</option>
+          <option value="explicit_consent">Explicit consent</option>
+          <option value="soft_opt_in">Soft opt-in (PECR)</option>
+          <option value="legitimate_interest">Legitimate interest</option>
+          <option value="contract">Contract</option>
+          <option value="none">No consent collected</option>
+          <option value="unsure">Unsure</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="consentDate">When was consent collected?</label>
+        <input type="text" id="consentDate" placeholder="e.g. Jan 2024 / ongoing / unknown" />
+        <span class="field-hint">Approximate month/year is fine</span>
+      </div>
+
+      <div class="field-group full">
+        <label for="coreOffer">Core offer or incentive <span class="req">*</span></label>
+        <input type="text" id="coreOffer" placeholder="e.g. 30% discount, free trial, prize draw entry" />
+      </div>
+
+      <div class="field-group">
+        <label for="listSize">Estimated list size</label>
+        <input type="number" id="listSize" placeholder="e.g. 25000" min="0" />
+      </div>
+
+      <div class="field-group">
+        <label for="suppressionDone">Suppression applied?</label>
+        <select id="suppressionDone">
+          <option value="">— Select —</option>
+          <option value="yes">Yes — unsubscribes suppressed</option>
+          <option value="partial">Partial — some lists</option>
+          <option value="no">No</option>
+          <option value="unsure">Unsure</option>
+        </select>
+      </div>
+
+    </div><!-- /form-grid -->
+
+    <!-- SOFT OPT-IN QUALIFIER (shown when soft_opt_in selected) -->
+    <div id="soft-optin-panel">
+      <h3>Soft opt-in qualifier</h3>
+      <p style="font-size:12px;color:var(--text-mid);margin-bottom:12px;">PECR allows soft opt-in only if all four conditions are met. Answer honestly.</p>
+
+      <div class="soft-question" data-key="existing_customer">
+        <span class="soft-question-text">Was the contact's address obtained during a sale or negotiation of a sale of a product or service?</span>
+        <div class="soft-toggle">
+          <button class="toggle-btn" data-val="yes" onclick="setSoftToggle(this)">Yes</button>
+          <button class="toggle-btn" data-val="no" onclick="setSoftToggle(this)">No</button>
+        </div>
+      </div>
+      <div class="soft-question" data-key="similar_products">
+        <span class="soft-question-text">Are you promoting similar products or services to those originally purchased?</span>
+        <div class="soft-toggle">
+          <button class="toggle-btn" data-val="yes" onclick="setSoftToggle(this)">Yes</button>
+          <button class="toggle-btn" data-val="no" onclick="setSoftToggle(this)">No</button>
+        </div>
+      </div>
+      <div class="soft-question" data-key="opt_out_given">
+        <span class="soft-question-text">Were contacts clearly offered an easy opt-out at the time their details were collected?</span>
+        <div class="soft-toggle">
+          <button class="toggle-btn" data-val="yes" onclick="setSoftToggle(this)">Yes</button>
+          <button class="toggle-btn" data-val="no" onclick="setSoftToggle(this)">No</button>
+        </div>
+      </div>
+      <div class="soft-question" data-key="opt_out_now">
+        <span class="soft-question-text">Does every message include a clear, easy opt-out option?</span>
+        <div class="soft-toggle">
+          <button class="toggle-btn" data-val="yes" onclick="setSoftToggle(this)">Yes</button>
+          <button class="toggle-btn" data-val="no" onclick="setSoftToggle(this)">No</button>
+        </div>
+      </div>
+    </div><!-- /soft-optin-panel -->
+
+    <!-- CONSENT TIMELINE (shown when date is within 24 months) -->
+    <div id="consent-timeline">
+      <h4>Consent timeline</h4>
+      <p id="consent-timeline-text"></p>
+    </div>
+
+    <div style="margin-top:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <button class="btn-primary" id="run-check-btn" onclick="runBriefCheck()">
+        <span>Run check</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span style="font-size:12px;color:var(--text-light);">Checks PECR, UK GDPR, ASA CAP, CMA</span>
+    </div>
+
+  </div><!-- /card -->
+
+  <!-- LOADING -->
+  <div id="loading-state" class="card">
+    <div class="spinner"></div>
+    <p>Checking your brief…</p>
+  </div>
+
+  <!-- ERROR -->
+  <div id="error-state"></div>
+
+  <!-- RESULTS -->
+  <div id="results-section">
+
+    <div class="results-header">
+      <div class="results-title">Results</div>
+      <div class="result-pills">
+        <span class="pill pill-red" id="pill-red"></span>
+        <span class="pill pill-amber" id="pill-amber"></span>
+        <span class="pill pill-green" id="pill-green"></span>
+      </div>
+    </div>
+
+    <!-- EXPOSURE SUMMARY -->
+    <div class="exposure-summary" id="exposure-summary" style="display:none;">
+      <div>
+        <div class="exposure-label">Total estimated exposure</div>
+        <div class="exposure-amount" id="exposure-amount"></div>
+        <div class="exposure-note">Illustrative risk ranges based on ICO/ASA/CMA enforcement data. Not legal advice.</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs" id="results-tabs">
+      <button class="tab-btn active" onclick="switchTab('all', this)">All issues</button>
+      <button class="tab-btn" onclick="switchTab('red', this)">🔴 Red</button>
+      <button class="tab-btn" onclick="switchTab('amber', this)">🟡 Amber</button>
+      <button class="tab-btn" onclick="switchTab('green', this)">🟢 Green</button>
+    </div>
+
+    <div id="issues-container"></div>
+
+    <!-- DOSSIER CTA -->
+    <div id="dossier-cta">
+      <h3>Your brief passed — document your compliance</h3>
+      <p>No red issues found. Build a compliance dossier to evidence your lawful basis, list provenance, consent, suppression, and sender identity — ready for any ICO enquiry.</p>
+      <button class="btn-primary" id="dossier-btn" onclick="goToDossier()">
+        Start compliance dossier
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <!-- RUN AGAIN -->
+    <div style="margin-top:20px;text-align:center;">
+      <button class="btn-secondary" onclick="resetForm()">Check another brief</button>
+    </div>
+
+  </div><!-- /results-section -->
+
+  <!-- DISCLAIMER -->
+  <p class="disclaimer">Information only — not legal advice.</p>
+
+</main>
+
+<script>
+  const APP_URL = 'https://sendwize-backend.vercel.app';
+  let userId = null;
+  let currentDossierId = null;
+  let currentIssues = [];
+  let allIssues = [];
+
+  // ── SOFT OPT-IN STATE ──
+  const softAnswers = {
+    existing_customer: null,
+    similar_products: null,
+    opt_out_given: null,
+    opt_out_now: null,
+  };
+
+  // ── AUTH ──
+  async function waitForMemberstack() {
+    return new Promise(resolve => {
+      const interval = setInterval(() => {
+        if (window.$memberstackDom) { clearInterval(interval); resolve(); }
+      }, 200);
+    });
+  }
+
+  function showAuthError() {
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('form-card').style.display = 'none';
+  }
+
+  async function init() {
+    try {
+      await waitForMemberstack();
+      const result = await window.$memberstackDom.getCurrentMember();
+      const member = result?.data;
+      if (!member?.id) { showAuthError(); return; }
+      userId = member.id;
+    } catch (e) {
+      showAuthError();
+    }
+  }
+
+  // ── CONSENT BASIS LISTENER ──
+  document.getElementById('lawfulBasis').addEventListener('change', function () {
+    const panel = document.getElementById('soft-optin-panel');
+    panel.style.display = this.value === 'soft_opt_in' ? 'block' : 'none';
+  });
+
+  // ── CONSENT DATE LISTENER ──
+  document.getElementById('consentDate').addEventListener('input', function () {
+    evaluateConsentTimeline(this.value);
+  });
+
+  function evaluateConsentTimeline(raw) {
+    const box = document.getElementById('consent-timeline');
+    const txt = document.getElementById('consent-timeline-text');
+    if (!raw || raw.toLowerCase() === 'unknown') { box.style.display = 'none'; return; }
+
+    // Try to parse year from input
+    const match = raw.match(/(\d{4})/);
+    if (!match) { box.style.display = 'none'; return; }
+    const year = parseInt(match[1]);
+    const now = new Date();
+    const approxMonthsAgo = (now.getFullYear() - year) * 12;
+
+    if (approxMonthsAgo <= 24) {
+      const safeDate = new Date();
+      safeDate.setMonth(safeDate.getMonth() + (24 - approxMonthsAgo));
+      const safeDateStr = safeDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      txt.innerHTML = `Based on consent collected in <strong>${year}</strong>, your latest safe send date is approximately <strong>${safeDateStr}</strong> — after this, UK GDPR/PECR may require fresh consent or a legitimate basis review.`;
+      box.style.display = 'block';
+    } else {
+      txt.innerHTML = `Consent collected in <strong>${year}</strong> is more than 24 months ago. UK GDPR guidance indicates this may be stale — consider a re-consent campaign before sending.`;
+      box.style.display = 'block';
+    }
+  }
+
+  // ── SOFT TOGGLE ──
+  function setSoftToggle(btn) {
+    const question = btn.closest('.soft-question');
+    const key = question.getAttribute('data-key');
+    const val = btn.getAttribute('data-val');
+    softAnswers[key] = val;
+
+    // Update UI
+    question.querySelectorAll('.toggle-btn').forEach(b => {
+      b.classList.remove('active-yes', 'active-no');
+    });
+    btn.classList.add(val === 'yes' ? 'active-yes' : 'active-no');
+  }
+
+  // ── RUN CHECK ──
+  async function runBriefCheck() {
+    if (!userId) { showAuthError(); return; }
+
+    const campaignName = document.getElementById('campaignName').value.trim();
+    const audience = document.getElementById('audience').value.trim();
+    const channel = document.getElementById('channel').value;
+    const listSource = document.getElementById('listSource').value.trim();
+    const lawfulBasis = document.getElementById('lawfulBasis').value;
+    const consentDate = document.getElementById('consentDate').value.trim();
+    const coreOffer = document.getElementById('coreOffer').value.trim();
+    const listSize = document.getElementById('listSize').value;
+    const suppressionDone = document.getElementById('suppressionDone').value;
+
+    if (!campaignName || !audience || !channel || !listSource || !lawfulBasis || !coreOffer) {
+      showError('Please fill in all required fields (marked with *).');
+      return;
+    }
+
+    setLoading(true);
+    hideResults();
+    clearError();
+
+    try {
+      const payload = {
+        userId,
+        campaignName,
+        audience,
+        channel,
+        listSource,
+        lawfulBasis,
+        consentDate,
+        coreOffer,
+        listSize: listSize ? parseInt(listSize) : null,
+        suppressionDone,
+        softOptInAnswers: lawfulBasis === 'soft_opt_in' ? softAnswers : null,
+      };
+
+      // Map to backend expected fields
+      const backendPayload = {
+        userId,
+        campaignName,
+        channel,
+        audience,
+        lawfulBasis,
+        listSource,
+        suppressionDone: suppressionDone === 'yes',
+        contentType: coreOffer,
+        hasUnsubscribe: suppressionDone !== 'no',
+        senderClear: true,
+      };
+
+      const res = await fetch(`${APP_URL}/api/submit-check?action=brief-check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(backendPayload),
+      });
+
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const data = await res.json();
+
+      setLoading(false);
+      renderResults(data);
+    } catch (err) {
+      setLoading(false);
+      showError(`Something went wrong: ${err.message}. Please try again.`);
+    }
+  }
+
+  // ── RENDER RESULTS ──
+  function renderResults(data) {
+    const { redCount = 0, amberCount = 0, greenCount = 0, issues = [], totalExposureEstimate, resultStatus, dossierId } = data;
+
+    // Store for tab filtering
+    allIssues = issues;
+    currentDossierId = dossierId || null;
+
+    // Pills
+    document.getElementById('pill-red').textContent = `${redCount} Red`;
+    document.getElementById('pill-amber').textContent = `${amberCount} Amber`;
+    document.getElementById('pill-green').textContent = `${greenCount} Green`;
+
+    // Exposure
+    if (totalExposureEstimate && totalExposureEstimate > 0) {
+      document.getElementById('exposure-amount').textContent = formatExposure(totalExposureEstimate);
+      document.getElementById('exposure-summary').style.display = 'flex';
+    }
+
+    // Issues
+    renderIssueTab('all');
+
+    // Dossier CTA
+    if (redCount === 0 && dossierId) {
+      document.getElementById('dossier-cta').style.display = 'block';
+    }
+
+    document.getElementById('results-section').style.display = 'block';
+    document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function renderIssueTab(filter) {
+    const container = document.getElementById('issues-container');
+    const filtered = filter === 'all' ? allIssues : allIssues.filter(i => (i.severity || '').toLowerCase() === filter);
+
+    if (!filtered || filtered.length === 0) {
+      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-light);font-size:14px;">No issues in this category.</div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map(issue => renderIssueCard(issue)).join('');
+  }
+
+  function renderIssueCard(issue) {
+    const sev = (issue.severity || 'green').toLowerCase();
+    const regLabel = issue.regulation || '';
+    const isCma = /cma|dmcca|mislead|urgency|dark_pattern/i.test(regLabel + (issue.description || ''));
+
+    let exposureHtml = '';
+    if (issue.exposureBasis === 'regulatory' && (issue.exposureLow || issue.exposureHigh)) {
+      exposureHtml = `£${fmt(issue.exposureLow)} – £${fmt(issue.exposureHigh)}`;
+    } else if (issue.exposureBasis === 'reputational') {
+      exposureHtml = 'Reputational risk';
+    } else if (issue.exposureEstimate) {
+      exposureHtml = `Up to £${fmt(issue.exposureEstimate)}`;
+    } else {
+      exposureHtml = '—';
+    }
+
+    const cmaNote = isCma ? `<div class="cma-note">CMA/DMCCA trajectory — no settled cases as of 2026</div>` : '';
+
+    return `
+      <div class="issue-card ${sev}">
+        <div class="issue-header">
+          <div>
+            <div class="issue-regulation">${regLabel}</div>
+            <div class="issue-title">${escHtml(issue.issue || issue.title || 'Issue')}</div>
+          </div>
+          <span class="issue-badge badge-${sev}">${sev.toUpperCase()}</span>
+        </div>
+        <div class="issue-desc">${escHtml(issue.description || issue.requiredChange || '')}</div>
+        ${issue.requiredChange && issue.description ? `<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">Required change: ${escHtml(issue.requiredChange)}</div>` : ''}
+        <div class="issue-meta">
+          <div class="issue-meta-item">
+            <div class="issue-meta-label">Estimated exposure</div>
+            <div class="issue-meta-value">${exposureHtml}</div>
+            ${cmaNote}
+          </div>
+          ${issue.regulation ? `<div class="issue-meta-item"><div class="issue-meta-label">Regulation</div><div class="issue-meta-value">${escHtml(issue.regulation)}</div></div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // ── TAB SWITCH ──
+  function switchTab(filter, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderIssueTab(filter);
+  }
+
+  // ── DOSSIER ──
+  function goToDossier() {
+    if (currentDossierId) {
+      window.location.href = `/dossier?dossierId=${currentDossierId}`;
+    }
+  }
+
+  // ── RESET ──
+  function resetForm() {
+    document.getElementById('results-section').style.display = 'none';
+    document.getElementById('dossier-cta').style.display = 'none';
+    document.getElementById('exposure-summary').style.display = 'none';
+    document.getElementById('form-card').scrollIntoView({ behavior: 'smooth' });
+    allIssues = [];
+    currentDossierId = null;
+  }
+
+  // ── HELPERS ──
+  function setLoading(on) {
+    document.getElementById('loading-state').style.display = on ? 'block' : 'none';
+    document.getElementById('run-check-btn').disabled = on;
+    if (on) document.getElementById('form-card').style.opacity = '0.5';
+    else document.getElementById('form-card').style.opacity = '1';
+  }
+  function hideResults() {
+    document.getElementById('results-section').style.display = 'none';
+  }
+  function showError(msg) {
+    const el = document.getElementById('error-state');
+    el.style.display = 'block';
+    el.textContent = msg;
+  }
+  function clearError() {
+    document.getElementById('error-state').style.display = 'none';
+  }
+  function formatExposure(n) {
+    if (n >= 1000000) return `£${(n / 1000000).toFixed(1)}m`;
+    if (n >= 1000) return `£${Math.round(n / 1000)}k`;
+    return `£${n.toLocaleString()}`;
+  }
+  function fmt(n) { return n ? Number(n).toLocaleString() : '0'; }
+  function escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── BOOT ──
+  init();
+</script>
+
+</body>
+</html>
