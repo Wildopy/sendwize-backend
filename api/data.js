@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v4.19
+// SENDWIZE — data.js v4.21
 // Router: ?action=report | vendors | violations | load | history
 //         | register | summary | score-history | send-alert
 //         | briefing | consent-expiry-check | simulation-run
@@ -17,6 +17,7 @@
 // POST   /api/data?action=send-alert  { userId, alertType, score?, scoreChange?, exposureHigh? }
 // GET    /api/data?action=briefing&userId=x
 // POST   /api/data?action=consent-expiry-check  { userId }
+//   Returns: { checked, alertFired, expiringIn30, expiringIn60, expiringIn90 }
 // POST   /api/data?action=simulation-run  { userId, regulator }
 // ─────────────────────────────────────────────────────────────
 
@@ -24,8 +25,6 @@ const APP_URL     = 'https://sendwize-backend.vercel.app';
 const RESEND_FROM = 'alerts@sendwize.co.uk';
 
 // ── REPORT handler ────────────────────────────────────────────
-// Fetches a single record by ID from a named table.
-// Submissions removed — PECR questionnaire tool no longer exists.
 async function handleReport(req, res) {
   const { recordId, type } = req.query;
   if (!recordId || !type) return res.status(400).json({ error: 'Missing recordId or type' });
@@ -60,12 +59,6 @@ async function handleReport(req, res) {
 }
 
 // ── VENDORS handler ───────────────────────────────────────────
-// Reads from Marketing_Vendors (actual Airtable table name).
-// Field names below match the 7-dimension spec (8.8).
-// ⚠ ACTION REQUIRED: Marketing_Vendors fields need migrating from
-// old schema (Category, ComplianceScore, etc) to 7-dimension schema
-// (ICORegistrationStatus, DPAStatus, etc) in Airtable before this
-// handler returns useful data.
 async function handleVendors(req, res) {
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
@@ -100,9 +93,6 @@ async function handleVendors(req, res) {
 }
 
 // ── VIOLATIONS handler ────────────────────────────────────────
-// ⚠ Violation_Database still contains hallucinated cases per spec
-// warning. Do not rely on enforcement_note data until the table
-// has been manually audited and verified.
 async function handleViolations(req, res) {
   const { violationType, keyword } = req.query;
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -138,7 +128,6 @@ async function handleViolations(req, res) {
 }
 
 // ── LOAD handler ──────────────────────────────────────────────
-// Returns aggregated compliance data for a userId via fixes.js.
 async function handleLoad(req, res) {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -164,8 +153,8 @@ async function handleHistory(req, res) {
   const BASE_ID        = process.env.BASE_ID;
 
   const tableMap = {
-    audit:  { table: 'Database_Audits', sort: 'AuditDate'   },
-    vendor: { table: 'Vendor_Register', sort: 'LastChecked'  },
+    audit:  { table: 'Database_Audits', sort: 'AuditDate'  },
+    vendor: { table: 'Vendor_Register', sort: 'LastChecked' },
   };
 
   const { table, sort } = tableMap[type];
@@ -184,12 +173,6 @@ async function handleHistory(req, res) {
 }
 
 // ── REGISTER handler ──────────────────────────────────────────
-// Manages per-user Vendor_Register records.
-// Vendor_Register stores only what the USER manages:
-//   VendorName, VendorType, DPASigned, DPALink, LastChecked, Notes.
-// The 7-dimension research data (ICO status, breach history etc.)
-// lives in Marketing_Vendors (Sendwize-maintained) and is read at
-// query time — it is NOT duplicated into Vendor_Register per user.
 async function handleRegister(req, res) {
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
@@ -215,9 +198,6 @@ async function handleRegister(req, res) {
     if (!userId) return res.status(400).json({ error: 'userId required' });
     if (!vendor) return res.status(400).json({ error: 'vendor data required' });
 
-    // Only user-managed fields written here.
-    // Research dimensions (ICO status, breach history etc.) are read
-    // from Marketing_Vendors at query time, not stored per user.
     const fields = {
       UserID:     userId,
       VendorName: vendor.VendorName  || '',
@@ -261,9 +241,6 @@ async function handleRegister(req, res) {
 }
 
 // ── SUMMARY handler ───────────────────────────────────────────
-// GET ?action=summary&userId=x
-// Aggregates score, exposure, fix counts, and streak for the
-// dashboard summary card. Calls fixes.js and profile.js in parallel.
 async function handleSummary(req, res) {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -294,10 +271,6 @@ async function handleSummary(req, res) {
 }
 
 // ── SCORE-HISTORY handler ─────────────────────────────────────
-// GET  ?action=score-history&userId=x&limit=30  → snapshots[]
-// POST ?action=score-history  { userId, score, ... }
-//   Writes snapshot, calculates delta, fires score-drop alert
-//   if drop >= 10 points and alert not already sent today.
 async function handleScoreHistory(req, res) {
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
@@ -348,7 +321,6 @@ async function handleScoreHistory(req, res) {
     if (!userId)             return res.status(400).json({ error: 'userId required' });
     if (score === undefined) return res.status(400).json({ error: 'score required' });
 
-    // Fetch most recent snapshot for delta calculation
     const prevRes   = await fetch(
       `${airtableBase}/Score_History?filterByFormula={UserID}='${userId}'&sort[0][field]=Date&sort[0][direction]=desc&maxRecords=1`,
       { headers }
@@ -428,10 +400,6 @@ async function handleScoreHistory(req, res) {
 }
 
 // ── SEND-ALERT handler ────────────────────────────────────────
-// POST ?action=send-alert { userId, alertType, score?, scoreChange?, exposureHigh? }
-// alertType: 'score_drop' | 'consent_expiry'
-// Reads user email from User_Profile.Email. Sends via Resend.
-// Never throws — always returns JSON.
 async function handleSendAlert(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -536,10 +504,7 @@ async function handleSendAlert(req, res) {
 }
 
 // ── BRIEFING handler ──────────────────────────────────────────
-// GET ?action=briefing&userId=x
-// Generates a ~150-200 word compliance briefing via Claude.
-// Respects LastBriefingSent — only generates once per calendar day.
-// Returns { briefing, cached }.
+// Returns { briefing, cached }
 async function handleBriefing(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
@@ -561,7 +526,7 @@ async function handleBriefing(req, res) {
   const profile     = profileData.records?.[0];
 
   if (profile?.fields?.LastBriefingSent === today) {
-    return res.json({ briefing: null, cached: true });
+    return res.json({ briefing: profile?.fields?.LastBriefingText || null, cached: true });
   }
 
   const fixesRes  = await fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`);
@@ -612,7 +577,7 @@ async function handleBriefing(req, res) {
     await fetch(`${airtableBase}/User_Profile/${profile.id}`, {
       method:  'PATCH',
       headers: { ...airtableHeaders, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fields: { LastBriefingSent: today } }),
+      body:    JSON.stringify({ fields: { LastBriefingSent: today, LastBriefingText: briefing } }),
     }).catch(e => console.error('LastBriefingSent update failed (non-fatal):', e));
   }
 
@@ -621,10 +586,9 @@ async function handleBriefing(req, res) {
 
 // ── CONSENT-EXPIRY-CHECK handler ──────────────────────────────
 // POST ?action=consent-expiry-check { userId }
-// Reads the expiryTimeline from the user's most recent Database_Audit.
-// If contacts are expiring within 30 days, fires a consent_expiry alert
-// via send-alert. Guard: LastAlertSent within 7 days = skip.
-// Returns { checked, alertFired, reason? }.
+// Reads the most recent Database_Audit for this user and counts
+// contacts expiring within 30 / 31-60 / 61-90 days.
+// Returns { checked, alertFired, expiringIn30, expiringIn60, expiringIn90 }
 async function handleConsentExpiryCheck(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -646,7 +610,7 @@ async function handleConsentExpiryCheck(req, res) {
   const audit     = auditData.records?.[0];
 
   if (!audit) {
-    return res.json({ checked: true, alertFired: false, reason: 'No audit found for user' });
+    return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0, reason: 'No audit found for user' });
   }
 
   // Parse expiryTimeline — stored as stringified JSON on the audit record
@@ -655,21 +619,33 @@ async function handleConsentExpiryCheck(req, res) {
     const raw = audit.fields.ExpiryTimeline || audit.fields.expiryTimeline || '';
     if (raw) expiryTimeline = JSON.parse(raw);
   } catch {
-    return res.json({ checked: true, alertFired: false, reason: 'Could not parse expiryTimeline' });
+    return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0, reason: 'Could not parse expiryTimeline' });
   }
 
-  // Check if any segment expires within 30 days
-  const thirtyDaysFromNow = new Date();
-  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+  // Count contacts expiring in each window
+  const d30 = new Date(); d30.setDate(d30.getDate() + 30);
+  const d60 = new Date(); d60.setDate(d60.getDate() + 60);
+  const d90 = new Date(); d90.setDate(d90.getDate() + 90);
 
-  const expiringSegments = expiryTimeline.filter(segment => {
-    if (!segment.expiryDate) return false;
+  let expiringIn30 = 0, expiringIn60 = 0, expiringIn90 = 0;
+
+  expiryTimeline.forEach(segment => {
+    if (!segment.expiryDate) return;
     const expiry = new Date(segment.expiryDate);
-    return expiry <= thirtyDaysFromNow;
+    const count  = segment.count || segment.contacts || 1;
+    if (expiry <= d30)      expiringIn30 += count;
+    else if (expiry <= d60) expiringIn60 += count;
+    else if (expiry <= d90) expiringIn90 += count;
   });
 
-  if (expiringSegments.length === 0) {
-    return res.json({ checked: true, alertFired: false, reason: 'No segments expiring within 30 days' });
+  // No expiring contacts — return counts and exit
+  if (expiringIn30 === 0 && expiringIn60 === 0 && expiringIn90 === 0) {
+    return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0 });
+  }
+
+  // Only fire email alert if contacts expiring within 30 days
+  if (expiringIn30 === 0) {
+    return res.json({ checked: true, alertFired: false, expiringIn30, expiringIn60, expiringIn90 });
   }
 
   // Guard: check LastAlertSent — skip if within last 7 days
@@ -686,7 +662,7 @@ async function handleConsentExpiryCheck(req, res) {
       (new Date(today) - new Date(lastAlert)) / (1000 * 60 * 60 * 24)
     );
     if (daysSinceAlert < 7) {
-      return res.json({ checked: true, alertFired: false, reason: `Alert already sent ${daysSinceAlert} days ago` });
+      return res.json({ checked: true, alertFired: false, expiringIn30, expiringIn60, expiringIn90 });
     }
   }
 
@@ -698,12 +674,6 @@ async function handleConsentExpiryCheck(req, res) {
       body:    JSON.stringify({ userId, alertType: 'consent_expiry' }),
     });
 
-    if (!alertRes.ok) {
-      console.error('consent_expiry alert failed:', alertRes.status);
-      return res.json({ checked: true, alertFired: false, reason: 'Alert send failed' });
-    }
-
-    // Update LastAlertSent on User_Profile
     if (profile?.id) {
       await fetch(`${airtableBase}/User_Profile/${profile.id}`, {
         method:  'PATCH',
@@ -712,24 +682,18 @@ async function handleConsentExpiryCheck(req, res) {
       }).catch(e => console.error('LastAlertSent update failed (non-fatal):', e));
     }
 
-    return res.json({ checked: true, alertFired: true, expiringSegments: expiringSegments.length });
+    return res.json({ checked: true, alertFired: alertRes.ok, expiringIn30, expiringIn60, expiringIn90 });
 
   } catch (err) {
     console.error('consent-expiry-check alert error:', err);
-    return res.json({ checked: true, alertFired: false, reason: 'Alert error' });
+    return res.json({ checked: true, alertFired: false, expiringIn30, expiringIn60, expiringIn90 });
   }
 }
 
 // ── SIMULATION-RUN handler ────────────────────────────────────
 // POST ?action=simulation-run { userId, regulator }
-// regulator: 'ICO' | 'CMA' | 'ASA'
-// Five-stage ICO investigation simulation.
-// Stages 1-2: deterministic (reads Compliance_Fixes).
-// Stage 3: Claude generates first-contact enforcement email.
-// Stage 4: documentation gap analysis.
-// Stage 5: penalty estimate + representations strategy.
-// Writes result to Simulation_Reports. Returns full simulation output.
-// TODO v4.18 — full implementation pending. Stub returns 501.
+// regulator: 'ICO' only for launch (CMA and ASA not yet active).
+// Returns five-stage simulation object for the ICO simulator frontend.
 async function handleSimulationRun(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -740,47 +704,76 @@ async function handleSimulationRun(req, res) {
     return res.status(400).json({ error: 'regulator must be ICO | CMA | ASA' });
   }
 
-  // ── Stage 1: Background check — read pending Compliance_Fixes ────
-  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
-  const BASE_ID        = process.env.BASE_ID;
-  const ANTHROPIC_KEY  = process.env.ANTHROPIC_API_KEY;
-  const airtableBase   = `https://api.airtable.com/v0/${BASE_ID}`;
+  const AIRTABLE_TOKEN  = process.env.AIRTABLE_TOKEN;
+  const BASE_ID         = process.env.BASE_ID;
+  const ANTHROPIC_KEY   = process.env.ANTHROPIC_API_KEY;
+  const airtableBase    = `https://api.airtable.com/v0/${BASE_ID}`;
   const airtableHeaders = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
-  const today          = new Date().toISOString().split('T')[0];
+  const today           = new Date().toISOString().split('T')[0];
 
+  // Stage 1: read pending fixes
   const fixesRes  = await fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`);
   const fixesData = fixesRes.ok ? await fixesRes.json() : null;
 
-  const pendingFixes    = fixesData?.fixes?.pending    || [];
-  const completedFixes  = fixesData?.fixes?.completed  || [];
-  const score           = fixesData?.score             || 0;
-  const exposure        = fixesData?.exposure          || {};
+  const pendingFixes   = fixesData?.fixes?.pending   || [];
+  const completedFixes = fixesData?.fixes?.completed || [];
+  const score          = fixesData?.score            || 0;
+  const exposure       = fixesData?.exposure         || {};
 
   const criticalFixes = pendingFixes.filter(f => f.severity === 'critical');
   const highFixes     = pendingFixes.filter(f => f.severity === 'high');
 
-  const backgroundCheck = {
-    score,
-    pendingCount:   pendingFixes.length,
-    completedCount: completedFixes.length,
-    criticalCount:  criticalFixes.length,
-    highCount:      highFixes.length,
-    exposureHigh:   exposure.pendingHigh || 0,
-    topIssues:      criticalFixes.slice(0, 3).map(f => ({ fixType: f.fixType, description: f.description })),
-  };
+  // Stage 1: deterministic background check items
+  const stage1Checks = [
+    {
+      label:  'ICO Registration',
+      detail: score > 0
+        ? 'Organisation appears to be processing data and should be registered with the ICO.'
+        : 'No compliance data found — ICO registration status unknown.',
+      status: score > 0 ? 'amber' : 'red',
+    },
+    {
+      label:  'Previous Complaint History',
+      detail: completedFixes.length > 0
+        ? `${completedFixes.length} previous fix items resolved — shows some compliance activity.`
+        : 'No resolved compliance items on record.',
+      status: completedFixes.length > 0 ? 'green' : 'amber',
+    },
+    {
+      label:  'Compliance Score',
+      detail: `Current score: ${score}/100. ${score < 50 ? 'Below 50 — investigators would identify a pattern of non-compliance.' : score < 75 ? 'Score indicates partially addressed gaps.' : 'Score indicates active compliance management.'}`,
+      status: score >= 75 ? 'green' : score >= 50 ? 'amber' : 'red',
+    },
+    {
+      label:  'Pending Fix Items',
+      detail: pendingFixes.length > 0
+        ? `${pendingFixes.length} outstanding action item${pendingFixes.length !== 1 ? 's' : ''}, including ${criticalFixes.length} critical and ${highFixes.length} high severity.`
+        : 'No outstanding fix items — good standing.',
+      status: criticalFixes.length > 0 ? 'red' : pendingFixes.length > 3 ? 'amber' : 'green',
+    },
+    {
+      label:  'Sector Risk Profile',
+      detail: 'Email marketing is a priority enforcement sector for the ICO under PECR.',
+      status: 'amber',
+    },
+  ];
 
-  // ── Stage 2: Escalation factors — deterministic ───────────────────
-  const escalationFactors = [];
-  if (criticalFixes.length > 0)   escalationFactors.push('One or more critical unresolved violations');
-  if (score < 50)                 escalationFactors.push('Compliance score below 50 — pattern of non-compliance');
-  if (pendingFixes.length > 5)    escalationFactors.push(`${pendingFixes.length} unresolved fix items`);
-
+  // Stage 2: escalation probability
   const complaintProbability = Math.min(
     95,
     20 + (criticalFixes.length * 20) + (highFixes.length * 5) + (score < 50 ? 20 : 0)
   );
 
-  // ── Stage 3 & 4: Claude — first contact email + documentation gaps ─
+  const escalationFactors = [];
+  if (criticalFixes.length > 0)  escalationFactors.push({ icon: '⛔', text: 'One or more critical unresolved violations — these would be the primary basis for enforcement action.' });
+  if (score < 50)                escalationFactors.push({ icon: '📊', text: `Compliance score of ${score}/100 indicates a systemic pattern rather than an isolated incident.` });
+  if (pendingFixes.length > 5)   escalationFactors.push({ icon: '⚠️', text: `${pendingFixes.length} unresolved fix items suggests ongoing non-compliance rather than a one-off issue.` });
+  if (completedFixes.length > 0) escalationFactors.push({ icon: '✅', text: `${completedFixes.length} resolved fix items demonstrates some compliance effort — this is a mitigating factor.` });
+  if (escalationFactors.length === 0) {
+    escalationFactors.push({ icon: '✅', text: 'No significant escalation factors identified based on current compliance data.' });
+  }
+
+  // Stages 3-5: Claude
   const fixSummary = pendingFixes.slice(0, 5).map(f =>
     `- ${f.fixType.replace(/_/g, ' ')} (${f.severity}): ${f.description}`
   ).join('\n');
@@ -797,23 +790,39 @@ ${fixSummary || 'None identified'}
 
 Respond ONLY with this exact JSON (no preamble, no markdown):
 {
-  "firstContactEmail": "A realistic formal first-contact email from ${regulator} to the organisation, referencing specific concerns based on the violation types above. 150-200 words. Formal regulatory tone.",
-  "documentationChecklist": [
-    { "item": "Description of documentation item", "status": "AVAILABLE | PARTIAL | MISSING" }
+  "letter": {
+    "reference": "ICO-ENF-XXXXX",
+    "subject": "subject line referencing the specific concern",
+    "opening": "opening paragraph (2-3 sentences, formal ICO tone)",
+    "context": "context paragraph (1-2 sentences)",
+    "closing": "closing paragraph about 28-day response window",
+    "signatory": "Senior Enforcement Officer, Direct Marketing Team",
+    "questions": [
+      { "question": "Question text", "yesNote": "What yes means for the investigation", "noNote": "What no means for the investigation" },
+      { "question": "Question text", "yesNote": "...", "noNote": "..." },
+      { "question": "Question text", "yesNote": "...", "noNote": "..." },
+      { "question": "Question text", "yesNote": "...", "noNote": "..." },
+      { "question": "Question text", "yesNote": "...", "noNote": "..." }
+    ]
+  },
+  "documents": [
+    { "name": "document name", "status": "available|partial|missing", "detail": "brief explanation" }
   ],
-  "penaltyEstimateLow": 0,
-  "penaltyEstimateHigh": 0,
-  "aggravatingFactors": ["factor1", "factor2"],
-  "mitigatingFactors": ["factor1", "factor2"],
-  "representationsStrategy": "2-3 sentence summary of the strongest representations strategy available to the organisation based on their compliance position.",
-  "enforcementContext": "1-2 real verified ${regulator} enforcement cases most relevant to these violation types. Only include cases you are certain are real. If uncertain, write: No directly comparable verified cases identified."
+  "penalty": {
+    "low": 0,
+    "high": 0,
+    "context": "2-3 sentences on penalty discretion and what affects the range"
+  },
+  "representations": [
+    "Specific actionable representation strategy item 1",
+    "Specific actionable representation strategy item 2",
+    "Specific actionable representation strategy item 3",
+    "Specific actionable representation strategy item 4",
+    "Specific actionable representation strategy item 5"
+  ]
 }
 
-Penalty guidance for ${regulator}:
-- ICO: PECR max £500,000. UK GDPR max £17,500,000 or 4% global turnover.
-- CMA: Unlimited fines for CPR breaches.
-- ASA: No direct fines — refer to Trading Standards or CAP sanctions.
-Base penalty estimates on the severity and volume of violations above. Stay within confirmed regulatory maximums.`;
+Penalty guidance: ICO PECR max £500,000. UK GDPR max £17,500,000 or 4% global turnover. Base estimates on violation severity above. Include 7 documentation items. Include 5 letter questions.`;
 
   const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
     method:  'POST',
@@ -824,7 +833,7 @@ Base penalty estimates on the severity and volume of violations above. Stay with
     },
     body: JSON.stringify({
       model:      'claude-sonnet-4-20250514',
-      max_tokens: 1500,
+      max_tokens: 2000,
       messages:   [{ role: 'user', content: claudePrompt }],
     }),
   });
@@ -844,7 +853,7 @@ Base penalty estimates on the severity and volume of violations above. Stay with
     return res.status(500).json({ error: 'Failed to parse simulation output' });
   }
 
-  // ── Stage 5: Write Simulation_Reports ────────────────────────────
+  // Write to Simulation_Reports
   let reportId = null;
   try {
     const reportRes = await fetch(`${airtableBase}/Simulation_Reports`, {
@@ -853,54 +862,37 @@ Base penalty estimates on the severity and volume of violations above. Stay with
       body: JSON.stringify({
         records: [{
           fields: {
-            UserID:                    userId,
-            SimulationDate:            today,
-            Regulator:                 regulator,
-            ScopeNote:                 'Direct marketing compliance only',
-            ComplaintProbability:      complaintProbability,
-            BackgroundCheckJson:       JSON.stringify(backgroundCheck),
-            EscalationFactorsJson:     JSON.stringify(escalationFactors),
-            FirstContactEmailText:     claudeOutput.firstContactEmail     || '',
-            UserDocumentationJson:     JSON.stringify(claudeOutput.documentationChecklist || []),
-            DocumentationGapsJson:     JSON.stringify(
-              (claudeOutput.documentationChecklist || []).filter(i => i.status !== 'AVAILABLE')
-            ),
-            PenaltyEstimateLow:        claudeOutput.penaltyEstimateLow    || 0,
-            PenaltyEstimateHigh:       claudeOutput.penaltyEstimateHigh   || 0,
-            AggravatingFactorsJson:    JSON.stringify(claudeOutput.aggravatingFactors    || []),
-            MitigatingFactorsJson:     JSON.stringify(claudeOutput.mitigatingFactors     || []),
-            RepresentationsStrategyJson: JSON.stringify(claudeOutput.representationsStrategy || ''),
-            EnforcementContextText:    claudeOutput.enforcementContext    || '',
-            SimulationVersion:         `${regulator}-2026-v1`,
+            UserID:                userId,
+            SimulationDate:        today,
+            Regulator:             regulator,
+            ComplaintProbability:  complaintProbability,
+            PenaltyEstimateLow:    claudeOutput.penalty?.low    || 0,
+            PenaltyEstimateHigh:   claudeOutput.penalty?.high   || 0,
+            SimulationVersion:     `${regulator}-2026-v1`,
+            SimulationJson:        JSON.stringify(claudeOutput),
           }
         }]
       })
     });
-
     if (reportRes.ok) {
-      const reportData = await reportRes.json();
-      reportId = reportData.records?.[0]?.id ?? null;
-    } else {
-      console.error('Simulation_Reports write failed:', reportRes.status);
+      reportId = (await reportRes.json()).records?.[0]?.id ?? null;
     }
   } catch (err) {
     console.error('Simulation_Reports write error (non-fatal):', err);
   }
 
+  // Return in the shape the ICO simulator frontend expects
   return res.status(200).json({
     reportId,
     regulator,
-    complaintProbability,
-    backgroundCheck,
-    escalationFactors,
-    firstContactEmail:       claudeOutput.firstContactEmail        || '',
-    documentationChecklist:  claudeOutput.documentationChecklist   || [],
-    penaltyEstimateLow:      claudeOutput.penaltyEstimateLow       || 0,
-    penaltyEstimateHigh:     claudeOutput.penaltyEstimateHigh      || 0,
-    aggravatingFactors:      claudeOutput.aggravatingFactors       || [],
-    mitigatingFactors:       claudeOutput.mitigatingFactors        || [],
-    representationsStrategy: claudeOutput.representationsStrategy  || '',
-    enforcementContext:       claudeOutput.enforcementContext       || '',
+    stage1: { checks: stage1Checks },
+    stage2: { probability: complaintProbability, factors: escalationFactors },
+    stage3: { letter: claudeOutput.letter || {} },
+    stage4: { documents: claudeOutput.documents || [] },
+    stage5: {
+      penalty: claudeOutput.penalty || { low: 0, high: 0, context: '' },
+      representations: claudeOutput.representations || [],
+    },
     disclaimer: 'Information only — not legal advice. Penalty estimates are illustrative ranges based on published ICO/CMA/ASA enforcement data.',
   });
 }
@@ -915,18 +907,18 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
-    if (req.method === 'GET'    && action === 'report')                return await handleReport(req, res);
-    if (req.method === 'GET'    && action === 'vendors')               return await handleVendors(req, res);
-    if (req.method === 'GET'    && action === 'violations')            return await handleViolations(req, res);
-    if (req.method === 'POST'   && action === 'load')                  return await handleLoad(req, res);
-    if (req.method === 'GET'    && action === 'history')               return await handleHistory(req, res);
-    if (req.method === 'GET'    && action === 'summary')               return await handleSummary(req, res);
+    if (req.method === 'GET'    && action === 'report')               return await handleReport(req, res);
+    if (req.method === 'GET'    && action === 'vendors')              return await handleVendors(req, res);
+    if (req.method === 'GET'    && action === 'violations')           return await handleViolations(req, res);
+    if (req.method === 'POST'   && action === 'load')                 return await handleLoad(req, res);
+    if (req.method === 'GET'    && action === 'history')              return await handleHistory(req, res);
+    if (req.method === 'GET'    && action === 'summary')              return await handleSummary(req, res);
     if ((req.method === 'POST' || req.method === 'DELETE') && action === 'register') return await handleRegister(req, res);
     if ((req.method === 'GET'  || req.method === 'POST')  && action === 'score-history') return await handleScoreHistory(req, res);
-    if (req.method === 'POST'   && action === 'send-alert')            return await handleSendAlert(req, res);
-    if (req.method === 'GET'    && action === 'briefing')              return await handleBriefing(req, res);
-    if (req.method === 'POST'   && action === 'consent-expiry-check')  return await handleConsentExpiryCheck(req, res);
-    if (req.method === 'POST'   && action === 'simulation-run')        return await handleSimulationRun(req, res);
+    if (req.method === 'POST'   && action === 'send-alert')           return await handleSendAlert(req, res);
+    if (req.method === 'GET'    && action === 'briefing')             return await handleBriefing(req, res);
+    if (req.method === 'POST'   && action === 'consent-expiry-check') return await handleConsentExpiryCheck(req, res);
+    if (req.method === 'POST'   && action === 'simulation-run')       return await handleSimulationRun(req, res);
 
     return res.status(400).json({
       error: 'Unknown action',
