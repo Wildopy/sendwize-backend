@@ -33,12 +33,9 @@
 
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 32px 20px 60px;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 32px 20px 60px;
     }
-
     .container { max-width: 820px; margin: 0 auto; }
 
     .back-link {
@@ -47,15 +44,11 @@
       margin-bottom: 20px; transition: color .15s;
     }
     .back-link:hover { color: var(--orange); }
+    .page-title    { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .page-subtitle { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; }
 
-    .page-title   { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
-    .page-subtitle{ font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; }
-
-    /* ── Tabs ─────────────────────────────────────────────────────── */
-    .tabs {
-      display: flex; gap: 0; border-bottom: 2px solid var(--border);
-      margin-bottom: 28px;
-    }
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 28px; }
     .tab-btn {
       padding: 10px 20px; font-size: 14px; font-weight: 500;
       background: none; border: none; cursor: pointer; font-family: inherit;
@@ -64,125 +57,77 @@
     }
     .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); font-weight: 600; }
     .tab-btn:hover:not(.active) { color: var(--text); }
-
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
     /* Cards */
-    .card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
-    }
-    .card-label {
-      font-size: 11px; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--orange); margin-bottom: 16px;
-    }
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+    .card-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--orange); margin-bottom: 16px; }
+    .section-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--orange); margin-bottom: 14px; }
 
     /* Form */
     .form-group { margin-bottom: 18px; }
     label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
-    select, input[type="text"] {
+    select, input[type="text"], textarea {
       width: 100%; padding: 10px 12px; border: 1px solid var(--border-mid);
       border-radius: var(--radius); font-size: 14px; font-family: inherit;
       background: var(--white); color: var(--text); transition: border-color .15s;
     }
-    select:focus, input[type="text"]:focus { outline: none; border-color: var(--orange); }
+    select:focus, input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--orange); }
+    textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
     .form-hint { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.4; }
-
-    /* Context row */
     .context-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
     @media(max-width:600px){ .context-grid { grid-template-columns: 1fr; } }
 
     /* File drop */
     .file-drop {
       border: 2px dashed var(--border-mid); border-radius: var(--radius);
-      padding: 36px 20px; text-align: center; cursor: pointer;
-      transition: all .15s; background: var(--bg);
+      padding: 36px 20px; text-align: center; cursor: pointer; transition: all .15s; background: var(--bg);
     }
-    .file-drop:hover, .file-drop.dragover {
-      border-color: var(--orange); background: var(--orange-light);
-    }
+    .file-drop:hover, .file-drop.dragover { border-color: var(--orange); background: var(--orange-light); }
     .file-drop-icon { font-size: 30px; margin-bottom: 10px; }
     .file-drop-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
     .file-drop-text strong { color: var(--orange); }
     .file-drop-sub  { font-size: 11px; color: var(--muted); margin-top: 6px; }
     .file-input     { display: none; }
-
-    .file-selected {
-      display: none; align-items: center; gap: 10px;
-      padding: 10px 14px; background: var(--orange-light);
-      border-radius: var(--radius); font-size: 13px; margin-top: 10px;
-    }
+    .file-selected  { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--orange-light); border-radius: var(--radius); font-size: 13px; margin-top: 10px; }
     .file-selected.show { display: flex; }
-    .file-name { flex: 1; font-weight: 500; color: var(--orange); }
-    .file-remove {
-      background: none; border: none; cursor: pointer;
-      color: var(--muted); font-size: 16px; transition: color .15s;
-    }
+    .file-name   { flex: 1; font-weight: 500; color: var(--orange); }
+    .file-remove { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; transition: color .15s; }
     .file-remove:hover { color: var(--danger); }
 
-    /* Column mapper */
+    /* Mapper */
     .mapper { display: none; }
     .mapper.show { display: block; }
     .mapper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     @media(max-width:500px){ .mapper-grid { grid-template-columns: 1fr; } }
     .mapper-row { display: flex; align-items: center; gap: 10px; }
-    .mapper-label {
-      font-size: 12px; font-weight: 600; color: var(--text);
-      width: 130px; flex-shrink: 0;
-    }
+    .mapper-label { font-size: 12px; font-weight: 600; color: var(--text); width: 130px; flex-shrink: 0; }
     .mapper-label span { font-weight: 400; color: var(--muted); }
     .mapper-row select { width: auto; flex: 1; font-size: 13px; padding: 8px 10px; }
-
-    /* Preview table */
     .preview-wrap { overflow-x: auto; margin-top: 14px; }
-    .preview-table {
-      width: 100%; border-collapse: collapse; font-size: 12px;
-    }
-    .preview-table th {
-      background: var(--bg); padding: 7px 10px; text-align: left;
-      border-bottom: 1px solid var(--border); font-weight: 600; white-space: nowrap;
-    }
-    .preview-table td {
-      padding: 6px 10px; border-bottom: 1px solid var(--border);
-      color: var(--muted); white-space: nowrap; max-width: 160px;
-      overflow: hidden; text-overflow: ellipsis;
-    }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .preview-table th { background: var(--bg); padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); font-weight: 600; white-space: nowrap; }
+    .preview-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--muted); white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
 
     /* Buttons */
-    .btn-primary {
-      width: 100%; padding: 13px 20px; background: var(--orange);
-      color: var(--white); border: none; border-radius: var(--radius);
-      font-size: 15px; font-weight: 600; cursor: pointer;
-      transition: background .15s; font-family: inherit;
-    }
+    .btn-primary { width: 100%; padding: 13px 20px; background: var(--orange); color: var(--white); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s; font-family: inherit; }
     .btn-primary:hover:not(:disabled) { background: #d4660f; }
     .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
-
-    .btn-secondary {
-      padding: 8px 16px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 13px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer;
-      font-family: inherit; transition: all .15s;
-    }
+    .btn-secondary { padding: 8px 16px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-weight: 500; background: var(--white); color: var(--text); cursor: pointer; font-family: inherit; transition: all .15s; }
     .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+    .btn-orange { padding: 10px 20px; background: var(--orange); color: #fff; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-orange:hover:not(:disabled) { background: #d4660f; }
+    .btn-orange:disabled { opacity: .5; cursor: not-allowed; }
 
     /* Error */
-    .error-box {
-      display: none; background: var(--danger-bg); border: 1px solid var(--danger-bd);
-      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px;
-      font-size: 13px; color: var(--danger);
-    }
+    .error-box { display: none; background: var(--danger-bg); border: 1px solid var(--danger-bd); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px; font-size: 13px; color: var(--danger); }
     .error-box.show { display: block; }
 
     /* Loading */
     .loading { display: none; text-align: center; padding: 56px 20px; }
     .loading.show { display: block; }
-    .spinner {
-      width: 36px; height: 36px; border: 3px solid var(--border);
-      border-top-color: var(--orange); border-radius: 50%;
-      animation: spin .8s linear infinite; margin: 0 auto 16px;
-    }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text  { font-size: 14px; color: var(--muted); }
     .loading-count { font-size: 12px; color: var(--muted); margin-top: 5px; }
@@ -190,204 +135,161 @@
     /* Results */
     .results { display: none; }
     .results.show { display: block; }
-
-    .new-audit-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 10px 18px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 13px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer;
-      font-family: inherit; transition: all .15s; margin-bottom: 24px;
-    }
+    .new-audit-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-weight: 500; background: var(--white); color: var(--text); cursor: pointer; font-family: inherit; transition: all .15s; margin-bottom: 24px; }
     .new-audit-btn:hover { border-color: var(--orange); color: var(--orange); }
 
-    /* Summary buckets */
-    .buckets {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-      margin-bottom: 20px;
-    }
+    /* Buckets */
+    .buckets { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
     @media(max-width:600px){ .buckets { grid-template-columns: repeat(2,1fr); } }
-
-    .bucket {
-      border-radius: var(--radius); padding: 18px 16px; text-align: center;
-      border: 1px solid;
-    }
-    .bucket.safe    { background: var(--safe-bg);   border-color: var(--safe-bd); }
-    .bucket.probably{ background: var(--prob-bg);   border-color: var(--prob-bd); }
-    .bucket.risky   { background: var(--risky-bg);  border-color: var(--risky-bd); }
-    .bucket.danger  { background: var(--danger-bg); border-color: var(--danger-bd); }
-
-    .bucket-count {
-      font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px;
-    }
+    .bucket { border-radius: var(--radius); padding: 18px 16px; text-align: center; border: 1px solid; }
+    .bucket.safe     { background: var(--safe-bg);   border-color: var(--safe-bd); }
+    .bucket.probably { background: var(--prob-bg);   border-color: var(--prob-bd); }
+    .bucket.risky    { background: var(--risky-bg);  border-color: var(--risky-bd); }
+    .bucket.danger   { background: var(--danger-bg); border-color: var(--danger-bd); }
+    .bucket-count { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
     .bucket.safe     .bucket-count { color: var(--safe); }
     .bucket.probably .bucket-count { color: var(--prob); }
     .bucket.risky    .bucket-count { color: var(--risky); }
     .bucket.danger   .bucket-count { color: var(--danger); }
-
     .bucket-label { font-size: 12px; font-weight: 600; }
     .bucket.safe     .bucket-label { color: var(--safe); }
     .bucket.probably .bucket-label { color: var(--prob); }
     .bucket.risky    .bucket-label { color: var(--risky); }
     .bucket.danger   .bucket-label { color: var(--danger); }
-
     .bucket-pct { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-    /* Bar chart */
+    /* Bars */
     .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .bar-seg-label { font-size: 12px; width: 70px; flex-shrink: 0; text-align: right; color: var(--muted); }
     .bar-track { flex: 1; height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
     .bar-fill  { height: 100%; border-radius: 6px; transition: width .6s ease; }
     .bar-count { font-size: 12px; color: var(--muted); width: 36px; }
 
-    /* Timeline chart */
+    /* Expiry countdown (audit results) */
+    .expiry-countdown { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 4px; }
+    @media(max-width:560px){ .expiry-countdown { grid-template-columns: 1fr; } }
+    .ec-card { border-radius: var(--radius); padding: 16px; text-align: center; border: 1px solid; }
+    .ec-card.ec-red   { background: var(--danger-bg); border-color: var(--danger-bd); }
+    .ec-card.ec-amber { background: var(--risky-bg);  border-color: var(--risky-bd); }
+    .ec-card.ec-grey  { background: var(--bg);        border-color: var(--border-mid); }
+    .ec-num  { font-size: 26px; font-weight: 800; line-height: 1; margin-bottom: 3px; }
+    .ec-card.ec-red   .ec-num { color: var(--danger); }
+    .ec-card.ec-amber .ec-num { color: var(--risky); }
+    .ec-card.ec-grey  .ec-num { color: var(--muted); }
+    .ec-lbl { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    /* Timeline */
     .timeline-wrap { overflow-x: auto; }
     .timeline-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; min-width: 400px; }
     .timeline-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
-    .timeline-bar {
-      width: 100%; background: var(--orange); border-radius: 3px 3px 0 0;
-      min-height: 2px; transition: height .4s ease;
-    }
+    .timeline-bar { width: 100%; background: var(--orange); border-radius: 3px 3px 0 0; min-height: 2px; }
     .timeline-label { font-size: 10px; color: var(--muted); white-space: nowrap; transform: rotate(-40deg); transform-origin: top right; }
 
-    /* Source quality table */
+    /* Source table */
     .source-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .source-table th {
-      text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 600;
-      letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
-      border-bottom: 1px solid var(--border);
-    }
+    .source-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
     .source-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); }
-    .rating-pill {
-      display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-    }
+    .rating-pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
     .rating-Excellent { background: var(--safe-bg);   color: var(--safe); }
     .rating-Good      { background: var(--prob-bg);   color: var(--prob); }
     .rating-Poor      { background: var(--risky-bg);  color: var(--risky); }
     .rating-Critical  { background: var(--danger-bg); color: var(--danger); }
 
-    /* Contact table */
+    /* Contact tables */
     .contacts-section { margin-bottom: 20px; }
-    .contacts-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .contacts-toggle {
-      font-size: 12px; color: var(--orange); cursor: pointer;
-      background: none; border: none; font-family: inherit; font-weight: 500;
-    }
+    .contacts-header  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .contacts-toggle  { font-size: 12px; color: var(--orange); cursor: pointer; background: none; border: none; font-family: inherit; font-weight: 500; }
     .contacts-table-wrap { overflow-x: auto; display: none; }
     .contacts-table-wrap.show { display: block; }
     .contacts-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .contacts-table th {
-      background: var(--bg); padding: 7px 10px; text-align: left;
-      border-bottom: 1px solid var(--border); font-weight: 600; white-space: nowrap;
-    }
-    .contacts-table td {
-      padding: 6px 10px; border-bottom: 1px solid var(--border);
-      max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .score-chip {
-      display: inline-block; padding: 2px 8px; border-radius: 4px;
-      font-size: 11px; font-weight: 600;
-    }
+    .contacts-table th { background: var(--bg); padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); font-weight: 600; white-space: nowrap; }
+    .contacts-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .score-chip { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
 
-    .section-label {
-      font-size: 11px; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--orange); margin-bottom: 14px;
-    }
+    /* ── RE-CONSENT BUILDER (Step 2) ── */
+    .step2-section { display: none; }
+    .step2-section.show { display: block; }
 
-    /* ── TAB 2: Consent Health ──────────────────────────────────── */
+    .rc-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .rc-tab  { padding: 9px 18px; font-size: 13px; font-weight: 500; background: none; border: none; cursor: pointer; font-family: inherit; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+    .rc-tab.active { color: var(--orange); border-bottom-color: var(--orange); font-weight: 600; }
 
-    /* Loading / empty states for tab 2 */
+    .rc-panel { display: none; }
+    .rc-panel.active { display: block; }
+
+    .draft-output { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; font-size: 14px; line-height: 1.75; white-space: pre-wrap; color: var(--text); min-height: 120px; }
+    .draft-actions { display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+    .copy-tick { font-size: 12px; color: var(--safe); display: none; }
+    .copy-tick.show { display: inline; }
+
+    /* Suppression window countdown */
+    .sup-countdown { background: #fffbeb; border: 1px solid var(--risky-bd); border-radius: var(--radius); padding: 20px 24px; margin-top: 16px; display: none; }
+    .sup-countdown.show { display: block; }
+    .sup-cd-header { font-size: 14px; font-weight: 600; color: var(--risky); margin-bottom: 8px; }
+    .sup-cd-body   { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .sup-cd-date   { font-size: 18px; font-weight: 700; color: var(--text); margin: 8px 0; }
+    .sup-cd-note   { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 8px; }
+
+    /* Consent Health Tab */
     .ch-loading { text-align: center; padding: 56px 20px; }
     .ch-empty   { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
-
-    /* Stacked bar chart */
     .stacked-chart-wrap { overflow-x: auto; }
-    .stacked-chart {
-      display: flex; align-items: flex-end; gap: 10px;
-      height: 140px; min-width: 360px; padding-bottom: 28px; position: relative;
-    }
-    .stacked-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 0; }
+    .stacked-chart { display: flex; align-items: flex-end; gap: 10px; height: 140px; min-width: 360px; padding-bottom: 28px; position: relative; }
+    .stacked-col  { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
     .stacked-bars { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 3px 3px 0 0; overflow: hidden; }
-    .stacked-seg  { width: 100%; min-height: 1px; transition: height .5s ease; }
-    .stacked-seg.safe   { background: var(--safe); }
+    .stacked-seg  { width: 100%; min-height: 1px; }
+    .stacked-seg.safe     { background: var(--safe); }
     .stacked-seg.probably { background: var(--prob); }
-    .stacked-seg.risky  { background: var(--risky); }
-    .stacked-seg.danger { background: var(--danger); }
+    .stacked-seg.risky    { background: var(--risky); }
+    .stacked-seg.danger   { background: var(--danger); }
     .stacked-date { font-size: 10px; color: var(--muted); margin-top: 6px; white-space: nowrap; }
-
     .chart-legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
     .legend-item  { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
     .legend-dot   { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .legend-dot.safe    { background: var(--safe); }
-    .legend-dot.probably{ background: var(--prob); }
-    .legend-dot.risky   { background: var(--risky); }
-    .legend-dot.danger  { background: var(--danger); }
+    .legend-dot.safe { background: var(--safe); } .legend-dot.probably { background: var(--prob); }
+    .legend-dot.risky { background: var(--risky); } .legend-dot.danger { background: var(--danger); }
 
-    /* Expiry countdown cards */
     .expiry-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
     @media(max-width:560px){ .expiry-grid { grid-template-columns: 1fr; } }
-    .expiry-card {
-      border-radius: var(--radius); padding: 18px 16px; text-align: center; border: 1px solid;
-    }
-    .expiry-card.red    { background: var(--danger-bg); border-color: var(--danger-bd); }
-    .expiry-card.amber  { background: var(--risky-bg);  border-color: var(--risky-bd); }
-    .expiry-card.grey   { background: var(--bg);        border-color: var(--border-mid); }
+    .expiry-card { border-radius: var(--radius); padding: 18px 16px; text-align: center; border: 1px solid; }
+    .expiry-card.red   { background: var(--danger-bg); border-color: var(--danger-bd); }
+    .expiry-card.amber { background: var(--risky-bg);  border-color: var(--risky-bd); }
+    .expiry-card.grey  { background: var(--bg);        border-color: var(--border-mid); }
     .expiry-count { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
     .expiry-card.red   .expiry-count { color: var(--danger); }
     .expiry-card.amber .expiry-count { color: var(--risky); }
     .expiry-card.grey  .expiry-count { color: var(--muted); }
     .expiry-label { font-size: 12px; font-weight: 600; color: var(--muted); }
 
-    /* Action cards */
-    .action-card {
-      border-radius: var(--radius); padding: 20px; margin-bottom: 14px; border: 1px solid;
-    }
+    .action-card { border-radius: var(--radius); padding: 20px; margin-bottom: 14px; border: 1px solid; }
     .action-card.danger { background: var(--danger-bg); border-color: var(--danger-bd); }
     .action-card.amber  { background: var(--risky-bg);  border-color: var(--risky-bd); }
     .action-card.orange { background: var(--orange-light); border-color: #fcd9b0; }
-
-    .action-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-    .action-card-title  { font-size: 14px; font-weight: 600; }
+    .action-card-title  { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
     .action-card.danger .action-card-title { color: var(--danger); }
     .action-card.amber  .action-card-title { color: var(--risky); }
     .action-card.orange .action-card-title { color: var(--orange); }
-
-    .action-card-body { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
-    .action-card-plain { font-size: 12px; color: var(--muted); line-height: 1.5; font-style: italic; margin-bottom: 14px; }
-
-    .btn-action {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 16px; border-radius: var(--radius); font-size: 13px;
-      font-weight: 500; cursor: pointer; font-family: inherit; border: none;
-      transition: opacity .15s;
-    }
+    .action-card-plain  { font-size: 12px; color: var(--muted); line-height: 1.5; font-style: italic; margin-bottom: 14px; }
+    .btn-action { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; border: none; transition: opacity .15s; }
     .btn-action:hover { opacity: .85; }
     .btn-action.danger { background: var(--danger); color: #fff; }
     .btn-action.amber  { background: var(--risky);  color: #fff; }
     .btn-action.orange { background: var(--orange); color: #fff; }
 
-    /* Last audit summary */
-    .audit-summary-row {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-    }
+    .audit-summary-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     .audit-summary-meta { font-size: 13px; color: var(--muted); }
     .audit-summary-meta strong { color: var(--text); }
     .audit-totals { display: flex; gap: 16px; flex-wrap: wrap; }
     .audit-total-item { font-size: 12px; }
 
-    .disclaimer-info {
-      font-size: 11px; color: var(--muted); background: var(--bg);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 10px 14px; margin-bottom: 20px; line-height: 1.5;
-    }
+    .disclaimer-info { font-size: 11px; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 20px; line-height: 1.5; }
+    .disclaimer { font-size: 11px; color: var(--muted); font-style: italic; text-align: center; margin-top: 24px; }
   </style>
 </head>
 <body>
 <div class="container">
 
-  <a href="javascript:history.back()" class="back-link">
+  <a href="/" class="back-link">
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
     Dashboard
   </a>
@@ -395,25 +297,20 @@
   <h1 class="page-title">Database Auditor</h1>
   <p class="page-subtitle">Upload your contact database to audit consent status, identify PECR risks and see which contacts can be legally emailed.</p>
 
-  <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('audit')">Database Audit</button>
+    <button class="tab-btn" onclick="switchTab('reconsent')">Re-consent Builder</button>
     <button class="tab-btn" onclick="switchTab('health')">Consent Health</button>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════ -->
-  <!-- TAB 1 — Database Audit (pixel-identical to deployed version)  -->
-  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════ TAB 1 — AUDIT ═══════════════════ -->
   <div class="tab-panel active" id="panel-audit">
-
     <div class="error-box" id="errorBox"></div>
 
-    <!-- Form -->
     <div id="formSection">
-
       <div class="card">
         <div class="card-label">Campaign Context</div>
-        <p class="form-hint" style="margin-bottom:16px;">Tell us about your contacts and what you're sending so we can apply the right PECR rules.</p>
+        <p class="form-hint" style="margin-bottom:16px">Tell us about your contacts so we can apply the right PECR rules.</p>
         <div class="context-grid">
           <div class="form-group">
             <label for="customerType">Are these customers?</label>
@@ -452,10 +349,9 @@
              ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
           <div class="file-drop-icon">📊</div>
           <div class="file-drop-text">Drag and drop your CSV here, or <strong>browse to upload</strong></div>
-          <div class="file-drop-sub">Required columns: email, consentDate — Optional: consentMethod, source, firstName, lastName</div>
+          <div class="file-drop-sub">Required: email, consentDate — Optional: consentMethod, source, firstName, lastName</div>
         </div>
         <input type="file" id="fileInput" class="file-input" accept=".csv" onchange="onFileSelect(event)" />
-
         <div class="file-selected" id="fileSelected">
           <span>📎</span>
           <span class="file-name" id="fileName"></span>
@@ -463,28 +359,23 @@
         </div>
       </div>
 
-      <!-- Column mapper -->
       <div class="card mapper" id="mapperCard">
         <div class="card-label">Map Your Columns</div>
-        <p class="form-hint" style="margin-bottom:16px;">Match your CSV columns to the fields Sendwize needs. We've pre-filled where column names match.</p>
+        <p class="form-hint" style="margin-bottom:16px">Match your CSV columns to the fields Sendwize needs.</p>
         <div class="mapper-grid" id="mapperGrid"></div>
         <div class="preview-wrap" id="previewWrap"></div>
       </div>
 
       <button class="btn-primary" id="submitBtn" onclick="runAudit()">Run Audit</button>
-
     </div>
 
-    <!-- Loading -->
     <div class="loading" id="loadingSection">
       <div class="spinner"></div>
       <div class="loading-text">Auditing your database…</div>
       <div class="loading-count" id="loadingCount"></div>
     </div>
 
-    <!-- Results -->
     <div class="results" id="resultsSection">
-
       <button class="new-audit-btn" onclick="resetForm()">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
         New Audit
@@ -497,15 +388,22 @@
         <div id="breakdownBars"></div>
       </div>
 
-      <div class="card" id="timelineCard" style="display:none;">
+      <!-- EXPIRY COUNTDOWN (new) -->
+      <div class="card" id="expiryCountdownCard" style="display:none">
+        <div class="section-label">Consent Expiry Countdown</div>
+        <div class="expiry-countdown" id="expiryCountdownBuckets"></div>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px">Contacts whose consent reaches 2 years old within each window. Re-consent before expiry to retain them.</p>
+      </div>
+
+      <div class="card" id="timelineCard" style="display:none">
         <div class="section-label">Consent Expiry — Next 12 Months</div>
         <div class="timeline-wrap">
           <div class="timeline-chart" id="timelineChart"></div>
         </div>
-        <p style="font-size:11px;color:var(--muted);margin-top:10px;">Contacts whose consent reaches 2 years old each month. Re-consent before expiry.</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px">Contacts whose consent reaches 2 years old each month. Re-consent before expiry.</p>
       </div>
 
-      <div class="card" id="sourceCard" style="display:none;">
+      <div class="card" id="sourceCard" style="display:none">
         <div class="section-label">Source Quality</div>
         <table class="source-table">
           <thead><tr><th>Source</th><th>Contacts</th><th>Avg Score</th><th>Rating</th></tr></thead>
@@ -515,37 +413,136 @@
 
       <div id="contactTables"></div>
 
+      <!-- Prompt to Re-consent builder -->
+      <div class="card" style="background:var(--orange-light);border-color:#fcd9b0">
+        <div class="card-label">Next Step</div>
+        <p style="font-size:13px;color:var(--text);margin-bottom:14px">Contacts at risk? Build a compliant re-consent email and track the suppression window.</p>
+        <button class="btn-orange" onclick="switchTab('reconsent')">Go to Re-consent Builder →</button>
+      </div>
+
+      <p class="disclaimer">Information only — not legal advice.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ TAB 2 — RE-CONSENT ══════════════ -->
+  <div class="tab-panel" id="panel-reconsent">
+
+    <div class="rc-tabs">
+      <button class="rc-tab active" onclick="switchRcTab('draft', this)">Draft Email</button>
+      <button class="rc-tab" onclick="switchRcTab('sent', this)">Mark as Sent</button>
     </div>
 
-  </div><!-- /panel-audit -->
+    <!-- Draft panel -->
+    <div class="rc-panel active" id="rc-panel-draft">
+      <div class="card">
+        <div class="card-label">Re-consent Email Builder</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">Fill in the details below to generate a compliant re-consent email you can copy into your sending platform.</p>
 
-  <!-- ══════════════════════════════════════════════════════════════ -->
-  <!-- TAB 2 — Consent Health                                        -->
-  <!-- ══════════════════════════════════════════════════════════════ -->
+        <div class="form-group">
+          <label for="rc-senderName">Sender name <span style="color:var(--orange)">*</span></label>
+          <input type="text" id="rc-senderName" placeholder="e.g. Sarah from Acme Co.">
+        </div>
+        <div class="form-group">
+          <label for="rc-segment">Segment description <span style="color:var(--orange)">*</span></label>
+          <input type="text" id="rc-segment" placeholder="e.g. customers who signed up before 2022 via our website form">
+        </div>
+        <div class="form-group">
+          <label for="rc-channel">Channel <span style="color:var(--orange)">*</span></label>
+          <select id="rc-channel">
+            <option value="">— Select —</option>
+            <option value="email">Email</option>
+            <option value="sms">SMS</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="rc-consent">Consent statement <span style="color:var(--orange)">*</span></label>
+          <textarea id="rc-consent" placeholder="e.g. I agree to receive marketing emails from Acme Co. about products and services. I can unsubscribe at any time."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="rc-mechanism">Opt-in mechanism <span style="color:var(--orange)">*</span></label>
+          <input type="text" id="rc-mechanism" placeholder="e.g. Click the button below to confirm you'd like to stay in touch">
+        </div>
+
+        <div class="error-box" id="rcErrorBox"></div>
+
+        <button class="btn-primary" id="rcDraftBtn" onclick="generateDraft()">Generate Re-consent Email</button>
+      </div>
+
+      <!-- Draft output -->
+      <div class="card" id="rcDraftOutput" style="display:none">
+        <div class="section-label">Generated Draft</div>
+        <div class="draft-output" id="rcDraftText"></div>
+        <div class="draft-actions">
+          <button class="btn-secondary" onclick="copyDraft()">Copy to clipboard</button>
+          <span class="copy-tick" id="copyTick">✓ Copied!</span>
+          <button class="btn-secondary" onclick="switchRcTab('sent', document.querySelectorAll(\'.rc-tab\')[1])">Mark as sent →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sent panel -->
+    <div class="rc-panel" id="rc-panel-sent">
+      <div class="card">
+        <div class="card-label">Mark Re-consent Campaign as Sent</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">Once you've sent your re-consent email, record it here. We'll calculate your suppression window — non-responders must be suppressed when it closes.</p>
+
+        <div class="form-group">
+          <label for="sent-channel">Channel sent</label>
+          <select id="sent-channel">
+            <option value="email">Email</option>
+            <option value="sms">SMS</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sent-count">Number of contacts sent to</label>
+          <input type="text" id="sent-count" placeholder="e.g. 4250">
+        </div>
+        <div class="form-group">
+          <label for="sent-segment">Segment description</label>
+          <input type="text" id="sent-segment" placeholder="e.g. lapsed customers pre-2022">
+        </div>
+        <div class="form-group">
+          <label for="sent-window">Suppression window (days)</label>
+          <select id="sent-window">
+            <option value="30">30 days</option>
+            <option value="60" selected>60 days (recommended)</option>
+            <option value="90">90 days</option>
+          </select>
+        </div>
+
+        <div class="error-box" id="sentErrorBox"></div>
+        <button class="btn-primary" id="sentBtn" onclick="markSent()">Record as Sent</button>
+      </div>
+
+      <!-- Suppression window countdown -->
+      <div class="sup-countdown" id="supCountdown">
+        <div class="sup-cd-header">🕐 Suppression window open</div>
+        <div class="sup-cd-body">Non-responders must be suppressed from all marketing by:</div>
+        <div class="sup-cd-date" id="supDate">—</div>
+        <div class="sup-cd-body" id="supDaysLeft"></div>
+        <div class="sup-cd-note">After this date, anyone who has not re-consented must be removed from your active marketing list and added to your suppression file.</div>
+      </div>
+    </div>
+
+    <p class="disclaimer">Information only — not legal advice.</p>
+  </div>
+
+  <!-- ═══════════════════════════════ TAB 3 — HEALTH ══════════════════ -->
   <div class="tab-panel" id="panel-health">
+    <div class="disclaimer-info">Information only — not legal advice. Your compliance score is based on information you've provided and is for guidance only.</div>
 
-    <div class="disclaimer-info">
-      Information only — not legal advice. Your compliance score is based on the information you've provided and is for guidance only.
-    </div>
-
-    <!-- Loading state -->
     <div id="ch-loading" class="ch-loading">
       <div class="spinner"></div>
       <div class="loading-text">Loading consent health data…</div>
     </div>
-
-    <!-- Empty state -->
-    <div id="ch-empty" style="display:none;" class="ch-empty">
-      <p style="font-size:32px;margin-bottom:12px;">📊</p>
-      <p style="font-weight:600;margin-bottom:8px;">No audit history yet</p>
+    <div id="ch-empty" style="display:none" class="ch-empty">
+      <p style="font-size:32px;margin-bottom:12px">📊</p>
+      <p style="font-weight:600;margin-bottom:8px">No audit history yet</p>
       <p>Run your first database audit to see consent health trends here.</p>
-      <button class="btn-secondary" style="margin-top:16px;" onclick="switchTab('audit')">Run an Audit</button>
+      <button class="btn-secondary" style="margin-top:16px" onclick="switchTab('audit')">Run an Audit</button>
     </div>
 
-    <!-- Content (shown when data available) -->
-    <div id="ch-content" style="display:none;">
-
-      <!-- Database Health Trend -->
+    <div id="ch-content" style="display:none">
       <div class="card">
         <div class="card-label">Database Health Trend</div>
         <div class="stacked-chart-wrap">
@@ -558,35 +555,27 @@
           <div class="legend-item"><div class="legend-dot danger"></div>Danger</div>
         </div>
       </div>
-
-      <!-- Consent Expiry Countdown -->
       <div class="card">
         <div class="card-label">Consent Expiry Countdown</div>
         <div class="expiry-grid" id="ch-expiry-cards"></div>
       </div>
-
-      <!-- Source Quality Tracker -->
-      <div class="card" id="ch-source-card" style="display:none;">
+      <div class="card" id="ch-source-card" style="display:none">
         <div class="card-label">Source Quality Tracker</div>
         <table class="source-table">
           <thead><tr><th>Source</th><th>Contacts</th><th>Avg Score</th><th>Rating</th></tr></thead>
           <tbody id="ch-source-body"></tbody>
         </table>
       </div>
-
-      <!-- Loop Closure Action Cards -->
       <div class="card">
         <div class="card-label">Loop Closure</div>
         <div id="ch-action-cards"></div>
       </div>
-
-      <!-- Last Audit Summary -->
       <div class="card">
         <div class="card-label">Last Audit Summary</div>
         <div class="audit-summary-row">
           <div>
             <div class="audit-summary-meta" id="ch-last-date"></div>
-            <div class="audit-totals" id="ch-last-totals" style="margin-top:8px;"></div>
+            <div class="audit-totals" id="ch-last-totals" style="margin-top:8px"></div>
           </div>
           <button class="btn-secondary" onclick="switchTab('audit')">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
@@ -594,258 +583,255 @@
           </button>
         </div>
       </div>
-
-    </div><!-- /ch-content -->
-  </div><!-- /panel-health -->
+    </div>
+  </div>
 
 </div><!-- /container -->
 
+<script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
 <script>
-  // ─── State ──────────────────────────────────────────────────────────
-  const userId     = new URLSearchParams(window.location.search).get('userId') || '';
-  const VERCEL_URL = window.location.origin;
-
-  let csvHeaders = [];
-  let csvRows    = [];
+  const APP_URL = 'https://sendwize-backend.vercel.app';
+  let userId = null;
+  let csvHeaders = [], csvRows = [];
+  let healthLoaded = false;
+  let lastDraftText = '';
 
   const FIELDS = [
-    { key: 'email',         label: 'Email',          required: true  },
-    { key: 'consentDate',   label: 'Consent Date',   required: true  },
-    { key: 'consentMethod', label: 'Consent Method', required: false },
-    { key: 'source',        label: 'Source',         required: false },
-    { key: 'firstName',     label: 'First Name',     required: false },
-    { key: 'lastName',      label: 'Last Name',      required: false },
+    { key:'email',         label:'Email',          required:true  },
+    { key:'consentDate',   label:'Consent Date',   required:true  },
+    { key:'consentMethod', label:'Consent Method', required:false },
+    { key:'source',        label:'Source',         required:false },
+    { key:'firstName',     label:'First Name',     required:false },
+    { key:'lastName',      label:'Last Name',      required:false },
   ];
 
-  // ─── Tab switching ────────────────────────────────────────────────
-  let healthLoaded = false;
+  // ── AUTH ────────────────────────────────────────────────────────────
+  async function init() {
+    try {
+      await new Promise(r => {
+        if (window.$memberstackDom) return r();
+        const iv = setInterval(() => { if (window.$memberstackDom) { clearInterval(iv); r(); } }, 200);
+      });
+      const m = (await window.$memberstackDom.getCurrentMember())?.data;
+      if (!m?.id) { showError('Please log in to use this tool.'); return; }
+      userId = m.id;
+    } catch(e) { showError('Authentication failed. Please log in.'); }
+  }
 
+  // ── TABS ────────────────────────────────────────────────────────────
   function switchTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach((b, i) => {
-      b.classList.toggle('active', (i === 0 && tab === 'audit') || (i === 1 && tab === 'health'));
+    ['audit','reconsent','health'].forEach((t, i) => {
+      document.querySelectorAll('.tab-btn')[i].classList.toggle('active', t === tab);
+      document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
     });
-    document.getElementById('panel-audit').classList.toggle('active', tab === 'audit');
-    document.getElementById('panel-health').classList.toggle('active', tab === 'health');
+    if (tab === 'health' && !healthLoaded) { healthLoaded = true; loadConsentHealth(); }
+  }
 
-    if (tab === 'health' && !healthLoaded) {
-      healthLoaded = true;
-      loadConsentHealth();
+  function switchRcTab(panel, btn) {
+    document.querySelectorAll('.rc-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.rc-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`rc-panel-${panel}`).classList.add('active');
+  }
+
+  // ── RE-CONSENT: GENERATE DRAFT ──────────────────────────────────────
+  async function generateDraft() {
+    if (!userId) { showRcError('Please log in first.'); return; }
+    const senderName = document.getElementById('rc-senderName').value.trim();
+    const segment    = document.getElementById('rc-segment').value.trim();
+    const channel    = document.getElementById('rc-channel').value;
+    const consent    = document.getElementById('rc-consent').value.trim();
+    const mechanism  = document.getElementById('rc-mechanism').value.trim();
+
+    if (!senderName || !segment || !channel || !consent || !mechanism) {
+      showRcError('Please fill in all required fields.'); return;
+    }
+    clearRcError();
+
+    const btn = document.getElementById('rcDraftBtn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+
+    try {
+      const res = await fetch(`${APP_URL}/api/audit-database-v2?action=reconsent-draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, senderName, segmentDescription: segment, channel, consentStatement: consent, optInMechanism: mechanism }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      lastDraftText = data.draft || data.emailDraft || data.smsDraft || JSON.stringify(data);
+      document.getElementById('rcDraftText').textContent = lastDraftText;
+      document.getElementById('rcDraftOutput').style.display = 'block';
+      document.getElementById('rcDraftOutput').scrollIntoView({ behavior:'smooth', block:'start' });
+    } catch(e) {
+      showRcError('Draft generation failed: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Generate Re-consent Email';
     }
   }
 
-  // ─── Consent Health — data loading ───────────────────────────────
+  async function copyDraft() {
+    try {
+      await navigator.clipboard.writeText(lastDraftText);
+      const tick = document.getElementById('copyTick');
+      tick.classList.add('show');
+      setTimeout(() => tick.classList.remove('show'), 2200);
+    } catch {}
+  }
+
+  // ── RE-CONSENT: MARK AS SENT ────────────────────────────────────────
+  async function markSent() {
+    if (!userId) { showSentError('Please log in first.'); return; }
+    const channel     = document.getElementById('sent-channel').value;
+    const countRaw    = document.getElementById('sent-count').value.trim();
+    const segment     = document.getElementById('sent-segment').value.trim();
+    const windowDays  = parseInt(document.getElementById('sent-window').value);
+    const contactCount = parseInt(countRaw.replace(/\D/g,'')) || 0;
+
+    clearSentError();
+    const btn = document.getElementById('sentBtn');
+    btn.disabled = true; btn.textContent = 'Recording…';
+
+    try {
+      const res = await fetch(`${APP_URL}/api/audit-database-v2?action=mark-sent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, channel, contactCount, segmentDescription: segment, windowDays }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // Show suppression window countdown
+      const closeDate = new Date();
+      closeDate.setDate(closeDate.getDate() + windowDays);
+      const dateStr = closeDate.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      const daysLeft = windowDays;
+
+      document.getElementById('supDate').textContent = dateStr;
+      document.getElementById('supDaysLeft').textContent = `${daysLeft} days remaining in your suppression window.`;
+      document.getElementById('supCountdown').classList.add('show');
+      document.getElementById('supCountdown').scrollIntoView({ behavior:'smooth', block:'start' });
+
+    } catch(e) {
+      showSentError('Failed to record: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Record as Sent';
+    }
+  }
+
+  // ── CONSENT HEALTH ──────────────────────────────────────────────────
   async function loadConsentHealth() {
     if (!userId) {
       document.getElementById('ch-loading').style.display = 'none';
-      document.getElementById('ch-empty').style.display   = 'block';
+      document.getElementById('ch-empty').style.display = 'block';
       return;
     }
-
     try {
-      const resp = await fetch(`${VERCEL_URL}/api/data?action=history&type=audit&userId=${encodeURIComponent(userId)}`);
-      if (!resp.ok) throw new Error('Failed to load');
-      const { records } = await resp.json();
-
+      const res = await fetch(`${APP_URL}/api/data?action=history&type=audit&userId=${encodeURIComponent(userId)}`);
+      if (!res.ok) throw new Error('Failed to load');
+      const { records } = await res.json();
       document.getElementById('ch-loading').style.display = 'none';
-
-      if (!records || records.length === 0) {
-        document.getElementById('ch-empty').style.display = 'block';
-        return;
-      }
-
+      if (!records?.length) { document.getElementById('ch-empty').style.display = 'block'; return; }
       renderConsentHealth(records);
       document.getElementById('ch-content').style.display = 'block';
-
-    } catch (err) {
+    } catch(e) {
       document.getElementById('ch-loading').style.display = 'none';
-      document.getElementById('ch-empty').style.display   = 'block';
-      console.error('Consent health load error:', err);
+      document.getElementById('ch-empty').style.display = 'block';
     }
   }
 
-  // ─── Consent Health — render ──────────────────────────────────────
   function renderConsentHealth(records) {
-    // Latest record is first (sorted desc)
-    const latest     = records[0];
-    const latestDate = latest.fields.AuditDate || '';
-    let   latestResults = null;
-    try { latestResults = JSON.parse(latest.fields.Results || '{}'); } catch { latestResults = {}; }
+    const latest = records[0];
+    let latestResults = {};
+    try { latestResults = JSON.parse(latest.fields.Results || '{}'); } catch {}
 
-    // ── 1. Stacked bar trend chart ───────────────────────────────────
-    const trendData = records.slice(0, 6).reverse(); // oldest → newest, max 6
+    // Trend chart
+    const trendData = records.slice(0, 6).reverse();
     const maxTotal  = Math.max(...trendData.map(r => (r.fields.Safe||0)+(r.fields.Probably||0)+(r.fields.Risky||0)+(r.fields.Danger||0)), 1);
-
     document.getElementById('ch-trend-chart').innerHTML = trendData.map(r => {
-      const safe    = r.fields.Safe    || 0;
-      const prob    = r.fields.Probably|| 0;
-      const risky   = r.fields.Risky   || 0;
-      const danger  = r.fields.Danger  || 0;
-      const total   = safe + prob + risky + danger || 1;
-      const barH    = Math.round((total / maxTotal) * 100); // % of max height
-      const label   = (r.fields.AuditDate || '').slice(0, 7); // YYYY-MM
-      return `
-        <div class="stacked-col">
-          <div class="stacked-bars" style="height:${barH}%">
-            <div class="stacked-seg danger"  style="height:${(danger/total*100).toFixed(1)}%"  title="Danger: ${danger}"></div>
-            <div class="stacked-seg risky"   style="height:${(risky/total*100).toFixed(1)}%"   title="Risky: ${risky}"></div>
-            <div class="stacked-seg probably"style="height:${(prob/total*100).toFixed(1)}%"   title="Probably: ${prob}"></div>
-            <div class="stacked-seg safe"    style="height:${(safe/total*100).toFixed(1)}%"    title="Safe: ${safe}"></div>
-          </div>
-          <div class="stacked-date">${escHtml(label)}</div>
-        </div>`;
+      const s=r.fields.Safe||0,p=r.fields.Probably||0,ri=r.fields.Risky||0,d=r.fields.Danger||0,tot=s+p+ri+d||1;
+      const bH = Math.round((tot/maxTotal)*100);
+      return `<div class="stacked-col">
+        <div class="stacked-bars" style="height:${bH}%">
+          <div class="stacked-seg danger"   style="height:${(d/tot*100).toFixed(1)}%"></div>
+          <div class="stacked-seg risky"    style="height:${(ri/tot*100).toFixed(1)}%"></div>
+          <div class="stacked-seg probably" style="height:${(p/tot*100).toFixed(1)}%"></div>
+          <div class="stacked-seg safe"     style="height:${(s/tot*100).toFixed(1)}%"></div>
+        </div>
+        <div class="stacked-date">${escHtml((r.fields.AuditDate||'').slice(0,7))}</div>
+      </div>`;
     }).join('');
 
-    // ── 2. Consent Expiry Countdown ──────────────────────────────────
-    const expiry = latestResults.expiryTimeline || {};
-    const d0 = (expiry.data || [])[0] || 0;
-    const d1 = (expiry.data || [])[1] || 0;
-    const d2 = (expiry.data || [])[2] || 0;
-
+    // Expiry cards
+    const exp = latestResults.expiryTimeline || {};
+    const d0 = exp.data?.[0]||0, d1 = exp.data?.[1]||0, d2 = exp.data?.[2]||0;
     document.getElementById('ch-expiry-cards').innerHTML = `
-      <div class="expiry-card ${d0 > 0 ? 'red' : 'grey'}">
-        <div class="expiry-count">${d0.toLocaleString()}</div>
-        <div class="expiry-label">Next 30 days</div>
-      </div>
-      <div class="expiry-card ${d1 > 0 ? 'amber' : 'grey'}">
-        <div class="expiry-count">${d1.toLocaleString()}</div>
-        <div class="expiry-label">31–60 days</div>
-      </div>
-      <div class="expiry-card grey">
-        <div class="expiry-count">${d2.toLocaleString()}</div>
-        <div class="expiry-label">61–90 days</div>
-      </div>`;
+      <div class="expiry-card ${d0>0?'red':'grey'}"><div class="expiry-count">${d0.toLocaleString()}</div><div class="expiry-label">Next 30 days</div></div>
+      <div class="expiry-card ${d1>0?'amber':'grey'}"><div class="expiry-count">${d1.toLocaleString()}</div><div class="expiry-label">31–60 days</div></div>
+      <div class="expiry-card grey"><div class="expiry-count">${d2.toLocaleString()}</div><div class="expiry-label">61–90 days</div></div>`;
 
-    // ── 3. Source Quality Tracker ────────────────────────────────────
-    const sourceQuality = latestResults.sourceQuality || [];
-    if (sourceQuality.length) {
-      document.getElementById('ch-source-body').innerHTML = sourceQuality.map(s => `
-        <tr>
-          <td>${escHtml(s.source)}</td>
-          <td>${(s.total||0).toLocaleString()}</td>
-          <td>${s.avgScore ?? '—'}</td>
-          <td><span class="rating-pill rating-${s.rating}">${escHtml(s.rating)}</span></td>
-        </tr>`).join('');
+    // Source quality
+    const sq = latestResults.sourceQuality || [];
+    if (sq.length) {
+      document.getElementById('ch-source-body').innerHTML = sq.map(s => `<tr><td>${escHtml(s.source)}</td><td>${(s.total||0).toLocaleString()}</td><td>${s.avgScore??'—'}</td><td><span class="rating-pill rating-${s.rating}">${escHtml(s.rating)}</span></td></tr>`).join('');
       document.getElementById('ch-source-card').style.display = 'block';
     }
 
-    // ── 4. Loop Closure Action Cards ─────────────────────────────────
-    const dangerContacts  = latestResults.danger  || [];
-    const probContacts    = latestResults.probably || [];
-    const recosentUrl     = `reconsent-builder.html?userId=${encodeURIComponent(userId)}`;
-    let actionHTML        = '';
+    // Action cards
+    const danger = latestResults.danger||[], prob = latestResults.probably||[];
+    let ac = '';
+    if (danger.length) ac += `<div class="action-card danger"><div class="action-card-title">⛔ ${danger.length.toLocaleString()} contacts have invalid or no consent — should be removed.</div><div class="action-card-plain">Pre-ticked boxes, purchased lists and undocumented consent do not meet PECR requirements.</div><button class="btn-action danger" onclick="downloadDangerCSV()">↓ Download danger contacts</button></div>`;
+    if (prob.length)   ac += `<div class="action-card amber"><div class="action-card-title">⚠️ ${prob.length.toLocaleString()} contacts have consent that may not fully meet current requirements.</div><div class="action-card-plain">Continue emailing for now but prioritise re-consent.</div><button class="btn-action amber" onclick="switchTab('reconsent')">Build re-consent email →</button></div>`;
+    if (d0 > 0)        ac += `<div class="action-card orange"><div class="action-card-title">🕐 ${d0.toLocaleString()} contacts' consent expires in the next 30 days.</div><div class="action-card-plain">Re-consent these contacts before their consent expires.</div><button class="btn-action orange" onclick="switchTab('reconsent')">Build re-consent email →</button></div>`;
+    if (!ac) ac = `<p style="font-size:13px;color:var(--muted)">No immediate actions required based on your latest audit.</p>`;
+    document.getElementById('ch-action-cards').innerHTML = ac;
+    window._dangerContacts = danger;
 
-    // DANGER card
-    if (dangerContacts.length > 0) {
-      actionHTML += `
-        <div class="action-card danger">
-          <div class="action-card-header">
-            <div class="action-card-title">⛔ ${dangerContacts.length.toLocaleString()} contacts have invalid or no consent — cannot be re-consented, should be removed.</div>
-          </div>
-          <div class="action-card-plain">Pre-ticked boxes, purchased lists and undocumented consent do not meet PECR requirements.</div>
-          <button class="btn-action danger" onclick="downloadDangerCSV()">
-            ↓ Download danger contacts
-          </button>
-        </div>`;
-    }
-
-    // PROBABLY card
-    if (probContacts.length > 0) {
-      actionHTML += `
-        <div class="action-card amber">
-          <div class="action-card-header">
-            <div class="action-card-title">⚠️ ${probContacts.length.toLocaleString()} contacts have consent that may not fully meet current requirements.</div>
-          </div>
-          <div class="action-card-plain">These contacts opted in but their consent is older or the method may not be robust enough. You can continue to email them for now but should prioritise re-consent.</div>
-          <a class="btn-action amber" href="${recosentUrl}">Build re-consent email →</a>
-        </div>`;
-    }
-
-    // EXPIRING card
-    if (d0 > 0) {
-      actionHTML += `
-        <div class="action-card orange">
-          <div class="action-card-header">
-            <div class="action-card-title">🕐 ${d0.toLocaleString()} contacts' consent expires in the next 30 days.</div>
-          </div>
-          <div class="action-card-plain">Re-consent these contacts before their consent expires to avoid having to remove them from your list.</div>
-          <a class="btn-action orange" href="${recosentUrl}">Build re-consent email →</a>
-        </div>`;
-    }
-
-    if (!actionHTML) {
-      actionHTML = `<p style="font-size:13px;color:var(--muted);">No immediate actions required based on your latest audit.</p>`;
-    }
-
-    document.getElementById('ch-action-cards').innerHTML = actionHTML;
-
-    // Store danger contacts for CSV download
-    window._dangerContacts = dangerContacts;
-
-    // ── 5. Last Audit Summary ────────────────────────────────────────
-    const lSafe   = latest.fields.Safe    || 0;
-    const lProb   = latest.fields.Probably|| 0;
-    const lRisky  = latest.fields.Risky   || 0;
-    const lDanger = latest.fields.Danger  || 0;
-    const lTotal  = lSafe + lProb + lRisky + lDanger;
-
-    document.getElementById('ch-last-date').innerHTML = `Last audit: <strong>${escHtml(latestDate)}</strong> — ${lTotal.toLocaleString()} contacts`;
-    document.getElementById('ch-last-totals').innerHTML = `
-      <span class="audit-total-item" style="color:var(--safe)">✓ ${lSafe.toLocaleString()} safe</span>
-      <span class="audit-total-item" style="color:var(--prob)">~ ${lProb.toLocaleString()} probably</span>
-      <span class="audit-total-item" style="color:var(--risky)">⚠ ${lRisky.toLocaleString()} risky</span>
-      <span class="audit-total-item" style="color:var(--danger)">✕ ${lDanger.toLocaleString()} danger</span>`;
+    // Summary
+    const lS=latest.fields.Safe||0,lP=latest.fields.Probably||0,lR=latest.fields.Risky||0,lD=latest.fields.Danger||0,lT=lS+lP+lR+lD;
+    document.getElementById('ch-last-date').innerHTML = `Last audit: <strong>${escHtml(latest.fields.AuditDate||'')}</strong> — ${lT.toLocaleString()} contacts`;
+    document.getElementById('ch-last-totals').innerHTML = `<span class="audit-total-item" style="color:var(--safe)">✓ ${lS.toLocaleString()} safe</span><span class="audit-total-item" style="color:var(--prob)">~ ${lP.toLocaleString()} probably</span><span class="audit-total-item" style="color:var(--risky)">⚠ ${lR.toLocaleString()} risky</span><span class="audit-total-item" style="color:var(--danger)">✕ ${lD.toLocaleString()} danger</span>`;
   }
 
-  // ─── Download danger contacts as CSV ─────────────────────────────
   function downloadDangerCSV() {
-    const contacts = window._dangerContacts || [];
-    if (!contacts.length) return;
-
-    const disclaimer = 'This document is provided for informational purposes only and does not constitute legal advice or confirm legal compliance.';
-    const headers    = ['email','consentDate','consentMethod','source','score','category'];
-    const rows       = contacts.map(c => headers.map(h => `"${String(c[h]||'').replace(/"/g,'""')}"`).join(','));
-    const csv        = [disclaimer, headers.join(','), ...rows].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const c = window._dangerContacts || [];
+    if (!c.length) return;
+    const hdrs = ['email','consentDate','consentMethod','source','score','category'];
+    const rows = c.map(r => hdrs.map(h => `"${String(r[h]||'').replace(/"/g,'""')}"`).join(','));
+    const csv  = ['Information only — not legal advice.', hdrs.join(','), ...rows].join('\n');
     const a    = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
+    a.href     = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
     a.download = `danger-contacts-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   }
 
-  // ─── CSV parsing (Tab 1) ──────────────────────────────────────────
+  // ── CSV / FILE (Tab 1) ──────────────────────────────────────────────
   function parseCSV(text) {
     const lines = text.trim().split(/\r?\n/);
     if (lines.length < 2) return null;
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''));
     const rows = [];
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       const vals = splitCSVLine(lines[i]);
       const obj  = {};
-      headers.forEach((h, idx) => { obj[h] = (vals[idx] || '').trim().replace(/^"|"$/g, ''); });
+      headers.forEach((h, idx) => { obj[h] = (vals[idx]||'').trim().replace(/^"|"$/g,''); });
       rows.push(obj);
     }
     return { headers, rows };
   }
 
   function splitCSVLine(line) {
-    const result = []; let cur = ''; let inQuote = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') { inQuote = !inQuote; }
-      else if (c === ',' && !inQuote) { result.push(cur); cur = ''; }
-      else cur += c;
+    const r=[]; let c=''; let q=false;
+    for (let i=0;i<line.length;i++) {
+      if(line[i]==='"'){q=!q;}else if(line[i]===','&&!q){r.push(c);c='';}else c+=line[i];
     }
-    result.push(cur);
-    return result;
+    r.push(c); return r;
   }
 
-  // ─── File handling ────────────────────────────────────────────────
-  function onDragOver(e)  { e.preventDefault(); document.getElementById('fileDrop').classList.add('dragover'); }
-  function onDragLeave()  { document.getElementById('fileDrop').classList.remove('dragover'); }
-  function onDrop(e)      { e.preventDefault(); onDragLeave(); const f = e.dataTransfer.files[0]; if (f) loadFile(f); }
-  function onFileSelect(e){ const f = e.target.files[0]; if (f) loadFile(f); }
+  function onDragOver(e){e.preventDefault();document.getElementById('fileDrop').classList.add('dragover');}
+  function onDragLeave(){document.getElementById('fileDrop').classList.remove('dragover');}
+  function onDrop(e){e.preventDefault();onDragLeave();const f=e.dataTransfer.files[0];if(f)loadFile(f);}
+  function onFileSelect(e){const f=e.target.files[0];if(f)loadFile(f);}
 
   function loadFile(file) {
     if (!file.name.endsWith('.csv')) { showError('Please upload a CSV file.'); return; }
@@ -854,34 +840,31 @@
     const reader = new FileReader();
     reader.onload = e => {
       const parsed = parseCSV(e.target.result);
-      if (!parsed || parsed.rows.length === 0) { showError('Could not read CSV — ensure it has a header row and data.'); return; }
-      csvHeaders = parsed.headers;
-      csvRows    = parsed.rows;
-      buildMapper();
+      if (!parsed || !parsed.rows.length) { showError('Could not read CSV — ensure it has a header row and data.'); return; }
+      csvHeaders = parsed.headers; csvRows = parsed.rows; buildMapper();
     };
     reader.readAsText(file);
   }
 
   function clearFile() {
-    csvHeaders = []; csvRows = [];
+    csvHeaders=[]; csvRows=[];
     document.getElementById('fileSelected').classList.remove('show');
     document.getElementById('fileInput').value = '';
     document.getElementById('mapperCard').classList.remove('show');
     document.getElementById('previewWrap').innerHTML = '';
   }
 
-  // ─── Column mapper ────────────────────────────────────────────────
-  function autoMatch(fieldKey, headers) {
+  function autoMatch(key, headers) {
     const aliases = {
-      email:         ['email', 'email address', 'emailaddress', 'e-mail'],
-      consentDate:   ['consentdate', 'consent date', 'consent_date', 'date', 'optindate', 'optin_date', 'date added', 'dateadded'],
-      consentMethod: ['consentmethod', 'consent method', 'consent_method', 'method', 'optin method', 'optinmethod'],
-      source:        ['source', 'lead source', 'leadsource', 'origin'],
-      firstName:     ['firstname', 'first name', 'first_name', 'forename'],
-      lastName:      ['lastname', 'last name', 'last_name', 'surname'],
+      email:['email','email address','emailaddress','e-mail'],
+      consentDate:['consentdate','consent date','consent_date','date','optindate','optin_date','date added','dateadded'],
+      consentMethod:['consentmethod','consent method','consent_method','method'],
+      source:['source','lead source','leadsource','origin'],
+      firstName:['firstname','first name','first_name','forename'],
+      lastName:['lastname','last name','last_name','surname'],
     };
-    const targets = aliases[fieldKey] || [fieldKey.toLowerCase()];
-    return headers.find(h => targets.includes(h.toLowerCase().trim())) || '';
+    const targets = aliases[key]||[key.toLowerCase()];
+    return headers.find(h => targets.includes(h.toLowerCase().trim()))||'';
   }
 
   function buildMapper() {
@@ -891,12 +874,7 @@
       const matched = autoMatch(f.key, csvHeaders);
       const row = document.createElement('div');
       row.className = 'mapper-row';
-      row.innerHTML = `
-        <div class="mapper-label">${f.label}${f.required ? ' <span style="color:var(--orange)">*</span>' : ' <span>(optional)</span>'}</div>
-        <select id="map_${f.key}" onchange="updatePreview()">
-          <option value="">— Not mapped —</option>
-          ${csvHeaders.map(h => `<option value="${escHtml(h)}" ${h === matched ? 'selected' : ''}>${escHtml(h)}</option>`).join('')}
-        </select>`;
+      row.innerHTML = `<div class="mapper-label">${f.label}${f.required?' <span style="color:var(--orange)">*</span>':' <span>(optional)</span>'}</div><select id="map_${f.key}" onchange="updatePreview()"><option value="">— Not mapped —</option>${csvHeaders.map(h=>`<option value="${escHtml(h)}"${h===matched?' selected':''}>${escHtml(h)}</option>`).join('')}</select>`;
       grid.appendChild(row);
     });
     document.getElementById('mapperCard').classList.add('show');
@@ -904,164 +882,111 @@
   }
 
   function getMapping() {
-    const m = {};
-    FIELDS.forEach(f => { m[f.key] = document.getElementById(`map_${f.key}`)?.value || ''; });
+    const m={};
+    FIELDS.forEach(f=>{ m[f.key]=document.getElementById(`map_${f.key}`)?.value||''; });
     return m;
   }
 
   function updatePreview() {
-    const mapping = getMapping();
-    const wrap    = document.getElementById('previewWrap');
-    const sample  = csvRows.slice(0, 3);
+    const mapping=getMapping(), wrap=document.getElementById('previewWrap'), sample=csvRows.slice(0,3);
     if (!sample.length) return;
-    const mappedFields = FIELDS.filter(f => mapping[f.key]);
-    if (!mappedFields.length) { wrap.innerHTML = ''; return; }
-    wrap.innerHTML = `
-      <p style="font-size:12px;color:var(--muted);margin:14px 0 8px;">Preview (first 3 rows):</p>
-      <table class="preview-table">
-        <thead><tr>${mappedFields.map(f => `<th>${f.label}</th>`).join('')}</tr></thead>
-        <tbody>
-          ${sample.map(row => `<tr>${mappedFields.map(f => `<td>${escHtml(row[mapping[f.key]] || '')}</td>`).join('')}</tr>`).join('')}
-        </tbody>
-      </table>`;
+    const mf = FIELDS.filter(f=>mapping[f.key]);
+    if (!mf.length) { wrap.innerHTML=''; return; }
+    wrap.innerHTML = `<p style="font-size:12px;color:var(--muted);margin:14px 0 8px">Preview (first 3 rows):</p><table class="preview-table"><thead><tr>${mf.map(f=>`<th>${f.label}</th>`).join('')}</tr></thead><tbody>${sample.map(row=>`<tr>${mf.map(f=>`<td>${escHtml(row[mapping[f.key]]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   }
 
-  // ─── Run audit ────────────────────────────────────────────────────
+  // ── RUN AUDIT ───────────────────────────────────────────────────────
   async function runAudit() {
     clearError();
-    const customerType = document.getElementById('customerType').value;
-    const productType  = document.getElementById('productType').value;
-    const emailType    = document.getElementById('emailType').value;
-
+    if (!userId)      { showError('Please log in to use this tool.'); return; }
     if (!csvRows.length) { showError('Please upload a CSV file.'); return; }
-    if (!customerType)   { showError('Please select whether these contacts are customers.'); return; }
-    if (!productType)    { showError('Please select what products you are marketing.'); return; }
-    if (!emailType)      { showError('Please select the contact type (B2C / B2B / Mixed).'); return; }
-    if (!userId)         { showError('Missing userId. Please access this tool via your Sendwize dashboard.'); return; }
+    const ct=document.getElementById('customerType').value, pt=document.getElementById('productType').value, et=document.getElementById('emailType').value;
+    if (!ct){ showError('Please select whether these contacts are customers.'); return; }
+    if (!pt){ showError('Please select what products you are marketing.'); return; }
+    if (!et){ showError('Please select the contact type.'); return; }
 
     const mapping = getMapping();
-    if (!mapping.email || !mapping.consentDate) {
-      showError('Please map at least the Email and Consent Date columns.'); return;
-    }
+    if (!mapping.email||!mapping.consentDate){ showError('Please map the Email and Consent Date columns.'); return; }
 
-    const contacts = csvRows.map(row => ({
-      email:         row[mapping.email]         || '',
-      consentDate:   row[mapping.consentDate]   || '',
-      consentMethod: mapping.consentMethod ? row[mapping.consentMethod] || '' : '',
-      source:        mapping.source        ? row[mapping.source]        || '' : '',
-      firstName:     mapping.firstName     ? row[mapping.firstName]     || '' : '',
-      lastName:      mapping.lastName      ? row[mapping.lastName]      || '' : '',
-    })).filter(c => c.email);
+    const contacts = csvRows.map(row=>({
+      email:         row[mapping.email]||'',
+      consentDate:   row[mapping.consentDate]||'',
+      consentMethod: mapping.consentMethod ? row[mapping.consentMethod]||'' : '',
+      source:        mapping.source        ? row[mapping.source]||''        : '',
+      firstName:     mapping.firstName     ? row[mapping.firstName]||''     : '',
+      lastName:      mapping.lastName      ? row[mapping.lastName]||''      : '',
+    })).filter(c=>c.email);
 
-    if (!contacts.length) { showError('No valid contacts found. Check your email column mapping.'); return; }
+    if (!contacts.length){ showError('No valid contacts found. Check your email column mapping.'); return; }
 
-    document.getElementById('formSection').style.display = 'none';
+    document.getElementById('formSection').style.display='none';
     document.getElementById('loadingSection').classList.add('show');
-    document.getElementById('loadingCount').textContent = `Analysing ${contacts.length.toLocaleString()} contacts…`;
+    document.getElementById('loadingCount').textContent=`Analysing ${contacts.length.toLocaleString()} contacts…`;
 
     try {
-      const resp = await fetch(`${VERCEL_URL}/api/audit-database-v2`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ contacts, customerType, productType, emailType, userId })
+      const res = await fetch(`${APP_URL}/api/audit-database-v2`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({contacts, customerType:ct, productType:pt, emailType:et, userId}),
       });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || `Server error ${resp.status}`);
-      }
-      const data = await resp.json();
+      if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.error||`Server error ${res.status}`); }
+      const data = await res.json();
       renderResults(data);
-      // Invalidate health tab cache so it refreshes on next switch
       healthLoaded = false;
-    } catch (err) {
-      showError('Audit failed: ' + err.message);
-      document.getElementById('formSection').style.display = 'block';
+    } catch(e) {
+      showError('Audit failed: '+e.message);
+      document.getElementById('formSection').style.display='block';
       document.getElementById('loadingSection').classList.remove('show');
     }
   }
 
-  // ─── Render results (Tab 1) ───────────────────────────────────────
+  // ── RENDER RESULTS ──────────────────────────────────────────────────
   function renderResults(data) {
-    const { total, safe, probably, risky, danger, expiryTimeline, sourceQuality } = data;
-
+    const {total, safe, probably, risky, danger, expiryTimeline, sourceQuality} = data;
     const buckets = [
-      { key: 'safe',     label: 'Safe',     count: safe.length,     cls: 'safe'     },
-      { key: 'probably', label: 'Probably', count: probably.length, cls: 'probably' },
-      { key: 'risky',    label: 'Risky',    count: risky.length,    cls: 'risky'    },
-      { key: 'danger',   label: 'Danger',   count: danger.length,   cls: 'danger'   },
+      {key:'safe',     label:'Safe',     count:safe.length,     cls:'safe'},
+      {key:'probably', label:'Probably', count:probably.length, cls:'probably'},
+      {key:'risky',    label:'Risky',    count:risky.length,    cls:'risky'},
+      {key:'danger',   label:'Danger',   count:danger.length,   cls:'danger'},
     ];
 
-    document.getElementById('bucketsRow').innerHTML = buckets.map(b => `
-      <div class="bucket ${b.cls}">
-        <div class="bucket-count">${b.count.toLocaleString()}</div>
-        <div class="bucket-label">${b.label}</div>
-        <div class="bucket-pct">${total ? Math.round(b.count / total * 100) : 0}%</div>
-      </div>`).join('');
+    document.getElementById('bucketsRow').innerHTML = buckets.map(b=>`<div class="bucket ${b.cls}"><div class="bucket-count">${b.count.toLocaleString()}</div><div class="bucket-label">${b.label}</div><div class="bucket-pct">${total?Math.round(b.count/total*100):0}%</div></div>`).join('');
+    document.getElementById('breakdownBars').innerHTML = buckets.map(b=>`<div class="bar-row"><div class="bar-seg-label">${b.label}</div><div class="bar-track"><div class="bar-fill" style="width:${total?(b.count/total*100):0}%;background:var(--${b.cls==='probably'?'prob':b.cls})"></div></div><div class="bar-count">${b.count.toLocaleString()}</div></div>`).join('');
 
-    document.getElementById('breakdownBars').innerHTML = buckets.map(b => `
-      <div class="bar-row">
-        <div class="bar-seg-label">${b.label}</div>
-        <div class="bar-track">
-          <div class="bar-fill" style="width:${total ? (b.count/total*100) : 0}%;background:var(--${b.cls === 'probably' ? 'prob' : b.cls})"></div>
-        </div>
-        <div class="bar-count">${b.count.toLocaleString()}</div>
-      </div>`).join('');
+    // Expiry countdown buckets (new)
+    if (expiryTimeline?.data) {
+      const d0=expiryTimeline.data[0]||0, d1=expiryTimeline.data[1]||0, d2=expiryTimeline.data[2]||0;
+      document.getElementById('expiryCountdownBuckets').innerHTML = `
+        <div class="ec-card ${d0>0?'ec-red':'ec-grey'}"><div class="ec-num">${d0.toLocaleString()}</div><div class="ec-lbl">Within 30 days</div></div>
+        <div class="ec-card ${d1>0?'ec-amber':'ec-grey'}"><div class="ec-num">${d1.toLocaleString()}</div><div class="ec-lbl">31–60 days</div></div>
+        <div class="ec-card ec-grey"><div class="ec-num">${d2.toLocaleString()}</div><div class="ec-lbl">61–90 days</div></div>`;
+      document.getElementById('expiryCountdownCard').style.display = 'block';
+    }
 
+    // 12-month timeline chart
     if (expiryTimeline?.labels?.length) {
       const maxVal = Math.max(...expiryTimeline.data, 1);
-      document.getElementById('timelineChart').innerHTML = expiryTimeline.labels.map((label, i) => {
-        const val = expiryTimeline.data[i] || 0;
-        const pct = Math.round(val / maxVal * 100);
-        return `<div class="timeline-bar-wrap">
-          <div class="timeline-bar" style="height:${pct}%" title="${val} contacts"></div>
-          <div class="timeline-label">${label}</div>
-        </div>`;
+      document.getElementById('timelineChart').innerHTML = expiryTimeline.labels.map((lbl,i)=>{
+        const val=expiryTimeline.data[i]||0,pct=Math.round(val/maxVal*100);
+        return `<div class="timeline-bar-wrap"><div class="timeline-bar" style="height:${pct}%" title="${val} contacts"></div><div class="timeline-label">${lbl}</div></div>`;
       }).join('');
-      document.getElementById('timelineCard').style.display = 'block';
+      document.getElementById('timelineCard').style.display='block';
     }
 
+    // Source quality
     if (sourceQuality?.length) {
-      document.getElementById('sourceBody').innerHTML = sourceQuality.map(s => `
-        <tr>
-          <td>${escHtml(s.source)}</td>
-          <td>${s.total.toLocaleString()}</td>
-          <td>${s.avgScore}</td>
-          <td><span class="rating-pill rating-${s.rating}">${s.rating}</span></td>
-        </tr>`).join('');
-      document.getElementById('sourceCard').style.display = 'block';
+      document.getElementById('sourceBody').innerHTML = sourceQuality.map(s=>`<tr><td>${escHtml(s.source)}</td><td>${s.total.toLocaleString()}</td><td>${s.avgScore}</td><td><span class="rating-pill rating-${s.rating}">${s.rating}</span></td></tr>`).join('');
+      document.getElementById('sourceCard').style.display='block';
     }
 
+    // Per-bucket contact tables
     const tablesEl = document.getElementById('contactTables');
     tablesEl.innerHTML = '';
     buckets.forEach(b => {
-      const contacts = data[b.key];
-      if (!contacts.length) return;
+      const cs = data[b.key];
+      if (!cs.length) return;
       const wrap = document.createElement('div');
       wrap.className = 'card contacts-section';
-      wrap.innerHTML = `
-        <div class="contacts-header">
-          <div class="section-label" style="margin:0">${b.label} — ${contacts.length.toLocaleString()} contact${contacts.length !== 1 ? 's' : ''}</div>
-          <button class="contacts-toggle" onclick="toggleContacts('ct_${b.key}', this)">Show contacts ▾</button>
-        </div>
-        <div class="contacts-table-wrap" id="ct_${b.key}">
-          <table class="contacts-table">
-            <thead><tr>
-              <th>Email</th><th>Consent Date</th><th>Method</th><th>Source</th><th>Score</th><th>Category</th>
-            </tr></thead>
-            <tbody>
-              ${contacts.slice(0, 200).map(c => `
-                <tr>
-                  <td>${escHtml(c.email || '')}</td>
-                  <td>${escHtml(c.consentDate || '—')}</td>
-                  <td>${escHtml(c.consentMethod || '—')}</td>
-                  <td>${escHtml(c.source || '—')}</td>
-                  <td><span class="score-chip" style="${scoreStyle(c.score)}">${c.score ?? '—'}</span></td>
-                  <td style="color:var(--muted)">${escHtml(c.category || '')}</td>
-                </tr>`).join('')}
-              ${contacts.length > 200 ? `<tr><td colspan="6" style="color:var(--muted);font-style:italic;padding:10px;">… and ${contacts.length - 200} more</td></tr>` : ''}
-            </tbody>
-          </table>
-        </div>`;
+      wrap.innerHTML = `<div class="contacts-header"><div class="section-label" style="margin:0">${b.label} — ${cs.length.toLocaleString()} contact${cs.length!==1?'s':''}</div><button class="contacts-toggle" onclick="toggleContacts('ct_${b.key}',this)">Show contacts ▾</button></div><div class="contacts-table-wrap" id="ct_${b.key}"><table class="contacts-table"><thead><tr><th>Email</th><th>Consent Date</th><th>Method</th><th>Source</th><th>Score</th><th>Category</th></tr></thead><tbody>${cs.slice(0,200).map(c=>`<tr><td>${escHtml(c.email||'')}</td><td>${escHtml(c.consentDate||'—')}</td><td>${escHtml(c.consentMethod||'—')}</td><td>${escHtml(c.source||'—')}</td><td><span class="score-chip" style="${scoreStyle(c.score)}">${c.score??'—'}</span></td><td style="color:var(--muted)">${escHtml(c.category||'')}</td></tr>`).join('')}${cs.length>200?`<tr><td colspan="6" style="color:var(--muted);font-style:italic;padding:10px">… and ${cs.length-200} more</td></tr>`:''}</tbody></table></div>`;
       tablesEl.appendChild(wrap);
     });
 
@@ -1070,38 +995,37 @@
   }
 
   function toggleContacts(id, btn) {
-    const el = document.getElementById(id);
-    const open = el.classList.toggle('show');
+    const open = document.getElementById(id).classList.toggle('show');
     btn.textContent = open ? 'Hide contacts ▴' : 'Show contacts ▾';
   }
 
-  function scoreStyle(score) {
-    if (score >= 90) return 'background:var(--safe-bg);color:var(--safe)';
-    if (score >= 70) return 'background:var(--prob-bg);color:var(--prob)';
-    if (score >= 40) return 'background:var(--risky-bg);color:var(--risky)';
+  function scoreStyle(s) {
+    if (s>=90) return 'background:var(--safe-bg);color:var(--safe)';
+    if (s>=70) return 'background:var(--prob-bg);color:var(--prob)';
+    if (s>=40) return 'background:var(--risky-bg);color:var(--risky)';
     return 'background:var(--danger-bg);color:var(--danger)';
   }
 
-  // ─── Reset ────────────────────────────────────────────────────────
   function resetForm() {
     document.getElementById('resultsSection').classList.remove('show');
-    document.getElementById('formSection').style.display = 'block';
-    document.getElementById('timelineCard').style.display = 'none';
-    document.getElementById('sourceCard').style.display   = 'none';
-    clearFile();
-    clearError();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('formSection').style.display='block';
+    document.getElementById('timelineCard').style.display='none';
+    document.getElementById('sourceCard').style.display='none';
+    document.getElementById('expiryCountdownCard').style.display='none';
+    clearFile(); clearError();
+    window.scrollTo({top:0,behavior:'smooth'});
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────
-  function showError(msg) {
-    const el = document.getElementById('errorBox');
-    el.textContent = msg; el.classList.add('show');
-  }
-  function clearError() { document.getElementById('errorBox').classList.remove('show'); }
-  function escHtml(s) {
-    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  // ── HELPERS ─────────────────────────────────────────────────────────
+  function showError(msg)    { const e=document.getElementById('errorBox');   e.textContent=msg; e.classList.add('show'); }
+  function clearError()      { document.getElementById('errorBox').classList.remove('show'); }
+  function showRcError(msg)  { const e=document.getElementById('rcErrorBox'); e.textContent=msg; e.classList.add('show'); }
+  function clearRcError()    { document.getElementById('rcErrorBox').classList.remove('show'); }
+  function showSentError(msg){ const e=document.getElementById('sentErrorBox');e.textContent=msg;e.classList.add('show'); }
+  function clearSentError()  { document.getElementById('sentErrorBox').classList.remove('show'); }
+  function escHtml(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  init();
 </script>
 </body>
 </html>
