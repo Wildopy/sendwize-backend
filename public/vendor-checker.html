@@ -35,355 +35,203 @@
 
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 32px 20px 60px;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 32px 20px 60px;
     }
-
     .container { max-width: 780px; margin: 0 auto; }
 
-    .back-link {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: 13px; color: var(--muted); text-decoration: none;
-      margin-bottom: 20px; transition: color .15s;
-    }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color .15s; }
     .back-link:hover { color: var(--orange); }
-
     .page-title    { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
     .page-subtitle { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; }
 
-    /* ── Tabs ──────────────────────────────────────────────────────── */
-    .tabs {
-      display: flex; gap: 0; border-bottom: 2px solid var(--border);
-      margin-bottom: 28px;
-    }
-    .tab-btn {
-      padding: 10px 20px; font-size: 14px; font-weight: 500;
-      background: none; border: none; cursor: pointer; font-family: inherit;
-      color: var(--muted); border-bottom: 2px solid transparent;
-      margin-bottom: -2px; transition: color .15s, border-color .15s;
-    }
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 28px; }
+    .tab-btn { padding: 10px 20px; font-size: 14px; font-weight: 500; background: none; border: none; cursor: pointer; font-family: inherit; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; }
     .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); font-weight: 600; }
     .tab-btn:hover:not(.active) { color: var(--text); }
-
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
     /* Card */
-    .card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
-    }
-    .card-label {
-      font-size: 11px; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--orange); margin-bottom: 16px;
-    }
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+    .card-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--orange); margin-bottom: 16px; }
 
     /* Search */
     .search-wrap { position: relative; margin-bottom: 16px; }
-    .search-input {
-      width: 100%; padding: 11px 40px 11px 14px;
-      border: 1px solid var(--border-mid); border-radius: var(--radius);
-      font-size: 14px; font-family: inherit; color: var(--text);
-      background: var(--white); transition: border-color .15s;
-    }
+    .search-input { width: 100%; padding: 11px 40px 11px 14px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 14px; font-family: inherit; color: var(--text); background: var(--white); transition: border-color .15s; }
     .search-input:focus { outline: none; border-color: var(--orange); }
-    .search-icon {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-      color: var(--muted); font-size: 16px; pointer-events: none;
-    }
-
-    /* Dropdown */
-    .dropdown {
-      display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-      background: var(--white); border: 1px solid var(--border-mid);
-      border-radius: var(--radius); z-index: 20;
-      box-shadow: 0 4px 16px rgba(0,0,0,.08); max-height: 280px; overflow-y: auto;
-    }
+    .search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 16px; pointer-events: none; }
+    .dropdown { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--white); border: 1px solid var(--border-mid); border-radius: var(--radius); z-index: 20; box-shadow: 0 4px 16px rgba(0,0,0,.08); max-height: 280px; overflow-y: auto; }
     .dropdown.show { display: block; }
-    .dropdown-item {
-      padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--border);
-      transition: background .1s;
-    }
+    .dropdown-item { padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
     .dropdown-item:last-child { border-bottom: none; }
     .dropdown-item:hover { background: var(--orange-light); }
     .dropdown-name { font-size: 13px; font-weight: 600; }
     .dropdown-cat  { font-size: 12px; color: var(--muted); margin-top: 1px; }
     .dropdown-custom { color: var(--orange); }
 
-    /* Selected tags */
+    /* Tags */
     .selected-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 10px; margin-bottom: 4px; }
-    .vendor-tag {
-      display: inline-flex; align-items: center; gap: 7px;
-      background: var(--green-bg); border: 1px solid var(--green-bd);
-      color: var(--green); padding: 6px 10px; border-radius: 6px;
-      font-size: 13px; font-weight: 600;
-    }
-    .vendor-tag.custom {
-      background: var(--blue-bg); border-color: var(--blue-bd); color: var(--blue);
-    }
-    .ai-pill {
-      font-size: 10px; font-weight: 600; padding: 1px 6px;
-      background: var(--blue-bg); color: var(--blue); border-radius: 3px;
-    }
-    .tag-remove {
-      background: none; border: none; cursor: pointer; font-size: 15px;
-      color: inherit; opacity: .6; padding: 0; line-height: 1; transition: opacity .15s;
-    }
+    .vendor-tag { display: inline-flex; align-items: center; gap: 7px; background: var(--green-bg); border: 1px solid var(--green-bd); color: var(--green); padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+    .vendor-tag.custom { background: var(--blue-bg); border-color: var(--blue-bd); color: var(--blue); }
+    .ai-pill { font-size: 10px; font-weight: 600; padding: 1px 6px; background: var(--blue-bg); color: var(--blue); border-radius: 3px; }
+    .tag-remove { background: none; border: none; cursor: pointer; font-size: 15px; color: inherit; opacity: .6; padding: 0; line-height: 1; transition: opacity .15s; }
     .tag-remove:hover { opacity: 1; }
-
     .selected-hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
     /* Buttons */
-    .btn-primary {
-      width: 100%; padding: 13px 20px; background: var(--orange); color: var(--white);
-      border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600;
-      cursor: pointer; transition: background .15s; font-family: inherit; margin-top: 8px;
-    }
+    .btn-primary { width: 100%; padding: 13px 20px; background: var(--orange); color: var(--white); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s; font-family: inherit; margin-top: 8px; }
     .btn-primary:hover:not(:disabled) { background: #d4660f; }
     .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
-
-    .btn-secondary {
-      padding: 8px 16px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 13px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer;
-      font-family: inherit; transition: all .15s;
-    }
+    .btn-secondary { padding: 8px 16px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-weight: 500; background: var(--white); color: var(--text); cursor: pointer; font-family: inherit; transition: all .15s; }
     .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
-
-    .btn-link {
-      padding: 7px 14px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 12px; font-weight: 500;
-      background: var(--white); color: var(--muted); cursor: pointer;
-      font-family: inherit; transition: all .15s; text-decoration: none;
-      display: inline-block;
-    }
+    .btn-link { padding: 7px 14px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 12px; font-weight: 500; background: var(--white); color: var(--muted); cursor: pointer; font-family: inherit; transition: all .15s; text-decoration: none; display: inline-block; }
     .btn-link:hover { border-color: var(--orange); color: var(--orange); }
 
     /* Error */
-    .error-box {
-      display: none; background: var(--red-bg); border: 1px solid var(--red-bd);
-      border-radius: var(--radius); padding: 14px; margin-bottom: 18px;
-      font-size: 13px; color: var(--red);
-    }
+    .error-box { display: none; background: var(--red-bg); border: 1px solid var(--red-bd); border-radius: var(--radius); padding: 14px; margin-bottom: 18px; font-size: 13px; color: var(--red); }
     .error-box.show { display: block; }
 
     /* Loading */
     .loading { display: none; text-align: center; padding: 56px 20px; }
     .loading.show { display: block; }
-    .spinner {
-      width: 36px; height: 36px; border: 3px solid var(--border);
-      border-top-color: var(--orange); border-radius: 50%;
-      animation: spin .8s linear infinite; margin: 0 auto 16px;
-    }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { font-size: 14px; color: var(--muted); }
 
     /* Results */
     .results { display: none; }
     .results.show { display: block; }
-
-    .new-check-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 10px 18px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 13px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer;
-      font-family: inherit; transition: all .15s; margin-bottom: 24px;
-    }
+    .new-check-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-weight: 500; background: var(--white); color: var(--text); cursor: pointer; font-family: inherit; transition: all .15s; margin-bottom: 24px; }
     .new-check-btn:hover { border-color: var(--orange); color: var(--orange); }
 
     /* Summary bar */
-    .summary-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 24px; background: var(--white);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      margin-bottom: 20px; gap: 20px; flex-wrap: wrap;
-    }
+    .summary-bar { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; gap: 20px; flex-wrap: wrap; }
     .summary-score { font-size: 32px; font-weight: 800; color: var(--orange); }
     .summary-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .summary-stats { display: flex; gap: 20px; }
     .stat { text-align: center; }
     .stat-num { font-size: 20px; font-weight: 700; }
     .stat-lbl { font-size: 11px; color: var(--muted); }
-    .stat.good  .stat-num { color: var(--green); }
-    .stat.warn  .stat-num { color: var(--yellow); }
-    .stat.bad   .stat-num { color: var(--red); }
+    .stat.good .stat-num { color: var(--green); }
+    .stat.warn .stat-num { color: var(--yellow); }
+    .stat.bad  .stat-num { color: var(--red); }
 
     /* Vendor cards */
-    .vendor-card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
-    }
-    .vendor-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px; cursor: pointer; transition: background .1s; gap: 12px;
-    }
+    .vendor-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+    .vendor-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; cursor: pointer; transition: background .1s; gap: 12px; }
     .vendor-header:hover { background: var(--bg); }
     .vendor-left  { flex: 1; }
     .vendor-name  { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
     .vendor-meta  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .vendor-cat   { font-size: 12px; color: var(--muted); }
-
-    .score-badge {
-      display: inline-block; padding: 3px 10px; border-radius: 4px;
-      font-size: 12px; font-weight: 700;
-    }
+    .score-badge  { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; }
     .score-high   { background: var(--green-bg); color: var(--green); }
     .score-medium { background: var(--yellow-bg); color: var(--yellow); }
     .score-low    { background: var(--red-bg);    color: var(--red); }
-
-    .ai-badge {
-      font-size: 10px; font-weight: 600; padding: 2px 7px;
-      background: var(--blue-bg); color: var(--blue); border-radius: 3px;
-    }
-
-    .chevron {
-      color: var(--muted); font-size: 18px; transition: transform .25s; flex-shrink: 0;
-    }
+    .ai-badge     { font-size: 10px; font-weight: 600; padding: 2px 7px; background: var(--blue-bg); color: var(--blue); border-radius: 3px; }
+    .chevron { color: var(--muted); font-size: 18px; transition: transform .25s; flex-shrink: 0; }
     .vendor-card.open .chevron { transform: rotate(180deg); }
-
-    /* Vendor body */
-    .vendor-body {
-      max-height: 0; overflow: hidden; transition: max-height .3s ease;
-      border-top: 1px solid var(--border);
-    }
-    .vendor-card.open .vendor-body { max-height: 1200px; }
+    .vendor-body { max-height: 0; overflow: hidden; transition: max-height .35s ease; border-top: 1px solid var(--border); }
+    .vendor-card.open .vendor-body { max-height: 2000px; }
     .vendor-body-inner { padding: 20px; }
 
     /* AI warning */
-    .ai-warn {
-      background: var(--yellow-bg); border-left: 3px solid var(--yellow);
-      padding: 12px 14px; border-radius: 4px; margin-bottom: 16px;
-      font-size: 13px; color: #78350f; line-height: 1.5;
-    }
+    .ai-warn { background: var(--yellow-bg); border-left: 3px solid var(--yellow); padding: 12px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 13px; color: #78350f; line-height: 1.5; }
+
+    /* DPA status inline widget */
+    .dpa-widget { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border-mid); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .dpa-widget-label { font-size: 12px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+    .dpa-toggle { display: flex; gap: 6px; }
+    .dpa-btn { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 5px; border: 1px solid var(--border-mid); background: var(--white); cursor: pointer; transition: all .15s; color: var(--muted); font-family: inherit; }
+    .dpa-btn.yes-on { background: var(--green-bg); border-color: var(--green-bd); color: var(--green); }
+    .dpa-btn.no-on  { background: var(--red-bg);   border-color: var(--red-bd);   color: var(--red); }
+    .dpa-link-wrap  { flex: 1; min-width: 160px; }
+    .dpa-link-input { width: 100%; font-size: 12px; padding: 5px 8px; border: 1px solid var(--border-mid); border-radius: 5px; font-family: inherit; }
+    .dpa-link-input:focus { outline: none; border-color: var(--orange); }
+    .dpa-save-btn { font-size: 12px; font-weight: 600; padding: 5px 12px; background: var(--orange); color: #fff; border: none; border-radius: 5px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .dpa-save-btn:hover { background: #d4660f; }
+    .dpa-saved-tick { font-size: 12px; color: var(--green); display: none; }
+    .dpa-saved-tick.show { display: inline; }
+
+    /* 7-dimension grid */
+    .dimensions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    @media(max-width:500px){ .dimensions-grid { grid-template-columns: 1fr; } }
+    .dim-item { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; background: #fafafa; }
+    .dim-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 4px; }
+    .dim-val   { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+    .dim-val.good { color: var(--green); }
+    .dim-val.warn { color: var(--yellow); }
+    .dim-val.bad  { color: var(--red); }
+    .dim-val a { color: var(--blue); text-decoration: none; font-size: 12px; }
+    .dim-val a:hover { text-decoration: underline; }
 
     /* Detail items */
     .detail-list { display: flex; flex-direction: column; gap: 0; }
-    .detail-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 11px 0; border-bottom: 1px solid var(--border);
-    }
+    .detail-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
     .detail-item:last-child { border-bottom: none; }
-    .detail-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .detail-icon  { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
     .detail-label { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
     .detail-desc  { font-size: 13px; color: var(--muted); line-height: 1.5; }
 
     /* Action items */
-    .action-box {
-      background: var(--orange-light); border-radius: var(--radius);
-      padding: 14px 16px; margin-top: 14px;
-    }
+    .action-box { background: var(--orange-light); border-radius: var(--radius); padding: 14px 16px; margin-top: 14px; }
     .action-title { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--orange); margin-bottom: 10px; }
     .action-list  { padding-left: 16px; }
     .action-list li { font-size: 13px; color: var(--text); margin-bottom: 6px; line-height: 1.5; }
-
-    /* Links row */
     .links-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 
-    @media(max-width:500px){ .summary-stats { gap: 12px; } }
+    .sec-title { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--orange); margin-bottom: 10px; margin-top: 16px; }
 
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* TAB 2 — Data Processor Register                                */
-    /* ═══════════════════════════════════════════════════════════════ */
-
-    .disclaimer-info {
-      font-size: 11px; color: var(--muted); background: var(--bg);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 10px 14px; margin-bottom: 20px; line-height: 1.5;
-    }
-
-    /* Stack health summary */
-    .health-grid {
-      display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px;
-    }
+    /* Register tab */
+    .disclaimer-info { font-size: 11px; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 20px; line-height: 1.5; }
+    .health-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
     @media(max-width:580px){ .health-grid { grid-template-columns: repeat(2,1fr); } }
-    .health-tile {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px; text-align: center;
-    }
-    .health-num   { font-size: 24px; font-weight: 800; color: var(--text); }
+    .health-tile { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+    .health-num { font-size: 24px; font-weight: 800; color: var(--text); }
     .health-num.warn { color: var(--yellow); }
     .health-num.bad  { color: var(--red); }
-    .health-lbl   { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .health-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-    /* Onboarding */
     .onboarding-card { text-align: center; padding: 40px 24px; }
-    .onboarding-icon { font-size: 40px; margin-bottom: 14px; }
+    .onboarding-icon  { font-size: 40px; margin-bottom: 14px; }
     .onboarding-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
     .onboarding-sub   { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
-
     .ob-category { margin-bottom: 20px; text-align: left; }
-    .ob-cat-label {
-      font-size: 11px; font-weight: 600; letter-spacing: .07em;
-      text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
-    }
+    .ob-cat-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
     .ob-vendor-btns { display: flex; flex-wrap: wrap; gap: 8px; }
-    .ob-vendor-btn {
-      padding: 7px 14px; border: 1px solid var(--border-mid);
-      border-radius: 20px; font-size: 13px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer;
-      font-family: inherit; transition: all .15s;
-    }
+    .ob-vendor-btn { padding: 7px 14px; border: 1px solid var(--border-mid); border-radius: 20px; font-size: 13px; font-weight: 500; background: var(--white); color: var(--text); cursor: pointer; font-family: inherit; transition: all .15s; }
     .ob-vendor-btn:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-light); }
     .ob-vendor-btn.added { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+    .ob-skip { font-size: 13px; color: var(--muted); cursor: pointer; background: none; border: none; font-family: inherit; text-decoration: underline; margin-top: 16px; }
 
-    .ob-skip {
-      font-size: 13px; color: var(--muted); cursor: pointer;
-      background: none; border: none; font-family: inherit;
-      text-decoration: underline; margin-top: 16px;
-    }
-
-    /* Register table */
     .register-wrap { overflow-x: auto; }
     .register-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
-    .register-table th {
-      text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 600;
-      letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
-      border-bottom: 2px solid var(--border); white-space: nowrap; background: var(--bg);
-    }
+    .register-table th { text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--border); white-space: nowrap; background: var(--bg); }
     .register-table td { padding: 12px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
     .register-table tr:last-child td { border-bottom: none; }
     .register-table tr:hover td { background: var(--bg); }
-
     .reg-vendor-name { font-weight: 600; font-size: 13px; }
     .reg-vendor-cat  { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .stale-badge {
-      display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 10px;
-      font-weight: 600; background: var(--yellow-bg); color: var(--yellow);
-      margin-left: 6px;
-    }
-
-    .agreement-pill {
-      display: inline-block; padding: 2px 9px; border-radius: 12px;
-      font-size: 11px; font-weight: 600; white-space: nowrap;
-    }
-    .ap-green  { background: var(--green-bg);  color: var(--green); }
-    .ap-amber  { background: var(--yellow-bg); color: var(--yellow); }
-    .ap-red    { background: var(--red-bg);    color: var(--red); }
-    .ap-grey   { background: var(--grey-bg);   color: var(--muted); }
-
+    .stale-badge { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 10px; font-weight: 600; background: var(--yellow-bg); color: var(--yellow); margin-left: 6px; }
+    .agreement-pill { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .ap-green { background: var(--green-bg); color: var(--green); }
+    .ap-amber { background: var(--yellow-bg); color: var(--yellow); }
+    .ap-red   { background: var(--red-bg);   color: var(--red); }
+    .ap-grey  { background: var(--grey-bg);  color: var(--muted); }
     .reg-score { font-size: 13px; font-weight: 700; }
     .reg-score.high { color: var(--green); }
     .reg-score.mid  { color: var(--yellow); }
     .reg-score.low  { color: var(--red); }
-
     .reg-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-    .reg-action-btn {
-      padding: 4px 10px; font-size: 11px; font-weight: 500;
-      border: 1px solid var(--border-mid); border-radius: var(--radius);
-      background: var(--white); color: var(--muted); cursor: pointer;
-      font-family: inherit; transition: all .15s; white-space: nowrap;
-    }
+    .reg-action-btn { padding: 4px 10px; font-size: 11px; font-weight: 500; border: 1px solid var(--border-mid); border-radius: var(--radius); background: var(--white); color: var(--muted); cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
     .reg-action-btn:hover { border-color: var(--orange); color: var(--orange); }
     .reg-action-btn.remove:hover { border-color: var(--red); color: var(--red); }
-
     .subprocessors-row { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
-    /* Add vendor panel */
     .add-vendor-panel { display: none; }
     .add-vendor-panel.show { display: block; }
-
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
     @media(max-width:500px){ .form-row { grid-template-columns: 1fr; } }
     .form-group-reg { margin-bottom: 14px; }
@@ -392,68 +240,31 @@
     .form-group-reg input[type="text"],
     .form-group-reg input[type="url"],
     .form-group-reg input[type="date"],
-    .form-group-reg textarea {
-      width: 100%; padding: 9px 11px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 13px; font-family: inherit;
-      background: var(--white); color: var(--text); transition: border-color .15s;
-    }
-    .form-group-reg select:focus,
-    .form-group-reg input:focus,
-    .form-group-reg textarea:focus { outline: none; border-color: var(--orange); }
+    .form-group-reg textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-family: inherit; background: var(--white); color: var(--text); transition: border-color .15s; }
+    .form-group-reg select:focus, .form-group-reg input:focus, .form-group-reg textarea:focus { outline: none; border-color: var(--orange); }
     .form-group-reg textarea { resize: vertical; min-height: 70px; }
-
     .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; }
-    .checkbox-label {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; cursor: pointer; padding: 5px 10px;
-      border: 1px solid var(--border-mid); border-radius: var(--radius);
-      background: var(--white); transition: all .15s;
-    }
+    .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; padding: 5px 10px; border: 1px solid var(--border-mid); border-radius: var(--radius); background: var(--white); transition: all .15s; }
     .checkbox-label:hover { border-color: var(--orange); }
     .checkbox-label input[type="checkbox"] { accent-color: var(--orange); }
-
     .form-actions { display: flex; gap: 10px; margin-top: 6px; }
-    .btn-save {
-      flex: 1; padding: 11px; background: var(--orange); color: var(--white);
-      border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600;
-      cursor: pointer; font-family: inherit; transition: background .15s;
-    }
+    .btn-save { flex: 1; padding: 11px; background: var(--orange); color: var(--white); border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s; }
     .btn-save:hover { background: #d4660f; }
-    .btn-cancel {
-      padding: 11px 20px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 14px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer; font-family: inherit;
-    }
-    .btn-cancel:hover { border-color: var(--muted); }
-
-    /* Register header row */
-    .register-header-row {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
-    }
-
-    /* Export */
-    .export-btn {
-      padding: 7px 14px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 12px; font-weight: 500;
-      background: var(--white); color: var(--muted); cursor: pointer;
-      font-family: inherit; transition: all .15s;
-    }
+    .btn-cancel { padding: 11px 20px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 14px; font-weight: 500; background: var(--white); color: var(--text); cursor: pointer; font-family: inherit; }
+    .register-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+    .export-btn { padding: 7px 14px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 12px; font-weight: 500; background: var(--white); color: var(--muted); cursor: pointer; font-family: inherit; transition: all .15s; }
     .export-btn:hover { border-color: var(--orange); color: var(--orange); }
-
-    /* Register loading/empty */
     .reg-loading { text-align: center; padding: 48px 20px; }
-    .reg-empty   { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 14px; }
-
-    /* Search wrap for register */
     .reg-search-wrap { position: relative; }
     .reg-search-wrap .dropdown { z-index: 30; }
+
+    .disc { font-size: 11px; color: var(--muted); font-style: italic; text-align: center; margin-top: 24px; }
   </style>
 </head>
 <body>
 <div class="container">
 
-  <a href="javascript:history.back()" class="back-link">
+  <a href="/" class="back-link">
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
     Dashboard
   </a>
@@ -461,46 +272,36 @@
   <h1 class="page-title">Vendor Checker</h1>
   <p class="page-subtitle">Check your marketing tools for UK GDPR compliance — DPAs, data location, certifications and breach history. Custom vendors are analysed by Claude AI.</p>
 
-  <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('checker')">Vendor Checker</button>
     <button class="tab-btn" onclick="switchTab('register')">Data Processor Register</button>
   </div>
 
-  <!-- ════════════════════════════════════════════════════════════════ -->
-  <!-- TAB 1 — Vendor Checker (pixel-identical to deployed version)    -->
-  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- ═══ TAB 1 — VENDOR CHECKER ═══ -->
   <div class="tab-panel active" id="panel-checker">
-
     <div class="error-box" id="errorBox"></div>
 
-    <!-- Form -->
     <div id="formSection">
       <div class="card">
         <div class="card-label">Search Vendors</div>
         <div class="search-wrap" id="searchWrap">
           <input type="text" class="search-input" id="searchInput"
                  placeholder="Type vendor name e.g. Mailchimp, HubSpot…"
-                 autocomplete="off"
-                 oninput="onSearch(this.value)" />
+                 autocomplete="off" oninput="onSearch(this.value)" />
           <span class="search-icon">🔍</span>
           <div class="dropdown" id="dropdown"></div>
         </div>
         <div class="selected-list" id="selectedList"></div>
-        <div class="selected-hint" id="selectedHint" style="display:none;"></div>
+        <div class="selected-hint" id="selectedHint" style="display:none"></div>
       </div>
-      <button class="btn-primary" id="submitBtn" disabled onclick="runCheck()">
-        Check Vendors
-      </button>
+      <button class="btn-primary" id="submitBtn" disabled onclick="runCheck()">Check Vendors</button>
     </div>
 
-    <!-- Loading -->
     <div class="loading" id="loadingSection">
       <div class="spinner"></div>
       <div class="loading-text" id="loadingText">Checking vendors…</div>
     </div>
 
-    <!-- Results -->
     <div class="results" id="resultsSection">
       <button class="new-check-btn" onclick="resetForm()">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
@@ -510,105 +311,60 @@
       <div id="vendorCards"></div>
     </div>
 
-  </div><!-- /panel-checker -->
+    <p class="disc">Information only — not legal advice.</p>
+  </div>
 
-  <!-- ════════════════════════════════════════════════════════════════ -->
-  <!-- TAB 2 — Data Processor Register                                 -->
-  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- ═══ TAB 2 — DATA PROCESSOR REGISTER ═══ -->
   <div class="tab-panel" id="panel-register">
+    <div class="disclaimer-info">Information only — not legal advice. Sendwize surfaces publicly available compliance information. Always verify directly with your vendor and seek independent legal advice if unsure.</div>
 
-    <div class="disclaimer-info">
-      Information only — not legal advice. Sendwize surfaces publicly available compliance information to support your data processor obligations. It does not constitute legal advice. Always verify directly with your vendor and seek independent legal advice if unsure.
-    </div>
-
-    <!-- Loading -->
     <div id="reg-loading" class="reg-loading">
       <div class="spinner"></div>
       <div class="loading-text">Loading your register…</div>
     </div>
 
-    <!-- Onboarding (empty register, first load) -->
-    <div id="reg-onboarding" style="display:none;">
+    <div id="reg-onboarding" style="display:none">
       <div class="card onboarding-card">
         <div class="onboarding-icon">🗂️</div>
         <div class="onboarding-title">Let's build your data processor register.</div>
         <div class="onboarding-sub">UK GDPR Article 28 requires you to maintain a record of all processors you share personal data with. Add your tools below to get started.</div>
-
         <div id="ob-categories"></div>
-
-        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;">
-          <button class="btn-secondary" onclick="showAddForm(null, true)">+ Add vendor manually</button>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
+          <button class="btn-secondary" onclick="showAddForm(null,true)">+ Add vendor manually</button>
           <button class="ob-skip" onclick="skipOnboarding()">Skip for now</button>
         </div>
       </div>
     </div>
 
-    <!-- Register view -->
-    <div id="reg-main" style="display:none;">
-
-      <!-- Stack health summary -->
+    <div id="reg-main" style="display:none">
       <div class="health-grid" id="reg-health"></div>
-
-      <!-- Register table + controls -->
       <div class="card">
         <div class="register-header-row">
           <div class="card-label" style="margin:0">Data Processors</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="export-btn" onclick="exportRegisterCSV()">↓ Export CSV</button>
             <button class="btn-secondary" onclick="showAddForm()">+ Add vendor</button>
           </div>
         </div>
-
         <div class="register-wrap">
           <table class="register-table" id="reg-table">
-            <thead>
-              <tr>
-                <th>Vendor</th>
-                <th>Data Processed</th>
-                <th>Agreement</th>
-                <th>Data Location</th>
-                <th>Score</th>
-                <th>Last Checked</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Vendor</th><th>Data Processed</th><th>Agreement</th><th>Data Location</th><th>Score</th><th>Last Checked</th><th>Actions</th></tr></thead>
             <tbody id="reg-tbody"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- Add / Edit vendor form (hidden by default) -->
       <div class="card add-vendor-panel" id="reg-add-panel">
         <div class="card-label" id="reg-form-title">Add Vendor</div>
-
-        <div class="reg-search-wrap" id="reg-form-search-wrap" style="margin-bottom:14px;">
-          <input type="text" class="search-input" id="reg-search-input"
-                 placeholder="Search vendor name or type a custom one…"
-                 autocomplete="off"
-                 oninput="onRegSearch(this.value)" />
+        <div class="reg-search-wrap" style="margin-bottom:14px">
+          <input type="text" class="search-input" id="reg-search-input" placeholder="Search vendor name or type a custom one…" autocomplete="off" oninput="onRegSearch(this.value)" />
           <span class="search-icon">🔍</span>
           <div class="dropdown" id="reg-dropdown"></div>
         </div>
-
         <div class="form-row">
-          <div class="form-group-reg">
-            <label>Category</label>
-            <select id="reg-category">
-              <option value="">— Select —</option>
-              <option>Email Service Provider</option>
-              <option>CRM</option>
-              <option>Analytics</option>
-              <option>Forms</option>
-              <option>Advertising</option>
-              <option>Other</option>
-            </select>
-          </div>
-          <div class="form-group-reg">
-            <label>Data Location</label>
-            <input type="text" id="reg-data-location" placeholder="e.g. EU, UK, US" />
-          </div>
+          <div class="form-group-reg"><label>Category</label><select id="reg-category"><option value="">— Select —</option><option>Email Service Provider</option><option>CRM</option><option>Analytics</option><option>Forms</option><option>Advertising</option><option>Other</option></select></div>
+          <div class="form-group-reg"><label>Data Location</label><input type="text" id="reg-data-location" placeholder="e.g. EU, UK, US" /></div>
         </div>
-
         <div class="form-group-reg">
           <label>Data Processed</label>
           <div class="checkbox-group">
@@ -619,734 +375,428 @@
             <label class="checkbox-label"><input type="checkbox" value="Special category data"> Special category data</label>
           </div>
         </div>
-
         <div class="form-row">
-          <div class="form-group-reg">
-            <label>Agreement Type</label>
-            <select id="reg-agreement-type">
-              <option value="">— Select —</option>
-              <option>Standalone DPA</option>
-              <option>Data Processing Addendum</option>
-              <option>Article 28 terms in ToS</option>
-              <option>Article 28 terms in Privacy Policy</option>
-              <option>Master Service Agreement</option>
-              <option>None in place</option>
-              <option>Unknown</option>
-            </select>
-          </div>
-          <div class="form-group-reg">
-            <label>Agreement Status</label>
-            <select id="reg-agreement-status">
-              <option value="">— Select —</option>
-              <option>In place</option>
-              <option>Requested</option>
-              <option>Not yet</option>
-              <option>N/A</option>
-            </select>
-          </div>
+          <div class="form-group-reg"><label>Agreement Type</label><select id="reg-agreement-type"><option value="">— Select —</option><option>Standalone DPA</option><option>Data Processing Addendum</option><option>Article 28 terms in ToS</option><option>Article 28 terms in Privacy Policy</option><option>Master Service Agreement</option><option>None in place</option><option>Unknown</option></select></div>
+          <div class="form-group-reg"><label>Agreement Status</label><select id="reg-agreement-status"><option value="">— Select —</option><option>In place</option><option>Requested</option><option>Not yet</option><option>N/A</option></select></div>
         </div>
-
         <div class="form-row">
-          <div class="form-group-reg">
-            <label>Agreement Link <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-            <input type="url" id="reg-agreement-link" placeholder="https://…" />
-          </div>
-          <div class="form-group-reg">
-            <label>Agreement Date <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-            <input type="date" id="reg-agreement-date" />
-          </div>
+          <div class="form-group-reg"><label>Agreement Link <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input type="url" id="reg-agreement-link" placeholder="https://…" /></div>
+          <div class="form-group-reg"><label>Agreement Date <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input type="date" id="reg-agreement-date" /></div>
         </div>
-
-        <div class="form-group-reg">
-          <label>Notes <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-          <textarea id="reg-notes" placeholder="Any additional notes…"></textarea>
-        </div>
-
+        <div class="form-group-reg"><label>Notes <span style="font-weight:400;color:var(--muted)">(optional)</span></label><textarea id="reg-notes" placeholder="Any additional notes…"></textarea></div>
         <div class="form-actions">
           <button class="btn-save" onclick="saveVendor()">Save Vendor</button>
           <button class="btn-cancel" onclick="hideAddForm()">Cancel</button>
         </div>
       </div>
+    </div>
+  </div>
 
-    </div><!-- /reg-main -->
+</div>
 
-  </div><!-- /panel-register -->
-
-</div><!-- /container -->
-
+<script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
 <script>
-  const userId     = new URLSearchParams(window.location.search).get('userId') || '';
-  const VERCEL_URL = window.location.origin;
+const APP_URL = 'https://sendwize-backend.vercel.app';
+let userId = null;
+let allVendors = [], selectedVendors = [];
+let registerLoaded = false, registerRecords = [];
+let editingRecordId = null;
 
-  let allVendors      = [];
-  let selectedVendors = [];
-  let registerLoaded  = false;
-  let registerRecords = [];   // Vendor_Register rows
-  let editingRecordId = null; // null = new, string = editing existing
-
-  // ─── Tab switching ────────────────────────────────────────────────
-  function switchTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach((b, i) => {
-      b.classList.toggle('active', (i === 0 && tab === 'checker') || (i === 1 && tab === 'register'));
+// ── AUTH ────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    await new Promise(r => {
+      if (window.$memberstackDom) return r();
+      const iv = setInterval(() => { if (window.$memberstackDom) { clearInterval(iv); r(); } }, 200);
     });
-    document.getElementById('panel-checker').classList.toggle('active', tab === 'checker');
-    document.getElementById('panel-register').classList.toggle('active', tab === 'register');
-
-    if (tab === 'register' && !registerLoaded) {
-      registerLoaded = true;
-      loadRegister();
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
-  // TAB 2 — Data Processor Register
-  // ═══════════════════════════════════════════════════════════════════
-
-  async function loadRegister() {
-    if (!userId) {
-      document.getElementById('reg-loading').style.display = 'none';
-      showRegOnboarding();
-      return;
-    }
-    try {
-      const resp = await fetch(`${VERCEL_URL}/api/data?action=history&type=vendor&userId=${encodeURIComponent(userId)}`);
-      if (!resp.ok) throw new Error();
-      const { records } = await resp.json();
-      registerRecords = records || [];
-      document.getElementById('reg-loading').style.display = 'none';
-
-      if (registerRecords.length === 0) {
-        showRegOnboarding();
-      } else {
-        renderRegisterMain();
-      }
-    } catch {
-      document.getElementById('reg-loading').style.display = 'none';
-      showRegOnboarding();
-    }
-  }
-
-  // ── Onboarding ────────────────────────────────────────────────────
-  const OB_CATEGORIES = [
-    { label: 'Email marketing', vendors: ['Mailchimp','Klaviyo','Brevo','HubSpot','ActiveCampaign','SendGrid'] },
-    { label: 'CRM',             vendors: ['HubSpot','Salesforce','Pipedrive','Zoho'] },
-    { label: 'Analytics',       vendors: ['Google Analytics','Hotjar'] },
-    { label: 'Forms',           vendors: ['Typeform','Gravity Forms'] },
-    { label: 'Advertising',     vendors: ['Google Ads','Meta Ads'] },
-  ];
-
-  function showRegOnboarding() {
-    const wrap = document.getElementById('ob-categories');
-    wrap.innerHTML = OB_CATEGORIES.map(cat => `
-      <div class="ob-category">
-        <div class="ob-cat-label">${escHtml(cat.label)}</div>
-        <div class="ob-vendor-btns">
-          ${cat.vendors.map(v => `
-            <button class="ob-vendor-btn" id="ob_${slugify(v)}" onclick="obAddVendor(${JSON.stringify(v)}, ${JSON.stringify(cat.label)}, this)">
-              ${escHtml(v)}
-            </button>`).join('')}
-          <button class="ob-vendor-btn" onclick="showAddForm({category:'${escHtml(cat.label)}'}, true)">+ Other</button>
-        </div>
-      </div>`).join('');
-    document.getElementById('reg-onboarding').style.display = 'block';
-  }
-
-  function slugify(s) { return s.replace(/[^a-z0-9]/gi, '_').toLowerCase(); }
-
-  async function obAddVendor(name, category, btn) {
-    btn.classList.add('added');
-    btn.textContent = '✓ ' + name;
-    btn.disabled = true;
-
-    // Quick-save with minimal fields; user can edit later
-    const vendor = allVendors.find(v => v.name === name) || {};
-    await saveVendorDirect({
-      VendorName: name,
-      Category: category,
-      DataLocation: vendor.dataLocation || '',
-      AgreementType: vendor.dpaLink ? 'Data Processing Addendum' : 'Unknown',
-      AgreementStatus: vendor.dpaLink ? 'In place' : 'Not yet',
-      AgreementLink: vendor.dpaLink || '',
-    });
-
-    // Once at least one added, transition to register view
-    setTimeout(() => {
-      document.getElementById('reg-onboarding').style.display = 'none';
-      registerLoaded = false; // force reload
-      loadRegister();
-    }, 600);
-  }
-
-  function skipOnboarding() {
-    document.getElementById('reg-onboarding').style.display = 'none';
-    registerLoaded = true;
-    registerRecords = [];
-    renderRegisterMain();
-  }
-
-  // ── Register main view ────────────────────────────────────────────
-  function renderRegisterMain() {
-    document.getElementById('reg-main').style.display = 'block';
-    renderHealthSummary();
-    renderRegisterTable();
-  }
-
-  function renderHealthSummary() {
-    const total   = registerRecords.length;
-    const noAgrmt = registerRecords.filter(r => {
-      const s = r.fields.AgreementStatus || '';
-      return s === 'Not yet' || s === 'None in place' || !s;
-    }).length;
-    const stale   = registerRecords.filter(r => isStale(r.fields.LastChecked)).length;
-    const scores  = registerRecords.map(r => r.fields.ComplianceScore || 0).filter(Boolean);
-    const avg     = scores.length ? Math.round(scores.reduce((a,b) => a+b,0) / scores.length) : '—';
-
-    document.getElementById('reg-health').innerHTML = `
-      <div class="health-tile"><div class="health-num">${total}</div><div class="health-lbl">Total vendors</div></div>
-      <div class="health-tile"><div class="health-num ${noAgrmt > 0 ? 'bad' : ''}">${noAgrmt}</div><div class="health-lbl">No written agreement</div></div>
-      <div class="health-tile"><div class="health-num ${stale > 0 ? 'warn' : ''}">${stale}</div><div class="health-lbl">Stale (>90 days)</div></div>
-      <div class="health-tile"><div class="health-num">${avg}${typeof avg === 'number' ? '/100' : ''}</div><div class="health-lbl">Avg compliance score</div></div>`;
-  }
-
-  function isStale(dateStr) {
-    if (!dateStr) return false;
-    const d = new Date(dateStr);
-    return (Date.now() - d.getTime()) > 90 * 24 * 60 * 60 * 1000;
-  }
-
-  function renderRegisterTable() {
-    const tbody = document.getElementById('reg-tbody');
-    if (!registerRecords.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">No vendors added yet. Click "+ Add vendor" to get started.</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = registerRecords.map(r => {
-      const f      = r.fields;
-      const stale  = isStale(f.LastChecked);
-      const agPill = agreementPill(f.AgreementStatus);
-      const score  = f.ComplianceScore;
-      const scoreCls = score >= 80 ? 'high' : score >= 60 ? 'mid' : 'low';
-
-      let dataProcessed = '';
-      try { dataProcessed = JSON.parse(f.DataProcessed || '[]').join(', '); } catch { dataProcessed = f.DataProcessed || ''; }
-
-      // Subprocessors from Marketing_Vendors (surfaced via allVendors)
-      const vendorData = allVendors.find(v => v.name === f.VendorName);
-      const subprocessors = vendorData?.subprocessors || '';
-
-      return `<tr>
-        <td>
-          <div class="reg-vendor-name">${escHtml(f.VendorName || '')}${stale ? '<span class="stale-badge">Stale</span>' : ''}</div>
-          <div class="reg-vendor-cat">${escHtml(f.Category || '')}</div>
-          ${subprocessors ? `<div class="subprocessors-row">▸ Known subprocessors: ${escHtml(subprocessors)}</div>` : ''}
-        </td>
-        <td style="color:var(--muted);font-size:12px;">${escHtml(dataProcessed || '—')}</td>
-        <td>${agPill}</td>
-        <td style="font-size:12px;color:var(--muted);">${escHtml(f.DataLocation || '—')}</td>
-        <td>${score != null ? `<span class="reg-score ${scoreCls}">${score}/100</span>` : '<span style="color:var(--muted)">—</span>'}</td>
-        <td style="font-size:12px;color:var(--muted);">${escHtml(f.LastChecked || '—')}</td>
-        <td>
-          <div class="reg-actions">
-            <button class="reg-action-btn" onclick="reCheckVendor(${JSON.stringify(r.id)}, ${JSON.stringify(f.VendorName)})">Re-check</button>
-            <button class="reg-action-btn" onclick="showEditForm(${JSON.stringify(r.id)})">Edit</button>
-            <button class="reg-action-btn remove" onclick="removeVendorReg(${JSON.stringify(r.id)}, ${JSON.stringify(f.VendorName)})">Remove</button>
-          </div>
-        </td>
-      </tr>`;
-    }).join('');
-  }
-
-  function agreementPill(status) {
-    if (!status) return `<span class="agreement-pill ap-grey">Unknown</span>`;
-    if (status === 'In place') return `<span class="agreement-pill ap-green">In place</span>`;
-    if (status === 'Requested') return `<span class="agreement-pill ap-amber">Requested</span>`;
-    if (status === 'N/A') return `<span class="agreement-pill ap-grey">N/A</span>`;
-    return `<span class="agreement-pill ap-red">Not in place</span>`;
-  }
-
-  // ── Add / Edit form ───────────────────────────────────────────────
-  function showAddForm(defaults, scrollTo) {
-    editingRecordId = null;
-    clearRegForm();
-    document.getElementById('reg-form-title').textContent = 'Add Vendor';
-    if (defaults?.category) {
-      document.getElementById('reg-category').value = defaults.category;
-    }
-    if (defaults?.name) {
-      document.getElementById('reg-search-input').value = defaults.name;
-    }
-    document.getElementById('reg-add-panel').classList.add('show');
-    if (scrollTo) document.getElementById('reg-add-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function showEditForm(recordId) {
-    const record = registerRecords.find(r => r.id === recordId);
-    if (!record) return;
-    editingRecordId = recordId;
-    const f = record.fields;
-
-    clearRegForm();
-    document.getElementById('reg-form-title').textContent = 'Edit Vendor';
-    document.getElementById('reg-search-input').value      = f.VendorName || '';
-    document.getElementById('reg-category').value          = f.Category || '';
-    document.getElementById('reg-data-location').value     = f.DataLocation || '';
-    document.getElementById('reg-agreement-type').value    = f.AgreementType || '';
-    document.getElementById('reg-agreement-status').value  = f.AgreementStatus || '';
-    document.getElementById('reg-agreement-link').value    = f.AgreementLink || '';
-    document.getElementById('reg-agreement-date').value    = f.AgreementDate || '';
-    document.getElementById('reg-notes').value             = f.Notes || '';
-
-    // Checkboxes
-    let dp = [];
-    try { dp = JSON.parse(f.DataProcessed || '[]'); } catch { dp = []; }
-    document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]').forEach(cb => {
-      cb.checked = dp.includes(cb.value);
-    });
-
-    document.getElementById('reg-add-panel').classList.add('show');
-    document.getElementById('reg-add-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function hideAddForm() {
-    document.getElementById('reg-add-panel').classList.remove('show');
-    clearRegForm();
-    editingRecordId = null;
-  }
-
-  function clearRegForm() {
-    document.getElementById('reg-search-input').value     = '';
-    document.getElementById('reg-category').value         = '';
-    document.getElementById('reg-data-location').value    = '';
-    document.getElementById('reg-agreement-type').value   = '';
-    document.getElementById('reg-agreement-status').value = '';
-    document.getElementById('reg-agreement-link').value   = '';
-    document.getElementById('reg-agreement-date').value   = '';
-    document.getElementById('reg-notes').value            = '';
-    document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]').forEach(cb => cb.checked = false);
-  }
-
-  // ── Save vendor ───────────────────────────────────────────────────
-  async function saveVendor() {
-    const name   = document.getElementById('reg-search-input').value.trim();
-    const status = document.getElementById('reg-agreement-status').value;
-
-    if (!name)   { alert('Please enter a vendor name.'); return; }
-    if (!status) { alert('Please select an agreement status.'); return; }
-
-    const dataProcessed = Array.from(
-      document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]:checked')
-    ).map(cb => cb.value);
-
-    const vendor = {
-      VendorName:      name,
-      Category:        document.getElementById('reg-category').value,
-      DataProcessed:   dataProcessed,
-      AgreementType:   document.getElementById('reg-agreement-type').value,
-      AgreementStatus: status,
-      AgreementLink:   document.getElementById('reg-agreement-link').value,
-      AgreementDate:   document.getElementById('reg-agreement-date').value,
-      DataLocation:    document.getElementById('reg-data-location').value,
-      Notes:           document.getElementById('reg-notes').value,
-    };
-
-    await saveVendorDirect(vendor, editingRecordId);
-    hideAddForm();
-    registerLoaded = false;
-    loadRegister();
-
-    // Fire no_dpa fix if agreement not in place
-    if (['Requested','Not yet','None in place'].includes(status) && userId) {
-      try {
-        await fetch(`${VERCEL_URL}/api/generate-fix`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            fixType:     'no_dpa',
-            description: `Data Processor Register: No written agreement in place for ${name}. A written contract under UK GDPR Article 28 is required before sharing personal data with this processor.`,
-            tool:        'Vendor Register',
-            severity:    'high',
-            volume:      null,
-            sourceRecordId: null,
-          })
-        });
-      } catch { /* non-blocking */ }
-    }
-  }
-
-  async function saveVendorDirect(vendor, recordId) {
-    try {
-      const body = { userId, vendor };
-      if (recordId) body.recordId = recordId;
-      await fetch(`${VERCEL_URL}/api/data?action=register`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body)
-      });
-    } catch (e) { console.error('Save vendor error:', e); }
-  }
-
-  // ── Re-check vendor ───────────────────────────────────────────────
-  async function reCheckVendor(recordId, vendorName) {
-    if (!confirm(`Re-check compliance data for ${vendorName}?`)) return;
-    try {
-      const resp = await fetch(`${VERCEL_URL}/api/check-vendors`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ vendors: [{ name: vendorName, isCustom: !allVendors.find(v => v.name === vendorName) }], userId })
-      });
-      if (!resp.ok) throw new Error();
-      const data = await resp.json();
-      const result = data.results?.[0];
-      if (result) {
-        await saveVendorDirect({
-          VendorName:      vendorName,
-          ComplianceScore: result.score,
-          LastChecked:     new Date().toISOString().split('T')[0],
-          CheckResults:    JSON.stringify(result),
-        }, recordId);
-        registerLoaded = false;
-        loadRegister();
-      }
-    } catch { alert('Re-check failed. Please try again.'); }
-  }
-
-  // ── Remove vendor ─────────────────────────────────────────────────
-  async function removeVendorReg(recordId, name) {
-    if (!confirm(`Remove ${name} from your register?`)) return;
-    try {
-      await fetch(`${VERCEL_URL}/api/data?action=register&recordId=${encodeURIComponent(recordId)}`, {
-        method: 'DELETE'
-      });
-      registerLoaded = false;
-      loadRegister();
-    } catch { alert('Remove failed. Please try again.'); }
-  }
-
-  // ── Export CSV ────────────────────────────────────────────────────
-  function exportRegisterCSV() {
-    if (!registerRecords.length) return;
-    const disclaimer = 'This document is provided for informational purposes only and does not constitute legal advice or confirm legal compliance.';
-    const headers = ['Vendor','Category','Data Processed','Agreement Type','Agreement Status','Agreement Link','Data Location','Compliance Score','Last Checked','Notes','Added Date'];
-    const rows = registerRecords.map(r => {
-      const f = r.fields;
-      let dp = '';
-      try { dp = JSON.parse(f.DataProcessed || '[]').join('; '); } catch { dp = f.DataProcessed || ''; }
-      return [
-        f.VendorName, f.Category, dp,
-        f.AgreementType, f.AgreementStatus, f.AgreementLink,
-        f.DataLocation, f.ComplianceScore, f.LastChecked,
-        f.Notes, f.AddedDate
-      ].map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',');
-    });
-    const csv = [disclaimer, headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a    = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
-    a.download = `data-processor-register-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-  }
-
-  // ── Register search (add form autocomplete) ───────────────────────
-  function onRegSearch(val) {
-    const q  = val.trim().toLowerCase();
-    const dd = document.getElementById('reg-dropdown');
-    if (q.length < 2) { dd.classList.remove('show'); return; }
-
-    const matches = allVendors.filter(v => v.name.toLowerCase().includes(q));
-    let html = matches.slice(0, 8).map(v => `
-      <div class="dropdown-item" onclick="selectRegVendor(${JSON.stringify(v.name)}, ${JSON.stringify(v.category || '')}, ${JSON.stringify(v.dataLocation || '')})">
-        <div class="dropdown-name">${escHtml(v.name)}</div>
-        <div class="dropdown-cat">${escHtml(v.category || '')}</div>
-      </div>`).join('');
-
-    const exact = allVendors.find(v => v.name.toLowerCase() === q);
-    if (!exact) {
-      const display = val.trim().charAt(0).toUpperCase() + val.trim().slice(1);
-      html += `<div class="dropdown-item" onclick="selectRegVendor(${JSON.stringify(display)}, '', '')">
-        <div class="dropdown-name dropdown-custom">➕ Use "${escHtml(display)}"</div>
-      </div>`;
-    }
-
-    dd.innerHTML = html;
-    dd.classList.add('show');
-  }
-
-  function selectRegVendor(name, category, dataLocation) {
-    document.getElementById('reg-search-input').value = name;
-    document.getElementById('reg-dropdown').classList.remove('show');
-    if (category && !document.getElementById('reg-category').value) {
-      document.getElementById('reg-category').value = category;
-    }
-    if (dataLocation && !document.getElementById('reg-data-location').value) {
-      document.getElementById('reg-data-location').value = dataLocation;
-    }
-    // Pre-fill DPA link if known
-    const vendor = allVendors.find(v => v.name === name);
-    if (vendor?.dpaLink && !document.getElementById('reg-agreement-link').value) {
-      document.getElementById('reg-agreement-link').value = vendor.dpaLink;
-    }
-  }
-
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#reg-form-search-wrap')) {
-      document.getElementById('reg-dropdown').classList.remove('show');
-    }
-  });
-
-  // ═══════════════════════════════════════════════════════════════════
-  // TAB 1 — Vendor Checker (unchanged logic)
-  // ═══════════════════════════════════════════════════════════════════
-
-  async function loadVendors() {
-    try {
-      const resp = await fetch(`${VERCEL_URL}/api/data?action=vendors`);
-      if (!resp.ok) throw new Error();
-      const data = await resp.json();
-      allVendors = data.vendors || [];
-    } catch {
-      allVendors = [
-        { name: 'Mailchimp',        category: 'Email Service Provider' },
-        { name: 'HubSpot',          category: 'CRM' },
-        { name: 'Klaviyo',          category: 'Email Service Provider' },
-        { name: 'ActiveCampaign',   category: 'Email Service Provider' },
-        { name: 'Salesforce',       category: 'CRM' },
-        { name: 'SendGrid',         category: 'Email Service Provider' },
-        { name: 'Brevo',            category: 'Email Service Provider' },
-        { name: 'Google Analytics', category: 'Analytics' },
-        { name: 'Hotjar',           category: 'Analytics' },
-        { name: 'Typeform',         category: 'Forms' },
-        { name: 'Pipedrive',        category: 'CRM' },
-        { name: 'Zoho CRM',         category: 'CRM' },
-      ];
-    }
-  }
-
-  function onSearch(val) {
-    const q  = val.trim().toLowerCase();
-    const dd = document.getElementById('dropdown');
-    if (q.length < 2) { dd.classList.remove('show'); return; }
-
-    const matches = allVendors.filter(v =>
-      v.name.toLowerCase().includes(q) &&
-      !selectedVendors.find(s => s.name === v.name)
-    );
-
-    let html = matches.slice(0, 10).map(v => `
-      <div class="dropdown-item" onclick="selectVendor(${JSON.stringify(v.name)})">
-        <div class="dropdown-name">${escHtml(v.name)}</div>
-        <div class="dropdown-cat">${escHtml(v.category || '')}</div>
-      </div>`).join('');
-
-    const exactMatch = allVendors.find(v => v.name.toLowerCase() === q);
-    if (!exactMatch) {
-      const display = val.trim().charAt(0).toUpperCase() + val.trim().slice(1);
-      html += `<div class="dropdown-item" onclick="addCustom(${JSON.stringify(display)})">
-        <div class="dropdown-name dropdown-custom">➕ Add "${escHtml(display)}" as custom vendor</div>
-        <div class="dropdown-cat">Claude AI will analyse this vendor</div>
-      </div>`;
-    }
-
-    dd.innerHTML = html || `<div class="dropdown-item"><div class="dropdown-name" style="color:var(--muted)">No vendors found</div></div>`;
-    dd.classList.add('show');
-  }
-
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#searchWrap')) document.getElementById('dropdown').classList.remove('show');
-  });
-
-  function selectVendor(name) {
-    const vendor = allVendors.find(v => v.name === name);
-    if (!vendor || selectedVendors.find(s => s.name === name)) return;
-    selectedVendors.push({ ...vendor, isCustom: false });
-    afterSelect();
-  }
-
-  function addCustom(name) {
-    if (!name || selectedVendors.find(s => s.name.toLowerCase() === name.toLowerCase())) return;
-    selectedVendors.push({ name, category: 'Custom Vendor', isCustom: true });
-    afterSelect();
-  }
-
-  function afterSelect() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('dropdown').classList.remove('show');
-    renderTags();
-  }
-
-  function removeVendor(name) {
-    selectedVendors = selectedVendors.filter(v => v.name !== name);
-    renderTags();
-  }
-
-  function renderTags() {
-    const list = document.getElementById('selectedList');
-    const hint = document.getElementById('selectedHint');
-    const btn  = document.getElementById('submitBtn');
-
-    if (!selectedVendors.length) {
-      list.innerHTML = '';
-      hint.style.display = 'none';
-      btn.disabled = true;
-      return;
-    }
-
-    list.innerHTML = selectedVendors.map(v => `
-      <span class="vendor-tag ${v.isCustom ? 'custom' : ''}">
-        ${escHtml(v.name)}
-        ${v.isCustom ? '<span class="ai-pill">AI</span>' : ''}
-        <button class="tag-remove" onclick="removeVendor(${JSON.stringify(v.name)})">×</button>
-      </span>`).join('');
-
-    hint.style.display = 'block';
-    hint.textContent   = `${selectedVendors.length} vendor${selectedVendors.length !== 1 ? 's' : ''} selected${selectedVendors.some(v => v.isCustom) ? ' — custom vendors will be analysed by Claude AI' : ''}`;
-    btn.disabled = false;
-  }
-
-  async function runCheck() {
-    clearError();
-    if (!selectedVendors.length) return;
-    if (!userId) { showError('Missing userId. Please access this tool via your Sendwize dashboard.'); return; }
-
-    const customCount = selectedVendors.filter(v => v.isCustom).length;
-    document.getElementById('loadingText').textContent =
-      customCount > 0 ? `Checking vendors — Claude AI is analysing ${customCount} custom vendor${customCount !== 1 ? 's' : ''}…` : 'Checking vendors…';
-
-    document.getElementById('formSection').style.display = 'none';
-    document.getElementById('loadingSection').classList.add('show');
-
-    try {
-      const resp = await fetch(`${VERCEL_URL}/api/check-vendors`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ vendors: selectedVendors, userId })
-      });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || `Server error ${resp.status}`);
-      }
-
-      const data = await resp.json();
-      renderResults(data.results);
-
-    } catch (err) {
-      showError('Check failed: ' + err.message);
-      document.getElementById('formSection').style.display = 'block';
-      document.getElementById('loadingSection').classList.remove('show');
-    }
-  }
-
-  function renderResults(results) {
-    if (!results?.length) { showError('No results returned.'); return; }
-
-    const avg       = Math.round(results.reduce((s, r) => s + (r.score || 0), 0) / results.length);
-    const highCount = results.filter(r => (r.score || 0) >= 80).length;
-    const midCount  = results.filter(r => (r.score || 0) >= 60 && (r.score || 0) < 80).length;
-    const lowCount  = results.filter(r => (r.score || 0) < 60).length;
-
-    document.getElementById('summaryBar').innerHTML = `
-      <div>
-        <div class="summary-score">${avg}<span style="font-size:18px;color:var(--muted)">/100</span></div>
-        <div class="summary-label">Average compliance score</div>
-      </div>
-      <div class="summary-stats">
-        <div class="stat good"><div class="stat-num">${highCount}</div><div class="stat-lbl">Compliant</div></div>
-        <div class="stat warn"><div class="stat-num">${midCount}</div><div class="stat-lbl">Review</div></div>
-        <div class="stat bad" ><div class="stat-num">${lowCount}</div><div class="stat-lbl">At Risk</div></div>
-      </div>`;
-
-    document.getElementById('vendorCards').innerHTML = results
-      .sort((a, b) => (a.score || 0) - (b.score || 0))
-      .map((v, i) => renderVendorCard(v, i)).join('');
-
-    document.getElementById('loadingSection').classList.remove('show');
-    document.getElementById('resultsSection').classList.add('show');
-  }
-
-  function renderVendorCard(v, i) {
-    const score     = v.score || 0;
-    const scoreCls  = score >= 80 ? 'score-high' : score >= 60 ? 'score-medium' : 'score-low';
-    const scoreLabel= score >= 80 ? 'Compliant'  : score >= 60 ? 'Review'       : 'At Risk';
-
-    const detailsHtml = (v.details || []).map(d => {
-      const icon = d.status === 'pass' ? '✅' : d.status === 'warning' ? '⚠️' : 'ℹ️';
-      return `<div class="detail-item">
-        <div class="detail-icon">${icon}</div>
-        <div>
-          <div class="detail-label">${escHtml(d.label || '')}</div>
-          <div class="detail-desc">${escHtml(d.description || '')}</div>
-        </div>
-      </div>`;
-    }).join('');
-
-    const actionsHtml = v.actionItems?.length ? `
-      <div class="action-box">
-        <div class="action-title">Action Items</div>
-        <ol class="action-list">
-          ${v.actionItems.map(a => `<li>${escHtml(a)}</li>`).join('')}
-        </ol>
-      </div>` : '';
-
-    const linksHtml = (v.links?.dpa || v.links?.privacy) ? `
-      <div class="links-row">
-        ${v.links.dpa     ? `<a class="btn-link" href="${escHtml(v.links.dpa)}"     target="_blank" rel="noopener">View DPA ↗</a>`     : ''}
-        ${v.links.privacy ? `<a class="btn-link" href="${escHtml(v.links.privacy)}" target="_blank" rel="noopener">Privacy Policy ↗</a>` : ''}
-      </div>` : '';
-
-    const aiWarnHtml = v.isAI ? `
-      <div class="ai-warn">
-        <strong>⚠️ AI Analysis</strong> — this vendor isn't in our verified database. Claude analysed their public information. Verify directly with the vendor before relying on this assessment.
-      </div>` : '';
-
-    return `<div class="vendor-card" id="vc_${i}">
-      <div class="vendor-header" onclick="toggleCard('vc_${i}')">
-        <div class="vendor-left">
-          <div class="vendor-name">
-            ${escHtml(v.name)}
-            ${v.isAI ? '<span class="ai-badge">AI Analysis</span>' : ''}
-          </div>
-          <div class="vendor-meta">
-            <span class="score-badge ${scoreCls}">${score}/100 — ${scoreLabel}</span>
-            <span class="vendor-cat">${escHtml(v.category || '')}</span>
-          </div>
-        </div>
-        <span class="chevron">▼</span>
-      </div>
-      <div class="vendor-body">
-        <div class="vendor-body-inner">
-          ${aiWarnHtml}
-          <div class="detail-list">${detailsHtml || '<div style="font-size:13px;color:var(--muted)">No details available.</div>'}</div>
-          ${actionsHtml}
-          ${linksHtml}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  function toggleCard(id) {
-    document.getElementById(id).classList.toggle('open');
-  }
-
-  function resetForm() {
-    selectedVendors = [];
-    renderTags();
-    document.getElementById('resultsSection').classList.remove('show');
-    document.getElementById('formSection').style.display = 'block';
-    clearError();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  // ─── Helpers ──────────────────────────────────────────────────────
-  function showError(msg) { const e = document.getElementById('errorBox'); e.textContent = msg; e.classList.add('show'); }
-  function clearError()   { document.getElementById('errorBox').classList.remove('show'); }
-  function escHtml(s) {
-    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  // ─── Init ─────────────────────────────────────────────────────────
+    const m = (await window.$memberstackDom.getCurrentMember())?.data;
+    if (!m?.id) { showError('Please log in to use this tool.'); return; }
+    userId = m.id;
+  } catch(e) { showError('Authentication failed. Please log in.'); }
   loadVendors();
+}
+
+// ── TABS ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i===0&&tab==='checker')||(i===1&&tab==='register')));
+  document.getElementById('panel-checker').classList.toggle('active', tab==='checker');
+  document.getElementById('panel-register').classList.toggle('active', tab==='register');
+  if (tab==='register' && !registerLoaded) { registerLoaded=true; loadRegister(); }
+}
+
+// ── LOAD VENDORS ────────────────────────────────────────────────────
+async function loadVendors() {
+  try {
+    const r = await fetch(`${APP_URL}/api/data?action=vendors`);
+    if (!r.ok) throw r;
+    const d = await r.json();
+    allVendors = d.vendors || [];
+  } catch {
+    allVendors = [
+      {name:'Mailchimp',category:'Email Service Provider'},{name:'HubSpot',category:'CRM'},
+      {name:'Klaviyo',category:'Email Service Provider'},{name:'ActiveCampaign',category:'Email Service Provider'},
+      {name:'Salesforce',category:'CRM'},{name:'SendGrid',category:'Email Service Provider'},
+      {name:'Brevo',category:'Email Service Provider'},{name:'Google Analytics',category:'Analytics'},
+      {name:'Hotjar',category:'Analytics'},{name:'Typeform',category:'Forms'},
+      {name:'Pipedrive',category:'CRM'},{name:'Zoho CRM',category:'CRM'},
+    ];
+  }
+}
+
+// ── VENDOR CHECKER ──────────────────────────────────────────────────
+function onSearch(val) {
+  const q=val.trim().toLowerCase(), dd=document.getElementById('dropdown');
+  if (q.length<2) { dd.classList.remove('show'); return; }
+  const matches=allVendors.filter(v=>v.name.toLowerCase().includes(q)&&!selectedVendors.find(s=>s.name===v.name));
+  let html=matches.slice(0,10).map(v=>`<div class="dropdown-item" onclick="selectVendor(${JSON.stringify(v.name)})"><div class="dropdown-name">${escH(v.name)}</div><div class="dropdown-cat">${escH(v.category||'')}</div></div>`).join('');
+  if (!allVendors.find(v=>v.name.toLowerCase()===q)) {
+    const d=val.trim().charAt(0).toUpperCase()+val.trim().slice(1);
+    html+=`<div class="dropdown-item" onclick="addCustom(${JSON.stringify(d)})"><div class="dropdown-name dropdown-custom">➕ Add "${escH(d)}" as custom vendor</div><div class="dropdown-cat">Claude AI will analyse this vendor</div></div>`;
+  }
+  dd.innerHTML=html||`<div class="dropdown-item"><div class="dropdown-name" style="color:var(--muted)">No vendors found</div></div>`;
+  dd.classList.add('show');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#searchWrap')) document.getElementById('dropdown').classList.remove('show');
+  if (!e.target.closest('.reg-search-wrap')) document.getElementById('reg-dropdown').classList.remove('show');
+});
+
+function selectVendor(name) {
+  const v=allVendors.find(v=>v.name===name);
+  if (!v||selectedVendors.find(s=>s.name===name)) return;
+  selectedVendors.push({...v,isCustom:false});
+  afterSelect();
+}
+function addCustom(name) {
+  if (!name||selectedVendors.find(s=>s.name.toLowerCase()===name.toLowerCase())) return;
+  selectedVendors.push({name,category:'Custom Vendor',isCustom:true});
+  afterSelect();
+}
+function afterSelect() {
+  document.getElementById('searchInput').value='';
+  document.getElementById('dropdown').classList.remove('show');
+  renderTags();
+}
+function removeVendor(name) { selectedVendors=selectedVendors.filter(v=>v.name!==name); renderTags(); }
+
+function renderTags() {
+  const list=document.getElementById('selectedList'),hint=document.getElementById('selectedHint'),btn=document.getElementById('submitBtn');
+  if (!selectedVendors.length) { list.innerHTML=''; hint.style.display='none'; btn.disabled=true; return; }
+  list.innerHTML=selectedVendors.map(v=>`<span class="vendor-tag ${v.isCustom?'custom':''}">${escH(v.name)}${v.isCustom?'<span class="ai-pill">AI</span>':''}<button class="tag-remove" onclick="removeVendor(${JSON.stringify(v.name)})">×</button></span>`).join('');
+  hint.style.display='block';
+  hint.textContent=`${selectedVendors.length} vendor${selectedVendors.length!==1?'s':''} selected${selectedVendors.some(v=>v.isCustom)?' — custom vendors will be analysed by Claude AI':''}`;
+  btn.disabled=false;
+}
+
+async function runCheck() {
+  clearError();
+  if (!selectedVendors.length) return;
+  if (!userId) { showError('Please log in to use this tool.'); return; }
+  const cc=selectedVendors.filter(v=>v.isCustom).length;
+  document.getElementById('loadingText').textContent=cc>0?`Checking vendors — Claude AI is analysing ${cc} custom vendor${cc!==1?'s':''}…`:'Checking vendors…';
+  document.getElementById('formSection').style.display='none';
+  document.getElementById('loadingSection').classList.add('show');
+  try {
+    const r=await fetch(`${APP_URL}/api/check-vendors`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vendors:selectedVendors,userId})});
+    if (!r.ok) { const e=await r.json().catch(()=>({})); throw new Error(e.error||`Server error ${r.status}`); }
+    const data=await r.json();
+    renderResults(data.results);
+  } catch(e) {
+    showError('Check failed: '+e.message);
+    document.getElementById('formSection').style.display='block';
+    document.getElementById('loadingSection').classList.remove('show');
+  }
+}
+
+function renderResults(results) {
+  if (!results?.length) { showError('No results returned.'); return; }
+  const avg=Math.round(results.reduce((s,r)=>s+(r.score||0),0)/results.length);
+  const hi=results.filter(r=>(r.score||0)>=80).length,mi=results.filter(r=>(r.score||0)>=60&&(r.score||0)<80).length,lo=results.filter(r=>(r.score||0)<60).length;
+  document.getElementById('summaryBar').innerHTML=`<div><div class="summary-score">${avg}<span style="font-size:18px;color:var(--muted)">/100</span></div><div class="summary-label">Average compliance score</div></div><div class="summary-stats"><div class="stat good"><div class="stat-num">${hi}</div><div class="stat-lbl">Compliant</div></div><div class="stat warn"><div class="stat-num">${mi}</div><div class="stat-lbl">Review</div></div><div class="stat bad"><div class="stat-num">${lo}</div><div class="stat-lbl">At Risk</div></div></div>`;
+  document.getElementById('vendorCards').innerHTML=results.sort((a,b)=>(a.score||0)-(b.score||0)).map((v,i)=>renderVendorCard(v,i)).join('');
+  document.getElementById('loadingSection').classList.remove('show');
+  document.getElementById('resultsSection').classList.add('show');
+}
+
+function renderVendorCard(v, i) {
+  const score=v.score||0;
+  const scoreCls=score>=80?'score-high':score>=60?'score-medium':'score-low';
+  const scoreLbl=score>=80?'Compliant':score>=60?'Review':'At Risk';
+  const d=v.dimensions||{};
+
+  // 7-dimension grid
+  const dimItems = [
+    { label:'ICO Registration', val: d.icoRegistration || '—', cls: dimClass(d.icoRegistration) },
+    { label:'DPA Status',       val: d.dpaStatus       || '—', cls: dimClass(d.dpaStatus) },
+    { label:'International Transfer', val: d.internationalTransfer || '—', cls: dimClass(d.internationalTransfer) },
+    { label:'Breach History',   val: d.breachHistory   || '—', cls: dimClass(d.breachHistory, true) },
+    { label:'DPO Present',      val: d.dpoPresence      || '—', cls: dimClass(d.dpoPresence) },
+    { label:'ISO Accreditation',val: d.isoAccreditation || '—', cls: dimClass(d.isoAccreditation) },
+    { label:'Last Verified',    val: d.lastVerified    || '—', cls: '' },
+  ];
+  const dpaLinkVal = d.dpaLink || d.dpaStatus || '';
+
+  const dimsHtml = `
+    <div class="sec-title">Research Dimensions</div>
+    <div class="dimensions-grid">
+      ${dimItems.map(di=>`<div class="dim-item"><div class="dim-label">${di.label}</div><div class="dim-val ${di.cls}">${escH(di.val)}</div></div>`).join('')}
+    </div>
+    ${dpaLinkVal && dpaLinkVal.startsWith('http') ? `<div style="margin-bottom:12px"><a class="btn-link" href="${escH(dpaLinkVal)}" target="_blank" rel="noopener">View DPA ↗</a></div>` : ''}`;
+
+  // DPA widget (inline register update)
+  const regRecord = registerRecords.find(r => r.fields.VendorName === v.name);
+  const dpaSigned = regRecord?.fields?.DPASigned;
+  const existingLink = regRecord?.fields?.DPALink || d.dpaLink || '';
+  const dpaWidgetHtml = `
+    <div class="dpa-widget" id="dpaw-${i}">
+      <div class="dpa-widget-label">DPA signed in your register?</div>
+      <div class="dpa-toggle">
+        <button class="dpa-btn ${dpaSigned===true?'yes-on':''}" id="dpabtn-yes-${i}" onclick="setDPA(${i},${JSON.stringify(v.name)},true)">Yes</button>
+        <button class="dpa-btn ${dpaSigned===false?'no-on':''}"  id="dpabtn-no-${i}"  onclick="setDPA(${i},${JSON.stringify(v.name)},false)">No</button>
+      </div>
+      <div class="dpa-link-wrap">
+        <input class="dpa-link-input" id="dpalink-${i}" type="url" placeholder="DPA link (optional)" value="${escH(existingLink)}">
+      </div>
+      <button class="dpa-save-btn" onclick="saveDPA(${i},${JSON.stringify(v.name)})">Save</button>
+      <span class="dpa-saved-tick" id="dpatick-${i}">✓ Saved</span>
+    </div>`;
+
+  const detailsHtml=(v.details||[]).map(d=>{const ic=d.status==='pass'?'✅':d.status==='warning'?'⚠️':'ℹ️';return`<div class="detail-item"><div class="detail-icon">${ic}</div><div><div class="detail-label">${escH(d.label||'')}</div><div class="detail-desc">${escH(d.description||'')}</div></div></div>`;}).join('');
+  const actionsHtml=v.actionItems?.length?`<div class="action-box"><div class="action-title">Action Items</div><ol class="action-list">${v.actionItems.map(a=>`<li>${escH(a)}</li>`).join('')}</ol></div>`:'';
+  const aiWarnHtml=v.isAI?`<div class="ai-warn"><strong>⚠️ AI Analysis</strong> — this vendor isn't in our verified database. Claude analysed their public information. Verify directly with the vendor before relying on this assessment.</div>`:'';
+
+  return `<div class="vendor-card" id="vc_${i}">
+    <div class="vendor-header" onclick="toggleCard('vc_${i}')">
+      <div class="vendor-left">
+        <div class="vendor-name">${escH(v.name)}${v.isAI?'<span class="ai-badge">AI Analysis</span>':''}</div>
+        <div class="vendor-meta"><span class="score-badge ${scoreCls}">${score}/100 — ${scoreLbl}</span><span class="vendor-cat">${escH(v.category||'')}</span></div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="vendor-body">
+      <div class="vendor-body-inner">
+        ${aiWarnHtml}
+        ${dpaWidgetHtml}
+        ${dimsHtml}
+        ${detailsHtml?`<div class="sec-title">Compliance Details</div><div class="detail-list">${detailsHtml}</div>`:''}
+        ${actionsHtml}
+      </div>
+    </div>
+  </div>`;
+}
+
+function dimClass(val, invertBad) {
+  if (!val || val === '—' || val === 'Unknown') return '';
+  const low = val.toLowerCase();
+  if (invertBad) {
+    if (low.includes('yes') || low.includes('breach') || low.includes('incident')) return 'bad';
+    if (low.includes('no') || low.includes('none')) return 'good';
+  } else {
+    if (low.includes('yes') || low.includes('registered') || low.includes('in place') || low.includes('confirmed') || low.includes('eu') || low.includes('uk')) return 'good';
+    if (low.includes('partial') || low.includes('pending') || low.includes('us')) return 'warn';
+    if (low.includes('no') || low.includes('not') || low.includes('unknown')) return 'bad';
+  }
+  return '';
+}
+
+// DPA inline update
+let dpaState = {}; // { vendorName: true/false }
+
+function setDPA(i, vendorName, val) {
+  dpaState[vendorName] = val;
+  document.getElementById(`dpabtn-yes-${i}`).className = `dpa-btn ${val===true?'yes-on':''}`;
+  document.getElementById(`dpabtn-no-${i}`).className  = `dpa-btn ${val===false?'no-on':''}`;
+}
+
+async function saveDPA(i, vendorName) {
+  if (!userId) return;
+  const signed = dpaState[vendorName];
+  const link   = document.getElementById(`dpalink-${i}`)?.value.trim() || '';
+  try {
+    await fetch(`${APP_URL}/api/data?action=register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        vendor: {
+          VendorName: vendorName,
+          DPASigned:  signed,
+          DPALink:    link,
+          LastChecked: new Date().toISOString().split('T')[0],
+        }
+      }),
+    });
+    const tick = document.getElementById(`dpatick-${i}`);
+    tick.classList.add('show');
+    setTimeout(() => tick.classList.remove('show'), 2200);
+    // Refresh register if loaded
+    if (registerLoaded) { registerLoaded=false; loadRegister(); }
+  } catch(e) { console.error('DPA save failed:', e); }
+}
+
+function toggleCard(id) { document.getElementById(id).classList.toggle('open'); }
+
+function resetForm() {
+  selectedVendors=[]; renderTags();
+  document.getElementById('resultsSection').classList.remove('show');
+  document.getElementById('formSection').style.display='block';
+  clearError();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── REGISTER TAB ────────────────────────────────────────────────────
+async function loadRegister() {
+  if (!userId) { document.getElementById('reg-loading').style.display='none'; showRegOnboarding(); return; }
+  try {
+    const r=await fetch(`${APP_URL}/api/data?action=history&type=vendor&userId=${encodeURIComponent(userId)}`);
+    if (!r.ok) throw r;
+    const {records}=await r.json();
+    registerRecords=records||[];
+    document.getElementById('reg-loading').style.display='none';
+    if (!registerRecords.length) showRegOnboarding();
+    else renderRegisterMain();
+  } catch {
+    document.getElementById('reg-loading').style.display='none';
+    showRegOnboarding();
+  }
+}
+
+const OB_CATS=[
+  {label:'Email marketing',vendors:['Mailchimp','Klaviyo','Brevo','HubSpot','ActiveCampaign','SendGrid']},
+  {label:'CRM',vendors:['HubSpot','Salesforce','Pipedrive','Zoho']},
+  {label:'Analytics',vendors:['Google Analytics','Hotjar']},
+  {label:'Forms',vendors:['Typeform','Gravity Forms']},
+  {label:'Advertising',vendors:['Google Ads','Meta Ads']},
+];
+
+function showRegOnboarding() {
+  document.getElementById('ob-categories').innerHTML=OB_CATS.map(cat=>`<div class="ob-category"><div class="ob-cat-label">${escH(cat.label)}</div><div class="ob-vendor-btns">${cat.vendors.map(v=>`<button class="ob-vendor-btn" id="ob_${slugify(v)}" onclick="obAddVendor(${JSON.stringify(v)},${JSON.stringify(cat.label)},this)">${escH(v)}</button>`).join('')}<button class="ob-vendor-btn" onclick="showAddForm({category:'${escH(cat.label)}'},true)">+ Other</button></div></div>`).join('');
+  document.getElementById('reg-onboarding').style.display='block';
+}
+
+function slugify(s){return s.replace(/[^a-z0-9]/gi,'_').toLowerCase();}
+
+async function obAddVendor(name,category,btn) {
+  btn.classList.add('added'); btn.textContent='✓ '+name; btn.disabled=true;
+  const v=allVendors.find(v=>v.name===name)||{};
+  await saveVendorDirect({VendorName:name,Category:category,DataLocation:v.dataLocation||'',AgreementType:v.dpaLink?'Data Processing Addendum':'Unknown',AgreementStatus:v.dpaLink?'In place':'Not yet',AgreementLink:v.dpaLink||''});
+  setTimeout(()=>{document.getElementById('reg-onboarding').style.display='none';registerLoaded=false;loadRegister();},600);
+}
+
+function skipOnboarding(){document.getElementById('reg-onboarding').style.display='none';registerLoaded=true;registerRecords=[];renderRegisterMain();}
+
+function renderRegisterMain(){document.getElementById('reg-main').style.display='block';renderHealthSummary();renderRegisterTable();}
+
+function renderHealthSummary(){
+  const tot=registerRecords.length;
+  const noAg=registerRecords.filter(r=>['Not yet','None in place',''].includes(r.fields.AgreementStatus||'')).length;
+  const stale=registerRecords.filter(r=>isStale(r.fields.LastChecked)).length;
+  const sc=registerRecords.map(r=>r.fields.ComplianceScore||0).filter(Boolean);
+  const avg=sc.length?Math.round(sc.reduce((a,b)=>a+b,0)/sc.length):'—';
+  document.getElementById('reg-health').innerHTML=`<div class="health-tile"><div class="health-num">${tot}</div><div class="health-lbl">Total vendors</div></div><div class="health-tile"><div class="health-num ${noAg>0?'bad':''}">${noAg}</div><div class="health-lbl">No written agreement</div></div><div class="health-tile"><div class="health-num ${stale>0?'warn':''}">${stale}</div><div class="health-lbl">Stale (>90 days)</div></div><div class="health-tile"><div class="health-num">${avg}${typeof avg==='number'?'/100':''}</div><div class="health-lbl">Avg compliance score</div></div>`;
+}
+
+function isStale(d){if(!d)return false;return(Date.now()-new Date(d).getTime())>90*24*60*60*1000;}
+
+function renderRegisterTable(){
+  const tbody=document.getElementById('reg-tbody');
+  if (!registerRecords.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;font-size:13px">No vendors added yet. Click "+ Add vendor" to get started.</td></tr>`;return;}
+  tbody.innerHTML=registerRecords.map(r=>{
+    const f=r.fields,stale=isStale(f.LastChecked),agPill=agreementPill(f.AgreementStatus);
+    const sc=f.ComplianceScore,scc=sc>=80?'high':sc>=60?'mid':'low';
+    let dp='';try{dp=JSON.parse(f.DataProcessed||'[]').join(', ');}catch{dp=f.DataProcessed||'';}
+    const vd=allVendors.find(v=>v.name===f.VendorName);
+    const sub=vd?.subprocessors||'';
+    return`<tr><td><div class="reg-vendor-name">${escH(f.VendorName||'')}${stale?'<span class="stale-badge">Stale</span>':''}</div><div class="reg-vendor-cat">${escH(f.Category||'')}</div>${sub?`<div class="subprocessors-row">▸ Known subprocessors: ${escH(sub)}</div>`:''}</td><td style="color:var(--muted);font-size:12px">${escH(dp||'—')}</td><td>${agPill}</td><td style="font-size:12px;color:var(--muted)">${escH(f.DataLocation||'—')}</td><td>${sc!=null?`<span class="reg-score ${scc}">${sc}/100</span>`:'<span style="color:var(--muted)">—</span>'}</td><td style="font-size:12px;color:var(--muted)">${escH(f.LastChecked||'—')}</td><td><div class="reg-actions"><button class="reg-action-btn" onclick="reCheckVendor(${JSON.stringify(r.id)},${JSON.stringify(f.VendorName)})">Re-check</button><button class="reg-action-btn" onclick="showEditForm(${JSON.stringify(r.id)})">Edit</button><button class="reg-action-btn remove" onclick="removeVendorReg(${JSON.stringify(r.id)},${JSON.stringify(f.VendorName)})">Remove</button></div></td></tr>`;
+  }).join('');
+}
+
+function agreementPill(s){if(!s)return`<span class="agreement-pill ap-grey">Unknown</span>`;if(s==='In place')return`<span class="agreement-pill ap-green">In place</span>`;if(s==='Requested')return`<span class="agreement-pill ap-amber">Requested</span>`;if(s==='N/A')return`<span class="agreement-pill ap-grey">N/A</span>`;return`<span class="agreement-pill ap-red">Not in place</span>`;}
+
+function showAddForm(defaults,scrollTo){editingRecordId=null;clearRegForm();document.getElementById('reg-form-title').textContent='Add Vendor';if(defaults?.category)document.getElementById('reg-category').value=defaults.category;if(defaults?.name)document.getElementById('reg-search-input').value=defaults.name;document.getElementById('reg-add-panel').classList.add('show');if(scrollTo)document.getElementById('reg-add-panel').scrollIntoView({behavior:'smooth',block:'start'});}
+
+function showEditForm(id){
+  const rec=registerRecords.find(r=>r.id===id);if(!rec)return;
+  editingRecordId=id;const f=rec.fields;clearRegForm();
+  document.getElementById('reg-form-title').textContent='Edit Vendor';
+  document.getElementById('reg-search-input').value=f.VendorName||'';
+  document.getElementById('reg-category').value=f.Category||'';
+  document.getElementById('reg-data-location').value=f.DataLocation||'';
+  document.getElementById('reg-agreement-type').value=f.AgreementType||'';
+  document.getElementById('reg-agreement-status').value=f.AgreementStatus||'';
+  document.getElementById('reg-agreement-link').value=f.AgreementLink||'';
+  document.getElementById('reg-agreement-date').value=f.AgreementDate||'';
+  document.getElementById('reg-notes').value=f.Notes||'';
+  let dp=[];try{dp=JSON.parse(f.DataProcessed||'[]');}catch{}
+  document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]').forEach(cb=>{cb.checked=dp.includes(cb.value);});
+  document.getElementById('reg-add-panel').classList.add('show');
+  document.getElementById('reg-add-panel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function hideAddForm(){document.getElementById('reg-add-panel').classList.remove('show');clearRegForm();editingRecordId=null;}
+function clearRegForm(){['reg-search-input','reg-category','reg-data-location','reg-agreement-type','reg-agreement-status','reg-agreement-link','reg-agreement-date','reg-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]').forEach(cb=>cb.checked=false);}
+
+async function saveVendor(){
+  const name=document.getElementById('reg-search-input').value.trim();
+  const status=document.getElementById('reg-agreement-status').value;
+  if (!name){alert('Please enter a vendor name.');return;}
+  if (!status){alert('Please select an agreement status.');return;}
+  const dp=Array.from(document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]:checked')).map(cb=>cb.value);
+  const vendor={VendorName:name,Category:document.getElementById('reg-category').value,DataProcessed:dp,AgreementType:document.getElementById('reg-agreement-type').value,AgreementStatus:status,AgreementLink:document.getElementById('reg-agreement-link').value,AgreementDate:document.getElementById('reg-agreement-date').value,DataLocation:document.getElementById('reg-data-location').value,Notes:document.getElementById('reg-notes').value};
+  await saveVendorDirect(vendor,editingRecordId);
+  hideAddForm();registerLoaded=false;loadRegister();
+  if(['Requested','Not yet','None in place'].includes(status)&&userId){
+    try{await fetch(`${APP_URL}/api/generate-fix`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId,fixType:'no_dpa',description:`No written agreement in place for ${name}. UK GDPR Article 28 requires a written contract before sharing personal data with this processor.`,tool:'Vendor Register',severity:'high',volume:null,sourceRecordId:null})});}catch{}
+  }
+}
+
+async function saveVendorDirect(vendor,recordId){
+  try{const body={userId,vendor};if(recordId)body.recordId=recordId;await fetch(`${APP_URL}/api/data?action=register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}catch(e){console.error(e);}
+}
+
+async function reCheckVendor(recordId,vendorName){
+  if(!confirm(`Re-check compliance data for ${vendorName}?`))return;
+  try{const r=await fetch(`${APP_URL}/api/check-vendors`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vendors:[{name:vendorName,isCustom:!allVendors.find(v=>v.name===vendorName)}],userId})});if(!r.ok)throw r;const data=await r.json();const res=data.results?.[0];if(res){await saveVendorDirect({VendorName:vendorName,ComplianceScore:res.score,LastChecked:new Date().toISOString().split('T')[0],CheckResults:JSON.stringify(res)},recordId);registerLoaded=false;loadRegister();}}catch{alert('Re-check failed. Please try again.');}
+}
+
+async function removeVendorReg(recordId,name){
+  if(!confirm(`Remove ${name} from your register?`))return;
+  try{await fetch(`${APP_URL}/api/data?action=register&recordId=${encodeURIComponent(recordId)}`,{method:'DELETE'});registerLoaded=false;loadRegister();}catch{alert('Remove failed.');}
+}
+
+function onRegSearch(val){
+  const q=val.trim().toLowerCase(),dd=document.getElementById('reg-dropdown');
+  if(q.length<2){dd.classList.remove('show');return;}
+  const matches=allVendors.filter(v=>v.name.toLowerCase().includes(q));
+  let html=matches.slice(0,8).map(v=>`<div class="dropdown-item" onclick="selectRegVendor(${JSON.stringify(v.name)},${JSON.stringify(v.category||'')},${JSON.stringify(v.dataLocation||'')})"><div class="dropdown-name">${escH(v.name)}</div><div class="dropdown-cat">${escH(v.category||'')}</div></div>`).join('');
+  if(!allVendors.find(v=>v.name.toLowerCase()===q)){const d=val.trim().charAt(0).toUpperCase()+val.trim().slice(1);html+=`<div class="dropdown-item" onclick="selectRegVendor(${JSON.stringify(d)},'','')"><div class="dropdown-name dropdown-custom">➕ Use "${escH(d)}"</div></div>`;}
+  dd.innerHTML=html;dd.classList.add('show');
+}
+
+function selectRegVendor(name,category,dataLocation){
+  document.getElementById('reg-search-input').value=name;
+  document.getElementById('reg-dropdown').classList.remove('show');
+  if(category&&!document.getElementById('reg-category').value)document.getElementById('reg-category').value=category;
+  if(dataLocation&&!document.getElementById('reg-data-location').value)document.getElementById('reg-data-location').value=dataLocation;
+  const v=allVendors.find(v=>v.name===name);
+  if(v?.dpaLink&&!document.getElementById('reg-agreement-link').value)document.getElementById('reg-agreement-link').value=v.dpaLink;
+}
+
+function exportRegisterCSV(){
+  if(!registerRecords.length)return;
+  const hdrs=['Vendor','Category','Data Processed','Agreement Type','Agreement Status','Agreement Link','Data Location','Compliance Score','Last Checked','Notes'];
+  const rows=registerRecords.map(r=>{const f=r.fields;let dp='';try{dp=JSON.parse(f.DataProcessed||'[]').join('; ');}catch{dp=f.DataProcessed||'';}return[f.VendorName,f.Category,dp,f.AgreementType,f.AgreementStatus,f.AgreementLink,f.DataLocation,f.ComplianceScore,f.LastChecked,f.Notes].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',');});
+  const csv=['Information only — not legal advice.',hdrs.join(','),...rows].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`data-processor-register-${new Date().toISOString().split('T')[0]}.csv`;a.click();
+}
+
+// ── HELPERS ─────────────────────────────────────────────────────────
+function showError(msg){const e=document.getElementById('errorBox');e.textContent=msg;e.classList.add('show');}
+function clearError(){document.getElementById('errorBox').classList.remove('show');}
+function escH(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+init();
 </script>
 </body>
 </html>
