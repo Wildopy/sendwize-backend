@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ICO Simulator — Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
+  --bg:#F4F3F0;--w:#fff;--b:#e8e5de;--bm:#d8d4cb;
+  --t:#0c0c0a;--tm:#4a4740;--mu:#9a9590;
+  --r:#dc2626;--rb:#fef2f2;--rc:#fecaca;
+  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
+  --y:#ca8a04;--yb:#fefce8;--yc:#fef08a;
+  --tl:#0d9488;
+  --ico:#1d4ed8;--icol:#eff6ff;--icoc:#bfdbfe;
+  --rad:10px;--rad-lg:14px;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --sh-lg:0 8px 32px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.05);
+}
+
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6}
+
+/* NAV */
+.nav{background:var(--w);border-bottom:1px solid var(--b);height:56px;display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:100;justify-content:space-between}
+.nav-logo{font-size:18px;font-weight:700;color:var(--o);letter-spacing:-.5px;text-decoration:none}
+.nav-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
+.nav-back:hover{color:var(--o);background:var(--ol)}
+
+/* PAGE */
+.page{max-width:740px;margin:0 auto;padding:40px 20px 80px}
+
+/* INTRO */
+.intro{margin-bottom:36px;animation:fadeUp .4s ease}
+.intro-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ico);background:var(--icol);border:1px solid var(--icoc);padding:4px 12px;border-radius:20px;margin-bottom:14px}
+.intro h1{font-size:30px;font-weight:700;letter-spacing:-.6px;line-height:1.15;margin-bottom:10px}
+.intro p{font-size:14px;color:var(--tm);line-height:1.7;max-width:540px}
+.intro-warning{display:flex;gap:12px;align-items:flex-start;background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:14px 18px;margin-top:18px}
+.intro-warning-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.intro-warning p{font-size:13px;color:#92400e;line-height:1.5}
+
+/* START BUTTON */
+.start-wrap{margin-bottom:36px}
+.btn-start{background:var(--ico);color:#fff;border:none;padding:14px 32px;border-radius:var(--rad);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;display:inline-flex;align-items:center;gap:10px;letter-spacing:-.2px}
+.btn-start:hover{background:#1e40af;transform:translateY(-1px);box-shadow:0 4px 16px rgba(29,78,216,.3)}
+.btn-start:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* STAGE SPINE */
+.spine{display:flex;flex-direction:column;gap:0}
+
+/* STAGE */
+.stage{position:relative;padding-left:52px;margin-bottom:8px}
+.stage::before{content:'';position:absolute;left:19px;top:40px;bottom:-8px;width:2px;background:var(--b);z-index:0}
+.stage:last-child::before{display:none}
+
+.stage-dot{position:absolute;left:0;top:0;width:40px;height:40px;border-radius:50%;border:2px solid var(--b);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--mu);z-index:1;transition:all .3s}
+.stage.active .stage-dot,.stage.done .stage-dot{background:var(--ico);border-color:var(--ico);color:#fff}
+.stage.done .stage-dot{background:var(--g);border-color:var(--g)}
+.stage.locked .stage-dot{background:var(--bg);border-color:var(--b);color:var(--mu)}
+
+.stage-header{padding:10px 0 0;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.stage-title{font-size:15px;font-weight:700;color:var(--mu);transition:color .2s}
+.stage.active .stage-title,.stage.done .stage-title{color:var(--t)}
+.stage-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.badge-locked{background:var(--b);color:var(--mu)}
+.badge-running{background:var(--icol);color:var(--ico);border:1px solid var(--icoc)}
+.badge-done{background:var(--gb);color:var(--g)}
+
+/* STAGE BODY */
+.stage-body{margin-top:12px;display:none;animation:fadeUp .3s ease}
+.stage.active .stage-body,.stage.done .stage-body{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARD */
+.scard{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:28px;margin-bottom:8px;box-shadow:var(--sh)}
+
+/* Stage 1 — Background check */
+.check-grid{display:flex;flex-direction:column;gap:8px}
+.check-row{display:flex;align-items:flex-start;gap:14px;padding:12px 16px;border-radius:8px;border:1px solid var(--b);background:#faf9f7}
+.check-row.red{background:var(--rb);border-color:var(--rc)}
+.check-row.amber{background:var(--yb);border-color:var(--yc)}
+.check-row.green{background:var(--gb);border-color:var(--gc)}
+.check-indicator{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.ind-red{background:var(--r)}.ind-amber{background:var(--y)}.ind-green{background:var(--g)}
+.check-label{font-size:13px;font-weight:600;margin-bottom:2px}
+.check-detail{font-size:12px;color:var(--mu);line-height:1.4}
+
+/* Stage 2 — Probability */
+.prob-main{text-align:center;padding:20px 0 8px}
+.prob-pct{font-size:64px;font-weight:800;letter-spacing:-3px;line-height:1;font-family:'DM Mono',monospace}
+.prob-pct.low{color:var(--g)}.prob-pct.medium{color:var(--y)}.prob-pct.high{color:var(--r)}
+.prob-label{font-size:13px;color:var(--mu);margin-top:6px;margin-bottom:20px}
+.prob-bar-wrap{background:var(--b);border-radius:4px;height:8px;overflow:hidden;margin-bottom:20px}
+.prob-bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.factors-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:10px}
+.factor-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--b)}
+.factor-row:last-child{border-bottom:none}
+.factor-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.factor-text{font-size:13px;color:var(--tm);line-height:1.4}
+
+/* Stage 3 — ICO letter */
+.letter-card{background:#fff;border:1px solid #c7d2fe;border-radius:var(--rad-lg);overflow:hidden;box-shadow:var(--sh-lg)}
+.letter-header{background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 100%);padding:24px 28px;color:#fff}
+.letter-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.letter-org{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.7;margin-bottom:4px}
+.letter-dept{font-size:16px;font-weight:700}
+.letter-ref{text-align:right}
+.letter-ref-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.6;margin-bottom:2px}
+.letter-ref-val{font-size:12px;font-weight:600;font-family:'DM Mono',monospace}
+.letter-divider{height:1px;background:rgba(255,255,255,.2);margin-bottom:14px}
+.letter-subject{font-size:13px;font-weight:600;opacity:.9}
+.letter-body{padding:28px}
+.letter-salutation{font-size:14px;margin-bottom:16px}
+.letter-para{font-size:13px;color:var(--tm);line-height:1.75;margin-bottom:14px}
+.letter-questions{display:flex;flex-direction:column;gap:10px;margin:18px 0}
+.letter-q{border:1px solid var(--b);border-radius:8px;padding:14px 16px;transition:border-color .15s}
+.letter-q.answered-yes{border-color:var(--gc);background:var(--gb)}
+.letter-q.answered-no{border-color:var(--rc);background:var(--rb)}
+.lq-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.lq-text{font-size:13px;color:var(--t);line-height:1.5;flex:1}
+.lq-toggles{display:flex;gap:6px;flex-shrink:0}
+.tgl{font-size:12px;font-weight:600;padding:4px 12px;border-radius:5px;border:1px solid var(--b);background:var(--bg);cursor:pointer;transition:all .15s;color:var(--mu)}
+.tgl.yes-on{background:var(--gb);border-color:var(--gc);color:var(--g)}
+.tgl.no-on{background:var(--rb);border-color:var(--rc);color:var(--r)}
+.lq-note{font-size:11px;margin-top:8px;line-height:1.4;display:none}
+.lq-note.show{display:block}
+.lq-note.yes{color:var(--g)}.lq-note.no{color:var(--r)}
+.letter-sign{margin-top:20px;padding-top:16px;border-top:1px solid var(--b)}
+.letter-sign p{font-size:13px;color:var(--tm);line-height:1.6}
+
+/* Stage 4 — Docs checklist */
+.docs-list{display:flex;flex-direction:column;gap:8px}
+.doc-row{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-radius:8px;border:1px solid var(--b)}
+.doc-row.available{background:var(--gb);border-color:var(--gc)}
+.doc-row.partial{background:var(--yb);border-color:var(--yc)}
+.doc-row.missing{background:var(--rb);border-color:var(--rc)}
+.doc-status-pill{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:10px;flex-shrink:0;white-space:nowrap;margin-top:1px}
+.available .doc-status-pill{background:#d1fae5;color:#065f46}
+.partial   .doc-status-pill{background:#fef3c7;color:#92400e}
+.missing   .doc-status-pill{background:#fee2e2;color:#991b1b}
+.doc-name{font-size:13px;font-weight:600;margin-bottom:2px}
+.doc-desc{font-size:12px;color:var(--mu);line-height:1.4}
+
+/* Stage 5 — Penalty */
+.penalty-range{text-align:center;padding:20px 0 24px}
+.penalty-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:8px}
+.penalty-amt{font-size:48px;font-weight:800;letter-spacing:-2px;line-height:1;font-family:'DM Mono',monospace;color:var(--r)}
+.penalty-to{font-size:18px;font-weight:400;color:var(--mu);margin:4px 0}
+.penalty-note{font-size:12px;color:var(--mu);font-style:italic;margin-top:8px}
+.rep-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tm);margin:20px 0 10px}
+.rep-items{display:flex;flex-direction:column;gap:8px}
+.rep-item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:#f8f7f4;border-radius:8px;border:1px solid var(--b)}
+.rep-num{width:22px;height:22px;border-radius:50%;background:var(--o);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rep-text{font-size:13px;color:var(--tm);line-height:1.5}
+.rep-text strong{color:var(--t)}
+
+/* NEXT STAGE BUTTON */
+.btn-next-stage{margin-top:16px;background:var(--ico);color:#fff;border:none;padding:11px 22px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-next-stage:hover{background:#1e40af}
+
+/* States */
+.ld{padding:80px 24px;text-align:center;color:var(--mu);font-size:14px}
+.spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-box{background:var(--rb);border:1px solid var(--rc);border-radius:var(--rad);padding:16px 20px;font-size:13px;color:var(--r);margin-bottom:20px;display:none}
+.err-box.show{display:block}
+.disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.5}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
+.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+
+@media(max-width:600px){
+  .penalty-amt{font-size:36px}
+  .intro h1{font-size:24px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="/">sendwize</a>
+  <a class="nav-back" href="/">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+    Dashboard
+  </a>
+</nav>
+
+<div class="page">
+
+  <div class="err-box" id="errBox"></div>
+
+  <!-- INTRO -->
+  <div class="intro">
+    <div class="intro-tag">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-.25 3h1.5v5h-1.5V7z"/></svg>
+      ICO Simulator — Sendwize
+    </div>
+    <h1>How would your business look in an ICO investigation?</h1>
+    <p>This simulator runs through the five stages of a real ICO enforcement action — using your actual compliance posture from Sendwize — and shows you exactly what investigators would find.</p>
+    <div class="intro-warning">
+      <div class="intro-warning-icon">⚠️</div>
+      <p>This is a simulation based on your current compliance data. It is illustrative only and does not constitute legal advice. Scenarios are based on published ICO enforcement patterns.</p>
+    </div>
+  </div>
+
+  <!-- START -->
+  <div class="start-wrap" id="startWrap">
+    <button class="btn-start" id="btnStart" onclick="startSimulation()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>
+      Start ICO Simulation
+    </button>
+  </div>
+
+  <!-- STAGES SPINE -->
+  <div class="spine" id="spine" style="display:none">
+
+    <!-- Stage 1 -->
+    <div class="stage locked" id="stage-0">
+      <div class="stage-dot">1</div>
+      <div class="stage-header" onclick="toggleStage(0)">
+        <div class="stage-title">Background Check</div>
+        <span class="stage-badge badge-locked" id="badge-0">Locked</span>
+      </div>
+      <div class="stage-body">
+        <div class="scard">
+          <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6">The ICO's first step is a background check against their own data — ICO registration, complaint history, and known data handling patterns.</div>
+          <div class="check-grid" id="stage1-checks"></div>
+        </div>
+        <button class="btn-next-stage" onclick="unlockStage(1)">
+          Continue to Complaint Probability →
+        </button>
+      </div>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="stage locked" id="stage-1">
+      <div class="stage-dot">2</div>
+      <div class="stage-header" onclick="toggleStage(1)">
+        <div class="stage-title">Complaint Probability</div>
+        <span class="stage-badge badge-locked" id="badge-1">Locked</span>
+      </div>
+      <div class="stage-body">
+        <div class="scard">
+          <div class="prob-main">
+            <div class="prob-pct" id="prob-pct">—%</div>
+            <div class="prob-label">estimated complaint escalation probability</div>
+            <div class="prob-bar-wrap"><div class="prob-bar-fill" id="prob-bar" style="width:0%"></div></div>
+          </div>
+          <div class="factors-title">Escalation factors</div>
+          <div id="stage2-factors"></div>
+        </div>
+        <button class="btn-next-stage" onclick="unlockStage(2)">
+          View ICO First-Contact Letter →
+        </button>
+      </div>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="stage locked" id="stage-2">
+      <div class="stage-dot">3</div>
+      <div class="stage-header" onclick="toggleStage(2)">
+        <div class="stage-title">ICO First-Contact Letter</div>
+        <span class="stage-badge badge-locked" id="badge-2">Locked</span>
+      </div>
+      <div class="stage-body">
+        <div class="letter-card" id="letterCard"></div>
+        <button class="btn-next-stage" style="margin-top:16px" onclick="unlockStage(3)">
+          Check Documentation →
+        </button>
+      </div>
+    </div>
+
+    <!-- Stage 4 -->
+    <div class="stage locked" id="stage-3">
+      <div class="stage-dot">4</div>
+      <div class="stage-header" onclick="toggleStage(3)">
+        <div class="stage-title">Documentation Checklist</div>
+        <span class="stage-badge badge-locked" id="badge-3">Locked</span>
+      </div>
+      <div class="stage-body">
+        <div class="scard">
+          <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6">The ICO will request specific documentation. Based on your current compliance posture, here's what you could produce today.</div>
+          <div class="docs-list" id="stage4-docs"></div>
+        </div>
+        <button class="btn-next-stage" onclick="unlockStage(4)">
+          View Penalty Estimate →
+        </button>
+      </div>
+    </div>
+
+    <!-- Stage 5 -->
+    <div class="stage locked" id="stage-4">
+      <div class="stage-dot">5</div>
+      <div class="stage-header" onclick="toggleStage(4)">
+        <div class="stage-title">Penalty Estimate & Strategy</div>
+        <span class="stage-badge badge-locked" id="badge-4">Locked</span>
+      </div>
+      <div class="stage-body">
+        <div class="scard" id="stage5-content"></div>
+      </div>
+    </div>
+
+  </div><!-- /spine -->
+
+  <p class="disc">Information only — not legal advice. Illustrative scenarios based on published ICO enforcement data. This simulation does not represent actual ICO activity or determinations.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
+<script>
+const APP_URL = 'https://sendwize-backend.vercel.app';
+let userId = null;
+let simData = null;
+let currentStage = -1; // -1 = not started
+
+// ── AUTH ──────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    await new Promise(r => {
+      if (window.$memberstackDom) return r();
+      const iv = setInterval(() => { if (window.$memberstackDom) { clearInterval(iv); r(); } }, 200);
+    });
+    const m = (await window.$memberstackDom.getCurrentMember())?.data;
+    if (!m?.id) { showErr('Please log in to use the ICO Simulator.'); return; }
+    userId = m.id;
+  } catch(e) { showErr('Authentication failed. Please log in and try again.'); }
+}
+
+// ── START ─────────────────────────────────────────────────────────────
+async function startSimulation() {
+  if (!userId) { showErr('Please log in first.'); return; }
+  const btn = el('btnStart');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spin" style="width:16px;height:16px;border-width:2px;margin:0"></div> Running simulation…';
+
+  try {
+    const res = await fetch(`${APP_URL}/api/data?action=simulation-run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, regulator: 'ICO' }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    simData = await res.json();
+  } catch(e) {
+    console.warn('Simulation API failed, using fallback data:', e);
+    simData = buildFallback();
+  }
+
+  el('startWrap').style.display = 'none';
+  el('spine').style.display = 'flex';
+  el('spine').style.flexDirection = 'column';
+  unlockStage(0);
+}
+
+// ── STAGE UNLOCK ──────────────────────────────────────────────────────
+function unlockStage(i) {
+  // Mark previous as done
+  if (i > 0) {
+    const prev = el(`stage-${i-1}`);
+    prev.className = 'stage done';
+    el(`badge-${i-1}`).className = 'stage-badge badge-done';
+    el(`badge-${i-1}`).textContent = 'Complete';
+  }
+
+  const stage = el(`stage-${i}`);
+  stage.className = 'stage active';
+  el(`badge-${i}`).className = 'stage-badge badge-running';
+  el(`badge-${i}`).textContent = 'In progress';
+  currentStage = i;
+
+  // Render content
+  renderStage(i);
+
+  // Scroll to stage
+  setTimeout(() => stage.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+function toggleStage(i) {
+  const s = el(`stage-${i}`);
+  if (s.classList.contains('locked')) return;
+  // stages are always open when active/done — toggle just collapses done stages
+  const body = s.querySelector('.stage-body');
+  if (body) body.style.display = body.style.display === 'none' ? '' : 'none';
+}
+
+// ── RENDER EACH STAGE ─────────────────────────────────────────────────
+function renderStage(i) {
+  const d = simData;
+  if (!d) return;
+
+  if (i === 0) renderStage1(d);
+  if (i === 1) renderStage2(d);
+  if (i === 2) renderStage3(d);
+  if (i === 3) renderStage4(d);
+  if (i === 4) renderStage5(d);
+}
+
+function renderStage1(d) {
+  const checks = d.stage1?.checks || [];
+  el('stage1-checks').innerHTML = checks.map(c => {
+    const cls = c.status === 'red' ? 'red' : c.status === 'amber' ? 'amber' : 'green';
+    return `<div class="check-row ${cls}">
+      <div class="check-indicator ind-${cls}"></div>
+      <div>
+        <div class="check-label">${escH(c.label)}</div>
+        <div class="check-detail">${escH(c.detail)}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--mu);font-size:13px;padding:12px 0">No background check data available.</div>';
+}
+
+function renderStage2(d) {
+  const pct   = d.stage2?.probability ?? 42;
+  const level = pct >= 70 ? 'high' : pct >= 40 ? 'medium' : 'low';
+  const color = level === 'high' ? '#dc2626' : level === 'medium' ? '#ca8a04' : '#16a34a';
+  const factors = d.stage2?.factors || [];
+
+  el('prob-pct').textContent = pct + '%';
+  el('prob-pct').className = `prob-pct ${level}`;
+  el('prob-bar').style.width = pct + '%';
+  el('prob-bar').style.background = color;
+
+  el('stage2-factors').innerHTML = factors.map(f => `
+    <div class="factor-row">
+      <div class="factor-icon">${f.icon || '•'}</div>
+      <div class="factor-text">${escH(f.text)}</div>
+    </div>`).join('') || '<div style="color:var(--mu);font-size:13px;padding:8px 0">No escalation factors identified.</div>';
+}
+
+function renderStage3(d) {
+  const l = d.stage3?.letter || {};
+  const ref = l.reference || ('ICO-ENF-' + Math.floor(Math.random()*90000+10000));
+  const qs  = l.questions  || [];
+  const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+
+  el('letterCard').innerHTML = `
+    <div class="letter-header">
+      <div class="letter-header-top">
+        <div>
+          <div class="letter-org">Information Commissioner's Office</div>
+          <div class="letter-dept">Enforcement & Investigations</div>
+        </div>
+        <div class="letter-ref">
+          <div class="letter-ref-label">Reference</div>
+          <div class="letter-ref-val">${escH(ref)}</div>
+          <div class="letter-ref-label" style="margin-top:6px">Date</div>
+          <div class="letter-ref-val">${today}</div>
+        </div>
+      </div>
+      <div class="letter-divider"></div>
+      <div class="letter-subject">${escH(l.subject || 'Preliminary enquiry regarding direct marketing practices')}</div>
+    </div>
+    <div class="letter-body">
+      <div class="letter-salutation">Dear Data Controller,</div>
+      <div class="letter-para">${escH(l.opening || 'The ICO has received information that raises questions about your organisation\'s direct marketing practices under the Privacy and Electronic Communications Regulations 2003 (PECR) and the UK General Data Protection Regulation (UK GDPR).')}</div>
+      <div class="letter-para">${escH(l.context || 'We are writing to you at this stage to offer you the opportunity to provide information before we consider whether to progress to a formal investigation. Your co-operation at this stage may be taken into account in any subsequent action.')}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--t);margin-bottom:10px">We would be grateful if you could address the following questions:</div>
+      <div class="letter-questions">
+        ${qs.map((q, i) => `
+          <div class="letter-q" id="lq-${i}">
+            <div class="lq-row">
+              <div class="lq-text"><strong>${i+1}.</strong> ${escH(q.question)}</div>
+              <div class="lq-toggles">
+                <button class="tgl" id="tgl-yes-${i}" onclick="answerQ(${i},'yes')">Yes</button>
+                <button class="tgl" id="tgl-no-${i}"  onclick="answerQ(${i},'no')">No</button>
+              </div>
+            </div>
+            <div class="lq-note yes" id="lqn-yes-${i}">${escH(q.yesNote || '✓ Good — you can evidence this.')}</div>
+            <div class="lq-note no"  id="lqn-no-${i}">${escH(q.noNote  || '⚠ This would be a concern for investigators.')}</div>
+          </div>`).join('')}
+      </div>
+      <div class="letter-para">${escH(l.closing || 'Please respond within 28 days of the date of this letter. Failure to respond or to provide adequate answers may result in us escalating our enquiries.')}</div>
+      <div class="letter-sign">
+        <p><strong>${escH(l.signatory || 'Senior Enforcement Officer')}</strong><br>Information Commissioner's Office<br>Wycliffe House, Water Lane, Wilmslow SK9 5AF</p>
+      </div>
+    </div>`;
+}
+
+function answerQ(i, val) {
+  const card = el(`lq-${i}`);
+  const yBtn = el(`tgl-yes-${i}`);
+  const nBtn = el(`tgl-no-${i}`);
+  const yNote = el(`lqn-yes-${i}`);
+  const nNote = el(`lqn-no-${i}`);
+  yBtn.className = `tgl${val==='yes'?' yes-on':''}`;
+  nBtn.className = `tgl${val==='no' ?' no-on' :''}`;
+  card.className = `letter-q answered-${val}`;
+  if (yNote) { yNote.className = `lq-note yes${val==='yes'?' show':''}`; }
+  if (nNote) { nNote.className = `lq-note no${val==='no'?' show':''}`; }
+}
+
+function renderStage4(d) {
+  const docs = d.stage4?.documents || [];
+  el('stage4-docs').innerHTML = docs.map(doc => {
+    const cls = doc.status === 'available' ? 'available' : doc.status === 'partial' ? 'partial' : 'missing';
+    const label = cls === 'available' ? 'Available' : cls === 'partial' ? 'Partial' : 'Missing';
+    return `<div class="doc-row ${cls}">
+      <div class="doc-status-pill">${label}</div>
+      <div>
+        <div class="doc-name">${escH(doc.name)}</div>
+        <div class="doc-desc">${escH(doc.detail)}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--mu);font-size:13px;padding:12px 0">No documentation data available.</div>';
+}
+
+function renderStage5(d) {
+  const p    = d.stage5?.penalty    || {};
+  const reps = d.stage5?.representations || [];
+  const low  = p.low  || 0;
+  const high = p.high || 0;
+
+  el('stage5-content').innerHTML = `
+    <div class="penalty-range">
+      <div class="penalty-label">Estimated penalty range</div>
+      <div class="penalty-amt">£${fmtK(low)}</div>
+      <div class="penalty-to">to</div>
+      <div class="penalty-amt">£${fmtK(high)}</div>
+      <div class="penalty-note">Based on ICO published enforcement decisions for comparable cases. Illustrative only.</div>
+    </div>
+    <div style="border-top:1px solid var(--b);padding-top:20px">
+      <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6">${escH(p.context || 'The ICO has discretion to reduce penalties significantly where organisations demonstrate genuine co-operation, prompt remedial action, and a credible compliance improvement plan.')}</div>
+      <div class="rep-title">Representations strategy — ${reps.length} recommended actions</div>
+      <div class="rep-items">
+        ${reps.map((r, i) => `
+          <div class="rep-item">
+            <div class="rep-num">${i+1}</div>
+            <div class="rep-text">${escH(r)}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--b);text-align:center">
+      <p style="font-size:13px;color:var(--tm);margin-bottom:16px">Address your pending fixes in Sendwize to improve your compliance posture before any real investigation.</p>
+      <a href="/" style="display:inline-flex;align-items:center;gap:8px;background:var(--o);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+        Back to Dashboard — Fix Issues
+      </a>
+    </div>`;
+
+  // Mark stage 5 done
+  setTimeout(() => {
+    el('stage-4').className = 'stage done';
+    el('badge-4').className = 'stage-badge badge-done';
+    el('badge-4').textContent = 'Complete';
+  }, 400);
+}
+
+// ── FALLBACK DATA (if API unavailable) ───────────────────────────────
+function buildFallback() {
+  return {
+    stage1: {
+      checks: [
+        { status:'green', label:'ICO Registration', detail:'Your organisation appears registered with the ICO for data processing activities.' },
+        { status:'amber', label:'Previous Complaint History', detail:'No upheld complaints found, but limited enforcement history means the ICO has no prior context for your practices.' },
+        { status:'amber', label:'Compliance Score', detail:'Your current Sendwize score indicates partially-addressed compliance gaps that investigators would identify.' },
+        { status:'red',   label:'Pending Fix Items', detail:'Outstanding action items suggest known compliance issues that have not been resolved.' },
+        { status:'green', label:'Sector Risk Profile', detail:'Your sector does not appear on the ICO\'s current high-risk watch list.' },
+      ]
+    },
+    stage2: {
+      probability: 52,
+      factors: [
+        { icon:'⚠️', text:'Unresolved compliance fixes increase likelihood that a complaint would be taken seriously by investigators.' },
+        { icon:'📊', text:'Compliance score below 75 indicates systemic gaps rather than isolated incidents — this pattern concerns the ICO.' },
+        { icon:'🔍', text:'No formal consent documentation on record means investigators could not verify lawful basis without an investigation.' },
+        { icon:'✅', text:'No prior ICO action reduces the probability of immediate formal enforcement vs preliminary enquiry.' },
+      ]
+    },
+    stage3: {
+      letter: {
+        reference: 'ICO-ENF-' + Math.floor(Math.random()*90000+10000),
+        subject: 'Preliminary enquiry regarding direct marketing practices — PECR / UK GDPR',
+        opening: 'The ICO has received a complaint that raises questions about your organisation\'s direct marketing practices under the Privacy and Electronic Communications Regulations 2003 (PECR) and UK GDPR. We are writing to give you the opportunity to provide information before we consider whether to progress to a formal investigation.',
+        context: 'Our enquiries at this stage are preliminary. Your co-operation and the quality of your response will be taken into account should this matter proceed further.',
+        closing: 'Please respond within 28 days. Failure to respond adequately may result in escalation to a formal investigation under section 115 of the Data Protection Act 2018.',
+        signatory: 'Senior Enforcement Officer, Direct Marketing Team',
+        questions: [
+          { question:'Can you provide a copy of your consent records, including the consent wording shown to individuals at the time their details were collected?', yesNote:'✓ Strong position — documented consent is your primary defence.', noNote:'✗ Absence of consent records is the single most common basis for ICO enforcement action.' },
+          { question:'Can you confirm what suppression processes are in place to ensure individuals who have opted out are not contacted?', yesNote:'✓ Good — documented suppression processes demonstrate active compliance management.', noNote:'✗ Inability to evidence suppression controls is a serious concern under PECR Regulation 23.' },
+          { question:'Can you provide a copy of your data retention policy and confirm how long you retain marketing contact data?', yesNote:'✓ A documented retention policy supports your position as a responsible controller.', noNote:'✗ Absence of a retention policy suggests inadequate data governance overall.' },
+          { question:'Can you confirm whether the marketing messages in question contained a clear and free opt-out mechanism in every communication?', yesNote:'✓ Consistent opt-out provision is a core PECR requirement and demonstrates compliance.', noNote:'✗ Missing opt-out mechanisms in any message creates a clear PECR breach.' },
+          { question:'Can you confirm the legal basis under which the recipients\' data was processed for direct marketing purposes?', yesNote:'✓ A clearly documented lawful basis is essential and gives you a strong starting position.', noNote:'✗ Unclear or absent lawful basis documentation would be central to any penalty decision.' },
+        ]
+      }
+    },
+    stage4: {
+      documents: [
+        { status:'partial',   name:'Consent Records', detail:'Some contact records have consent flags, but documentation of the exact consent wording and collection mechanism is incomplete.' },
+        { status:'missing',   name:'Legitimate Interest Assessment', detail:'No LIA on record. If relying on legitimate interest for any processing, this document is essential.' },
+        { status:'available', name:'Privacy Notice', detail:'A privacy notice is present on your website covering marketing communications.' },
+        { status:'partial',   name:'Suppression Log', detail:'Suppression lists exist but no formal audit trail showing when they were applied to each campaign.' },
+        { status:'missing',   name:'Data Retention Schedule', detail:'No documented retention policy specifying how long marketing data is held and when it is deleted.' },
+        { status:'available', name:'Opt-out Mechanism Evidence', detail:'Unsubscribe links are present in email records reviewed.' },
+        { status:'partial',   name:'Staff Training Records', detail:'Some evidence of data protection awareness but no formal PECR-specific training records.' },
+      ]
+    },
+    stage5: {
+      penalty: {
+        low: 8000,
+        high: 140000,
+        context: 'The ICO has broad discretion in setting penalties. For first-time PECR breaches with prompt remedial action and genuine co-operation, penalties are typically at the lower end. Repeated or deliberate breaches, or failure to co-operate, can lead to maximum fines.'
+      },
+      representations: [
+        'Immediately complete all outstanding Sendwize compliance fixes to demonstrate active remediation before any response to the ICO.',
+        'Prepare a written consent audit documenting the lawful basis for every contact segment in your database.',
+        'Draft a formal Legitimate Interest Assessment for any processing not covered by explicit consent.',
+        'Implement a documented suppression audit trail showing when suppression lists were applied to each campaign sent in the past 24 months.',
+        'Respond to the ICO promptly, fully, and co-operatively — non-co-operation can increase penalties by up to 20% per published ICO guidance.',
+        'Appoint a named individual responsible for data protection compliance and reference this in your response to demonstrate accountability.',
+      ]
+    }
+  };
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+const el   = id => document.getElementById(id);
+const escH = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtK = n => {
+  if (!n) return '0';
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'm';
+  if (n >= 1000)    return Math.round(n/1000) + 'k';
+  return n.toLocaleString('en-GB');
+};
+
+function showErr(msg) {
+  const e = el('errBox'); e.textContent = msg; e.classList.add('show');
+  el('btnStart') && (el('btnStart').disabled = true);
+}
+
+let _tt;
+function toast(msg, type='') {
+  const t = el('toast'); t.textContent = msg;
+  t.className = `toast on${type?' '+type:''}`;
+  clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('on'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
