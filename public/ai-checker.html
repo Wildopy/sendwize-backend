@@ -31,9 +31,8 @@
       padding: 32px 20px 60px;
     }
 
-    .container { max-width: 780px; margin: 0 auto; }
+    .container { max-width: 900px; margin: 0 auto; }
 
-    /* Header */
     .page-header { margin-bottom: 32px; }
     .back-link {
       display: inline-flex; align-items: center; gap: 6px;
@@ -41,14 +40,9 @@
       margin-bottom: 20px; transition: color .15s;
     }
     .back-link:hover { color: var(--orange); }
-    .back-link svg { width: 14px; height: 14px; }
-
-    .page-title {
-      font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 6px;
-    }
+    .page-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
     .page-subtitle { font-size: 14px; color: var(--muted); line-height: 1.5; }
 
-    /* Card */
     .card {
       background: var(--white); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 28px; margin-bottom: 20px;
@@ -57,65 +51,57 @@
       font-size: 11px; font-weight: 600; letter-spacing: .08em;
       text-transform: uppercase; color: var(--orange); margin-bottom: 16px;
     }
-
-    /* Mode toggle */
-    .mode-toggle {
-      display: flex; gap: 8px; margin-bottom: 24px;
+    .section-title {
+      font-size: 11px; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--orange); margin-bottom: 14px;
     }
+
+    /* Content type + mode row */
+    .controls-row {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+      align-items: start;
+    }
+    .control-group { display: flex; flex-direction: column; gap: 6px; }
+    .control-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--orange);
+    }
+
+    select {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 14px; font-family: inherit;
+      background: var(--white); color: var(--text); transition: border-color .15s;
+      appearance: none; cursor: pointer;
+    }
+    select:focus { outline: none; border-color: var(--orange); }
+
+    .mode-toggle { display: flex; gap: 8px; }
     .mode-btn {
       flex: 1; padding: 10px 16px; border-radius: var(--radius);
       border: 1px solid var(--border-mid); background: var(--white);
       font-size: 13px; font-weight: 500; color: var(--muted);
       cursor: pointer; transition: all .15s; text-align: center;
     }
-    .mode-btn.active {
-      background: var(--orange); color: var(--white); border-color: var(--orange);
-    }
+    .mode-btn.active { background: var(--orange); color: var(--white); border-color: var(--orange); }
     .mode-btn:not(.active):hover { border-color: var(--orange); color: var(--orange); }
+
     .mode-desc { font-size: 12px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
 
-    /* Form elements */
     label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text); }
     .form-group { margin-bottom: 18px; }
 
-    input[type="text"], select, textarea {
+    input[type="text"], textarea {
       width: 100%; padding: 10px 12px; border: 1px solid var(--border-mid);
       border-radius: var(--radius); font-size: 14px; font-family: inherit;
       background: var(--white); color: var(--text); transition: border-color .15s;
       resize: vertical;
     }
-    input[type="text"]:focus, select:focus, textarea:focus {
-      outline: none; border-color: var(--orange);
-    }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--orange); }
     textarea { min-height: 160px; line-height: 1.6; }
 
-    /* File upload */
-    .file-drop {
-      border: 2px dashed var(--border-mid); border-radius: var(--radius);
-      padding: 32px 20px; text-align: center; cursor: pointer; transition: all .15s;
-      background: var(--bg);
-    }
-    .file-drop:hover, .file-drop.dragover {
-      border-color: var(--orange); background: var(--orange-light);
-    }
-    .file-drop-icon { font-size: 28px; margin-bottom: 8px; }
-    .file-drop-text { font-size: 13px; color: var(--muted); }
-    .file-drop-text strong { color: var(--orange); cursor: pointer; }
-    .file-input { display: none; }
-    .file-selected {
-      display: none; align-items: center; gap: 10px;
-      padding: 10px 14px; background: var(--orange-light);
-      border-radius: var(--radius); font-size: 13px; margin-top: 10px;
-    }
-    .file-selected.show { display: flex; }
-    .file-selected-name { flex: 1; font-weight: 500; color: var(--orange); }
-    .file-remove {
-      background: none; border: none; cursor: pointer; color: var(--muted);
-      font-size: 16px; padding: 0; line-height: 1; transition: color .15s;
-    }
-    .file-remove:hover { color: var(--red); }
-
-    /* Submit button */
     .btn-primary {
       width: 100%; padding: 13px 20px; background: var(--orange); color: var(--white);
       border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600;
@@ -124,10 +110,16 @@
     .btn-primary:hover:not(:disabled) { background: #d4660f; }
     .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
 
-    /* Loading */
-    .loading {
-      display: none; text-align: center; padding: 48px 20px;
+    .btn-secondary {
+      padding: 8px 16px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 13px; font-weight: 500;
+      background: var(--white); color: var(--text); cursor: pointer;
+      font-family: inherit; transition: border-color .15s;
     }
+    .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Loading */
+    .loading { display: none; text-align: center; padding: 48px 20px; }
     .loading.show { display: block; }
     .spinner {
       width: 36px; height: 36px; border: 3px solid var(--border);
@@ -142,14 +134,23 @@
     .results { display: none; }
     .results.show { display: block; }
 
-    /* Risk score banner */
+    .new-check-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 18px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 13px; font-weight: 500;
+      background: var(--white); color: var(--text); cursor: pointer;
+      font-family: inherit; transition: all .15s; margin-bottom: 24px;
+    }
+    .new-check-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Risk banner */
     .risk-banner {
       border-radius: var(--radius); padding: 24px 28px; margin-bottom: 20px;
       display: flex; align-items: center; gap: 24px;
     }
-    .risk-banner.low    { background: #f0fdf4; border: 1px solid #bbf7d0; }
-    .risk-banner.medium { background: #fffbeb; border: 1px solid #fde68a; }
-    .risk-banner.high   { background: #fff7ed; border: 1px solid #fed7aa; }
+    .risk-banner.low      { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .risk-banner.medium   { background: #fffbeb; border: 1px solid #fde68a; }
+    .risk-banner.high     { background: #fff7ed; border: 1px solid #fed7aa; }
     .risk-banner.critical { background: #fef2f2; border: 1px solid #fecaca; }
 
     .risk-score-circle {
@@ -157,18 +158,55 @@
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       font-weight: 700; flex-shrink: 0;
     }
-    .risk-banner.low    .risk-score-circle { background: #dcfce7; color: #16a34a; }
-    .risk-banner.medium .risk-score-circle { background: #fef3c7; color: #d97706; }
-    .risk-banner.high   .risk-score-circle { background: #ffedd5; color: #ea580c; }
+    .risk-banner.low      .risk-score-circle { background: #dcfce7; color: #16a34a; }
+    .risk-banner.medium   .risk-score-circle { background: #fef3c7; color: #d97706; }
+    .risk-banner.high     .risk-score-circle { background: #ffedd5; color: #ea580c; }
     .risk-banner.critical .risk-score-circle { background: #fee2e2; color: #dc2626; }
-
-    .risk-score-num { font-size: 24px; line-height: 1; }
+    .risk-score-num   { font-size: 24px; line-height: 1; }
     .risk-score-label { font-size: 10px; font-weight: 500; opacity: .7; }
+    .risk-verdict h2  { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .risk-verdict p   { font-size: 13px; color: var(--muted); }
 
-    .risk-verdict h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-    .risk-verdict p  { font-size: 13px; color: var(--muted); }
+    /* Email score bar (email mode only) */
+    .email-score-bar {
+      display: none;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px;
+    }
+    .email-score-bar.show { display: block; }
+    .esb-row { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+    .esb-label { font-size: 13px; font-weight: 600; min-width: 140px; }
+    .esb-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .esb-fill  { height: 100%; border-radius: 4px; transition: width .6s ease; }
+    .esb-val   { font-size: 13px; font-weight: 700; min-width: 36px; text-align: right; }
 
-    /* Violations list */
+    /* Side-by-side rewrite panel */
+    .rewrite-panel {
+      display: none;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .rewrite-panel.show { display: grid; grid-template-columns: 1fr 1fr; }
+    .rewrite-col { }
+    .rewrite-col-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .06em;
+      text-transform: uppercase; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .rewrite-col-label.original { color: var(--muted); }
+    .rewrite-col-label.fixed    { color: var(--green); }
+    .rewrite-box {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+      font-size: 13px; line-height: 1.7; white-space: pre-wrap;
+      min-height: 140px; color: var(--text);
+    }
+    .rewrite-box.fixed-box { background: #f0fdf4; border-color: #bbf7d0; }
+    .copy-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .copy-success { font-size: 12px; color: var(--green); display: none; }
+    .copy-success.show { display: inline; }
+
+    /* Violations */
     .violations-list { display: flex; flex-direction: column; gap: 12px; }
     .violation-item {
       border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;
@@ -188,52 +226,35 @@
     .high     .violation-type { background: #ffedd5; color: #ea580c; }
     .medium   .violation-type { background: #fef3c7; color: #d97706; }
     .low      .violation-type { background: #f0fdf4; color: #16a34a; }
-
-    .violation-reg { font-size: 11px; color: var(--muted); margin-left: auto; }
-    .violation-text { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; }
+    .violation-reg  { font-size: 11px; color: var(--muted); margin-left: auto; }
+    .violation-text { font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
     .violation-quote {
       font-size: 12px; color: var(--muted); font-style: italic;
       background: var(--bg); padding: 8px 12px; border-radius: 4px;
       border-left: 2px solid var(--border-mid);
     }
 
-    /* Fixed version */
-    .fixed-copy {
-      background: var(--bg); border-radius: var(--radius);
-      padding: 18px; font-size: 14px; line-height: 1.7;
-      white-space: pre-wrap; color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .copy-actions { display: flex; gap: 8px; margin-top: 12px; }
-    .btn-secondary {
-      padding: 8px 16px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 13px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer;
-      font-family: inherit; transition: border-color .15s;
-    }
-    .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
-    .copy-success { font-size: 12px; color: var(--green); display: none; }
-    .copy-success.show { display: inline; }
+    .no-violations { text-align: center; padding: 32px; color: var(--muted); font-size: 14px; }
+    .no-violations-icon { font-size: 32px; margin-bottom: 10px; }
 
-    /* Related cases */
-    .cases-list { display: flex; flex-direction: column; gap: 10px; }
-    .case-item {
-      display: flex; align-items: flex-start; gap: 14px;
-      padding: 14px; border: 1px solid var(--border); border-radius: var(--radius);
+    /* Checks section (email mode) */
+    .checks-section { display: none; }
+    .checks-section.show { display: block; }
+    .check-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
     }
-    .case-fine {
-      font-size: 13px; font-weight: 700; color: var(--red); white-space: nowrap;
-      min-width: 90px;
+    .check-row:last-child { border-bottom: none; }
+    .check-status {
+      font-size: 11px; font-weight: 700; padding: 3px 8px;
+      border-radius: 4px; flex-shrink: 0; text-transform: uppercase;
     }
-    .case-details { flex: 1; }
-    .case-company { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-    .case-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
-
-    /* Sections */
-    .section-title {
-      font-size: 11px; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--orange); margin-bottom: 14px;
-    }
+    .check-status.pass { background: #d1fae5; color: #065f46; }
+    .check-status.warn { background: #fef3c7; color: #92400e; }
+    .check-status.fail { background: #fee2e2; color: #991b1b; }
+    .check-body { flex: 1; }
+    .check-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .check-desc  { font-size: 12px; color: var(--muted); line-height: 1.4; }
 
     /* Error */
     .error-box {
@@ -243,24 +264,15 @@
     }
     .error-box.show { display: block; }
 
-    /* New check link */
-    .new-check-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 10px 18px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 13px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer;
-      font-family: inherit; transition: all .15s; text-decoration: none;
-      margin-bottom: 24px;
+    /* Disclaimer */
+    .disclaimer {
+      font-size: 11px; color: var(--muted); font-style: italic;
+      text-align: center; margin-top: 24px;
     }
-    .new-check-btn:hover { border-color: var(--orange); color: var(--orange); }
 
-    /* Empty violations */
-    .no-violations {
-      text-align: center; padding: 32px; color: var(--muted); font-size: 14px;
-    }
-    .no-violations-icon { font-size: 32px; margin-bottom: 10px; }
-
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
+      .controls-row { grid-template-columns: 1fr; }
+      .rewrite-panel.show { grid-template-columns: 1fr; }
       .risk-banner { flex-direction: column; text-align: center; gap: 14px; }
       .mode-toggle { flex-direction: column; }
     }
@@ -270,86 +282,96 @@
 
 <div class="container">
 
-  <!-- Header -->
   <div class="page-header">
     <a href="javascript:history.back()" class="back-link">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M10 12L6 8l4-4"/>
-      </svg>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
       Dashboard
     </a>
     <h1 class="page-title">AI Copy Checker</h1>
     <p class="page-subtitle">Analyse marketing copy for PECR, UK GDPR and ASA CAP Code compliance issues before you send.</p>
   </div>
 
-  <!-- Error box -->
   <div class="error-box" id="errorBox"></div>
 
-  <!-- Input form -->
+  <!-- FORM -->
   <div id="formSection">
     <div class="card">
-      <div class="card-label">Check Mode</div>
-      <div class="mode-toggle">
-        <button class="mode-btn active" data-mode="copy" onclick="setMode('copy', this)">Copy Check</button>
-        <button class="mode-btn" data-mode="combined" onclick="setMode('combined', this)">Copy + Email Scan</button>
+      <div class="card-label">Check Settings</div>
+
+      <div class="controls-row">
+        <!-- Content type -->
+        <div class="control-group">
+          <div class="control-label">Content type</div>
+          <select id="contentType" onchange="onContentTypeChange()">
+            <option value="email">Email</option>
+            <option value="sms">SMS</option>
+            <option value="push">Push notification</option>
+            <option value="social">Social ad</option>
+            <option value="directmail">Direct mail</option>
+          </select>
+        </div>
+
+        <!-- Mode toggle (email only) -->
+        <div class="control-group" id="modeGroup">
+          <div class="control-label">Check mode</div>
+          <div class="mode-toggle">
+            <button class="mode-btn active" onclick="setMode('copy', this)">Copy only</button>
+            <button class="mode-btn" onclick="setMode('combined', this)">Copy + HTML scan</button>
+          </div>
+        </div>
       </div>
-      <p class="mode-desc" id="modeDesc">
-        Scan your marketing copy for misleading claims, fake urgency, missing compliance elements and ASA CAP Code violations.
-      </p>
+
+      <p class="mode-desc" id="modeDesc">Scan your email copy for misleading claims, fake urgency, missing opt-out language and ASA CAP Code violations. Paste subject line and body copy.</p>
 
       <div class="form-group">
-        <label for="campaignName">Campaign / File Name</label>
+        <label for="campaignName">Campaign / file name</label>
         <input type="text" id="campaignName" placeholder="e.g. Summer Sale Email — June 2026" />
       </div>
 
-      <!-- Copy textarea -->
+      <!-- Copy textarea — always shown -->
       <div class="form-group" id="copyGroup">
-        <label for="copyText">Marketing Copy</label>
-        <textarea id="copyText" placeholder="Paste your email subject line, body copy, SMS, or ad text here…"></textarea>
+        <label for="copyText" id="copyLabel">Marketing copy</label>
+        <textarea id="copyText" placeholder="Paste your copy here…"></textarea>
       </div>
 
-      <!-- Email fields (combined mode) -->
-      <div id="fileGroup" style="display:none;">
+      <!-- Email combined mode: subject + HTML -->
+      <div id="emailGroup" style="display:none;">
         <div class="form-group">
-          <label for="emailSubject">Email Subject Line</label>
+          <label for="emailSubject">Email subject line</label>
           <input type="text" id="emailSubject" placeholder="e.g. Last chance — 50% off ends tonight!" />
         </div>
         <div class="form-group">
-          <label for="emailHtml">Email HTML <span style="color:var(--muted);font-weight:400;">(paste your raw HTML)</span></label>
+          <label for="emailHtml">Email HTML <span style="color:var(--muted);font-weight:400;">(paste raw HTML)</span></label>
           <textarea id="emailHtml" style="min-height:120px;font-family:monospace;font-size:12px;" placeholder="Paste your full email HTML here…"></textarea>
         </div>
       </div>
 
     </div>
 
-    <button class="btn-primary" id="submitBtn" onclick="runCheck()">
-      Run Compliance Check
-    </button>
+    <button class="btn-primary" id="submitBtn" onclick="runCheck()">Run Compliance Check</button>
+    <p class="disclaimer">Information only — not legal advice.</p>
   </div>
 
-  <!-- Loading -->
+  <!-- LOADING -->
   <div class="loading" id="loadingSection">
     <div class="spinner"></div>
     <div class="loading-text">Analysing your copy…</div>
     <div class="loading-steps" id="loadingSteps">Checking for compliance issues</div>
   </div>
 
-  <!-- Results -->
+  <!-- RESULTS -->
   <div class="results" id="resultsSection">
 
     <button class="new-check-btn" onclick="resetForm()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M2 8a6 6 0 1 0 6-6"/>
-        <path d="M2 4v4h4"/>
-      </svg>
-      New Check
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
+      New check
     </button>
 
     <!-- Risk banner -->
     <div class="risk-banner" id="riskBanner">
       <div class="risk-score-circle" id="riskCircle">
         <span class="risk-score-num" id="riskNum">—</span>
-        <span class="risk-score-label">RISK</span>
+        <span class="risk-score-label">SCORE</span>
       </div>
       <div class="risk-verdict">
         <h2 id="verdictText">—</h2>
@@ -357,234 +379,303 @@
       </div>
     </div>
 
-    <!-- Violations -->
-    <div class="card" id="violationsCard">
-      <div class="section-title">Compliance Issues Found</div>
-      <div id="violationsList" class="violations-list"></div>
+    <!-- Email score bar (email mode only) -->
+    <div class="email-score-bar card" id="emailScoreBar">
+      <div class="section-title">Email Deliverability Score</div>
+      <div id="emailScoreRows"></div>
     </div>
 
-    <!-- Fixed copy -->
-    <div class="card" id="fixedCard" style="display:none;">
-      <div class="section-title">Compliant Version</div>
-      <div class="fixed-copy" id="fixedCopy"></div>
-      <div class="copy-actions">
-        <button class="btn-secondary" onclick="copyCopy()">Copy to clipboard</button>
-        <span class="copy-success" id="copySuccess">✓ Copied!</span>
+    <!-- Side-by-side rewrite panel -->
+    <div class="rewrite-panel" id="rewritePanel">
+      <div class="rewrite-col">
+        <div class="rewrite-col-label original">📄 Original copy</div>
+        <div class="rewrite-box" id="originalBox"></div>
+      </div>
+      <div class="rewrite-col">
+        <div class="rewrite-col-label fixed">✅ Compliant rewrite</div>
+        <div class="rewrite-box fixed-box" id="fixedBox"></div>
+        <div class="copy-actions">
+          <button class="btn-secondary" onclick="copyCopy()">Copy to clipboard</button>
+          <span class="copy-success" id="copySuccess">✓ Copied!</span>
+        </div>
       </div>
     </div>
 
-    <!-- Related cases -->
-    <div class="card" id="casesCard" style="display:none;">
-      <div class="section-title">Real Enforcement Cases</div>
-      <div id="casesList" class="cases-list"></div>
+    <!-- AI violations -->
+    <div class="card" id="violationsCard">
+      <div class="section-title" id="violationsTitle">Compliance Issues</div>
+      <div id="violationsList" class="violations-list"></div>
     </div>
+
+    <!-- Deterministic email checks (email mode only) -->
+    <div class="card checks-section" id="checksSection">
+      <div class="section-title">Email Technical Checks</div>
+      <div id="checksList"></div>
+    </div>
+
+    <p class="disclaimer">Information only — not legal advice.</p>
 
   </div>
 
 </div>
 
 <script>
-  // ─── State ───────────────────────────────────────────────────────────
+  const APP_URL = 'https://sendwize-backend.vercel.app';
+
   let currentMode = 'copy';
-  let lastResults = null;
+  let currentContentType = 'email';
+  let userId = null;
+  let lastCopy = '';
 
-  const userId = new URLSearchParams(window.location.search).get('userId') || '';
-  const VERCEL_URL = window.location.origin;
+  // ── AUTH ──────────────────────────────────────────────────────────────
+  async function waitForMemberstack() {
+    return new Promise(resolve => {
+      if (window.$memberstackDom) return resolve();
+      const iv = setInterval(() => {
+        if (window.$memberstackDom) { clearInterval(iv); resolve(); }
+      }, 200);
+    });
+  }
 
-  // ─── Mode toggle ─────────────────────────────────────────────────────
-  const modeDescs = {
-    copy: 'Scan your marketing copy for misleading claims, fake urgency, missing compliance elements and ASA CAP Code violations. Paste any text — ad copy, SMS, landing page, social post.',
-    combined: 'Full combined check: paste your marketing copy AND your raw email HTML. Claude will analyse both the copy compliance AND email deliverability/rendering issues together.'
+  async function init() {
+    try {
+      await waitForMemberstack();
+      const result = await window.$memberstackDom.getCurrentMember();
+      const member = result?.data;
+      if (!member?.id) { showError('Please log in to use this tool.'); return; }
+      userId = member.id;
+    } catch (e) {
+      showError('Authentication failed. Please log in and try again.');
+    }
+  }
+
+  // ── CONTENT TYPE ──────────────────────────────────────────────────────
+  const typeDescriptions = {
+    email:      'Scan email copy for misleading claims, fake urgency, missing opt-out language, and ASA CAP Code violations.',
+    sms:        'Scan SMS copy for PECR compliance, opt-out requirements, and misleading claims.',
+    push:       'Scan push notification copy for misleading claims and ASA CAP Code violations.',
+    social:     'Scan social ad copy for ASA CAP Code compliance, misleading pricing, and fake urgency.',
+    directmail: 'Scan direct mail copy for PECR, UK GDPR compliance, and misleading claims.',
   };
 
+  const typePlaceholders = {
+    email:      'Paste your email subject line and body copy here…',
+    sms:        'Paste your SMS message text here…',
+    push:       'Paste your push notification title and body here…',
+    social:     'Paste your social ad headline and copy here…',
+    directmail: 'Paste your direct mail copy here…',
+  };
+
+  function onContentTypeChange() {
+    currentContentType = document.getElementById('contentType').value;
+    const isEmail = currentContentType === 'email';
+
+    // Show/hide mode group (combined HTML scan — email only)
+    document.getElementById('modeGroup').style.display = isEmail ? '' : 'none';
+
+    // If not email, force copy-only mode and hide email HTML fields
+    if (!isEmail) {
+      currentMode = 'copy';
+      document.querySelectorAll('.mode-btn').forEach((b, i) => {
+        b.classList.toggle('active', i === 0);
+      });
+      document.getElementById('emailGroup').style.display = 'none';
+    }
+
+    // Update description and placeholder
+    document.getElementById('modeDesc').textContent = isEmail && currentMode === 'combined'
+      ? 'Full combined check: paste your copy AND raw email HTML. Returns both AI violations and deterministic deliverability checks.'
+      : typeDescriptions[currentContentType] || typeDescriptions.email;
+
+    document.getElementById('copyText').placeholder = typePlaceholders[currentContentType] || typePlaceholders.email;
+    document.getElementById('copyLabel').textContent = isEmail ? 'Email copy' : 'Marketing copy';
+  }
+
+  // ── MODE TOGGLE ───────────────────────────────────────────────────────
   function setMode(mode, btn) {
     currentMode = mode;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('modeDesc').textContent = modeDescs[mode];
-    document.getElementById('fileGroup').style.display  = mode === 'combined' ? 'block' : 'none';
-    document.getElementById('copyGroup').style.display  = 'block';
+    const isCombined = mode === 'combined';
+    document.getElementById('emailGroup').style.display = isCombined ? 'block' : 'none';
+    document.getElementById('modeDesc').textContent = isCombined
+      ? 'Full combined check: paste your copy AND raw email HTML. Returns both AI violations and deterministic deliverability checks.'
+      : typeDescriptions.email;
   }
 
-  // ─── Reset ────────────────────────────────────────────────────────────
-  function resetForm() {
-    document.getElementById('resultsSection').classList.remove('show');
-    document.getElementById('formSection').style.display = 'block';
-    document.getElementById('fixedCard').style.display = 'none';
-    document.getElementById('casesCard').style.display = 'none';
-    document.getElementById('copyText').value = '';
-    document.getElementById('campaignName').value = '';
-    if (document.getElementById('emailSubject')) document.getElementById('emailSubject').value = '';
-    if (document.getElementById('emailHtml'))    document.getElementById('emailHtml').value = '';
-    clearError();
-    lastResults = null;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  // ─── Loading steps animation ──────────────────────────────────────────
-  const loadingStepTexts = [
+  // ── LOADING ANIMATION ─────────────────────────────────────────────────
+  const loadingSteps = [
     'Checking for compliance issues',
     'Scanning for misleading claims',
     'Reviewing ASA CAP Code requirements',
     'Analysing consent language',
-    'Generating compliant version',
-    'Searching enforcement database'
+    'Generating compliant rewrite',
+    'Searching enforcement database',
   ];
   let loadingInterval;
 
-  function startLoadingAnimation() {
+  function startLoading() {
     let i = 0;
     const el = document.getElementById('loadingSteps');
     loadingInterval = setInterval(() => {
-      i = (i + 1) % loadingStepTexts.length;
-      el.textContent = loadingStepTexts[i];
+      el.textContent = loadingSteps[i = (i + 1) % loadingSteps.length];
     }, 1800);
   }
-  function stopLoadingAnimation() {
-    clearInterval(loadingInterval);
-  }
+  function stopLoading() { clearInterval(loadingInterval); }
 
-  // ─── Main check ───────────────────────────────────────────────────────
+  // ── RUN CHECK ─────────────────────────────────────────────────────────
   async function runCheck() {
+    if (!userId) { showError('Please log in to use this tool.'); return; }
     clearError();
 
-    const copy         = document.getElementById('copyText').value.trim();
-    const campaignName = document.getElementById('campaignName').value.trim() || 'Untitled check';
-    const subject      = document.getElementById('emailSubject')?.value.trim() || '';
-    const emailHtml    = document.getElementById('emailHtml')?.value.trim()    || '';
+    const copy    = document.getElementById('copyText').value.trim();
+    const name    = document.getElementById('campaignName').value.trim() || 'Untitled check';
+    const subject = document.getElementById('emailSubject')?.value.trim() || '';
+    const html    = document.getElementById('emailHtml')?.value.trim()    || '';
 
-    if (!copy) { showError('Please paste your marketing copy to check.'); return; }
-    if (currentMode === 'combined' && !emailHtml) {
-      showError('Please paste your email HTML for a combined check, or switch to Copy Check mode.'); return;
+    if (!copy) { showError('Please paste your marketing copy before running a check.'); return; }
+    if (currentMode === 'combined' && !html) {
+      showError('Please paste your email HTML, or switch to Copy only mode.'); return;
     }
-    if (!userId) { showError('Missing userId. Please access this tool via your Sendwize dashboard.'); return; }
 
-    setLoading(true);
+    lastCopy = copy;
+    setLoadingState(true);
 
     try {
       const payload = {
         userId,
+        contentType: currentContentType,
+        content: copy,
         autoFix: true,
-        content: copy
       };
 
-      if (currentMode === 'combined') {
+      if (currentContentType === 'email' && currentMode === 'combined') {
         payload.subject = subject;
-        payload.html    = emailHtml;
+        payload.html    = html;
       }
 
-      const resp = await fetch(`${VERCEL_URL}/api/analyze-copy`, {
+      const res = await fetch(`${APP_URL}/api/analyze-copy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || `Server error ${resp.status}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${res.status}`);
       }
 
-      const data = await resp.json();
-      lastResults = data;
+      const data = await res.json();
       renderResults(data);
 
     } catch (err) {
       showError('Something went wrong: ' + err.message);
-      setLoading(false);
+      setLoadingState(false);
     }
   }
 
-  // ─── Render results ───────────────────────────────────────────────────
+  // ── RENDER RESULTS ────────────────────────────────────────────────────
   function renderResults(data) {
-    stopLoadingAnimation();
+    stopLoading();
 
-    // API returns: score, verdict, violations[], fixedVersion, relatedCases[], summary
-    // violations items: { regulation, severity, issue, location, recommendation }
-    // relatedCases items: { company, fine, violation, regulator, date, description }
+    const score      = data.score      ?? 0;
+    const verdict    = data.verdict    ?? '';
+    const violations = data.violations ?? [];
+    const fixed      = data.fixedVersion ?? '';
+    const checks     = data.checks     ?? [];      // deterministic email checks
+    const emailScore = data.emailScore ?? null;    // email-specific score object
+    const isEmail    = currentContentType === 'email';
 
-    const score        = data.score      ?? 0;
-    const verdict      = data.verdict    ?? '';
-    const violations   = data.violations ?? [];
-    const fixedVersion = data.fixedVersion ?? '';
-    const relatedCases = data.relatedCases ?? [];
-
-    // Risk level (score here is 0–100 where 100 = compliant, so invert for risk display)
+    // ── Risk banner
     const riskScore = 100 - score;
-    let riskLevel = 'low';
-    if (riskScore >= 75) riskLevel = 'critical';
-    else if (riskScore >= 50) riskLevel = 'high';
-    else if (riskScore >= 25) riskLevel = 'medium';
+    let level = 'low';
+    if (riskScore >= 75) level = 'critical';
+    else if (riskScore >= 50) level = 'high';
+    else if (riskScore >= 25) level = 'medium';
 
-    const banner = document.getElementById('riskBanner');
-    banner.className = `risk-banner ${riskLevel}`;
-    document.getElementById('riskNum').textContent = score;
-    document.getElementById('verdictText').textContent = verdict || riskLevelLabel(riskLevel);
-    document.getElementById('verdictSub').textContent = riskSubtext(riskLevel, violations.length);
+    document.getElementById('riskBanner').className = `risk-banner ${level}`;
+    document.getElementById('riskNum').textContent   = score;
+    document.getElementById('verdictText').textContent = verdict || riskLabel(level);
+    document.getElementById('verdictSub').textContent  = riskSub(level, violations.length);
 
-    // Violations — API shape: { regulation, severity, issue, location, recommendation }
-    const vlEl = document.getElementById('violationsList');
-    if (!violations.length) {
-      vlEl.innerHTML = `<div class="no-violations">
-        <div class="no-violations-icon">✅</div>
-        <div>No compliance issues detected in this copy.</div>
-      </div>`;
+    // ── Email score bar (email mode only)
+    const esb = document.getElementById('emailScoreBar');
+    if (isEmail && emailScore && typeof emailScore === 'object') {
+      const rows = Object.entries(emailScore).map(([k, v]) => {
+        const pct   = Math.min(100, Math.max(0, Number(v) || 0));
+        const color = pct >= 70 ? '#16a34a' : pct >= 40 ? '#f59e0b' : '#ef4444';
+        const label = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        return `<div class="esb-row">
+          <div class="esb-label">${escH(label)}</div>
+          <div class="esb-track"><div class="esb-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="esb-val" style="color:${color}">${pct}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('emailScoreRows').innerHTML = rows;
+      esb.classList.add('show');
     } else {
-      vlEl.innerHTML = violations.map(v => {
+      esb.classList.remove('show');
+    }
+
+    // ── Side-by-side rewrite
+    const panel = document.getElementById('rewritePanel');
+    if (fixed) {
+      document.getElementById('originalBox').textContent = lastCopy;
+      document.getElementById('fixedBox').textContent    = fixed;
+      panel.classList.add('show');
+    } else {
+      panel.classList.remove('show');
+    }
+
+    // ── AI violations
+    const vEl = document.getElementById('violationsList');
+    document.getElementById('violationsTitle').textContent = isEmail
+      ? 'AI Compliance Issues'
+      : 'Compliance Issues';
+
+    if (!violations.length) {
+      vEl.innerHTML = `<div class="no-violations"><div class="no-violations-icon">✅</div><div>No compliance issues detected.</div></div>`;
+    } else {
+      vEl.innerHTML = violations.map(v => {
         const sev = (v.severity || 'medium').toLowerCase();
         return `<div class="violation-item ${sev}">
           <div class="violation-header">
-            <span class="violation-type">${escHtml(v.regulation || 'Issue')}</span>
-            <span class="violation-reg">${escHtml(v.location || '')}</span>
+            <span class="violation-type">${escH(v.regulation || 'Issue')}</span>
+            <span class="violation-reg">${escH(v.location || '')}</span>
           </div>
-          <div class="violation-text">${escHtml(v.issue || '')}</div>
-          ${v.recommendation ? `<div class="violation-quote">Fix: ${escHtml(v.recommendation)}</div>` : ''}
+          <div class="violation-text">${escH(v.issue || '')}</div>
+          ${v.recommendation ? `<div class="violation-quote">Fix: ${escH(v.recommendation)}</div>` : ''}
         </div>`;
       }).join('');
     }
 
-    // Email scan checks (combined mode)
-    if (data.checks && data.checks.length) {
-      const checksHtml = data.checks.filter(c => c.status !== 'pass').map(c => {
-        const sev = c.status === 'fail' ? 'high' : 'medium';
-        return `<div class="violation-item ${sev}">
-          <div class="violation-header">
-            <span class="violation-type">Email Scan</span>
-            <span class="violation-reg">${escHtml(c.status.toUpperCase())}</span>
+    // ── Deterministic checks (email only — all items, pass/warn/fail)
+    const csec = document.getElementById('checksSection');
+    const clist = document.getElementById('checksList');
+    if (isEmail && checks.length) {
+      clist.innerHTML = checks.map(c => {
+        const st = (c.status || 'pass').toLowerCase();
+        return `<div class="check-row">
+          <span class="check-status ${st}">${st}</span>
+          <div class="check-body">
+            <div class="check-title">${escH(c.title || c.name || '')}</div>
+            ${c.description ? `<div class="check-desc">${escH(c.description)}</div>` : ''}
           </div>
-          <div class="violation-text">${escHtml(c.title || '')}</div>
-          ${c.description ? `<div class="violation-quote">${escHtml(c.description)}</div>` : ''}
         </div>`;
       }).join('');
-      if (checksHtml) vlEl.innerHTML += checksHtml;
+      csec.classList.add('show');
+    } else {
+      csec.classList.remove('show');
     }
 
-    // Fixed version
-    if (fixedVersion) {
-      document.getElementById('fixedCopy').textContent = fixedVersion;
-      document.getElementById('fixedCard').style.display = 'block';
-    }
-
-    // Related cases — API shape: { company, fine, violation, regulator, date, description }
-    if (relatedCases.length) {
-      document.getElementById('casesList').innerHTML = relatedCases.map(c => `
-        <div class="case-item">
-          <div class="case-fine">${formatFine(c.fine)}</div>
-          <div class="case-details">
-            <div class="case-company">${escHtml(c.company || 'Unknown')}</div>
-            <div class="case-desc">${escHtml(c.description || c.violation || '')}</div>
-          </div>
-        </div>`).join('');
-      document.getElementById('casesCard').style.display = 'block';
-    }
-
-    setLoading(false);
+    setLoadingState(false);
     document.getElementById('resultsSection').classList.add('show');
     document.getElementById('formSection').style.display = 'none';
   }
 
-  // ─── Copy to clipboard ────────────────────────────────────────────────
+  // ── COPY TO CLIPBOARD ─────────────────────────────────────────────────
   async function copyCopy() {
-    const text = document.getElementById('fixedCopy').textContent;
+    const text = document.getElementById('fixedBox').textContent;
     try {
       await navigator.clipboard.writeText(text);
       const el = document.getElementById('copySuccess');
@@ -593,74 +684,58 @@
     } catch {}
   }
 
-  // ─── Reset ────────────────────────────────────────────────────────────
+  // ── RESET ─────────────────────────────────────────────────────────────
   function resetForm() {
     document.getElementById('resultsSection').classList.remove('show');
     document.getElementById('formSection').style.display = 'block';
-    document.getElementById('fixedCard').style.display = 'none';
-    document.getElementById('casesCard').style.display = 'none';
+    document.getElementById('rewritePanel').classList.remove('show');
+    document.getElementById('emailScoreBar').classList.remove('show');
+    document.getElementById('checksSection').classList.remove('show');
     document.getElementById('copyText').value = '';
     document.getElementById('campaignName').value = '';
-    clearFile();
+    document.getElementById('emailSubject').value = '';
+    document.getElementById('emailHtml').value    = '';
     clearError();
-    lastResults = null;
+    lastCopy = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────
-  function setLoading(on) {
+  // ── HELPERS ───────────────────────────────────────────────────────────
+  function setLoadingState(on) {
     document.getElementById('loadingSection').classList.toggle('show', on);
     document.getElementById('submitBtn').disabled = on;
     if (on) {
       document.getElementById('formSection').style.display = 'none';
-      startLoadingAnimation();
+      startLoading();
     }
   }
 
   function showError(msg) {
     const el = document.getElementById('errorBox');
-    el.textContent = msg;
-    el.classList.add('show');
+    el.textContent = msg; el.classList.add('show');
     document.getElementById('formSection').style.display = 'block';
     document.getElementById('loadingSection').classList.remove('show');
-    stopLoadingAnimation();
+    stopLoading();
   }
-  function clearError() {
-    document.getElementById('errorBox').classList.remove('show');
+  function clearError() { document.getElementById('errorBox').classList.remove('show'); }
+
+  function escH(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function parseJSON(val) {
-    if (!val) return null;
-    if (typeof val === 'object') return val;
-    try { return JSON.parse(val); } catch { return null; }
+  function riskLabel(l) {
+    return { low:'Low Risk', medium:'Medium Risk', high:'High Risk', critical:'Critical Risk' }[l] || l;
   }
-
-  function escHtml(s) {
-    return String(s ?? '')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  function formatFine(val) {
-    if (!val) return '—';
-    const n = parseFloat(String(val).replace(/[^0-9.]/g, ''));
-    if (isNaN(n)) return String(val);
-    if (n >= 1000000) return `£${(n/1000000).toFixed(1)}m`;
-    if (n >= 1000) return `£${(n/1000).toFixed(0)}k`;
-    return `£${n}`;
-  }
-
-  function riskLevelLabel(level) {
-    return { low: 'Low Risk', medium: 'Medium Risk', high: 'High Risk', critical: 'Critical Risk' }[level] || level;
-  }
-
-  function riskSubtext(level, count) {
-    if (level === 'low')      return count === 0 ? 'No issues detected. Your copy looks compliant.' : `${count} minor issue${count !== 1 ? 's' : ''} to review.`;
-    if (level === 'medium')   return `${count} issue${count !== 1 ? 's' : ''} detected. Review before sending.`;
-    if (level === 'high')     return `${count} serious issue${count !== 1 ? 's' : ''} found. Fix before sending.`;
-    if (level === 'critical') return `${count} critical issue${count !== 1 ? 's' : ''} found. Do not send this copy.`;
+  function riskSub(l, n) {
+    if (l === 'low')      return n === 0 ? 'No issues detected. Your copy looks compliant.' : `${n} minor issue${n!==1?'s':''} to review.`;
+    if (l === 'medium')   return `${n} issue${n!==1?'s':''} detected. Review before sending.`;
+    if (l === 'high')     return `${n} serious issue${n!==1?'s':''} found. Fix before sending.`;
+    if (l === 'critical') return `${n} critical issue${n!==1?'s':''} found. Do not send this copy.`;
     return '';
   }
+
+  // ── BOOT ──────────────────────────────────────────────────────────────
+  init();
 </script>
 
 </body>
