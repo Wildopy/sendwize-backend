@@ -1,626 +1,870 @@
-existing_customer: null, similar_products: null, opt_out_given: null, opt_out_now: null,
-};
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brief Checker — Sendwize</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--ol:#fff4ec;--om:#fde8d4;
+  --bg:#FAFAFA;--card:#fff;--bdr:#f0f0f0;--bdm:#e5e5e5;
+  --t:#1a1a1a;--tm:#555;--tl:#9ca3af;
+  --r:#dc2626;--rb:#fef2f2;--rbd:#fecaca;
+  --a:#92400e;--ab:#fffbeb;--abd:#fde68a;
+  --g:#15803d;--gb:#f0fdf4;--gbd:#bbf7d0;
+  --bl:#0369a1;--blb:#f0f9ff;--blbd:#bae6fd;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
 
-// ── AUTH ─────────────────────────────────────────────────────
+/* NAV */
+nav{background:#fff;height:56px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100}
+.logo{font-size:18px;font-weight:700;color:var(--o);text-decoration:none}
+.nav-links{display:flex;gap:8px}
+.nav-link{font-size:13px;color:var(--tm);text-decoration:none;padding:6px 12px;border-radius:6px}
+.nav-link:hover{background:var(--bg)}
+
+main{max-width:860px;margin:0 auto;padding:40px 24px 80px}
+
+/* PAGE HEADER */
+.pg-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--o);margin-bottom:8px}
+.pg-title{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px}
+.pg-desc{font-size:14px;color:var(--tm);line-height:1.6;max-width:580px;margin-bottom:24px}
+
+/* LIVE SCORE */
+.score-wrap{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+.score-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--tl);white-space:nowrap}
+.score-bar{flex:1;height:8px;background:var(--bdr);border-radius:4px;overflow:hidden}
+.score-fill{height:100%;border-radius:4px;transition:width .4s,background .4s;width:0;background:#e5e5e5}
+.score-num{font-size:20px;font-weight:800;min-width:44px;text-align:right;transition:color .3s}
+.score-band{font-size:12px;color:var(--tl);white-space:nowrap}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:28px;margin-bottom:16px}
+.sec-title{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--tl);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--bdr)}
+
+/* FORM */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fg.full{grid-column:1/-1}
+label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--o)}
+label .req{color:var(--r);margin-left:2px}
+select,input[type=text],input[type=number]{font-family:inherit;font-size:14px;color:var(--t);background:#fff;border:1px solid var(--bdm);border-radius:6px;padding:10px 12px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+select:focus,input:focus{border-color:var(--o);box-shadow:0 0 0 3px rgba(234,115,23,.12)}
+select{appearance:none;cursor:pointer}
+.hint{font-size:12px;color:var(--tl);line-height:1.4}
+
+/* INLINE ALERTS */
+.ia{border-radius:6px;padding:10px 14px;font-size:13px;line-height:1.5;margin-top:6px;display:none}
+.ia.show{display:block}
+.ia.red{background:var(--rb);border:1px solid var(--rbd);color:var(--r)}
+.ia.amber{background:var(--ab);border:1px solid var(--abd);color:var(--a)}
+.ia.blue{background:var(--blb);border:1px solid var(--blbd);color:var(--bl)}
+.ia-exp{font-weight:700;margin-right:4px}
+
+/* SOFT OPT-IN */
+.soft-panel{display:none;background:var(--ol);border:1px solid var(--om);border-radius:8px;padding:20px;margin-top:16px}
+.soft-panel h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--o);margin-bottom:12px}
+.soft-q{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:10px 0;border-bottom:1px solid var(--om)}
+.soft-q:last-of-type{border-bottom:none}
+.soft-qt{font-size:13px;flex:1;line-height:1.4}
+.soft-togs{display:flex;gap:6px;flex-shrink:0}
+.tog{font-size:12px;font-weight:600;padding:4px 12px;border-radius:4px;border:1px solid var(--bdm);background:#fff;cursor:pointer;color:var(--tm);transition:all .15s}
+.tog.y{background:var(--gb);border-color:var(--gbd);color:var(--g)}
+.tog.n{background:var(--rb);border-color:var(--rbd);color:var(--r)}
+.soft-verdict{margin-top:12px;font-size:13px;font-weight:600;padding:8px 12px;border-radius:6px;display:none}
+.soft-verdict.pass{background:var(--gb);color:var(--g)}
+.soft-verdict.fail{background:var(--rb);color:var(--r)}
+
+/* CONSENT TIMELINE */
+.ct-box{display:none;background:var(--blb);border:1px solid var(--blbd);border-radius:8px;padding:14px 18px;margin-top:10px}
+.ct-box h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--bl);margin-bottom:6px}
+.ct-box p{font-size:13px;color:#0c4a6e;line-height:1.5}
+
+/* BUTTONS */
+.btn-primary{background:var(--o);color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:14px;font-weight:600;padding:12px 28px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:opacity .15s}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{background:#fff;color:var(--t);border:1px solid var(--bdm);border-radius:6px;font-family:inherit;font-size:14px;font-weight:500;padding:10px 20px;cursor:pointer}
+.btn-fix{background:transparent;border:1px solid var(--bdm);color:var(--tm);border-radius:4px;font-family:inherit;font-size:11px;font-weight:600;padding:3px 10px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.btn-fix:hover{border-color:var(--o);color:var(--o)}
+
+/* LOADING */
+.loading{display:none;text-align:center;padding:40px}
+.spinner{width:32px;height:32px;border:3px solid var(--bdm);border-top-color:var(--o);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* AUTH / ERROR */
+.auth-err{display:none;background:var(--rb);border:1px solid var(--rbd);border-radius:8px;padding:20px;text-align:center;font-size:14px;color:var(--r);margin-bottom:16px}
+.err-msg{display:none;background:var(--rb);border:1px solid var(--rbd);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--r);margin-bottom:16px}
+
+/* RESULTS */
+.results{display:none}
+.results-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.results-title{font-size:20px;font-weight:700}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px}
+.pill-r{background:var(--rb);color:var(--r);border:1px solid var(--rbd)}
+.pill-a{background:var(--ab);color:var(--a);border:1px solid var(--abd)}
+.pill-g{background:var(--gb);color:var(--g);border:1px solid var(--gbd)}
+
+/* EXPOSURE SUMMARY */
+.exp-sum{background:#fff7f0;border:1px solid var(--om);border-radius:8px;padding:16px 20px;margin-bottom:16px;display:none}
+.exp-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--o);margin-bottom:4px}
+.exp-amt{font-size:24px;font-weight:800}
+.exp-note{font-size:11px;color:var(--tl);font-style:italic;margin-top:2px}
+
+/* CHECKLIST */
+.checklist{list-style:none;display:flex;flex-direction:column;gap:8px}
+.cl-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:8px;border:1px solid var(--bdr);background:var(--card)}
+.cl-item.red{background:var(--rb);border-color:var(--rbd)}
+.cl-item.amber{background:var(--ab);border-color:var(--abd)}
+.cl-item.green{background:var(--gb);border-color:var(--gbd)}
+.cl-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.cl-body{flex:1;min-width:0}
+.cl-title{font-size:14px;font-weight:600;margin-bottom:3px}
+.cl-desc{font-size:13px;color:var(--tm);line-height:1.4}
+.cl-reg{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--tl);margin-top:4px}
+.cl-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.cl-exp{font-size:13px;font-weight:700;color:var(--r);white-space:nowrap}
+.cl-exp.am{color:#d97706}
+.cl-exp.rp{font-size:12px;color:#7c3aed}
+
+/* TOOL CTAS */
+.tool-ctas{margin-top:16px;display:none}
+.tool-ctas-lbl{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--tl);margin-bottom:8px}
+.tool-ctas-btns{display:flex;gap:10px;flex-wrap:wrap}
+.tool-cta-btn{background:#fff;border:1px solid var(--bdm);border-radius:6px;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--t);transition:border-color .15s}
+.tool-cta-btn:hover{border-color:var(--o);color:var(--o)}
+
+/* DOSSIER CTA */
+.dossier-cta{display:none;background:linear-gradient(135deg,var(--ol),#fff);border:2px solid var(--o);border-radius:8px;padding:24px;text-align:center;margin-top:20px}
+.dossier-cta h3{font-size:18px;font-weight:700;margin-bottom:6px}
+.dossier-cta p{font-size:13px;color:var(--tm);margin-bottom:16px}
+
+.disclaimer{font-size:11px;color:var(--tl);font-style:italic;text-align:center;margin-top:24px;line-height:1.5}
+
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(234,115,23,.5)}70%{box-shadow:0 0 0 8px rgba(234,115,23,0)}100%{box-shadow:0 0 0 0 rgba(234,115,23,0)}}
+.highlight{animation:pulse .8s ease-out 2;border-color:var(--o) !important}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="https://sendwize-backend.vercel.app">Sendwize</a>
+  <div class="nav-links">
+    <a class="nav-link" href="https://sendwize.co.uk/dashboard">Dashboard</a>
+    <a class="nav-link" href="https://sendwize-backend.vercel.app/vendor-checker.html">Vendors</a>
+  </div>
+</nav>
+
+<main>
+  <div class="pg-label">Tool 7</div>
+  <h1 class="pg-title">Campaign Brief Checker</h1>
+  <p class="pg-desc">Fill in your campaign brief before briefing your team. We'll flag compliance issues against PECR, UK GDPR, ASA CAP Code, and CMA rules — and tell you exactly what to fix.</p>
+
+  <div class="auth-err" id="authErr">You need to be signed in to use this tool. <a href="https://sendwize.co.uk/login" style="color:var(--r);font-weight:600">Sign in</a></div>
+  <div class="err-msg" id="errMsg"></div>
+
+  <!-- LIVE SCORE -->
+  <div class="score-wrap">
+    <span class="score-label">Brief strength</span>
+    <div class="score-bar"><div class="score-fill" id="scoreFill"></div></div>
+    <span class="score-num" id="scoreNum" style="color:var(--tl)">—</span>
+    <span class="score-band" id="scoreBand">Fill in your brief</span>
+  </div>
+
+  <!-- FORM -->
+  <div class="card" id="formCard">
+    <div class="sec-title">Campaign details</div>
+    <div class="grid">
+
+      <div class="fg full">
+        <label for="campaignName">Campaign name <span class="req">*</span></label>
+        <input type="text" id="campaignName" placeholder="e.g. Summer sale 2026" oninput="onChange()" />
+      </div>
+
+      <div class="fg">
+        <label for="channel">Channel <span class="req">*</span></label>
+        <select id="channel" onchange="onChannel()">
+          <option value="">— Select —</option>
+          <option value="email">Email</option>
+          <option value="sms">SMS</option>
+          <option value="push">Push notification</option>
+          <option value="direct_mail">Direct mail</option>
+          <option value="social_ad">Social ad (paid)</option>
+        </select>
+        <div class="ia" id="ia-channel"></div>
+      </div>
+
+      <div class="fg">
+        <label for="audience">Audience <span class="req">*</span></label>
+        <select id="audience" onchange="onAudience()">
+          <option value="">— Select —</option>
+          <option value="existing_customers">Existing customers</option>
+          <option value="lapsed_customers">Lapsed customers (12+ months inactive)</option>
+          <option value="prospects">Prospects (never purchased)</option>
+          <option value="b2b">B2B contacts</option>
+          <option value="mixed">Mixed</option>
+        </select>
+        <div class="ia" id="ia-audience"></div>
+      </div>
+
+      <div class="fg">
+        <label for="listSource">Where is the list from? <span class="req">*</span></label>
+        <select id="listSource" onchange="onListSource()">
+          <option value="">— Select —</option>
+          <option value="own_organic">Own list — contacts signed up directly</option>
+          <option value="own_purchased">Purchased or rented list</option>
+          <option value="third_party">Third-party / partner data</option>
+          <option value="mixed">Mix of sources</option>
+        </select>
+        <div class="ia" id="ia-listSource"></div>
+      </div>
+
+      <div class="fg">
+        <label for="lawfulBasis">Consent / lawful basis <span class="req">*</span></label>
+        <select id="lawfulBasis" onchange="onBasis()">
+          <option value="">— Select —</option>
+          <option value="explicit_consent">Explicit consent</option>
+          <option value="soft_opt_in">Soft opt-in (PECR)</option>
+          <option value="legitimate_interest">Legitimate interest</option>
+          <option value="contract">Contract</option>
+          <option value="none">No consent collected</option>
+          <option value="unsure">Unsure</option>
+        </select>
+        <div class="ia" id="ia-basis"></div>
+      </div>
+
+      <div class="fg">
+        <label for="consentDate">When was consent collected?</label>
+        <input type="text" id="consentDate" placeholder="e.g. Jan 2024 / ongoing / unknown" oninput="onConsentDate()" />
+        <span class="hint">Approximate month/year is fine</span>
+        <div class="ct-box" id="ctBox"><h4>Consent timeline</h4><p id="ctText"></p></div>
+      </div>
+
+      <div class="fg">
+        <label for="suppressionDone">Suppression applied? <span class="req">*</span></label>
+        <select id="suppressionDone" onchange="onSuppression()">
+          <option value="">— Select —</option>
+          <option value="yes">Yes — opted-out contacts removed</option>
+          <option value="partial">Partial — some lists only</option>
+          <option value="no">No</option>
+          <option value="unsure">Unsure</option>
+        </select>
+        <div class="ia" id="ia-suppression"></div>
+      </div>
+
+      <div class="fg">
+        <label for="hasUnsubscribe">Unsubscribe in every message?</label>
+        <select id="hasUnsubscribe" onchange="onUnsub()">
+          <option value="">— Select —</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+          <option value="na">Not applicable</option>
+        </select>
+        <div class="ia" id="ia-unsub"></div>
+      </div>
+
+      <div class="fg">
+        <label for="senderClear">Sender clearly identified?</label>
+        <select id="senderClear" onchange="onChange()">
+          <option value="">— Select —</option>
+          <option value="yes">Yes — name and address included</option>
+          <option value="no">No</option>
+          <option value="unsure">Unsure</option>
+        </select>
+      </div>
+
+      <div class="fg">
+        <label for="listSize">Estimated list size</label>
+        <input type="number" id="listSize" placeholder="e.g. 25000" min="0" oninput="onListSize()" />
+        <div class="ia" id="ia-listSize"></div>
+      </div>
+
+    </div>
+
+    <!-- SOFT OPT-IN QUALIFIER -->
+    <div class="soft-panel" id="softPanel">
+      <h3>Soft opt-in qualifier — all four conditions must be met</h3>
+      <div class="soft-q" data-key="existing_customer">
+        <span class="soft-qt">Was the contact's address obtained during a sale or negotiation of a sale?</span>
+        <div class="soft-togs"><button class="tog" data-val="yes" onclick="setSoft(this)">Yes</button><button class="tog" data-val="no" onclick="setSoft(this)">No</button></div>
+      </div>
+      <div class="soft-q" data-key="similar_products">
+        <span class="soft-qt">Are you promoting similar products or services to those originally purchased?</span>
+        <div class="soft-togs"><button class="tog" data-val="yes" onclick="setSoft(this)">Yes</button><button class="tog" data-val="no" onclick="setSoft(this)">No</button></div>
+      </div>
+      <div class="soft-q" data-key="opt_out_given">
+        <span class="soft-qt">Were contacts offered a clear opt-out when their details were collected?</span>
+        <div class="soft-togs"><button class="tog" data-val="yes" onclick="setSoft(this)">Yes</button><button class="tog" data-val="no" onclick="setSoft(this)">No</button></div>
+      </div>
+      <div class="soft-q" data-key="opt_out_now">
+        <span class="soft-qt">Does every message include a clear, easy opt-out?</span>
+        <div class="soft-togs"><button class="tog" data-val="yes" onclick="setSoft(this)">Yes</button><button class="tog" data-val="no" onclick="setSoft(this)">No</button></div>
+      </div>
+      <div class="soft-verdict" id="softVerdict"></div>
+    </div>
+
+    <!-- PROMOTION DETAILS -->
+    <div style="margin-top:24px">
+      <div class="sec-title">Promotion details</div>
+      <div class="grid">
+
+        <div class="fg">
+          <label for="promoType">Type of promotion <span class="req">*</span></label>
+          <select id="promoType" onchange="onPromo()">
+            <option value="">— Select —</option>
+            <option value="percentage_discount">Percentage discount (e.g. 30% off)</option>
+            <option value="fixed_discount">Fixed amount off (e.g. £20 off)</option>
+            <option value="free_trial">Free trial</option>
+            <option value="prize_draw">Prize draw / competition</option>
+            <option value="bogof">Buy one get one free / multibuy</option>
+            <option value="subscription">Subscription offer</option>
+            <option value="service_promo">Service or product promotion (no special offer)</option>
+            <option value="other">Other</option>
+          </select>
+          <div class="ia" id="ia-promo"></div>
+        </div>
+
+        <div class="fg">
+          <label for="referencePrice">Reference pricing used?</label>
+          <select id="referencePrice" onchange="onRefPrice()">
+            <option value="">— Select —</option>
+            <option value="none">No — straightforward offer</option>
+            <option value="was_now">Was / now pricing (e.g. Was £200, now £120)</option>
+            <option value="rrp">RRP or recommended retail price comparison</option>
+            <option value="strikethrough">Strikethrough pricing</option>
+          </select>
+          <div class="ia" id="ia-refprice"></div>
+        </div>
+
+        <div class="fg">
+          <label for="urgency">Urgency or scarcity language?</label>
+          <select id="urgency" onchange="onUrgency()">
+            <option value="">— Select —</option>
+            <option value="none">No urgency language</option>
+            <option value="time_limited_genuine">Yes — genuine time limit (fixed end date)</option>
+            <option value="time_limited_rolling">Yes — rolling "ends soon" language</option>
+            <option value="stock_limited_genuine">Yes — genuine stock limit</option>
+            <option value="stock_limited_unclear">Yes — low stock language (not verified)</option>
+          </select>
+          <div class="ia" id="ia-urgency"></div>
+        </div>
+
+        <div class="fg">
+          <label for="healthClaim">Health or wellbeing claims?</label>
+          <select id="healthClaim" onchange="onHealth()">
+            <option value="">— Select —</option>
+            <option value="none">No health claims</option>
+            <option value="general_wellness">General wellness language (e.g. feel better, boost energy)</option>
+            <option value="specific_health">Specific health claim (e.g. reduces cholesterol, clinically proven)</option>
+            <option value="medicinal">Medicinal or treatment claim (e.g. cures, treats, heals)</option>
+          </select>
+          <div class="ia" id="ia-health"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="margin-top:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn-primary" id="runBtn" onclick="runCheck()">
+        Run check
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span style="font-size:12px;color:var(--tl)">Checks PECR · UK GDPR · ASA CAP Code · CMA</span>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="card loading" id="loadingEl">
+    <div class="spinner"></div>
+    <p style="font-size:13px;color:var(--tm)">Saving your brief…</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="resultsEl">
+    <div class="results-hdr">
+      <div class="results-title">Before you send — compliance checklist</div>
+      <div class="pills">
+        <span class="pill pill-r" id="pillR"></span>
+        <span class="pill pill-a" id="pillA"></span>
+        <span class="pill pill-g" id="pillG"></span>
+      </div>
+    </div>
+
+    <div class="exp-sum" id="expSum">
+      <div class="exp-lbl">Estimated regulatory exposure</div>
+      <div class="exp-amt" id="expAmt"></div>
+      <div class="exp-note">Illustrative ranges based on ICO/ASA/CMA enforcement data. Not legal advice.</div>
+    </div>
+
+    <ul class="checklist" id="checklist"></ul>
+
+    <div class="tool-ctas" id="toolCtas">
+      <div class="tool-ctas-lbl">Suggested next steps</div>
+      <div class="tool-ctas-btns" id="toolCtasBtns"></div>
+    </div>
+
+    <div class="dossier-cta" id="dossierCta">
+      <h3 id="dossierCtaTitle">Document your compliance</h3>
+      <p id="dossierCtaDesc">Build a compliance dossier to evidence your lawful basis, list provenance, consent, suppression, and sender identity.</p>
+      <button class="btn-primary" onclick="goToDossier()">
+        Start compliance dossier
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <div style="margin-top:20px;text-align:center">
+      <button class="btn-secondary" onclick="reset()">Check another brief</button>
+    </div>
+  </div>
+
+  <p class="disclaimer">Information only — not legal advice.</p>
+</main>
+
+<script>
+const AU = 'https://sendwize-backend.vercel.app';
+let userId = null, dossierId = null, allIssues = [];
+const softAnswers = { existing_customer:null, similar_products:null, opt_out_given:null, opt_out_now:null };
+
+// ── AUTH ──────────────────────────────────────────────────────
 function init() {
   userId = new URLSearchParams(window.location.search).get('userId');
-  if (!userId) { document.getElementById('auth-error').style.display = 'block'; document.getElementById('form-card').style.display = 'none'; document.getElementById('liveScoreWrap').style.display = 'none'; }
-}
-
-// ── EXPOSURE LOOKUP ───────────────────────────────────────────
-const EXPOSURE = {
-  no_consent:               { low: 30000, high: 140000, reg: 'PECR Reg 22' },
-  expired_consent:          { low: 5000,  high: 200000, reg: 'PECR / UK GDPR' },
-  third_party_list:         { low: 50000, high: 130000, reg: 'PECR Reg 22' },
-  invalid_consent_mechanism:{ low: 30000, high: 140000, reg: 'PECR Reg 22' },
-  no_soft_optin:            { low: 30000, high: 120000, reg: 'PECR Reg 22' },
-  suppressed_contact:       { low: 30000, high: 50000,  reg: 'PECR Reg 23' },
-  missing_unsubscribe:      { low: 30000, high: 140000, reg: 'PECR Reg 22' },
-  concealed_sender:         { low: 5000,  high: 50000,  reg: 'PECR Reg 23' },
-  misleading_reference_price:{ low: 0,   high: 0,      reg: 'CMA / DMCCA 2024', rep: true },
-  fake_urgency:             { low: 0,     high: 0,      reg: 'CAP Code 3.3 / CMA', rep: true },
-  unauthorised_health_claim:{ low: 0,     high: 0,      reg: 'CAP Code 12 / MHRA', rep: true },
-  unlawful_incentive:       { low: 0,     high: 0,      reg: 'CAP Code 8', rep: true },
-  misleading_free_claim:    { low: 0,     high: 0,      reg: 'CAP Code 3 / CMA', rep: true },
-};
-
-function expStr(fixType) {
-  const e = EXPOSURE[fixType];
-  if (!e) return '';
-  if (e.rep) return 'Reputational risk';
-  return `£${fmt(e.low)}–£${fmt(e.high)}`;
-}
-function fmt(n) { return Number(n).toLocaleString('en-GB'); }
-function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// ── LIVE SCORE ENGINE ─────────────────────────────────────────
-// Deductions applied as fields are filled
-function calcLiveScore() {
-  let s = 100;
-  const ch  = v('channel'), ls = v('listSource'), lb = v('lawfulBasis');
-  const sup = v('suppressionDone'), unsub = v('hasUnsubscribe');
-  const pt  = v('promoType'), rp = v('referencePrice'), urg = v('urgency'), hc = v('healthClaim');
-  const isElec = ['email','sms','push'].includes(ch);
-
-  if (ls === 'own_purchased' || ls === 'third_party') s -= 40;
-  else if (ls === 'mixed') s -= 15;
-
-  if (isElec && lb === 'legitimate_interest') s -= 35;
-  else if (isElec && (lb === 'none' || lb === 'unsure')) s -= 35;
-  else if (lb === 'contract' && isElec) s -= 15;
-
-  if (sup === 'no') s -= 25;
-  else if (sup === 'partial' || sup === 'unsure') s -= 10;
-
-  if (isElec && unsub === 'no') s -= 20;
-
-  if (rp === 'was_now' || rp === 'rrp' || rp === 'strikethrough') s -= 10;
-  if (urg === 'time_limited_rolling' || urg === 'stock_limited_unclear') s -= 10;
-  if (hc === 'specific_health') s -= 15;
-  else if (hc === 'medicinal') s -= 25;
-  if (pt === 'prize_draw') s -= 5;
-
-  // Soft opt-in failures
-  if (lb === 'soft_opt_in') {
-    const fails = Object.values(softAnswers).filter(a => a === 'no').length;
-    s -= fails * 10;
+  if (!userId) {
+    document.getElementById('authErr').style.display = 'block';
+    document.getElementById('formCard').style.display = 'none';
+    document.querySelector('.score-wrap').style.display = 'none';
   }
-
-  return Math.max(0, Math.min(100, s));
 }
 
-function updateLiveScore() {
-  const s = calcLiveScore();
-  liveScore = s;
-  const fill = document.getElementById('lsFill');
-  const val  = document.getElementById('lsVal');
-  const band = document.getElementById('lsBand');
-  let col, label;
-  if (s >= 80)       { col = '#16a34a'; label = 'Strong'; }
-  else if (s >= 60)  { col = '#0d9488'; label = 'Good'; }
-  else if (s >= 40)  { col = '#eab308'; label = 'Review needed'; }
-  else if (s >= 20)  { col = '#f97316'; label = 'High risk'; }
-  else               { col = '#ef4444'; label = 'Critical issues'; }
-  fill.style.width = s + '%';
-  fill.style.background = col;
-  val.textContent = s;
-  val.style.color = col;
-  band.textContent = label;
-}
+// ── HELPERS ───────────────────────────────────────────────────
+const v = id => (document.getElementById(id)||{}).value || '';
+const isElec = () => ['email','sms','push'].includes(v('channel'));
+const fmt = n => Number(n).toLocaleString('en-GB');
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-function v(id) { const e = document.getElementById(id); return e ? e.value : ''; }
-
-// ── CONSTRAINT ENGINE ─────────────────────────────────────────
-function showAlert(id, type, html) {
+function alert$(id, type, html) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (!html) { el.classList.remove('show','red','amber','blue'); el.innerHTML = ''; return; }
-  el.className = `inline-alert ${type} show`;
+  if (!html) { el.className = 'ia'; el.innerHTML = ''; return; }
+  el.className = `ia ${type} show`;
   el.innerHTML = html;
 }
 
-function onChannelChange() {
-  const ch = v('channel'), lb = v('lawfulBasis');
-  const isElec = ['email','sms','push'].includes(ch);
-  if (isElec && lb === 'legitimate_interest') {
-    showAlert('ia-channel','red','<span class="ia-exp">⛔ Blocked.</span> Legitimate interest cannot be used for electronic direct marketing under PECR. Change your consent basis.');
-  } else if (ch === 'sms') {
-    showAlert('ia-channel','amber','<span class="ia-exp">⚠️ SMS marketing</span> requires explicit consent or valid soft opt-in. TPS screening also required.');
-  } else {
-    showAlert('ia-channel', '', '');
-  }
-  onUnsubChange();
-  onFieldChange();
+// ── EXPOSURE TABLE ────────────────────────────────────────────
+const EXP = {
+  no_consent:               {lo:30000,  hi:140000},
+  expired_consent:          {lo:5000,   hi:200000},
+  third_party_list:         {lo:50000,  hi:130000},
+  invalid_consent_mechanism:{lo:30000,  hi:140000},
+  no_soft_optin:            {lo:30000,  hi:120000},
+  suppressed_contact:       {lo:30000,  hi:50000},
+  missing_unsubscribe:      {lo:30000,  hi:140000},
+  concealed_sender:         {lo:5000,   hi:50000},
+};
+const expStr = ft => EXP[ft] ? `£${fmt(EXP[ft].lo)}–£${fmt(EXP[ft].hi)}` : null;
+
+// ── LIVE SCORE ────────────────────────────────────────────────
+function updateScore() {
+  let s = 100;
+  const ls = v('listSource'), lb = v('lawfulBasis'), ch = v('channel');
+  const sup = v('suppressionDone'), unsub = v('hasUnsubscribe');
+  const rp = v('referencePrice'), urg = v('urgency'), hc = v('healthClaim');
+  const elec = ['email','sms','push'].includes(ch);
+
+  if (ls === 'own_purchased' || ls === 'third_party') s -= 40;
+  else if (ls === 'mixed') s -= 15;
+  if (elec && (lb === 'legitimate_interest' || lb === 'none' || lb === 'unsure')) s -= 35;
+  else if (lb === 'contract' && elec) s -= 15;
+  if (sup === 'no') s -= 25;
+  else if (sup === 'partial' || sup === 'unsure') s -= 10;
+  if (elec && unsub === 'no') s -= 20;
+  if (rp && rp !== 'none') s -= 10;
+  if (urg === 'time_limited_rolling' || urg === 'stock_limited_unclear') s -= 10;
+  if (hc === 'specific_health') s -= 15;
+  else if (hc === 'medicinal') s -= 25;
+  if (lb === 'soft_opt_in') s -= Object.values(softAnswers).filter(a=>a==='no').length * 10;
+  s = Math.max(0, Math.min(100, s));
+
+  const fill = document.getElementById('scoreFill');
+  const num  = document.getElementById('scoreNum');
+  const band = document.getElementById('scoreBand');
+  let col, lbl;
+  if (s >= 80)      { col='#16a34a'; lbl='Strong'; }
+  else if (s >= 60) { col='#0d9488'; lbl='Good'; }
+  else if (s >= 40) { col='#eab308'; lbl='Review needed'; }
+  else if (s >= 20) { col='#f97316'; lbl='High risk'; }
+  else              { col='#ef4444'; lbl='Critical issues'; }
+  fill.style.width = s + '%';
+  fill.style.background = col;
+  num.textContent = s;
+  num.style.color = col;
+  band.textContent = lbl;
 }
 
-function onListSourceChange() {
+// ── CONSTRAINT ENGINE ─────────────────────────────────────────
+function onChange() { updateScore(); onUnsub(); }
+
+function onChannel() {
+  const ch = v('channel'), lb = v('lawfulBasis'), elec = ['email','sms','push'].includes(ch);
+  if (elec && lb === 'legitimate_interest') {
+    alert$('ia-channel','red','<span class="ia-exp">⛔ Blocked.</span> Legitimate interest cannot be used for electronic direct marketing under PECR. Change your consent basis.');
+  } else if (ch === 'sms') {
+    alert$('ia-channel','amber','<span class="ia-exp">⚠️ SMS.</span> Requires explicit consent or valid soft opt-in. TPS screening also required.');
+  } else { alert$('ia-channel','',''); }
+  onBasis(); onUnsub(); updateScore();
+}
+
+function onListSource() {
   const ls = v('listSource');
   if (ls === 'own_purchased' || ls === 'third_party') {
-    showAlert('ia-listSource','red',`<span class="ia-exp">⛔ Tier 1 risk.</span> Purchased/third-party lists almost never carry valid PECR consent. Typical ICO exposure: <strong>£50,000–£130,000</strong>. This path blocks the dossier CTA.`);
+    alert$('ia-listSource','red','<span class="ia-exp">⛔ Tier 1 risk.</span> Purchased/third-party lists almost never carry valid PECR consent. Typical ICO exposure: <strong>£50,000–£130,000</strong>.');
   } else if (ls === 'mixed') {
-    showAlert('ia-listSource','amber','<span class="ia-exp">⚠️ Mixed sources.</span> You must verify consent validity for each segment separately before sending.');
-  } else {
-    showAlert('ia-listSource','','');
-  }
-  onBasisChange();
-  onFieldChange();
+    alert$('ia-listSource','amber','<span class="ia-exp">⚠️ Mixed sources.</span> Verify consent validity for each segment separately before sending.');
+  } else { alert$('ia-listSource','',''); }
+  onBasis(); updateScore();
 }
 
-function onBasisChange() {
+function onBasis() {
   const lb = v('lawfulBasis'), ch = v('channel'), ls = v('listSource');
-  const isElec = ['email','sms','push'].includes(ch);
-  const panel = document.getElementById('soft-panel');
-  panel.style.display = lb === 'soft_opt_in' ? 'block' : 'none';
-
-  if (isElec && lb === 'legitimate_interest') {
-    showAlert('ia-lawfulBasis','red','<span class="ia-exp">⛔ Invalid for this channel.</span> PECR Reg 22 requires express consent or soft opt-in for email, SMS, and push. Legitimate interest applies to non-electronic channels only.');
-  } else if (isElec && (lb === 'none' || lb === 'unsure')) {
-    showAlert('ia-lawfulBasis','red','<span class="ia-exp">⛔ No valid consent basis.</span> You must confirm a valid basis before sending electronic marketing. Typical ICO exposure: <strong>£30,000–£140,000</strong>.');
+  const elec = ['email','sms','push'].includes(ch);
+  document.getElementById('softPanel').style.display = lb === 'soft_opt_in' ? 'block' : 'none';
+  if (elec && lb === 'legitimate_interest') {
+    alert$('ia-basis','red','<span class="ia-exp">⛔ Invalid for this channel.</span> PECR Reg 22 requires consent or soft opt-in for email, SMS, and push.');
+  } else if (elec && (lb === 'none' || lb === 'unsure')) {
+    alert$('ia-basis','red','<span class="ia-exp">⛔ No valid consent basis.</span> Cannot send electronic marketing without a confirmed PECR basis. Typical exposure: <strong>£30,000–£140,000</strong>.');
   } else if (lb === 'soft_opt_in' && (ls === 'own_purchased' || ls === 'third_party')) {
-    showAlert('ia-lawfulBasis','red','<span class="ia-exp">⛔ Soft opt-in cannot apply.</span> Soft opt-in only applies to contacts obtained during your own sale. It cannot be used with bought or partner data.');
-  } else if (lb === 'contract' && isElec) {
-    showAlert('ia-lawfulBasis','amber','<span class="ia-exp">⚠️ Contract ≠ PECR consent.</span> A contract basis satisfies UK GDPR but electronic marketing still requires separate PECR consent or soft opt-in.');
-  } else {
-    showAlert('ia-lawfulBasis','','');
-  }
-  onFieldChange();
+    alert$('ia-basis','red','<span class="ia-exp">⛔ Soft opt-in cannot apply.</span> Soft opt-in only applies to contacts from your own transactions. Cannot be used with bought or partner data.');
+  } else if (lb === 'contract' && elec) {
+    alert$('ia-basis','amber','<span class="ia-exp">⚠️ Contract ≠ PECR consent.</span> Contract satisfies UK GDPR but electronic marketing still requires separate PECR consent or soft opt-in.');
+  } else { alert$('ia-basis','',''); }
+  updateScore();
 }
 
-function onAudienceChange() {
-  const aud = v('audience'), lb = v('lawfulBasis'), ch = v('channel');
-  const isElec = ['email','sms','push'].includes(ch);
+function onAudience() {
+  const aud = v('audience'), lb = v('lawfulBasis');
   if (aud === 'lapsed_customers') {
-    showAlert('ia-audience','amber','<span class="ia-exp">⚠️ Lapsed contacts.</span> If consent was collected more than 24 months ago it may no longer be valid. Check your consent date below.');
+    alert$('ia-audience','amber','<span class="ia-exp">⚠️ Lapsed contacts.</span> Consent collected more than 24 months ago may no longer be valid. Check consent date below.');
   } else if (aud === 'prospects' && lb === 'soft_opt_in') {
-    showAlert('ia-audience','red','<span class="ia-exp">⛔ Prospects cannot be soft opt-in.</span> Soft opt-in requires a prior transaction. Prospects need explicit consent.');
-  } else {
-    showAlert('ia-audience','','');
-  }
-  onFieldChange();
+    alert$('ia-audience','red','<span class="ia-exp">⛔ Prospects cannot be soft opt-in.</span> Soft opt-in requires a prior transaction. Prospects need explicit consent.');
+  } else { alert$('ia-audience','',''); }
+  updateScore();
 }
 
-function onSuppressionChange() {
+function onSuppression() {
   const sup = v('suppressionDone');
   if (sup === 'no') {
-    showAlert('ia-suppression','red','<span class="ia-exp">⛔ Suppression required.</span> Sending to opted-out contacts is a direct PECR breach. Typical exposure: <strong>£30,000–£50,000</strong>.');
+    alert$('ia-suppression','red','<span class="ia-exp">⛔ Suppression required.</span> Sending to opted-out contacts is a direct PECR breach. Typical exposure: <strong>£30,000–£50,000</strong>.');
   } else if (sup === 'partial' || sup === 'unsure') {
-    showAlert('ia-suppression','amber','<span class="ia-exp">⚠️ Incomplete suppression.</span> You must confirm suppression has been applied to all segments before sending.');
-  } else {
-    showAlert('ia-suppression','','');
-  }
-  onFieldChange();
+    alert$('ia-suppression','amber','<span class="ia-exp">⚠️ Incomplete suppression.</span> Confirm suppression applied to all segments before sending.');
+  } else { alert$('ia-suppression','',''); }
+  updateScore();
 }
 
-function onUnsubChange() {
+function onUnsub() {
   const ch = v('channel'), unsub = v('hasUnsubscribe');
-  const isElec = ['email','sms','push'].includes(ch);
-  if (isElec && unsub === 'no') {
-    showAlert('ia-unsub','red','<span class="ia-exp">⛔ Unsubscribe required.</span> PECR Reg 22 requires a simple, free opt-out in every electronic marketing message.');
-  } else {
-    showAlert('ia-unsub','','');
-  }
+  if (['email','sms','push'].includes(ch) && unsub === 'no') {
+    alert$('ia-unsub','red','<span class="ia-exp">⛔ Unsubscribe required.</span> PECR Reg 22 requires a simple, free opt-out in every electronic marketing message.');
+  } else { alert$('ia-unsub','',''); }
 }
 
-function onPromoChange() {
-  const pt = v('promoType');
-  if (pt === 'prize_draw') {
-    showAlert('ia-promo','amber','<span class="ia-exp">⚠️ Prize promotion rules apply.</span> CAP Code 8 requires: stated odds or number of prizes, closing date, and linked T&Cs. Promoters must not exaggerate chances of winning.');
-  } else if (pt === 'free_trial') {
-    showAlert('ia-promo','amber','<span class="ia-exp">⚠️ "Free" offer rules apply.</span> Under CMA rules, free offers must not require any payment beyond unavoidable costs. Check for auto-renewal or hidden sign-up fees.');
-  } else if (pt === 'subscription') {
-    showAlert('ia-promo','blue','<span class="ia-exp">ℹ️ Subscription offers.</span> DMCCA 2024 requires clear disclosure of total cost, renewal terms, and cancellation rights before sign-up.');
+function onConsentDate() {
+  const raw = v('consentDate'), box = document.getElementById('ctBox'), txt = document.getElementById('ctText');
+  if (!raw || ['unknown','ongoing'].includes(raw.toLowerCase())) { box.style.display='none'; return; }
+  const m = raw.match(/(\d{4})/);
+  if (!m) { box.style.display='none'; return; }
+  const yr = parseInt(m[1]), months = (new Date().getFullYear() - yr) * 12;
+  if (months > 24) {
+    txt.innerHTML = `Consent collected in <strong>${yr}</strong> is more than 24 months ago — likely stale under ICO guidance. A re-consent campaign is strongly recommended before sending.`;
   } else {
-    showAlert('ia-promo','','');
-  }
-  onFieldChange();
-}
-
-function onRefPriceChange() {
-  const rp = v('referencePrice');
-  if (rp === 'was_now' || rp === 'rrp' || rp === 'strikethrough') {
-    showAlert('ia-refprice','amber','<span class="ia-exp">⚠️ Reference pricing rules apply.</span> Under DMCCA 2024, a "was" price must have been the genuine price for a meaningful period — the CMA expects at least 28 consecutive days in the last 6 months.');
-  } else {
-    showAlert('ia-refprice','','');
-  }
-  onFieldChange();
-}
-
-function onUrgencyChange() {
-  const urg = v('urgency');
-  if (urg === 'time_limited_rolling') {
-    showAlert('ia-urgency','amber','<span class="ia-exp">⚠️ Rolling urgency is high risk.</span> "Ends soon" or "limited time" language that resets or is not genuine is a misleading commercial practice under DMCCA 2024.');
-  } else if (urg === 'stock_limited_unclear') {
-    showAlert('ia-urgency','amber','<span class="ia-exp">⚠️ Unverified scarcity.</span> Stock scarcity claims must be accurate. False scarcity is an unfair commercial practice under CMA guidance.');
-  } else {
-    showAlert('ia-urgency','','');
-  }
-  onFieldChange();
-}
-
-function onHealthChange() {
-  const hc = v('healthClaim');
-  if (hc === 'specific_health') {
-    showAlert('ia-health','red','<span class="ia-exp">⛔ Specific health claims require authorisation.</span> Must be on the UK register of permitted nutrition and health claims, or substantiated to ASA standards.');
-  } else if (hc === 'medicinal') {
-    showAlert('ia-health','red','<span class="ia-exp">⛔ Medicinal claims are MHRA-regulated.</span> Claims that a product cures, treats, or heals a condition require MHRA authorisation. Do not use without sign-off.');
-  } else if (hc === 'general_wellness') {
-    showAlert('ia-health','amber','<span class="ia-exp">⚠️ Wellness language.</span> Even general wellness claims (e.g. "feel better", "boost energy") can be challenged by the ASA if not substantiated.');
-  } else {
-    showAlert('ia-health','','');
-  }
-  onFieldChange();
-}
-
-function onListSizeChange() {
-  const sz = parseInt(v('listSize')) || 0;
-  if (sz > 50000) {
-    showAlert('ia-listSize','blue','<span class="ia-exp">ℹ️ Large list.</span> For lists over 50,000 contacts, run a Database Audit to check consent expiry and suppression before sending.');
-  } else {
-    showAlert('ia-listSize','','');
-  }
-  onFieldChange();
-}
-
-function onConsentDateChange() {
-  const raw = v('consentDate');
-  const box = document.getElementById('consent-timeline');
-  const txt = document.getElementById('consent-timeline-text');
-  if (!raw || raw.toLowerCase() === 'unknown' || raw.toLowerCase() === 'ongoing') { box.style.display = 'none'; onFieldChange(); return; }
-  const match = raw.match(/(\d{4})/);
-  if (!match) { box.style.display = 'none'; onFieldChange(); return; }
-  const year = parseInt(match[1]);
-  const monthsAgo = (new Date().getFullYear() - year) * 12;
-  if (monthsAgo > 24) {
-    txt.innerHTML = `Consent collected in <strong>${year}</strong> is more than 24 months ago — this is likely stale under ICO guidance. A re-consent campaign is strongly recommended before sending.`;
-  } else {
-    const safeDate = new Date(); safeDate.setMonth(safeDate.getMonth() + (24 - monthsAgo));
-    txt.innerHTML = `Consent collected in <strong>${year}</strong>. Latest safe send date: approximately <strong>${safeDate.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</strong>.`;
+    const safe = new Date(); safe.setMonth(safe.getMonth() + (24 - months));
+    txt.innerHTML = `Consent from <strong>${yr}</strong>. Latest safe send date: approximately <strong>${safe.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</strong>.`;
   }
   box.style.display = 'block';
-  onFieldChange();
+  updateScore();
 }
 
-function onFieldChange() {
-  updateLiveScore();
-  const ch = v('channel'), unsub = v('hasUnsubscribe');
-  onUnsubChange();
+function onListSize() {
+  const sz = parseInt(v('listSize')) || 0;
+  if (sz > 50000) alert$('ia-listSize','blue','<span class="ia-exp">ℹ️ Large list.</span> For lists over 50,000 contacts, run a Database Audit to check consent expiry and suppression before sending.');
+  else alert$('ia-listSize','','');
+  updateScore();
+}
+
+function onPromo() {
+  const pt = v('promoType');
+  if (pt === 'prize_draw') alert$('ia-promo','amber','<span class="ia-exp">⚠️ Prize promotion rules apply.</span> CAP Code 8 requires: stated odds or number of prizes, closing date, and linked T&amp;Cs. Do not exaggerate chances of winning.');
+  else if (pt === 'free_trial') alert$('ia-promo','amber','<span class="ia-exp">⚠️ "Free" offer rules apply.</span> CMA rules require no payment beyond unavoidable costs. Check for auto-renewal or hidden fees.');
+  else if (pt === 'subscription') alert$('ia-promo','blue','<span class="ia-exp">ℹ️ Subscription disclosure required.</span> DMCCA 2024 requires clear disclosure of total cost, renewal terms, and cancellation rights before sign-up.');
+  else alert$('ia-promo','','');
+  updateScore();
+}
+
+function onRefPrice() {
+  const rp = v('referencePrice');
+  if (rp && rp !== 'none') alert$('ia-refprice','amber','<span class="ia-exp">⚠️ Reference pricing — 28-day rule applies.</span> Under DMCCA 2024 a "was" price must have been genuine for at least 28 consecutive days in the last 6 months. Document your pricing history.');
+  else alert$('ia-refprice','','');
+  updateScore();
+}
+
+function onUrgency() {
+  const urg = v('urgency');
+  if (urg === 'time_limited_rolling') alert$('ia-urgency','amber','<span class="ia-exp">⚠️ Rolling urgency is high risk.</span> "Ends soon" language that resets or is not genuine is a misleading commercial practice under DMCCA 2024.');
+  else if (urg === 'stock_limited_unclear') alert$('ia-urgency','amber','<span class="ia-exp">⚠️ Unverified scarcity.</span> Low stock claims must be accurate. False scarcity is an unfair commercial practice under CMA guidance.');
+  else alert$('ia-urgency','','');
+  updateScore();
+}
+
+function onHealth() {
+  const hc = v('healthClaim');
+  if (hc === 'specific_health') alert$('ia-health','red','<span class="ia-exp">⛔ Specific health claim — authorisation required.</span> Must be on the UK register of permitted health claims, or substantiated to ASA standards.');
+  else if (hc === 'medicinal') alert$('ia-health','red','<span class="ia-exp">⛔ Medicinal claim — MHRA authorisation required.</span> Claims that a product cures, treats, or heals require MHRA authorisation. Do not proceed without sign-off.');
+  else if (hc === 'general_wellness') alert$('ia-health','amber','<span class="ia-exp">⚠️ Wellness language.</span> General wellness claims (e.g. "feel better") can be challenged by the ASA if not substantiated.');
+  else alert$('ia-health','','');
+  updateScore();
 }
 
 function setSoft(btn) {
   const q = btn.closest('.soft-q');
-  const key = q.getAttribute('data-key');
-  softAnswers[key] = btn.getAttribute('data-val');
+  softAnswers[q.dataset.key] = btn.dataset.val;
   q.querySelectorAll('.tog').forEach(b => b.classList.remove('y','n'));
-  btn.classList.add(btn.getAttribute('data-val') === 'yes' ? 'y' : 'n');
-  // Update verdict
-  const answered = Object.values(softAnswers).filter(a => a !== null).length;
-  const failed   = Object.values(softAnswers).filter(a => a === 'no').length;
-  const vd = document.getElementById('soft-verdict');
+  btn.classList.add(btn.dataset.val === 'yes' ? 'y' : 'n');
+  const answered = Object.values(softAnswers).filter(a=>a!==null).length;
+  const failed   = Object.values(softAnswers).filter(a=>a==='no').length;
+  const vd = document.getElementById('softVerdict');
   if (answered === 4) {
     vd.style.display = 'block';
-    if (failed === 0) { vd.className = 'pass'; vd.textContent = '✓ You qualify for soft opt-in'; }
-    else { vd.className = 'fail'; vd.textContent = `✗ Soft opt-in conditions not met (${failed} condition${failed>1?'s':''} failed) — explicit consent required`; }
-  } else {
-    vd.style.display = 'none';
-  }
-  onFieldChange();
+    if (failed === 0) { vd.className='soft-verdict pass'; vd.textContent='✓ You qualify for soft opt-in'; }
+    else { vd.className='soft-verdict fail'; vd.textContent=`✗ ${failed} condition${failed>1?'s':''} failed — explicit consent required`; }
+  } else { vd.style.display = 'none'; }
+  updateScore();
 }
 
-// ── BUILD ISSUES LIST ─────────────────────────────────────────
+// ── BUILD ISSUES ──────────────────────────────────────────────
 function buildIssues() {
   const issues = [];
-  const ch = v('channel'), lb = v('lawfulBasis'), ls = v('listSource');
-  const sup = v('suppressionDone'), unsub = v('hasUnsubscribe'), sender = v('senderClear');
-  const cd = v('consentDate'), pt = v('promoType'), rp = v('referencePrice');
-  const urg = v('urgency'), hc = v('healthClaim'), aud = v('audience');
-  const isElec = ['email','sms','push'].includes(ch);
+  const ch=v('channel'), lb=v('lawfulBasis'), ls=v('listSource'), sup=v('suppressionDone');
+  const unsub=v('hasUnsubscribe'), sender=v('senderClear'), cd=v('consentDate');
+  const pt=v('promoType'), rp=v('referencePrice'), urg=v('urgency'), hc=v('healthClaim'), aud=v('audience');
+  const elec = ['email','sms','push'].includes(ch);
 
-  // LIST SOURCE
-  if (ls === 'own_purchased' || ls === 'third_party') {
-    issues.push({ severity:'red', field:'listSource', issue:'Purchased or third-party list', description:'PECR requires consent that specifically names your organisation. Purchased lists almost never meet this standard — sending to them is a PECR breach.', fixType:'third_party_list', regulation:'PECR Reg 22' });
-  } else if (ls === 'mixed') {
-    issues.push({ severity:'amber', field:'listSource', issue:'Mixed list sources', description:'Verify consent validity separately for each segment. Do not treat all contacts as having the same consent status.', fixType:'third_party_list', regulation:'PECR Reg 22' });
+  // List source
+  if (ls==='own_purchased'||ls==='third_party') issues.push({severity:'red',field:'listSource',issue:'Purchased or third-party list',description:'PECR requires consent that specifically names your organisation. Purchased lists almost never meet this standard.',fixType:'third_party_list',regulation:'PECR Reg 22'});
+  else if (ls==='mixed') issues.push({severity:'amber',field:'listSource',issue:'Mixed list sources',description:'Verify consent validity separately for each segment. Do not treat all contacts as having the same consent status.',fixType:'third_party_list',regulation:'PECR Reg 22'});
+
+  // Lawful basis
+  if (elec && lb==='legitimate_interest') issues.push({severity:'red',field:'lawfulBasis',issue:'Legitimate interest invalid for electronic marketing',description:'PECR Reg 22 requires express consent or soft opt-in for email, SMS, and push. Legitimate interest does not apply.',fixType:'no_consent',regulation:'PECR Reg 22'});
+  else if (elec && (lb==='none'||lb==='unsure')) issues.push({severity:'red',field:'lawfulBasis',issue:'No confirmed lawful basis',description:'You cannot send electronic marketing without a confirmed PECR basis. Clarify before briefing your team.',fixType:'no_consent',regulation:'PECR Reg 22'});
+  else if (lb==='contract'&&elec) issues.push({severity:'amber',field:'lawfulBasis',issue:'Contract basis insufficient for PECR',description:'A contract basis satisfies UK GDPR but electronic marketing requires separate PECR consent or soft opt-in.',fixType:'invalid_consent_mechanism',regulation:'PECR Reg 22'});
+
+  // Soft opt-in
+  if (lb==='soft_opt_in') {
+    const LABELS = {existing_customer:'contact obtained during a sale',similar_products:'similar products promoted',opt_out_given:'opt-out at collection',opt_out_now:'opt-out in every message'};
+    const failed = Object.entries(softAnswers).filter(([k,val])=>val==='no');
+    if (failed.length > 0) issues.push({severity:'red',field:'lawfulBasis',issue:'Soft opt-in conditions not met',description:`Failed: ${failed.map(([k])=>LABELS[k]).join('; ')}. All four must be satisfied — explicit consent required.`,fixType:'no_soft_optin',regulation:'PECR Reg 22'});
+    else if (ls==='own_purchased'||ls==='third_party') issues.push({severity:'red',field:'lawfulBasis',issue:'Soft opt-in cannot apply to this list',description:'Soft opt-in only applies to contacts from your own transactions. Cannot be used with bought or partner data.',fixType:'no_soft_optin',regulation:'PECR Reg 22'});
   }
 
-  // LAWFUL BASIS
-  if (isElec && lb === 'legitimate_interest') {
-    issues.push({ severity:'red', field:'lawfulBasis', issue:'Legitimate interest invalid for electronic marketing', description:'PECR Reg 22 requires express consent or soft opt-in for email, SMS, and push. Legitimate interest does not apply regardless of UK GDPR status.', fixType:'no_consent', regulation:'PECR Reg 22' });
-  } else if (isElec && (lb === 'none' || lb === 'unsure')) {
-    issues.push({ severity:'red', field:'lawfulBasis', issue:'No confirmed lawful basis', description:'You cannot send electronic marketing without a confirmed PECR basis. Clarify before briefing your team.', fixType:'no_consent', regulation:'PECR Reg 22' });
-  } else if (lb === 'contract' && isElec) {
-    issues.push({ severity:'amber', field:'lawfulBasis', issue:'Contract basis insufficient for PECR', description:'A contract basis satisfies UK GDPR but electronic marketing requires separate PECR consent or soft opt-in.', fixType:'invalid_consent_mechanism', regulation:'PECR Reg 22' });
-  }
-
-  // SOFT OPT-IN QUALIFIER
-  if (lb === 'soft_opt_in') {
-    const failed = Object.entries(softAnswers).filter(([k,v]) => v === 'no');
-    if (failed.length > 0) {
-      const labels = { existing_customer:'contact obtained during a sale', similar_products:'similar products being promoted', opt_out_given:'opt-out offered at collection', opt_out_now:'opt-out in every message' };
-      issues.push({ severity:'red', field:'lawfulBasis', issue:'Soft opt-in conditions not met', description:`The following conditions failed: ${failed.map(([k])=>labels[k]).join('; ')}. All four must be satisfied — explicit consent is required instead.`, fixType:'no_soft_optin', regulation:'PECR Reg 22' });
-    } else if (ls === 'own_purchased' || ls === 'third_party') {
-      issues.push({ severity:'red', field:'lawfulBasis', issue:'Soft opt-in cannot apply to this list', description:'Soft opt-in only applies to contacts obtained during your own transaction. It cannot be applied to bought or partner data.', fixType:'no_soft_optin', regulation:'PECR Reg 22' });
-    }
-  }
-
-  // CONSENT DATE
+  // Consent date
   if (cd) {
     const lc = cd.toLowerCase();
-    if (lc === 'unknown' || lc === "don't know" || lc === 'dont know') {
-      if (isElec) issues.push({ severity:'red', field:'consentDate', issue:'Consent date unknown', description:'You must be able to demonstrate when consent was collected. If you cannot, the consent may not be valid under UK GDPR.', fixType:'expired_consent', regulation:'UK GDPR Art 5(2)' });
+    if (lc==='unknown'||lc==="don't know"||lc==='dont know') {
+      if (elec) issues.push({severity:'red',field:'consentDate',issue:'Consent date unknown',description:'You must demonstrate when consent was collected. If you cannot, the consent may not be valid.',fixType:'expired_consent',regulation:'UK GDPR Art 5(2)'});
     } else {
       const m = cd.match(/(\d{4})/);
       if (m) {
-        const months = (new Date().getFullYear() - parseInt(m[1])) * 12;
-        if (months > 24) issues.push({ severity:'red', field:'consentDate', issue:`Consent from ${m[1]} — likely stale`, description:'ICO guidance indicates consent should be refreshed periodically. Consent over 24 months old is unlikely to remain valid without a re-consent campaign.', fixType:'expired_consent', regulation:'UK GDPR / PECR' });
-        else if (months > 18) issues.push({ severity:'amber', field:'consentDate', issue:`Consent from ${m[1]} — approaching refresh threshold`, description:'Consent is within 6 months of the 24-month threshold. Consider scheduling a re-consent campaign now.', fixType:'expired_consent', regulation:'UK GDPR' });
+        const months = (new Date().getFullYear()-parseInt(m[1]))*12;
+        if (months>24) issues.push({severity:'red',field:'consentDate',issue:`Consent from ${m[1]} — likely stale`,description:'ICO guidance indicates consent should be refreshed periodically. Consent over 24 months old is unlikely to remain valid.',fixType:'expired_consent',regulation:'UK GDPR / PECR'});
+        else if (months>18) issues.push({severity:'amber',field:'consentDate',issue:`Consent from ${m[1]} — approaching threshold`,description:'Within 6 months of the 24-month refresh threshold. Consider scheduling a re-consent campaign now.',fixType:'expired_consent',regulation:'UK GDPR'});
       }
     }
   }
 
-  // SUPPRESSION
-  if (sup === 'no') {
-    issues.push({ severity:'red', field:'suppressionDone', issue:'Suppression list not applied', description:'Sending to opted-out contacts is a direct PECR breach. Apply suppression before every send.', fixType:'suppressed_contact', regulation:'PECR Reg 23' });
-  } else if (sup === 'partial' || sup === 'unsure') {
-    issues.push({ severity:'amber', field:'suppressionDone', issue:'Suppression not confirmed for all contacts', description:'Partial or uncertain suppression leaves you exposed. Confirm full suppression application before sending.', fixType:'suppressed_contact', regulation:'PECR Reg 23' });
-  }
+  // Suppression
+  if (sup==='no') issues.push({severity:'red',field:'suppressionDone',issue:'Suppression list not applied',description:'Sending to opted-out contacts is a direct PECR breach. Apply suppression before every send.',fixType:'suppressed_contact',regulation:'PECR Reg 23'});
+  else if (sup==='partial'||sup==='unsure') issues.push({severity:'amber',field:'suppressionDone',issue:'Suppression not confirmed for all contacts',description:'Partial or uncertain suppression leaves you exposed. Confirm full application before sending.',fixType:'suppressed_contact',regulation:'PECR Reg 23'});
 
-  // UNSUBSCRIBE
-  if (isElec && unsub === 'no') {
-    issues.push({ severity:'red', field:'hasUnsubscribe', issue:'No unsubscribe mechanism', description:'PECR Reg 22 requires a simple, free opt-out in every electronic marketing message.', fixType:'missing_unsubscribe', regulation:'PECR Reg 22' });
-  }
+  // Unsubscribe
+  if (elec && unsub==='no') issues.push({severity:'red',field:'hasUnsubscribe',issue:'No unsubscribe mechanism',description:'PECR Reg 22 requires a simple, free opt-out in every electronic marketing message.',fixType:'missing_unsubscribe',regulation:'PECR Reg 22'});
 
-  // SENDER
-  if (sender === 'no') {
-    issues.push({ severity:'red', field:'senderClear', issue:'Sender not identified', description:'PECR Reg 23 requires the sender to be clearly identifiable — the From name and a contact address must be included.', fixType:'concealed_sender', regulation:'PECR Reg 23' });
-  } else if (sender === 'unsure') {
-    issues.push({ severity:'amber', field:'senderClear', issue:'Sender identity not confirmed', description:'Verify the From name matches your trading name and a contact address is included before sending.', fixType:'concealed_sender', regulation:'PECR Reg 23' });
-  }
+  // Sender
+  if (sender==='no') issues.push({severity:'red',field:'senderClear',issue:'Sender not identified',description:'PECR Reg 23 requires the sender to be clearly identifiable — From name and contact address must be included.',fixType:'concealed_sender',regulation:'PECR Reg 23'});
+  else if (sender==='unsure') issues.push({severity:'amber',field:'senderClear',issue:'Sender identity not confirmed',description:'Verify From name matches your trading name and a contact address is included before sending.',fixType:'concealed_sender',regulation:'PECR Reg 23'});
 
-  // PROMOTION TYPE
-  if (pt === 'prize_draw') {
-    issues.push({ severity:'amber', field:'promoType', issue:'Prize draw — CAP Code conditions apply', description:'Must state odds or number of prizes, closing date, and link to T&Cs. Do not exaggerate chances of winning.', fixType:'unlawful_incentive', regulation:'CAP Code 8' });
-  } else if (pt === 'free_trial') {
-    issues.push({ severity:'amber', field:'promoType', issue:'"Free" offer — hidden charges check required', description:'CMA rules require that free offers involve no payment beyond unavoidable costs. Check for auto-renewal or hidden fees.', fixType:'misleading_free_claim', regulation:'CAP Code 3 / CMA' });
-  } else if (pt === 'subscription') {
-    issues.push({ severity:'amber', field:'promoType', issue:'Subscription — DMCCA disclosure required', description:'DMCCA 2024 requires clear disclosure of total cost, renewal terms, and cancellation rights before sign-up.', fixType:'misleading_claim', regulation:'DMCCA 2024' });
-  }
+  // Promotion type
+  if (pt==='prize_draw') issues.push({severity:'amber',field:'promoType',issue:'Prize draw — CAP Code conditions apply',description:'Must state odds or number of prizes, closing date, and link T&Cs. Do not exaggerate chances of winning.',fixType:'unlawful_incentive',regulation:'CAP Code 8'});
+  else if (pt==='free_trial') issues.push({severity:'amber',field:'promoType',issue:'"Free" offer — hidden charges check required',description:'CMA rules require free offers involve no payment beyond unavoidable costs. Check for auto-renewal or hidden fees.',fixType:'misleading_free_claim',regulation:'CAP Code 3 / CMA'});
+  else if (pt==='subscription') issues.push({severity:'amber',field:'promoType',issue:'Subscription — DMCCA disclosure required',description:'DMCCA 2024 requires clear disclosure of total cost, renewal terms, and cancellation rights before sign-up.',fixType:'misleading_claim',regulation:'DMCCA 2024'});
 
-  // REFERENCE PRICING
-  if (rp === 'was_now' || rp === 'rrp' || rp === 'strikethrough') {
-    issues.push({ severity:'amber', field:'referencePrice', issue:'Reference pricing — 28-day rule applies', description:'Under DMCCA 2024 a "was" price must have been the genuine price for at least 28 consecutive days in the last 6 months. Document your pricing history before using reference prices.', fixType:'misleading_reference_price', regulation:'CMA / DMCCA 2024' });
-  }
+  // Reference pricing
+  if (rp && rp!=='none') issues.push({severity:'amber',field:'referencePrice',issue:'Reference pricing — 28-day rule applies',description:'Under DMCCA 2024 a "was" price must have been genuine for at least 28 consecutive days in the last 6 months.',fixType:'misleading_reference_price',regulation:'CMA / DMCCA 2024'});
 
-  // URGENCY
-  if (urg === 'time_limited_rolling') {
-    issues.push({ severity:'amber', field:'urgency', issue:'Rolling urgency language — misleading commercial practice risk', description:'"Ends soon" language that resets or is not tied to a genuine deadline is a misleading commercial practice under DMCCA 2024.', fixType:'fake_urgency', regulation:'DMCCA 2024 / CAP Code 3.3' });
-  } else if (urg === 'stock_limited_unclear') {
-    issues.push({ severity:'amber', field:'urgency', issue:'Unverified scarcity claim', description:'Low stock language must accurately reflect actual stock levels. False scarcity is an unfair commercial practice under CMA guidance.', fixType:'fake_urgency', regulation:'CMA / CAP Code 3.3' });
-  }
+  // Urgency
+  if (urg==='time_limited_rolling') issues.push({severity:'amber',field:'urgency',issue:'Rolling urgency — misleading commercial practice risk',description:'"Ends soon" language that resets or has no genuine deadline is a misleading commercial practice under DMCCA 2024.',fixType:'fake_urgency',regulation:'DMCCA 2024'});
+  else if (urg==='stock_limited_unclear') issues.push({severity:'amber',field:'urgency',issue:'Unverified scarcity claim',description:'Low stock language must accurately reflect actual stock. False scarcity is an unfair commercial practice.',fixType:'fake_urgency',regulation:'CMA / CAP Code 3.3'});
 
-  // HEALTH CLAIMS
-  if (hc === 'specific_health') {
-    issues.push({ severity:'red', field:'healthClaim', issue:'Specific health claim — authorisation required', description:'Must be on the UK register of permitted nutrition and health claims, or substantiated to ASA standards. Do not proceed without compliance sign-off.', fixType:'unauthorised_health_claim', regulation:'CAP Code 12 / MHRA' });
-  } else if (hc === 'medicinal') {
-    issues.push({ severity:'red', field:'healthClaim', issue:'Medicinal claim — MHRA authorisation required', description:'Claims that a product cures, treats, or heals a condition require MHRA authorisation. This cannot proceed without regulatory sign-off.', fixType:'unauthorised_health_claim', regulation:'CAP Code 12 / MHRA' });
-  } else if (hc === 'general_wellness') {
-    issues.push({ severity:'amber', field:'healthClaim', issue:'General wellness language — substantiation needed', description:'Even general wellness claims (e.g. "feel better", "boost energy") can be challenged by the ASA. Ensure you have evidence to support any claim.', fixType:'unauthorised_health_claim', regulation:'CAP Code 12' });
-  }
+  // Health claims
+  if (hc==='specific_health') issues.push({severity:'red',field:'healthClaim',issue:'Specific health claim — authorisation required',description:'Must be on the UK register of permitted health claims, or substantiated to ASA standards. Do not proceed without compliance sign-off.',fixType:'unauthorised_health_claim',regulation:'CAP Code 12 / MHRA'});
+  else if (hc==='medicinal') issues.push({severity:'red',field:'healthClaim',issue:'Medicinal claim — MHRA authorisation required',description:'Claims that a product cures, treats, or heals require MHRA authorisation. Cannot proceed without regulatory sign-off.',fixType:'unauthorised_health_claim',regulation:'CAP Code 12 / MHRA'});
+  else if (hc==='general_wellness') issues.push({severity:'amber',field:'healthClaim',issue:'General wellness language — substantiation needed',description:'Even general wellness claims (e.g. "feel better") can be challenged by the ASA if not substantiated.',fixType:'unauthorised_health_claim',regulation:'CAP Code 12'});
 
-  // GREEN PASSES — one per clean structural area
-  const checks = [
-    { ok: ls === 'own_organic', label:'List source', desc:'Own organic list — contacts signed up directly.' },
-    { ok: ['explicit_consent','soft_opt_in'].includes(lb) && !issues.find(i=>i.fixType==='no_consent'||i.fixType==='no_soft_optin'||i.fixType==='invalid_consent_mechanism'), label:'Lawful basis', desc:'Confirmed valid basis for this channel.' },
-    { ok: sup === 'yes', label:'Suppression', desc:'Opted-out contacts confirmed as excluded.' },
-    { ok: isElec ? unsub === 'yes' : true, label:'Unsubscribe mechanism', desc: isElec ? 'Opt-out included in every message.' : 'Not applicable for this channel.' },
-    { ok: sender === 'yes', label:'Sender identity', desc:'Sender name and address clearly disclosed.' },
-    { ok: rp === 'none' || !rp, label:'Pricing', desc:'No reference pricing — straightforward offer.' },
-    { ok: urg === 'none' || !urg, label:'Urgency language', desc:'No urgency or scarcity language.' },
-    { ok: hc === 'none' || !hc, label:'Health claims', desc:'No health claims — no authorisation issues.' },
+  // Green passes
+  const passes = [
+    {ok:ls==='own_organic', label:'List source',desc:'Own organic list — contacts signed up directly.'},
+    {ok:['explicit_consent','soft_opt_in'].includes(lb)&&!issues.find(i=>['no_consent','no_soft_optin','invalid_consent_mechanism'].includes(i.fixType)), label:'Lawful basis',desc:'Confirmed valid basis for this channel.'},
+    {ok:sup==='yes', label:'Suppression',desc:'Opted-out contacts confirmed as excluded.'},
+    {ok:elec ? unsub==='yes' : true, label:'Unsubscribe mechanism',desc:elec?'Opt-out included in every message.':'Not applicable for this channel.'},
+    {ok:sender==='yes', label:'Sender identity',desc:'Sender name and address clearly disclosed.'},
+    {ok:!rp||rp==='none', label:'Pricing',desc:'No reference pricing — straightforward offer.'},
+    {ok:!urg||urg==='none'||urg==='time_limited_genuine'||urg==='stock_limited_genuine', label:'Urgency language',desc:'No problematic urgency or scarcity language.'},
+    {ok:!hc||hc==='none', label:'Health claims',desc:'No health claims — no authorisation issues.'},
   ];
-  checks.forEach(c => { if (c.ok) issues.push({ severity:'green', label:c.label, issue:c.label + ' ✓', description:c.desc }); });
+  passes.forEach(p => { if(p.ok) issues.push({severity:'green',issue:p.label+' ✓',description:p.desc}); });
 
   return issues;
 }
 
-// ── TOOL CTAS ─────────────────────────────────────────────────
-function buildToolCTAs(issues) {
-  const sz = parseInt(v('listSize')) || 0;
-  const ch = v('channel');
-  const ctas = [];
-  if (['email','sms'].includes(ch)) ctas.push({ label:'🤖 Scan campaign copy', url:`${APP_URL}/ai-checker.html` });
-  if (sz > 10000 || issues.find(i=>i.fixType==='expired_consent')) ctas.push({ label:'📊 Audit your database', url:`${APP_URL}/database-auditor.html` });
-  if (issues.find(i=>i.fixType==='suppressed_contact')) ctas.push({ label:'🚫 Run suppression check', url:`${APP_URL}/suppression-checker.html` });
-  if (issues.find(i=>i.fixType==='no_dpa')) ctas.push({ label:'🏢 Check your vendors', url:`${APP_URL}/vendor-checker.html` });
-  return ctas;
+function buildPrefill() {
+  const LBLS = {explicit_consent:'Explicit consent',soft_opt_in:'Soft opt-in (PECR)',legitimate_interest:'Legitimate interest',contract:'Contract',own_organic:'Own organic list',own_purchased:'Purchased list',third_party:'Third-party data',mixed:'Mixed sources'};
+  return {
+    ListProvenance:   `List source: ${LBLS[v('listSource')]||v('listSource')||'Not specified'}. Channel: ${v('channel')||'Not specified'}. Consent collected: ${v('consentDate')||'Not specified'}.`,
+    ConsentMechanism: `Lawful basis: ${LBLS[v('lawfulBasis')]||v('lawfulBasis')||'Not specified'}. ${v('consentDate')?'Consent date: '+v('consentDate')+'.':''} ${v('lawfulBasis')==='soft_opt_in'?'Soft opt-in qualifier completed.':''}`,
+    ContentCheck:     `Promotion type: ${v('promoType')||'Not specified'}. Reference pricing: ${v('referencePrice')||'none'}. Urgency language: ${v('urgency')||'none'}. Health claims: ${v('healthClaim')||'none'}.`,
+    Suppression:      `Suppression applied: ${v('suppressionDone')||'Not confirmed'}. Unsubscribe mechanism: ${v('hasUnsubscribe')||'Not confirmed'}.`,
+    SenderIdentity:   `Sender clearly identified: ${v('senderClear')||'Not confirmed'}.`,
+  };
 }
 
 // ── RUN CHECK ─────────────────────────────────────────────────
 async function runCheck() {
-  if (!userId) { document.getElementById('auth-error').style.display='block'; return; }
+  if (!userId) { document.getElementById('authErr').style.display='block'; return; }
+  const em = document.getElementById('errMsg');
+  em.style.display='none';
 
-  const ch = v('channel'), ls = v('listSource'), lb = v('lawfulBasis'), sup = v('suppressionDone'), pt = v('promoType'), cn = v('campaignName');
-  if (!ch || !ls || !lb || !sup || !pt || !cn) {
-    const em = document.getElementById('error-msg');
-    em.style.display = 'block'; em.textContent = 'Please fill in all required fields (marked *) before running the check.'; return;
+  if (!v('channel')||!v('listSource')||!v('lawfulBasis')||!v('suppressionDone')||!v('promoType')||!v('campaignName')) {
+    em.style.display='block'; em.textContent='Please fill in all required fields (marked *) before running the check.'; return;
   }
-  document.getElementById('error-msg').style.display = 'none';
 
   const issues = buildIssues();
-  const redCount   = issues.filter(i=>i.severity==='red').length;
-  const amberCount = issues.filter(i=>i.severity==='amber').length;
-  const greenCount = issues.filter(i=>i.severity==='green').length;
-  const resultStatus = redCount > 0 ? 'Red' : amberCount > 0 ? 'Amber' : 'Green';
+  const red   = issues.filter(i=>i.severity==='red').length;
+  const amber = issues.filter(i=>i.severity==='amber').length;
+  const green = issues.filter(i=>i.severity==='green').length;
+  const status = red>0?'Red':amber>0?'Amber':'Green';
 
-  document.getElementById('loading').style.display = 'block';
-  document.getElementById('form-card').style.opacity = '0.5';
-  document.getElementById('run-btn').disabled = true;
+  document.getElementById('loadingEl').style.display='block';
+  document.getElementById('formCard').style.opacity='0.5';
+  document.getElementById('runBtn').disabled=true;
 
-  // Build dossier pre-fill from brief answers
-  const dossierPrefill = buildDossierPrefill();
-
-  let briefCheckId = null, dossierId = null, totalExposure = 0;
+  let briefCheckId=null;
+  dossierId=null;
 
   try {
-    const payload = {
-      userId,
-      campaignName: cn,
-      channel: ch,
-      audience: v('audience'),
-      lawfulBasis: lb,
-      listSource: ls,
-      consentDate: v('consentDate'),
-      coreOffer: v('promoType'),
-      promoType: v('promoType'),
-      referencePrice: v('referencePrice'),
-      urgency: v('urgency'),
-      healthClaim: v('healthClaim'),
-      listSize: parseInt(v('listSize')) || null,
-      suppressionDone: sup,
-      hasUnsubscribe: v('hasUnsubscribe'),
-      senderClear: v('senderClear'),
-      softOptInAnswers: lb === 'soft_opt_in' ? softAnswers : null,
-      issues,
-      resultStatus,
-      dossierPrefill,
-    };
-
-    const res = await fetch(`${APP_URL}/api/submit-check?action=brief-check`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    const res = await fetch(`${AU}/api/submit-check?action=brief-check`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({userId,campaignName:v('campaignName'),channel:v('channel'),audience:v('audience'),lawfulBasis:v('lawfulBasis'),listSource:v('listSource'),consentDate:v('consentDate'),suppressionDone:v('suppressionDone'),hasUnsubscribe:v('hasUnsubscribe'),senderClear:v('senderClear'),promoType:v('promoType'),referencePrice:v('referencePrice'),urgency:v('urgency'),healthClaim:v('healthClaim'),listSize:parseInt(v('listSize'))||null,softOptInAnswers:v('lawfulBasis')==='soft_opt_in'?softAnswers:null,issues,resultStatus:status,dossierPrefill:buildPrefill()})
     });
-    if (res.ok) {
-      const data = await res.json();
-      briefCheckId = data.briefCheckId || null;
-      dossierId    = data.dossierId    || null;
-      totalExposure = data.totalExposureEstimate || 0;
-    }
-  } catch(e) { console.warn('Brief check API error (non-fatal):', e); }
+    if (res.ok) { const d=await res.json(); briefCheckId=d.briefCheckId||null; dossierId=d.dossierId||null; }
+  } catch(e) { console.warn('API error (non-fatal):',e); }
 
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('form-card').style.opacity = '1';
-  document.getElementById('run-btn').disabled = false;
+  document.getElementById('loadingEl').style.display='none';
+  document.getElementById('formCard').style.opacity='1';
+  document.getElementById('runBtn').disabled=false;
 
-  allIssues = issues;
-  currentDossierId = dossierId;
-
-  renderResults(issues, redCount, amberCount, greenCount, resultStatus, dossierId, totalExposure);
+  allIssues=issues;
+  renderResults(issues,red,amber,green,status);
 }
 
-function buildDossierPrefill() {
-  const lb = v('lawfulBasis'), ls = v('listSource'), ch = v('channel'), cd = v('consentDate');
-  const LABELS = {
-    explicit_consent:'Explicit consent', soft_opt_in:'Soft opt-in (PECR)',
-    legitimate_interest:'Legitimate interest', contract:'Contract',
-    own_organic:'Own list — direct sign-ups', own_purchased:'Purchased list',
-    third_party:'Third-party data', mixed:'Mixed sources',
-  };
-  return {
-    ListProvenance: `List source: ${LABELS[ls]||ls||'Not specified'}. Channel: ${ch||'Not specified'}. Consent date: ${v('consentDate')||'Not specified'}.`,
-    ConsentMechanism: `Lawful basis: ${LABELS[lb]||lb||'Not specified'}. ${cd ? 'Consent collected: '+cd+'.' : ''} ${lb==='soft_opt_in' ? 'Soft opt-in qualifier completed.' : ''}`,
-    ContentCheck: `Promotion type: ${v('promoType')||'Not specified'}. Reference pricing: ${v('referencePrice')||'none'}. Urgency language: ${v('urgency')||'none'}. Health claims: ${v('healthClaim')||'none'}.`,
-    Suppression: `Suppression applied: ${v('suppressionDone')||'Not confirmed'}. Unsubscribe mechanism: ${v('hasUnsubscribe')||'Not confirmed'}.`,
-    SenderIdentity: `Sender clearly identified: ${v('senderClear')||'Not confirmed'}.`,
-  };
-}
+// ── RENDER ────────────────────────────────────────────────────
+function renderResults(issues,red,amber,green,status) {
+  document.getElementById('pillR').textContent = red+' Red';
+  document.getElementById('pillA').textContent = amber+' Amber';
+  document.getElementById('pillG').textContent = green+' Green';
 
-// ── RENDER RESULTS ────────────────────────────────────────────
-function renderResults(issues, red, amber, green, status, dossierId, totalExposure) {
-  document.getElementById('pill-red').textContent   = `${red} Red`;
-  document.getElementById('pill-amber').textContent = `${amber} Amber`;
-  document.getElementById('pill-green').textContent = `${green} Green`;
-
-  // Exposure summary
-  const regIssues = issues.filter(i=>i.severity!=='green' && EXPOSURE[i.fixType] && !EXPOSURE[i.fixType].rep);
-  let expLow = 0, expHigh = 0;
-  regIssues.forEach(i => { const e = EXPOSURE[i.fixType]; if(e){expLow+=e.low;expHigh+=e.high;} });
-  if (expHigh > 0) {
-    document.getElementById('exp-amount').textContent = `£${fmt(expLow)} – £${fmt(expHigh)}`;
-    document.getElementById('exp-summary').style.display = 'flex';
+  // Exposure
+  const regIssues = issues.filter(i=>i.severity!=='green'&&EXP[i.fixType]);
+  let lo=0, hi=0;
+  regIssues.forEach(i=>{if(EXP[i.fixType]){lo+=EXP[i.fixType].lo;hi+=EXP[i.fixType].hi;}});
+  if (hi>0) {
+    document.getElementById('expAmt').textContent=`£${fmt(lo)} – £${fmt(hi)}`;
+    document.getElementById('expSum').style.display='block';
   }
 
   // Checklist
-  const list = document.getElementById('checklist');
-  const sorted = [
-    ...issues.filter(i=>i.severity==='red'),
-    ...issues.filter(i=>i.severity==='amber'),
-    ...issues.filter(i=>i.severity==='green'),
-  ];
-  list.innerHTML = sorted.map(issue => {
-    const sev = issue.severity;
-    const icon = sev==='red' ? '❌' : sev==='amber' ? '⚠️' : '✅';
-    const e = EXPOSURE[issue.fixType];
-    let expHtml = '';
-    if (e && !e.rep && (e.low||e.high)) expHtml = `<div class="cl-exp">£${fmt(e.low)}–£${fmt(e.high)}</div>`;
-    else if (e && e.rep) expHtml = `<div class="cl-exp rep">Reputational risk</div>`;
-    const fixBtn = (sev==='red'||sev==='amber') && issue.field
-      ? `<button class="btn-fix" onclick="fixThis('${issue.field}')">Fix this ↑</button>` : '';
-    return `<li class="cl-item ${sev}">
-      <span class="cl-icon">${icon}</span>
-      <div class="cl-body">
-        <div class="cl-title">${escH(issue.issue)}</div>
-        <div class="cl-desc">${escH(issue.description)}</div>
-        ${issue.regulation ? `<div class="cl-reg">${escH(issue.regulation)}</div>` : ''}
-      </div>
-      <div class="cl-right">${expHtml}${fixBtn}</div>
-    </li>`;
+  const sorted=[...issues.filter(i=>i.severity==='red'),...issues.filter(i=>i.severity==='amber'),...issues.filter(i=>i.severity==='green')];
+  const cl=document.getElementById('checklist');
+  cl.innerHTML=sorted.map(issue=>{
+    const sev=issue.severity;
+    const icon=sev==='red'?'❌':sev==='amber'?'⚠️':'✅';
+    const e=EXP[issue.fixType];
+    let expHtml='';
+    if (e) expHtml=`<div class="cl-exp${sev==='amber'?' am':''}">${expStr(issue.fixType)}</div>`;
+    const fixBtn=(sev==='red'||sev==='amber')&&issue.field?`<button class="btn-fix" onclick="fixThis('${issue.field}')">Fix this ↑</button>`:'';
+    return `<li class="cl-item ${sev}"><span class="cl-icon">${icon}</span><div class="cl-body"><div class="cl-title">${esc(issue.issue)}</div><div class="cl-desc">${esc(issue.description)}</div>${issue.regulation?`<div class="cl-reg">${esc(issue.regulation)}</div>`:''}</div><div class="cl-right">${expHtml}${fixBtn}</div></li>`;
   }).join('');
 
   // Tool CTAs
-  const ctas = buildToolCTAs(issues);
-  if (ctas.length > 0) {
-    document.getElementById('tool-ctas').style.display = 'block';
-    document.getElementById('tool-ctas-inner').innerHTML = ctas.map(c =>
-      `<button class="tool-cta-btn" onclick="goTool('${c.url}')">${escH(c.label)}</button>`
-    ).join('');
+  const sz=parseInt(v('listSize'))||0, ch=v('channel');
+  const ctas=[];
+  if (['email','sms'].includes(ch)) ctas.push({label:'🤖 Scan campaign copy',url:`${AU}/ai-checker.html`});
+  if (sz>10000||issues.find(i=>i.fixType==='expired_consent')) ctas.push({label:'📊 Audit your database',url:`${AU}/database-auditor.html`});
+  if (issues.find(i=>i.fixType==='suppressed_contact')) ctas.push({label:'🚫 Run suppression check',url:`${AU}/suppression-checker.html`});
+  if (ctas.length>0) {
+    document.getElementById('toolCtas').style.display='block';
+    document.getElementById('toolCtasBtns').innerHTML=ctas.map(c=>`<button class="tool-cta-btn" onclick="goTool('${c.url}')">${esc(c.label)}</button>`).join('');
   }
 
-  // Dossier CTA — show unless red issues from list/consent (not just amber)
-  const blockingRed = issues.filter(i => i.severity==='red' && ['third_party_list','no_consent','no_soft_optin'].includes(i.fixType));
-  const ctaEl = document.getElementById('dossier-cta');
-  if (blockingRed.length === 0) {
-    ctaEl.style.display = 'block';
-    if (red > 0) {
-      document.getElementById('dossier-cta-title').textContent = 'Issues found — document your compliance evidence';
-      document.getElementById('dossier-cta-desc').textContent = 'There are issues to resolve, but you can still start a compliance dossier to document your evidence and track fixes.';
-    } else if (amber > 0) {
-      document.getElementById('dossier-cta-title').textContent = 'Amber issues noted — document your compliance';
-      document.getElementById('dossier-cta-desc').textContent = 'Review the amber items above. Build a dossier to evidence your decisions on each point.';
-    } else {
-      document.getElementById('dossier-cta-title').textContent = 'Brief looks good — document your compliance';
-      document.getElementById('dossier-cta-desc').textContent = 'No blocking issues found. Build a compliance dossier to evidence your lawful basis, list provenance, consent, suppression, and sender identity.';
-    }
-  } else {
-    ctaEl.style.display = 'none';
-  }
+  // Dossier CTA
+  const blocking=issues.filter(i=>i.severity==='red'&&i.fixType==='third_party_list');
+  const cta=document.getElementById('dossierCta');
+  if (blocking.length===0) {
+    cta.style.display='block';
+    const t=document.getElementById('dossierCtaTitle'), d=document.getElementById('dossierCtaDesc');
+    if (red>0) { t.textContent='Issues found — document your compliance evidence'; d.textContent='There are issues to resolve. Start a compliance dossier to document your evidence and track fixes.'; }
+    else if (amber>0) { t.textContent='Amber issues noted — document your compliance'; d.textContent='Review the amber items above. Build a dossier to evidence your decisions on each point.'; }
+    else { t.textContent='Brief looks good — document your compliance'; d.textContent='No blocking issues found. Build a compliance dossier to evidence your lawful basis, list provenance, consent, suppression, and sender identity.'; }
+  } else { cta.style.display='none'; }
 
-  document.getElementById('results').style.display = 'block';
-  document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+  document.getElementById('resultsEl').style.display='block';
+  document.getElementById('resultsEl').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ── FIX THIS ──────────────────────────────────────────────────
 function fixThis(field) {
-  const fieldMap = {
-    listSource: 'listSource', lawfulBasis: 'lawfulBasis', suppressionDone: 'suppressionDone',
-    hasUnsubscribe: 'hasUnsubscribe', senderClear: 'senderClear', consentDate: 'consentDate',
-    channel: 'channel', promoType: 'promoType', referencePrice: 'referencePrice',
-    urgency: 'urgency', healthClaim: 'healthClaim',
-  };
-  const targetId = fieldMap[field] || field;
-  const el = document.getElementById(targetId);
+  const map={listSource:'listSource',lawfulBasis:'lawfulBasis',suppressionDone:'suppressionDone',hasUnsubscribe:'hasUnsubscribe',senderClear:'senderClear',consentDate:'consentDate',channel:'channel',promoType:'promoType',referencePrice:'referencePrice',urgency:'urgency',healthClaim:'healthClaim'};
+  const el=document.getElementById(map[field]||field);
   if (!el) return;
-  document.getElementById('form-card').scrollIntoView({ behavior:'smooth' });
-  setTimeout(() => {
-    el.scrollIntoView({ behavior:'smooth', block:'center' });
-    el.classList.add('field-highlight');
+  document.getElementById('formCard').scrollIntoView({behavior:'smooth'});
+  setTimeout(()=>{
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.classList.add('highlight');
     el.focus();
-    setTimeout(() => el.classList.remove('field-highlight'), 2000);
-  }, 400);
+    setTimeout(()=>el.classList.remove('highlight'),2000);
+  },400);
 }
 
 function goToDossier() {
-  if (currentDossierId) {
-    window.location.href = `${APP_URL}/campaign-dossier.html?dossierId=${currentDossierId}&userId=${userId}`;
-  } else {
-    window.location.href = `${APP_URL}/campaign-dossier.html?userId=${userId}`;
-  }
+  const url = dossierId
+    ? `${AU}/campaign-dossier.html?dossierId=${dossierId}&userId=${userId}`
+    : `${AU}/campaign-dossier.html?userId=${userId}`;
+  window.location.href = url;
 }
 
 function goTool(url) {
-  const sep = url.includes('?') ? '&' : '?';
-  window.location.href = url + sep + 'userId=' + userId;
+  window.location.href = url + (url.includes('?')?'&':'?') + 'userId=' + userId;
 }
 
-function resetForm() {
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('dossier-cta').style.display = 'none';
-  document.getElementById('exp-summary').style.display = 'none';
-  document.getElementById('tool-ctas').style.display = 'none';
-  document.getElementById('form-card').scrollIntoView({ behavior:'smooth' });
-  allIssues = []; currentDossierId = null;
+function reset() {
+  document.getElementById('resultsEl').style.display='none';
+  document.getElementById('dossierCta').style.display='none';
+  document.getElementById('expSum').style.display='none';
+  document.getElementById('toolCtas').style.display='none';
+  document.getElementById('formCard').scrollIntoView({behavior:'smooth'});
+  allIssues=[]; dossierId=null;
 }
 
-document.readyState === 'loading'
-  ? document.addEventListener('DOMContentLoaded', init)
-  : init();
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
 </script>
 </body>
 </html>
