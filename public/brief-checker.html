@@ -401,14 +401,20 @@
   }
 
   async function init() {
-    try {
-      await waitForMemberstack();
+  try {
+    await waitForMemberstack();
+    // Retry up to 10 times — Memberstack session can take a moment to load
+    let member = null;
+    for (let i = 0; i < 10; i++) {
       const result = await window.$memberstackDom.getCurrentMember();
-      const member = result?.data;
-      if (!member?.id) { showAuthError(); return; }
-      userId = member.id;
-    } catch(e) { showAuthError(); }
-  }
+      member = result?.data;
+      if (member?.id) break;
+      await new Promise(r => setTimeout(r, 400));
+    }
+    if (!member?.id) { showAuthError(); return; }
+    userId = member.id;
+  } catch(e) { showAuthError(); }
+}
 
   function showAuthError() {
     document.getElementById('auth-error').style.display = 'block';
