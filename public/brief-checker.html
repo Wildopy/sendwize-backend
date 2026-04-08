@@ -379,7 +379,6 @@
 
 </main>
 
-<script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
 <script>
   const APP_URL = 'https://sendwize-backend.vercel.app';
   let userId = null;
@@ -394,27 +393,12 @@
   };
 
   // ── AUTH ──────────────────────────────────────────────────
-  async function waitForMemberstack() {
-    return new Promise(resolve => {
-      const iv = setInterval(() => { if (window.$memberstackDom) { clearInterval(iv); resolve(); } }, 200);
-    });
+  // userId is passed via ?userId= from the dashboard go() function.
+  // Memberstack cannot be called cross-domain from Vercel.
+  function init() {
+    userId = new URLSearchParams(window.location.search).get('userId');
+    if (!userId) { showAuthError(); }
   }
-
-  async function init() {
-  try {
-    await waitForMemberstack();
-    // Retry up to 10 times — Memberstack session can take a moment to load
-    let member = null;
-    for (let i = 0; i < 10; i++) {
-      const result = await window.$memberstackDom.getCurrentMember();
-      member = result?.data;
-      if (member?.id) break;
-      await new Promise(r => setTimeout(r, 400));
-    }
-    if (!member?.id) { showAuthError(); return; }
-    userId = member.id;
-  } catch(e) { showAuthError(); }
-}
 
   function showAuthError() {
     document.getElementById('auth-error').style.display = 'block';
@@ -611,7 +595,9 @@
   function fmt(n) { return n ? Number(n).toLocaleString() : '0'; }
   function escH(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-  init();
+  document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', init)
+    : init();
 </script>
 </body>
 </html>
