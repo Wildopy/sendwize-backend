@@ -159,7 +159,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <h1>How would your business look in an ICO investigation?</h1>
     <p>This simulator runs through the five stages of a real ICO enforcement action — using your actual compliance posture from Sendwize — and shows you exactly what investigators would find.</p>
     <div class="intro-warning">
-      <div class="intro-warning-icon">⚠️</div>
+      <div class="intro-warning-icon">&#9888;&#65039;</div>
       <p>This is a simulation based on your current compliance data. It is illustrative only and does not constitute legal advice. Scenarios are based on published ICO enforcement patterns.</p>
     </div>
   </div>
@@ -184,7 +184,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
           <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6">The ICO's first step is a background check against their own data — ICO registration, complaint history, and known data handling patterns.</div>
           <div class="check-grid" id="stage1-checks"></div>
         </div>
-        <button class="btn-next-stage" onclick="unlockStage(1)">Continue to Complaint Probability →</button>
+        <button class="btn-next-stage" onclick="unlockStage(1)">Continue to Complaint Probability &rarr;</button>
       </div>
     </div>
 
@@ -197,14 +197,14 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <div class="stage-body">
         <div class="scard">
           <div class="prob-main">
-            <div class="prob-pct" id="prob-pct">—%</div>
+            <div class="prob-pct" id="prob-pct">0%</div>
             <div class="prob-label">estimated complaint escalation probability</div>
             <div class="prob-bar-wrap"><div class="prob-bar-fill" id="prob-bar" style="width:0%"></div></div>
           </div>
           <div class="factors-title">Escalation factors</div>
           <div id="stage2-factors"></div>
         </div>
-        <button class="btn-next-stage" onclick="unlockStage(2)">View ICO First-Contact Letter →</button>
+        <button class="btn-next-stage" onclick="unlockStage(2)">View ICO First-Contact Letter &rarr;</button>
       </div>
     </div>
 
@@ -216,7 +216,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </div>
       <div class="stage-body">
         <div class="letter-card" id="letterCard"></div>
-        <button class="btn-next-stage" style="margin-top:16px" onclick="unlockStage(3)">Check Documentation →</button>
+        <button class="btn-next-stage" style="margin-top:16px" onclick="unlockStage(3)">Check Documentation &rarr;</button>
       </div>
     </div>
 
@@ -228,17 +228,17 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </div>
       <div class="stage-body">
         <div class="scard">
-          <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6">The ICO will request specific documentation. Based on your current compliance posture, here's what you could produce today.</div>
+          <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6">The ICO will request specific documentation. Based on your current compliance posture, here is what you could produce today.</div>
           <div class="docs-list" id="stage4-docs"></div>
         </div>
-        <button class="btn-next-stage" onclick="unlockStage(4)">View Penalty Estimate →</button>
+        <button class="btn-next-stage" onclick="unlockStage(4)">View Penalty Estimate &rarr;</button>
       </div>
     </div>
 
     <div class="stage locked" id="stage-4">
       <div class="stage-dot">5</div>
       <div class="stage-header" onclick="toggleStage(4)">
-        <div class="stage-title">Penalty Estimate & Strategy</div>
+        <div class="stage-title">Penalty Estimate &amp; Strategy</div>
         <span class="stage-badge badge-locked" id="badge-4">Locked</span>
       </div>
       <div class="stage-body">
@@ -254,192 +254,272 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_URL   = 'https://sendwize-backend.vercel.app';
-const DASHBOARD = 'https://sendwize.co.uk/dashboard';
-let userId = null, simData = null, currentStage = -1;
+var APP_URL   = 'https://sendwize-backend.vercel.app';
+var DASHBOARD = 'https://sendwize.co.uk/dashboard';
+var userId = null, simData = null, currentStage = -1;
 
-// ── AUTH — URL param passed by dashboard go() ─────────────────────────
 function init() {
   userId = new URLSearchParams(window.location.search).get('userId');
   if (!userId) {
     showErr('You need to be signed in. Please return to the dashboard and click ICO Simulator from there.');
-    const btn = document.getElementById('btnStart');
+    var btn = document.getElementById('btnStart');
     if (btn) btn.disabled = true;
   }
 }
 
-// ── START ─────────────────────────────────────────────────────────────
-async function startSimulation() {
+function startSimulation() {
   if (!userId) { showErr('Please return to the dashboard and open the simulator from there.'); return; }
-  const btn = el('btnStart');
+  var btn = el('btnStart');
   btn.disabled = true;
-  btn.innerHTML = '<div class="spin" style="width:16px;height:16px;border-width:2px;margin:0"></div> Running simulation…';
-  try {
-    const res = await fetch(`${APP_URL}/api/data?action=simulation-run`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ userId, regulator:'ICO' }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    simData = await res.json();
-  } catch(e) {
+  btn.textContent = 'Running simulation...';
+  fetch(APP_URL + '/api/data?action=simulation-run', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ userId: userId, regulator: 'ICO' })
+  })
+  .then(function(res) {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  })
+  .then(function(data) {
+    simData = data;
+    showSpine();
+  })
+  .catch(function(e) {
     console.warn('Simulation API failed, using fallback:', e);
     simData = buildFallback();
-  }
+    showSpine();
+  });
+}
+
+function showSpine() {
   el('startWrap').style.display = 'none';
-  el('spine').style.display = 'flex';
-  el('spine').style.flexDirection = 'column';
+  var spine = el('spine');
+  spine.style.display = 'flex';
+  spine.style.flexDirection = 'column';
   unlockStage(0);
 }
 
-// ── STAGE UNLOCK ──────────────────────────────────────────────────────
 function unlockStage(i) {
   if (i > 0) {
-    el(`stage-${i-1}`).className = 'stage done';
-    el(`badge-${i-1}`).className = 'stage-badge badge-done';
-    el(`badge-${i-1}`).textContent = 'Complete';
+    el('stage-' + (i-1)).className = 'stage done';
+    el('badge-' + (i-1)).className = 'stage-badge badge-done';
+    el('badge-' + (i-1)).textContent = 'Complete';
   }
-  el(`stage-${i}`).className = 'stage active';
-  el(`badge-${i}`).className = 'stage-badge badge-running';
-  el(`badge-${i}`).textContent = 'In progress';
+  el('stage-' + i).className = 'stage active';
+  el('badge-' + i).className = 'stage-badge badge-running';
+  el('badge-' + i).textContent = 'In progress';
   currentStage = i;
   renderStage(i);
-  setTimeout(() => el(`stage-${i}`).scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+  setTimeout(function() {
+    el('stage-' + i).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 }
 
 function toggleStage(i) {
-  const s = el(`stage-${i}`);
+  var s = el('stage-' + i);
   if (s.classList.contains('locked')) return;
-  const body = s.querySelector('.stage-body');
+  var body = s.querySelector('.stage-body');
   if (body) body.style.display = body.style.display === 'none' ? '' : 'none';
 }
 
-// ── RENDER ────────────────────────────────────────────────────────────
 function renderStage(i) {
   if (!simData) return;
-  [renderStage1,renderStage2,renderStage3,renderStage4,renderStage5][i]?.(simData);
+  if (i === 0) renderStage1(simData);
+  else if (i === 1) renderStage2(simData);
+  else if (i === 2) renderStage3(simData);
+  else if (i === 3) renderStage4(simData);
+  else if (i === 4) renderStage5(simData);
 }
 
 function renderStage1(d) {
-  el('stage1-checks').innerHTML = (d.stage1?.checks||[]).map(c => {
-    const cls = c.status==='red'?'red':c.status==='amber'?'amber':'green';
-    return `<div class="check-row ${cls}"><div class="check-indicator ind-${cls}"></div><div><div class="check-label">${escH(c.label)}</div><div class="check-detail">${escH(c.detail)}</div></div></div>`;
-  }).join('') || '<div style="color:var(--mu);font-size:13px;padding:12px 0">No background check data available.</div>';
+  var checks = (d.stage1 && d.stage1.checks) ? d.stage1.checks : [];
+  el('stage1-checks').innerHTML = checks.length ? checks.map(function(c) {
+    var cls = c.status === 'red' ? 'red' : c.status === 'amber' ? 'amber' : 'green';
+    return '<div class="check-row ' + cls + '"><div class="check-indicator ind-' + cls + '"></div><div><div class="check-label">' + escH(c.label) + '</div><div class="check-detail">' + escH(c.detail) + '</div></div></div>';
+  }).join('') : '<div style="color:var(--mu);font-size:13px;padding:12px 0">No background check data available.</div>';
 }
 
 function renderStage2(d) {
-  const pct = d.stage2?.probability ?? 42;
-  const level = pct>=70?'high':pct>=40?'medium':'low';
-  const color = level==='high'?'#dc2626':level==='medium'?'#ca8a04':'#16a34a';
-  el('prob-pct').textContent = pct+'%';
-  el('prob-pct').className = `prob-pct ${level}`;
-  el('prob-bar').style.width = pct+'%';
+  var pct = (d.stage2 && d.stage2.probability != null) ? d.stage2.probability : 42;
+  var level = pct >= 70 ? 'high' : pct >= 40 ? 'medium' : 'low';
+  var color = level === 'high' ? '#dc2626' : level === 'medium' ? '#ca8a04' : '#16a34a';
+  el('prob-pct').textContent = pct + '%';
+  el('prob-pct').className = 'prob-pct ' + level;
+  el('prob-bar').style.width = pct + '%';
   el('prob-bar').style.background = color;
-  el('stage2-factors').innerHTML = (d.stage2?.factors||[]).map(f =>
-    `<div class="factor-row"><div class="factor-icon">${f.icon||'•'}</div><div class="factor-text">${escH(f.text)}</div></div>`
-  ).join('') || '<div style="color:var(--mu);font-size:13px;padding:8px 0">No escalation factors identified.</div>';
+  var factors = (d.stage2 && d.stage2.factors) ? d.stage2.factors : [];
+  el('stage2-factors').innerHTML = factors.length ? factors.map(function(f) {
+    return '<div class="factor-row"><div class="factor-icon">' + (f.icon || '') + '</div><div class="factor-text">' + escH(f.text) + '</div></div>';
+  }).join('') : '<div style="color:var(--mu);font-size:13px;padding:8px 0">No escalation factors identified.</div>';
 }
 
 function renderStage3(d) {
-  const l = d.stage3?.letter || {};
-  const ref = l.reference || ('ICO-ENF-'+Math.floor(Math.random()*90000+10000));
-  const qs  = l.questions  || [];
-  const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  el('letterCard').innerHTML = `
-    <div class="letter-header">
-      <div class="letter-header-top">
-        <div><div class="letter-org">Information Commissioner's Office</div><div class="letter-dept">Enforcement & Investigations</div></div>
-        <div class="letter-ref">
-          <div class="letter-ref-label">Reference</div><div class="letter-ref-val">${escH(ref)}</div>
-          <div class="letter-ref-label" style="margin-top:6px">Date</div><div class="letter-ref-val">${today}</div>
-        </div>
-      </div>
-      <div class="letter-divider"></div>
-      <div class="letter-subject">${escH(l.subject||'Preliminary enquiry regarding direct marketing practices')}</div>
-    </div>
-    <div class="letter-body">
-      <div class="letter-salutation">Dear Data Controller,</div>
-      <div class="letter-para">${escH(l.opening||"The ICO has received information that raises questions about your organisation's direct marketing practices under PECR and UK GDPR.")}</div>
-      <div class="letter-para">${escH(l.context||'We are writing to offer you the opportunity to provide information before we consider whether to progress to a formal investigation.')}</div>
-      <div style="font-size:13px;font-weight:600;color:var(--t);margin-bottom:10px">We would be grateful if you could address the following questions:</div>
-      <div class="letter-questions">
-        ${qs.map((q,i)=>`
-          <div class="letter-q" id="lq-${i}">
-            <div class="lq-row">
-              <div class="lq-text"><strong>${i+1}.</strong> ${escH(q.question)}</div>
-              <div class="lq-toggles">
-                <button class="tgl" id="tgl-yes-${i}" onclick="answerQ(${i},'yes')">Yes</button>
-                <button class="tgl" id="tgl-no-${i}"  onclick="answerQ(${i},'no')">No</button>
-              </div>
-            </div>
-            <div class="lq-note yes" id="lqn-yes-${i}">${escH(q.yesNote||'✓ Good — you can evidence this.')}</div>
-            <div class="lq-note no"  id="lqn-no-${i}">${escH(q.noNote||'⚠ This would be a concern for investigators.')}</div>
-          </div>`).join('')}
-      </div>
-      <div class="letter-para">${escH(l.closing||'Please respond within 28 days. Failure to respond adequately may result in escalation to a formal investigation.')}</div>
-      <div class="letter-sign"><p><strong>${escH(l.signatory||'Senior Enforcement Officer')}</strong><br>Information Commissioner's Office<br>Wycliffe House, Water Lane, Wilmslow SK9 5AF</p></div>
-    </div>`;
+  var l = (d.stage3 && d.stage3.letter) ? d.stage3.letter : {};
+  var ref = l.reference || ('ICO-ENF-' + Math.floor(Math.random() * 90000 + 10000));
+  var qs = l.questions || [];
+  var today = new Date().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+  var qsHtml = qs.map(function(q, i) {
+    return '<div class="letter-q" id="lq-' + i + '">' +
+      '<div class="lq-row">' +
+        '<div class="lq-text"><strong>' + (i+1) + '.</strong> ' + escH(q.question) + '</div>' +
+        '<div class="lq-toggles">' +
+          '<button class="tgl" id="tgl-yes-' + i + '" onclick="answerQ(' + i + ',\'yes\')">Yes</button>' +
+          '<button class="tgl" id="tgl-no-' + i + '" onclick="answerQ(' + i + ',\'no\')">No</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="lq-note yes" id="lqn-yes-' + i + '">' + escH(q.yesNote || 'Good — you can evidence this.') + '</div>' +
+      '<div class="lq-note no" id="lqn-no-' + i + '">' + escH(q.noNote || 'This would be a concern for investigators.') + '</div>' +
+    '</div>';
+  }).join('');
+  el('letterCard').innerHTML =
+    '<div class="letter-header">' +
+      '<div class="letter-header-top">' +
+        '<div><div class="letter-org">Information Commissioner\'s Office</div><div class="letter-dept">Enforcement &amp; Investigations</div></div>' +
+        '<div class="letter-ref">' +
+          '<div class="letter-ref-label">Reference</div><div class="letter-ref-val">' + escH(ref) + '</div>' +
+          '<div class="letter-ref-label" style="margin-top:6px">Date</div><div class="letter-ref-val">' + today + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="letter-divider"></div>' +
+      '<div class="letter-subject">' + escH(l.subject || 'Preliminary enquiry regarding direct marketing practices') + '</div>' +
+    '</div>' +
+    '<div class="letter-body">' +
+      '<div class="letter-salutation">Dear Data Controller,</div>' +
+      '<div class="letter-para">' + escH(l.opening || "The ICO has received information that raises questions about your organisation's direct marketing practices under PECR and UK GDPR.") + '</div>' +
+      '<div class="letter-para">' + escH(l.context || 'We are writing to offer you the opportunity to provide information before we consider whether to progress to a formal investigation.') + '</div>' +
+      '<div style="font-size:13px;font-weight:600;color:var(--t);margin-bottom:10px">We would be grateful if you could address the following questions:</div>' +
+      '<div class="letter-questions">' + qsHtml + '</div>' +
+      '<div class="letter-para">' + escH(l.closing || 'Please respond within 28 days. Failure to respond adequately may result in escalation to a formal investigation.') + '</div>' +
+      '<div class="letter-sign"><p><strong>' + escH(l.signatory || 'Senior Enforcement Officer') + '</strong><br>Information Commissioner\'s Office<br>Wycliffe House, Water Lane, Wilmslow SK9 5AF</p></div>' +
+    '</div>';
 }
 
 function answerQ(i, val) {
-  el(`tgl-yes-${i}`).className = `tgl${val==='yes'?' yes-on':''}`;
-  el(`tgl-no-${i}`).className  = `tgl${val==='no' ?' no-on':''}`;
-  el(`lq-${i}`).className = `letter-q answered-${val}`;
-  const yn=el(`lqn-yes-${i}`); if(yn) yn.className=`lq-note yes${val==='yes'?' show':''}`;
-  const nn=el(`lqn-no-${i}`);  if(nn) nn.className=`lq-note no${val==='no'?' show':''}`;
+  el('tgl-yes-' + i).className = 'tgl' + (val === 'yes' ? ' yes-on' : '');
+  el('tgl-no-' + i).className  = 'tgl' + (val === 'no'  ? ' no-on'  : '');
+  el('lq-' + i).className = 'letter-q answered-' + val;
+  var yn = el('lqn-yes-' + i); if (yn) yn.className = 'lq-note yes' + (val === 'yes' ? ' show' : '');
+  var nn = el('lqn-no-'  + i); if (nn) nn.className = 'lq-note no'  + (val === 'no'  ? ' show' : '');
 }
 
 function renderStage4(d) {
-  el('stage4-docs').innerHTML = (d.stage4?.documents||[]).map(doc => {
-    const cls = doc.status==='available'?'available':doc.status==='partial'?'partial':'missing';
-    const lbl = cls==='available'?'Available':cls==='partial'?'Partial':'Missing';
-    return `<div class="doc-row ${cls}"><div class="doc-status-pill">${lbl}</div><div><div class="doc-name">${escH(doc.name)}</div><div class="doc-desc">${escH(doc.detail)}</div></div></div>`;
-  }).join('') || '<div style="color:var(--mu);font-size:13px;padding:12px 0">No documentation data available.</div>';
+  var docs = (d.stage4 && d.stage4.documents) ? d.stage4.documents : [];
+  el('stage4-docs').innerHTML = docs.length ? docs.map(function(doc) {
+    var cls = doc.status === 'available' ? 'available' : doc.status === 'partial' ? 'partial' : 'missing';
+    var lbl = cls === 'available' ? 'Available' : cls === 'partial' ? 'Partial' : 'Missing';
+    return '<div class="doc-row ' + cls + '"><div class="doc-status-pill">' + lbl + '</div><div><div class="doc-name">' + escH(doc.name) + '</div><div class="doc-desc">' + escH(doc.detail) + '</div></div></div>';
+  }).join('') : '<div style="color:var(--mu);font-size:13px;padding:12px 0">No documentation data available.</div>';
 }
 
 function renderStage5(d) {
-  const p    = d.stage5?.penalty || {};
-  const reps = d.stage5?.representations || [];
-  el('stage5-content').innerHTML = `
-    <div class="penalty-range">
-      <div class="penalty-label">Estimated penalty range</div>
-      <div class="penalty-amt">£${fmtK(p.low||0)}</div>
-      <div class="penalty-to">to</div>
-      <div class="penalty-amt">£${fmtK(p.high||0)}</div>
-      <div class="penalty-note">Based on ICO published enforcement decisions for comparable cases. Illustrative only.</div>
-    </div>
-    <div style="border-top:1px solid var(--b);padding-top:20px">
-      <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6">${escH(p.context||'The ICO has discretion to reduce penalties significantly where organisations demonstrate genuine co-operation and prompt remedial action.')}</div>
-      <div class="rep-title">Representations strategy — ${reps.length} recommended actions</div>
-      <div class="rep-items">
-        ${reps.map((r,i)=>`<div class="rep-item"><div class="rep-num">${i+1}</div><div class="rep-text">${escH(r)}</div></div>`).join('')}
-      </div>
-    </div>
-    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--b);text-align:center">
-      <p style="font-size:13px;color:var(--tm);margin-bottom:16px">Address your pending fixes in Sendwize to improve your compliance posture before any real investigation.</p>
-      <a href="${DASHBOARD}" style="display:inline-flex;align-items:center;gap:8px;background:var(--o);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
-        Back to Dashboard — Fix Issues
-      </a>
-    </div>`;
-  setTimeout(()=>{
-    el('stage-4').className='stage done';
-    el('badge-4').className='stage-badge badge-done';
-    el('badge-4').textContent='Complete';
-  },400);
+  var p    = (d.stage5 && d.stage5.penalty) ? d.stage5.penalty : {};
+  var reps = (d.stage5 && d.stage5.representations) ? d.stage5.representations : [];
+  el('stage5-content').innerHTML =
+    '<div class="penalty-range">' +
+      '<div class="penalty-label">Estimated penalty range</div>' +
+      '<div class="penalty-amt">&pound;' + fmtK(p.low || 0) + '</div>' +
+      '<div class="penalty-to">to</div>' +
+      '<div class="penalty-amt">&pound;' + fmtK(p.high || 0) + '</div>' +
+      '<div class="penalty-note">Based on ICO published enforcement decisions for comparable cases. Illustrative only.</div>' +
+    '</div>' +
+    '<div style="border-top:1px solid var(--b);padding-top:20px">' +
+      '<div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6">' + escH(p.context || 'The ICO has discretion to reduce penalties significantly where organisations demonstrate genuine co-operation and prompt remedial action.') + '</div>' +
+      '<div class="rep-title">Representations strategy &mdash; ' + reps.length + ' recommended actions</div>' +
+      '<div class="rep-items">' + reps.map(function(r, i) {
+        return '<div class="rep-item"><div class="rep-num">' + (i+1) + '</div><div class="rep-text">' + escH(r) + '</div></div>';
+      }).join('') + '</div>' +
+    '</div>' +
+    '<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--b);text-align:center">' +
+      '<p style="font-size:13px;color:var(--tm);margin-bottom:16px">Address your pending fixes in Sendwize to improve your compliance posture before any real investigation.</p>' +
+      '<a href="' + DASHBOARD + '" style="display:inline-flex;align-items:center;gap:8px;background:var(--o);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600">' +
+        '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>' +
+        'Back to Dashboard &mdash; Fix Issues' +
+      '</a>' +
+    '</div>';
+  setTimeout(function() {
+    el('stage-4').className = 'stage done';
+    el('badge-4').className = 'stage-badge badge-done';
+    el('badge-4').textContent = 'Complete';
+  }, 400);
 }
 
-// ── FALLBACK ──────────────────────────────────────────────────────────
-function buildFallback(){return{stage1:{checks:[{status:'green',label:'ICO Registration',detail:"Your organisation appears registered with the ICO for data processing activities."},{status:'amber',label:'Previous Complaint History',detail:"No upheld complaints found, but limited enforcement history means the ICO has no prior context for your practices."},{status:'amber',label:'Compliance Score',detail:"Your current Sendwize score indicates partially-addressed compliance gaps that investigators would identify."},{status:'red',label:'Pending Fix Items',detail:"Outstanding action items suggest known compliance issues that have not been resolved."},{status:'green',label:'Sector Risk Profile',detail:"Your sector does not appear on the ICO's current high-risk watch list."}]},stage2:{probability:52,factors:[{icon:'⚠️',text:'Unresolved compliance fixes increase likelihood that a complaint would be taken seriously by investigators.'},{icon:'📊',text:'Compliance score below 75 indicates systemic gaps rather than isolated incidents — this pattern concerns the ICO.'},{icon:'🔍',text:"No formal consent documentation on record means investigators could not verify lawful basis without an investigation."},{icon:'✅',text:'No prior ICO action reduces the probability of immediate formal enforcement vs preliminary enquiry.'}]},stage3:{letter:{reference:'ICO-ENF-'+Math.floor(Math.random()*90000+10000),subject:'Preliminary enquiry regarding direct marketing practices — PECR / UK GDPR',opening:"The ICO has received a complaint that raises questions about your organisation's direct marketing practices under PECR and UK GDPR. We are writing to give you the opportunity to provide information before we consider whether to progress to a formal investigation.",context:'Our enquiries at this stage are preliminary. Your co-operation and the quality of your response will be taken into account should this matter proceed further.',closing:'Please respond within 28 days. Failure to respond adequately may result in escalation to a formal investigation under section 115 of the Data Protection Act 2018.',signatory:'Senior Enforcement Officer, Direct Marketing Team',questions:[{question:'Can you provide a copy of your consent records, including the consent wording shown to individuals at the time their details were collected?',yesNote:'✓ Strong position — documented consent is your primary defence.',noNote:'✗ Absence of consent records is the single most common basis for ICO enforcement action.'},{question:'Can you confirm what suppression processes are in place to ensure individuals who have opted out are not contacted?',yesNote:'✓ Good — documented suppression processes demonstrate active compliance management.',noNote:'✗ Inability to evidence suppression controls is a serious concern under PECR Regulation 23.'},{question:'Can you provide a copy of your data retention policy and confirm how long you retain marketing contact data?',yesNote:'✓ A documented retention policy supports your position as a responsible controller.',noNote:'✗ Absence of a retention policy suggests inadequate data governance overall.'},{question:'Can you confirm whether the marketing messages in question contained a clear and free opt-out mechanism in every communication?',yesNote:'✓ Consistent opt-out provision is a core PECR requirement and demonstrates compliance.',noNote:'✗ Missing opt-out mechanisms in any message creates a clear PECR breach.'},{question:"Can you confirm the legal basis under which the recipients' data was processed for direct marketing purposes?",yesNote:'✓ A clearly documented lawful basis is essential and gives you a strong starting position.',noNote:'✗ Unclear or absent lawful basis documentation would be central to any penalty decision.'}]}},stage4:{documents:[{status:'partial',name:'Consent Records',detail:'Some contact records have consent flags, but documentation of the exact consent wording and collection mechanism is incomplete.'},{status:'missing',name:'Legitimate Interest Assessment',detail:'No LIA on record. If relying on legitimate interest for any processing, this document is essential.'},{status:'available',name:'Privacy Notice',detail:'A privacy notice is present on your website covering marketing communications.'},{status:'partial',name:'Suppression Log',detail:'Suppression lists exist but no formal audit trail showing when they were applied to each campaign.'},{status:'missing',name:'Data Retention Schedule',detail:'No documented retention policy specifying how long marketing data is held and when it is deleted.'},{status:'available',name:'Opt-out Mechanism Evidence',detail:'Unsubscribe links are present in email records reviewed.'},{status:'partial',name:'Staff Training Records',detail:'Some evidence of data protection awareness but no formal PECR-specific training records.'}]},stage5:{penalty:{low:8000,high:140000,context:'The ICO has broad discretion in setting penalties. For first-time PECR breaches with prompt remedial action and genuine co-operation, penalties are typically at the lower end. Repeated or deliberate breaches, or failure to co-operate, can lead to maximum fines.'},representations:['Immediately complete all outstanding Sendwize compliance fixes to demonstrate active remediation before any response to the ICO.','Prepare a written consent audit documenting the lawful basis for every contact segment in your database.','Draft a formal Legitimate Interest Assessment for any processing not covered by explicit consent.','Implement a documented suppression audit trail showing when suppression lists were applied to each campaign sent in the past 24 months.','Respond to the ICO promptly, fully, and co-operatively — non-co-operation can increase penalties per published ICO guidance.','Appoint a named individual responsible for data protection compliance and reference this in your response to demonstrate accountability.']}}};}
+function buildFallback() {
+  return {
+    stage1: {
+      checks: [
+        {status:'green', label:'ICO Registration', detail:'Your organisation appears registered with the ICO for data processing activities.'},
+        {status:'amber', label:'Previous Complaint History', detail:'No upheld complaints found, but limited enforcement history means the ICO has no prior context for your practices.'},
+        {status:'amber', label:'Compliance Score', detail:'Your current Sendwize score indicates partially-addressed compliance gaps that investigators would identify.'},
+        {status:'red',   label:'Pending Fix Items', detail:'Outstanding action items suggest known compliance issues that have not been resolved.'},
+        {status:'green', label:'Sector Risk Profile', detail:"Your sector does not appear on the ICO's current high-risk watch list."}
+      ]
+    },
+    stage2: {
+      probability: 52,
+      factors: [
+        {icon:'', text:'Unresolved compliance fixes increase likelihood that a complaint would be taken seriously by investigators.'},
+        {icon:'', text:'Compliance score below 75 indicates systemic gaps rather than isolated incidents — this pattern concerns the ICO.'},
+        {icon:'', text:'No formal consent documentation on record means investigators could not verify lawful basis without an investigation.'},
+        {icon:'', text:'No prior ICO action reduces the probability of immediate formal enforcement vs preliminary enquiry.'}
+      ]
+    },
+    stage3: {
+      letter: {
+        reference: 'ICO-ENF-' + Math.floor(Math.random() * 90000 + 10000),
+        subject: 'Preliminary enquiry regarding direct marketing practices — PECR / UK GDPR',
+        opening: "The ICO has received a complaint that raises questions about your organisation's direct marketing practices under PECR and UK GDPR. We are writing to give you the opportunity to provide information before we consider whether to progress to a formal investigation.",
+        context: 'Our enquiries at this stage are preliminary. Your co-operation and the quality of your response will be taken into account should this matter proceed further.',
+        closing: 'Please respond within 28 days. Failure to respond adequately may result in escalation to a formal investigation under section 115 of the Data Protection Act 2018.',
+        signatory: 'Senior Enforcement Officer, Direct Marketing Team',
+        questions: [
+          {question:'Can you provide a copy of your consent records, including the consent wording shown to individuals at the time their details were collected?', yesNote:'Strong position — documented consent is your primary defence.', noNote:'Absence of consent records is the single most common basis for ICO enforcement action.'},
+          {question:'Can you confirm what suppression processes are in place to ensure individuals who have opted out are not contacted?', yesNote:'Good — documented suppression processes demonstrate active compliance management.', noNote:'Inability to evidence suppression controls is a serious concern under PECR Regulation 23.'},
+          {question:'Can you provide a copy of your data retention policy and confirm how long you retain marketing contact data?', yesNote:'A documented retention policy supports your position as a responsible controller.', noNote:'Absence of a retention policy suggests inadequate data governance overall.'},
+          {question:'Can you confirm whether the marketing messages in question contained a clear and free opt-out mechanism in every communication?', yesNote:'Consistent opt-out provision is a core PECR requirement and demonstrates compliance.', noNote:'Missing opt-out mechanisms in any message creates a clear PECR breach.'},
+          {question:"Can you confirm the legal basis under which the recipients' data was processed for direct marketing purposes?", yesNote:'A clearly documented lawful basis is essential and gives you a strong starting position.', noNote:'Unclear or absent lawful basis documentation would be central to any penalty decision.'}
+        ]
+      }
+    },
+    stage4: {
+      documents: [
+        {status:'partial',   name:'Consent Records',             detail:'Some contact records have consent flags, but documentation of the exact consent wording and collection mechanism is incomplete.'},
+        {status:'missing',   name:'Legitimate Interest Assessment', detail:'No LIA on record. If relying on legitimate interest for any processing, this document is essential.'},
+        {status:'available', name:'Privacy Notice',              detail:'A privacy notice is present on your website covering marketing communications.'},
+        {status:'partial',   name:'Suppression Log',             detail:'Suppression lists exist but no formal audit trail showing when they were applied to each campaign.'},
+        {status:'missing',   name:'Data Retention Schedule',     detail:'No documented retention policy specifying how long marketing data is held and when it is deleted.'},
+        {status:'available', name:'Opt-out Mechanism Evidence',  detail:'Unsubscribe links are present in email records reviewed.'},
+        {status:'partial',   name:'Staff Training Records',      detail:'Some evidence of data protection awareness but no formal PECR-specific training records.'}
+      ]
+    },
+    stage5: {
+      penalty: {
+        low: 8000,
+        high: 140000,
+        context: 'The ICO has broad discretion in setting penalties. For first-time PECR breaches with prompt remedial action and genuine co-operation, penalties are typically at the lower end. Repeated or deliberate breaches, or failure to co-operate, can lead to maximum fines.'
+      },
+      representations: [
+        'Immediately complete all outstanding Sendwize compliance fixes to demonstrate active remediation before any response to the ICO.',
+        'Prepare a written consent audit documenting the lawful basis for every contact segment in your database.',
+        'Draft a formal Legitimate Interest Assessment for any processing not covered by explicit consent.',
+        'Implement a documented suppression audit trail showing when suppression lists were applied to each campaign sent in the past 24 months.',
+        'Respond to the ICO promptly, fully, and co-operatively — non-co-operation can increase penalties per published ICO guidance.',
+        'Appoint a named individual responsible for data protection compliance and reference this in your response to demonstrate accountability.'
+      ]
+    }
+  };
+}
 
-// ── HELPERS ───────────────────────────────────────────────────────────
-const el   = id => document.getElementById(id);
-const escH = s  => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const fmtK = n  => { if(!n)return'0'; if(n>=1000000)return(n/1000000).toFixed(1)+'m'; if(n>=1000)return Math.round(n/1000)+'k'; return n.toLocaleString('en-GB'); };
-function showErr(msg){ const e=el('errBox'); e.textContent=msg; e.classList.add('show'); }
+function el(id) { return document.getElementById(id); }
+function escH(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtK(n) { if (!n) return '0'; if (n >= 1000000) return (n/1000000).toFixed(1) + 'm'; if (n >= 1000) return Math.round(n/1000) + 'k'; return n.toLocaleString('en-GB'); }
+function showErr(msg) { var e = el('errBox'); e.textContent = msg; e.classList.add('show'); }
 
-document.readyState==='loading'
-  ? document.addEventListener('DOMContentLoaded', init)
-  : init();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 </script>
 </body>
 </html>
