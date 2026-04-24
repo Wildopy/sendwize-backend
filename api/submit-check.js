@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v4.22
+// SENDWIZE — submit-check.js v4.25
 // Campaign Compliance Dossier (Tool 5) + Campaign Brief Checker (Tool 7).
 //
 // POST ?action=dossier-save    { userId, dossierId, module, evidenceJson }
@@ -7,11 +7,18 @@
 // POST ?action=dossier-submit  { userId, dossierId, issues[] }
 // POST ?action=brief-check     { userId, campaignName, ...fields, issues[], dossierPrefill{} }
 //
-// v4.22: brief-check now accepts issues[] pre-built by the frontend
-// constraint engine — no server-side runBriefCheck() needed.
-// dossierPrefill{} auto-populates Campaign_Dossiers module fields.
-// Module keys PascalCase: ListProvenance | ConsentMechanism |
-//   ContentCheck | Suppression | SenderIdentity
+// v4.25 changes from v4.22:
+//   - dossierId clarification: dossierId passed from frontend = CampaignID
+//     (the Campaigns table record ID). dossier-get filters on CampaignID,
+//     not the Campaign_Dossiers record ID. This is intentional — do not
+//     change this join without updating the frontend.
+//   - Brief_Checks TotalExposureEstimate patch now guarded: only fires
+//     if the Brief_Checks table has that field (non-fatal if absent).
+//   - SoftOptInQualified and ConsentTimelineJson removed from Brief_Checks
+//     save (fields deleted from Airtable).
+//   - handleBriefCheck now explicitly documents the dossierId convention
+//     in the response comment.
+//   - Minor: all non-fatal Airtable errors log consistently.
 // ─────────────────────────────────────────────────────────────
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -71,20 +78,20 @@ const ISSUE_TO_FIX = {
 
 // ── Fix type → exposure for brief-check fix generation ────────
 const BRIEF_FIX_TYPES = {
-  no_consent:                'no_consent',
-  expired_consent:           'expired_consent',
-  third_party_list:          'third_party_list',
-  invalid_consent_mechanism: 'invalid_consent_mechanism',
-  no_soft_optin:             'no_soft_optin',
-  suppressed_contact:        'suppressed_contact',
-  missing_unsubscribe:       'missing_unsubscribe',
-  concealed_sender:          'concealed_sender',
-  misleading_reference_price:'misleading_reference_price',
-  fake_urgency:              'fake_urgency',
-  unauthorised_health_claim: 'unauthorised_health_claim',
-  unlawful_incentive:        'unlawful_incentive',
-  misleading_free_claim:     'misleading_free_claim',
-  misleading_claim:          'misleading_claim',
+  no_consent:                 'no_consent',
+  expired_consent:            'expired_consent',
+  third_party_list:           'third_party_list',
+  invalid_consent_mechanism:  'invalid_consent_mechanism',
+  no_soft_optin:              'no_soft_optin',
+  suppressed_contact:         'suppressed_contact',
+  missing_unsubscribe:        'missing_unsubscribe',
+  concealed_sender:           'concealed_sender',
+  misleading_reference_price: 'misleading_reference_price',
+  fake_urgency:               'fake_urgency',
+  unauthorised_health_claim:  'unauthorised_health_claim',
+  unlawful_incentive:         'unlawful_incentive',
+  misleading_free_claim:      'misleading_free_claim',
+  misleading_claim:           'misleading_claim',
 };
 
 // ── Router ────────────────────────────────────────────────────
@@ -132,6 +139,8 @@ async function handleDossierSave(req, res) {
   const campaignTitle = evidence.CampaignTitle || '';
   const ownerName     = evidence.OwnerName     || '';
 
+  // NOTE: dossierId here = CampaignID (Campaigns table record ID).
+  // Campaign_Dossiers is filtered by CampaignID, not its own record ID.
   const existingRes  = await fetch(
     `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
     { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
@@ -140,8 +149,9 @@ async function handleDossierSave(req, res) {
   const existing     = existingData.records?.[0];
 
   const fields = {
-    UserID: userId, CampaignID: dossierId,
-    [module]: moduleText,
+    UserID:    userId,
+    CampaignID: dossierId,
+    [module]:  moduleText,
     UpdatedAt: new Date().toISOString(),
   };
   if (campaignTitle) fields.CampaignTitle = campaignTitle;
@@ -167,6 +177,8 @@ async function handleDossierSave(req, res) {
 
 // ─────────────────────────────────────────────────────────────
 // dossier-get
+// Returns flat field shape — all module keys at top level.
+// dossierId param = CampaignID value in Campaign_Dossiers.
 // ─────────────────────────────────────────────────────────────
 async function handleDossierGet(req, res) {
   const { userId, dossierId } = req.query;
@@ -185,6 +197,7 @@ async function handleDossierGet(req, res) {
   const data   = await r.json();
   const record = data.records?.[0];
 
+  // No record found — return empty draft shape so frontend can start fresh
   if (!record) {
     return res.json({
       CampaignTitle: '', OwnerName: '', Status: 'Draft', UserID: userId, CampaignID: dossierId,
@@ -194,19 +207,19 @@ async function handleDossierGet(req, res) {
 
   const f = record.fields;
   return res.json({
-    recordId: record.id,
+    recordId:         record.id,
     CampaignTitle:    f.CampaignTitle    || '',
-    OwnerName:        f.OwnerName         || '',
-    Status:           f.Status            || 'Draft',
-    UserID:           f.UserID            || userId,
-    CampaignID:       f.CampaignID        || dossierId,
-    ListProvenance:   f.ListProvenance    || '',
-    ConsentMechanism: f.ConsentMechanism  || '',
-    ContentCheck:     f.ContentCheck      || '',
-    Suppression:      f.Suppression       || '',
-    SenderIdentity:   f.SenderIdentity    || '',
-    CreatedDate:      f.CreatedDate       || '',
-    UpdatedAt:        f.UpdatedAt         || '',
+    OwnerName:        f.OwnerName        || '',
+    Status:           f.Status           || 'Draft',
+    UserID:           f.UserID           || userId,
+    CampaignID:       f.CampaignID       || dossierId,
+    ListProvenance:   f.ListProvenance   || '',
+    ConsentMechanism: f.ConsentMechanism || '',
+    ContentCheck:     f.ContentCheck     || '',
+    Suppression:      f.Suppression      || '',
+    SenderIdentity:   f.SenderIdentity   || '',
+    CreatedDate:      f.CreatedDate      || '',
+    UpdatedAt:        f.UpdatedAt        || '',
   });
 }
 
@@ -223,9 +236,12 @@ async function handleDossierSubmit(req, res) {
 
   let emailVolume = 'medium_send';
   try {
-    const pr = await fetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    const pr = await fetch(
+      `https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
+      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+    );
     if (pr.ok) emailVolume = (await pr.json()).records?.[0]?.fields?.EmailVolume || 'medium_send';
-  } catch(e) { console.error('Profile fetch failed:', e); }
+  } catch(e) { console.error('Profile fetch failed (non-fatal):', e); }
 
   const issueList  = Array.isArray(issues) ? issues : [];
   const fixResults = [];
@@ -238,15 +254,20 @@ async function handleDossierSubmit(req, res) {
     try {
       const fixRes  = await fetch(`${APP_URL}/api/generate-fix`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, fixType: mapping.fixType, description: mapping.description, tool: 'Campaign Dossier', severity: finalSeverity, volume: null, sourceRecordId: dossierId }),
+        body: JSON.stringify({
+          userId, fixType: mapping.fixType, description: mapping.description,
+          tool: 'Campaign Dossier', severity: finalSeverity, volume: null, sourceRecordId: dossierId,
+        }),
       });
       const fixData = await fixRes.json();
       fixResults.push({ issue: issueKey, status: fixData.skipped ? 'duplicate_skipped' : 'created', fixId: fixData.fixId });
     } catch(e) {
+      console.error(`generate-fix failed for dossier issue "${issueKey}" (non-fatal):`, e);
       fixResults.push({ issue: issueKey, status: 'error' });
     }
   }
 
+  // Update Campaign_Dossiers status to Submitted
   try {
     const dr = await fetch(
       `https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
@@ -258,28 +279,44 @@ async function handleDossierSubmit(req, res) {
         fetch(`https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers/${r.id}`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields: { Status: 'Submitted', IssuesFound: issueList.length, SubmittedAt: new Date().toISOString() } }),
+          body: JSON.stringify({ fields: {
+            Status:       'Submitted',
+            IssuesFound:  issueList.length,
+            SubmittedAt:  new Date().toISOString(),
+          }}),
         })
       ));
     }
   } catch(e) { console.error('Dossier status update failed (non-fatal):', e); }
 
-  fetch(`${APP_URL}/api/profile?action=streak`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) })
-    .catch(e => console.error('Streak failed:', e));
+  fetch(`${APP_URL}/api/profile?action=streak`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
+  }).catch(e => console.error('Streak failed (non-fatal):', e));
 
-  return res.json({ success: true, dossierId, issuesFound: issueList.length, fixesGenerated: fixResults.filter(f => f.status === 'created').length, fixResults });
+  return res.json({
+    success:        true,
+    dossierId,
+    issuesFound:    issueList.length,
+    fixesGenerated: fixResults.filter(f => f.status === 'created').length,
+    fixResults,
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
 // brief-check
 //
-// v4.22: The frontend constraint engine builds issues[] before
-// calling this endpoint. The backend:
+// The frontend constraint engine builds issues[] before calling.
+// This endpoint:
 //   1. Saves a Brief_Checks record
 //   2. Generates fix records for non-green issues
-//   3. Creates Campaigns + Campaign_Dossiers skeleton
+//   3. Creates a Campaigns record + Campaign_Dossiers skeleton
 //   4. Auto-populates dossier module fields from dossierPrefill{}
-//   5. Returns { briefCheckId, dossierId, redCount, amberCount, greenCount, totalExposureEstimate }
+//   5. Returns { briefCheckId, dossierId, redCount, amberCount,
+//      greenCount, totalExposureEstimate, resultStatus }
+//
+// IMPORTANT: dossierId in the response = the Campaigns record ID.
+// The dossier frontend passes this as ?dossierId= and dossier-get
+// filters Campaign_Dossiers on {CampaignID}. Do not change this.
 // ─────────────────────────────────────────────────────────────
 async function handleBriefCheck(req, res) {
   const {
@@ -288,8 +325,8 @@ async function handleBriefCheck(req, res) {
     consentDate, coreOffer, listSize,
     suppressionDone, hasUnsubscribe, senderClear,
     softOptInAnswers,
-    issues: frontendIssues,
-    resultStatus: frontendStatus,
+    issues:        frontendIssues,
+    resultStatus:  frontendStatus,
     dossierPrefill,
   } = req.body ?? {};
 
@@ -299,15 +336,16 @@ async function handleBriefCheck(req, res) {
   const BASE_ID        = process.env.BASE_ID;
   const today          = new Date().toISOString().split('T')[0];
 
-  // Use frontend-built issues if provided, otherwise return empty
-  const issues = Array.isArray(frontendIssues) ? frontendIssues : [];
+  const issues   = Array.isArray(frontendIssues) ? frontendIssues : [];
   const nonGreen = issues.filter(i => i.severity !== 'green');
   const redCount   = issues.filter(i => i.severity === 'red').length;
   const amberCount = issues.filter(i => i.severity === 'amber').length;
   const greenCount = issues.filter(i => i.severity === 'green').length;
   const resultStatus = frontendStatus || (redCount > 0 ? 'Red' : amberCount > 0 ? 'Amber' : 'Green');
 
-  // Save Brief_Checks record
+  // ── Save Brief_Checks record ──────────────────────────────────────
+  // Note: SoftOptInQualified and ConsentTimelineJson excluded —
+  // those fields have been removed from the Airtable table.
   let briefCheckId = null, totalExposureEstimate = 0;
   try {
     const briefRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks`, {
@@ -317,7 +355,10 @@ async function handleBriefCheck(req, res) {
         UserID:          userId,
         CampaignName:    campaignName || `Brief ${new Date().toLocaleDateString('en-GB')}`,
         CheckDate:       today,
-        BriefFieldsJson: JSON.stringify({ channel, audience, lawfulBasis, listSource, consentDate, coreOffer, suppressionDone, hasUnsubscribe, senderClear }),
+        BriefFieldsJson: JSON.stringify({
+          channel, audience, lawfulBasis, listSource, consentDate,
+          coreOffer, suppressionDone, hasUnsubscribe, senderClear,
+        }),
         RedCount:        redCount,
         AmberCount:      amberCount,
         GreenCount:      greenCount,
@@ -325,17 +366,24 @@ async function handleBriefCheck(req, res) {
         ResultStatus:    resultStatus,
       }}]}),
     });
-    if (briefRes.ok) briefCheckId = (await briefRes.json()).records?.[0]?.id ?? null;
-  } catch(e) { console.error('Brief_Checks save failed (non-fatal):', e); }
+    if (briefRes.ok) {
+      briefCheckId = (await briefRes.json()).records?.[0]?.id ?? null;
+    } else {
+      console.error('Brief_Checks save failed:', await briefRes.text());
+    }
+  } catch(e) { console.error('Brief_Checks save error (non-fatal):', e); }
 
-  // emailVolume for refineSeverity
+  // ── Fetch email volume for severity refinement ────────────────────
   let emailVolume = 'medium_send';
   try {
-    const pr = await fetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    const pr = await fetch(
+      `https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
+      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+    );
     if (pr.ok) emailVolume = (await pr.json()).records?.[0]?.fields?.EmailVolume || 'medium_send';
-  } catch(e) {}
+  } catch(e) { /* non-fatal */ }
 
-  // Generate fix records for non-green issues that have a fixType
+  // ── Generate fix records for non-green issues ─────────────────────
   for (const issue of nonGreen) {
     if (!issue.fixType || !BRIEF_FIX_TYPES[issue.fixType]) continue;
     const finalSeverity = refineSeverity(issue.fixType, emailVolume) || (issue.severity === 'red' ? 'high' : 'medium');
@@ -343,28 +391,39 @@ async function handleBriefCheck(req, res) {
       const fr = await fetch(`${APP_URL}/api/generate-fix`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId, fixType: issue.fixType,
-          description: `Brief Checker: ${issue.issue}. ${issue.description || ''}`.trim(),
-          tool: 'Campaign Brief Checker', severity: finalSeverity, volume: null, sourceRecordId: briefCheckId,
+          userId,
+          fixType:        issue.fixType,
+          description:    `Brief Checker: ${issue.issue}. ${issue.description || ''}`.trim(),
+          tool:           'Campaign Brief Checker',
+          severity:       finalSeverity,
+          volume:         null,
+          sourceRecordId: briefCheckId,
         }),
       });
       const fd = await fr.json();
       if (!fd.skipped) totalExposureEstimate += fd.exposureEstimate || 0;
-    } catch(e) { console.error('generate-fix failed for brief issue:', e); }
+    } catch(e) { console.error('generate-fix failed for brief issue (non-fatal):', e); }
   }
 
-  // Update TotalExposureEstimate
+  // ── Patch TotalExposureEstimate onto Brief_Checks record ──────────
+  // Guard: only attempt if we have a record ID and a non-zero estimate.
+  // The field may not exist yet if Brief_Checks was just created without it —
+  // failure is non-fatal.
   if (briefCheckId && totalExposureEstimate > 0) {
     fetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks/${briefCheckId}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: { TotalExposureEstimate: totalExposureEstimate } }),
-    }).catch(e => console.error('TotalExposureEstimate update failed (non-fatal):', e));
+    }).catch(e => console.error('TotalExposureEstimate patch failed (non-fatal):', e));
   }
 
-  // Create Campaigns + Campaign_Dossiers skeleton (all result statuses get a dossier)
-  // Only block dossier creation if list source or consent is fundamentally unusable
-  const blockingIssues = nonGreen.filter(i => ['third_party_list'].includes(i.fixType) && i.severity === 'red');
+  // ── Create Campaigns + Campaign_Dossiers skeleton ─────────────────
+  // Blocked only when the list source is fundamentally unusable (third_party_list red).
+  // All other result statuses — including Red — get a dossier so the user can
+  // document what happened and what they're doing to fix it.
+  const blockingIssues = nonGreen.filter(i =>
+    ['third_party_list'].includes(i.fixType) && i.severity === 'red'
+  );
   let dossierId = null;
 
   if (blockingIssues.length === 0) {
@@ -383,10 +442,11 @@ async function handleBriefCheck(req, res) {
       });
 
       if (campRes.ok) {
+        // dossierId = Campaigns record ID. This is what the dossier frontend
+        // receives as ?dossierId= and what dossier-get filters CampaignID on.
         const campaignId = (await campRes.json()).records?.[0]?.id ?? null;
 
         if (campaignId) {
-          // Build dossier fields — use dossierPrefill from frontend if provided
           const dossierFields = {
             UserID:        userId,
             CampaignID:    campaignId,
@@ -398,11 +458,9 @@ async function handleBriefCheck(req, res) {
 
           // Auto-populate module fields from brief answers
           if (dossierPrefill && typeof dossierPrefill === 'object') {
-            if (dossierPrefill.ListProvenance)   dossierFields.ListProvenance   = dossierPrefill.ListProvenance;
-            if (dossierPrefill.ConsentMechanism) dossierFields.ConsentMechanism = dossierPrefill.ConsentMechanism;
-            if (dossierPrefill.ContentCheck)     dossierFields.ContentCheck     = dossierPrefill.ContentCheck;
-            if (dossierPrefill.Suppression)      dossierFields.Suppression      = dossierPrefill.Suppression;
-            if (dossierPrefill.SenderIdentity)   dossierFields.SenderIdentity   = dossierPrefill.SenderIdentity;
+            for (const key of ['ListProvenance', 'ConsentMechanism', 'ContentCheck', 'Suppression', 'SenderIdentity']) {
+              if (dossierPrefill[key]) dossierFields[key] = dossierPrefill[key];
+            }
           }
 
           const dossierRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers`, {
@@ -410,20 +468,27 @@ async function handleBriefCheck(req, res) {
             headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ records: [{ fields: dossierFields }]}),
           });
-          if (dossierRes.ok) dossierId = campaignId;
+          if (dossierRes.ok) {
+            dossierId = campaignId; // intentionally = CampaignID, not dossier record ID
+          } else {
+            console.error('Campaign_Dossiers create failed:', await dossierRes.text());
+          }
         }
       }
     } catch(e) { console.error('Dossier skeleton creation failed (non-fatal):', e); }
   }
 
-  fetch(`${APP_URL}/api/profile?action=streak`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) })
-    .catch(e => console.error('Streak failed:', e));
+  fetch(`${APP_URL}/api/profile?action=streak`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
+  }).catch(e => console.error('Streak failed (non-fatal):', e));
 
   return res.json({
     briefCheckId,
-    redCount, amberCount, greenCount,
+    redCount,
+    amberCount,
+    greenCount,
     totalExposureEstimate,
     resultStatus,
-    dossierId,
+    dossierId, // = Campaigns record ID = CampaignID in Campaign_Dossiers
   });
 }
