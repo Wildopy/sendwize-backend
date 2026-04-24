@@ -172,9 +172,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </head>
 <body>
 
+<!-- FIXED v4.25: nav links point to sendwize.co.uk/dashboard, not / -->
 <nav class="nav">
-  <a class="nav-logo" href="/">sendwize</a>
-  <a class="nav-back" href="/">
+  <a class="nav-logo" href="https://www.sendwize.co.uk/dashboard">sendwize</a>
+  <a class="nav-back" href="https://www.sendwize.co.uk/dashboard">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
     Dashboard
   </a>
@@ -184,7 +185,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div class="ld" id="loadingState"><div class="spin"></div>Loading dossier…</div>
   <div class="err-box" id="errBox"></div>
 
-  <!-- DOSSIER CONTENT (hidden until loaded) -->
   <div id="dossierContent" style="display:none">
 
     <div class="dossier-header">
@@ -196,7 +196,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <p class="dossier-owner">Owner: <span id="headerOwner">—</span></p>
     </div>
 
-    <!-- TITLE FIELDS (shown if no campaign title yet) -->
     <div class="title-fields" id="titleFields">
       <div class="tf-row">
         <div class="fg">
@@ -210,25 +209,20 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </div>
     </div>
 
-    <!-- STEPPER -->
     <div class="stepper" id="stepper"></div>
 
-    <!-- PROGRESS -->
     <div class="progress-row">
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="progress-label" id="progressLabel">0 / 5 modules</div>
     </div>
 
-    <!-- MODULE CARD -->
     <div class="module-card" id="moduleCard"></div>
 
-    <!-- MODULE NAV -->
     <div class="module-nav" id="moduleNav">
       <button class="btn-prev" id="btnPrev" onclick="prevModule()">← Previous</button>
       <span></span>
     </div>
 
-    <!-- SUBMIT CARD -->
     <div class="submit-card" id="submitCard">
       <div style="font-size:48px;margin-bottom:16px">🎉</div>
       <h2>All modules complete</h2>
@@ -239,7 +233,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </button>
     </div>
 
-  </div><!-- /dossierContent -->
+  </div>
 
   <!-- CERTIFICATE -->
   <div class="cert-section" id="certSection">
@@ -284,7 +278,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="1" width="10" height="5" rx="1"/><path d="M3 6H1v7h14V6h-2"/><rect x="4" y="10" width="8" height="5" rx="1"/></svg>
         Print / Save PDF
       </button>
-      <button class="btn-new" onclick="location.href='/'">Back to Dashboard</button>
+      <!-- FIXED v4.25: points to sendwize.co.uk/dashboard, not / -->
+      <button class="btn-new" onclick="location.href='https://www.sendwize.co.uk/dashboard'">Back to Dashboard</button>
     </div>
   </div>
 
@@ -293,7 +288,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <div class="toast" id="toast"></div>
 
-<script src="https://api.memberstackapp.com/static/memberstack.js?custom" data-memberstack-id="app_cmk1jc5fs00ry0ssb70vgbz3r"></script>
 <script>
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -364,39 +358,36 @@ const MODULES = [
   },
 ];
 
-let userId = null;
+let userId    = null;
 let dossierId = null;
-let moduleData = {}; // { key: evidenceText }
+let moduleData = {};
 let campaignTitle = '';
 let ownerName = '';
 let currentStep = 0;
 let isSaving = false;
 
-// ── AUTH + INIT ───────────────────────────────────────────────────────
-async function waitForMs() {
-  return new Promise(r => {
-    if (window.$memberstackDom) return r();
-    const iv = setInterval(() => { if (window.$memberstackDom) { clearInterval(iv); r(); } }, 200);
-  });
-}
+// ── AUTH v4.25 — URL param replaces Memberstack ───────────────────────
+function init() {
+  const params = new URLSearchParams(window.location.search);
+  userId    = params.get('userId');
+  dossierId = params.get('dossierId');
 
-async function init() {
-  try {
-    await waitForMs();
-    const m = (await window.$memberstackDom.getCurrentMember())?.data;
-    if (!m?.id) { showErr('Please log in to access your dossier.'); return; }
-    userId = m.id;
-
-    dossierId = new URLSearchParams(window.location.search).get('dossierId');
-    if (!dossierId) { showErr('No dossier ID found in URL. Please return to the dashboard.'); return; }
-
-    el('dossierIdLabel').textContent = dossierId.slice(0, 14) + '…';
-    await loadDossier();
-  } catch(e) {
-    console.error(e);
-    showErr('Failed to load dossier. Please refresh.');
+  if (!userId) {
+    showErr('You need to be signed in. Please return to the dashboard and open this tool from there.');
+    return;
   }
+  if (!dossierId) {
+    showErr('No dossier ID found in URL. Please return to the dashboard and open a dossier from there.');
+    return;
+  }
+
+  el('dossierIdLabel').textContent = dossierId.slice(0, 14) + '…';
+  loadDossier();
 }
+
+document.readyState === 'loading'
+  ? document.addEventListener('DOMContentLoaded', init)
+  : init();
 
 async function loadDossier() {
   try {
@@ -404,7 +395,6 @@ async function loadDossier() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    // Populate from saved data
     campaignTitle = data.CampaignTitle || data.campaignTitle || '';
     ownerName     = data.OwnerName     || data.ownerName     || '';
 
@@ -413,30 +403,17 @@ async function loadDossier() {
       moduleData[m.key] = val;
     });
 
-    // If already submitted, show certificate
     if (data.Status === 'Submitted' || data.status === 'Submitted') {
       renderCertificate();
       return;
     }
 
-    // Show dossier UI
     el('loadingState').style.display = 'none';
     el('dossierContent').style.display = 'block';
 
-    // Pre-fill title fields if we have them
-    if (campaignTitle) {
-      el('campaignTitle').value = campaignTitle;
-      el('headerTitle').textContent = campaignTitle;
-    }
-    if (ownerName) {
-      el('ownerName').value = ownerName;
-      el('headerOwner').textContent = ownerName;
-    }
-
-    // Hide title fields if both already set
-    if (campaignTitle && ownerName) {
-      el('titleFields').style.display = 'none';
-    }
+    if (campaignTitle) { el('campaignTitle').value = campaignTitle; el('headerTitle').textContent = campaignTitle; }
+    if (ownerName)     { el('ownerName').value = ownerName;         el('headerOwner').textContent = ownerName; }
+    if (campaignTitle && ownerName) el('titleFields').style.display = 'none';
 
     renderStepper();
     renderModule(currentStep);
@@ -444,7 +421,7 @@ async function loadDossier() {
 
   } catch(e) {
     console.error(e);
-    // If 404/not found, start fresh
+    // 404 / not found — start fresh
     el('loadingState').style.display = 'none';
     el('dossierContent').style.display = 'block';
     renderStepper();
@@ -455,8 +432,7 @@ async function loadDossier() {
 
 // ── STEPPER ───────────────────────────────────────────────────────────
 function renderStepper() {
-  const s = el('stepper');
-  s.innerHTML = MODULES.map((m, i) => {
+  el('stepper').innerHTML = MODULES.map((m, i) => {
     const isDone   = !!(moduleData[m.key]?.trim());
     const isActive = i === currentStep;
     const cls = isDone ? 'done' : isActive ? 'active' : '';
@@ -493,26 +469,24 @@ function renderModule(i) {
         <span class="status-pill ${saved ? 'saved' : 'empty'}">${saved ? 'Saved' : 'Not saved'}</span>
       </div>
     </div>
-
     <div class="guidance">
       <div class="guidance-title">What to include</div>
       <ul>${m.guidance.map(g => `<li>${escH(g)}</li>`).join('')}</ul>
     </div>
-
     <textarea class="evidence-area" id="evidenceText" placeholder="Document your evidence here…" oninput="onTextInput()">${escH(val)}</textarea>
-
     <div class="module-actions">
-      <button class="btn-save" id="btnSave" onclick="saveModule()" ${saved && val === getTextVal() ? 'disabled' : ''}>
+      <button class="btn-save" id="btnSave" onclick="saveModule()">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 14l2-4 8-8 2 2-8 8-4 2z"/></svg>
         Save module
       </button>
-      ${i < 4 ? `<button class="btn-next" onclick="saveAndNext()">Save & next →</button>` : `<button class="btn-next" onclick="saveAndFinish()">Save & finish ✓</button>`}
+      ${i < 4
+        ? `<button class="btn-next" onclick="saveAndNext()">Save & next →</button>`
+        : `<button class="btn-next" onclick="saveAndFinish()">Save & finish ✓</button>`}
       <span class="saved-tick" id="savedTick">✓ Saved</span>
       <span class="save-note">Evidence is saved per module — you can return any time.</span>
     </div>
   `;
 
-  // Prev button visibility
   el('btnPrev').style.visibility = i === 0 ? 'hidden' : 'visible';
 }
 
@@ -523,15 +497,12 @@ function onTextInput() {
   if (tick) tick.classList.remove('show');
 }
 
-function getTextVal() {
-  return el('evidenceText')?.value || '';
-}
+function getTextVal() { return el('evidenceText')?.value || ''; }
 
 // ── SAVE MODULE ───────────────────────────────────────────────────────
 async function saveModule() {
   if (isSaving) return;
 
-  // Ensure title fields are filled
   const title = el('campaignTitle').value.trim();
   const owner = el('ownerName').value.trim();
   if (!title) { toast('Please enter a campaign title first.', 'er'); el('campaignTitle').focus(); return; }
@@ -539,8 +510,8 @@ async function saveModule() {
 
   campaignTitle = title;
   ownerName     = owner;
-  el('headerTitle').textContent  = title;
-  el('headerOwner').textContent  = owner;
+  el('headerTitle').textContent   = title;
+  el('headerOwner').textContent   = owner;
   el('titleFields').style.display = 'none';
 
   const text = getTextVal().trim();
@@ -569,7 +540,6 @@ async function saveModule() {
     renderStepper();
     updateProgress();
 
-    // Update status pill
     const pill = document.querySelector('.status-pill');
     if (pill) { pill.className = 'status-pill saved'; pill.textContent = 'Saved'; }
 
@@ -588,7 +558,11 @@ async function saveModule() {
 async function saveAndNext() {
   await saveModule();
   if (currentStep < 4) {
-    setTimeout(() => { currentStep++; renderStepper(); renderModule(currentStep); updateProgress(); window.scrollTo({top:0,behavior:'smooth'}); }, 300);
+    setTimeout(() => {
+      currentStep++;
+      renderStepper(); renderModule(currentStep); updateProgress();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 300);
   }
 }
 
@@ -600,9 +574,7 @@ async function saveAndFinish() {
 function prevModule() {
   if (currentStep > 0) {
     currentStep--;
-    renderStepper();
-    renderModule(currentStep);
-    updateProgress();
+    renderStepper(); renderModule(currentStep); updateProgress();
     el('submitCard').classList.remove('show');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -637,9 +609,7 @@ async function submitDossier() {
       body: JSON.stringify({ userId, dossierId, issues: [] }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
     renderCertificate();
-
   } catch(e) {
     console.error(e);
     toast('Submission failed — please try again', 'er');
@@ -657,14 +627,14 @@ function renderCertificate() {
   const dateStr  = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const certIdStr = 'SW-' + dossierId.slice(0, 8).toUpperCase();
 
-  el('certId').textContent       = certIdStr;
-  el('certDate').textContent     = dateStr;
-  el('certCampaign').textContent = campaignTitle || 'Untitled Campaign';
-  el('certOwner').textContent    = ownerName     || '—';
+  el('certId').textContent        = certIdStr;
+  el('certDate').textContent      = dateStr;
+  el('certCampaign').textContent  = campaignTitle || 'Untitled Campaign';
+  el('certOwner').textContent     = ownerName     || '—';
   el('certDossierId').textContent = dossierId.slice(0, 14) + '…';
 
   el('certModules').innerHTML = MODULES.map(m => {
-    const text = moduleData[m.key] || '';
+    const text   = moduleData[m.key] || '';
     const hasTxt = text.trim().length > 0;
     return `<div class="cert-module">
       <div class="cert-module-header">
@@ -681,8 +651,8 @@ function renderCertificate() {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────
-const el  = id => document.getElementById(id);
-const escH = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const el   = id => document.getElementById(id);
+const escH = s  => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 function showErr(msg) {
   el('loadingState').style.display = 'none';
@@ -707,8 +677,6 @@ document.addEventListener('DOMContentLoaded', () => {
     el('headerOwner').textContent = this.value || '—';
   });
 });
-
-init();
 </script>
 </body>
 </html>
