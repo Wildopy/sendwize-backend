@@ -3,675 +3,303 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Suppression Checker — Sendwize</title>
+  <title>Suppression Check Report — Sendwize</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --orange: #EA7317;
-      --orange-light: #FFF4EA;
-      --bg: #FAFAFA;
-      --white: #ffffff;
-      --border: #f0f0f0;
-      --border-mid: #e5e5e5;
-      --text: #1a1a1a;
-      --muted: #6b7280;
-      --green: #16a34a;
-      --green-bg: #f0fdf4;
-      --green-bd: #bbf7d0;
-      --red: #dc2626;
-      --red-bg: #fef2f2;
-      --red-bd: #fecaca;
-      --yellow: #d97706;
-      --yellow-bg: #fffbeb;
-      --yellow-bd: #fde68a;
-      --blue: #1d4ed8;
-      --blue-bg: #eff6ff;
-      --blue-bd: #bfdbfe;
-      --radius: 8px;
+      --orange:#EA7317; --orange-light:#FFF4EA;
+      --bg:#FAFAFA; --white:#fff; --border:#f0f0f0; --border-mid:#e5e5e5;
+      --text:#1a1a1a; --muted:#6b7280;
+      --green:#16a34a; --green-bg:#f0fdf4; --green-bd:#bbf7d0;
+      --yellow:#d97706; --yellow-bg:#fffbeb; --yellow-bd:#fde68a;
+      --red:#dc2626; --red-bg:#fef2f2; --red-bd:#fecaca;
+      --blue:#1d4ed8; --blue-bg:#eff6ff; --blue-bd:#bfdbfe;
+      --radius:8px;
     }
+    body { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg); color: var(--text);
-      min-height: 100vh; padding: 32px 20px 60px;
-    }
+    .topnav { background:var(--white); border-bottom:1px solid var(--border); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+    .topnav-logo { font-size:18px; font-weight:800; color:var(--orange); letter-spacing:-.5px; }
+    .nav-actions { display:flex; gap:8px; align-items:center; }
+    .btn-ghost { padding:7px 14px; border:1px solid var(--border-mid); border-radius:var(--radius); font-size:13px; font-weight:500; background:var(--white); color:var(--muted); cursor:pointer; font-family:inherit; transition:all .15s; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+    .btn-ghost:hover { border-color:var(--orange); color:var(--orange); }
+    .btn-primary { padding:7px 16px; border-radius:var(--radius); font-size:13px; font-weight:600; background:var(--orange); color:var(--white); border:none; cursor:pointer; font-family:inherit; transition:background .15s; }
+    .btn-primary:hover { background:#d4660f; }
 
-    .container { max-width: 780px; margin: 0 auto; }
+    .container { max-width:860px; margin:0 auto; padding:36px 20px 80px; }
 
-    .back-link {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: 13px; color: var(--muted); text-decoration: none;
-      margin-bottom: 20px; transition: color .15s;
-    }
-    .back-link:hover { color: var(--orange); }
+    .state-box { text-align:center; padding:100px 20px; }
+    .spinner { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 14px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .state-text { font-size:14px; color:var(--muted); }
 
-    .page-title    { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
-    .page-subtitle { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+    .hero { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:32px; margin-bottom:16px; }
+    .hero-eyebrow { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:10px; }
+    .hero-title { font-size:28px; font-weight:800; line-height:1.2; margin-bottom:8px; }
+    .hero-meta { font-size:13px; color:var(--muted); margin-bottom:22px; }
+    .verdict-badge { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:6px; font-size:14px; font-weight:700; border:1px solid; }
+    .verdict-pass { background:var(--green-bg); color:var(--green); border-color:var(--green-bd); }
+    .verdict-warn { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow-bd); }
+    .verdict-fail { background:var(--red-bg); color:var(--red); border-color:var(--red-bd); }
 
-    .pecr-note {
-      font-size: 12px; color: var(--muted); background: var(--orange-light);
-      border: 1px solid #fde5c7; border-radius: var(--radius);
-      padding: 10px 14px; margin-bottom: 28px; line-height: 1.5;
-    }
-    .pecr-note strong { color: var(--orange); }
+    .metrics-top { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    @media(max-width:480px){ .metrics-top { grid-template-columns:1fr; } }
+    .metric-big { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px 20px; }
+    .metric-big-label { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+    .metric-big-val { font-size:32px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .metric-big-sub { font-size:12px; color:var(--muted); }
 
-    .card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
-    }
-    .card-label {
-      font-size: 11px; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--orange); margin-bottom: 16px;
-    }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    @media(max-width:580px){ .metrics { grid-template-columns:repeat(2,1fr); } }
+    .metric { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:16px; text-align:center; }
+    .metric-val { font-size:22px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .metric-lbl { font-size:11px; color:var(--muted); font-weight:500; }
 
-    /* Upload grid */
-    .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 0; }
-    @media(max-width:560px){ .upload-grid { grid-template-columns: 1fr; } }
+    .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
+    .card-label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; }
 
-    .upload-slot label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px; }
-    .upload-slot-desc  { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
+    .warning-list { display:flex; flex-direction:column; gap:8px; }
+    .warning-item { padding:12px 14px 12px 16px; border-radius:var(--radius); border-left:3px solid; }
+    .warning-item.critical { background:var(--red-bg);    border-color:var(--red); }
+    .warning-item.high     { background:var(--yellow-bg); border-color:var(--yellow); }
+    .warning-item.medium   { background:#fff7ed;           border-color:#fb923c; }
+    .warning-item.low      { background:var(--bg);         border-color:var(--border-mid); }
+    .warning-item.info     { background:var(--blue-bg);    border-color:var(--blue); }
+    .warning-header { display:flex; align-items:center; gap:8px; margin-bottom:5px; flex-wrap:wrap; }
+    .w-sev { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:3px; }
+    .warning-item.critical .w-sev { background:var(--red);    color:#fff; }
+    .warning-item.high     .w-sev { background:var(--yellow); color:#fff; }
+    .warning-item.medium   .w-sev { background:#fb923c;       color:#fff; }
+    .warning-item.low      .w-sev { background:var(--muted);  color:#fff; }
+    .warning-item.info     .w-sev { background:var(--blue);   color:#fff; }
+    .w-reg  { font-size:11px; color:var(--muted); }
+    .w-msg  { font-size:13px; color:var(--text); line-height:1.5; margin-bottom:5px; }
+    .w-action { font-size:12px; font-weight:600; color:var(--text); }
+    .w-action::before { content:'→ '; }
 
-    .file-drop {
-      border: 2px dashed var(--border-mid); border-radius: var(--radius);
-      padding: 22px 14px; text-align: center; cursor: pointer;
-      transition: all .15s; background: var(--bg);
-    }
-    .file-drop:hover, .file-drop.dragover { border-color: var(--orange); background: var(--orange-light); }
-    .file-drop.loaded { border-color: var(--green); border-style: solid; background: var(--green-bg); }
-    .file-drop-icon { font-size: 22px; margin-bottom: 6px; }
-    .file-drop-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
-    .file-drop-text strong { color: var(--orange); }
-    .file-loaded-name  { font-size: 12px; font-weight: 600; color: var(--green); }
-    .file-loaded-count { font-size: 11px; color: var(--green); opacity: .8; }
-    .file-clear {
-      font-size: 11px; color: var(--muted); background: none; border: none;
-      cursor: pointer; margin-top: 4px; text-decoration: underline; font-family: inherit;
-    }
-    .file-clear:hover { color: var(--red); }
-    .file-input { display: none; }
+    .email-list { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; font-size:12px; font-family:monospace; max-height:160px; overflow-y:auto; line-height:1.9; color:var(--text); }
 
-    /* Or paste */
-    .paste-toggle {
-      font-size: 12px; color: var(--orange); background: none; border: none;
-      cursor: pointer; font-family: inherit; padding: 0; margin-top: 8px;
-      display: block; text-decoration: underline;
-    }
-    .paste-wrap { display: none; margin-top: 8px; }
-    .paste-wrap.show { display: block; }
-    .paste-wrap textarea {
-      width: 100%; padding: 9px 10px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 12px; font-family: monospace;
-      min-height: 90px; resize: vertical; line-height: 1.5; transition: border-color .15s;
-    }
-    .paste-wrap textarea:focus { outline: none; border-color: var(--orange); }
-    .paste-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+    @media(max-width:480px){ .stat-row { grid-template-columns:repeat(2,1fr); } }
+    .stat-box { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:12px; text-align:center; }
+    .stat-val { font-size:18px; font-weight:800; margin-bottom:3px; }
+    .stat-lbl { font-size:11px; color:var(--muted); }
 
-    /* Suppression age */
-    .form-group { margin-bottom: 0; }
-    label.field-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
-    select {
-      width: 100%; padding: 10px 12px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 14px; font-family: inherit;
-      background: var(--white); color: var(--text); transition: border-color .15s;
-    }
-    select:focus { outline: none; border-color: var(--orange); }
-    .field-hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+    .fix-list { display:flex; flex-direction:column; gap:8px; }
+    .fix-item { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid var(--border); border-radius:var(--radius); }
+    .fix-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+    .fix-dot.pending   { background:var(--yellow); }
+    .fix-dot.completed { background:var(--green); }
+    .fix-dot.dismissed { background:#d1d5db; }
+    .fix-body { flex:1; }
+    .fix-title { font-size:13px; font-weight:600; margin-bottom:3px; }
+    .fix-desc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
+    .fix-pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .pill { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:500; }
+    .pill-critical { background:var(--red-bg);    color:var(--red); }
+    .pill-high     { background:var(--yellow-bg); color:var(--yellow); }
+    .pill-medium   { background:#fff7ed;           color:#ea580c; }
+    .pill-low      { background:var(--bg);         color:var(--muted); border:1px solid var(--border-mid); }
+    .pill-exposure { background:var(--orange-light); color:var(--orange); }
+    .pill-pending  { background:var(--yellow-bg); color:var(--yellow); }
+    .pill-completed{ background:var(--green-bg);  color:var(--green); }
+    .pill-dismissed{ background:var(--bg); color:var(--muted); border:1px solid var(--border-mid); }
 
-    /* Buttons */
-    .btn-primary {
-      width: 100%; padding: 13px 20px; background: var(--orange); color: var(--white);
-      border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600;
-      cursor: pointer; transition: background .15s; font-family: inherit;
-    }
-    .btn-primary:hover:not(:disabled) { background: #d4660f; }
-    .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+    .empty-state { text-align:center; padding:28px 20px; color:var(--muted); font-size:13px; }
+    .empty-icon  { font-size:24px; margin-bottom:8px; }
 
-    .btn-secondary {
-      padding: 9px 18px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 13px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer;
-      font-family: inherit; transition: all .15s;
-    }
-    .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
-
-    /* Error */
-    .error-box {
-      display: none; background: var(--red-bg); border: 1px solid var(--red-bd);
-      border-radius: var(--radius); padding: 14px; margin-bottom: 18px;
-      font-size: 13px; color: var(--red);
-    }
-    .error-box.show { display: block; }
-
-    /* Loading */
-    .loading { display: none; text-align: center; padding: 56px 20px; }
-    .loading.show { display: block; }
-    .spinner {
-      width: 36px; height: 36px; border: 3px solid var(--border);
-      border-top-color: var(--orange); border-radius: 50%;
-      animation: spin .8s linear infinite; margin: 0 auto 16px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-size: 14px; color: var(--muted); }
-
-    /* Results */
-    .results { display: none; }
-    .results.show { display: block; }
-
-    .new-check-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 10px 18px; border: 1px solid var(--border-mid);
-      border-radius: var(--radius); font-size: 13px; font-weight: 500;
-      background: var(--white); color: var(--text); cursor: pointer;
-      font-family: inherit; transition: all .15s; margin-bottom: 24px;
-    }
-    .new-check-btn:hover { border-color: var(--orange); color: var(--orange); }
-
-    /* Verdict */
-    .verdict {
-      border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px;
-      border: 1px solid; display: flex; align-items: flex-start; gap: 16px;
-    }
-    .verdict.clean    { background: var(--green-bg); border-color: var(--green-bd); }
-    .verdict.critical { background: var(--red-bg);   border-color: var(--red-bd); }
-    .verdict.warning  { background: var(--yellow-bg); border-color: var(--yellow-bd); }
-    .verdict-icon  { font-size: 26px; flex-shrink: 0; }
-    .verdict-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-    .verdict-sub   { font-size: 13px; line-height: 1.5; }
-    .verdict.clean    .verdict-title { color: var(--green); }
-    .verdict.critical .verdict-title { color: var(--red); }
-    .verdict.warning  .verdict-title { color: var(--yellow); }
-    .verdict.clean    .verdict-sub   { color: #166534; }
-    .verdict.critical .verdict-sub   { color: #7f1d1d; }
-    .verdict.warning  .verdict-sub   { color: #78350f; }
-
-    /* Score + exposure row */
-    .metrics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-    @media(max-width:480px){ .metrics-row { grid-template-columns: 1fr; } }
-
-    .metric-card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 18px 20px;
-    }
-    .metric-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-    .metric-value { font-size: 28px; font-weight: 800; line-height: 1; }
-    .metric-sub   { font-size: 12px; color: var(--muted); margin-top: 5px; }
-
-    .score-high   { color: var(--green); }
-    .score-medium { color: var(--yellow); }
-    .score-low    { color: var(--red); }
-    .exposure-val { color: var(--red); }
-
-    /* Stats grid */
-    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
-    @media(max-width:520px){ .stats-grid { grid-template-columns: repeat(2,1fr); } }
-
-    .stat-box {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 14px 12px; text-align: center;
-    }
-    .stat-num   { font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
-    .stat-lbl   { font-size: 11px; color: var(--muted); font-weight: 500; }
-    .stat-box.danger .stat-num { color: var(--red); }
-    .stat-box.warn   .stat-num { color: var(--yellow); }
-    .stat-box.info   .stat-num { color: var(--blue); }
-    .stat-box.good   .stat-num { color: var(--green); }
-
-    /* Warnings */
-    .warning-list { display: flex; flex-direction: column; gap: 10px; }
-    .warning-item {
-      border-radius: var(--radius); padding: 14px 16px;
-      border-left: 3px solid; font-size: 13px; line-height: 1.5;
-    }
-    .warning-item.critical { background: var(--red-bg);    border-color: var(--red); }
-    .warning-item.high     { background: var(--yellow-bg); border-color: var(--yellow); }
-    .warning-item.medium   { background: var(--yellow-bg); border-color: #fbbf24; }
-    .warning-item.low      { background: var(--bg);        border-color: var(--border-mid); }
-    .warning-item.info     { background: var(--blue-bg);   border-color: var(--blue); }
-
-    .warning-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
-    .warning-sev {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .06em; padding: 2px 7px; border-radius: 3px;
-    }
-    .warning-item.critical .warning-sev { background: var(--red);    color: var(--white); }
-    .warning-item.high     .warning-sev { background: var(--yellow); color: var(--white); }
-    .warning-item.medium   .warning-sev { background: #fbbf24;       color: var(--white); }
-    .warning-item.low      .warning-sev { background: var(--muted);  color: var(--white); }
-    .warning-item.info     .warning-sev { background: var(--blue);   color: var(--white); }
-
-    .warning-reg  { font-size: 11px; color: var(--muted); }
-    .warning-msg  { color: var(--text); margin-bottom: 6px; }
-    .warning-action { font-size: 12px; font-weight: 600; color: var(--text); }
-    .warning-action::before { content: '→ '; }
-
-    /* Email list display */
-    .email-list-wrap { margin-top: 10px; }
-    .email-list {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 10px 12px;
-      font-size: 12px; font-family: monospace; max-height: 140px;
-      overflow-y: auto; line-height: 1.8; color: var(--text);
-    }
-    .list-toggle {
-      font-size: 12px; color: var(--orange); background: none; border: none;
-      cursor: pointer; font-family: inherit; padding: 0; margin-top: 6px;
-      text-decoration: underline;
-    }
-
-    /* Download */
-    .download-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
-
-    .section-label {
-      font-size: 11px; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--orange); margin-bottom: 14px;
-    }
-
-    .copy-success { font-size: 12px; color: var(--green); display: none; }
-    .copy-success.show { display: inline; }
+    @media print { .topnav { display:none; } .container { padding:20px; } }
   </style>
 </head>
 <body>
-<div class="container">
+  <nav class="topnav">
+    <div class="topnav-logo">sendwize</div>
+    <div class="nav-actions">
+      <!-- FIXED v4.25: back link points to sendwize.co.uk/dashboard, not history.back() -->
+      <a href="https://www.sendwize.co.uk/dashboard" class="btn-ghost">← Dashboard</a>
+      <button class="btn-primary" onclick="window.print()">Export PDF</button>
+    </div>
+  </nav>
 
-  <a href="javascript:history.back()" class="back-link">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
-    Dashboard
-  </a>
-
-  <h1 class="page-title">Suppression Checker</h1>
-  <p class="page-subtitle">Check your send list against your suppression list before every campaign send.</p>
-  <div class="pecr-note">
-    <strong>PECR Regulation 22</strong> — You must not send marketing emails to anyone who has previously opted out or unsubscribed. The ICO requires you to maintain an up-to-date suppression list and check it before every send. Failure to do so can result in fines and enforcement notices.
+  <div class="container">
+    <div class="state-box" id="stateBox">
+      <div class="spinner"></div>
+      <div class="state-text">Loading report…</div>
+    </div>
+    <div id="report" style="display:none;"></div>
   </div>
-
-  <div class="error-box" id="errorBox"></div>
-
-  <!-- Form -->
-  <div id="formSection">
-
-    <div class="card">
-      <div class="card-label">Upload Your Lists</div>
-      <div class="upload-grid">
-
-        <!-- Send list -->
-        <div class="upload-slot">
-          <label>Send List <span style="color:var(--orange)">*</span></label>
-          <div class="upload-slot-desc">The contacts you plan to email for this campaign.</div>
-          <div class="file-drop" id="sendDrop"
-               onclick="document.getElementById('sendInput').click()"
-               ondragover="onDrag(event,'sendDrop')" ondragleave="offDrag('sendDrop')" ondrop="onDrop(event,'send')">
-            <div class="file-drop-icon">📤</div>
-            <div class="file-drop-text" id="sendDropText">
-              Drop CSV here or <strong>browse</strong><br>
-              <span style="font-size:11px;">One email per row, or a CSV with an email column</span>
-            </div>
-          </div>
-          <input type="file" id="sendInput" class="file-input" accept=".csv,.txt" onchange="onFile(event,'send')" />
-          <button class="paste-toggle" onclick="togglePaste('send')">Or paste emails instead</button>
-          <div class="paste-wrap" id="sendPasteWrap">
-            <textarea id="sendPaste" placeholder="paste@example.com&#10;another@example.com&#10;…" oninput="onPaste('send')"></textarea>
-            <div class="paste-hint">One email per line</div>
-          </div>
-        </div>
-
-        <!-- Suppression list -->
-        <div class="upload-slot">
-          <label>Suppression List <span style="color:var(--orange)">*</span></label>
-          <div class="upload-slot-desc">All contacts who have previously unsubscribed or opted out.</div>
-          <div class="file-drop" id="suppDrop"
-               onclick="document.getElementById('suppInput').click()"
-               ondragover="onDrag(event,'suppDrop')" ondragleave="offDrag('suppDrop')" ondrop="onDrop(event,'supp')">
-            <div class="file-drop-icon">🚫</div>
-            <div class="file-drop-text" id="suppDropText">
-              Drop CSV here or <strong>browse</strong><br>
-              <span style="font-size:11px;">One email per row, or a CSV with an email column</span>
-            </div>
-          </div>
-          <input type="file" id="suppInput" class="file-input" accept=".csv,.txt" onchange="onFile(event,'supp')" />
-          <button class="paste-toggle" onclick="togglePaste('supp')">Or paste emails instead</button>
-          <div class="paste-wrap" id="suppPasteWrap">
-            <textarea id="suppPaste" placeholder="unsubscribed@example.com&#10;optedout@example.com&#10;…" oninput="onPaste('supp')"></textarea>
-            <div class="paste-hint">One email per line</div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-label">Suppression List Health</div>
-      <div class="form-group">
-        <label class="field-label" for="listAge">When was your suppression list last updated?</label>
-        <select id="listAge">
-          <option value="current">Within the last month — fully up to date</option>
-          <option value="6months">1–6 months ago</option>
-          <option value="1year">6–12 months ago</option>
-          <option value="2years+">Over a year ago</option>
-          <option value="unknown">Not sure</option>
-        </select>
-        <div class="field-hint">ICO guidance requires suppression lists to be kept current. Stale lists mean recent opt-outs may not be captured.</div>
-      </div>
-    </div>
-
-    <button class="btn-primary" id="submitBtn" disabled onclick="runCheck()">
-      Run Suppression Check
-    </button>
-  </div>
-
-  <!-- Loading -->
-  <div class="loading" id="loadingSection">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">Checking your lists…</div>
-  </div>
-
-  <!-- Results -->
-  <div class="results" id="resultsSection">
-
-    <button class="new-check-btn" onclick="resetForm()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
-      New Check
-    </button>
-
-    <!-- Verdict -->
-    <div class="verdict" id="verdictBox">
-      <div class="verdict-icon" id="verdictIcon"></div>
-      <div>
-        <div class="verdict-title" id="verdictTitle"></div>
-        <div class="verdict-sub"   id="verdictSub"></div>
-      </div>
-    </div>
-
-    <!-- Score + exposure -->
-    <div class="metrics-row">
-      <div class="metric-card">
-        <div class="metric-label">PECR Risk Score</div>
-        <div class="metric-value" id="scoreVal"></div>
-        <div class="metric-sub"   id="scoreSub"></div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Financial Exposure</div>
-        <div class="metric-value exposure-val" id="exposureVal"></div>
-        <div class="metric-sub" id="exposureSub"></div>
-      </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="stats-grid" id="statsGrid"></div>
-
-    <!-- Warnings -->
-    <div class="card" id="warningsCard" style="display:none;">
-      <div class="section-label">PECR & ICO Warnings</div>
-      <div class="warning-list" id="warningList"></div>
-    </div>
-
-    <!-- Suppressed contacts detail -->
-    <div class="card" id="matchesCard" style="display:none;">
-      <div class="section-label">Suppressed Contacts Found</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">These contacts must be removed from your send list. Do not email them.</p>
-      <div class="email-list-wrap">
-        <div class="email-list" id="matchesList"></div>
-      </div>
-      <div class="download-row">
-        <button class="btn-secondary" onclick="downloadList('matches')">Download suppressed contacts</button>
-        <span class="copy-success" id="matchCopySuccess">✓ Downloaded</span>
-      </div>
-    </div>
-
-    <!-- Clean list download -->
-    <div class="card" id="cleanCard">
-      <div class="section-label">Clean Send List</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;" id="cleanDesc"></p>
-      <div class="download-row">
-        <button class="btn-secondary" onclick="downloadList('clean')">Download clean list</button>
-        <button class="btn-secondary" onclick="copyClean()">Copy to clipboard</button>
-        <span class="copy-success" id="cleanCopySuccess">✓ Copied!</span>
-      </div>
-    </div>
-
-  </div>
-
-</div>
 
 <script>
-  const userId     = new URLSearchParams(window.location.search).get('userId') || '';
-  const VERCEL_URL = window.location.origin;
+  // AUTH — already URL param, confirmed v4.24. No Memberstack present.
+  const p        = new URLSearchParams(window.location.search);
+  const recordId = p.get('id') || p.get('recordId');
+  const userId   = p.get('userId');
+  const BASE     = 'https://sendwize-backend.vercel.app';
 
-  let sendEmails = [];
-  let suppEmails = [];
-  let lastResults = null;
-
-  // ─── CSV / text parsing ────────────────────────────────────────────
-  function extractEmails(text) {
-    // Handles: one per line, CSV with header, comma-separated
-    const lines = text.split(/[\r\n,;]+/).map(l => l.trim().replace(/^"|"$/g, '').toLowerCase());
-    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return lines.filter(l => emailRe.test(l));
-  }
-
-  // ─── File handling ────────────────────────────────────────────────
-  function onDrag(e, id)  { e.preventDefault(); document.getElementById(id).classList.add('dragover'); }
-  function offDrag(id)    { document.getElementById(id).classList.remove('dragover'); }
-  function onDrop(e, key) { e.preventDefault(); offDrag(key === 'send' ? 'sendDrop' : 'suppDrop'); readFile(e.dataTransfer.files[0], key); }
-  function onFile(e, key) { readFile(e.target.files[0], key); }
-
-  function readFile(file, key) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => setEmails(key, e.target.result, file.name);
-    reader.readAsText(file);
-  }
-
-  function onPaste(key) {
-    const text = document.getElementById(key === 'send' ? 'sendPaste' : 'suppPaste').value;
-    setEmails(key, text, 'pasted');
-  }
-
-  function setEmails(key, text, source) {
-    const emails = extractEmails(text);
-    if (key === 'send') sendEmails = emails;
-    else               suppEmails = emails;
-    updateDropUI(key, source, emails.length);
-    updateSubmitBtn();
-  }
-
-  function updateDropUI(key, source, count) {
-    const dropId   = key === 'send' ? 'sendDrop' : 'suppDrop';
-    const textId   = key === 'send' ? 'sendDropText' : 'suppDropText';
-    const drop     = document.getElementById(dropId);
-    const textEl   = document.getElementById(textId);
-
-    if (count === 0) {
-      drop.classList.remove('loaded');
-      return;
-    }
-    drop.classList.add('loaded');
-    textEl.innerHTML = `<div class="file-loaded-name">✓ ${source === 'pasted' ? 'Pasted' : source}</div>
-      <div class="file-loaded-count">${count.toLocaleString()} email${count !== 1 ? 's' : ''} loaded</div>
-      <button class="file-clear" onclick="clearList('${key}',event)">Clear</button>`;
-  }
-
-  function clearList(key, e) {
-    e.stopPropagation();
-    if (key === 'send') { sendEmails = []; document.getElementById('sendInput').value = ''; document.getElementById('sendPaste').value = ''; }
-    else               { suppEmails = []; document.getElementById('suppInput').value = ''; document.getElementById('suppPaste').value = ''; }
-    updateDropUI(key, '', 0);
-    const dropId = key === 'send' ? 'sendDrop' : 'suppDrop';
-    const textId = key === 'send' ? 'sendDropText' : 'suppDropText';
-    document.getElementById(dropId).classList.remove('loaded');
-    document.getElementById(textId).innerHTML = key === 'send'
-      ? 'Drop CSV here or <strong>browse</strong><br><span style="font-size:11px;">One email per row, or a CSV with an email column</span>'
-      : 'Drop CSV here or <strong>browse</strong><br><span style="font-size:11px;">One email per row, or a CSV with an email column</span>';
-    updateSubmitBtn();
-  }
-
-  function togglePaste(key) {
-    const wrap = document.getElementById(key === 'send' ? 'sendPasteWrap' : 'suppPasteWrap');
-    wrap.classList.toggle('show');
-  }
-
-  function updateSubmitBtn() {
-    document.getElementById('submitBtn').disabled = sendEmails.length === 0 || suppEmails.length === 0;
-  }
-
-  // ─── Run check ────────────────────────────────────────────────────
-  async function runCheck() {
-    clearError();
-    if (!userId) { showError('Missing userId. Please access this tool via your Sendwize dashboard.'); return; }
-
-    const suppressionListAge = document.getElementById('listAge').value;
-
-    document.getElementById('loadingText').textContent =
-      `Checking ${sendEmails.length.toLocaleString()} contacts against ${suppEmails.length.toLocaleString()} suppressed addresses…`;
-    document.getElementById('formSection').style.display = 'none';
-    document.getElementById('loadingSection').classList.add('show');
-
+  async function load() {
+    if (!recordId) { return showError('No report ID provided.'); }
     try {
-      const resp = await fetch(`${VERCEL_URL}/api/check-suppression`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          sendList:        sendEmails,
-          suppressionList: suppEmails,
-          userId,
-          suppressionListAge
-        })
-      });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || `Server error ${resp.status}`);
-      }
-
-      lastResults = await resp.json();
-      renderResults(lastResults);
-
-    } catch (err) {
-      showError('Check failed: ' + err.message);
-      document.getElementById('formSection').style.display = 'block';
-      document.getElementById('loadingSection').classList.remove('show');
-    }
+      const [rr, fr] = await Promise.all([
+        fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=suppression`),
+        userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
+      ]);
+      if (!rr.ok) throw new Error('Report not found');
+      const rd = await rr.json();
+      const fd = fr && fr.ok ? await fr.json() : null;
+      render(rd.fields || rd, fd);
+    } catch(e) { showError(e.message); }
   }
 
-  // ─── Render results ───────────────────────────────────────────────
-  function renderResults(d) {
-    // Verdict
-    const hasMatches = d.matchCount > 0;
-    const hasWarnings = d.warnings?.some(w => ['critical','high'].includes(w.severity));
-    const verdictBox = document.getElementById('verdictBox');
-    verdictBox.className = `verdict ${hasMatches ? 'critical' : hasWarnings ? 'warning' : 'clean'}`;
-    document.getElementById('verdictIcon').textContent  = hasMatches ? '🚫' : hasWarnings ? '⚠️' : '✅';
-    document.getElementById('verdictTitle').textContent = hasMatches ? 'Do Not Send' : hasWarnings ? 'Review Required' : 'List is Clean';
-    document.getElementById('verdictSub').textContent   = d.recommendation || '';
+  function render(f, fd) {
+    const date         = fmtDate(f.CheckDate);
+    const sendCount    = f.SendListSize       || 0;
+    const suppCount    = f.SuppressionListSize || 0;
+    const matchCount   = f.MatchesFound       || 0;
+    const dupCount     = f.DuplicatesFound    || 0;
+    const invalidCount = f.InvalidEmailsFound || 0;
+    const cleanCount   = f.CleanListSize      || 0;
+    const score        = f.RiskScore          || 0;
+    const expLow       = f.ExposureLow        || 0;
+    const expHigh      = f.ExposureHigh       || 0;
+    const results      = parseJ(f.Results)    || {};
+    const warnings     = results.warnings     || [];
 
-    // Score
-    const score    = d.score ?? 100;
-    const scoreCls = score >= 80 ? 'score-high' : score >= 50 ? 'score-medium' : 'score-low';
-    const scoreEl  = document.getElementById('scoreVal');
-    scoreEl.textContent = score + '/100';
-    scoreEl.className   = `metric-value ${scoreCls}`;
-    document.getElementById('scoreSub').textContent = scoreLabel(score);
+    const isClean = matchCount === 0 && dupCount === 0 && invalidCount === 0;
+    const vc = isClean && score >= 80 ? 'pass' : matchCount > 0 || score < 50 ? 'fail' : 'warn';
+    const vi = vc==='pass'?'✅':vc==='warn'?'⚠️':'🚫';
+    const verdictText = vc==='pass' ? 'List Clean — Safe to Send' : matchCount > 0 ? 'Do Not Send' : 'Review Required';
+    const sc = score>=80?'var(--green)':score>=50?'var(--yellow)':'var(--red)';
 
-    // Exposure
-    const expEl = document.getElementById('exposureVal');
-    if (d.exposureLow > 0) {
-      expEl.textContent = `${formatMoney(d.exposureLow)}–${formatMoney(d.exposureHigh)}`;
-      document.getElementById('exposureSub').textContent = 'Estimated regulatory exposure (PECR Reg 22)';
-    } else {
-      expEl.textContent = '£0';
-      expEl.className   = 'metric-value score-high';
-      document.getElementById('exposureSub').textContent = 'No suppressed contacts found';
-    }
+    const allFixes = fd?.fixes || fd?.records || [];
+    const fixes = allFixes.filter(x => {
+      const xf = x.fields||x;
+      return xf.SourceRecordID === recordId || xf.Tool === 'Suppression Checker';
+    });
 
-    // Stats
-    document.getElementById('statsGrid').innerHTML = [
-      { num: d.sendListCount.toLocaleString(),      lbl: 'Send List',         cls: '' },
-      { num: d.matchCount.toLocaleString(),          lbl: 'Suppressed',        cls: d.matchCount > 0 ? 'danger' : 'good' },
-      { num: d.duplicateCount.toLocaleString(),      lbl: 'Duplicates',        cls: d.duplicateCount > 0 ? 'warn' : '' },
-      { num: d.cleanListCount.toLocaleString(),      lbl: 'Clean',             cls: 'good' },
-    ].map(s => `<div class="stat-box ${s.cls}">
-      <div class="stat-num">${s.num}</div>
-      <div class="stat-lbl">${s.lbl}</div>
-    </div>`).join('');
+    const suppressionHealth = results.suppressionHealth || {};
+    const healthIssues = [
+      suppressionHealth.tooSmall ? 'Suppression list appears too small relative to send volume' : null,
+      suppressionHealth.stale    ? `Suppression list is stale (${suppressionHealth.listAge || 'unknown age'})` : null,
+      suppressionHealth.aged     ? 'Suppression list is approximately 1 year old' : null,
+    ].filter(Boolean);
 
-    // Warnings
-    if (d.warnings?.length) {
-      document.getElementById('warningList').innerHTML = d.warnings.map(w => `
-        <div class="warning-item ${w.severity}">
-          <div class="warning-header">
-            <span class="warning-sev">${w.severity}</span>
-            ${w.regulation ? `<span class="warning-reg">${escHtml(w.regulation)}</span>` : ''}
-          </div>
-          <div class="warning-msg">${escHtml(w.message)}</div>
-          ${w.action ? `<div class="warning-action">${escHtml(w.action)}</div>` : ''}
-        </div>`).join('');
-      document.getElementById('warningsCard').style.display = 'block';
-    }
+    document.getElementById('report').innerHTML = `
+      <div class="hero">
+        <div class="hero-eyebrow">Suppression Check Report</div>
+        <div class="hero-title">${sendCount.toLocaleString()} Contacts Checked</div>
+        <div class="hero-meta">${date} · PECR Regulation 22</div>
+        <div class="verdict-badge verdict-${vc}">${vi} ${verdictText}</div>
+      </div>
 
-    // Suppressed contacts list
-    if (d.matchCount > 0 && d.matches?.length) {
-      document.getElementById('matchesList').textContent = d.matches.join('\n');
-      document.getElementById('matchesCard').style.display = 'block';
-    }
+      <div class="metrics-top">
+        <div class="metric-big">
+          <div class="metric-big-label">PECR Risk Score</div>
+          <div class="metric-big-val" style="color:${sc}">${score}/100</div>
+          <div class="metric-big-sub">${scoreLabel(score)}</div>
+        </div>
+        <div class="metric-big">
+          <div class="metric-big-label">Financial Exposure</div>
+          <div class="metric-big-val" style="color:${expLow>0?'var(--red)':'var(--green)'}">${expLow>0?`${fmtMoney(expLow)}–${fmtMoney(expHigh)}`:'£0'}</div>
+          <div class="metric-big-sub">${expLow>0 ? 'Estimated PECR Reg 22 exposure' : 'No suppressed contacts found'}</div>
+        </div>
+      </div>
 
-    // Clean list
-    document.getElementById('cleanDesc').textContent =
-      `${d.cleanListCount.toLocaleString()} contacts ready to send to after removing ${d.removedCount} problematic email${d.removedCount !== 1 ? 's' : ''}.`;
+      <div class="metrics">
+        <div class="metric"><div class="metric-val">${sendCount.toLocaleString()}</div><div class="metric-lbl">Send List</div></div>
+        <div class="metric"><div class="metric-val" style="color:${matchCount>0?'var(--red)':'var(--green)'}">${matchCount.toLocaleString()}</div><div class="metric-lbl">Suppressed Matches</div></div>
+        <div class="metric"><div class="metric-val" style="color:${dupCount>0?'var(--yellow)':'inherit'}">${dupCount.toLocaleString()}</div><div class="metric-lbl">Duplicates</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--green)">${cleanCount.toLocaleString()}</div><div class="metric-lbl">Clean</div></div>
+      </div>
 
-    document.getElementById('loadingSection').classList.remove('show');
-    document.getElementById('resultsSection').classList.add('show');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+      ${warnings.length ? `
+      <div class="card">
+        <div class="card-label">PECR & ICO Warnings</div>
+        <div class="warning-list">${warnings.map(renderWarning).join('')}</div>
+      </div>` : ''}
+
+      ${healthIssues.length ? `
+      <div class="card">
+        <div class="card-label">Suppression List Health</div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-val">${suppCount.toLocaleString()}</div><div class="stat-lbl">Suppression List Size</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:var(--muted)">${esc(suppressionHealth.listAge||'—')}</div><div class="stat-lbl">Last Updated</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:${suppressionHealth.tooSmall?'var(--red)':'var(--green)'}">${suppressionHealth.tooSmall?'⚠ Small':'✓ OK'}</div><div class="stat-lbl">List Size Check</div></div>
+        </div>
+        ${healthIssues.map(i=>`<p style="font-size:13px;color:var(--muted);margin-top:8px;">⚠ ${esc(i)}</p>`).join('')}
+      </div>` : `
+      <div class="card">
+        <div class="card-label">Suppression List Health</div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-val">${suppCount.toLocaleString()}</div><div class="stat-lbl">Suppression List Size</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:var(--muted)">${esc(suppressionHealth.listAge||'—')}</div><div class="stat-lbl">Last Updated</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:var(--green)">✓ OK</div><div class="stat-lbl">List Size Check</div></div>
+        </div>
+      </div>`}
+
+      ${matchCount > 0 && results.matches?.length ? `
+      <div class="card">
+        <div class="card-label">Suppressed Contacts (${matchCount})</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">These contacts must not be emailed. Sending to them is a PECR Regulation 22 breach.</p>
+        <div class="email-list">${esc((results.matches||[]).join('\n'))}</div>
+      </div>` : ''}
+
+      ${invalidCount > 0 && results.invalidEmails?.length ? `
+      <div class="card">
+        <div class="card-label">Invalid Emails (${invalidCount})</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Invalid email syntax — these will hard bounce and should be added to your suppression list.</p>
+        <div class="email-list">${esc((results.invalidEmails||[]).join('\n'))}</div>
+      </div>` : ''}
+
+      ${fixes.length ? `
+      <div class="card">
+        <div class="card-label">Compliance Fixes</div>
+        <div class="fix-list">${fixes.map(renderFix).join('')}</div>
+      </div>` : ''}
+    `;
+
+    document.getElementById('stateBox').style.display = 'none';
+    document.getElementById('report').style.display   = 'block';
   }
 
-  // ─── Download / copy ──────────────────────────────────────────────
-  function downloadList(type) {
-    if (!lastResults) return;
-    const emails = type === 'clean' ? lastResults.cleanList : lastResults.matches;
-    if (!emails?.length) return;
-    const blob = new Blob([emails.join('\n')], { type: 'text/plain' });
-    const a    = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
-    a.download = type === 'clean' ? 'sendwize-clean-list.csv' : 'sendwize-suppressed-matches.csv';
-    a.click();
+  function renderWarning(w) {
+    const sev = (w.severity||'info').toLowerCase();
+    return `<div class="warning-item ${sev}">
+      <div class="warning-header">
+        <span class="w-sev">${sev}</span>
+        ${w.regulation ? `<span class="w-reg">${esc(w.regulation)}</span>` : ''}
+      </div>
+      <div class="w-msg">${esc(w.message||'')}</div>
+      ${w.action ? `<div class="w-action">${esc(w.action)}</div>` : ''}
+    </div>`;
   }
 
-  async function copyClean() {
-    if (!lastResults?.cleanList) return;
-    try {
-      await navigator.clipboard.writeText(lastResults.cleanList.join('\n'));
-      const el = document.getElementById('cleanCopySuccess');
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 2200);
-    } catch {}
+  function renderFix(fx) {
+    const f  = fx.fields||fx;
+    const st = f.Status||'pending';
+    const el = f.ExposureLow||0, eh = f.ExposureHigh||0;
+    return `<div class="fix-item">
+      <div class="fix-dot ${st}"></div>
+      <div class="fix-body">
+        <div class="fix-title">${esc(fmtFixType(f.FixType||''))}</div>
+        <div class="fix-desc">${esc(f.Description||'')}</div>
+        <div class="fix-pills">
+          ${f.Severity ? `<span class="pill pill-${f.Severity}">${f.Severity}</span>` : ''}
+          <span class="pill pill-${st}">${st}</span>
+          ${el||eh ? `<span class="pill pill-exposure">${fmtMoney(el)}–${fmtMoney(eh)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
   }
 
-  // ─── Reset ────────────────────────────────────────────────────────
-  function resetForm() {
-    sendEmails = []; suppEmails = []; lastResults = null;
-    document.getElementById('resultsSection').classList.remove('show');
-    document.getElementById('warningsCard').style.display = 'none';
-    document.getElementById('matchesCard').style.display  = 'none';
-    document.getElementById('formSection').style.display  = 'block';
-    clearError();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+  function scoreLabel(s) { return s>=90?'Compliant — safe to send':s>=70?'Minor issues — review warnings':s>=50?'Moderate risk — action required':'High risk — do not send'; }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '—'; }
+  function fmtFixType(s) { return s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
+  function fmtMoney(n) { if(!n)return'£0'; if(n>=1000000)return`£${(n/1e6).toFixed(1)}m`; if(n>=1000)return`£${(n/1000).toFixed(0)}k`; return`£${n}`; }
+  function parseJ(v) { if(!v)return null; if(typeof v==='object')return v; try{return JSON.parse(v);}catch{return null;} }
+  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function showError(msg) { document.getElementById('stateBox').innerHTML=`<div class="state-text" style="color:var(--red)">⚠️ ${esc(msg)}</div>`; }
 
-  // ─── Helpers ──────────────────────────────────────────────────────
-  function showError(msg) { const e = document.getElementById('errorBox'); e.textContent = msg; e.classList.add('show'); }
-  function clearError()   { document.getElementById('errorBox').classList.remove('show'); }
-  function escHtml(s)     { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function formatMoney(n) {
-    if (!n) return '£0';
-    if (n >= 1000000) return `£${(n/1000000).toFixed(1)}m`;
-    if (n >= 1000)    return `£${(n/1000).toFixed(0)}k`;
-    return `£${n.toLocaleString()}`;
-  }
-  function scoreLabel(s) {
-    if (s >= 90) return 'Compliant — safe to send';
-    if (s >= 70) return 'Minor issues — review warnings';
-    if (s >= 50) return 'Moderate risk — action required';
-    return 'High risk — do not send';
-  }
+  load();
 </script>
 </body>
 </html>
