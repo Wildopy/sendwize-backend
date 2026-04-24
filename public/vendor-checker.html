@@ -180,13 +180,15 @@
 <body>
 <div class="container">
 
-  <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="back-link">
+  <!-- FIXED v4.25: back link corrected from Webflow staging URL to sendwize.co.uk/dashboard -->
+  <a href="https://www.sendwize.co.uk/dashboard" class="back-link">
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
     Dashboard
   </a>
 
   <h1 class="page-title">Vendor Checker</h1>
-  <p class="page-subtitle">Check your marketing tools for UK GDPR compliance — DPAs, data location, certifications and breach history. Custom vendors are analysed by Claude AI.</p>
+  <!-- FIXED v4.25: subtitle updated to explicitly include self-serve platforms -->
+  <p class="page-subtitle">Check your marketing tools for UK GDPR compliance — DPAs, data location, certifications and breach history. This includes platforms you use directly (Mailchimp, Klaviyo etc.) — these are data processors under UK GDPR even if you manage the account yourself. Custom vendors are analysed by Claude AI.</p>
 
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('checker')">Vendor Checker</button>
@@ -198,6 +200,8 @@
     <div id="formSection">
       <div class="card">
         <div class="card-label">Search Vendors</div>
+        <!-- ADDED v4.25: self-serve scope note -->
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Search for any platform or agency you use for marketing — including tools you manage yourself like Mailchimp or Klaviyo. These are data processors under UK GDPR regardless of whether you or an agency operates them.</p>
         <div class="search-row">
           <div class="search-wrap" id="searchWrap">
             <input type="text" class="search-input" id="searchInput"
@@ -238,7 +242,7 @@
       <div class="card onboarding-card">
         <div class="onboarding-icon">&#128194;</div>
         <div class="onboarding-title">Let's build your data processor register.</div>
-        <div class="onboarding-sub">UK GDPR Article 28 requires you to maintain a record of all processors you share personal data with. Add your tools below to get started.</div>
+        <div class="onboarding-sub">UK GDPR Article 28 requires you to maintain a record of all processors you share personal data with. Add your tools below to get started — this includes platforms you manage yourself.</div>
         <div id="ob-categories"></div>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
           <button class="btn-secondary" onclick="showAddForm(null,true)">+ Add vendor manually</button>
@@ -311,7 +315,7 @@ var highlightedIndex = -1;
 var currentDropdownItems = [];
 var dpaState = {};
 
-// AUTH — URL param
+// AUTH — URL param (already correct, confirmed v4.24)
 function init() {
   userId = new URLSearchParams(window.location.search).get('userId');
   if (!userId) {
@@ -340,7 +344,8 @@ function loadVendors() {
         {name:'Salesforce',category:'CRM'},{name:'SendGrid',category:'Email Service Provider'},
         {name:'Brevo',category:'Email Service Provider'},{name:'Google Analytics',category:'Analytics'},
         {name:'Hotjar',category:'Analytics'},{name:'Typeform',category:'Forms'},
-        {name:'Pipedrive',category:'CRM'},{name:'Zoho CRM',category:'CRM'}
+        {name:'Pipedrive',category:'CRM'},{name:'Zoho CRM',category:'CRM'},
+        {name:'Dotdigital',category:'Email Service Provider'},{name:'Salesforce Marketing Cloud',category:'Email Service Provider'}
       ];
     });
 }
@@ -405,7 +410,6 @@ function addFromInput() {
       afterSelect();
     }
   } else {
-    // partial match — pick first
     var partial = allVendors.find(function(v) { return v.name.toLowerCase().includes(val.toLowerCase()); });
     if (partial && !selectedVendors.find(function(s) { return s.name === partial.name; })) {
       selectedVendors.push({name: partial.name, category: partial.category, isCustom: false});
@@ -494,7 +498,7 @@ function renderVendorCard(v, i) {
     {label:'International Transfer', val: d.internationalTransfer || 'Unknown', cls: dimClass(d.internationalTransfer, false)},
     {label:'Breach History', val: d.breachHistory || 'None known', cls: dimClass(d.breachHistory, true)},
     {label:'DPO Present', val: d.dpoPresence || 'Unknown', cls: dimClass(d.dpoPresence, false)},
-    {label:'ISO Accreditation', val: d.isoAccreditation || 'Unknown', cls: dimClass(d.isoAccreditation, false)},
+    {label:'Security Certification', val: d.isoAccreditation || 'Unknown', cls: dimClass(d.isoAccreditation, false)},
     {label:'Last Verified', val: d.lastVerified || 'Unknown', cls: ''}
   ];
   var dpaLinkVal = d.dpaLink || '';
@@ -572,7 +576,7 @@ function loadRegister() {
 }
 
 var OB_CATS = [
-  {label:'Email marketing', vendors:['Mailchimp','Klaviyo','Brevo','HubSpot','ActiveCampaign','SendGrid']},
+  {label:'Email marketing', vendors:['Mailchimp','Klaviyo','Brevo','HubSpot','ActiveCampaign','SendGrid','Dotdigital']},
   {label:'CRM', vendors:['HubSpot','Salesforce','Pipedrive','Zoho']},
   {label:'Analytics', vendors:['Google Analytics','Hotjar']},
   {label:'Forms', vendors:['Typeform','Gravity Forms']},
