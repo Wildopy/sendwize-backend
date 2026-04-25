@@ -11,7 +11,8 @@
   --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
   --bg:#F7F6F3;--w:#fff;--b:#ece9e3;--bm:#ddd9d0;
   --t:#0f0f0d;--tm:#4a4740;--mu:#9a9690;
-  --r:#dc2626;--rb:#fef2f2;--g:#16a34a;--gb:#f0fdf4;--gbd:#bbf7d0;
+  --r:#dc2626;--rb:#fef2f2;--rbd:#fecaca;
+  --g:#16a34a;--gb:#f0fdf4;--gbd:#bbf7d0;
   --tl:#0d9488;--y:#ca8a04;--yb:#fefce8;--ybd:#fde047;
   --blue:#1d4ed8;--blueb:#eff6ff;--bluebd:#bfdbfe;
   --rad:10px;--rad-lg:16px;
@@ -20,57 +21,49 @@
 }
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6}
 
-/* ── NAV ── */
 .nav{background:var(--w);border-bottom:1px solid var(--b);height:56px;display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:100;justify-content:space-between;gap:12px;box-shadow:0 1px 0 var(--b)}
 .nav-logo{font-size:18px;font-weight:700;color:var(--o);letter-spacing:-.5px;text-decoration:none}
 .nav-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
 .nav-back:hover{color:var(--o);background:var(--ol)}
 .nav-back svg{width:14px;height:14px}
-.nav-right{display:flex;gap:8px;align-items:center}
 
-/* ── PAGE ── */
 .page{max-width:820px;margin:0 auto;padding:40px 20px 80px}
 
-/* ── STATES ── */
+/* States */
 .ld{padding:80px 24px;text-align:center;color:var(--mu);font-size:14px}
 .spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .err-box{background:#fef2f2;border:1px solid #fecaca;border-radius:var(--rad);padding:16px 20px;font-size:13px;color:var(--r);margin-bottom:20px;display:none}
 .err-box.show{display:block}
-.toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
-.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:340px;line-height:1.4}
+.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}.toast.warn{background:var(--y)}
 
-/* ── LIST VIEW ── */
+/* List view */
 .list-view{display:none}.list-view.show{display:block;animation:fadeUp .25s ease}
 .list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap}
 .list-title{font-size:26px;font-weight:700;letter-spacing:-.5px}
 .list-subtitle{font-size:14px;color:var(--mu);margin-top:2px}
 .btn-new-dossier{background:var(--o);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;display:inline-flex;align-items:center;gap:8px}
 .btn-new-dossier:hover{background:var(--od)}
-
 .dossier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .dc{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:22px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative}
 .dc:hover{border-color:var(--o);box-shadow:var(--sh-lg)}
-.dc-source{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dc-source{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:8px}
 .dc-title{font-size:15px;font-weight:700;margin-bottom:3px;line-height:1.3}
 .dc-owner{font-size:12px;color:var(--mu);margin-bottom:12px}
 .dc-bar{height:5px;background:var(--b);border-radius:3px;overflow:hidden;margin-bottom:10px}
-.dc-bar-fill{height:100%;background:linear-gradient(90deg,var(--o),#f97316);border-radius:3px;transition:width .5s}
+.dc-bar-fill{height:100%;background:linear-gradient(90deg,var(--o),#f97316);border-radius:3px}
 .dc-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
 .dc-modules{font-size:12px;color:var(--mu)}
 .dc-strength{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
-.dc-strength.weak{background:var(--rb);color:var(--r)}
-.dc-strength.adequate{background:var(--yb);color:var(--y)}
-.dc-strength.strong{background:var(--gb);color:var(--g)}
+.dc-strength.weak{background:var(--rb);color:var(--r)}.dc-strength.adequate{background:var(--yb);color:var(--y)}.dc-strength.strong{background:var(--gb);color:var(--g)}
 .dc-status{font-size:11px;font-weight:700;color:var(--tl)}
 .dc-date{font-size:11px;color:var(--mu);margin-top:8px}
-
 .empty-list{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:60px 32px;text-align:center}
-.empty-icon{font-size:48px;margin-bottom:16px}
-.empty-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.empty-icon{font-size:48px;margin-bottom:16px}.empty-title{font-size:18px;font-weight:700;margin-bottom:8px}
 .empty-sub{font-size:14px;color:var(--mu);margin-bottom:24px;line-height:1.6;max-width:360px;margin-left:auto;margin-right:auto}
 
-/* ── NEW DOSSIER MODAL ── */
+/* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.show{display:flex;animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -79,18 +72,16 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .modal-title{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px}
 .modal-sub{font-size:13px;color:var(--mu);margin-bottom:24px;line-height:1.5}
 .modal-actions{display:flex;gap:10px;margin-top:24px}
-.btn-cancel{background:var(--w);color:var(--t);border:1px solid var(--bm);padding:10px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
-.btn-cancel:hover{border-color:var(--bm);background:var(--bg)}
+.btn-cancel{background:var(--w);color:var(--t);border:1px solid var(--bm);padding:10px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
 
-/* ── DOSSIER EDITOR ── */
+/* Editor */
 .editor-view{display:none}.editor-view.show{display:block;animation:fadeUp .25s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* Health bar */
 .health-bar-wrap{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px 24px;margin-bottom:20px;box-shadow:var(--sh);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 .health-score-circle{width:56px;height:56px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:18px;line-height:1;background:var(--ol);color:var(--o)}
-.health-score-circle.good{background:var(--gb);color:var(--g)}
-.health-score-circle.warn{background:var(--yb);color:var(--y)}
+.health-score-circle.good{background:var(--gb);color:var(--g)}.health-score-circle.warn{background:var(--yb);color:var(--y)}
 .health-score-circle span{font-size:9px;font-weight:500;opacity:.7}
 .health-info{flex:1;min-width:120px}
 .health-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:3px}
@@ -98,14 +89,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .health-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1)}
 .health-desc{font-size:12px;color:var(--tm)}
 .health-modules{display:flex;gap:6px;flex-wrap:wrap}
-.hm-pip{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid var(--b)}
-.hm-pip.weak{background:var(--rb);border-color:var(--r);color:var(--r)}
-.hm-pip.adequate{background:var(--yb);border-color:var(--y);color:var(--y)}
-.hm-pip.strong{background:var(--gb);border-color:var(--g);color:var(--g)}
-.hm-pip.empty{background:var(--bg);color:var(--mu)}
+.hm-pip{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid var(--b);cursor:pointer;title:attr(title)}
+.hm-pip.weak{background:var(--rb);border-color:var(--r);color:var(--r)}.hm-pip.adequate{background:var(--yb);border-color:var(--y);color:var(--y)}.hm-pip.strong{background:var(--gb);border-color:var(--g);color:var(--g)}.hm-pip.empty{background:var(--bg);color:var(--mu)}
 
 /* Regulatory lens */
-.reg-lens{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.reg-lens{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.rl-label{font-size:11px;font-weight:600;color:var(--mu);margin-right:2px}
 .rl-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--b);background:var(--w);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;color:var(--mu)}
 .rl-btn.active{border-color:currentColor}
 .rl-btn.ico.active{background:#fef2f2;color:#dc2626;border-color:#fca5a5}
@@ -140,8 +129,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .step.active .step-dot{background:var(--o);border-color:var(--o);color:#fff;box-shadow:0 0 0 4px rgba(234,115,23,.2)}
 .step.strong .step-dot{background:var(--tl);border-color:var(--tl);color:#fff}
 .step-label{font-size:10px;font-weight:600;text-align:center;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;line-height:1.3;max-width:72px;transition:color .2s}
-.step.done .step-label,.step.strong .step-label{color:var(--g)}
-.step.active .step-label{color:var(--o)}
+.step.done .step-label,.step.strong .step-label{color:var(--g)}.step.active .step-label{color:var(--o)}
 
 /* Progress */
 .progress-row{display:flex;align-items:center;gap:12px;margin-bottom:24px}
@@ -158,18 +146,20 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .module-name{font-size:19px;font-weight:700;letter-spacing:-.3px;margin-bottom:3px}
 .module-desc{font-size:13px;color:var(--tm);line-height:1.5}
 .strength-pill{font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;white-space:nowrap}
-.strength-pill.weak{background:var(--rb);color:var(--r)}
-.strength-pill.adequate{background:var(--yb);color:var(--y)}
-.strength-pill.strong{background:var(--gb);color:var(--g)}
-.strength-pill.empty{background:var(--b);color:var(--mu)}
+.strength-pill.weak{background:var(--rb);color:var(--r)}.strength-pill.adequate{background:var(--yb);color:var(--y)}.strength-pill.strong{background:var(--gb);color:var(--g)}.strength-pill.empty{background:var(--b);color:var(--mu)}
 
 /* Regulatory spotlight */
-.reg-spotlight{border-radius:8px;padding:12px 16px;margin-bottom:16px;border-left:3px solid;font-size:12px;line-height:1.5}
+.reg-spotlight{border-radius:8px;padding:12px 16px;margin-bottom:16px;border-left:3px solid;font-size:12px;line-height:1.6}
 .reg-spotlight.ico{background:#fef2f2;border-color:#dc2626;color:#991b1b}
 .reg-spotlight.cma{background:#fefce8;border-color:#ca8a04;color:#713f12}
 .reg-spotlight.asa{background:#eff6ff;border-color:#1d4ed8;color:#1e3a8a}
 .reg-spotlight.all{background:var(--ol);border-color:var(--o);color:#92400e}
-.reg-spotlight-title{font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:10px;margin-bottom:4px}
+.reg-spotlight-title{font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:10px;margin-bottom:6px}
+.reg-spotlight-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px}
+.reg-spotlight-item{background:rgba(255,255,255,.6);border-radius:6px;padding:8px 10px}
+.reg-spotlight-reg{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.reg-spotlight-ico{color:#dc2626}.reg-spotlight-cma{color:#ca8a04}.reg-spotlight-asa{color:#1d4ed8}
+.reg-spotlight-text{font-size:11px;line-height:1.4;color:var(--tm)}
 
 /* Structured fields */
 .fields-grid{display:grid;gap:14px;margin-bottom:16px}
@@ -183,16 +173,33 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .field-input:focus{border-color:var(--o);box-shadow:0 0 0 3px rgba(234,115,23,.1);background:var(--w)}
 .field-input.filled{border-color:var(--g);background:var(--gb)}
 textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
-.field-input[type="date"]{cursor:pointer}
 .field-hint{font-size:11px;color:var(--mu);line-height:1.4;margin-top:2px}
 
 /* Checkbox group */
 .check-group{display:flex;flex-direction:column;gap:8px}
 .check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--b);border-radius:7px;cursor:pointer;transition:border-color .15s;background:#faf9f7}
-.check-item:hover{border-color:var(--bm)}
-.check-item.checked{border-color:var(--g);background:var(--gb)}
-.check-item input[type="checkbox"]{accent-color:var(--g);flex-shrink:0;margin-top:1px;width:15px;height:15px}
+.check-item:hover{border-color:var(--bm)}.check-item.checked{border-color:var(--g);background:var(--gb)}
+.check-item input[type="checkbox"]{accent-color:var(--g);flex-shrink:0;margin-top:2px;width:15px;height:15px}
 .check-item-text{font-size:13px;line-height:1.4;color:var(--t)}
+
+/* File upload */
+.file-upload-section{background:var(--bg);border:1px dashed var(--bm);border-radius:8px;padding:16px;margin-bottom:16px}
+.file-upload-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.file-upload-title svg{opacity:.6}
+.file-upload-hint{font-size:11px;color:var(--mu);margin-bottom:10px;line-height:1.4}
+.file-input-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.file-input-label{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--bm);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:var(--w);color:var(--tm);transition:all .15s;white-space:nowrap}
+.file-input-label:hover{border-color:var(--o);color:var(--o)}
+.file-input-label input[type="file"]{display:none}
+.file-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.file-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--w);border:1px solid var(--b);border-radius:6px;font-size:12px}
+.file-item-name{flex:1;color:var(--tm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-item-size{color:var(--mu);flex-shrink:0;font-size:11px}
+.file-item-remove{background:none;border:none;cursor:pointer;color:var(--mu);padding:0;font-size:14px;flex-shrink:0;line-height:1}
+.file-item-remove:hover{color:var(--r)}
+.file-uploading{font-size:11px;color:var(--o);display:none;align-items:center;gap:6px}
+.file-uploading.show{display:flex}
+.mini-spin{width:12px;height:12px;border:2px solid var(--om);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}
 
 /* Strength meter */
 .strength-meter{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:14px 16px;margin-bottom:16px}
@@ -202,8 +209,7 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 .sm-label{font-size:11px;color:var(--tm);min-width:80px}
 .sm-track{flex:1;height:5px;background:var(--b);border-radius:3px;overflow:hidden}
 .sm-fill{height:100%;border-radius:3px;transition:width .5s}
-.sm-fill.req{background:var(--o)}
-.sm-fill.opt{background:var(--g)}
+.sm-fill.req{background:var(--o)}.sm-fill.opt{background:var(--g)}
 .sm-val{font-size:11px;font-weight:700;min-width:20px;text-align:right}
 
 /* Module actions */
@@ -220,6 +226,15 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 .module-nav{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
 .btn-prev{background:transparent;color:var(--tm);border:1px solid var(--b);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
 .btn-prev:hover{border-color:var(--bm);color:var(--t)}
+
+/* Progress status banner — shows incomplete modules before finish */
+.incomplete-banner{display:none;background:var(--yb);border:1px solid var(--ybd);border-radius:8px;padding:14px 16px;margin-top:8px}
+.incomplete-banner.show{display:block}
+.incomplete-banner-title{font-size:13px;font-weight:700;color:var(--y);margin-bottom:6px}
+.incomplete-list{display:flex;flex-direction:column;gap:4px}
+.incomplete-item{font-size:12px;color:var(--tm);display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 0}
+.incomplete-item:hover{color:var(--o)}
+.incomplete-item::before{content:'→';color:var(--y);font-weight:700;flex-shrink:0}
 
 /* Submit card */
 .submit-card{background:linear-gradient(135deg,#fff7ed 0%,var(--w) 100%);border:2px solid var(--o);border-radius:var(--rad-lg);padding:32px;text-align:center;display:none;margin-top:4px}
@@ -251,9 +266,7 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 .cert-module-icon{font-size:16px}
 .cert-module-name{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tm)}
 .cert-module-strength{margin-left:auto;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
-.cert-module-strength.strong{background:var(--gb);color:var(--g)}
-.cert-module-strength.adequate{background:var(--yb);color:var(--y)}
-.cert-module-strength.weak{background:var(--rb);color:var(--r)}
+.cert-module-strength.strong{background:var(--gb);color:var(--g)}.cert-module-strength.adequate{background:var(--yb);color:var(--y)}.cert-module-strength.weak{background:var(--rb);color:var(--r)}
 .cert-module-evidence{font-size:12px;color:var(--tm);line-height:1.7;white-space:pre-wrap}
 .cert-snapshot-note{font-size:11px;color:var(--mu);background:var(--bg);padding:8px 12px;border-radius:6px;margin-top:8px;font-family:'DM Mono',monospace}
 .cert-footer{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:20px}
@@ -261,28 +274,25 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 .cert-footer-val{font-size:12px;font-weight:600;color:var(--t);font-family:'DM Mono',monospace}
 .cert-disclaimer{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:24px;padding-top:18px;border-top:1px solid var(--b);line-height:1.5}
 .cert-actions{display:flex;gap:10px;margin-top:20px;justify-content:center;flex-wrap:wrap}
-.btn-print{background:var(--t);color:#fff;border:none;padding:11px 26px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s;display:inline-flex;align-items:center;gap:7px}
+.btn-print{background:var(--t);color:#fff;border:none;padding:11px 26px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:7px}
 .btn-print:hover{opacity:.85}
-.btn-back-dash{background:var(--w);color:var(--t);border:1px solid var(--bm);padding:11px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-back-dash{background:var(--w);color:var(--t);border:1px solid var(--bm);padding:11px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
 .btn-back-dash:hover{border-color:var(--o);color:var(--o)}
-.btn-new-dossier-cert{background:var(--ol);color:var(--o);border:1px solid var(--om);padding:11px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
-.btn-new-dossier-cert:hover{background:var(--om)}
+.btn-new-dossier-cert{background:var(--ol);color:var(--o);border:1px solid var(--om);padding:11px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 
 .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px}
-@media print{.nav,.stepper,.progress-row,.module-card,.submit-card,.cert-actions,.disc,.toast,.health-bar-wrap,.reg-lens,.list-view,.editor-view .dossier-header{display:none!important}.cert-section{display:block!important}.cert-card{border:none;box-shadow:none;padding:20px}body{background:#fff}}
-@media(max-width:600px){.tf-row,.fields-grid.two-col,.cert-footer{grid-template-columns:1fr}.stepper::before{display:none}.step-label{display:none}.cert-header{flex-direction:column}.dossier-grid{grid-template-columns:1fr}}
+@media print{.nav,.stepper,.progress-row,.module-card,.submit-card,.cert-actions,.disc,.toast,.health-bar-wrap,.reg-lens,.incomplete-banner{display:none!important}.cert-section{display:block!important}.cert-card{border:none;box-shadow:none;padding:20px}body{background:#fff}}
+@media(max-width:600px){.tf-row,.fields-grid.two-col,.cert-footer,.reg-spotlight-grid{grid-template-columns:1fr}.stepper::before{display:none}.step-label{display:none}.cert-header{flex-direction:column}}
 </style>
 </head>
 <body>
 
 <nav class="nav">
   <a class="nav-logo" href="https://www.sendwize.co.uk/dashboard">sendwize</a>
-  <div class="nav-right">
-    <a class="nav-back" href="https://www.sendwize.co.uk/dashboard" id="navBack">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
-      Dashboard
-    </a>
-  </div>
+  <a class="nav-back" href="https://www.sendwize.co.uk/dashboard">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+    Dashboard
+  </a>
 </nav>
 
 <div class="page">
@@ -306,7 +316,7 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
   <!-- EDITOR VIEW -->
   <div class="editor-view" id="editorView">
 
-    <div class="dossier-header" id="dossierHeader">
+    <div class="dossier-header">
       <div class="dossier-meta">
         <span class="dossier-tag">Campaign Dossier</span>
         <span class="dossier-source-tag" id="sourceTag">Standalone</span>
@@ -325,7 +335,6 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
       </div>
     </div>
 
-    <!-- Health bar -->
     <div class="health-bar-wrap" id="healthBar">
       <div class="health-score-circle" id="healthCircle">—<span>score</span></div>
       <div class="health-info">
@@ -336,10 +345,9 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
       <div class="health-modules" id="healthModules"></div>
     </div>
 
-    <!-- Regulatory lens -->
     <div class="reg-lens">
-      <span style="font-size:11px;font-weight:600;color:var(--mu);align-self:center;margin-right:2px">Regulatory lens:</span>
-      <button class="rl-btn all active" onclick="setLens('all',this)">All</button>
+      <span class="rl-label">Regulatory lens:</span>
+      <button class="rl-btn all active" onclick="setLens('all',this)">All regulators</button>
       <button class="rl-btn ico" onclick="setLens('ico',this)">🔴 ICO</button>
       <button class="rl-btn cma" onclick="setLens('cma',this)">🟡 CMA</button>
       <button class="rl-btn asa" onclick="setLens('asa',this)">🔵 ASA</button>
@@ -353,6 +361,11 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
     </div>
 
     <div id="moduleCard"></div>
+
+    <div class="incomplete-banner" id="incompleteBanner">
+      <div class="incomplete-banner-title">⚠️ Some modules need completing before you can finish</div>
+      <div class="incomplete-list" id="incompleteList"></div>
+    </div>
 
     <div class="module-nav">
       <button class="btn-prev" id="btnPrev" onclick="prevModule()">← Previous</button>
@@ -437,68 +450,97 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 <script>
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
-// ── Module definitions with structured fields ─────────────────
+// ── Module definitions ────────────────────────────────────────
 const MODULES = [
   {
     key: 'ListProvenance', name: 'List Provenance', icon: '📋',
     desc: 'Document where your contact list came from and how it was built.',
+    allowFiles: true,
+    fileHint: 'Upload your sign-up form screenshot, data collection agreement, or list provenance record.',
     regulatoryFocus: {
-      all: 'The ICO expects you to know exactly where each contact came from and confirm you own the data.',
-      ico: 'ICO Investigation focus: Can you demonstrate lawful collection of each contact\'s data? Third-party lists require named consent. The ICO will ask for the source URL and collection mechanism.',
-      cma: 'CMA focus: Was your list built using fair commercial practices? Misleading sign-up flows may constitute unfair practices under DMCCA 2024.',
-      asa: 'ASA focus: Less directly relevant to list provenance — primary ASA concerns are in Content Check.',
+      all: {
+        summary: 'All three regulators need to understand where your list came from and confirm you have the right to market to it.',
+        ico: 'Can you demonstrate lawful collection of each contact\'s data? Third-party lists require named consent. The ICO will ask for the source URL and collection mechanism.',
+        cma: 'Was your list built using fair commercial practices? Misleading sign-up flows may constitute unfair practices under DMCCA 2024.',
+        asa: 'The ASA focuses primarily on content rather than list provenance — but misleading sign-up language used to build your list could be investigated.',
+      },
+      ico: 'ICO Investigation focus: Can you demonstrate lawful collection of each contact\'s data? Third-party lists require named consent. The ICO will ask for the source URL, collection mechanism, and confirmation the list is owned by you.',
+      cma: 'CMA focus: Was your list built using fair commercial practices? Misleading sign-up flows or pre-ticked boxes may constitute unfair practices under DMCCA 2024.',
+      asa: 'ASA focus: Less directly relevant to list provenance — primary ASA concerns are in Content Check. However, misleading language used at point of sign-up could be investigated.',
     },
     fields: [
       { key:'listSource', label:'List source', type:'select', required:true, options:['Own sign-up form','Event registration','Existing customers','Co-registration','Third-party/purchased','Other'], hint:'Where did these contacts come from?' },
-      { key:'collectionUrl', label:'Collection URL or reference', type:'text', required:false, placeholder:'e.g. https://example.com/signup', hint:'Where contacts signed up' },
-      { key:'collectionMech', label:'Collection mechanism', type:'textarea', required:true, placeholder:'Describe how addresses were collected…', hint:'e.g. double opt-in form, checkout opt-in, event badge scan' },
+      { key:'collectionUrl', label:'Collection URL or reference', type:'text', required:false, placeholder:'e.g. https://example.com/signup', hint:'Page where contacts signed up' },
+      { key:'collectionMech', label:'Collection mechanism', type:'textarea', required:true, placeholder:'Describe how addresses were collected — e.g. double opt-in form at checkout, event badge scan, account registration', hint:'Be specific — this is what the ICO will ask for' },
       { key:'dateFrom', label:'Collection from', type:'date', required:false, col:'half' },
       { key:'dateTo', label:'Collection to', type:'date', required:false, col:'half' },
-      { key:'ownership', label:'Ownership status', type:'select', required:true, options:['Owned by us','Rented','Shared with partner','Third-party managed'], hint:'Who controls this list?' },
-      { key:'notes', label:'Additional notes', type:'textarea', required:false, placeholder:'Any other relevant details…' },
+      { key:'ownership', label:'Ownership status', type:'select', required:true, options:['Owned by us — collected directly','Rented — not owned','Shared with partner','Third-party managed'], hint:'Who controls this data?' },
+      { key:'dataRetention', label:'Data retention period', type:'text', required:false, placeholder:'e.g. 3 years from last interaction', hint:'Required under UK GDPR Article 5(1)(e)' },
+      { key:'notes', label:'Additional notes', type:'textarea', required:false, placeholder:'Any other relevant details about list provenance…' },
     ]
   },
   {
     key: 'ConsentMechanism', name: 'Consent Mechanism', icon: '✅',
     desc: 'Evidence the consent or lawful basis under which you are sending.',
+    allowFiles: true,
+    fileHint: 'Upload a screenshot of the exact consent wording shown to contacts, your LIA record, or consent audit trail.',
     regulatoryFocus: {
-      all: 'Consent is the ICO\'s primary focus in any direct marketing investigation. Document your lawful basis precisely.',
-      ico: 'ICO Investigation focus: Does your consent meet the PECR standard — freely given, specific, informed, unambiguous? For soft opt-in: confirm all four conditions. The ICO will request the exact wording shown to contacts at point of collection.',
-      cma: 'CMA focus: Was consent obtained fairly? Buried consent language or pre-ticked boxes may constitute unfair commercial practices.',
+      all: {
+        summary: 'Consent is the most scrutinised area in any direct marketing investigation. All three regulators expect clear, documented evidence of your lawful basis.',
+        ico: 'Does your consent meet the PECR standard — freely given, specific, informed, unambiguous? The ICO will request the exact wording shown to contacts at point of collection.',
+        cma: 'Was consent obtained fairly? Buried consent language, pre-ticked boxes, or consent bundled with other terms may constitute unfair commercial practices.',
+        asa: 'Consent language in your marketing should be consistent with how you collected it. Misleading consent wording could breach CAP Code Section 10.',
+      },
+      ico: 'ICO Investigation focus: Does your consent meet the PECR standard — freely given, specific, informed, unambiguous? For soft opt-in: confirm all four conditions. The ICO will request the exact wording shown to contacts at point of collection and the consent audit trail.',
+      cma: 'CMA focus: Was consent obtained fairly? Buried consent language or pre-ticked boxes may constitute unfair commercial practices under DMCCA 2024.',
       asa: 'ASA focus: Consent language in your marketing should be consistent with how you collected it. Misleading consent wording could breach CAP Code.',
     },
     fields: [
       { key:'lawfulBasis', label:'Lawful basis', type:'select', required:true, options:['Explicit consent (PECR)','Soft opt-in (PECR)','Legitimate interest (UK GDPR)','Contract (UK GDPR)','Legal obligation','Other'], hint:'The legal ground for sending' },
-      { key:'consentWording', label:'Consent wording shown to contacts', type:'textarea', required:true, placeholder:'Paste the exact wording shown at point of sign-up…', hint:'Word-for-word what contacts saw — this is what the ICO will ask for' },
+      { key:'consentWording', label:'Exact consent wording shown to contacts', type:'textarea', required:true, placeholder:'Paste the word-for-word text contacts saw at point of sign-up…', hint:'This is the single most important piece of evidence — paste verbatim' },
       { key:'dateFrom', label:'Consent collected from', type:'date', required:false, col:'half' },
       { key:'dateTo', label:'Consent collected to', type:'date', required:false, col:'half' },
-      { key:'softOptIn', label:'Soft opt-in conditions (if applicable)', type:'checkbox-group', required:false,
+      { key:'doubleOptIn', label:'Double opt-in used', type:'select', required:false, options:['Yes — confirmation email sent','No — single opt-in','Not applicable'], col:'half' },
+      { key:'consentRefreshDate', label:'Last consent refresh / re-consent campaign', type:'date', required:false, col:'half', hint:'If applicable' },
+      { key:'softOptIn', label:'Soft opt-in conditions (complete if lawful basis = soft opt-in)', type:'checkbox-group', required:false,
         checkboxes:[
           { key:'softOptIn1', label:'Contacts are existing customers who purchased a similar product or service' },
-          { key:'softOptIn2', label:'Contacts were given a clear opportunity to opt out at point of collection' },
-          { key:'softOptIn3', label:'Every subsequent communication includes a clear opt-out mechanism' },
-          { key:'softOptIn4', label:'Contacts are natural persons (B2C) not corporate subscribers' },
+          { key:'softOptIn2', label:'The marketing is for similar products or services to those originally purchased' },
+          { key:'softOptIn3', label:'Contacts were given a clear opportunity to opt out at the time of collection' },
+          { key:'softOptIn4', label:'Every subsequent communication includes a clear, easy opt-out mechanism' },
         ]
       },
-      { key:'liaSummary', label:'Legitimate interest assessment summary (if applicable)', type:'textarea', required:false, placeholder:'Summarise your LIA outcome…' },
-      { key:'notes', label:'Additional notes', type:'textarea', required:false, placeholder:'Re-consent campaigns, consent refresh dates, etc.' },
+      { key:'liaSummary', label:'Legitimate interest assessment (LIA) summary', type:'textarea', required:false, placeholder:'Summarise your LIA outcome — purpose test, necessity test, balancing test…', hint:'Required if using legitimate interest as lawful basis under UK GDPR' },
+      { key:'withdrawalMechanism', label:'How contacts can withdraw consent', type:'text', required:false, placeholder:'e.g. Unsubscribe link in every email, email to privacy@example.com' },
+      { key:'notes', label:'Additional notes', type:'textarea', required:false, placeholder:'Any other consent documentation…' },
     ]
   },
   {
     key: 'ContentCheck', name: 'Content Check', icon: '🔍',
     desc: 'Evidence that the campaign content has been reviewed for compliance.',
+    allowFiles: true,
+    fileHint: 'Upload the final approved copy, creative assets, or AI Copy Checker report.',
     regulatoryFocus: {
-      all: 'Document that the content was reviewed before sending. The ASA and CMA both care about what was in the email.',
-      ico: 'ICO focus: Does the email clearly identify the sender? Is there an opt-out? These are PECR Reg 23 requirements.',
+      all: {
+        summary: 'Content is scrutinised by all three regulators from different angles — the ICO on identification, CMA on pricing and urgency, ASA on claims and substantiation.',
+        ico: 'Does the email clearly identify the sender? Is there an opt-out in every message? Is the subject line accurate and not misleading?',
+        cma: 'No misleading pricing, fake urgency, or dark patterns. Reference prices must reflect genuine previous selling price (28 days minimum). Free claims must be genuinely free.',
+        asa: 'All claims must be substantiated before publication. Pricing must be transparent. Health claims must be on the authorised list. Urgency must reflect genuine constraints.',
+      },
+      ico: 'ICO focus: Does the email clearly identify the sender? Is there an opt-out? Is the subject line accurate? These are PECR Reg 23 requirements.',
       cma: 'CMA/DMCCA 2024 focus: No misleading pricing, fake urgency, or dark patterns. Reference prices must reflect genuine previous selling price. Free claims must be genuinely free.',
       asa: 'ASA/CAP Code focus: All claims must be substantiated. Pricing must be transparent. Health claims must be on the authorised list. Urgency must reflect genuine constraints.',
     },
     fields: [
       { key:'aiCheckerRun', label:'AI Copy Checker run', type:'select', required:true, options:['Yes — no issues found','Yes — issues found and resolved','Yes — issues found, accepted with rationale','No — not run'], hint:'Sendwize AI Copy Checker result' },
-      { key:'aiCheckerScore', label:'AI Checker score (if run)', type:'text', required:false, placeholder:'e.g. 87/100', col:'half' },
+      { key:'aiCheckerScore', label:'AI Checker compliance score', type:'text', required:false, placeholder:'e.g. 87/100', col:'half' },
       { key:'asaReviewed', label:'ASA CAP Code review confirmed', type:'select', required:true, options:['Yes','No','In progress'], col:'half' },
-      { key:'pricingCompliant', label:'Pricing compliance confirmed', type:'select', required:true, options:['Yes — pricing is clear and transparent','Yes — no pricing in this campaign','No — pricing under review','N/A'] },
-      { key:'substantiatedClaims', label:'Substantiated claims', type:'textarea', required:false, placeholder:'List any specific claims and the evidence substantiating them…', hint:'e.g. "Best price" — substantiated by price comparison dated 24 April 2026' },
+      { key:'subjectLineAccurate', label:'Subject line is accurate and not misleading', type:'select', required:true, options:['Yes','No — flagged for amendment','N/A'] },
+      { key:'senderNameClear', label:'Sender name clearly identifies the organisation', type:'select', required:true, options:['Yes','No'] },
+      { key:'pricingCompliant', label:'Pricing compliance confirmed', type:'select', required:true, options:['Yes — pricing is clear and transparent','Yes — no pricing in this campaign','No — pricing under review'] },
+      { key:'referencePriceEvidence', label:'Reference price evidence', type:'text', required:false, placeholder:'e.g. Price was £200 for 30+ days from 01/01/26 to 05/02/26', hint:'Required if using was/now pricing under DMCCA 2024' },
+      { key:'urgencyGenuine', label:'Urgency/scarcity language reflects genuine constraints', type:'select', required:false, options:['Yes — genuine fixed deadline','Yes — genuine stock limit','No urgency language used','Not confirmed'] },
+      { key:'substantiatedClaims', label:'Substantiated claims', type:'textarea', required:false, placeholder:'List each specific claim and the evidence substantiating it…', hint:'e.g. "UK\'s best price" — substantiated by price comparison dated 24 April 2026' },
       { key:'amendments', label:'Amendments made following compliance review', type:'textarea', required:false, placeholder:'Note any changes made to copy, pricing, or claims before sending…' },
       { key:'notes', label:'Additional notes', type:'textarea', required:false, placeholder:'Any other content compliance notes…' },
     ]
@@ -506,90 +548,91 @@ const MODULES = [
   {
     key: 'Suppression', name: 'Suppression', icon: '🚫',
     desc: 'Evidence that unsubscribes and suppression lists have been applied.',
+    allowFiles: true,
+    fileHint: 'Upload your suppression list export, Sendwize suppression check report, or screenshot confirming suppression was applied.',
     regulatoryFocus: {
-      all: 'Sending to suppressed contacts is a direct PECR Regulation 22 breach. Document that your list was cleaned before sending.',
-      ico: 'ICO focus: Sending to a contact who has previously opted out is one of the most common enforcement triggers. The ICO expects suppression lists to be applied immediately and maintained. Fines for this are common (£30k–£140k range).',
+      all: {
+        summary: 'Sending to suppressed contacts is a direct PECR breach and is the most common reason for ICO enforcement action. All regulators expect documented suppression evidence.',
+        ico: 'Sending to an opted-out contact is a PECR Regulation 22 breach. The ICO expects suppression lists to be applied immediately and maintained. Fines for this are common (£30k–£140k range).',
+        cma: 'Sending unwanted messages after opt-out may constitute harassment under consumer protection law and could engage DMCCA 2024 provisions.',
+        asa: 'The ASA focuses primarily on content — but repeated marketing to people who have opted out could be referred to the ICO.',
+      },
+      ico: 'ICO focus: Sending to a contact who has previously opted out is one of the most common enforcement triggers. The ICO expects suppression lists to be applied before every send and updated within 28 days of receiving an opt-out request.',
       cma: 'CMA focus: Sending unwanted messages after opt-out may constitute harassment under consumer protection law.',
-      asa: 'ASA focus: Less directly relevant to suppression — primary suppression concerns are ICO/PECR.',
+      asa: 'ASA focus: Less directly relevant to suppression — primary suppression concerns are ICO/PECR. Repeated unwanted contact could be referred to the ICO.',
     },
     fields: [
-      { key:'suppressionApplied', label:'Suppression list applied before send', type:'select', required:true, options:['Yes','No — not yet applied','N/A — no existing opt-outs'] },
+      { key:'suppressionApplied', label:'Suppression list applied before send', type:'select', required:true, options:['Yes — confirmed applied','No — not yet applied','N/A — no existing opt-outs'] },
       { key:'dateApplied', label:'Date suppression applied', type:'date', required:true, col:'half' },
       { key:'listLastUpdated', label:'Suppression list last updated', type:'date', required:true, col:'half' },
+      { key:'optOutProcessingTime', label:'Opt-out requests processed within', type:'select', required:false, options:['Same day','Within 7 days','Within 28 days','Longer than 28 days — explain in notes'], hint:'ICO expects opt-outs actioned within 28 days' },
       { key:'contactsCount', label:'Number of contacts suppressed', type:'text', required:false, placeholder:'e.g. 142', col:'half', hint:'If known' },
       { key:'hardBouncesExcluded', label:'Hard bounces and complaints excluded', type:'select', required:false, options:['Yes','No','Unknown'], col:'half' },
-      { key:'sendwizeCheckScore', label:'Sendwize suppression check score (if run)', type:'text', required:false, placeholder:'e.g. 94', col:'half', hint:'Score from Tool 3' },
-      { key:'notes', label:'Additional notes', type:'textarea', required:false, placeholder:'e.g. TPS screened, suppression source, etc.' },
+      { key:'tpsScreened', label:'TPS/CTPS screened (if telephone/SMS)', type:'select', required:false, options:['Yes — screened','No — not required for this channel','Not confirmed'] },
+      { key:'sendwizeCheckScore', label:'Sendwize suppression check score', type:'text', required:false, placeholder:'e.g. 94/100', col:'half', hint:'Score from Tool 3' },
+      { key:'sendwizeCheckDate', label:'Sendwize check date', type:'date', required:false, col:'half' },
+      { key:'notes', label:'Additional notes', type:'textarea', required:false, placeholder:'e.g. Suppression source, any edge cases handled…' },
     ]
   },
   {
     key: 'SenderIdentity', name: 'Sender Identity', icon: '🏢',
     desc: 'Document that the sender is clearly identified in the campaign.',
+    allowFiles: true,
+    fileHint: 'Upload a screenshot of the email footer showing your business address and unsubscribe link.',
     regulatoryFocus: {
-      all: 'PECR Regulation 23 requires the sender to be clearly identified in every marketing message.',
-      ico: 'ICO focus: Can the recipient identify who sent this? Concealed sender identity is a PECR Reg 23 breach (£5k–£50k). From name must match a real registered entity. Physical address must be present.',
+      all: {
+        summary: 'All three regulators require the sender to be clearly and honestly identified in every marketing message.',
+        ico: 'PECR Regulation 23 requires the sender to be clearly identifiable in every marketing message. Concealed sender identity is an automatic breach (£5k–£50k exposure). Physical address must be present.',
+        cma: 'Concealing the commercial identity of a sender may constitute an unfair commercial practice under DMCCA 2024 and a misleading omission under the Consumer Protection Regulations.',
+        asa: 'CAP Code Section 2: Marketing communications must make clear they are commercial and identify the sender. "Teaser" campaigns that conceal identity require rapid disclosure.',
+      },
+      ico: 'ICO focus: Can the recipient identify who sent this? From name must match a real registered entity. Physical address must be present. Concealed sender is a PECR Reg 23 breach (£5k–£50k).',
       cma: 'CMA focus: Concealed commercial identity may constitute an unfair commercial practice under DMCCA 2024.',
-      asa: 'ASA/CAP Code focus: Marketing communications must make clear they are commercial and identify the sender. Section 2 of the CAP Code.',
+      asa: 'ASA/CAP Code focus: Section 2 requires marketing communications to make clear they are commercial and identify the sender. Even teaser campaigns must disclose identity promptly.',
     },
     fields: [
       { key:'fromName', label:'From name', type:'text', required:true, placeholder:'e.g. Sendwize Compliance', col:'half' },
       { key:'fromEmail', label:'From email address', type:'text', required:true, placeholder:'e.g. hello@sendwize.co.uk', col:'half' },
       { key:'matchesTradingName', label:'From name matches registered trading name', type:'select', required:true, options:['Yes','No — explained in notes'], col:'half' },
-      { key:'businessAddress', label:'Business address in email footer', type:'select', required:false, options:['Yes','No'], col:'half' },
-      { key:'unsubscribePresent', label:'Unsubscribe link present and functional', type:'select', required:true, options:['Yes — tested and working','Yes — not tested','No'] },
-      { key:'replyToAddress', label:'Reply-to address', type:'text', required:false, placeholder:'e.g. hello@sendwize.co.uk', col:'half' },
+      { key:'businessAddress', label:'Business address in email footer', type:'select', required:true, options:['Yes — full registered address included','Yes — partial address','No'], col:'half', hint:'PECR Reg 23 requires a contact address' },
+      { key:'addressText', label:'Business address as it appears in email', type:'text', required:false, placeholder:'e.g. Sendwize Ltd, 123 High Street, London, EC1A 1BB' },
+      { key:'unsubscribePresent', label:'Unsubscribe link present and functional', type:'select', required:true, options:['Yes — tested and working','Yes — present but not tested','No'] },
+      { key:'unsubscribeUrl', label:'Unsubscribe URL', type:'text', required:false, placeholder:'e.g. https://example.com/unsubscribe or ESP-managed' },
+      { key:'replyToAddress', label:'Reply-to email address', type:'text', required:false, placeholder:'e.g. hello@sendwize.co.uk', col:'half' },
       { key:'replyToMonitor', label:'Reply-to monitored by', type:'text', required:false, placeholder:'e.g. Marketing team, checked daily', col:'half' },
+      { key:'privacyPolicyLink', label:'Privacy policy link in email', type:'select', required:false, options:['Yes — linked','No','N/A'] },
       { key:'notes', label:'Additional notes', type:'textarea', required:false, placeholder:'Any other sender identity notes…' },
     ]
   },
 ];
 
-// Module weights for health score (mirrors ICO investigation priority)
 const MODULE_WEIGHTS = { ListProvenance:16.67, ConsentMechanism:25, ContentCheck:16.67, Suppression:25, SenderIdentity:16.66 };
-
 const REQUIRED_FIELDS = {
   ListProvenance:   ['listSource','collectionMech','ownership'],
-  ConsentMechanism: ['lawfulBasis','consentWording','dateFrom'],
-  ContentCheck:     ['aiCheckerRun','asaReviewed','pricingCompliant'],
+  ConsentMechanism: ['lawfulBasis','consentWording'],
+  ContentCheck:     ['aiCheckerRun','asaReviewed','pricingCompliant','subjectLineAccurate','senderNameClear'],
   Suppression:      ['suppressionApplied','dateApplied','listLastUpdated'],
-  SenderIdentity:   ['fromName','fromEmail','matchesTradingName','unsubscribePresent'],
+  SenderIdentity:   ['fromName','fromEmail','matchesTradingName','businessAddress','unsubscribePresent'],
 };
 
-let userId = null, dossierId = null, moduleData = {}, campaignTitle = '', ownerName = '';
-let currentStep = 0, currentLens = 'all', isSaving = false;
-let healthScore = 0, submitSnapshotVersion = 1;
+let userId=null, dossierId=null, moduleData={}, uploadedFiles={};
+let campaignTitle='', ownerName='', currentStep=0, currentLens='all', isSaving=false;
+let healthScore=0, submitSnapshotVersion=1;
 
 // ── AUTH ──────────────────────────────────────────────────────
 function init() {
   const params = new URLSearchParams(window.location.search);
   userId    = params.get('userId');
   dossierId = params.get('dossierId');
-
   if (!userId) { showErr('You need to be signed in. Please return to the dashboard.'); return; }
-
-  if (dossierId) {
-    showEditorView();
-    loadDossier();
-  } else {
-    showListView();
-    loadDossierList();
-  }
+  if (dossierId) { showEditorView(); loadDossier(); }
+  else           { showListView();   loadDossierList(); }
 }
-document.readyState === 'loading'
-  ? document.addEventListener('DOMContentLoaded', init)
-  : init();
+document.readyState==='loading' ? document.addEventListener('DOMContentLoaded',init) : init();
 
 // ── VIEWS ─────────────────────────────────────────────────────
-function showListView() {
-  el('listView').classList.add('show');
-  el('editorView').classList.remove('show');
-  el('certSection').classList.remove('show');
-}
-function showEditorView() {
-  el('listView').classList.remove('show');
-  el('editorView').classList.add('show');
-  el('certSection').classList.remove('show');
-}
+function showListView()   { el('listView').classList.add('show'); el('editorView').classList.remove('show'); el('certSection').classList.remove('show'); }
+function showEditorView() { el('listView').classList.remove('show'); el('editorView').classList.add('show'); el('certSection').classList.remove('show'); }
 
 // ── LIST VIEW ─────────────────────────────────────────────────
 async function loadDossierList() {
@@ -597,79 +640,69 @@ async function loadDossierList() {
     const r = await fetch(`${APP_URL}/api/submit-check?action=dossier-list&userId=${userId}&limit=50`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const { dossiers } = await r.json();
-    renderDossierList(dossiers || []);
+    renderDossierList(dossiers||[]);
   } catch(e) {
-    console.error(e);
-    el('dossierListContent').innerHTML = `<div style="color:var(--r);font-size:13px;padding:20px">Could not load dossiers — ${e.message}</div>`;
+    el('dossierListContent').innerHTML=`<div style="color:var(--r);font-size:13px;padding:20px">Could not load dossiers — ${e.message}</div>`;
   }
 }
 
 function renderDossierList(dossiers) {
   if (!dossiers.length) {
-    el('dossierListContent').innerHTML = `<div class="empty-list">
+    el('dossierListContent').innerHTML=`<div class="empty-list">
       <div class="empty-icon">📁</div>
       <div class="empty-title">No dossiers yet</div>
       <div class="empty-sub">Create a compliance evidence file for each campaign you send. The ICO, CMA and ASA can all request this evidence.</div>
-      <button class="btn-new-dossier" onclick="showNewDossierModal()">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>
-        Create your first dossier
-      </button>
+      <button class="btn-new-dossier" onclick="showNewDossierModal()">Create your first dossier</button>
     </div>`;
     return;
   }
-
   const cards = dossiers.map(d => {
-    const strength = (d.evidenceStrength || '').toLowerCase();
-    const strengthClass = strength === 'strong' ? 'strong' : strength === 'adequate' ? 'adequate' : strength ? 'weak' : '';
-    const strengthLabel = strength ? (strength.charAt(0).toUpperCase()+strength.slice(1)) : '';
-    const pct = d.modulesPct || 0;
-    const dt  = d.submittedAt || d.updatedAt || d.createdDate;
+    const strength = (d.evidenceStrength||'').toLowerCase();
+    const strengthClass = strength==='strong'?'strong':strength==='adequate'?'adequate':strength?'weak':'';
+    const strengthLabel = strength ? strength.charAt(0).toUpperCase()+strength.slice(1) : '';
+    const pct = d.modulesPct||0;
+    const dt  = d.submittedAt||d.updatedAt||d.createdDate;
     const dateLabel = dt ? new Date(dt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
     return `<div class="dc" onclick="openDossier('${d.dossierId}')">
-      <div class="dc-source">${d.dossierSource === 'Brief Checker' ? '📋 From Brief Checker' : '📁 Standalone'}</div>
+      <div class="dc-source">${d.dossierSource==='Brief Checker'?'📋 From Brief Checker':'📁 Standalone'}</div>
       <div class="dc-title">${escH(d.campaignTitle)}</div>
-      ${d.ownerName ? `<div class="dc-owner">${escH(d.ownerName)}</div>` : '<div class="dc-owner" style="height:18px"></div>'}
+      ${d.ownerName?`<div class="dc-owner">${escH(d.ownerName)}</div>`:'<div class="dc-owner" style="height:18px"></div>'}
       <div class="dc-bar"><div class="dc-bar-fill" style="width:${pct}%"></div></div>
       <div class="dc-meta">
         <span class="dc-modules">${d.modulesComplete}/5 modules</span>
-        ${strengthLabel ? `<span class="dc-strength ${strengthClass}">${strengthLabel}</span>` : ''}
-        <span class="dc-status">${d.status === 'Submitted' ? '✓ Submitted' : 'Draft'}</span>
+        ${strengthLabel?`<span class="dc-strength ${strengthClass}">${strengthLabel}</span>`:''}
+        <span class="dc-status">${d.status==='Submitted'?'✓ Submitted':'Draft'}</span>
       </div>
-      ${dateLabel ? `<div class="dc-date">${d.status === 'Submitted' ? 'Submitted' : 'Updated'} ${dateLabel}</div>` : ''}
+      ${dateLabel?`<div class="dc-date">${d.status==='Submitted'?'Submitted':'Updated'} ${dateLabel}</div>`:''}
     </div>`;
   }).join('');
-
-  el('dossierListContent').innerHTML = `<div class="dossier-grid">${cards}</div>`;
+  el('dossierListContent').innerHTML=`<div class="dossier-grid">${cards}</div>`;
 }
 
-function openDossier(id) {
-  window.location.href = `campaign-dossier.html?userId=${userId}&dossierId=${id}`;
-}
+function openDossier(id) { window.location.href=`campaign-dossier.html?userId=${userId}&dossierId=${id}`; }
 
 // ── NEW DOSSIER MODAL ─────────────────────────────────────────
 function showNewDossierModal() { el('newDossierModal').classList.add('show'); el('newCampaignTitle').focus(); }
 function hideNewDossierModal() { el('newDossierModal').classList.remove('show'); }
 
-async function createDossier(prefill = null, source = 'Standalone', titleOverride = null) {
+async function createDossier(prefill=null,source='Standalone',titleOverride=null) {
   const btn   = el('btnCreateDossier');
   const title = titleOverride || el('newCampaignTitle')?.value.trim();
-  const owner = el('newOwnerName')?.value.trim() || '';
-
-  if (!title) { toast('Please enter a campaign title.', 'er'); return; }
-  if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
-
+  const owner = el('newOwnerName')?.value.trim()||'';
+  if (!title) { toast('Please enter a campaign title.','er'); return; }
+  if (btn) { btn.disabled=true; btn.textContent='Creating…'; }
   try {
-    const res = await fetch(`${APP_URL}/api/submit-check?action=dossier-create`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, campaignTitle: title, ownerName: owner, dossierSource: source, prefill }),
+    const res = await fetch(`${APP_URL}/api/submit-check?action=dossier-create`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({userId, campaignTitle:title, ownerName:owner, dossierSource:source, prefill}),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { dossierId: newId } = await res.json();
+    const {dossierId:newId} = await res.json();
     hideNewDossierModal();
-    window.location.href = `campaign-dossier.html?userId=${userId}&dossierId=${newId}`;
+    window.location.href=`campaign-dossier.html?userId=${userId}&dossierId=${newId}`;
   } catch(e) {
-    toast('Could not create dossier — ' + e.message, 'er');
-    if (btn) { btn.disabled = false; btn.textContent = 'Create Dossier'; }
+    toast('Could not create dossier — '+e.message,'er');
+    if (btn) { btn.disabled=false; btn.textContent='Create Dossier'; }
   }
 }
 
@@ -679,114 +712,83 @@ async function loadDossier() {
     const res = await fetch(`${APP_URL}/api/submit-check?action=dossier-get&dossierId=${dossierId}&userId=${userId}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-
-    campaignTitle = data.CampaignTitle || '';
-    ownerName     = data.OwnerName     || '';
-
-    // Load structured module fields (v4.26) or fall back to text parsing
+    campaignTitle = data.CampaignTitle||'';
+    ownerName     = data.OwnerName||'';
     MODULES.forEach(m => {
-      moduleData[m.key] = data.moduleFields?.[m.key] || {};
-      // If no structured data but has text, show text in notes field
-      if (!Object.keys(moduleData[m.key]).length && data[m.key]) {
-        moduleData[m.key] = { notes: data[m.key] };
-      }
+      moduleData[m.key] = data.moduleFields?.[m.key]||{};
+      if (!Object.keys(moduleData[m.key]).length && data[m.key]) moduleData[m.key]={notes:data[m.key]};
     });
-
-    // Update source tag
-    const src = data.DossierSource || 'Standalone';
-    el('sourceTag').textContent = src === 'Brief Checker' ? '📋 Brief Checker' : '📁 Standalone';
-
-    if (data.Status === 'Submitted') {
-      renderCertificate(data);
-      return;
-    }
-
-    if (campaignTitle) { el('campaignTitle').value = campaignTitle; el('headerTitle').textContent = campaignTitle; }
-    if (ownerName)     { el('ownerName').value = ownerName;         el('headerOwner').textContent = ownerName; }
-    if (campaignTitle && ownerName) el('titleFields').style.display = 'none';
-
-    el('dossierIdLabel').textContent = dossierId.slice(0, 12) + '…';
-
-    updateHealthBar();
-    renderStepper();
-    renderModule(currentStep);
-    updateProgress();
-
+    const src = data.DossierSource||'Standalone';
+    el('sourceTag').textContent = src==='Brief Checker'?'📋 Brief Checker':'📁 Standalone';
+    if (data.Status==='Submitted') { renderCertificate(data); return; }
+    if (campaignTitle) { el('campaignTitle').value=campaignTitle; el('headerTitle').textContent=campaignTitle; }
+    if (ownerName)     { el('ownerName').value=ownerName;         el('headerOwner').textContent=ownerName; }
+    if (campaignTitle&&ownerName) el('titleFields').style.display='none';
+    el('dossierIdLabel').textContent=dossierId.slice(0,12)+'…';
+    updateHealthBar(); renderStepper(); renderModule(currentStep); updateProgress();
   } catch(e) {
     console.error(e);
-    // Start fresh if not found
-    updateHealthBar();
-    renderStepper();
-    renderModule(currentStep);
-    updateProgress();
+    updateHealthBar(); renderStepper(); renderModule(currentStep); updateProgress();
   }
 }
 
 // ── LENS ──────────────────────────────────────────────────────
-function setLens(lens, btn) {
-  currentLens = lens;
-  document.querySelectorAll('.rl-btn').forEach(b => b.classList.remove('active'));
+function setLens(lens,btn) {
+  currentLens=lens;
+  document.querySelectorAll('.rl-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderModule(currentStep);
 }
 
 // ── HEALTH BAR ────────────────────────────────────────────────
 function updateHealthBar() {
-  let total = 0;
-  const pips = [];
-
+  let total=0;
+  const pips=[];
   MODULES.forEach(m => {
-    const fields = moduleData[m.key] || {};
-    const req    = REQUIRED_FIELDS[m.key] || [];
-    const reqFilled = req.filter(f => {
-      const v = fields[f]; return v !== undefined && v !== null && v !== '' && v !== false;
-    }).length;
-    const optKeys = Object.keys(fields).filter(k => !req.includes(k) && k !== 'notes');
-    const optFilled = optKeys.filter(k => { const v = fields[k]; return v !== undefined && v !== null && v !== '' && v !== false; }).length;
-
-    let strength, pct;
-    if (reqFilled < req.length) { strength = 'Weak'; pct = req.length ? Math.round(reqFilled/req.length*40) : 0; }
-    else if (optFilled === 0)   { strength = 'Adequate'; pct = 65; }
-    else                        { strength = 'Strong'; pct = 100; }
-
-    const modScore = pct;
-    total += (modScore * MODULE_WEIGHTS[m.key]) / 100;
-    pips.push({ key: m.key, strength, icon: m.icon });
+    const fields=moduleData[m.key]||{};
+    const req=REQUIRED_FIELDS[m.key]||[];
+    const reqFilled=req.filter(f=>{const v=fields[f];return v!==undefined&&v!==null&&v!==''&&v!==false;}).length;
+    const optKeys=Object.keys(fields).filter(k=>!req.includes(k)&&k!=='notes');
+    const optFilled=optKeys.filter(k=>{const v=fields[k];return v!==undefined&&v!==null&&v!==''&&v!==false;}).length;
+    let strength,pct;
+    if (reqFilled<req.length){strength='Weak';pct=req.length?Math.round(reqFilled/req.length*40):0;}
+    else if (optFilled===0){strength='Adequate';pct=65;}
+    else{strength='Strong';pct=100;}
+    total+=(pct*MODULE_WEIGHTS[m.key])/100;
+    pips.push({key:m.key,strength,icon:m.icon,name:m.name});
   });
-
-  healthScore = Math.round(total);
-  const color = healthScore >= 75 ? 'var(--g)' : healthScore >= 45 ? 'var(--y)' : 'var(--o)';
-  const desc  = healthScore >= 75 ? 'Strong evidence base — well positioned for regulatory scrutiny.'
-              : healthScore >= 45 ? 'Adequate evidence — complete optional fields to reach Strong.'
-              : 'Evidence needs attention — complete required fields in each module.';
-
-  const circle = el('healthCircle');
-  circle.innerHTML = `${healthScore}<span>score</span>`;
-  circle.className = `health-score-circle ${healthScore >= 75 ? 'good' : healthScore >= 45 ? 'warn' : ''}`;
-
-  el('healthFill').style.width  = healthScore + '%';
-  el('healthFill').style.background = color;
-  el('healthDesc').textContent  = desc;
-
-  el('healthModules').innerHTML = pips.map(p => {
-    const cls = p.strength === 'Strong' ? 'strong' : p.strength === 'Adequate' ? 'adequate' : Object.keys(moduleData[p.key]||{}).length ? 'weak' : 'empty';
-    const abbr = p.icon;
-    return `<div class="hm-pip ${cls}" title="${p.key}: ${p.strength}">${abbr}</div>`;
+  healthScore=Math.round(total);
+  const color=healthScore>=75?'var(--g)':healthScore>=45?'var(--y)':'var(--o)';
+  const desc=healthScore>=75?'Strong evidence base — well positioned for regulatory scrutiny.'
+            :healthScore>=45?'Adequate evidence — complete optional fields to reach Strong.'
+            :'Evidence needs attention — complete required fields in each module.';
+  const circle=el('healthCircle');
+  circle.innerHTML=`${healthScore}<span>score</span>`;
+  circle.className=`health-score-circle ${healthScore>=75?'good':healthScore>=45?'warn':''}`;
+  el('healthFill').style.width=healthScore+'%';
+  el('healthFill').style.background=color;
+  el('healthDesc').textContent=desc;
+  el('healthModules').innerHTML=pips.map((p,i)=>{
+    const cls=p.strength==='Strong'?'strong':p.strength==='Adequate'?'adequate':Object.keys(moduleData[p.key]||{}).length?'weak':'empty';
+    return `<div class="hm-pip ${cls}" title="${p.name}: ${p.strength}" onclick="goToStep(${i})">${p.icon}</div>`;
   }).join('');
 }
 
 // ── STEPPER ───────────────────────────────────────────────────
 function renderStepper() {
-  el('stepper').innerHTML = MODULES.map((m, i) => {
-    const fields  = moduleData[m.key] || {};
-    const req     = REQUIRED_FIELDS[m.key] || [];
-    const reqFilled = req.filter(f => { const v = fields[f]; return v !== undefined && v !== null && v !== '' && v !== false; }).length;
-    const hasAny  = Object.values(fields).some(v => v !== undefined && v !== null && v !== '' && v !== false);
-    const isStrong   = reqFilled >= req.length && Object.keys(fields).filter(k=>!req.includes(k)&&k!=='notes').some(k=>fields[k]);
-    const isAdequate = reqFilled >= req.length;
-    const cls = isStrong ? 'done strong' : isAdequate ? 'done' : hasAny ? 'active' : i === currentStep ? 'active' : '';
-    const dot = isStrong ? '★' : isAdequate ? '✓' : i + 1;
-    return `<div class="step ${cls} ${i===currentStep?'active':''}" onclick="goToStep(${i})" title="${m.name}">
+  el('stepper').innerHTML=MODULES.map((m,i)=>{
+    const fields=moduleData[m.key]||{};
+    const req=REQUIRED_FIELDS[m.key]||[];
+    const reqFilled=req.filter(f=>{const v=fields[f];return v!==undefined&&v!==null&&v!==''&&v!==false;}).length;
+    const hasAny=Object.values(fields).some(v=>v!==undefined&&v!==null&&v!==''&&v!==false);
+    const optFilled=Object.keys(fields).filter(k=>!req.includes(k)&&k!=='notes').filter(k=>{const v=fields[k];return v!==undefined&&v!==null&&v!==''&&v!==false;}).length;
+    const isStrong=reqFilled>=req.length&&optFilled>0;
+    const isAdequate=reqFilled>=req.length;
+    const isLegacy=!isAdequate&&!!(moduleData[m.key]?.notes?.trim());
+    const isActive=i===currentStep;
+    const cls=`step ${isStrong?'done strong':(isAdequate||isLegacy)?'done':hasAny?'active':''} ${isActive?'active':''}`;
+    const dot=isStrong?'★':isAdequate?'✓':i+1;
+    return `<div class="${cls}" onclick="goToStep(${i})" title="${m.name}">
       <div class="step-dot">${dot}</div>
       <div class="step-label">${m.name.split(' ')[0]}</div>
     </div>`;
@@ -794,47 +796,100 @@ function renderStepper() {
 }
 
 function goToStep(i) {
-  currentStep = i;
+  currentStep=i;
+  el('incompleteBanner').classList.remove('show');
   renderStepper(); renderModule(i); updateProgress();
   el('submitCard').classList.remove('show');
 }
 
 // ── MODULE RENDER ─────────────────────────────────────────────
 function renderModule(i) {
-  const m = MODULES[i];
-  const fields = moduleData[m.key] || {};
-  const req = REQUIRED_FIELDS[m.key] || [];
-  const reqFilled = req.filter(f => { const v = fields[f]; return v !== undefined && v !== null && v !== '' && v !== false; }).length;
-  const optKeys = Object.keys(fields).filter(k => !req.includes(k) && k !== 'notes');
-  const optFilled = optKeys.filter(k => { const v = fields[k]; return v !== undefined && v !== null && v !== '' && v !== false; }).length;
-  const totalOpt = m.fields.filter(f => !f.required && f.key !== 'notes' && f.type !== 'checkbox-group').length;
+  const m=MODULES[i];
+  const fields=moduleData[m.key]||{};
+  const req=REQUIRED_FIELDS[m.key]||[];
+  const reqFilled=req.filter(f=>{const v=fields[f];return v!==undefined&&v!==null&&v!==''&&v!==false;}).length;
+  const optKeys=Object.keys(fields).filter(k=>!req.includes(k)&&k!=='notes');
+  const optFilled=optKeys.filter(k=>{const v=fields[k];return v!==undefined&&v!==null&&v!==''&&v!==false;}).length;
+  const totalOpt=m.fields.filter(f=>!f.required&&f.key!=='notes'&&f.type!=='checkbox-group').length;
+  const strength=reqFilled>=req.length&&optFilled>0?'strong':reqFilled>=req.length?'adequate':reqFilled>0?'weak':'empty';
+  const strengthLabel={strong:'⭐ Strong',adequate:'✓ Adequate',weak:'⚠ Weak',empty:'Not started'}[strength];
 
-  const strength = reqFilled >= req.length && optFilled > 0 ? 'strong'
-                 : reqFilled >= req.length ? 'adequate'
-                 : reqFilled > 0 ? 'weak' : 'empty';
-  const strengthLabel = { strong:'⭐ Strong', adequate:'✓ Adequate', weak:'⚠ Weak', empty:'Not started' }[strength];
-  const pillClass = strength === 'empty' ? 'empty' : strength;
+  // Regulatory spotlight
+  let spotlightHtml='';
+  const focus=m.regulatoryFocus[currentLens];
+  if (currentLens==='all' && focus.summary) {
+    spotlightHtml=`<div class="reg-spotlight all">
+      <div class="reg-spotlight-title">What all regulators look for</div>
+      <div style="margin-bottom:8px">${escH(focus.summary)}</div>
+      <div class="reg-spotlight-grid">
+        <div class="reg-spotlight-item"><div class="reg-spotlight-reg reg-spotlight-ico">🔴 ICO</div><div class="reg-spotlight-text">${escH(focus.ico)}</div></div>
+        <div class="reg-spotlight-item"><div class="reg-spotlight-reg reg-spotlight-cma">🟡 CMA</div><div class="reg-spotlight-text">${escH(focus.cma)}</div></div>
+        <div class="reg-spotlight-item"><div class="reg-spotlight-reg reg-spotlight-asa">🔵 ASA</div><div class="reg-spotlight-text">${escH(focus.asa)}</div></div>
+      </div>
+    </div>`;
+  } else {
+    const lensClass=currentLens==='all'?'all':currentLens;
+    const lensLabel=currentLens==='all'?'Compliance focus':currentLens.toUpperCase()+' focus';
+    spotlightHtml=`<div class="reg-spotlight ${lensClass}">
+      <div class="reg-spotlight-title">${lensLabel}</div>
+      ${escH(typeof focus==='string'?focus:focus.summary||'')}
+    </div>`;
+  }
 
-  // Regulatory spotlight text
-  const spotlight = m.regulatoryFocus[currentLens] || m.regulatoryFocus.all;
-  const lensClass = currentLens === 'all' ? 'all' : currentLens;
+  // Strength meter
+  const smHtml=`<div class="strength-meter">
+    <div class="sm-title">Evidence strength</div>
+    <div class="sm-bars">
+      <div class="sm-row"><div class="sm-label">Required</div><div class="sm-track"><div class="sm-fill req" style="width:${req.length?Math.round(reqFilled/req.length*100):0}%"></div></div><div class="sm-val">${reqFilled}/${req.length}</div></div>
+      <div class="sm-row"><div class="sm-label">Optional</div><div class="sm-track"><div class="sm-fill opt" style="width:${totalOpt?Math.round(optFilled/totalOpt*100):0}%"></div></div><div class="sm-val">${optFilled}/${totalOpt}</div></div>
+    </div>
+  </div>`;
+
+  // File upload section
+  const filesForModule = uploadedFiles[m.key]||[];
+  const fileListHtml = filesForModule.map((f,fi)=>
+    `<div class="file-item">
+      <span style="font-size:14px">${fileIcon(f.name)}</span>
+      <span class="file-item-name">${escH(f.name)}</span>
+      <span class="file-item-size">${formatBytes(f.size)}</span>
+      <button class="file-item-remove" onclick="removeFile('${m.key}',${fi})">✕</button>
+    </div>`
+  ).join('');
+
+  const fileUploadHtml=m.allowFiles?`<div class="file-upload-section">
+    <div class="file-upload-title">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 10v3a1 1 0 01-1 1H3a1 1 0 01-1-1v-3M8 2v8M4 6l4-4 4 4"/></svg>
+      Supporting Evidence Files <span class="field-optional">optional</span>
+    </div>
+    <div class="file-upload-hint">${escH(m.fileHint)}</div>
+    <div class="file-input-row">
+      <label class="file-input-label">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 10v3a1 1 0 01-1 1H3a1 1 0 01-1-1v-3M8 2v8M4 6l4-4 4 4"/></svg>
+        Choose files
+        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx" onchange="handleFileSelect('${m.key}',this)">
+      </label>
+      <span style="font-size:11px;color:var(--mu)">Images, PDF, Word, Excel — max 5MB each</span>
+    </div>
+    <div class="file-uploading" id="fileUploading-${m.key}"><div class="mini-spin"></div>Uploading…</div>
+    ${filesForModule.length?`<div class="file-list">${fileListHtml}</div>`:''}
+  </div>`:'';
 
   // Build field HTML
-  let fieldsHtml = '<div class="fields-grid two-col">';
-  let isInGrid = true;
+  let fieldsHtml='<div class="fields-grid two-col">';
+  let isInGrid=true;
 
-  m.fields.forEach(field => {
-    const val = fields[field.key];
-    const isHalf = field.col === 'half';
-    const isFull = !isHalf && field.type !== 'checkbox-group';
+  m.fields.forEach(field=>{
+    const val=fields[field.key];
+    const isHalf=field.col==='half';
+    const isFull=!isHalf&&field.type!=='checkbox-group';
 
-    if (field.type === 'checkbox-group') {
-      if (isInGrid) { fieldsHtml += '</div>'; isInGrid = false; }
-      fieldsHtml += `<div class="field-group full" style="margin-bottom:14px">
+    if (field.type==='checkbox-group') {
+      if (isInGrid){fieldsHtml+='</div>';isInGrid=false;}
+      fieldsHtml+=`<div class="field-group full" style="margin-bottom:14px">
         <div class="field-label">${escH(field.label)} <span class="field-optional">optional</span></div>
         <div class="check-group">
-          ${field.checkboxes.map(cb => {
-            const checked = fields[cb.key] === true || fields[cb.key] === 'true';
+          ${field.checkboxes.map(cb=>{
+            const checked=fields[cb.key]===true||fields[cb.key]==='true';
             return `<label class="check-item${checked?' checked':''}" id="ci-${cb.key}">
               <input type="checkbox" id="chk-${cb.key}" ${checked?'checked':''} onchange="onCheckChange('${m.key}','${cb.key}',this.checked)">
               <span class="check-item-text">${escH(cb.label)}</span>
@@ -845,165 +900,221 @@ function renderModule(i) {
       return;
     }
 
-    if (!isInGrid) { fieldsHtml += '<div class="fields-grid two-col">'; isInGrid = true; }
-
-    const isFilled = val !== undefined && val !== null && val !== '' && val !== false;
-    const groupClass = `field-group${isFull?' full':''}`;
-    const req2 = field.required;
-
-    let inputHtml = '';
-    if (field.type === 'select') {
-      inputHtml = `<select class="field-input${isFilled?' filled':''}" id="f-${field.key}" onchange="onFieldChange('${m.key}','${field.key}',this.value)">
+    if (!isInGrid){fieldsHtml+='<div class="fields-grid two-col">';isInGrid=true;}
+    const isFilled=val!==undefined&&val!==null&&val!==''&&val!==false;
+    const groupClass=`field-group${isFull?' full':''}`;
+    const req2=field.required;
+    let inputHtml='';
+    if (field.type==='select') {
+      inputHtml=`<select class="field-input${isFilled?' filled':''}" id="f-${field.key}" onchange="onFieldChange('${m.key}','${field.key}',this.value)">
         <option value="">Select…</option>
         ${(field.options||[]).map(o=>`<option value="${escH(o)}"${val===o?' selected':''}>${escH(o)}</option>`).join('')}
       </select>`;
-    } else if (field.type === 'textarea') {
-      inputHtml = `<textarea class="field-input${isFilled?' filled':''}" id="f-${field.key}" placeholder="${escH(field.placeholder||'')}" rows="3" oninput="onFieldChange('${m.key}','${field.key}',this.value)">${escH(val||'')}</textarea>`;
+    } else if (field.type==='textarea') {
+      inputHtml=`<textarea class="field-input${isFilled?' filled':''}" id="f-${field.key}" placeholder="${escH(field.placeholder||'')}" rows="3" oninput="onFieldChange('${m.key}','${field.key}',this.value)">${escH(val||'')}</textarea>`;
     } else {
-      inputHtml = `<input type="${field.type||'text'}" class="field-input${isFilled?' filled':''}" id="f-${field.key}" placeholder="${escH(field.placeholder||'')}" value="${escH(val||'')}" oninput="onFieldChange('${m.key}','${field.key}',this.value)">`;
+      inputHtml=`<input type="${field.type||'text'}" class="field-input${isFilled?' filled':''}" id="f-${field.key}" placeholder="${escH(field.placeholder||'')}" value="${escH(val||'')}" oninput="onFieldChange('${m.key}','${field.key}',this.value)">`;
     }
-
-    fieldsHtml += `<div class="${groupClass}">
+    fieldsHtml+=`<div class="${groupClass}">
       <div class="field-label">${escH(field.label)}${req2?` <span class="field-required">*</span>`:` <span class="field-optional">optional</span>`}</div>
       ${inputHtml}
-      ${field.hint ? `<div class="field-hint">${escH(field.hint)}</div>` : ''}
+      ${field.hint?`<div class="field-hint">${escH(field.hint)}</div>`:''}
     </div>`;
   });
 
-  if (isInGrid) fieldsHtml += '</div>';
+  if (isInGrid) fieldsHtml+='</div>';
 
-  // Strength meter
-  const smHtml = `<div class="strength-meter">
-    <div class="sm-title">Evidence strength</div>
-    <div class="sm-bars">
-      <div class="sm-row">
-        <div class="sm-label">Required</div>
-        <div class="sm-track"><div class="sm-fill req" style="width:${req.length?Math.round(reqFilled/req.length*100):0}%"></div></div>
-        <div class="sm-val">${reqFilled}/${req.length}</div>
+  el('moduleCard').innerHTML=`<div class="module-card">
+    <div class="module-header">
+      <div class="module-icon-wrap">${m.icon}</div>
+      <div class="module-info">
+        <div class="module-num">Module ${i+1} of 5</div>
+        <div class="module-name">${m.name}</div>
+        <div class="module-desc">${m.desc}</div>
       </div>
-      <div class="sm-row">
-        <div class="sm-label">Optional</div>
-        <div class="sm-track"><div class="sm-fill opt" style="width:${totalOpt?Math.round(optFilled/totalOpt*100):0}%"></div></div>
-        <div class="sm-val">${optFilled}/${totalOpt}</div>
-      </div>
+      <span class="strength-pill ${strength}">${strengthLabel}</span>
+    </div>
+    ${spotlightHtml}
+    ${smHtml}
+    ${fieldsHtml}
+    ${fileUploadHtml}
+    <div class="module-actions">
+      <button class="btn-save" id="btnSave" onclick="saveModule()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 14l2-4 8-8 2 2-8 8-4 2z"/></svg>
+        Save module
+      </button>
+      ${i<4
+        ?`<button class="btn-next" onclick="saveAndNext()">Save &amp; next →</button>`
+        :`<button class="btn-next" onclick="saveAndFinish()">Save &amp; finish ✓</button>`}
+      <span class="saved-tick" id="savedTick">✓ Saved</span>
+      <span class="save-note">Progress saves per module.</span>
     </div>
   </div>`;
 
-  el('moduleCard').innerHTML = `
-    <div class="module-card">
-      <div class="module-header">
-        <div class="module-icon-wrap">${m.icon}</div>
-        <div class="module-info">
-          <div class="module-num">Module ${i+1} of 5</div>
-          <div class="module-name">${m.name}</div>
-          <div class="module-desc">${m.desc}</div>
-        </div>
-        <span class="strength-pill ${pillClass}">${strengthLabel}</span>
-      </div>
-      <div class="reg-spotlight ${lensClass}">
-        <div class="reg-spotlight-title">${currentLens === 'all' ? 'Compliance focus' : currentLens.toUpperCase() + ' focus'}</div>
-        ${escH(spotlight)}
-      </div>
-      ${smHtml}
-      ${fieldsHtml}
-      <div class="module-actions">
-        <button class="btn-save" id="btnSave" onclick="saveModule()">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 14l2-4 8-8 2 2-8 8-4 2z"/></svg>
-          Save module
-        </button>
-        ${i < 4
-          ? `<button class="btn-next" onclick="saveAndNext()">Save & next →</button>`
-          : `<button class="btn-next" onclick="saveAndFinish()">Save & finish ✓</button>`}
-        <span class="saved-tick" id="savedTick">✓ Saved</span>
-        <span class="save-note">Progress saves per module.</span>
-      </div>
-    </div>`;
+  el('btnPrev').style.visibility=i===0?'hidden':'visible';
+}
 
-  el('btnPrev').style.visibility = i === 0 ? 'hidden' : 'visible';
+// ── FILE HANDLING ─────────────────────────────────────────────
+function fileIcon(name) {
+  const ext=(name.split('.').pop()||'').toLowerCase();
+  if (['jpg','jpeg','png','gif','webp'].includes(ext)) return '🖼️';
+  if (ext==='pdf') return '📄';
+  if (['doc','docx'].includes(ext)) return '📝';
+  if (['xls','xlsx','csv'].includes(ext)) return '📊';
+  return '📎';
+}
+function formatBytes(b) { if(b<1024)return b+'B'; if(b<1048576)return Math.round(b/1024)+'KB'; return (b/1048576).toFixed(1)+'MB'; }
+
+async function handleFileSelect(moduleKey, input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  const tooBig = files.filter(f=>f.size>5*1024*1024);
+  if (tooBig.length) { toast(`${tooBig.map(f=>f.name).join(', ')} exceeds 5MB limit`,'er'); input.value=''; return; }
+  if (!uploadedFiles[moduleKey]) uploadedFiles[moduleKey]=[];
+
+  const upEl = document.getElementById(`fileUploading-${moduleKey}`);
+  if (upEl) upEl.classList.add('show');
+
+  // Store locally — actual upload to Airtable happens on save
+  for (const file of files) {
+    const reader = new FileReader();
+    await new Promise(resolve => {
+      reader.onload = e => {
+        uploadedFiles[moduleKey].push({ name:file.name, size:file.size, type:file.type, dataUrl:e.target.result });
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (upEl) upEl.classList.remove('show');
+  input.value='';
+  renderModule(currentStep); // re-render to show file list
+}
+
+function removeFile(moduleKey, index) {
+  if (uploadedFiles[moduleKey]) uploadedFiles[moduleKey].splice(index,1);
+  renderModule(currentStep);
 }
 
 // ── FIELD CHANGE ──────────────────────────────────────────────
 function onFieldChange(moduleKey, fieldKey, value) {
-  if (!moduleData[moduleKey]) moduleData[moduleKey] = {};
-  moduleData[moduleKey][fieldKey] = value;
-  // Update filled styling
-  const el2 = document.getElementById('f-' + fieldKey);
-  if (el2) el2.classList.toggle('filled', value !== '' && value !== null);
-  updateHealthBar();
-  renderStepper();
+  if (!moduleData[moduleKey]) moduleData[moduleKey]={};
+  moduleData[moduleKey][fieldKey]=value;
+  const el2=document.getElementById('f-'+fieldKey);
+  if (el2) el2.classList.toggle('filled', value!==''&&value!==null);
+  updateHealthBar(); renderStepper();
 }
 
 function onCheckChange(moduleKey, fieldKey, checked) {
-  if (!moduleData[moduleKey]) moduleData[moduleKey] = {};
-  moduleData[moduleKey][fieldKey] = checked;
-  const ci = document.getElementById('ci-' + fieldKey);
-  if (ci) ci.classList.toggle('checked', checked);
-  updateHealthBar();
-  renderStepper();
+  if (!moduleData[moduleKey]) moduleData[moduleKey]={};
+  moduleData[moduleKey][fieldKey]=checked;
+  const ci=document.getElementById('ci-'+fieldKey);
+  if (ci) ci.classList.toggle('checked',checked);
+  updateHealthBar(); renderStepper();
 }
 
 // ── SAVE MODULE ───────────────────────────────────────────────
 async function saveModule() {
   if (isSaving) return;
+  const title=el('campaignTitle').value.trim();
+  const owner=el('ownerName').value.trim();
+  if (!title){toast('Please enter a campaign title first.','er');el('campaignTitle').focus();return;}
+  if (!owner){toast('Please enter your name first.','er');el('ownerName').focus();return;}
 
-  const title = el('campaignTitle').value.trim();
-  const owner = el('ownerName').value.trim();
-  if (!title) { toast('Please enter a campaign title first.', 'er'); el('campaignTitle').focus(); return; }
-  if (!owner) { toast('Please enter your name first.', 'er'); el('ownerName').focus(); return; }
+  campaignTitle=title; ownerName=owner;
+  el('headerTitle').textContent=title;
+  el('headerOwner').textContent=owner;
+  el('titleFields').style.display='none';
 
-  campaignTitle = title; ownerName = owner;
-  el('headerTitle').textContent   = title;
-  el('headerOwner').textContent   = owner;
-  el('titleFields').style.display = 'none';
-
-  const mod = MODULES[currentStep];
-  const fields = moduleData[mod.key] || {};
-
-  const btn  = el('btnSave');
-  const tick = el('savedTick');
-  if (btn) btn.disabled = true;
-  isSaving = true;
+  const mod=MODULES[currentStep];
+  const fields=moduleData[mod.key]||{};
+  const btn=el('btnSave');
+  const tick=el('savedTick');
+  if (btn) btn.disabled=true;
+  isSaving=true;
 
   try {
-    const res = await fetch(`${APP_URL}/api/submit-check?action=dossier-save`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId, dossierId, module: mod.key,
-        moduleFields: { ...fields, campaignTitle, ownerName },
-      }),
+    // Build payload including file attachments if any
+    const payload = {
+      userId, dossierId, module:mod.key,
+      moduleFields:{...fields, campaignTitle, ownerName},
+    };
+
+    // Attach file data if files were uploaded for this module
+    const files = uploadedFiles[mod.key]||[];
+    if (files.length) {
+      payload.attachments = files.map(f=>({filename:f.name, data:f.dataUrl}));
+    }
+
+    const res=await fetch(`${APP_URL}/api/submit-check?action=dossier-save`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     if (tick) tick.classList.add('show');
     updateHealthBar(); renderStepper(); updateProgress();
-    toast('Module saved', 'ok');
-    checkAllComplete();
+    toast('Module saved','ok');
 
   } catch(e) {
     console.error(e);
-    toast('Save failed — please try again', 'er');
-    if (btn) btn.disabled = false;
+    toast('Save failed — '+e.message,'er');
+    if (btn) btn.disabled=false;
   } finally {
-    isSaving = false;
-    if (btn) btn.disabled = false;
+    isSaving=false;
+    if (btn) btn.disabled=false;
   }
 }
 
 async function saveAndNext() {
   await saveModule();
-  if (currentStep < 4) {
-    setTimeout(() => { currentStep++; renderStepper(); renderModule(currentStep); updateProgress(); window.scrollTo({top:0,behavior:'smooth'}); }, 300);
+  if (currentStep<4) {
+    setTimeout(()=>{
+      currentStep++;
+      el('incompleteBanner').classList.remove('show');
+      renderStepper(); renderModule(currentStep); updateProgress();
+      window.scrollTo({top:0,behavior:'smooth'});
+    },300);
   }
 }
 
 async function saveAndFinish() {
   await saveModule();
-  checkAllComplete();
+
+  // Check which modules are incomplete
+  const incomplete = MODULES.filter(m=>!moduleComplete(m.key));
+
+  if (incomplete.length>0) {
+    // Show banner listing incomplete modules with click-to-navigate
+    const banner=el('incompleteBanner');
+    const list=el('incompleteList');
+    list.innerHTML=incomplete.map(m=>{
+      const idx=MODULES.findIndex(x=>x.key===m.key);
+      const req=REQUIRED_FIELDS[m.key]||[];
+      const f=moduleData[m.key]||{};
+      const missing=req.filter(k=>{const v=f[k];return v===undefined||v===null||v===''||v===false;});
+      const missingLabels=missing.map(k=>{
+        const field=m.fields.find(fd=>fd.key===k);
+        return field?.label||k;
+      });
+      return `<div class="incomplete-item" onclick="goToStep(${idx})">
+        ${escH(m.name)} — missing: ${escH(missingLabels.join(', '))}
+      </div>`;
+    }).join('');
+    banner.classList.add('show');
+    banner.scrollIntoView({behavior:'smooth',block:'nearest'});
+    toast(`${incomplete.length} module${incomplete.length!==1?'s':''} still need required fields — see below`,'warn');
+  } else {
+    el('incompleteBanner').classList.remove('show');
+    checkAllComplete();
+  }
 }
 
 function prevModule() {
-  if (currentStep > 0) {
+  if (currentStep>0) {
     currentStep--;
+    el('incompleteBanner').classList.remove('show');
     renderStepper(); renderModule(currentStep); updateProgress();
     el('submitCard').classList.remove('show');
     window.scrollTo({top:0,behavior:'smooth'});
@@ -1012,22 +1123,23 @@ function prevModule() {
 
 // ── PROGRESS ──────────────────────────────────────────────────
 function updateProgress() {
-  const done = MODULES.filter(m => {
-    const req = REQUIRED_FIELDS[m.key] || [];
-    const f = moduleData[m.key] || {};
-    return req.every(k => { const v = f[k]; return v !== undefined && v !== null && v !== '' && v !== false; });
-  }).length;
-  const pct = Math.round((done / MODULES.length) * 100);
-  el('progressFill').style.width  = pct + '%';
-  el('progressLabel').textContent = `${done} / ${MODULES.length} modules`;
+  const done=MODULES.filter(m=>moduleComplete(m.key)).length;
+  const pct=Math.round((done/MODULES.length)*100);
+  el('progressFill').style.width=pct+'%';
+  el('progressLabel').textContent=`${done} / ${MODULES.length} modules`;
+}
+
+function moduleComplete(key) {
+  const f=moduleData[key]||{};
+  // Legacy format: if notes has any content, module counts as complete
+  if (f.notes&&f.notes.trim()) return true;
+  // Structured format: all required fields must be filled
+  const req=REQUIRED_FIELDS[key]||[];
+  return req.every(k=>{const v=f[k];return v!==undefined&&v!==null&&v!==''&&v!==false;});
 }
 
 function checkAllComplete() {
-  const allDone = MODULES.every(m => {
-    const req = REQUIRED_FIELDS[m.key] || [];
-    const f = moduleData[m.key] || {};
-    return req.every(k => { const v = f[k]; return v !== undefined && v !== null && v !== '' && v !== false; });
-  });
+  const allDone=MODULES.every(m=>moduleComplete(m.key));
   if (allDone) {
     el('submitCard').classList.add('show');
     el('submitCard').scrollIntoView({behavior:'smooth',block:'start'});
@@ -1036,66 +1148,65 @@ function checkAllComplete() {
 
 // ── SUBMIT ────────────────────────────────────────────────────
 async function submitDossier() {
-  const btn = el('btnSubmit');
-  btn.disabled = true; btn.textContent = 'Generating…';
+  const btn=el('btnSubmit');
+  btn.disabled=true; btn.textContent='Generating…';
   try {
-    const res = await fetch(`${APP_URL}/api/submit-check?action=dossier-submit`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, dossierId, issues: [] }),
+    const res=await fetch(`${APP_URL}/api/submit-check?action=dossier-submit`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({userId,dossierId,issues:[]}),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    submitSnapshotVersion = data.snapshotVersion || 1;
-    renderCertificate({ EvidenceStrength: data.evidenceStrength, HealthScore: data.healthScore });
+    const data=await res.json();
+    submitSnapshotVersion=data.snapshotVersion||1;
+    renderCertificate({EvidenceStrength:data.evidenceStrength,HealthScore:data.healthScore});
   } catch(e) {
     console.error(e);
-    toast('Submission failed — please try again', 'er');
-    btn.disabled = false; btn.textContent = 'Generate Compliance Certificate';
+    toast('Submission failed — '+e.message,'er');
+    btn.disabled=false; btn.textContent='Generate Compliance Certificate';
   }
 }
 
 // ── CERTIFICATE ───────────────────────────────────────────────
-function renderCertificate(serverData = {}) {
+function renderCertificate(serverData={}) {
   el('editorView').classList.remove('show');
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const certIdStr='SW-'+(dossierId||'').slice(0,8).toUpperCase();
+  const strength=serverData.EvidenceStrength||serverData.evidenceStrength||'';
+  const hScore=serverData.HealthScore||serverData.healthScore||healthScore;
 
-  const now       = new Date();
-  const dateStr   = now.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  const certIdStr = 'SW-' + (dossierId||'').slice(0,8).toUpperCase();
-  const strength  = serverData.EvidenceStrength || serverData.evidenceStrength || '';
-  const hScore    = serverData.HealthScore      || serverData.healthScore      || healthScore;
+  el('certId').textContent=certIdStr;
+  el('certDate').textContent=dateStr;
+  el('certVersion').textContent=submitSnapshotVersion;
+  el('certCampaign').textContent=campaignTitle||'Untitled Campaign';
+  el('certOwner').textContent=ownerName||'—';
+  el('certDossierId').textContent=(dossierId||'').slice(0,12)+'…';
 
-  el('certId').textContent       = certIdStr;
-  el('certDate').textContent     = dateStr;
-  el('certVersion').textContent  = submitSnapshotVersion;
-  el('certCampaign').textContent = campaignTitle || 'Untitled Campaign';
-  el('certOwner').textContent    = ownerName || '—';
-  el('certDossierId').textContent = (dossierId||'').slice(0,12) + '…';
-
-  const strengthBadge = el('certStrengthBadge');
+  const strengthBadge=el('certStrengthBadge');
   if (strength) {
-    strengthBadge.textContent = strength + ' evidence';
-    strengthBadge.className   = `cert-strength-badge ${strength.toLowerCase()}`;
-    strengthBadge.style.background = strength === 'Strong' ? 'var(--gb)' : strength === 'Adequate' ? 'var(--yb)' : 'var(--rb)';
-    strengthBadge.style.color      = strength === 'Strong' ? 'var(--g)'  : strength === 'Adequate' ? 'var(--y)'  : 'var(--r)';
+    strengthBadge.textContent=strength+' evidence';
+    strengthBadge.style.background=strength==='Strong'?'var(--gb)':strength==='Adequate'?'var(--yb)':'var(--rb)';
+    strengthBadge.style.color=strength==='Strong'?'var(--g)':strength==='Adequate'?'var(--y)':'var(--r)';
   }
-  if (hScore) el('certHealthScore').textContent = `Dossier health score: ${hScore}/100`;
+  if (hScore) el('certHealthScore').textContent=`Dossier health score: ${hScore}/100`;
 
-  el('certModules').innerHTML = MODULES.map(m => {
-    const fields   = moduleData[m.key] || {};
-    const req      = REQUIRED_FIELDS[m.key] || [];
-    const reqFilled = req.filter(f => { const v = fields[f]; return v !== undefined && v !== null && v !== '' && v !== false; }).length;
-    const optFilled = Object.keys(fields).filter(k => !req.includes(k) && fields[k] !== undefined && fields[k] !== null && fields[k] !== '' && fields[k] !== false).length;
-    const strength  = reqFilled >= req.length && optFilled > 0 ? 'strong' : reqFilled >= req.length ? 'adequate' : 'weak';
-    const text      = serialiseForCert(m.key, fields);
-    const hasTxt    = text.trim().length > 0;
-
+  el('certModules').innerHTML=MODULES.map(m=>{
+    const fields=moduleData[m.key]||{};
+    const req=REQUIRED_FIELDS[m.key]||[];
+    const reqFilled=req.filter(f=>{const v=fields[f];return v!==undefined&&v!==null&&v!==''&&v!==false;}).length;
+    const optFilled=Object.keys(fields).filter(k=>!req.includes(k)&&fields[k]!==undefined&&fields[k]!==null&&fields[k]!==''&&fields[k]!==false).length;
+    const strength=reqFilled>=req.length&&optFilled>0?'strong':reqFilled>=req.length?'adequate':'weak';
+    const text=serialiseForCert(m.key,fields);
+    const hasTxt=text.trim().length>0;
+    const moduleFiles=uploadedFiles[m.key]||[];
     return `<div class="cert-module">
       <div class="cert-module-header">
         <span class="cert-module-icon">${m.icon}</span>
         <span class="cert-module-name">${m.name}</span>
         <span class="cert-module-strength ${strength}">${strength.charAt(0).toUpperCase()+strength.slice(1)}</span>
       </div>
-      <div class="cert-module-evidence">${hasTxt ? escH(text) : '<span style="color:var(--mu);font-style:italic">No evidence provided.</span>'}</div>
+      <div class="cert-module-evidence">${hasTxt?escH(text):'<span style="color:var(--mu);font-style:italic">No evidence provided.</span>'}</div>
+      ${moduleFiles.length?`<div style="font-size:11px;color:var(--mu);margin-top:6px">📎 ${moduleFiles.length} supporting file${moduleFiles.length!==1?'s':''} attached</div>`:''}
       <div class="cert-snapshot-note">Snapshot v${submitSnapshotVersion} · ${dateStr}</div>
     </div>`;
   }).join('');
@@ -1104,22 +1215,18 @@ function renderCertificate(serverData = {}) {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// Serialise structured fields to readable text for certificate
 function serialiseForCert(key, fields) {
-  const lines = [];
-  const m = MODULES.find(m => m.key === key);
+  const lines=[];
+  const m=MODULES.find(m=>m.key===key);
   if (!m) return '';
-  m.fields.forEach(field => {
-    if (field.type === 'checkbox-group') {
-      field.checkboxes.forEach(cb => {
-        const v = fields[cb.key];
-        if (v === true || v === 'true') lines.push(`✓ ${cb.label}`);
+  m.fields.forEach(field=>{
+    if (field.type==='checkbox-group') {
+      field.checkboxes.forEach(cb=>{
+        if (fields[cb.key]===true||fields[cb.key]==='true') lines.push(`✓ ${cb.label}`);
       });
     } else {
-      const v = fields[field.key];
-      if (v !== undefined && v !== null && v !== '' && v !== false) {
-        lines.push(`${field.label}: ${v}`);
-      }
+      const v=fields[field.key];
+      if (v!==undefined&&v!==null&&v!==''&&v!==false) lines.push(`${field.label}: ${v}`);
     }
   });
   return lines.join('\n');
@@ -1127,38 +1234,25 @@ function serialiseForCert(key, fields) {
 
 // ── HELPERS ───────────────────────────────────────────────────
 const el   = id => document.getElementById(id);
-const escH = s  => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const escH = s  => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-function showErr(msg) {
-  el('errBox').textContent = msg; el('errBox').classList.add('show');
-}
+function showErr(msg) { el('errBox').textContent=msg; el('errBox').classList.add('show'); }
 
 let _tt;
-function toast(msg, type = '') {
-  const t = el('toast');
-  t.textContent = msg;
-  t.className = `toast on${type ? ' ' + type : ''}`;
+function toast(msg,type='') {
+  const t=el('toast');
+  t.textContent=msg;
+  t.className=`toast on${type?' '+type:''}`;
   clearTimeout(_tt);
-  _tt = setTimeout(() => t.classList.remove('on'), 3000);
+  _tt=setTimeout(()=>t.classList.remove('on'),4000);
 }
 
-// Title live update
-document.addEventListener('DOMContentLoaded', () => {
-  el('campaignTitle')?.addEventListener('input', function() {
-    el('headerTitle').textContent = this.value || 'Untitled Campaign';
-  });
-  el('ownerName')?.addEventListener('input', function() {
-    el('headerOwner').textContent = this.value || '—';
-  });
-  el('newCampaignTitle')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') createDossier();
-  });
+document.addEventListener('DOMContentLoaded',()=>{
+  el('campaignTitle')?.addEventListener('input',function(){el('headerTitle').textContent=this.value||'Untitled Campaign';});
+  el('ownerName')?.addEventListener('input',function(){el('headerOwner').textContent=this.value||'—';});
+  el('newCampaignTitle')?.addEventListener('keydown',e=>{if(e.key==='Enter')createDossier();});
 });
-
-// Close modal on overlay click
-el('newDossierModal')?.addEventListener('click', function(e) {
-  if (e.target === this) hideNewDossierModal();
-});
+el('newDossierModal')?.addEventListener('click',function(e){if(e.target===this)hideNewDossierModal();});
 </script>
 </body>
 </html>
