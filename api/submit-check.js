@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v4.26
+// SENDWIZE — submit-check.js v4.26n
 //
 // POST ?action=dossier-create  { userId, campaignTitle, ownerName, dossierSource?, prefill? }
 // GET  ?action=dossier-list    ?userId=x&limit=x
