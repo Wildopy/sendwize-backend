@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v4.26
+// SENDWIZE — submit-check.js v4.27
 //
 // POST ?action=dossier-create  { userId, campaignTitle, ownerName, dossierSource?, prefill? }
 // GET  ?action=dossier-list    ?userId=x&limit=x
@@ -8,19 +8,9 @@
 // POST ?action=dossier-submit  { userId, dossierId, issues[] }
 // POST ?action=brief-check     { userId, campaignName, ...fields, issues[], dossierPrefill{} }
 //
-// v4.26 changes from v4.25:
-//   - dossier-create: creates standalone dossier without requiring a
-//     Campaigns parent record. DossierSource tracks origin.
-//   - dossier-list: returns all dossiers for a userId. Used by dashboard
-//     instead of direct Airtable call (security fix — no token in client JS).
-//   - dossier-save: accepts moduleFields{} (structured fields object) in
-//     addition to legacy evidenceJson. Serialises to Long text fields AND
-//     stores raw structured JSON in ModuleFieldsJson.
-//   - dossier-submit: appends version snapshot to VersionHistory before
-//     marking Submitted. Calculates EvidenceStrength.
-//   - brief-check: no longer auto-creates dossier. Returns briefCheckId,
-//     scores, and dossierPrefill{} for the frontend to use if user clicks
-//     the optional "Create dossier" button.
+// v4.27 change from v4.26:
+//   - dossier-list: sort changed from CreatedDate to UpdatedAt.
+//     CreatedDate may be empty on older records causing Airtable 422.
 // ─────────────────────────────────────────────────────────────
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -30,8 +20,6 @@ const DOSSIER_MODULES = [
 ];
 
 // ── Structured field serialiser ───────────────────────────────
-// Converts structured module fields object → human-readable long text
-// stored in the Airtable module field. This is what appears on the certificate.
 function serialiseModuleFields(key, fields) {
   if (!fields || typeof fields !== 'object') return '';
   const lines = [];
@@ -92,8 +80,6 @@ function serialiseModuleFields(key, fields) {
 }
 
 // ── Evidence strength calculator ──────────────────────────────
-// Required fields per module. All must be present for Adequate.
-// Optional fields push to Strong.
 const REQUIRED_FIELDS = {
   ListProvenance:   ['listSource', 'collectionMech', 'ownership'],
   ConsentMechanism: ['lawfulBasis', 'consentWording', 'dateFrom'],
@@ -136,8 +122,6 @@ function calculateOverallStrength(allModuleFields) {
 }
 
 // ── Health score calculator ───────────────────────────────────
-// Consent (25%) + Suppression (25%) + others (16.67% each)
-// Mirrors ICO investigation priority weighting.
 const MODULE_WEIGHTS = {
   ListProvenance:   16.67,
   ConsentMechanism: 25,
@@ -237,14 +221,11 @@ export default async function handler(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// dossier-create (NEW v4.26)
-// Creates a blank standalone dossier — no Campaigns parent required.
-// Also used when Brief Checker user clicks "Create dossier" button,
-// in which case dossierSource='Brief Checker' and prefill{} is passed.
+// dossier-create
 // ─────────────────────────────────────────────────────────────
 async function handleDossierCreate(req, res) {
   const { userId, campaignTitle, ownerName, dossierSource = 'Standalone', prefill } = req.body ?? {};
-  if (!userId)       return res.status(400).json({ error: 'Missing userId' });
+  if (!userId)        return res.status(400).json({ error: 'Missing userId' });
   if (!campaignTitle) return res.status(400).json({ error: 'Missing campaignTitle' });
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -258,19 +239,17 @@ async function handleDossierCreate(req, res) {
     Status:        'Draft',
     DossierSource: dossierSource,
     CreatedDate:   today,
+    UpdatedAt:     new Date().toISOString(),
   };
 
-  // If pre-fill provided (from Brief Checker), serialise into module text fields
   if (prefill && typeof prefill === 'object') {
     for (const key of DOSSIER_MODULES) {
       if (prefill[key]) {
-        // prefill values may be plain text (from brief) or structured fields object
         fields[key] = typeof prefill[key] === 'string'
           ? prefill[key]
           : serialiseModuleFields(key, prefill[key]);
       }
     }
-    // Store raw structured prefill JSON for later editing
     if (Object.keys(prefill).some(k => DOSSIER_MODULES.includes(k))) {
       fields.ModuleFieldsJson = JSON.stringify(prefill);
     }
@@ -283,7 +262,7 @@ async function handleDossierCreate(req, res) {
   });
   if (!r.ok) return res.status(r.status).json({ error: 'Failed to create dossier' });
 
-  const record   = (await r.json()).records?.[0];
+  const record    = (await r.json()).records?.[0];
   const dossierId = record?.id;
 
   fetch(`${APP_URL}/api/profile?action=streak`, {
@@ -294,9 +273,9 @@ async function handleDossierCreate(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// dossier-list (NEW v4.26)
-// Returns all dossiers for a userId sorted by date desc.
-// Used by dashboard — replaces direct Airtable call with token in JS.
+// dossier-list
+// v4.27: sort changed from CreatedDate → UpdatedAt (fixes 422
+// on records where CreatedDate was empty).
 // ─────────────────────────────────────────────────────────────
 async function handleDossierList(req, res) {
   const { userId, limit = '20' } = req.query;
@@ -307,7 +286,7 @@ async function handleDossierList(req, res) {
   const maxRecords     = Math.min(parseInt(limit, 10) || 20, 100);
 
   const r = await fetch(
-    `https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers?filterByFormula={UserID}='${userId}'&sort[0][field]=CreatedDate&sort[0][direction]=desc&maxRecords=${maxRecords}`,
+    `https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers?filterByFormula={UserID}='${userId}'&sort[0][field]=UpdatedAt&sort[0][direction]=desc&maxRecords=${maxRecords}`,
     { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
   );
   if (!r.ok) return res.status(r.status).json({ error: 'Failed to fetch dossiers' });
@@ -319,24 +298,21 @@ async function handleDossierList(req, res) {
     const f      = record.fields;
     const filled = modules.filter(m => f[m]?.trim()).length;
     const pct    = Math.round((filled / modules.length) * 100);
-
-    // Parse structured fields if stored
     let moduleFields = {};
     try { moduleFields = JSON.parse(f.ModuleFieldsJson || '{}'); } catch {}
-
     return {
-      dossierId:      record.id,
-      campaignTitle:  f.CampaignTitle   || 'Untitled Campaign',
-      ownerName:      f.OwnerName       || '',
-      status:         f.Status          || 'Draft',
-      dossierSource:  f.DossierSource   || 'Standalone',
+      dossierId:        record.id,
+      campaignTitle:    f.CampaignTitle    || 'Untitled Campaign',
+      ownerName:        f.OwnerName        || '',
+      status:           f.Status           || 'Draft',
+      dossierSource:    f.DossierSource    || 'Standalone',
       evidenceStrength: f.EvidenceStrength || null,
-      healthScore:    f.HealthScore     || null,
-      modulesComplete: filled,
-      modulesPct:     pct,
-      createdDate:    f.CreatedDate     || '',
-      updatedAt:      f.UpdatedAt       || '',
-      submittedAt:    f.SubmittedAt     || '',
+      healthScore:      f.HealthScore      || null,
+      modulesComplete:  filled,
+      modulesPct:       pct,
+      createdDate:      f.CreatedDate      || '',
+      updatedAt:        f.UpdatedAt        || '',
+      submittedAt:      f.SubmittedAt      || '',
     };
   });
 
@@ -344,12 +320,7 @@ async function handleDossierList(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// dossier-save (updated v4.26)
-// Accepts moduleFields{} (structured) or legacy evidenceJson.
-// Stores serialised text in the module Long text field.
-// Stores raw structured JSON in ModuleFieldsJson for editing.
-// dossierId = Campaign_Dossiers record ID (standalone) OR
-//             CampaignID (Brief Checker legacy). Tries record ID first.
+// dossier-save
 // ─────────────────────────────────────────────────────────────
 async function handleDossierSave(req, res) {
   const { userId, dossierId, module, moduleFields, evidenceJson } = req.body ?? {};
@@ -365,7 +336,6 @@ async function handleDossierSave(req, res) {
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
   const authH          = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
 
-  // Resolve structured fields → module text
   let moduleText = '';
   let rawFields  = moduleFields || null;
 
@@ -378,13 +348,11 @@ async function handleDossierSave(req, res) {
     moduleText = ev[module] || '';
   }
 
-  const campaignTitle = (moduleFields?.campaignTitle) || null;
-  const ownerName     = (moduleFields?.ownerName)     || null;
+  const campaignTitle = moduleFields?.campaignTitle || null;
+  const ownerName     = moduleFields?.ownerName     || null;
 
-  // Try to find record by direct ID first (standalone), then by CampaignID (legacy)
   let existing = null;
 
-  // Attempt direct record fetch
   try {
     const dr = await fetch(`${base}/Campaign_Dossiers/${dossierId}`, {
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
@@ -395,7 +363,6 @@ async function handleDossierSave(req, res) {
     }
   } catch {}
 
-  // Fall back to CampaignID filter (Brief Checker legacy)
   if (!existing) {
     const lr = await fetch(
       `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
@@ -405,7 +372,6 @@ async function handleDossierSave(req, res) {
     existing = ld.records?.[0] || null;
   }
 
-  // Build update fields
   const updateFields = {
     [module]:  moduleText,
     UpdatedAt: new Date().toISOString(),
@@ -413,7 +379,6 @@ async function handleDossierSave(req, res) {
   if (campaignTitle) updateFields.CampaignTitle = campaignTitle;
   if (ownerName)     updateFields.OwnerName     = ownerName;
 
-  // Merge structured fields into ModuleFieldsJson
   if (rawFields) {
     let existingMFJ = {};
     try { existingMFJ = JSON.parse(existing?.fields?.ModuleFieldsJson || '{}'); } catch {}
@@ -431,7 +396,6 @@ async function handleDossierSave(req, res) {
     if (!r.ok) return res.status(r.status).json({ error: 'Failed to save module' });
     result = await r.json();
   } else {
-    // Create new record (shouldn't happen for standalone — dossier-create should be called first)
     const createFields = {
       UserID: userId, CampaignID: dossierId,
       [module]: moduleText, UpdatedAt: new Date().toISOString(),
@@ -450,9 +414,7 @@ async function handleDossierSave(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// dossier-get (updated v4.26)
-// Returns flat shape + structured moduleFields from ModuleFieldsJson.
-// Tries record ID first, falls back to CampaignID filter.
+// dossier-get
 // ─────────────────────────────────────────────────────────────
 async function handleDossierGet(req, res) {
   const { userId, dossierId } = req.query;
@@ -465,7 +427,6 @@ async function handleDossierGet(req, res) {
 
   let record = null;
 
-  // Try direct record ID first (standalone dossiers)
   try {
     const dr = await fetch(`${base}/Campaign_Dossiers/${dossierId}`, {
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
@@ -476,7 +437,6 @@ async function handleDossierGet(req, res) {
     }
   } catch {}
 
-  // Fall back to CampaignID filter (Brief Checker legacy)
   if (!record) {
     const r = await fetch(
       `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
@@ -518,14 +478,12 @@ async function handleDossierGet(req, res) {
     CreatedDate:      f.CreatedDate      || '',
     UpdatedAt:        f.UpdatedAt        || '',
     SubmittedAt:      f.SubmittedAt      || '',
-    moduleFields,   // structured fields object for each module
+    moduleFields,
   });
 }
 
 // ─────────────────────────────────────────────────────────────
-// dossier-submit (updated v4.26)
-// Appends version snapshot to VersionHistory before submitting.
-// Calculates EvidenceStrength and HealthScore on submit.
+// dossier-submit
 // ─────────────────────────────────────────────────────────────
 async function handleDossierSubmit(req, res) {
   const { userId, dossierId, issues } = req.body ?? {};
@@ -546,7 +504,6 @@ async function handleDossierSubmit(req, res) {
     if (pr.ok) emailVolume = (await pr.json()).records?.[0]?.fields?.EmailVolume || 'medium_send';
   } catch(e) { console.error('Profile fetch failed (non-fatal):', e); }
 
-  // Fetch current dossier for snapshot
   let currentRecord = null;
   try {
     const dr = await fetch(`${base}/Campaign_Dossiers/${dossierId}`, {
@@ -559,7 +516,6 @@ async function handleDossierSubmit(req, res) {
   } catch {}
 
   if (!currentRecord) {
-    // Legacy CampaignID lookup
     const lr = await fetch(
       `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
       { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
@@ -570,34 +526,22 @@ async function handleDossierSubmit(req, res) {
   const f = currentRecord?.fields || {};
   const actualRecordId = currentRecord?.id || dossierId;
 
-  // Parse existing structured fields
   let moduleFields = {};
   try { moduleFields = JSON.parse(f.ModuleFieldsJson || '{}'); } catch {}
 
-  // ── Build version snapshot ────────────────────────────────────────
-  const snapshot = {
-    snapshotAt: now,
-    version: 1,
-    modules: {},
-  };
+  const snapshot = { snapshotAt: now, version: 1, modules: {} };
   for (const key of DOSSIER_MODULES) {
-    snapshot.modules[key] = {
-      text:   f[key] || '',
-      fields: moduleFields[key] || {},
-    };
+    snapshot.modules[key] = { text: f[key] || '', fields: moduleFields[key] || {} };
   }
 
-  // Append to existing history
   let history = [];
   try { history = JSON.parse(f.VersionHistory || '[]'); } catch {}
   snapshot.version = history.length + 1;
   history.push(snapshot);
 
-  // ── Calculate strength and health score ───────────────────────────
   const evidenceStrength = calculateOverallStrength(moduleFields);
   const healthScore      = calculateHealthScore(moduleFields);
 
-  // ── Generate fix records ──────────────────────────────────────────
   const issueList  = Array.isArray(issues) ? issues : [];
   const fixResults = [];
 
@@ -617,23 +561,22 @@ async function handleDossierSubmit(req, res) {
       const fixData = await fixRes.json();
       fixResults.push({ issue: issueKey, status: fixData.skipped ? 'duplicate_skipped' : 'created', fixId: fixData.fixId });
     } catch(e) {
-      console.error(`generate-fix failed (non-fatal):`, e);
+      console.error('generate-fix failed (non-fatal):', e);
       fixResults.push({ issue: issueKey, status: 'error' });
     }
   }
 
-  // ── Update dossier to Submitted with snapshot ─────────────────────
   try {
     await fetch(`${base}/Campaign_Dossiers/${actualRecordId}`, {
       method:  'PATCH',
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
       body:    JSON.stringify({ fields: {
-        Status:          'Submitted',
-        IssuesFound:     issueList.length,
-        SubmittedAt:     now,
-        VersionHistory:  JSON.stringify(history),
+        Status:           'Submitted',
+        IssuesFound:      issueList.length,
+        SubmittedAt:      now,
+        VersionHistory:   JSON.stringify(history),
         EvidenceStrength: evidenceStrength,
-        HealthScore:     healthScore,
+        HealthScore:      healthScore,
       }}),
     });
   } catch(e) { console.error('Dossier status update failed (non-fatal):', e); }
@@ -644,7 +587,7 @@ async function handleDossierSubmit(req, res) {
 
   return res.json({
     success: true, dossierId: actualRecordId,
-    issuesFound: issueList.length,
+    issuesFound:    issueList.length,
     fixesGenerated: fixResults.filter(f => f.status === 'created').length,
     fixResults, evidenceStrength, healthScore,
     snapshotVersion: snapshot.version,
@@ -652,11 +595,7 @@ async function handleDossierSubmit(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// brief-check (updated v4.26)
-// No longer auto-creates a dossier. Returns dossierPrefill{}
-// which the Brief Checker frontend uses if the user clicks
-// the optional "Create compliance dossier" button.
-// That button calls dossier-create with dossierSource='Brief Checker'.
+// brief-check
 // ─────────────────────────────────────────────────────────────
 async function handleBriefCheck(req, res) {
   const {
@@ -679,7 +618,6 @@ async function handleBriefCheck(req, res) {
   const greenCount   = issues.filter(i => i.severity === 'green').length;
   const resultStatus = frontendStatus || (redCount > 0 ? 'Red' : amberCount > 0 ? 'Amber' : 'Green');
 
-  // Save Brief_Checks record
   let briefCheckId = null, totalExposureEstimate = 0;
   try {
     const briefRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks`, {
@@ -698,7 +636,6 @@ async function handleBriefCheck(req, res) {
     else console.error('Brief_Checks save failed:', await briefRes.text());
   } catch(e) { console.error('Brief_Checks save error (non-fatal):', e); }
 
-  // Email volume for severity refinement
   let emailVolume = 'medium_send';
   try {
     const pr = await fetch(
@@ -708,7 +645,6 @@ async function handleBriefCheck(req, res) {
     if (pr.ok) emailVolume = (await pr.json()).records?.[0]?.fields?.EmailVolume || 'medium_send';
   } catch {}
 
-  // Generate fix records
   for (const issue of nonGreen) {
     if (!issue.fixType || !BRIEF_FIX_TYPES[issue.fixType]) continue;
     const finalSeverity = refineSeverity(issue.fixType, emailVolume) || (issue.severity === 'red' ? 'high' : 'medium');
@@ -738,15 +674,12 @@ async function handleBriefCheck(req, res) {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
   }).catch(() => {});
 
-  // Return dossierPrefill for optional button — NOT auto-created
-  // Frontend should show "Create compliance dossier →" button and call
-  // dossier-create with { userId, campaignTitle: campaignName, dossierSource: 'Brief Checker', prefill: dossierPrefill }
   return res.json({
     briefCheckId,
     redCount, amberCount, greenCount,
     totalExposureEstimate,
     resultStatus,
-    dossierPrefill: dossierPrefill || null, // pass back to frontend for optional create
-    campaignName: campaignName || '',
+    dossierPrefill: dossierPrefill || null,
+    campaignName:   campaignName   || '',
   });
 }
