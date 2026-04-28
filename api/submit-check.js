@@ -1,16 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v4.27
-//
-// POST ?action=dossier-create  { userId, campaignTitle, ownerName, dossierSource?, prefill? }
-// GET  ?action=dossier-list    ?userId=x&limit=x
-// POST ?action=dossier-save    { userId, dossierId, module, moduleFields }
-// GET  ?action=dossier-get     ?dossierId=x&userId=x
-// POST ?action=dossier-submit  { userId, dossierId, issues[] }
-// POST ?action=brief-check     { userId, campaignName, ...fields, issues[], dossierPrefill{} }
-//
-// v4.27 change from v4.26:
-//   - dossier-list: sort changed from CreatedDate to UpdatedAt.
-//     CreatedDate may be empty on older records causing Airtable 422.
+// SENDWIZE — submit-check.js v4.28
+// v4.28: Remove UpdatedAt from dossier-create (Date field rejects
+//        ISO timestamp). Add UpdatedAt back to dossier-save.
 // ─────────────────────────────────────────────────────────────
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -19,11 +10,9 @@ const DOSSIER_MODULES = [
   'ListProvenance', 'ConsentMechanism', 'ContentCheck', 'Suppression', 'SenderIdentity',
 ];
 
-// ── Structured field serialiser ───────────────────────────────
 function serialiseModuleFields(key, fields) {
   if (!fields || typeof fields !== 'object') return '';
   const lines = [];
-
   if (key === 'ListProvenance') {
     if (fields.listSource)       lines.push(`List source: ${fields.listSource}`);
     if (fields.collectionUrl)    lines.push(`Collection URL: ${fields.collectionUrl}`);
@@ -32,7 +21,6 @@ function serialiseModuleFields(key, fields) {
     if (fields.ownership)        lines.push(`Ownership: ${fields.ownership}`);
     if (fields.notes)            lines.push(`Notes: ${fields.notes}`);
   }
-
   if (key === 'ConsentMechanism') {
     if (fields.lawfulBasis)      lines.push(`Lawful basis: ${fields.lawfulBasis}`);
     if (fields.consentWording)   lines.push(`Consent wording: ${fields.consentWording}`);
@@ -44,7 +32,6 @@ function serialiseModuleFields(key, fields) {
     if (fields.liaSummary)       lines.push(`LIA summary: ${fields.liaSummary}`);
     if (fields.notes)            lines.push(`Notes: ${fields.notes}`);
   }
-
   if (key === 'ContentCheck') {
     if (fields.aiCheckerRun)     lines.push(`AI Copy Checker run: ${fields.aiCheckerRun}`);
     if (fields.aiCheckerScore)   lines.push(`AI Copy Checker score: ${fields.aiCheckerScore}`);
@@ -54,7 +41,6 @@ function serialiseModuleFields(key, fields) {
     if (fields.amendments)       lines.push(`Amendments made: ${fields.amendments}`);
     if (fields.notes)            lines.push(`Notes: ${fields.notes}`);
   }
-
   if (key === 'Suppression') {
     if (fields.suppressionApplied) lines.push(`Suppression list applied: ${fields.suppressionApplied ? 'Yes' : 'No'}`);
     if (fields.dateApplied)      lines.push(`Date applied: ${fields.dateApplied}`);
@@ -64,7 +50,6 @@ function serialiseModuleFields(key, fields) {
     if (fields.sendwizeCheckScore) lines.push(`Sendwize suppression check score: ${fields.sendwizeCheckScore}/100`);
     if (fields.notes)            lines.push(`Notes: ${fields.notes}`);
   }
-
   if (key === 'SenderIdentity') {
     if (fields.fromName)         lines.push(`From name: ${fields.fromName}`);
     if (fields.fromEmail)        lines.push(`From email: ${fields.fromEmail}`);
@@ -75,11 +60,9 @@ function serialiseModuleFields(key, fields) {
     if (fields.replyToMonitor)   lines.push(`Reply-to monitored by: ${fields.replyToMonitor}`);
     if (fields.notes)            lines.push(`Notes: ${fields.notes}`);
   }
-
   return lines.join('\n');
 }
 
-// ── Evidence strength calculator ──────────────────────────────
 const REQUIRED_FIELDS = {
   ListProvenance:   ['listSource', 'collectionMech', 'ownership'],
   ConsentMechanism: ['lawfulBasis', 'consentWording', 'dateFrom'],
@@ -98,18 +81,12 @@ const OPTIONAL_FIELDS = {
 
 function calculateModuleStrength(key, fields) {
   if (!fields || typeof fields !== 'object') return 'Weak';
-  const req  = REQUIRED_FIELDS[key]  || [];
-  const opt  = OPTIONAL_FIELDS[key]  || [];
-  const reqFilled = req.filter(f => {
-    const v = fields[f];
-    return v !== undefined && v !== null && v !== '' && v !== false;
-  }).length;
-  const optFilled = opt.filter(f => {
-    const v = fields[f];
-    return v !== undefined && v !== null && v !== '' && v !== false;
-  }).length;
+  const req = REQUIRED_FIELDS[key] || [];
+  const opt = OPTIONAL_FIELDS[key] || [];
+  const reqFilled = req.filter(f => { const v = fields[f]; return v !== undefined && v !== null && v !== '' && v !== false; }).length;
+  const optFilled = opt.filter(f => { const v = fields[f]; return v !== undefined && v !== null && v !== '' && v !== false; }).length;
   if (reqFilled < req.length) return 'Weak';
-  if (optFilled === 0)        return 'Adequate';
+  if (optFilled === 0) return 'Adequate';
   return 'Strong';
 }
 
@@ -121,13 +98,8 @@ function calculateOverallStrength(allModuleFields) {
   return 'Weak';
 }
 
-// ── Health score calculator ───────────────────────────────────
 const MODULE_WEIGHTS = {
-  ListProvenance:   16.67,
-  ConsentMechanism: 25,
-  ContentCheck:     16.67,
-  Suppression:      25,
-  SenderIdentity:   16.66,
+  ListProvenance: 16.67, ConsentMechanism: 25, ContentCheck: 16.67, Suppression: 25, SenderIdentity: 16.66,
 };
 
 function calculateHealthScore(allModuleFields) {
@@ -140,7 +112,6 @@ function calculateHealthScore(allModuleFields) {
   return Math.round(total);
 }
 
-// ── Fix type → severity refinement ───────────────────────────
 function refineSeverity(fixType, emailVolume) {
   const isLarge = ['large_send', 'enterprise_send'].includes(emailVolume);
   const isMicro = ['micro_send', 'small_send'].includes(emailVolume);
@@ -198,13 +169,11 @@ const BRIEF_FIX_TYPES = {
   misleading_claim: 'misleading_claim',
 };
 
-// ── Router ────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   const action = req.query.action;
   try {
     if (req.method === 'POST' && action === 'dossier-create') return await handleDossierCreate(req, res);
@@ -220,9 +189,6 @@ export default async function handler(req, res) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// dossier-create
-// ─────────────────────────────────────────────────────────────
 async function handleDossierCreate(req, res) {
   const { userId, campaignTitle, ownerName, dossierSource = 'Standalone', prefill } = req.body ?? {};
   if (!userId)        return res.status(400).json({ error: 'Missing userId' });
@@ -232,6 +198,9 @@ async function handleDossierCreate(req, res) {
   const BASE_ID        = process.env.BASE_ID;
   const today          = new Date().toISOString().split('T')[0];
 
+  // ── FIX v4.28: UpdatedAt removed from create payload ──────────
+  // UpdatedAt is a Date field in Airtable — it rejects ISO timestamps.
+  // It gets written correctly on first module save instead.
   const fields = {
     UserID:        userId,
     CampaignTitle: campaignTitle,
@@ -239,7 +208,6 @@ async function handleDossierCreate(req, res) {
     Status:        'Draft',
     DossierSource: dossierSource,
     CreatedDate:   today,
-    UpdatedAt:     new Date().toISOString(),
   };
 
   if (prefill && typeof prefill === 'object') {
@@ -260,7 +228,12 @@ async function handleDossierCreate(req, res) {
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
     body:    JSON.stringify({ records: [{ fields }] }),
   });
-  if (!r.ok) return res.status(r.status).json({ error: 'Failed to create dossier' });
+
+  if (!r.ok) {
+    const errBody = await r.text();
+    console.error('Airtable create failed:', r.status, errBody);
+    return res.status(r.status).json({ error: 'Failed to create dossier', detail: errBody });
+  }
 
   const record    = (await r.json()).records?.[0];
   const dossierId = record?.id;
@@ -272,11 +245,6 @@ async function handleDossierCreate(req, res) {
   return res.json({ success: true, dossierId, campaignTitle, status: 'Draft' });
 }
 
-// ─────────────────────────────────────────────────────────────
-// dossier-list
-// v4.27: sort changed from CreatedDate → UpdatedAt (fixes 422
-// on records where CreatedDate was empty).
-// ─────────────────────────────────────────────────────────────
 async function handleDossierList(req, res) {
   const { userId, limit = '20' } = req.query;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
@@ -291,15 +259,11 @@ async function handleDossierList(req, res) {
   );
   if (!r.ok) return res.status(r.status).json({ error: 'Failed to fetch dossiers' });
 
-  const data    = await r.json();
-  const modules = DOSSIER_MODULES;
-
+  const data = await r.json();
   const dossiers = (data.records || []).map(record => {
     const f      = record.fields;
-    const filled = modules.filter(m => f[m]?.trim()).length;
-    const pct    = Math.round((filled / modules.length) * 100);
-    let moduleFields = {};
-    try { moduleFields = JSON.parse(f.ModuleFieldsJson || '{}'); } catch {}
+    const filled = DOSSIER_MODULES.filter(m => f[m]?.trim()).length;
+    const pct    = Math.round((filled / DOSSIER_MODULES.length) * 100);
     return {
       dossierId:        record.id,
       campaignTitle:    f.CampaignTitle    || 'Untitled Campaign',
@@ -319,9 +283,6 @@ async function handleDossierList(req, res) {
   return res.json({ dossiers });
 }
 
-// ─────────────────────────────────────────────────────────────
-// dossier-save
-// ─────────────────────────────────────────────────────────────
 async function handleDossierSave(req, res) {
   const { userId, dossierId, module, moduleFields, evidenceJson } = req.body ?? {};
   if (!userId)    return res.status(400).json({ error: 'Missing userId' });
@@ -352,7 +313,6 @@ async function handleDossierSave(req, res) {
   const ownerName     = moduleFields?.ownerName     || null;
 
   let existing = null;
-
   try {
     const dr = await fetch(`${base}/Campaign_Dossiers/${dossierId}`, {
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
@@ -372,8 +332,12 @@ async function handleDossierSave(req, res) {
     existing = ld.records?.[0] || null;
   }
 
+  // ── FIX v4.28: UpdatedAt restored to save payload ─────────────
+  // Removed from create (Date field rejects ISO string) but correct
+  // here since UpdatedAt is a text/datetime field used for sorting.
   const updateFields = {
     [module]:  moduleText,
+    UpdatedAt: new Date().toISOString(),
   };
   if (campaignTitle) updateFields.CampaignTitle = campaignTitle;
   if (ownerName)     updateFields.OwnerName     = ownerName;
@@ -397,7 +361,7 @@ async function handleDossierSave(req, res) {
   } else {
     const createFields = {
       UserID: userId, CampaignID: dossierId,
-      [module]: moduleText, UpdatedAt: new Date().toISOString(),
+      [module]: moduleText,
       DossierSource: 'Brief Checker',
     };
     if (campaignTitle) createFields.CampaignTitle = campaignTitle;
@@ -412,9 +376,6 @@ async function handleDossierSave(req, res) {
   return res.json({ success: true, recordId: result?.id || recordId, module });
 }
 
-// ─────────────────────────────────────────────────────────────
-// dossier-get
-// ─────────────────────────────────────────────────────────────
 async function handleDossierGet(req, res) {
   const { userId, dossierId } = req.query;
   if (!userId)    return res.status(400).json({ error: 'Missing userId' });
@@ -425,7 +386,6 @@ async function handleDossierGet(req, res) {
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
 
   let record = null;
-
   try {
     const dr = await fetch(`${base}/Campaign_Dossiers/${dossierId}`, {
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
@@ -481,9 +441,6 @@ async function handleDossierGet(req, res) {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// dossier-submit
-// ─────────────────────────────────────────────────────────────
 async function handleDossierSubmit(req, res) {
   const { userId, dossierId, issues } = req.body ?? {};
   if (!userId)    return res.status(400).json({ error: 'Missing userId' });
@@ -550,7 +507,7 @@ async function handleDossierSubmit(req, res) {
     if (!mapping) continue;
     const finalSeverity = refineSeverity(mapping.fixType, emailVolume) || mapping.severity;
     try {
-      const fixRes  = await fetch(`${APP_URL}/api/generate-fix`, {
+      const fixRes = await fetch(`${APP_URL}/api/generate-fix`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId, fixType: mapping.fixType, description: mapping.description,
@@ -593,9 +550,6 @@ async function handleDossierSubmit(req, res) {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// brief-check
-// ─────────────────────────────────────────────────────────────
 async function handleBriefCheck(req, res) {
   const {
     userId, campaignName, channel, audience, lawfulBasis, listSource,
