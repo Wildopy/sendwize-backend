@@ -374,7 +374,6 @@ async function handleDossierSave(req, res) {
 
   const updateFields = {
     [module]:  moduleText,
-    UpdatedAt: new Date().toISOString(),
   };
   if (campaignTitle) updateFields.CampaignTitle = campaignTitle;
   if (ownerName)     updateFields.OwnerName     = ownerName;
