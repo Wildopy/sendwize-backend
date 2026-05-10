@@ -1,7 +1,16 @@
-// api/analyze-copy.js  v5.0
-// AI Copy Scanner — five content types, full compliance framework.
+// api/analyze-copy.js  v5.1
+// AI Copy Scanner — five content types, image analysis, text-only input.
 //
-// POST { contentType, userId, content?, subject?, html?, autoFix?, sendingContext? }
+// POST { contentType, userId, content, subject?, autoFix?, sendingContext?, images? }
+//
+// images (optional): [{ data: base64string, mediaType: 'image/jpeg'|'image/png'|'image/gif'|'image/webp' }]
+// Max 3 images, max 5MB each. Analysed alongside copy for all content types.
+//
+// v5.1 changes:
+//   - All content types now use plain text 'content' field. HTML mode removed.
+//   - Image upload support — base64 images passed as multipart content to Claude.
+//   - 'Compliant' / 'safe to send' language removed from all outputs.
+//   - Deterministic HTML email scanner removed.
 //
 // sendingContext (optional):
 //   { senderRelationship, listSource, consentSpecificity, fromNameMatch }
@@ -628,114 +637,6 @@ function contentHash(userId, contentType, content) {
     .slice(0, 16);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EMAIL SCANNER — deterministic checks (email only)
-// ─────────────────────────────────────────────────────────────────────────────
-
-function runEmailChecks(subject, html) {
-  const checks = [];
-  let score = 100;
-
-  const hasUnsubscribe = /unsubscribe|opt-out|opt out/i.test(html);
-  const unsubLink      = html.match(/<a[^>]*href=["']([^"']*unsubscribe[^"']*)["']/i);
-  const unsubBroken    = unsubLink && (unsubLink[1] === '#' || unsubLink[1].startsWith('javascript'));
-
-  if (!hasUnsubscribe) {
-    checks.push({ status: 'fail', title: 'No Unsubscribe Link', description: 'PECR Regulation 22 requires a clear unsubscribe mechanism. Add an unsubscribe link immediately.', fixType: 'missing_unsubscribe' });
-    score -= 10;
-  } else if (unsubBroken) {
-    checks.push({ status: 'fail', title: 'Broken Unsubscribe Link', description: 'Unsubscribe link goes nowhere. This violates PECR and traps users.', fixType: 'missing_unsubscribe' });
-    score -= 10;
-  } else {
-    checks.push({ status: 'pass', title: 'Unsubscribe Link Present', description: 'Valid unsubscribe mechanism found.' });
-  }
-
-  const ukPostcode = /[A-Z]{1,2}\d{1,2}\s?\d[A-Z]{2}/i.test(html);
-  const hasAddress = /address|registered office/i.test(html);
-  if (!ukPostcode && !hasAddress) {
-    checks.push({ status: 'fail', title: 'No Postal Address', description: 'PECR requires a company postal address. Add your registered address to the email footer.', fixType: 'missing_address' });
-    score -= 10;
-  } else {
-    checks.push({ status: 'pass', title: 'Postal Address Found', description: 'Company address included.' });
-  }
-
-  if (!/privacy|data protection|gdpr/i.test(html)) {
-    checks.push({ status: 'warning', title: 'No Privacy Policy Link', description: 'Best practice: link to your privacy policy to show transparency.', fixType: 'no_privacy_policy' });
-    score -= 5;
-  } else {
-    checks.push({ status: 'pass', title: 'Privacy Policy Linked', description: 'Privacy information provided.' });
-  }
-
-  if (!/<html/i.test(html) || !/<body/i.test(html)) {
-    checks.push({ status: 'fail', title: 'Invalid HTML Structure', description: 'Missing basic HTML tags. Email may not render correctly.' });
-    score -= 10;
-  } else {
-    checks.push({ status: 'pass', title: 'Valid HTML Structure', description: 'Proper HTML document structure.' });
-  }
-
-  if (subject) {
-    const spamWords = ['free', 'winner', 'claim', 'act now', 'urgent', 'limited time', 'click here', 'buy now', 'guarantee', 'cash', '$$$', '100%', 'risk-free', 'no obligation', 'order now'];
-    const found     = spamWords.filter(w => new RegExp(`\\b${w}\\b`, 'i').test(subject));
-    if (found.length > 2) {
-      checks.push({ status: 'fail', title: 'High Spam Score in Subject', description: `Found ${found.length} spam trigger words: ${found.join(', ')}.` });
-      score -= 10;
-    } else if (found.length > 0) {
-      checks.push({ status: 'warning', title: 'Spam Words in Subject', description: `Found: ${found.join(', ')}. Consider rewording.` });
-      score -= 5;
-    } else {
-      checks.push({ status: 'pass', title: 'Clean Subject Line', description: 'No obvious spam trigger words.' });
-    }
-    const capsRatio = (subject.match(/[A-Z]/g) || []).length / (subject.replace(/\s/g, '').length || 1);
-    if (capsRatio > 0.5) { checks.push({ status: 'warning', title: 'Excessive Caps in Subject', description: 'More than 50% uppercase triggers spam filters.' }); score -= 5; }
-    if (/[!?]{2,}/.test(subject)) { checks.push({ status: 'warning', title: 'Excessive Punctuation', description: 'Multiple !? looks spammy.' }); score -= 3; }
-    if (subject.length > 70) { checks.push({ status: 'warning', title: 'Subject Line Too Long', description: `${subject.length} characters. Mobile devices truncate at ~40.` }); score -= 3; }
-    else if (subject.length < 20) { checks.push({ status: 'warning', title: 'Subject Line Too Short', description: 'Very short subjects underperform. Aim for 40–50 characters.' }); score -= 2; }
-  }
-
-  const textContent  = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-  const imageCount   = (html.match(/<img/gi) || []).length;
-  if (imageCount > 0 && textContent.length < 100) { checks.push({ status: 'fail', title: 'Image-Only Email', description: 'Less than 100 chars of text. Spam filters block image-only emails.' }); score -= 10; }
-  else if (imageCount > textContent.length / 50)  { checks.push({ status: 'warning', title: 'Low Text-to-Image Ratio', description: 'Too many images vs text.' }); score -= 5; }
-
-  const noAlt = (html.match(/<img(?![^>]*alt=)/gi) || []).length;
-  if (noAlt > 0) { checks.push({ status: 'warning', title: 'Missing Alt Text', description: `${noAlt} image(s) missing alt text.` }); score -= 5; }
-
-  const allLinks   = html.match(/<a[^>]*href=["']([^"']*)["']/gi) || [];
-  const httpLinks  = allLinks.filter(l => /href=["']http:/i.test(l));
-  const shortLinks = allLinks.filter(l => /bit\.ly|tinyurl|t\.co/i.test(l));
-  if (httpLinks.length > 0)  { checks.push({ status: 'warning', title: 'Insecure HTTP Links',     description: `${httpLinks.length} link(s) use HTTP.` }); score -= 5; }
-  if (shortLinks.length > 0) { checks.push({ status: 'warning', title: 'URL Shorteners Detected', description: 'Shortened URLs trigger spam filters.' }); score -= 3; }
-  if (allLinks.length > 15)  { checks.push({ status: 'warning', title: 'Too Many Links',           description: `${allLinks.length} links. Focus on 1–3 CTAs.` }); score -= 5; }
-  if (/display:\s*none|visibility:\s*hidden|font-size:\s*0/i.test(html)) { checks.push({ status: 'fail', title: 'Hidden Text Detected', description: 'CSS hiding is a spam technique.' }); score -= 10; }
-  if (/<script/i.test(html)) { checks.push({ status: 'fail', title: 'JavaScript in Email', description: 'Email clients block JS. Remove all <script> tags.' }); score -= 10; }
-  if (/<form/i.test(html))   { checks.push({ status: 'warning', title: 'Form in Email', description: 'Most email clients do not support forms. Link to a landing page.' }); score -= 5; }
-
-  if (subject && /\bfree\b/i.test(subject) && !/terms|conditions|t&c/i.test(html)) {
-    checks.push({ status: 'warning', title: '"Free" Claim Without T&Cs', description: 'ASA CAP Code requires terms when claiming "free".', fixType: 'misleading_free_claim' }); score -= 5;
-  }
-  if (/limited time|ends soon|last chance|today only/i.test(html) &&
-      !/\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2}\s(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(html)) {
-    checks.push({ status: 'warning', title: 'Vague Time Limit', description: 'CAP Code 3.7: "limited time" must specify an exact end date.', fixType: 'fake_urgency' }); score -= 5;
-  }
-  if (/limited stock|while supplies last|only \d+ left/i.test(html)) {
-    checks.push({ status: 'warning', title: 'Limited Stock Claim', description: 'Must be able to prove stock levels if challenged.', fixType: 'fake_scarcity' }); score -= 3;
-  }
-  if (!/<meta[^>]*viewport/i.test(html)) { checks.push({ status: 'warning', title: 'Not Mobile Optimised', description: 'Missing viewport meta tag.' }); score -= 3; }
-  if (Buffer.byteLength(html, 'utf8') > 102000) { checks.push({ status: 'warning', title: 'Email Too Large', description: 'Gmail clips emails over 102KB.' }); score -= 5; }
-  if (/\{\{|\[\[|lorem ipsum/i.test(html) || /\btest\b|\bdraft\b|\btodo\b/i.test(html)) {
-    checks.push({ status: 'fail', title: 'Template Placeholders Found', description: 'Unfinished template detected.' }); score -= 10;
-  }
-
-  return {
-    checks,
-    emailScore: Math.max(0, Math.min(100, score)),
-    summary: {
-      passed:   checks.filter(c => c.status === 'pass').length,
-      warnings: checks.filter(c => c.status === 'warning').length,
-      failed:   checks.filter(c => c.status === 'fail').length
-    }
-  };
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATE FIXES — writes to Compliance_Fixes via generate-fix.js
@@ -806,29 +707,24 @@ export default async function handler(req, res) {
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { contentType, content, subject, html, userId, autoFix, sendingContext } = req.body ?? {};
+    const { contentType, content, subject, userId, autoFix, sendingContext, images } = req.body ?? {};
 
     // ── Validation ────────────────────────────────────────────────────
     if (!userId)      return res.status(400).json({ error: 'Missing userId' });
     if (!contentType) return res.status(400).json({ error: 'Missing contentType' });
     if (!['email','sms','push','social','directmail'].includes(contentType))
       return res.status(400).json({ error: 'contentType must be email | sms | push | social | directmail' });
-    if (contentType === 'email' && !html)    return res.status(400).json({ error: 'Missing html (required for email contentType)' });
-    if (contentType !== 'email' && !content) return res.status(400).json({ error: 'Missing content' });
+    if (!content) return res.status(400).json({ error: 'Missing content' });
 
     // ── 1. Content deduplication hash ─────────────────────────────────
-    const rawContent  = contentType === 'email' ? html : content;
-    const checkHash   = contentHash(userId, contentType, rawContent);
+    const checkHash = contentHash(userId, contentType, content);
 
-    // ── 2. Deterministic email checks ─────────────────────────────────
-    const emailResult = contentType === 'email' ? runEmailChecks(subject || '', html) : null;
-
-    // ── 3. Deterministic context violations ───────────────────────────
+    // ── 2. Deterministic context violations ───────────────────────────
     const contextViolations = getContextViolations(sendingContext);
 
     // ── 4. Build analysis content for Claude ──────────────────────────
-    const copyText = contentType === 'email'
-      ? `Subject: ${subject || '(none)'}\n\nEmail body:\n${html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}`
+    const copyText = contentType === 'email' && subject
+      ? `Subject: ${subject}\n\nEmail body:\n${content}`
       : content;
 
     const contextBlock = buildSendingContextBlock(sendingContext);
@@ -845,11 +741,28 @@ CONTENT TO ANALYSE:
 ${analysisContent}
 ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten compliant version.' : ''}`;
 
+    // Build content array — text first, then images if provided
+    const messageContent = [{ type: 'text', text: userMessage }];
+    const validMediaTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (Array.isArray(images) && images.length > 0) {
+      const imageBlocks = images
+        .slice(0, 3) // max 3 images
+        .filter(img => img?.data && validMediaTypes.includes(img?.mediaType))
+        .map(img => ({
+          type: 'image',
+          source: { type: 'base64', media_type: img.mediaType, data: img.data }
+        }));
+      messageContent.push(...imageBlocks);
+      if (imageBlocks.length > 0) {
+        messageContent.push({ type: 'text', text: `\nNote: ${imageBlocks.length} image(s) provided above. Analyse them for compliance issues alongside the copy — check for misleading visuals, fake urgency in graphics, undisclosed ads, health claims in imagery, or any visual element that contradicts or adds to the compliance picture.` });
+      }
+    }
+
     const message = await anthropic.messages.create({
       model:      'claude-sonnet-4-20250514',
       max_tokens: 2000,
       system:     SYSTEM_PROMPT,
-      messages:   [{ role: 'user', content: userMessage }]
+      messages:   [{ role: 'user', content: messageContent }]
     });
 
     let aiAnalysis = null;
@@ -912,7 +825,7 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
               Verdict:        finalVerdict ?? '',
               CriticalIssues: criticalCount,
               Warnings:       warningCount,
-              MarketingCopy:  copyText?.slice(0, 10000) ?? '',
+              MarketingCopy:  content?.slice(0, 10000) ?? '',
               FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
               Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '' }),
               FixedVersion:   aiAnalysis?.fixedVersion ?? '',
@@ -934,8 +847,8 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
     }
 
     // ── 8. Generate Compliance_Fixes (fire and forget) ─────────────────
-    if (allViolations.length > 0 || emailResult?.checks.some(c => c.fixType)) {
-      generateFixes(userId, allViolations, emailResult?.checks || [], savedRecordId)
+    if (allViolations.length > 0) {
+      generateFixes(userId, allViolations, [], savedRecordId)
         .catch(e => console.error('generateFixes error:', e));
     }
 
@@ -957,11 +870,7 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
       violations: cleanViolations,
       contentType,
       checkHash,
-      ...(emailResult ? {
-        emailScore:    emailResult.emailScore,
-        checks:        emailResult.checks,
-        checksSummary: emailResult.summary
-      } : {})
+
     });
 
   } catch (error) {
