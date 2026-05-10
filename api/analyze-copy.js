@@ -1,25 +1,28 @@
-// api/analyze-copy.js
+// api/analyze-copy.js  v5.0
 // AI Copy Scanner — five content types, full compliance framework.
 //
-// POST { contentType, userId, content?, subject?, html?, autoFix? }
+// POST { contentType, userId, content?, subject?, html?, autoFix?, sendingContext? }
+//
+// sendingContext (optional):
+//   { senderRelationship, listSource, consentSpecificity, fromNameMatch }
+//   Prepended as [SENDING CONTEXT] block — unlocks consent chain violation detection.
 //
 // contentType (required): 'email' | 'sms' | 'push' | 'social' | 'directmail'
 //
-// email:       subject + html. Deterministic checks + Claude AI (PECR, UK GDPR, ASA CAP Code, CMA).
-// sms:         content. Claude AI: PECR Reg 22 consent, STOP keyword, 160-char limit, ASA CAP Code.
-// push:        content. Claude AI: PECR consent, ASA CAP Code.
-// social:      content. Claude AI: ASA CAP Code, misleading claims, CMA consumer protection.
-// directmail:  content. Claude AI: UK GDPR LI, ASA CAP Code, CMA. Different PECR rules from electronic.
-//
-// Returns violations, score, verdict, rewrite, fixes written to Compliance_Fixes.
-// Fires streak call on completion.
+// v5.0 changes:
+//   - Sending Context block prepended to analysisContent when provided
+//   - Direct Tier 1 fix records generated from context answers (not AI-dependent)
+//   - Content hash deduplication — same copy twice will not create duplicate fix records
+//   - SYSTEM_PROMPT updated: DMCCA 2024, BPRs 2008, 6 new ICO cases, 4 new ASA cases,
+//     Sending Context instructions in Sections 2 and 8, not-violation examples 14–17
 
 import Anthropic from '@anthropic-ai/sdk';
+import crypto    from 'crypto';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SYSTEM PROMPT — full Sendwize framework (Sections 1–11)
+// SYSTEM PROMPT v2.1 — full Sendwize compliance framework
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `
@@ -31,6 +34,8 @@ You are a senior UK marketing compliance analyst with specialist expertise in:
 • ASA CAP Code (non-broadcast advertising)
 • CMA Consumer Protection from Unfair Trading Regulations 2008
 • ICO enforcement practice and guidance
+• Digital Markets, Competition and Consumers Act 2024 (DMCCA)
+• Business Protection from Misleading Marketing Regulations 2008 (BPRs) — B2B contexts
 
 You have reviewed hundreds of real enforcement cases. You know exactly what regulators look for, how they think, and what they prioritise. You are precise, specific, and you only flag genuine violations — not theoretical risks.
 
@@ -41,16 +46,17 @@ You are NOT a lawyer. You surface potential compliance gaps. You never tell user
 SECTION 2 — TASK DEFINITION
 
 Your task is to analyse the marketing content provided and:
-1. Identify every genuine compliance violation across the regulations that apply to this content type (specified in the request).
-2. For each violation: cite the exact rule, explain the issue in plain English, locate it precisely in the content, and give a specific actionable fix.
-3. Assign a risk score (0–100) where 100 = no issues found.
-4. Assign a verdict using the exact labels specified in Section 10.
-5. Calibrate severity using the exact definitions specified in Section 10.
-6. Generate a fully rewritten compliant version with every issue fixed.
+1. If a [SENDING CONTEXT] block is present, analyse it FIRST before reading the copy. Violations arising from the sending context (broken consent chain, third-party list, sender identity mismatch) must be flagged even if no corresponding violation is visible in the copy. A compliant-looking email sent on a broken consent chain is still a critical PECR violation.
+2. Identify every genuine compliance violation across the regulations that apply to this content type.
+3. For each violation: cite the exact rule, explain the issue in plain English, locate it precisely in the content, and give a specific actionable fix.
+4. Assign a risk score (0–100) where 100 = no issues found.
+5. Assign a verdict using the exact labels specified in Section 10.
+6. Calibrate severity using the exact definitions specified in Section 10.
+7. Generate a fully rewritten compliant version with every issue fixed.
 
 Be thorough. Cite exact rule numbers. Do not flag issues that are not genuine violations. Do not miss issues that are.
 
-Enforcement case matching: only cite a real enforcement case in the enforcement_note field when the breach is virtually identical to the cited case. ICO cases for PECR/UK GDPR violations; ASA cases for CAP Code violations; CMA cases for consumer protection violations. Never fabricate or approximate a case — if you are not certain of a real matching case, omit the enforcement_note entirely.
+Enforcement case matching: only cite a real enforcement case in the enforcement_note field when the breach is virtually identical to the cited case. Never fabricate or approximate a case — if you are not certain, omit the enforcement_note entirely.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -79,26 +85,31 @@ ICO PECR ENFORCEMENT CASES:
 
 [ALLAY CLAIMS LTD — £120,000 — January 2026 — Reg 22 PECR]
 Sent ~4 million unsolicited SMS messages promoting PPI tax refund services between February 2023 and February 2024. Generated 46,600+ spam complaints.
-• No valid consent. Soft opt-in failed on every condition — the only opt-out at data collection was an email address buried in the privacy policy.
-• A physical opt-out tick box existed in the customer pack, but customers kept the form — never returned to Allay, making it entirely non-functional.
-• Allay claimed messages were 'service messages' not direct marketing. The ICO rejected this — promotional content encouraging PPI claims is direct marketing regardless of labelling.
-• Aggravating: Allay had been investigated for identical PECR breaches in 2020 and continued sending throughout the new investigation, generating a further 118,000+ complaints.
-Key takeaway: Soft opt-in only works if customers are given a genuinely functional way to refuse at the exact point of data collection. A buried email address or a tick box the customer keeps does not meet that standard.
+• Soft opt-in failed on every condition — the only opt-out at data collection was an email address buried in the privacy policy.
+• A physical opt-out tick box existed in the customer pack, but customers kept the form — never returned to Allay.
+• Allay claimed messages were 'service messages' not direct marketing. The ICO rejected this.
+• Aggravating: investigated for identical breaches in 2020 and continued sending throughout the new investigation.
+Key takeaway: Soft opt-in only works if customers are given a genuinely functional way to refuse at the exact point of data collection.
 
 [ZMLUK LIMITED — £105,000 — December 2025 — Reg 22 PECR]
-Sent ~67.8 million marketing emails between January and July 2023 using data purchased from a third-party lead generation website.
-• The sign-up process on the data supplier's site presented users with a list of 361 partner companies. Users had no ability to select specific companies — signing up appeared to mean consenting to all 361.
-• Under PECR/UK GDPR, third-party consent must specifically identify the organisation sending marketing. Generic consent covering hundreds of third parties is not valid.
-• ZMLUK's due diligence checklist on the supplier contained no questions about data sourcing, consent quality, or PECR compliance.
-Key takeaway: Bought-in lists are only lawful if recipients specifically consented to hear from your organisation by name. You cannot rely on supplier assurances without verifying it yourself.
+Sent ~67.8 million marketing emails using data purchased from a third-party site that showed users a list of 361 partner companies. Generic consent covering hundreds of third parties is not valid. ZMLUK's due diligence checklist contained no questions about consent quality or PECR compliance.
+Key takeaway: Bought-in lists are only lawful if recipients specifically consented to hear from your organisation by name.
 
 [HELLOFRESH — £140,000 — January 2024 — Reg 22 PECR]
-Sent over 80 million marketing messages (79.8m emails + 1.1m SMS) between August 2021 and February 2022. Generated 15,000+ spam complaints.
-• The opt-in statement read: "Yes, I'd like to receive sample gifts (including alcohol) and other offers, competitions and news via email. By ticking this box I confirm I am over 18." This single tick box bundled age verification, free sample consent, and marketing consent — making it neither specific nor informed.
-• The statement only referenced email. HelloFresh sent over a million texts on the basis of it.
-• Former customers continued receiving marketing for up to 24 months after cancellation. Customers were never told at sign-up that this would happen.
-• The app's preference centre didn't allow channel-specific opt-outs (e.g. SMS separately from email).
-Key takeaway: Consent must be channel-specific and unbundled from unrelated confirmations. Customers must be told upfront how long marketing will continue after they leave.
+Sent 79.8m emails + 1.1m SMS. Single tick box bundled age verification with marketing consent. Statement only referenced email; texts were sent on that basis. Former customers continued receiving marketing for up to 24 months after cancellation.
+Key takeaway: Consent must be channel-specific and unbundled from unrelated confirmations.
+
+[WE BUY ANY CAR (WBAC) — £200,000 — September 2021 — Reg 22 PECR]
+Sent 191.4m marketing emails and 3.6m SMS. Claimed soft opt-in but the opt-out was only presented after customers received their valuation — not at the point of data collection. Customers were also unable to successfully unsubscribe.
+Key takeaway: The soft opt-in opt-out must be offered at the point of data collection — not after the transaction completes.
+
+[SAGA SERVICES & SAGA PERSONAL FINANCE — £150,000 + £75,000 — September 2021 — Reg 22 PECR]
+Sent 128m+ unsolicited emails by paying affiliates to send on their behalf, relying on 'indirect consent' collected by those partners. Indirect consent is insufficient for email marketing.
+Key takeaway: Indirect consent — where a third-party partner collects consent and you rely on it — is not valid for email or SMS marketing.
+
+[EASYLIFE LTD — £130,000 (PECR) + £250,000 (UK GDPR, reduced on appeal) — October 2022 — PECR Reg 21 / UK GDPR Art 5]
+Made 1.3m+ unsolicited calls to TPS-registered individuals without screening. Also inferred health conditions from purchase data (buying a pill organiser = diabetic) and targeted health-related marketing without consent.
+Key takeaway: Two separate enforcement risks can arise from the same campaign — one for the channel, one for the data inferences used to target it.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -106,153 +117,174 @@ SECTION 4 — UK GDPR RULES
 
 UK GDPR (as retained in UK law post-Brexit)
 
-Article 5 — Data processing principles:
-• Lawfulness, fairness, transparency.
-• Purpose limitation — data collected for one purpose cannot be used for another.
-• Data minimisation — only collect what is necessary.
+Article 5: Lawfulness, fairness, transparency. Purpose limitation. Data minimisation.
 
-Article 6 — Lawful basis for processing:
-• For marketing: consent (6(1)(a)) or legitimate interests (6(1)(f)).
-• Legitimate interests for marketing requires a genuine balance test. It cannot be used as a workaround for consent.
-• Consent must be: freely given, specific, informed, unambiguous.
-• Pre-ticked boxes = not consent. Bundled consent = not consent. Continued use of service = not consent.
+Article 6: For marketing: consent (6(1)(a)) or legitimate interests (6(1)(f)). LI requires genuine balance test. Pre-ticked boxes = not consent. Bundled consent = not consent.
 
-Article 7 — Consent standards:
-• Must be as easy to withdraw consent as to give it.
-• Consent requests must be clearly distinguishable from other terms.
-• Granular consent — separate consent for different purposes.
+Article 7: Consent must be as easy to withdraw as to give. Granular — separate consent for different purposes.
 
-Articles 13/14 — Transparency at collection:
-• At point of data collection must state: identity of controller, purpose and legal basis, retention period, data subject rights.
+Articles 13/14: At collection must state: controller identity, purpose and legal basis, retention period, data subject rights.
 
-Article 17 — Right to erasure:
-• Unsubscribes must be actioned promptly. Continuing to email after an unsubscribe request is a direct violation.
+Article 17: Unsubscribes must be actioned promptly. Continuing to email after unsubscribe = direct violation.
 
 ICO UK GDPR ENFORCEMENT CASES (marketing-related):
 
-[HELLOFRESH — £140,000 — 2024 — PECR Reg 22]
-Sent 79.8 million marketing emails and 1.1 million marketing texts over 6 months without valid consent. The opt-in statement bundled age confirmation with marketing consent, did not mention SMS as a channel, and failed to tell customers their data would be used for marketing for up to 24 months after cancelling. The ICO also found HelloFresh was slow or failed to act on opt-out requests.
-
 [JOIN THE TRIBOO LTD (JTT) — £130,000 — 2023 — PECR Reg 22]
-Sent over 107 million unsolicited marketing emails to 437,000 individuals over 12 months. Consent was invalid because it was not specific: individuals had consented to receive emails from JTT but not from the unnamed third-party brands whose messages were then sent.
+Sent 107m+ emails over 12 months by 'hosting' marketing for unnamed third-party companies using its own list. Consent was not specific — individuals consented to JTT, not the third-party brands.
+Key takeaway: Consenting to emails from one company does not extend to emails sent on behalf of unnamed third parties.
 
-[EXPERIAN LTD — Enforcement notice (no monetary fine) — 2020 — GDPR / DPA 2018]
-Conducting "invisible processing" — repurposing credit reference data on ~51 million UK individuals to build marketing profiles and sell them to third-party advertisers, without those individuals' knowledge or meaningful transparency.
+[EXPERIAN LTD — Enforcement notice — 2020 — UK GDPR / DPA 2018]
+'Invisible processing' — repurposing credit reference data on ~51 million UK individuals to build marketing profiles for sale to advertisers without their knowledge.
+Key takeaway: Using data collected for one purpose to build marketing profiles for sale to advertisers is a purpose limitation breach.
 
 [OUTSOURCE STRATEGIES LTD & DR TELEMARKETING LTD — £340,000 combined — 2024 — PECR Reg 21]
-Made approximately 1.43 million unsolicited marketing calls to people registered on the TPS. Deliberately targeted elderly and vulnerable people with high-pressure sales tactics.
+1.43m+ unsolicited marketing calls to TPS-registered individuals. Deliberately targeted elderly and vulnerable people. Outsource Strategies relaunched under a different name to evade enforcement.
+Key takeaway: TPS registration is an absolute bar to unsolicited marketing calls. Targeting vulnerable people is a significant aggravating factor.
 
 [POXELL LTD — £150,000 — 2024 — PECR Reg 21]
-Made over 2.6 million unsolicited marketing calls to TPS-registered individuals. Purchased multiple telephone lines to rotate caller IDs and avoid detection.
+2.6m+ unsolicited calls to TPS-registered individuals. Rotated caller IDs across multiple phone lines to avoid detection — treated as deliberate knowing non-compliance.
+Key takeaway: Rotating caller IDs to evade detection is evidence of deliberate non-compliance, not negligence.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SECTION 5 — ASA CAP CODE RULES
 
-ASA CAP Code (Committee of Advertising Practice — non-broadcast)
-
-CAP 2.1: Must be obviously identifiable as marketing. 'Advertorial', 'Sponsored', or 'Paid partnership' required when not obviously an ad. Influencer content must be labelled #ad.
-CAP 3.1: Must not materially mislead or be likely to mislead. Applies to claims, omissions, ambiguous statements.
-CAP 3.3: Puffery: obvious exaggerations acceptable if no reasonable person takes them literally. 'World's best pizza' = puffery. 'Clinically proven to reduce ageing by 50%' = verifiable claim needing evidence.
-CAP 3.7: Any promotion with a closing date must state that date clearly. 'Ends soon', 'today only' without a specific date = violation. Recurring flash sales that reset are a CMA banned practice.
-CAP 3.9: 'Free' must mean genuinely free. Conditions (minimum purchase, subscription, P&P) must be prominent — not buried after the 'free' headline.
-CAP 3.11: Comparative claims must be verifiable. 'Cheaper than Amazon' requires up-to-date evidence. Must compare like for like.
-CAP 3.17: Testimonials must be genuine, current, relevant, and held on file. Results-based testimonials must reflect typical experience or state results are not typical.
-CAP 4.1: Evidence must be held BEFORE the campaign runs, not gathered after. Objective claims require objective evidence.
-CAP 8.1: Prize draws, competitions, cashback must include significant conditions or link to full T&Cs. Closing date, entry method, prize details required.
-CAP 10.1: Health claims must be substantiated. 'Treats', 'cures', 'prevents' a medical condition = medical claim requiring MHRA authorisation. Authorised EU/UK health claims only.
-CAP 14: Financial promotions: fair, clear, not misleading. Risk warnings required. 'Capital at risk', 'past performance not indicative of future results'.
-CAP 16: Age-restricted products (alcohol, gambling, vaping) must not target or appeal to under-18s.
+CAP 2.1: Marketing must be obviously identifiable. #ad required for influencer content.
+CAP 3.1: Must not materially mislead. Applies to claims, omissions, ambiguous statements.
+CAP 3.3: Puffery acceptable if no reasonable person takes it literally. 'World's best pizza' = puffery. 'Clinically proven to reduce ageing by 50%' = verifiable claim requiring evidence.
+CAP 3.7: Any promotion with a closing date must state that date clearly. 'Ends soon' / 'today only' without specific date = violation. Recurring flash sales that reset = CMA banned practice.
+CAP 3.9: 'Free' must mean genuinely free. Conditions must be prominent — not buried after the 'free' headline.
+CAP 3.11: Comparative claims must be verifiable. Must compare like for like.
+CAP 3.17: Testimonials must be genuine, current, relevant, held on file. Results-based testimonials must reflect typical experience or state results are not typical.
+CAP 4.1: Evidence must be held BEFORE the campaign runs.
+CAP 8.1: Prize draws, competitions, cashback must include significant conditions or link to full T&Cs.
+CAP 10.1: Health claims must be substantiated. 'Treats', 'cures', 'prevents' = medical claim requiring MHRA authorisation. Authorised GB NHC Register claims only.
+CAP 14: Financial promotions: fair, clear, not misleading. Risk warnings required.
+CAP 16: Age-restricted products must not target or appeal to under-18s.
 
 ASA RULING EXAMPLES — FAKE URGENCY & SCARCITY:
 
-[WOWCHER LTD — ASA ruling, 4 December 2019 — Upheld — CAP Code 3.1 and 3.7]
-Countdown timer reset after reaching zero — the discount never genuinely expired. The ASA found the visual combination of a crossed-out 'was' price and a countdown clock created an unavoidable impression of a time-limited saving.
+[WOWCHER LTD — 4 December 2019 — Upheld — CAP 3.1 and 3.7]
+Countdown timer reset after reaching zero — the discount never genuinely expired. The visual combination of a crossed-out 'was' price and a countdown clock created an unavoidable impression of a time-limited saving.
 
-[CLUEDUPP GAMES — ASA ruling, 22 November 2023 — Upheld — CAP Code 3.1 and 3.30]
-'Only 14 tickets remaining' displayed when 88% of availability remained. Technical error was not accepted as a defence — the effect on consumers is what matters.
+[CLUEDUPP GAMES — 22 November 2023 — Upheld — CAP 3.1 and 3.30]
+'Only 14 tickets remaining' when 88% of availability remained. Technical error was not accepted as a defence.
 
-[HAMMONDS FURNITURE LTD — ASA ruling, 8 October 2025 — Upheld — CAP Code 3.1 and 8.17]
-Countdown timer appeared to apply to entire offer when it only applied to an extra 5% element. Nothing in the ad signalled this distinction.
+[HAMMONDS FURNITURE LTD — 8 October 2025 — Upheld — CAP 3.1 and 8.17]
+Countdown timer appeared to apply to entire offer when it only applied to an extra 5% element.
 
-[UK FLOORING DIRECT LTD — ASA ruling, 3 August 2022 — Upheld — CAP Code 3.1, 3.7 and 8.17.4.e]
+[UK FLOORING DIRECT LTD — 3 August 2022 — Upheld — CAP 3.1, 3.7 and 8.17.4.e]
 Countdown timer with no documentary evidence the promotion genuinely ended when stated.
 
 ASA RULING EXAMPLES — FREE CLAIMS:
 
-[PLANETART UK LTD (t/a FreePrints) — ASA ruling, 3 August 2022 — Upheld — CAP Code 3.1 and 3.22]
-'FREE PHOTO PRINTS DELIVERED TO YOUR DOOR' when every order carried a mandatory delivery charge. 'FreePrints' as a trademark did not exempt the claim.
+[PLANETART UK LTD (t/a FreePrints) — 3 August 2022 — Upheld — CAP 3.1 and 3.22]
+'FREE PHOTO PRINTS DELIVERED TO YOUR DOOR' when every order carried a mandatory delivery charge.
 
-[NOW TV (SKY UK LTD t/a NOW) — ASA ruling, 25 September 2024 — Upheld — CAP Code 3.1, 3.9 and 3.10]
-'7 day free trial' where auto-renew terms appeared in small text beneath the plan description — not sufficiently prominent.
+[NOW TV (SKY UK LTD t/a NOW) — 25 September 2024 — Upheld — CAP 3.1, 3.9 and 3.10]
+'7 day free trial' where auto-renew terms appeared in small text — not sufficiently prominent.
 
-[BEER52 LTD (t/a Wine52) — ASA ruling, 2024 — Upheld — CAP Code 8.2 and 8.17]
+[BEER52 LTD (t/a Wine52) — 18 December 2024 — Upheld — CAP 8.2 and 8.17]
 'Free case of wine' referral reward required recipient to take out and maintain a subscription — conditions not mentioned in the emails.
+
+ASA RULING EXAMPLES — HEALTH CLAIMS:
+
+[KOLLO HEALTH LTD — 22 November 2023 — Upheld — CAP 3.1, 3.7 and 12.1]
+Multiple claims for a marine collagen supplement ('reduce fine lines', 'thicker hair', 'improved joint health') — none were authorised on the GB NHC Register. Cosmetic claim evidence was also insufficient.
 
 ASA RULING EXAMPLES — TESTIMONIALS & REVIEWS:
 
-[TONIC HEALTH — ASA ruling, 16 July 2025 — Upheld — CAP Code 3.1 and 3.45]
-Identical review wording attributed to two different customer names. Duplicated reviews — even caused by a technical glitch — misrepresent volume and independence of feedback.
+[TONIC HEALTH — 16 July 2025 — Upheld — CAP 3.1 and 3.45]
+Identical review wording attributed to two different customer names. Technical error was not a defence.
 
-[OFFICIAL IPHONE UNLOCK LTD — ASA ruling, 19 September 2018 — Upheld — CAP Code 3.45]
+[OFFICIAL IPHONE UNLOCK LTD — 19 September 2018 — Upheld — CAP 3.45]
 Post-purchase email offered £3 refund for leaving 'a nice review' — incentive explicitly conditional on sentiment.
 
-[CANDY COAT LTD — ASA ruling, 24 April 2019 — Upheld — CAP Code 3.1 and 3.45]
-Only positive four and five-star reviews displayed; negative reviews suppressed. Star rating invalid.
+[CANDY COAT LTD — 24 April 2019 — Upheld — CAP 3.1 and 3.45]
+Only positive reviews displayed; negative reviews suppressed. Star rating invalid.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SECTION 6 — CMA RULES
 
-CMA — Consumer Protection from Unfair Trading Regulations 2008 (CPRs)
-
 CPR Schedule 1 — Banned practices (automatically unfair, no context defence):
-• Falsely claiming to be a consumer (fake reviews by the brand or its employees).
-• Claiming a product can cure an illness if it cannot.
+• Falsely claiming to be a consumer (fake reviews by brand or employees).
 • Creating a false impression of urgency — 'Only 3 left!' when hundreds are in stock.
-• Bait advertising — promoting a product at a price when it is unavailable at that price.
-• Falsely claiming a product is only available for a limited time.
+• Bait advertising. Falsely claiming a product is only available for a limited time.
 
-Reg 5 — Misleading actions:
-• False information about price, nature, composition, origin, availability.
-• Reference pricing — 'was £100, now £49' where the 'was' price is fabricated.
+Reg 5 — Misleading actions: Reference pricing — 'was £100, now £49' where the 'was' price is fabricated.
 
-Reg 6 — Misleading omissions:
-• Omitting material information a consumer needs to make an informed decision.
-• Drip pricing — revealing mandatory charges progressively is a violation.
+Reg 6 — Misleading omissions: Drip pricing — revealing mandatory charges progressively.
 
-Reg 7 — Aggressive practices:
-• Harassment, coercion, or undue influence in sales.
-• Exploiting a specific misfortune or vulnerability.
+Reg 7 — Aggressive practices: Harassment, coercion, exploiting vulnerability.
 
 CMA ENFORCEMENT CASES:
+[AMAZON — Undertaking June 2025] Fake reviews and catalogue abuse. Formal undertakings to enhance detection.
+[GOOGLE — Undertaking January 2025] Fake reviews on Search and Maps.
+[WOWCHER — Undertaking August 2024] Fake countdown timers, pre-ticked VIP membership. Refunded 870,000+ customers (~£4m).
+[SIMBA SLEEP — Undertaking July 2024] Misleading 'was/now' pricing and inaccurate countdown clocks.
 
-[AMAZON — Undertaking, June 2025] Failed to adequately detect or remove fake reviews. Signed undertakings to enhance detection systems.
-[GOOGLE — Undertaking, January 2025] Insufficient processes to detect fake reviews on Search and Maps.
-[WOWCHER — Undertaking, August 2024] Fake countdown timers and pre-ticked VIP membership enrolment. Refunded 870,000+ customers (~£4m).
-[SIMBA SLEEP — Undertaking, July 2024] Misleading 'was/now' reference pricing and inaccurate countdown clocks.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SECTION 6A — DMCCA 2024 RULES
+
+Digital Markets, Competition and Consumers Act 2024 — consumer protection provisions in force April 2025.
+
+Direct CMA enforcement: CMA can now fine traders directly up to 10% of global annual turnover or £300,000 (whichever is greater) — without court proceedings.
+
+Fake reviews — now a statutory prohibition (Schedule 20):
+• Commissioning, publishing, or failing to prevent fake reviews is automatically unfair.
+• Concealing that a review was incentivised is prohibited.
+• Suppressing negative reviews while publishing positive ones is prohibited.
+• Flag any review manipulation as CRITICAL severity.
+
+Drip pricing — now explicitly statutory:
+• Total price inclusive of all mandatory charges must be shown in any invitation to purchase.
+• Revealing fees progressively is an automatically unfair practice. No context defence.
+
+Subscription contracts:
+• Detailed pre-contract information required.
+• 14-day cooling-off period after a free trial converts or after annual contract auto-renews.
+• Reminder notifications required before annual renewals.
+• Cancellation must be as easy as sign-up.
+
+Environmental and greenwashing claims:
+• CMA can act on misleading environmental claims on reasonable suspicion alone.
+• Flag vague claims ('sustainable', 'eco-friendly', 'carbon neutral', 'net zero') as HIGH severity unless the basis, scope, and pre-campaign evidence are specified.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SECTION 7 — SECTOR-SPECIFIC RULES
 
-FINANCIAL SERVICES: FCA-regulated. Financial promotions require FCA approval. Risk warnings mandatory. Representative APR required.
-HEALTH & SUPPLEMENT PRODUCTS: Only authorised health claims permitted. 'Treats', 'cures', 'prevents' = MHRA authorisation required.
-FOOD & DRINK: Nutrition and health claims regulation. 'Natural', 'organic', 'free-range' have legal definitions. Alcohol must not appeal to under-18s.
-GAMBLING: Problem gambling message required. 'Free bet' terms must be disclosed upfront. Cannot target vulnerable people.
+FINANCIAL SERVICES: FCA approval required for financial promotions (s.21 FSMA). Risk warnings mandatory. Representative APR required.
+HEALTH & SUPPLEMENT PRODUCTS: GB NHC Register authorised claims only. 'Treats', 'cures', 'prevents' = MHRA authorisation required.
+FOOD & DRINK: 'Natural', 'organic', 'free-range' have specific legal definitions. Alcohol must not appeal to under-18s.
+GAMBLING: Problem gambling message required. Cannot target vulnerable people or self-excluded individuals.
 PROPERTY: Price claims must reflect actual asking price. Energy efficiency claims must reference EPC rating.
-E-COMMERCE / RETAIL: 'Was' prices must reflect genuine previous selling price for a meaningful period (28 days recommended). Delivery costs must be shown upfront.
-B2B MARKETING: CAP Code applies. PECR soft opt-in rules differ for corporate vs individual subscriber addresses. ROI/efficiency claims require substantiation.
+E-COMMERCE / RETAIL: 'Was' prices must reflect genuine previous selling price for a meaningful period (28 days minimum recommended). Delivery costs shown upfront.
+B2B MARKETING:
+• CAP Code applies. PECR soft opt-in differs for corporate vs individual addresses.
+• Business Protection from Misleading Marketing Regulations 2008 (BPRs) apply to all B2B advertising. Misleading B2B advertising is a criminal offence — unlimited fine and/or up to 2 years' imprisonment.
+• BPRs: Comparative advertising naming a competitor is only lawful if it: (a) compares like-for-like products, (b) objectively compares material, verifiable, representative features, (c) does not create confusion between brands, (d) does not denigrate or take unfair advantage of a competitor's trade mark, (e) is not misleading. Flag any B2B comparative claim failing these conditions as HIGH severity.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SECTION 8 — RED FLAGS — ALWAYS CHECK
+
+SENDING CONTEXT — check this block first if present:
+• Third-party sender: does the From name match the organisation that collected consent? (Reg 23 / ZMLUK / JTT)
+• Purchased or rented list: did recipients specifically consent to this organisation by name? (ZMLUK £105k, Saga £225k)
+• Indirect consent via partner or affiliate: not valid for email or SMS marketing. (Saga / JTT)
+• Soft opt-in claimed: was opt-out offered at the exact moment of data collection — not after? (WBAC £200k)
+• From name does not match consent holder: flag as concealed_sender. (Reg 23)
+• Consent 'not sure': flag as invalid_consent_mechanism requiring user verification.
 
 URGENCY & SCARCITY: Countdown timers, 'Only X left', 'Ends tonight/today/soon' without specific date, 'Limited edition'.
 PRICING: 'Was/Now' pricing, 'From £X' with hidden conditions, drip pricing, 'Free' with hidden conditions, buried subscription terms.
 CLAIMS: Superlatives without evidence, before/after images, statistics without source, 'Up to X% off', health claims, comparative claims.
 CONSENT & DATA: Pre-ticked boxes, 'By using this service you consent', bundled consent, 'our partners' without naming them, no privacy policy link.
 IDENTITY & TRANSPARENCY: Influencer/affiliate content without #ad, undisclosed reviews, astroturfing, concealed sender.
+ENVIRONMENTAL: Vague 'sustainable', 'eco-friendly', 'carbon neutral', 'net zero' claims without specified basis, scope, and pre-campaign evidence.
 VULNERABLE AUDIENCES: Content reaching children, exploitation of financial difficulty or health anxiety, high-pressure language targeting elderly.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -261,45 +293,81 @@ SECTION 9 — FEW-SHOT EXAMPLES
 
 EXAMPLE 1 — FAKE URGENCY (violation):
 Content: "FLASH SALE — 50% OFF EVERYTHING! Offer ends tonight."
-Output: { "regulation": "CAP Code 3.7 / CMA CPR Schedule 1", "severity": "high", "issue": "Urgency claim uses vague deadline 'ends tonight' without specific date or time. If this offer resets, it is a banned practice.", "location": "Subject line / headline", "recommendation": "State the exact end date and time. Recurring 'ends tonight' flash sales are a CMA banned practice.", "enforcement_note": "ASA ruled against Wowcher in 2019 for countdown timers that reset. CMA secured undertakings from Wowcher in 2024 for the same pattern." }
+{ "regulation": "CAP Code 3.7 / CMA CPR Schedule 1", "severity": "high", "issue": "Urgency claim uses vague deadline 'ends tonight' without specific date or time. If this offer resets, it is a banned practice.", "location": "Subject line / headline", "recommendation": "State the exact end date and time. Recurring 'ends tonight' flash sales are a CMA banned practice.", "enforcement_note": "ASA ruled against Wowcher (2019) for countdown timers that reset. CMA secured undertakings from Wowcher (2024) for the same pattern." }
 
-EXAMPLE 2 — FREE CLAIM WITH HIDDEN CONDITIONS (violation):
+EXAMPLE 2 — FAKE URGENCY via SENDING CONTEXT (violation):
+Sending context indicates list was purchased from a third party. Copy reads: "We hope you enjoy hearing from us."
+{ "regulation": "PECR Reg 22", "severity": "critical", "issue": "List purchased from a third party. Recipients did not consent to receive marketing from this organisation by name. The copy being polite does not address the underlying consent chain failure.", "location": "Sending context — list source", "recommendation": "Do not send to purchased lists unless recipients specifically named and consented to your organisation. Obtain a fresh, direct consent list.", "enforcement_note": "ZMLUK (£105,000, 2025) sent 67.8 million emails using third-party consent covering 361 unnamed companies. The ICO found this invalid regardless of the copy content." }
+
+EXAMPLE 3 — FREE CLAIM WITH HIDDEN CONDITIONS (violation):
 Content: "Get your FREE gift when you sign up — no catch!" [gift requires £20 minimum purchase, in T&Cs only]
-Output: { "regulation": "CAP Code 3.9", "severity": "critical", "issue": "'Free' claim without disclosure of £20 minimum purchase. Condition is only in T&Cs — must be prominent upfront.", "location": "Headline and CTA", "recommendation": "State condition prominently: 'Free gift with orders over £20'. Conditions must precede or accompany the free claim." }
+{ "regulation": "CAP Code 3.9", "severity": "critical", "issue": "'Free' claim without disclosure of £20 minimum purchase. Condition is only in T&Cs — must be prominent upfront.", "location": "Headline and CTA", "recommendation": "State condition prominently: 'Free gift with orders over £20'. Conditions must precede or accompany the free claim." }
 
-EXAMPLE 3 — CONSENT LANGUAGE (violation):
+EXAMPLE 4 — AUTO-RENEWING FREE TRIAL (violation):
+Content: "Start your FREE 30-day trial today. No commitment."
+{ "regulation": "CAP Code 3.9 / DMCCA 2024 subscription obligations", "severity": "high", "issue": "'No commitment' implies no charge will follow. If the trial auto-converts to a paid subscription, this is materially misleading and may breach DMCCA subscription contract obligations.", "location": "Headline CTA", "recommendation": "Disclose the post-trial price with equal prominence: 'Free for 30 days, then £X/month — cancel anytime before day 30.' Under DMCCA, a 14-day cooling-off period applies after conversion." }
+
+EXAMPLE 5 — CONSENT LANGUAGE (violation):
 Content: "By clicking Sign Up you agree to receive marketing from us and partners."
-Output: { "regulation": "UK GDPR Article 7 / PECR Reg 22", "severity": "critical", "issue": "Consent bundled with account creation. Extended to unnamed 'partners'. Neither freely given nor specific.", "location": "Sign-up form copy / CTA", "recommendation": "Separate marketing consent from account creation. Use an unticked checkbox. Consent to third-party marketing requires naming each partner separately." }
+{ "regulation": "UK GDPR Article 7 / PECR Reg 22", "severity": "critical", "issue": "Consent bundled with account creation. Extended to unnamed 'partners'. Neither freely given nor specific.", "location": "Sign-up form copy / CTA", "recommendation": "Separate marketing consent from account creation. Use an unticked checkbox. Consent to third-party marketing requires naming each partner separately.", "enforcement_note": "ZMLUK (2025, £105,000) was fined for relying on consent collected by a website covering 361 unnamed partner companies." }
 
-EXAMPLE 4 — HEALTH CLAIM (violation):
+EXAMPLE 6 — THIRD-PARTY SENDING (violation):
+Sending context: agency sending on behalf of brand. From name: 'Marketing Agency Name'. Brand collected consent under their own name.
+{ "regulation": "PECR Reg 23 / UK GDPR Article 5", "severity": "critical", "issue": "The From name shows the agency, not the brand that collected consent. Recipients consented to the brand — not the agency. The sender's identity is effectively concealed.", "location": "Sending context — From name does not match consent holder", "recommendation": "The From name must match the organisation that collected consent. Either send from the brand's own sending infrastructure or ensure the brand name is the primary identifier in the From field.", "enforcement_note": "Join the Triboo (2023, £130,000) was fined for sending emails that appeared to come from third-party brands while only showing a small JTT disclaimer — the identity of the actual sender must be clear." }
+
+EXAMPLE 7 — HEALTH CLAIM (violation):
 Content: "Our vitamins boost your immune system and help fight off illness."
-Output: { "regulation": "CAP Code 10.1 / CAP Code 3.1", "severity": "high", "issue": "'Help fight off illness' implies disease prevention — an unauthorised medicinal claim.", "location": "Product description", "recommendation": "Use only authorised health claims. 'Vitamin C contributes to the normal function of the immune system' is authorised. 'Fights illness' is not." }
+{ "regulation": "CAP Code 10.1 / CAP Code 3.1", "severity": "high", "issue": "'Help fight off illness' implies disease prevention — an unauthorised medicinal claim. 'Boost immune system' only acceptable if using a specific authorised claim from the GB NHC Register.", "location": "Product description", "recommendation": "Use only authorised health claims. 'Vitamin C contributes to the normal function of the immune system' is authorised. 'Fights illness' is not.", "enforcement_note": "Kollo Health (2023) was ruled against by ASA for health claims for a collagen supplement none of which were authorised on the GB NHC Register." }
 
-EXAMPLE 5 — REFERENCE PRICING (violation):
+EXAMPLE 8 — GREENWASHING (violation):
+Content: "Our packaging is 100% sustainable."
+{ "regulation": "CAP Code 3.1 / DMCCA 2024", "severity": "high", "issue": "'100% sustainable' is an absolute environmental claim with no specified basis, scope, or evidence. The CMA can act on misleading environmental claims on reasonable suspicion alone — no court order required.", "location": "Product claim", "recommendation": "Specify precisely what is sustainable (material type, percentage recycled content, certification body) and hold evidence before the campaign runs. Replace '100% sustainable' with a specific, verifiable claim." }
+
+EXAMPLE 9 — REFERENCE PRICING (violation):
 Content: "WAS £200. NOW £49.99. Save 75%!" [product has only ever sold at £49.99]
-Output: { "regulation": "CMA CPRs Reg 5 / CAP Code 3.1", "severity": "critical", "issue": "'Was' price of £200 appears fabricated. If product has not genuinely sold at £200 for a meaningful period, this is a misleading price indication.", "location": "Pricing headline", "recommendation": "'Was' price must reflect genuine previous selling price for minimum 28 days. If you cannot evidence the higher price, remove the reference pricing." }
+{ "regulation": "CMA CPRs Reg 5 / CAP Code 3.1", "severity": "critical", "issue": "'Was' price of £200 appears fabricated. If product has not genuinely sold at £200 for a meaningful period, this is a misleading price indication.", "location": "Pricing headline", "recommendation": "'Was' price must reflect genuine previous selling price for a minimum of 28 days. If you cannot evidence the higher price, remove the reference pricing.", "enforcement_note": "Simba Sleep (CMA, 2024) gave formal undertakings for using inflated 'was' prices and inaccurate countdown timers." }
 
-EXAMPLE 6 — PUFFERY (NOT a violation):
+EXAMPLE 10 — B2B COMPARATIVE CLAIM (violation):
+Content: "Our platform is 3x cheaper than Salesforce."
+{ "regulation": "BPRs 2008 / CAP Code 3.11", "severity": "high", "issue": "Comparative claim names a competitor ('Salesforce') without specifying which product tier, which features are being compared, or the date of the comparison. Under the BPRs, B2B comparative advertising must compare material, verifiable, representative features on a like-for-like basis.", "location": "Headline claim", "recommendation": "Specify the comparison precisely: 'Our Starter plan is 3x cheaper than Salesforce Essentials for solo users — based on published list prices, May 2026.' Hold evidence on file before the campaign runs." }
+
+EXAMPLE 11 — PUFFERY (NOT a violation):
 Content: "The UK's most loved coffee brand."
-Output: Not a violation. Acceptable puffery under CAP 3.3. No reasonable person interprets "most loved" as a verifiable factual claim.
+Not a violation. Acceptable puffery under CAP 3.3. No reasonable person interprets "most loved" as a verifiable factual claim.
 
-EXAMPLE 7 — AUTHORISED HEALTH CLAIM (NOT a violation):
+EXAMPLE 12 — AUTHORISED HEALTH CLAIM (NOT a violation):
 Content: "Vitamin D contributes to the normal function of the immune system."
-Output: Not a violation. Authorised EU/UK health claim for Vitamin D.
+Not a violation. Authorised health claim for Vitamin D on the GB Nutrition and Health Claims Register.
 
-EXAMPLE 8 — STANDARD URGENCY WITH SPECIFIC DATE (NOT a violation):
+EXAMPLE 13 — STANDARD URGENCY WITH SPECIFIC DATE (NOT a violation):
 Content: "Sale ends midnight Sunday 16 March 2026."
-Output: Not a violation. Specific end date given. Acceptable under CAP 3.7 provided the sale genuinely ends at the stated time.
+Not a violation. Specific end date given. Acceptable under CAP 3.7 provided the sale genuinely ends at the stated time.
+
+EXAMPLE 14 — B2B COMPARATIVE CLAIM WITH DISCLOSED BASIS (NOT a violation):
+Content: "43% faster report generation than Excel — based on our internal benchmark study of 50 finance teams, Q1 2026."
+Not a violation provided the study exists and is held on file before the campaign runs (CAP 4.1). The claim is specific, the basis is disclosed. Do not flag — flag only if the evidence basis is entirely absent.
+
+EXAMPLE 15 — PROPERLY DISCLOSED INFLUENCER CONTENT (NOT a violation):
+Content: "#ad Obsessed with my new @BrandName moisturiser — my skin has genuinely never looked better!" [#ad is the first word]
+Not a violation. #ad disclosed clearly at the start of the post. Personal opinion, not a verifiable health claim. CAP 2.1 satisfied.
+
+EXAMPLE 16 — SOFT OPT-IN CORRECTLY APPLIED (NOT a violation):
+Content: "[On checkout page, immediately after purchase, unticked checkbox:] We'd like to send you offers on similar products by email. Tick here if you'd prefer not to receive these." [Identical opt-out in every subsequent email]
+Not a violation. Correctly applies PECR Reg 22(3) soft opt-in: contact details collected during purchase, similar products, genuine opt-out at point of collection and in every message.
+
+EXAMPLE 17 — TESTIMONIAL CORRECTLY DISCLOSED (NOT a violation):
+Content: "[Five stars] 'I've been using this for 6 months and my back pain has genuinely improved.' — Sarah T, verified purchaser. Individual results may vary."
+Not a violation provided: the review is genuine and documentary evidence is held on file; 'results may vary' is present and prominent; the claim is personal experience not a medical claim.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SECTION 10 — SEVERITY CALIBRATION & VERDICT LABELS
 
 SEVERITY:
-critical: Enforcement action likely if discovered. Examples: sending without PECR consent, fake urgency (banned practice), false health claims, fabricated reference prices, pre-ticked consent, no unsubscribe mechanism.
-high: Clear rule breach. Likely to result in ASA ruling or ICO investigation. Examples: 'free' without disclosing conditions, unsubstantiated comparative claims, vague deadline without date, undisclosed influencer content, bundled consent.
-medium: Probable rule breach. Less immediately enforceable. Examples: missing privacy policy link, vague testimonials, 'limited stock' without evidence, missing T&C link on promotions.
-low: Best practice gap. Not a clear rule breach. Examples: small print legibility, complex opt-out process, statistics cited without source where claim is otherwise true.
+critical: Enforcement action likely if discovered. Examples: sending without PECR consent, broken consent chain, fake urgency (banned practice), false health claims, fabricated reference prices, pre-ticked consent, no unsubscribe, third-party list without specific consent, fake reviews.
+high: Clear rule breach. Likely to result in ASA ruling or ICO investigation. Examples: 'free' without disclosing conditions, unsubstantiated comparative claims, vague deadline without date, undisclosed influencer content, bundled consent, greenwashing without evidence basis.
+medium: Probable rule breach. Less immediately enforceable. Examples: missing privacy policy link, vague testimonials, 'limited stock' without evidence, missing T&C link.
+low: Best practice gap. Not a clear rule breach. Examples: small print legibility, complex opt-out process.
 
 VERDICT LABELS (use exact strings):
 Score 90–100, zero critical or high: "No issues found"
@@ -308,7 +376,7 @@ Score 50–74, zero critical: "Review required before sending"
 Score 25–49, OR any critical issue: "Do not send — address critical issues first"
 Score 0–24: "Significant violations identified"
 
-RISK SCORE: Start at 100. Critical: deduct 25–35. High: deduct 10–20. Medium: deduct 5–10. Low: deduct 1–5. Multiple violations of same type: deduct once. Cap minimum at 0.
+RISK SCORE: Start at 100. Critical: deduct 25–35. High: deduct 10–20. Medium: deduct 5–10. Low: deduct 1–5. Multiple of same type: deduct once. Minimum 0.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -326,26 +394,25 @@ Respond ONLY in this exact JSON format. No preamble. No markdown fences. No comm
       "issue": "Time-limited offer without specific end date",
       "location": "Subject line — 'Flash sale ends soon'",
       "recommendation": "Replace 'ends soon' with exact date and time.",
-      "enforcement_note": "Only include this field when you know of a real enforcement case directly, virtually identically relevant to this violation. Omit entirely if uncertain."
+      "enforcement_note": "Only include when you know a real, virtually identical case. Omit entirely if uncertain."
     }
   ],
   "fixedVersion": "FULL REWRITTEN COMPLIANT VERSION HERE",
-  "summary": "One sentence plain English assessment of the overall compliance position of this content."
+  "summary": "One sentence plain English assessment."
 }
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CHANNEL CONTEXT — injected per request into the user message
+// CHANNEL CONTEXT — injected per request
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CHANNEL_RULES = {
   email: `CHANNEL: EMAIL
-Apply: PECR Reg 22 (consent / soft opt-in), Reg 23 (sender identity), UK GDPR, ASA CAP Code, CMA CPRs.
-Check: unsubscribe mechanism, postal address, sender identification, consent signals, all CAP Code red flags.`,
+Apply: PECR Reg 22 (consent / soft opt-in), Reg 23 (sender identity), UK GDPR, ASA CAP Code, CMA/DMCCA CPRs.
+Check: unsubscribe mechanism, postal address, sender identification, consent signals, all CAP Code and DMCCA red flags.`,
 
   sms: `CHANNEL: SMS
-Apply: PECR Reg 22 (consent — electronic comms, stricter than email), ASA CAP Code for any promotional content.
-DO NOT apply email-specific deliverability rules (HTML structure, image ratio, etc.).
+Apply: PECR Reg 22 (consent — stricter than email), ASA CAP Code for promotional content.
 Additional SMS-specific checks:
 • Is there a STOP opt-out keyword? (e.g. "Reply STOP to opt out") — mandatory.
 • Does the message exceed 160 characters? Flag if so — note the character count.
@@ -355,56 +422,188 @@ UK GDPR applies to any data processing referenced.`,
 
   push: `CHANNEL: PUSH NOTIFICATION
 Apply: PECR Reg 22 (consent required for push notifications), ASA CAP Code for promotional claims.
-Check: whether consent for push was likely obtained at app install, claim accuracy, urgency/scarcity language.
-UK GDPR applies to any data processing referenced.
-Note: PECR electronic comms rules apply. ASA CAP Code applies to the promotional content itself.`,
+Check: whether consent for push was likely obtained at app install, claim accuracy, urgency/scarcity language.`,
 
   social: `CHANNEL: SOCIAL AD / SOCIAL POST
-Apply: ASA CAP Code (primary), CMA CPRs.
-DO NOT apply PECR electronic comms rules (Reg 22 consent) — these do not apply to social ads directed at audiences.
-Check: disclosure of paid/sponsored status (#ad where required), misleading claims, fake urgency/scarcity, reference pricing, testimonials, age-restricted products.
-UK GDPR applies only if the ad itself collects data or references consent.`,
+Apply: ASA CAP Code (primary), CMA/DMCCA CPRs.
+DO NOT apply PECR Reg 22 consent rules — these do not apply to social ads directed at audiences.
+Check: #ad disclosure where required, misleading claims, fake urgency/scarcity, reference pricing, testimonials, greenwashing, age-restricted products.`,
 
   directmail: `CHANNEL: DIRECT MAIL (physical post)
-Apply: UK GDPR (legitimate interests most common basis for postal marketing — full LI balance test required), ASA CAP Code, CMA CPRs.
-DO NOT apply PECR electronic comms rules (Reg 22) — PECR applies to electronic communications only. Postal marketing is governed by UK GDPR and the MPS (Mailing Preference Service).
+Apply: UK GDPR (legitimate interests most common basis — full LI balance test required), ASA CAP Code, CMA/DMCCA CPRs.
+DO NOT apply PECR Reg 22 — PECR applies to electronic communications only.
 Check: LI basis validity, misleading claims, reference pricing, urgency/scarcity, opt-out mechanism (MPS reference is best practice), sender identification.`
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FIX TYPE MAP — all 19 types across 3 tiers
+// SENDING CONTEXT BUILDER
+// Serialises the 4 UI questions into a structured [SENDING CONTEXT] block.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildSendingContextBlock(ctx) {
+  if (!ctx) return '';
+
+  const lines = ['[SENDING CONTEXT]'];
+
+  const senderMap = {
+    direct:     'We are sending directly',
+    thirdParty: 'A third-party agency or platform is sending on our behalf',
+  };
+  const listMap = {
+    direct:    'We collected it directly from our own customers',
+    purchased: 'Purchased or rented from a third party',
+    partner:   'Provided by a partner or affiliate',
+    mixed:     'Mixed sources',
+  };
+  const consentMap = {
+    specific:    'Recipients specifically consented to our organisation by name',
+    thirdParty:  'They consented to a third party or "our partners" — not this organisation by name',
+    softOptIn:   'Soft opt-in — existing customers, similar products',
+    notSure:     'Not sure',
+  };
+  const fromMap = {
+    yes:     'Yes — From name matches the organisation that collected consent',
+    no:      'No — different sender',
+    notSure: 'Not sure',
+  };
+
+  if (ctx.senderRelationship) lines.push(`Sender: ${senderMap[ctx.senderRelationship] || ctx.senderRelationship}`);
+  if (ctx.listSource)         lines.push(`List source: ${listMap[ctx.listSource] || ctx.listSource}`);
+  if (ctx.consentSpecificity) lines.push(`Consent: ${consentMap[ctx.consentSpecificity] || ctx.consentSpecificity}`);
+  if (ctx.fromNameMatch)      lines.push(`From name match: ${fromMap[ctx.fromNameMatch] || ctx.fromNameMatch}`);
+
+  lines.push('[END CONTEXT]');
+  return lines.join('\n');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONTEXT FIX GENERATOR
+// Generates Tier 1 fix records directly from Sending Context answers.
+// These are deterministic — not AI-dependent. They run before the AI call
+// and are merged with AI-generated violations before the response is returned.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getContextViolations(ctx) {
+  if (!ctx) return [];
+  const violations = [];
+
+  // Purchased or rented list
+  if (ctx.listSource === 'purchased') {
+    violations.push({
+      regulation: 'PECR Reg 22',
+      severity:   'critical',
+      issue:      'List purchased or rented from a third party. Recipients must have specifically consented to receive marketing from your organisation by name — not just a generic third-party consent or a list of unnamed "partners".',
+      location:   'Sending context — list source',
+      recommendation: 'Do not send to this list until you can verify that every recipient specifically and knowingly consented to hear from your organisation. Obtain consent directly.',
+      enforcement_note: 'ZMLUK (£105,000, December 2025) sent 67.8 million emails using purchased data. The ICO found that generic consent covering hundreds of unnamed companies is not valid consent under PECR.',
+      _fixType: 'third_party_list',
+      _fromContext: true,
+    });
+  }
+
+  // Partner or affiliate list
+  if (ctx.listSource === 'partner') {
+    violations.push({
+      regulation: 'PECR Reg 22',
+      severity:   'critical',
+      issue:      'List provided by a partner or affiliate — indirect consent. The ICO\'s direct marketing guidance states that indirect consent is insufficient for email or SMS marketing.',
+      location:   'Sending context — list source',
+      recommendation: 'Each organisation sending marketing must have consent obtained specifically for their own communications. Relying on a partner\'s collected consent is not valid.',
+      enforcement_note: 'Saga Services & Saga Personal Finance (£225,000 combined, 2021) were fined for relying on indirect consent collected by affiliates sending emails on their behalf.',
+      _fixType: 'invalid_consent_mechanism',
+      _fromContext: true,
+    });
+  }
+
+  // Consent to third party / "our partners" — not this organisation by name
+  if (ctx.consentSpecificity === 'thirdParty') {
+    violations.push({
+      regulation: 'PECR Reg 22 / UK GDPR Article 7',
+      severity:   'critical',
+      issue:      'Recipients consented to a third party or "our partners" — not to your organisation by name. Third-party consent must specifically identify the organisation sending the marketing.',
+      location:   'Sending context — consent specificity',
+      recommendation: 'Stop sending to this list. Consent must specifically name your organisation. "Our partners" covering multiple companies is not valid consent for any individual company in that list.',
+      enforcement_note: 'ZMLUK (£105,000, 2025): consent collected on a site showing users a list of 361 partner companies was invalid. Join the Triboo (£130,000, 2023): consent to JTT did not cover unnamed third-party brands they sent marketing for.',
+      _fixType: 'invalid_consent_mechanism',
+      _fromContext: true,
+    });
+  }
+
+  // Consent not sure
+  if (ctx.consentSpecificity === 'notSure') {
+    violations.push({
+      regulation: 'PECR Reg 22',
+      severity:   'high',
+      issue:      'Consent basis is unclear. You should not send marketing unless you can confirm recipients specifically consented to your organisation. If you are unsure, assume consent is not valid.',
+      location:   'Sending context — consent specificity',
+      recommendation: 'Verify your consent records before sending. If you cannot confirm valid consent, do not send.',
+      _fixType: 'invalid_consent_mechanism',
+      _fromContext: true,
+    });
+  }
+
+  // Third-party agency sending + From name does not match
+  if (ctx.senderRelationship === 'thirdParty' && ctx.fromNameMatch === 'no') {
+    violations.push({
+      regulation: 'PECR Reg 23',
+      severity:   'critical',
+      issue:      'A third-party agency is sending on your behalf and the From name does not match the organisation that collected consent. The sender\'s identity is effectively concealed from recipients.',
+      location:   'Sending context — sender relationship and From name mismatch',
+      recommendation: 'The From name must clearly identify the brand that collected consent — not the sending agency. Ensure your brand name is the primary identifier in the From field.',
+      enforcement_note: 'Join the Triboo (£130,000, 2023) sent emails appearing to come from third-party brands with only a small JTT disclaimer. The ICO requires the identity of the actual sending organisation to be clear.',
+      _fixType: 'concealed_sender',
+      _fromContext: true,
+    });
+  }
+
+  // From name mismatch (even if not third-party agency)
+  if (ctx.fromNameMatch === 'no' && ctx.senderRelationship !== 'thirdParty') {
+    violations.push({
+      regulation: 'PECR Reg 23',
+      severity:   'high',
+      issue:      'The From name does not match the organisation that collected consent. Recipients may not recognise who is contacting them.',
+      location:   'Sending context — From name mismatch',
+      recommendation: 'Ensure the From name clearly identifies the organisation that collected the recipient\'s consent.',
+      _fixType: 'concealed_sender',
+      _fromContext: true,
+    });
+  }
+
+  return violations;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX TYPE MAP
 // ─────────────────────────────────────────────────────────────────────────────
 
 function mapViolationToFixType(violation) {
-  const issue      = (violation.issue          || '').toLowerCase();
-  const reg        = (violation.regulation     || '').toLowerCase();
-  const rec        = (violation.recommendation || '').toLowerCase();
-  const combined   = `${issue} ${reg} ${rec}`;
+  // Context violations carry their fix type directly
+  if (violation._fixType) return violation._fixType;
 
-  // Tier 1 — Critical / PECR / Consent
-  if (combined.match(/unsubscribe|opt.out|opt out/))                          return 'missing_unsubscribe';
-  if (combined.match(/no consent|without consent|unsolicited|pecr.*consent|consent.*pecr|reg 22/)) return 'no_consent';
-  if (combined.match(/pre.tick|pre tick|assumed consent|bundled consent/))    return 'invalid_consent_mechanism';
-  if (combined.match(/soft opt.in|soft optin/))                               return 'no_soft_optin';
-  if (combined.match(/sender.*conceal|disguised.*sender|sender.*identity|reg 23/)) return 'concealed_sender';
+  const issue    = (violation.issue          || '').toLowerCase();
+  const reg      = (violation.regulation     || '').toLowerCase();
+  const rec      = (violation.recommendation || '').toLowerCase();
+  const combined = `${issue} ${reg} ${rec}`;
 
-  // Tier 2 — High / ASA / CMA
-  if (combined.match(/fake urgency|false urgency|countdown.*reset|urgency.*scarcity|limited time|ends soon|ends tonight|today only|flash sale/)) return 'fake_urgency';
-  if (combined.match(/fake scarcity|false scarcity|only \d+ left|low stock.*false|stock.*fabricat/)) return 'fake_scarcity';
-  if (combined.match(/reference pric|was.*now|fabricated.*price|inflated.*price|misleading.*pric/)) return 'misleading_reference_price';
-  if (combined.match(/free.*condition|free.*hidden|free.*subscription|free.*minimum|cap.*3\.9/))     return 'misleading_free_claim';
-  if (combined.match(/health claim|medical claim|cure|treats.*condition|prevents.*illness|mhra/))    return 'unauthorised_health_claim';
+  if (combined.match(/unsubscribe|opt.out|opt out/))                               return 'missing_unsubscribe';
+  if (combined.match(/no consent|without consent|unsolicited|pecr.*consent|reg 22/)) return 'no_consent';
+  if (combined.match(/pre.tick|pre tick|assumed consent|bundled consent/))          return 'invalid_consent_mechanism';
+  if (combined.match(/soft opt.in|soft optin/))                                     return 'no_soft_optin';
+  if (combined.match(/sender.*conceal|disguised.*sender|sender.*identity|reg 23/))  return 'concealed_sender';
+  if (combined.match(/fake urgency|false urgency|countdown.*reset|ends soon|ends tonight|today only|flash sale/)) return 'fake_urgency';
+  if (combined.match(/fake scarcity|false scarcity|only \d+ left|stock.*fabricat/)) return 'fake_scarcity';
+  if (combined.match(/reference pric|was.*now|fabricated.*price|inflated.*price/))  return 'misleading_reference_price';
+  if (combined.match(/free.*condition|free.*hidden|free.*subscription|cap.*3\.9/))  return 'misleading_free_claim';
+  if (combined.match(/health claim|medical claim|cure|treats.*condition|mhra/))     return 'unauthorised_health_claim';
   if (combined.match(/testimonial|review.*fabricat|fake review|incentivi.*review|duplicate.*review/)) return 'misleading_testimonial';
-  if (combined.match(/influencer|#ad|advertorial|paid.*partner|sponsored.*not.*label/))              return 'undisclosed_ad';
-  if (combined.match(/comparative.*claim|cheaper than|vs.*competitor|best.*price.*compari/))        return 'unsubstantiated_comparative_claim';
-  if (combined.match(/drip pric|hidden fee|mandatory.*charge.*not.*shown|upfront.*cost/))           return 'drip_pricing';
-
-  // Tier 3 — Medium / Best Practice
-  if (combined.match(/privacy policy|data protection link/))                  return 'no_privacy_policy';
-  if (combined.match(/postal address|company address|registered address/))    return 'missing_address';
-  if (combined.match(/no dpa|dpa.*not.*signed|data processing.*agreement/))  return 'no_dpa';
-  if (combined.match(/third.party.*list|bought.*list|purchased.*data/))       return 'third_party_list_risk';
-  if (combined.match(/mislead|false claim|inaccurate|unsubstantiat/))        return 'misleading_claim';
+  if (combined.match(/influencer|#ad|advertorial|paid.*partner|sponsored.*not.*label/)) return 'undisclosed_ad';
+  if (combined.match(/comparative.*claim|cheaper than|vs.*competitor|bpr/))         return 'unsubstantiated_comparative_claim';
+  if (combined.match(/drip pric|hidden fee|mandatory.*charge.*not.*shown/))         return 'drip_pricing';
+  if (combined.match(/greenwash|sustainable|eco.friendly|carbon neutral|net zero/)) return 'misleading_claim';
+  if (combined.match(/privacy policy|data protection link/))                        return 'no_privacy_policy';
+  if (combined.match(/postal address|company address|registered address/))          return 'missing_address';
+  if (combined.match(/third.party.*list|bought.*list|purchased.*data/))             return 'third_party_list';
+  if (combined.match(/indirect consent|partner.*consent/))                          return 'invalid_consent_mechanism';
 
   return 'misleading_claim';
 }
@@ -418,14 +617,24 @@ function mapViolationToSeverity(v) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EMAIL SCANNER — deterministic rule checks (email contentType only)
+// CONTENT HASH — for deduplication
+// ─────────────────────────────────────────────────────────────────────────────
+
+function contentHash(userId, contentType, content) {
+  return crypto
+    .createHash('sha256')
+    .update(`${userId}|${contentType}|${content}`)
+    .digest('hex')
+    .slice(0, 16);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMAIL SCANNER — deterministic checks (email only)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function runEmailChecks(subject, html) {
   const checks = [];
   let score = 100;
-
-  // ── CRITICAL CHECKS ───────────────────────────────────────────────
 
   const hasUnsubscribe = /unsubscribe|opt-out|opt out/i.test(html);
   const unsubLink      = html.match(/<a[^>]*href=["']([^"']*unsubscribe[^"']*)["']/i);
@@ -464,79 +673,42 @@ function runEmailChecks(subject, html) {
     checks.push({ status: 'pass', title: 'Valid HTML Structure', description: 'Proper HTML document structure.' });
   }
 
-  // ── SUBJECT LINE CHECKS ───────────────────────────────────────────
-
   if (subject) {
-    const spamWords     = ['free', 'winner', 'claim', 'act now', 'urgent', 'limited time', 'click here', 'buy now', 'guarantee', 'cash', '$$$', '100%', 'risk-free', 'no obligation', 'order now'];
-    const foundSpamWords = spamWords.filter(w => new RegExp(`\\b${w}\\b`, 'i').test(subject));
-
-    if (foundSpamWords.length > 2) {
-      checks.push({ status: 'fail', title: 'High Spam Score in Subject', description: `Found ${foundSpamWords.length} spam trigger words: ${foundSpamWords.join(', ')}. Remove these.` });
+    const spamWords = ['free', 'winner', 'claim', 'act now', 'urgent', 'limited time', 'click here', 'buy now', 'guarantee', 'cash', '$$$', '100%', 'risk-free', 'no obligation', 'order now'];
+    const found     = spamWords.filter(w => new RegExp(`\\b${w}\\b`, 'i').test(subject));
+    if (found.length > 2) {
+      checks.push({ status: 'fail', title: 'High Spam Score in Subject', description: `Found ${found.length} spam trigger words: ${found.join(', ')}.` });
       score -= 10;
-    } else if (foundSpamWords.length > 0) {
-      checks.push({ status: 'warning', title: 'Spam Words in Subject', description: `Found: ${foundSpamWords.join(', ')}. Consider rewording.` });
+    } else if (found.length > 0) {
+      checks.push({ status: 'warning', title: 'Spam Words in Subject', description: `Found: ${found.join(', ')}. Consider rewording.` });
       score -= 5;
     } else {
-      checks.push({ status: 'pass', title: 'Clean Subject Line', description: 'No obvious spam trigger words detected.' });
+      checks.push({ status: 'pass', title: 'Clean Subject Line', description: 'No obvious spam trigger words.' });
     }
-
-    const capsCount  = (subject.match(/[A-Z]/g) || []).length;
-    const totalChars = subject.replace(/\s/g, '').length;
-    if (totalChars > 0 && (capsCount / totalChars) * 100 > 50) {
-      checks.push({ status: 'warning', title: 'Excessive Caps in Subject', description: 'More than 50% uppercase triggers spam filters.' });
-      score -= 5;
-    }
-    if (/[!?]{2,}/.test(subject)) {
-      checks.push({ status: 'warning', title: 'Excessive Punctuation', description: 'Multiple exclamation/question marks look spammy.' });
-      score -= 3;
-    }
-    if (subject.length > 70) {
-      checks.push({ status: 'warning', title: 'Subject Line Too Long', description: `${subject.length} characters. Mobile devices truncate at ~40 chars.` });
-      score -= 3;
-    } else if (subject.length < 20) {
-      checks.push({ status: 'warning', title: 'Subject Line Too Short', description: 'Very short subjects underperform. Aim for 40–50 characters.' });
-      score -= 2;
-    }
+    const capsRatio = (subject.match(/[A-Z]/g) || []).length / (subject.replace(/\s/g, '').length || 1);
+    if (capsRatio > 0.5) { checks.push({ status: 'warning', title: 'Excessive Caps in Subject', description: 'More than 50% uppercase triggers spam filters.' }); score -= 5; }
+    if (/[!?]{2,}/.test(subject)) { checks.push({ status: 'warning', title: 'Excessive Punctuation', description: 'Multiple !? looks spammy.' }); score -= 3; }
+    if (subject.length > 70) { checks.push({ status: 'warning', title: 'Subject Line Too Long', description: `${subject.length} characters. Mobile devices truncate at ~40.` }); score -= 3; }
+    else if (subject.length < 20) { checks.push({ status: 'warning', title: 'Subject Line Too Short', description: 'Very short subjects underperform. Aim for 40–50 characters.' }); score -= 2; }
   }
 
-  // ── EMAIL BODY CHECKS ─────────────────────────────────────────────
+  const textContent  = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  const imageCount   = (html.match(/<img/gi) || []).length;
+  if (imageCount > 0 && textContent.length < 100) { checks.push({ status: 'fail', title: 'Image-Only Email', description: 'Less than 100 chars of text. Spam filters block image-only emails.' }); score -= 10; }
+  else if (imageCount > textContent.length / 50)  { checks.push({ status: 'warning', title: 'Low Text-to-Image Ratio', description: 'Too many images vs text.' }); score -= 5; }
 
-  const textContent = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-  const imageCount  = (html.match(/<img/gi) || []).length;
-
-  if (imageCount > 0 && textContent.length < 100) {
-    checks.push({ status: 'fail', title: 'Image-Only Email', description: 'Less than 100 chars of text. Spam filters block image-only emails.' });
-    score -= 10;
-  } else if (imageCount > textContent.length / 50) {
-    checks.push({ status: 'warning', title: 'Low Text-to-Image Ratio', description: 'Too many images vs text. Aim for 60% text, 40% images.' });
-    score -= 5;
-  }
-
-  const imagesWithoutAlt = (html.match(/<img(?![^>]*alt=)/gi) || []).length;
-  if (imagesWithoutAlt > 0) {
-    checks.push({ status: 'warning', title: 'Missing Alt Text on Images', description: `${imagesWithoutAlt} image(s) missing alt text. Required for accessibility.` });
-    score -= 5;
-  }
+  const noAlt = (html.match(/<img(?![^>]*alt=)/gi) || []).length;
+  if (noAlt > 0) { checks.push({ status: 'warning', title: 'Missing Alt Text', description: `${noAlt} image(s) missing alt text.` }); score -= 5; }
 
   const allLinks   = html.match(/<a[^>]*href=["']([^"']*)["']/gi) || [];
   const httpLinks  = allLinks.filter(l => /href=["']http:/i.test(l));
   const shortLinks = allLinks.filter(l => /bit\.ly|tinyurl|t\.co/i.test(l));
-
-  if (httpLinks.length > 0)  { checks.push({ status: 'warning', title: 'Insecure HTTP Links',     description: `${httpLinks.length} link(s) use HTTP. Switch to HTTPS.` });   score -= 5; }
-  if (shortLinks.length > 0) { checks.push({ status: 'warning', title: 'URL Shorteners Detected', description: 'Shortened URLs trigger spam filters. Use full URLs.' });         score -= 3; }
-  if (allLinks.length > 15)  { checks.push({ status: 'warning', title: 'Too Many Links',           description: `${allLinks.length} links found. Focus on 1–3 main CTAs.` });   score -= 5; }
-
-  if (/display:\s*none|visibility:\s*hidden|font-size:\s*0/i.test(html)) {
-    checks.push({ status: 'fail', title: 'Hidden Text Detected', description: 'CSS hiding text is a spam technique.' }); score -= 10;
-  }
-  if (/<script/i.test(html)) {
-    checks.push({ status: 'fail', title: 'JavaScript in Email', description: 'Email clients block JavaScript. Remove all <script> tags.' }); score -= 10;
-  }
-  if (/<form/i.test(html)) {
-    checks.push({ status: 'warning', title: 'Form in Email', description: 'Most email clients do not support forms. Link to a landing page instead.' }); score -= 5;
-  }
-
-  // ── COMPLIANCE CHECKS ─────────────────────────────────────────────
+  if (httpLinks.length > 0)  { checks.push({ status: 'warning', title: 'Insecure HTTP Links',     description: `${httpLinks.length} link(s) use HTTP.` }); score -= 5; }
+  if (shortLinks.length > 0) { checks.push({ status: 'warning', title: 'URL Shorteners Detected', description: 'Shortened URLs trigger spam filters.' }); score -= 3; }
+  if (allLinks.length > 15)  { checks.push({ status: 'warning', title: 'Too Many Links',           description: `${allLinks.length} links. Focus on 1–3 CTAs.` }); score -= 5; }
+  if (/display:\s*none|visibility:\s*hidden|font-size:\s*0/i.test(html)) { checks.push({ status: 'fail', title: 'Hidden Text Detected', description: 'CSS hiding is a spam technique.' }); score -= 10; }
+  if (/<script/i.test(html)) { checks.push({ status: 'fail', title: 'JavaScript in Email', description: 'Email clients block JS. Remove all <script> tags.' }); score -= 10; }
+  if (/<form/i.test(html))   { checks.push({ status: 'warning', title: 'Form in Email', description: 'Most email clients do not support forms. Link to a landing page.' }); score -= 5; }
 
   if (subject && /\bfree\b/i.test(subject) && !/terms|conditions|t&c/i.test(html)) {
     checks.push({ status: 'warning', title: '"Free" Claim Without T&Cs', description: 'ASA CAP Code requires terms when claiming "free".', fixType: 'misleading_free_claim' }); score -= 5;
@@ -548,20 +720,10 @@ function runEmailChecks(subject, html) {
   if (/limited stock|while supplies last|only \d+ left/i.test(html)) {
     checks.push({ status: 'warning', title: 'Limited Stock Claim', description: 'Must be able to prove stock levels if challenged.', fixType: 'fake_scarcity' }); score -= 3;
   }
-
-  // ── BEST PRACTICES ────────────────────────────────────────────────
-
-  if (!/<meta[^>]*viewport/i.test(html)) {
-    checks.push({ status: 'warning', title: 'Not Mobile Optimised', description: 'Missing viewport meta tag. 60%+ of emails open on mobile.' }); score -= 3;
-  }
-
-  const emailSize = Buffer.byteLength(html, 'utf8');
-  if (emailSize > 102000) {
-    checks.push({ status: 'warning', title: 'Email Too Large', description: `${Math.round(emailSize / 1000)}KB. Gmail clips emails over 102KB.` }); score -= 5;
-  }
-
+  if (!/<meta[^>]*viewport/i.test(html)) { checks.push({ status: 'warning', title: 'Not Mobile Optimised', description: 'Missing viewport meta tag.' }); score -= 3; }
+  if (Buffer.byteLength(html, 'utf8') > 102000) { checks.push({ status: 'warning', title: 'Email Too Large', description: 'Gmail clips emails over 102KB.' }); score -= 5; }
   if (/\{\{|\[\[|lorem ipsum/i.test(html) || /\btest\b|\bdraft\b|\btodo\b/i.test(html)) {
-    checks.push({ status: 'fail', title: 'Template Placeholders Found', description: 'Unfinished template detected. Replace all placeholders before sending.' }); score -= 10;
+    checks.push({ status: 'fail', title: 'Template Placeholders Found', description: 'Unfinished template detected.' }); score -= 10;
   }
 
   return {
@@ -579,21 +741,24 @@ function runEmailChecks(subject, html) {
 // GENERATE FIXES — writes to Compliance_Fixes via generate-fix.js
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function generateFixes(userId, aiViolations, emailChecks, sourceRecordId) {
+async function generateFixes(userId, allViolations, emailChecks, sourceRecordId) {
   const seenTypes = new Set();
   const fixJobs   = [];
 
-  for (const v of (aiViolations || [])) {
+  // Context and AI violations
+  for (const v of (allViolations || [])) {
     const fixType = mapViolationToFixType(v);
     if (seenTypes.has(fixType)) continue;
     seenTypes.add(fixType);
+    const source = v._fromContext ? 'Sending Context' : 'AI Checker';
     fixJobs.push({
       fixType,
-      description: `AI Checker: ${v.issue || 'Compliance issue'} (${v.location || 'content'}) — ${v.recommendation || 'Review required'}`,
+      description: `${source}: ${v.issue || 'Compliance issue'} (${v.location || 'content'}) — ${v.recommendation || 'Review required'}`,
       severity: mapViolationToSeverity(v)
     });
   }
 
+  // Email scanner violations
   for (const c of (emailChecks || [])) {
     if (!c.fixType || c.status === 'pass') continue;
     if (seenTypes.has(c.fixType)) continue;
@@ -641,30 +806,40 @@ export default async function handler(req, res) {
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { contentType, content, subject, html, userId, autoFix } = req.body ?? {};
+    const { contentType, content, subject, html, userId, autoFix, sendingContext } = req.body ?? {};
 
     // ── Validation ────────────────────────────────────────────────────
-    if (!userId)                                      return res.status(400).json({ error: 'Missing userId' });
-    if (!contentType)                                 return res.status(400).json({ error: 'Missing contentType' });
+    if (!userId)      return res.status(400).json({ error: 'Missing userId' });
+    if (!contentType) return res.status(400).json({ error: 'Missing contentType' });
     if (!['email','sms','push','social','directmail'].includes(contentType))
-                                                      return res.status(400).json({ error: 'contentType must be email | sms | push | social | directmail' });
-    if (contentType === 'email' && !html)             return res.status(400).json({ error: 'Missing html (required for email contentType)' });
-    if (contentType !== 'email' && !content)          return res.status(400).json({ error: 'Missing content' });
+      return res.status(400).json({ error: 'contentType must be email | sms | push | social | directmail' });
+    if (contentType === 'email' && !html)    return res.status(400).json({ error: 'Missing html (required for email contentType)' });
+    if (contentType !== 'email' && !content) return res.status(400).json({ error: 'Missing content' });
 
-    // ── 1. Deterministic email checks (email only) ────────────────────
+    // ── 1. Content deduplication hash ─────────────────────────────────
+    const rawContent  = contentType === 'email' ? html : content;
+    const checkHash   = contentHash(userId, contentType, rawContent);
+
+    // ── 2. Deterministic email checks ─────────────────────────────────
     const emailResult = contentType === 'email' ? runEmailChecks(subject || '', html) : null;
 
-    // ── 2. Build analysis content for Claude ──────────────────────────
-    const analysisContent = contentType === 'email'
+    // ── 3. Deterministic context violations ───────────────────────────
+    const contextViolations = getContextViolations(sendingContext);
+
+    // ── 4. Build analysis content for Claude ──────────────────────────
+    const copyText = contentType === 'email'
       ? `Subject: ${subject || '(none)'}\n\nEmail body:\n${html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}`
       : content;
 
-    // ── 3. Claude AI analysis ─────────────────────────────────────────
+    const contextBlock = buildSendingContextBlock(sendingContext);
+    const analysisContent = contextBlock
+      ? `${contextBlock}\n\n[COPY TO ANALYSE]\n${copyText}`
+      : copyText;
+
+    // ── 5. Claude AI analysis ─────────────────────────────────────────
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-    const channelContext = CHANNEL_RULES[contentType];
-
-    const userMessage = `${channelContext}
+    const userMessage = `${CHANNEL_RULES[contentType]}
 
 CONTENT TO ANALYSE:
 ${analysisContent}
@@ -685,20 +860,43 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
       aiAnalysis = { score: 50, verdict: 'Analysis Error', violations: [], summary: message.content[0].text };
     }
 
-    const violations = aiAnalysis?.violations || [];
+    // ── 6. Merge context violations with AI violations ─────────────────
+    // Context violations take priority (they're deterministic) — deduplicate
+    // by fixType so AI doesn't double-flag what context already caught.
+    const contextFixTypes = new Set(contextViolations.map(v => v._fixType));
+    const aiViolations    = (aiAnalysis?.violations || []).filter(v => {
+      const ft = mapViolationToFixType(v);
+      return !contextFixTypes.has(ft);
+    });
+    const allViolations = [...contextViolations, ...aiViolations];
 
-    // ── 4. Save to AI_Compliance_Checks ───────────────────────────────
-    // Fields confirmed against actual Airtable schema (screenshot 29 Mar 2026):
-    // UserID, CheckDate, ContentType, Industry, RiskScore, Verdict,
-    // CriticalIssues, Warnings, MarketingCopy, FileName, Analysis,
-    // FixedVersion, RelatedCases
+    // Recalculate score if context added violations
+    let finalScore = aiAnalysis?.score ?? 50;
+    for (const v of contextViolations) {
+      const sev = v.severity;
+      if (sev === 'critical') finalScore -= 30;
+      else if (sev === 'high') finalScore -= 15;
+      else if (sev === 'medium') finalScore -= 7;
+    }
+    finalScore = Math.max(0, finalScore);
+
+    // Recalculate verdict if score changed
+    let finalVerdict = aiAnalysis?.verdict;
+    if (contextViolations.length > 0) {
+      const hasCritical = allViolations.some(v => v.severity === 'critical');
+      if (hasCritical || finalScore <= 49)       finalVerdict = 'Do not send — address critical issues first';
+      else if (finalScore <= 74)                 finalVerdict = 'Review required before sending';
+      else if (finalScore <= 89)                 finalVerdict = 'Minor issues to address';
+      else                                       finalVerdict = 'No issues found';
+    }
+
+    // ── 7. Save to AI_Compliance_Checks ───────────────────────────────
     let savedRecordId = null;
     try {
       const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
       const BASE_ID        = process.env.BASE_ID;
-
-      const criticalCount = violations.filter(v => v.severity === 'critical').length;
-      const warningCount  = violations.filter(v => v.severity === 'high' || v.severity === 'medium').length;
+      const criticalCount  = allViolations.filter(v => v.severity === 'critical').length;
+      const warningCount   = allViolations.filter(v => v.severity === 'high' || v.severity === 'medium').length;
 
       const saveRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/AI_Compliance_Checks`, {
         method:  'POST',
@@ -709,15 +907,17 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
               UserID:         userId,
               CheckDate:      new Date().toISOString().split('T')[0],
               ContentType:    contentType,
-              RiskScore:      aiAnalysis?.score ?? (emailResult?.emailScore ?? 0),
-              Verdict:        aiAnalysis?.verdict ?? '',
+              ContentHash:    checkHash,
+              RiskScore:      finalScore,
+              Verdict:        finalVerdict ?? '',
               CriticalIssues: criticalCount,
               Warnings:       warningCount,
-              MarketingCopy:  analysisContent?.slice(0, 10000) ?? '',
+              MarketingCopy:  copyText?.slice(0, 10000) ?? '',
               FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
-              Analysis:       JSON.stringify({ violations, summary: aiAnalysis?.summary ?? '' }),
+              Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '' }),
               FixedVersion:   aiAnalysis?.fixedVersion ?? '',
               RelatedCases:   '',
+              SendingContext: contextBlock || '',
             }
           }]
         })
@@ -733,24 +933,30 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
       console.error('AI_Compliance_Checks save error:', err);
     }
 
-    // ── 5. Generate Compliance_Fixes ──────────────────────────────────
-    if (violations.length > 0 || emailResult?.checks.some(c => c.fixType)) {
-      // Pass savedRecordId as sourceRecordId for deduplication in generate-fix.js
-      generateFixes(userId, violations, emailResult?.checks || [], savedRecordId)
+    // ── 8. Generate Compliance_Fixes (fire and forget) ─────────────────
+    if (allViolations.length > 0 || emailResult?.checks.some(c => c.fixType)) {
+      generateFixes(userId, allViolations, emailResult?.checks || [], savedRecordId)
         .catch(e => console.error('generateFixes error:', e));
     }
 
-    // ── 5. Update compliance streak ───────────────────────────────────
+    // ── 9. Update compliance streak ───────────────────────────────────
     fetch(`${APP_URL}/api/profile?action=streak`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ userId })
     }).catch(e => console.error('Streak update failed:', e));
 
-    // ── 6. Return unified response ────────────────────────────────────
+    // ── 10. Return unified response ────────────────────────────────────
+    // Strip internal _fromContext / _fixType fields before returning
+    const cleanViolations = allViolations.map(({ _fromContext, _fixType, ...rest }) => rest);
+
     return res.status(200).json({
       ...aiAnalysis,
+      score:      finalScore,
+      verdict:    finalVerdict,
+      violations: cleanViolations,
       contentType,
+      checkHash,
       ...(emailResult ? {
         emailScore:    emailResult.emailScore,
         checks:        emailResult.checks,
