@@ -41,6 +41,40 @@
     .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
     .btn-secondary { padding: 8px 16px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-weight: 500; background: var(--white); color: var(--text); cursor: pointer; font-family: inherit; transition: border-color .15s; }
     .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* ── SENDING CONTEXT PANEL ───────────────────────────────────────── */
+    .context-panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; overflow: hidden; }
+    .context-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; cursor: pointer; user-select: none; transition: background .15s; }
+    .context-header:hover { background: #fafafa; }
+    .context-header-left { display: flex; align-items: center; gap: 10px; }
+    .context-badge { background: #FFF4EA; color: var(--orange); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
+    .context-title { font-size: 14px; font-weight: 600; }
+    .context-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .context-chevron { color: var(--muted); transition: transform .2s; flex-shrink: 0; }
+    .context-chevron.open { transform: rotate(180deg); }
+    .context-body { padding: 0 24px 24px; border-top: 1px solid var(--border); }
+    .context-intro { font-size: 12px; color: var(--muted); line-height: 1.6; padding: 14px 0 18px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .context-intro strong { color: var(--text); }
+    .context-question { margin-bottom: 20px; }
+    .context-question:last-child { margin-bottom: 0; }
+    .context-q-label { font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .context-q-num { background: var(--orange); color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .radio-group { display: flex; flex-direction: column; gap: 8px; }
+    .radio-option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid var(--border-mid); border-radius: var(--radius); cursor: pointer; transition: all .15s; }
+    .radio-option:hover { border-color: var(--orange); background: var(--orange-light); }
+    .radio-option input[type="radio"] { margin-top: 1px; accent-color: var(--orange); flex-shrink: 0; }
+    .radio-option-text { font-size: 13px; line-height: 1.4; }
+    .radio-option-risk { font-size: 11px; color: var(--red); font-weight: 600; margin-top: 2px; display: none; }
+    .radio-option input[type="radio"]:checked ~ .radio-option-text .radio-option-risk { display: block; }
+    .radio-option.selected { border-color: var(--orange); background: var(--orange-light); }
+    .context-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .context-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-mid); flex-shrink: 0; }
+    .context-status-dot.answered { background: var(--green); }
+    .context-status-dot.risk { background: var(--red); }
+    .context-skip { font-size: 12px; color: var(--muted); text-decoration: underline; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
+    .context-skip:hover { color: var(--orange); }
+
+    /* ── REST OF EXISTING STYLES ─────────────────────────────────────── */
     .loading { display: none; text-align: center; padding: 48px 20px; }
     .loading.show { display: block; }
     .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
@@ -88,15 +122,19 @@
     .violation-item.high     { border-left-color: #ea580c; }
     .violation-item.medium   { border-left-color: #d97706; }
     .violation-item.low      { border-left-color: #16a34a; }
-    .violation-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    /* Context-sourced violation — slightly different background */
+    .violation-item.from-context { background: #fefbf3; }
+    .violation-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
     .violation-type { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; }
     .critical .violation-type { background: #fee2e2; color: #dc2626; }
     .high     .violation-type { background: #ffedd5; color: #ea580c; }
     .medium   .violation-type { background: #fef3c7; color: #d97706; }
     .low      .violation-type { background: #f0fdf4; color: #16a34a; }
+    .violation-source-tag { font-size: 10px; font-weight: 600; background: #FFF4EA; color: var(--orange); padding: 2px 7px; border-radius: 4px; letter-spacing: .04em; }
     .violation-reg  { font-size: 11px; color: var(--muted); margin-left: auto; }
     .violation-text { font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
     .violation-quote { font-size: 12px; color: var(--muted); font-style: italic; background: var(--bg); padding: 8px 12px; border-radius: 4px; border-left: 2px solid var(--border-mid); }
+    .violation-enforcement { font-size: 12px; color: #374151; background: #f0f4ff; padding: 8px 12px; border-radius: 4px; border-left: 2px solid #6366f1; margin-top: 6px; }
     .no-violations { text-align: center; padding: 32px; color: var(--muted); font-size: 14px; }
     .no-violations-icon { font-size: 32px; margin-bottom: 10px; }
     .checks-section { display: none; }
@@ -105,7 +143,7 @@
     .check-row:last-child { border-bottom: none; }
     .check-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; text-transform: uppercase; }
     .check-status.pass { background: #d1fae5; color: #065f46; }
-    .check-status.warn { background: #fef3c7; color: #92400e; }
+    .check-status.warn, .check-status.warning { background: #fef3c7; color: #92400e; }
     .check-status.fail { background: #fee2e2; color: #991b1b; }
     .check-body { flex: 1; }
     .check-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
@@ -118,6 +156,7 @@
       .rewrite-panel.show { grid-template-columns: 1fr; }
       .risk-banner { flex-direction: column; text-align: center; gap: 14px; }
       .mode-toggle { flex-direction: column; }
+      .radio-group { gap: 6px; }
     }
   </style>
 </head>
@@ -125,18 +164,158 @@
 <div class="container">
 
   <div class="page-header">
-    <!-- FIXED v4.25: URL param auth. Back link points to sendwize.co.uk/dashboard -->
     <a href="https://www.sendwize.co.uk/dashboard" class="back-link">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
       Dashboard
     </a>
     <h1 class="page-title">AI Copy Checker</h1>
-    <p class="page-subtitle">Analyse marketing copy for PECR, UK GDPR and ASA CAP Code compliance issues before you send.</p>
+    <p class="page-subtitle">Analyse marketing copy for PECR, UK GDPR, ASA CAP Code, and CMA/DMCCA compliance issues before you send.</p>
   </div>
 
   <div class="error-box" id="errorBox"></div>
 
   <div id="formSection">
+
+    <!-- ── SENDING CONTEXT PANEL ──────────────────────────────────────── -->
+    <div class="context-panel" id="contextPanel">
+      <div class="context-header" onclick="toggleContext()" id="contextHeader">
+        <div class="context-header-left">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="context-title">Sending Context</span>
+              <span class="context-badge">Recommended</span>
+            </div>
+            <div class="context-subtitle" id="contextSubtitle">4 quick questions — catches consent chain violations invisible in copy</div>
+          </div>
+        </div>
+        <svg class="context-chevron open" id="contextChevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+
+      <div class="context-body" id="contextBody">
+        <p class="context-intro">
+          The most expensive PECR violations are <strong>not visible in the email copy</strong>. ZMLUK was fined £105,000 — the copy was fine, the consent chain was broken. Saga was fined £225,000 — the emails looked fine, the list source was wrong. Answer these 4 questions so the AI can check what content analysis alone cannot see.
+          <br><br>
+          <button class="context-skip" onclick="skipContext(event)">Skip — analyse copy only</button>
+        </p>
+
+        <!-- Q1 -->
+        <div class="context-question">
+          <div class="context-q-label">
+            <span class="context-q-num">1</span>
+            Who is sending this?
+          </div>
+          <div class="radio-group">
+            <label class="radio-option" id="q1_direct_label">
+              <input type="radio" name="senderRelationship" value="direct" onchange="onContextChange()">
+              <div class="radio-option-text">We are sending it directly from our own platform or ESP</div>
+            </label>
+            <label class="radio-option" id="q1_thirdParty_label">
+              <input type="radio" name="senderRelationship" value="thirdParty" onchange="onContextChange()">
+              <div class="radio-option-text">
+                A third-party agency or platform is sending on our behalf
+                <div class="radio-option-risk">⚠ From name must match the organisation that collected consent</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="context-question">
+          <div class="context-q-label">
+            <span class="context-q-num">2</span>
+            Where did this contact list come from?
+          </div>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="listSource" value="direct" onchange="onContextChange()">
+              <div class="radio-option-text">We collected it directly from our own customers or website sign-ups</div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="listSource" value="purchased" onchange="onContextChange()">
+              <div class="radio-option-text">
+                Purchased or rented from a third party
+                <div class="radio-option-risk">⚠ High risk — ZMLUK fined £105,000 for this in 2025</div>
+              </div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="listSource" value="partner" onchange="onContextChange()">
+              <div class="radio-option-text">
+                Provided by a partner or affiliate
+                <div class="radio-option-risk">⚠ Indirect consent is not valid for email/SMS (Saga, £225,000, 2021)</div>
+              </div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="listSource" value="mixed" onchange="onContextChange()">
+              <div class="radio-option-text">Mixed sources</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="context-question">
+          <div class="context-q-label">
+            <span class="context-q-num">3</span>
+            Did recipients specifically consent to receive marketing from your organisation by name?
+          </div>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="consentSpecificity" value="specific" onchange="onContextChange()">
+              <div class="radio-option-text">Yes — they specifically consented to our organisation by name</div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="consentSpecificity" value="softOptIn" onchange="onContextChange()">
+              <div class="radio-option-text">Soft opt-in — existing customers, marketing for similar products/services</div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="consentSpecificity" value="thirdParty" onchange="onContextChange()">
+              <div class="radio-option-text">
+                They consented to a third party or to "our partners" — not specifically our organisation
+                <div class="radio-option-risk">⚠ Critical — not valid consent under PECR</div>
+              </div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="consentSpecificity" value="notSure" onchange="onContextChange()">
+              <div class="radio-option-text">
+                Not sure
+                <div class="radio-option-risk">⚠ If unsure, assume consent is not valid and do not send</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="context-question">
+          <div class="context-q-label">
+            <span class="context-q-num">4</span>
+            Does the From name match the organisation that collected the consent?
+          </div>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="fromNameMatch" value="yes" onchange="onContextChange()">
+              <div class="radio-option-text">Yes — the From name is the same organisation that collected consent</div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="fromNameMatch" value="no" onchange="onContextChange()">
+              <div class="radio-option-text">
+                No — different sender
+                <div class="radio-option-risk">⚠ Sender identity may be concealed — PECR Reg 23</div>
+              </div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="fromNameMatch" value="notSure" onchange="onContextChange()">
+              <div class="radio-option-text">Not sure</div>
+            </label>
+          </div>
+        </div>
+
+        <div class="context-status" id="contextStatus">
+          <div class="context-status-dot" id="contextDot"></div>
+          <span id="contextStatusText">0 of 4 questions answered</span>
+        </div>
+      </div>
+    </div>
+    <!-- ── END SENDING CONTEXT PANEL ─────────────────────────────────── -->
+
     <div class="card">
       <div class="card-label">Check Settings</div>
       <div class="controls-row">
@@ -239,8 +418,9 @@
   let currentContentType = 'email';
   let userId = null;
   let lastCopy = '';
+  let contextSkipped = false;
 
-  // ── AUTH v4.25 — URL param replaces Memberstack ───────────────────────
+  // ── AUTH v4.25 — URL param ────────────────────────────────────────────
   function init() {
     userId = new URLSearchParams(window.location.search).get('userId');
     if (!userId) {
@@ -252,10 +432,75 @@
     ? document.addEventListener('DOMContentLoaded', init)
     : init();
 
+  // ── SENDING CONTEXT PANEL ─────────────────────────────────────────────
+  let contextOpen = true;
+
+  function toggleContext() {
+    contextOpen = !contextOpen;
+    document.getElementById('contextBody').style.display = contextOpen ? '' : 'none';
+    document.getElementById('contextChevron').classList.toggle('open', contextOpen);
+  }
+
+  function skipContext(e) {
+    e.stopPropagation();
+    contextSkipped = true;
+    contextOpen = false;
+    document.getElementById('contextBody').style.display = 'none';
+    document.getElementById('contextChevron').classList.remove('open');
+    document.getElementById('contextSubtitle').textContent = 'Skipped — copy-only analysis';
+    document.getElementById('contextBadge') && (document.getElementById('contextBadge').textContent = 'Skipped');
+  }
+
+  function onContextChange() {
+    const q1 = document.querySelector('input[name="senderRelationship"]:checked')?.value;
+    const q2 = document.querySelector('input[name="listSource"]:checked')?.value;
+    const q3 = document.querySelector('input[name="consentSpecificity"]:checked')?.value;
+    const q4 = document.querySelector('input[name="fromNameMatch"]:checked')?.value;
+    const answered = [q1, q2, q3, q4].filter(Boolean).length;
+
+    // Update radio option styling
+    document.querySelectorAll('.radio-option').forEach(el => {
+      const radio = el.querySelector('input[type="radio"]');
+      el.classList.toggle('selected', radio?.checked || false);
+    });
+
+    // Detect high-risk answers
+    const isHighRisk = q2 === 'purchased' || q2 === 'partner' || q3 === 'thirdParty' || q3 === 'notSure' || q4 === 'no';
+
+    const dot  = document.getElementById('contextDot');
+    const text = document.getElementById('contextStatusText');
+    dot.className = 'context-status-dot ' + (answered === 0 ? '' : isHighRisk ? 'risk' : 'answered');
+    text.textContent = answered === 4
+      ? (isHighRisk ? '⚠ Potential consent chain issues detected — AI will flag these' : '✓ All answered — no context issues detected')
+      : `${answered} of 4 questions answered`;
+
+    // Update subtitle
+    if (answered > 0) {
+      document.getElementById('contextSubtitle').textContent = answered === 4
+        ? (isHighRisk ? 'Issues detected — will be included in analysis' : 'Complete — no context issues')
+        : `${answered} of 4 answered`;
+    }
+  }
+
+  function getSendingContext() {
+    if (contextSkipped) return null;
+    const q1 = document.querySelector('input[name="senderRelationship"]:checked')?.value;
+    const q2 = document.querySelector('input[name="listSource"]:checked')?.value;
+    const q3 = document.querySelector('input[name="consentSpecificity"]:checked')?.value;
+    const q4 = document.querySelector('input[name="fromNameMatch"]:checked')?.value;
+    if (!q1 && !q2 && !q3 && !q4) return null; // not answered — skip
+    return {
+      senderRelationship: q1 || null,
+      listSource:         q2 || null,
+      consentSpecificity: q3 || null,
+      fromNameMatch:      q4 || null,
+    };
+  }
+
   // ── CONTENT TYPE ──────────────────────────────────────────────────────
   const typeDescriptions = {
     email:      'Scan email copy for misleading claims, fake urgency, missing opt-out language, and ASA CAP Code violations.',
-    sms:        'Scan SMS copy for PECR compliance, opt-out requirements, and misleading claims.',
+    sms:        'Scan SMS copy for PECR compliance, STOP opt-out requirement, and misleading claims.',
     push:       'Scan push notification copy for misleading claims and ASA CAP Code violations.',
     social:     'Scan social ad copy for ASA CAP Code compliance, misleading pricing, and fake urgency.',
     directmail: 'Scan direct mail copy for PECR, UK GDPR compliance, and misleading claims.',
@@ -296,9 +541,13 @@
   }
 
   const loadingSteps = [
-    'Checking for compliance issues','Scanning for misleading claims',
-    'Reviewing ASA CAP Code requirements','Analysing consent language',
-    'Generating compliant rewrite','Searching enforcement database',
+    'Checking sending context for consent chain issues',
+    'Scanning for PECR violations',
+    'Reviewing ASA CAP Code requirements',
+    'Analysing consent language and data practices',
+    'Checking for DMCCA and CMA red flags',
+    'Generating compliant rewrite',
+    'Searching enforcement database',
   ];
   let loadingInterval;
   function startLoading() {
@@ -320,8 +569,10 @@
     lastCopy = copy;
     setLoadingState(true);
     try {
+      const sendingContext = getSendingContext();
       const payload = { userId, contentType: currentContentType, content: copy, autoFix: true };
       if (currentContentType === 'email' && currentMode === 'combined') { payload.subject = subject; payload.html = html; }
+      if (sendingContext) payload.sendingContext = sendingContext;
       const res = await fetch(`${APP_URL}/api/analyze-copy`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || `Server error ${res.status}`); }
       const data = await res.json();
@@ -343,6 +594,7 @@
     document.getElementById('riskNum').textContent = score;
     document.getElementById('verdictText').textContent = verdict || riskLabel(level);
     document.getElementById('verdictSub').textContent  = riskSub(level, violations.length);
+
     const esb = document.getElementById('emailScoreBar');
     if (isEmail && emailScore && typeof emailScore === 'object') {
       document.getElementById('emailScoreRows').innerHTML = Object.entries(emailScore).map(([k, v]) => {
@@ -353,17 +605,44 @@
       }).join('');
       esb.classList.add('show');
     } else { esb.classList.remove('show'); }
+
     const panel = document.getElementById('rewritePanel');
     if (fixed) { document.getElementById('originalBox').textContent = lastCopy; document.getElementById('fixedBox').textContent = fixed; panel.classList.add('show'); }
     else { panel.classList.remove('show'); }
+
     const vEl = document.getElementById('violationsList');
     document.getElementById('violationsTitle').textContent = isEmail ? 'AI Compliance Issues' : 'Compliance Issues';
-    vEl.innerHTML = !violations.length
-      ? `<div class="no-violations"><div class="no-violations-icon">✅</div><div>No compliance issues detected.</div></div>`
-      : violations.map(v => {
-          const sev = (v.severity || 'medium').toLowerCase();
-          return `<div class="violation-item ${sev}"><div class="violation-header"><span class="violation-type">${escH(v.regulation || 'Issue')}</span><span class="violation-reg">${escH(v.location || '')}</span></div><div class="violation-text">${escH(v.issue || '')}</div>${v.recommendation ? `<div class="violation-quote">Fix: ${escH(v.recommendation)}</div>` : ''}</div>`;
-        }).join('');
+
+    if (!violations.length) {
+      vEl.innerHTML = `<div class="no-violations"><div class="no-violations-icon">✅</div><div>No compliance issues detected.</div></div>`;
+    } else {
+      // Sort: context violations first, then by severity
+      const sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+      const sorted = [...violations].sort((a, b) => {
+        // context violations first
+        const aCtx = a.location?.toLowerCase().includes('context') ? 0 : 1;
+        const bCtx = b.location?.toLowerCase().includes('context') ? 0 : 1;
+        if (aCtx !== bCtx) return aCtx - bCtx;
+        return (sevOrder[a.severity] ?? 4) - (sevOrder[b.severity] ?? 4);
+      });
+
+      vEl.innerHTML = sorted.map(v => {
+        const sev = (v.severity || 'medium').toLowerCase();
+        const isFromCtx = v.location?.toLowerCase().includes('context');
+        return `<div class="violation-item ${sev}${isFromCtx ? ' from-context' : ''}">
+          <div class="violation-header">
+            <span class="violation-type">${escH(sev)}</span>
+            ${isFromCtx ? '<span class="violation-source-tag">Sending Context</span>' : ''}
+            <span class="violation-reg">${escH(v.regulation || '')}</span>
+          </div>
+          <div class="violation-text">${escH(v.issue || '')}</div>
+          ${v.location ? `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">📍 ${escH(v.location)}</div>` : ''}
+          ${v.recommendation ? `<div class="violation-quote">Fix: ${escH(v.recommendation)}</div>` : ''}
+          ${v.enforcement_note ? `<div class="violation-enforcement">📋 ${escH(v.enforcement_note)}</div>` : ''}
+        </div>`;
+      }).join('');
+    }
+
     const csec = document.getElementById('checksSection');
     if (isEmail && checks.length) {
       document.getElementById('checksList').innerHTML = checks.map(c => {
@@ -372,6 +651,7 @@
       }).join('');
       csec.classList.add('show');
     } else { csec.classList.remove('show'); }
+
     setLoadingState(false);
     document.getElementById('resultsSection').classList.add('show');
     document.getElementById('formSection').style.display = 'none';
@@ -391,7 +671,17 @@
     document.getElementById('rewritePanel').classList.remove('show');
     document.getElementById('emailScoreBar').classList.remove('show');
     document.getElementById('checksSection').classList.remove('show');
-    ['copyText','campaignName','emailSubject','emailHtml'].forEach(id => { document.getElementById(id).value = ''; });
+    ['copyText','campaignName','emailSubject','emailHtml'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    // Reset context
+    document.querySelectorAll('.radio-option input[type="radio"]').forEach(r => r.checked = false);
+    document.querySelectorAll('.radio-option').forEach(el => el.classList.remove('selected'));
+    contextSkipped = false;
+    contextOpen = true;
+    document.getElementById('contextBody').style.display = '';
+    document.getElementById('contextChevron').classList.add('open');
+    document.getElementById('contextSubtitle').textContent = '4 quick questions — catches consent chain violations invisible in copy';
+    document.getElementById('contextDot').className = 'context-status-dot';
+    document.getElementById('contextStatusText').textContent = '0 of 4 questions answered';
     clearError(); lastCopy = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
