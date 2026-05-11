@@ -42,10 +42,9 @@
     .verdict-warn { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow-bd); }
     .verdict-fail { background:var(--red-bg); color:var(--red); border-color:var(--red-bd); }
 
-    /* Score + exposure */
     .metrics-top { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
     @media(max-width:480px){ .metrics-top { grid-template-columns:1fr; } }
-    .metric-big { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px 20px; }
+    .metric-big { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
     .metric-big-label { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
     .metric-big-val { font-size:32px; font-weight:800; line-height:1; margin-bottom:4px; }
     .metric-big-sub { font-size:12px; color:var(--muted); }
@@ -59,7 +58,6 @@
     .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
     .card-label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; }
 
-    /* Warnings */
     .warning-list { display:flex; flex-direction:column; gap:8px; }
     .warning-item { padding:12px 14px 12px 16px; border-radius:var(--radius); border-left:3px solid; }
     .warning-item.critical { background:var(--red-bg);    border-color:var(--red); }
@@ -79,17 +77,14 @@
     .w-action { font-size:12px; font-weight:600; color:var(--text); }
     .w-action::before { content:'→ '; }
 
-    /* List display */
     .email-list { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; font-size:12px; font-family:monospace; max-height:160px; overflow-y:auto; line-height:1.9; color:var(--text); }
 
-    /* Stat row */
     .stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
     @media(max-width:480px){ .stat-row { grid-template-columns:repeat(2,1fr); } }
     .stat-box { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:12px; text-align:center; }
     .stat-val { font-size:18px; font-weight:800; margin-bottom:3px; }
     .stat-lbl { font-size:11px; color:var(--muted); }
 
-    /* Fixes */
     .fix-list { display:flex; flex-direction:column; gap:8px; }
     .fix-item { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid var(--border); border-radius:var(--radius); }
     .fix-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
@@ -110,8 +105,7 @@
     .pill-completed{ background:var(--green-bg);  color:var(--green); }
     .pill-dismissed{ background:var(--bg); color:var(--muted); border:1px solid var(--border-mid); }
 
-    .empty-state { text-align:center; padding:28px 20px; color:var(--muted); font-size:13px; }
-    .empty-icon  { font-size:24px; margin-bottom:8px; }
+    .disc { font-size:11px; color:var(--muted); font-style:italic; margin-top:24px; line-height:1.5; text-align:center; }
 
     @media print { .topnav { display:none; } .container { padding:20px; } }
   </style>
@@ -120,7 +114,7 @@
   <nav class="topnav">
     <div class="topnav-logo">sendwize</div>
     <div class="nav-actions">
-      <a href="javascript:history.back()" class="btn-ghost">← Dashboard</a>
+      <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="btn-ghost">← Dashboard</a>
       <button class="btn-primary" onclick="window.print()">Export PDF</button>
     </div>
   </nav>
@@ -137,19 +131,19 @@
   const p        = new URLSearchParams(window.location.search);
   const recordId = p.get('id') || p.get('recordId');
   const userId   = p.get('userId');
-  const BASE     = window.location.origin;
+
+  // Always use the absolute backend URL — window.location.origin would point
+  // to the Webflow domain when linked from the dashboard, which is wrong.
+  const BASE = 'https://sendwize-backend.vercel.app';
 
   async function load() {
-    if (!recordId) { return showError('No report ID provided.'); }
+    if (!recordId) { return showError('No report ID provided. Please open this report from the dashboard.'); }
     try {
-      // Note: data.js doesn't have a 'suppression' type yet — uses Results JSON from Suppression_Checks
-      // For now we call with type=pecr and handle gracefully, or fetch direct
-      // TODO: add type=suppression to data.js tables map when ready
       const [rr, fr] = await Promise.all([
         fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=suppression`),
-        userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
+        userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : Promise.resolve(null)
       ]);
-      if (!rr.ok) throw new Error('Report not found');
+      if (!rr.ok) throw new Error('Report not found — it may have been deleted or the ID is incorrect.');
       const rd = await rr.json();
       const fd = fr && fr.ok ? await fr.json() : null;
       render(rd.fields || rd, fd);
@@ -158,31 +152,41 @@
 
   function render(f, fd) {
     const date         = fmtDate(f.CheckDate);
-    const sendCount    = f.SendListSize       || 0;
+    const sendCount    = f.SendListSize        || 0;
     const suppCount    = f.SuppressionListSize || 0;
-    const matchCount   = f.MatchesFound       || 0;
-    const dupCount     = f.DuplicatesFound    || 0;
-    const invalidCount = f.InvalidEmailsFound || 0;
-    const cleanCount   = f.CleanListSize      || 0;
-    const score        = f.RiskScore          || 0;
-    const expLow       = f.ExposureLow        || 0;
-    const expHigh      = f.ExposureHigh       || 0;
-    const results      = parseJ(f.Results)    || {};
-    const warnings     = results.warnings     || [];
+    const matchCount   = f.MatchesFound        || 0;
+    const dupCount     = f.DuplicatesFound     || 0;
+    const invalidCount = f.InvalidEmailsFound  || 0;
+    const cleanCount   = f.CleanListSize       || 0;
+    const score        = f.RiskScore           || 0;
+    const expLow       = f.ExposureLow         || 0;
+    const expHigh      = f.ExposureHigh        || 0;
+    const results      = parseJ(f.Results)     || {};
+    const warnings     = results.warnings      || [];
 
     const isClean = matchCount === 0 && dupCount === 0 && invalidCount === 0;
     const vc = isClean && score >= 80 ? 'pass' : matchCount > 0 || score < 50 ? 'fail' : 'warn';
-    const vi = vc==='pass'?'✅':vc==='warn'?'⚠️':'🚫';
-    const verdictText = vc==='pass' ? 'List Clean — Safe to Send' : matchCount > 0 ? 'Do Not Send' : 'Review Required';
-    const sc = score>=80?'var(--green)':score>=50?'var(--yellow)':'var(--red)';
+    const vi = vc === 'pass' ? '✅' : vc === 'warn' ? '⚠️' : '🚫';
 
-    const allFixes = fd?.fixes || fd?.records || [];
+    // No "safe to send" language — Sendwize does not give binary compliance verdicts
+    const verdictText = vc === 'pass'
+      ? 'No suppressed contacts found'
+      : matchCount > 0
+        ? 'Suppressed contacts detected — do not send'
+        : 'Review required before sending';
+
+    const sc = score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+
+    // Average midpoint exposure — consistent with dashboard display
+    const expMid = expLow && expHigh ? Math.round((expLow + expHigh) / 2) : 0;
+
+    const allFixes = fd?.fixes?.pending || fd?.fixes?.completed
+      ? [...(fd.fixes.pending || []), ...(fd.fixes.completed || [])]
+      : fd?.records || [];
     const fixes = allFixes.filter(x => {
-      const xf = x.fields||x;
+      const xf = x.fields || x;
       return xf.SourceRecordID === recordId || xf.Tool === 'Suppression Checker';
     });
-    const pending   = fixes.filter(x=>(x.fields||x).Status==='pending').length;
-    const completed = fixes.filter(x=>(x.fields||x).Status==='completed').length;
 
     const suppressionHealth = results.suppressionHealth || {};
     const healthIssues = [
@@ -206,16 +210,20 @@
           <div class="metric-big-sub">${scoreLabel(score)}</div>
         </div>
         <div class="metric-big">
-          <div class="metric-big-label">Financial Exposure</div>
-          <div class="metric-big-val" style="color:${expLow>0?'var(--red)':'var(--green)'}">${expLow>0?`${fmtMoney(expLow)}–${fmtMoney(expHigh)}`:'£0'}</div>
-          <div class="metric-big-sub">${expLow>0 ? 'Estimated PECR Reg 22 exposure' : 'No suppressed contacts found'}</div>
+          <div class="metric-big-label">Estimated Exposure</div>
+          <div class="metric-big-val" style="color:${expMid > 0 ? 'var(--red)' : 'var(--green)'}">
+            ${expMid > 0 ? fmtMoney(expMid) : '£0'}
+          </div>
+          <div class="metric-big-sub">${expMid > 0
+            ? 'Average single-issue PECR Reg 22 exposure — not legal advice'
+            : 'No suppressed contacts detected'}</div>
         </div>
       </div>
 
       <div class="metrics">
         <div class="metric"><div class="metric-val">${sendCount.toLocaleString()}</div><div class="metric-lbl">Send List</div></div>
-        <div class="metric"><div class="metric-val" style="color:${matchCount>0?'var(--red)':'var(--green)'}">${matchCount.toLocaleString()}</div><div class="metric-lbl">Suppressed Matches</div></div>
-        <div class="metric"><div class="metric-val" style="color:${dupCount>0?'var(--yellow)':'inherit'}">${dupCount.toLocaleString()}</div><div class="metric-lbl">Duplicates</div></div>
+        <div class="metric"><div class="metric-val" style="color:${matchCount > 0 ? 'var(--red)' : 'var(--green)'}">${matchCount.toLocaleString()}</div><div class="metric-lbl">Suppressed Matches</div></div>
+        <div class="metric"><div class="metric-val" style="color:${dupCount > 0 ? 'var(--yellow)' : 'inherit'}">${dupCount.toLocaleString()}</div><div class="metric-lbl">Duplicates</div></div>
         <div class="metric"><div class="metric-val" style="color:var(--green)">${cleanCount.toLocaleString()}</div><div class="metric-lbl">Clean</div></div>
       </div>
 
@@ -225,44 +233,37 @@
         <div class="warning-list">${warnings.map(renderWarning).join('')}</div>
       </div>` : ''}
 
-      ${healthIssues.length ? `
       <div class="card">
         <div class="card-label">Suppression List Health</div>
         <div class="stat-row">
           <div class="stat-box"><div class="stat-val">${suppCount.toLocaleString()}</div><div class="stat-lbl">Suppression List Size</div></div>
-          <div class="stat-box"><div class="stat-val" style="color:var(--muted)">${esc(suppressionHealth.listAge||'—')}</div><div class="stat-lbl">Last Updated</div></div>
-          <div class="stat-box"><div class="stat-val" style="color:${suppressionHealth.tooSmall?'var(--red)':'var(--green)'}">${suppressionHealth.tooSmall?'⚠ Small':'✓ OK'}</div><div class="stat-lbl">List Size Check</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:var(--muted)">${esc(suppressionHealth.listAge || '—')}</div><div class="stat-lbl">Last Updated</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:${suppressionHealth.tooSmall ? 'var(--red)' : 'var(--green)'}">${suppressionHealth.tooSmall ? '⚠ Small' : '✓ OK'}</div><div class="stat-lbl">List Size Check</div></div>
         </div>
-        ${healthIssues.map(i=>`<p style="font-size:13px;color:var(--muted);margin-top:8px;">⚠ ${esc(i)}</p>`).join('')}
-      </div>` : `
-      <div class="card">
-        <div class="card-label">Suppression List Health</div>
-        <div class="stat-row">
-          <div class="stat-box"><div class="stat-val">${suppCount.toLocaleString()}</div><div class="stat-lbl">Suppression List Size</div></div>
-          <div class="stat-box"><div class="stat-val" style="color:var(--muted)">${esc(suppressionHealth.listAge||'—')}</div><div class="stat-lbl">Last Updated</div></div>
-          <div class="stat-box"><div class="stat-val" style="color:var(--green)">✓ OK</div><div class="stat-lbl">List Size Check</div></div>
-        </div>
-      </div>`}
+        ${healthIssues.map(i => `<p style="font-size:13px;color:var(--muted);margin-top:8px;">⚠ ${esc(i)}</p>`).join('')}
+      </div>
 
       ${matchCount > 0 && results.matches?.length ? `
       <div class="card">
         <div class="card-label">Suppressed Contacts (${matchCount})</div>
         <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">These contacts must not be emailed. Sending to them is a PECR Regulation 22 breach.</p>
-        <div class="email-list">${esc((results.matches||[]).join('\n'))}</div>
+        <div class="email-list">${esc((results.matches || []).join('\n'))}</div>
       </div>` : ''}
 
       ${invalidCount > 0 && results.invalidEmails?.length ? `
       <div class="card">
         <div class="card-label">Invalid Emails (${invalidCount})</div>
         <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Invalid email syntax — these will hard bounce and should be added to your suppression list.</p>
-        <div class="email-list">${esc((results.invalidEmails||[]).join('\n'))}</div>
+        <div class="email-list">${esc((results.invalidEmails || []).join('\n'))}</div>
       </div>` : ''}
 
       ${fixes.length ? `
       <div class="card">
-        <div class="card-label">Compliance Fixes</div>
+        <div class="card-label">Compliance Fixes (${fixes.length})</div>
         <div class="fix-list">${fixes.map(renderFix).join('')}</div>
       </div>` : ''}
+
+      <p class="disc">Information only — not legal advice. Illustrative risk ranges based on ICO enforcement data.</p>
     `;
 
     document.getElementById('stateBox').style.display = 'none';
@@ -270,42 +271,51 @@
   }
 
   function renderWarning(w) {
-    const sev = (w.severity||'info').toLowerCase();
+    const sev = (w.severity || 'info').toLowerCase();
     return `<div class="warning-item ${sev}">
       <div class="warning-header">
         <span class="w-sev">${sev}</span>
         ${w.regulation ? `<span class="w-reg">${esc(w.regulation)}</span>` : ''}
       </div>
-      <div class="w-msg">${esc(w.message||'')}</div>
+      <div class="w-msg">${esc(w.message || '')}</div>
       ${w.action ? `<div class="w-action">${esc(w.action)}</div>` : ''}
     </div>`;
   }
 
   function renderFix(fx) {
-    const f  = fx.fields||fx;
-    const st = f.Status||'pending';
-    const el = f.ExposureLow||0, eh = f.ExposureHigh||0;
+    const f  = fx.fields || fx;
+    const st = f.Status || 'pending';
+    const el = f.ExposureLow  || 0;
+    const eh = f.ExposureHigh || 0;
+    const mid = el && eh ? Math.round((el + eh) / 2) : 0;
     return `<div class="fix-item">
       <div class="fix-dot ${st}"></div>
       <div class="fix-body">
-        <div class="fix-title">${esc(fmtFixType(f.FixType||''))}</div>
-        <div class="fix-desc">${esc(f.Description||'')}</div>
+        <div class="fix-title">${esc(fmtFixType(f.FixType || ''))}</div>
+        <div class="fix-desc">${esc(f.Description || '')}</div>
         <div class="fix-pills">
-          ${f.Severity ? `<span class="pill pill-${f.Severity}">${f.Severity}</span>` : ''}
+          ${f.Severity ? `<span class="pill pill-${f.Severity}">${esc(f.Severity)}</span>` : ''}
           <span class="pill pill-${st}">${st}</span>
-          ${el||eh ? `<span class="pill pill-exposure">${fmtMoney(el)}–${fmtMoney(eh)}</span>` : ''}
+          ${mid ? `<span class="pill pill-exposure">~${fmtMoney(mid)} est.</span>` : ''}
         </div>
       </div>
     </div>`;
   }
 
-  function scoreLabel(s) { return s>=90?'Compliant — safe to send':s>=70?'Minor issues — review warnings':s>=50?'Moderate risk — action required':'High risk — do not send'; }
-  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '—'; }
-  function fmtFixType(s) { return s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
-  function fmtMoney(n) { if(!n)return'£0'; if(n>=1000000)return`£${(n/1e6).toFixed(1)}m`; if(n>=1000)return`£${(n/1000).toFixed(0)}k`; return`£${n}`; }
-  function parseJ(v) { if(!v)return null; if(typeof v==='object')return v; try{return JSON.parse(v);}catch{return null;} }
-  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function showError(msg) { document.getElementById('stateBox').innerHTML=`<div class="state-text" style="color:var(--red)">⚠️ ${esc(msg)}</div>`; }
+  // No binary verdicts — language reflects posture not legal status
+  function scoreLabel(s) {
+    return s >= 90 ? 'No issues detected — review before sending'
+         : s >= 70 ? 'Minor issues — review warnings'
+         : s >= 50 ? 'Moderate risk — action required'
+         :           'High risk — do not send';
+  }
+
+  function fmtDate(d)    { return d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }) : '—'; }
+  function fmtFixType(s) { return s.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()); }
+  function fmtMoney(n)   { if (!n) return '£0'; if (n >= 1000000) return `£${(n/1e6).toFixed(1)}m`; if (n >= 1000) return `£${(n/1000).toFixed(0)}k`; return `£${n}`; }
+  function parseJ(v)     { if (!v) return null; if (typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } }
+  function esc(s)        { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function showError(msg){ document.getElementById('stateBox').innerHTML = `<div class="state-text" style="color:var(--red)">⚠️ ${esc(msg)}</div>`; }
 
   load();
 </script>
