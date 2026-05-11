@@ -141,6 +141,7 @@ async function handleGet(req, res) {
   const midpoints     = regPending.map(x => Math.round(((x.fields.ExposureLow || 0) + (x.fields.ExposureHigh || 0)) / 2));
   const avgMidpoint   = midpoints.length ? Math.round(midpoints.reduce((s, v) => s + v, 0) / midpoints.length) : 0;
   const peakHigh      = pendingHighValues.length ? Math.max(...pendingHighValues) : 0;
+  const peakLow       = pendingLowValues.length  ? Math.max(...pendingLowValues)  : 0;
 
   // Keep medianLow/medianHigh in response for backwards compat but set to avgMidpoint
   const medianHigh = avgMidpoint;
