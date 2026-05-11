@@ -136,15 +136,21 @@ async function handleGet(req, res) {
   const pendingHighValues = regPending.map(x => x.fields.ExposureHigh || 0);
   const pendingLowValues  = regPending.map(x => x.fields.ExposureLow  || 0);
 
-  const medianHigh = median(pendingHighValues);
-  const medianLow  = median(pendingLowValues);
-  const peakHigh   = pendingHighValues.length ? Math.max(...pendingHighValues) : 0;
-  const peakLow    = pendingLowValues.length  ? Math.max(...pendingLowValues)  : 0;
+  // Average midpoint — mean of each fix's midpoint value.
+  // More intuitive than median of highs. Gives one honest central figure.
+  const midpoints     = regPending.map(x => Math.round(((x.fields.ExposureLow || 0) + (x.fields.ExposureHigh || 0)) / 2));
+  const avgMidpoint   = midpoints.length ? Math.round(midpoints.reduce((s, v) => s + v, 0) / midpoints.length) : 0;
+  const peakHigh      = pendingHighValues.length ? Math.max(...pendingHighValues) : 0;
 
-  // Saved exposure — what completed fixes eliminated (also median)
+  // Keep medianLow/medianHigh in response for backwards compat but set to avgMidpoint
+  const medianHigh = avgMidpoint;
+  const medianLow  = avgMidpoint;
+
+  // Saved exposure — average midpoint of completed fixes
   const regCompleted      = completed.filter(x => (x.fields.ExposureHigh || 0) > 0);
   const completedHighVals = regCompleted.map(x => x.fields.ExposureHigh || 0);
   const completedLowVals  = regCompleted.map(x => x.fields.ExposureLow  || 0);
+  const completedMids     = regCompleted.map(x => Math.round(((x.fields.ExposureLow || 0) + (x.fields.ExposureHigh || 0)) / 2));
 
   // Tier counts for dashboard breakdown
   const pendingFormatted = pending.map(formatFix);
@@ -169,8 +175,8 @@ async function handleGet(req, res) {
       peakHigh,
       peakLow,
       // Saved — median of completed fixes (what was at risk and fixed)
-      savedLow:    median(completedLowVals),
-      savedHigh:   median(completedHighVals),
+      savedLow:    completedMids.length ? Math.round(completedMids.reduce((s,v)=>s+v,0)/completedMids.length) : 0,
+      savedHigh:   completedMids.length ? Math.round(completedMids.reduce((s,v)=>s+v,0)/completedMids.length) : 0,
       // Count of pending fixes with £ exposure (for label: "across X open issues")
       regPendingCount: regPending.length,
       // Method label for transparency
