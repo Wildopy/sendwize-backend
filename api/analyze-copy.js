@@ -846,13 +846,17 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
       console.error('AI_Compliance_Checks save error:', err);
     }
 
-    // ── 8. Generate Compliance_Fixes (fire and forget) ─────────────────
+    // ── 8. Generate Compliance_Fixes — must complete BEFORE response ──
+    // On Vercel Hobby, async work after res.json() is killed immediately.
     if (allViolations.length > 0) {
-      generateFixes(userId, allViolations, [], savedRecordId)
-        .catch(e => console.error('generateFixes error:', e));
+      try {
+        await generateFixes(userId, allViolations, [], savedRecordId);
+      } catch (e) {
+        console.error('generateFixes error:', e);
+      }
     }
 
-    // ── 9. Update compliance streak ───────────────────────────────────
+    // ── 9. Update compliance streak (fire and forget — low priority) ──
     fetch(`${APP_URL}/api/profile?action=streak`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
