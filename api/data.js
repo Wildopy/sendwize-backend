@@ -1,24 +1,17 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v4.21
+// SENDWIZE — data.js v5.1
 // Router: ?action=report | vendors | violations | load | history
 //         | register | summary | score-history | send-alert
 //         | briefing | consent-expiry-check | simulation-run
 //
-// GET    /api/data?action=report&recordId=x&type=ai|email|audit|vendor|suppression|brief|dossier
-// GET    /api/data?action=vendors
-// GET    /api/data?action=violations&violationType=x&keyword=x
-// POST   /api/data?action=load  { userId }
-// GET    /api/data?action=history&type=audit|vendor&userId=x
-// POST   /api/data?action=register  { userId, recordId?, vendor: { ... } }
-// DELETE /api/data?action=register&recordId=x
-// GET    /api/data?action=summary&userId=x
-// GET    /api/data?action=score-history&userId=x&limit=30
-// POST   /api/data?action=score-history  { userId, score, pending, completed, exposureLow, exposureHigh, triggerEvent }
-// POST   /api/data?action=send-alert  { userId, alertType, score?, scoreChange?, exposureHigh? }
-// GET    /api/data?action=briefing&userId=x
-// POST   /api/data?action=consent-expiry-check  { userId }
-//   Returns: { checked, alertFired, expiringIn30, expiringIn60, expiringIn90 }
-// POST   /api/data?action=simulation-run  { userId, regulator }
+// v5.1 changes:
+//   - simulation-run: ASA and CMA/DMCCA simulators fully implemented
+//   - Stage 1 checks are regulator-aware
+//   - Escalation factors are regulator-aware
+//   - Claude prompt is regulator-specific with correct penalty guidance
+//   - ASA: no financial fine, reputational sanctions explained
+//   - CMA: DMCCA turnover-linked fines, settlement discounts noted
+//   - history: type=ai, type=brief, type=suppression added (were 400ing)
 // ─────────────────────────────────────────────────────────────
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
@@ -37,6 +30,7 @@ async function handleReport(req, res) {
     suppression: 'Suppression_Checks',
     brief:       'Brief_Checks',
     dossier:     'Campaign_Dossiers',
+    pecr:        'Suppression_Checks',
   };
 
   const tableName = tables[type];
@@ -142,26 +136,32 @@ async function handleLoad(req, res) {
 }
 
 // ── HISTORY handler ───────────────────────────────────────────
+// v5.1: added ai, brief, suppression types (were returning 400)
 async function handleHistory(req, res) {
   const { type, userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
-  if (!type || !['audit', 'vendor'].includes(type)) {
-    return res.status(400).json({ error: 'type must be audit or vendor' });
+
+  const validTypes = ['audit', 'vendor', 'ai', 'brief', 'suppression'];
+  if (!type || !validTypes.includes(type)) {
+    return res.status(400).json({ error: `type must be one of: ${validTypes.join(' | ')}` });
   }
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
 
   const tableMap = {
-    audit:  { table: 'Database_Audits', sort: 'AuditDate'  },
-    vendor: { table: 'Vendor_Register', sort: 'LastChecked' },
+    audit:       { table: 'Database_Audits',       sort: 'AuditDate'   },
+    vendor:      { table: 'Vendor_Register',        sort: 'LastChecked' },
+    ai:          { table: 'AI_Compliance_Checks',   sort: 'CheckDate'   },
+    brief:       { table: 'Brief_Checks',           sort: 'CreatedDate' },
+    suppression: { table: 'Suppression_Checks',     sort: 'CheckDate'   },
   };
 
   const { table, sort } = tableMap[type];
   const url = `https://api.airtable.com/v0/${BASE_ID}/${table}` +
     `?filterByFormula={UserID}='${userId}'` +
     `&sort[0][field]=${sort}&sort[0][direction]=desc` +
-    `&maxRecords=10`;
+    `&maxRecords=20`;
 
   const response = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
   if (!response.ok) {
@@ -220,7 +220,6 @@ async function handleRegister(req, res) {
         return res.status(response.status).json({ error: 'Failed to update vendor' });
       }
       return res.json({ record: await response.json() });
-
     } else {
       fields.LastChecked = new Date().toISOString().split('T')[0];
       const response = await fetch(`${airtableBase}/Vendor_Register`, {
@@ -254,19 +253,19 @@ async function handleSummary(req, res) {
   const profileData = profileRes.ok ? await profileRes.json() : null;
 
   return res.json({
-    score:          fixesData?.score                      ?? 0,
-    scoreBand:      fixesData?.scoreBand                  ?? 'Not Started',
-    pendingCount:   fixesData?.fixes?.pending?.length     ?? 0,
-    completedCount: fixesData?.fixes?.completed?.length   ?? 0,
+    score:          fixesData?.score                    ?? 0,
+    scoreBand:      fixesData?.scoreBand                ?? 'Not Started',
+    pendingCount:   fixesData?.fixes?.pending?.length   ?? 0,
+    completedCount: fixesData?.fixes?.completed?.length ?? 0,
     exposure: {
-      pendingLow:  fixesData?.exposure?.pendingLow        ?? 0,
-      pendingHigh: fixesData?.exposure?.pendingHigh       ?? 0,
-      savedLow:    fixesData?.exposure?.savedLow          ?? 0,
-      savedHigh:   fixesData?.exposure?.savedHigh         ?? 0,
+      medianLow:  fixesData?.exposure?.medianLow  ?? 0,
+      medianHigh: fixesData?.exposure?.medianHigh ?? 0,
+      savedLow:   fixesData?.exposure?.savedLow   ?? 0,
+      savedHigh:  fixesData?.exposure?.savedHigh  ?? 0,
     },
-    streak:         profileData?.currentStreak            ?? 0,
-    longestStreak:  profileData?.longestStreak            ?? 0,
-    lastCheckDate:  profileData?.lastCheckDate            ?? null,
+    streak:         profileData?.currentStreak  ?? 0,
+    longestStreak:  profileData?.longestStreak  ?? 0,
+    lastCheckDate:  profileData?.lastCheckDate  ?? null,
   });
 }
 
@@ -445,15 +444,15 @@ async function handleSendAlert(req, res) {
           <h2 style="margin:0 0 8px;font-size:20px;">Compliance score alert</h2>
           <p style="color:#555;margin:0 0 24px;font-size:14px;">
             Your score dropped by <strong>${absChange} points</strong>, now at <strong>${score}/100</strong>.
-            ${exposureHigh ? `Your current pending regulatory exposure is <strong>${fmtGBP(exposureHigh)}</strong>.` : ''}
+            ${exposureHigh ? `Your current pending regulatory exposure is approximately <strong>${fmtGBP(exposureHigh)}</strong>.` : ''}
           </p>
-          <a href="https://sendwize.co.uk/dashboard"
+          <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy"
              style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block;">
             View your dashboard →
           </a>
           <p style="margin:32px 0 0;font-size:11px;color:#999;line-height:1.5;">
             Illustrative regulatory risk ranges based on ICO/ASA/CMA enforcement data.
-            Not legal advice. Data (Use and Access) Act 2025 may affect maximum penalty levels.
+            Not legal advice.
           </p>
         </div>
       </div>`;
@@ -472,12 +471,12 @@ async function handleSendAlert(req, res) {
             <strong>30 days</strong>. Review your database audit and consider a re-consent
             campaign before sending to these contacts.
           </p>
-          <a href="https://sendwize.co.uk/dashboard"
+          <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy"
              style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block;">
             Review database audit →
           </a>
           <p style="margin:32px 0 0;font-size:11px;color:#999;line-height:1.5;">
-            Information only — not legal advice. Sendwize · sendwize.co.uk
+            Information only — not legal advice. Sendwize
           </p>
         </div>
       </div>`;
@@ -504,7 +503,6 @@ async function handleSendAlert(req, res) {
 }
 
 // ── BRIEFING handler ──────────────────────────────────────────
-// Returns { briefing, cached }
 async function handleBriefing(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
@@ -544,7 +542,7 @@ async function handleBriefing(req, res) {
   const promptContext = [
     `Compliance score: ${score}/100 (${scoreBand})`,
     `Pending fixes: ${pending.length}`,
-    `Estimated pending exposure: £${(exposure.pendingLow || 0).toLocaleString('en-GB')} – £${(exposure.pendingHigh || 0).toLocaleString('en-GB')}`,
+    `Estimated pending exposure: ~£${(exposure.medianHigh || 0).toLocaleString('en-GB')} (average single-issue)`,
     fixSummary ? `\nTop pending items:\n${fixSummary}` : '',
   ].filter(Boolean).join('\n');
 
@@ -585,10 +583,6 @@ async function handleBriefing(req, res) {
 }
 
 // ── CONSENT-EXPIRY-CHECK handler ──────────────────────────────
-// POST ?action=consent-expiry-check { userId }
-// Reads the most recent Database_Audit for this user and counts
-// contacts expiring within 30 / 31-60 / 61-90 days.
-// Returns { checked, alertFired, expiringIn30, expiringIn60, expiringIn90 }
 async function handleConsentExpiryCheck(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -601,7 +595,6 @@ async function handleConsentExpiryCheck(req, res) {
   const airtableHeaders = { Authorization: `Bearer ${AIRTABLE_TOKEN}` };
   const today           = new Date().toISOString().split('T')[0];
 
-  // Fetch most recent audit for this user
   const auditRes  = await fetch(
     `${airtableBase}/Database_Audits?filterByFormula={UserID}='${userId}'&sort[0][field]=AuditDate&sort[0][direction]=desc&maxRecords=1`,
     { headers: airtableHeaders }
@@ -613,7 +606,6 @@ async function handleConsentExpiryCheck(req, res) {
     return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0, reason: 'No audit found for user' });
   }
 
-  // Parse expiryTimeline — stored as stringified JSON on the audit record
   let expiryTimeline = [];
   try {
     const raw = audit.fields.ExpiryTimeline || audit.fields.expiryTimeline || '';
@@ -622,7 +614,6 @@ async function handleConsentExpiryCheck(req, res) {
     return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0, reason: 'Could not parse expiryTimeline' });
   }
 
-  // Count contacts expiring in each window
   const d30 = new Date(); d30.setDate(d30.getDate() + 30);
   const d60 = new Date(); d60.setDate(d60.getDate() + 60);
   const d90 = new Date(); d90.setDate(d90.getDate() + 90);
@@ -638,17 +629,14 @@ async function handleConsentExpiryCheck(req, res) {
     else if (expiry <= d90) expiringIn90 += count;
   });
 
-  // No expiring contacts — return counts and exit
   if (expiringIn30 === 0 && expiringIn60 === 0 && expiringIn90 === 0) {
     return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0 });
   }
 
-  // Only fire email alert if contacts expiring within 30 days
   if (expiringIn30 === 0) {
     return res.json({ checked: true, alertFired: false, expiringIn30, expiringIn60, expiringIn90 });
   }
 
-  // Guard: check LastAlertSent — skip if within last 7 days
   const profileRes  = await fetch(
     `${airtableBase}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
     { headers: airtableHeaders }
@@ -666,7 +654,6 @@ async function handleConsentExpiryCheck(req, res) {
     }
   }
 
-  // Fire consent_expiry alert
   try {
     const alertRes = await fetch(`${APP_URL}/api/data?action=send-alert`, {
       method:  'POST',
@@ -690,10 +677,10 @@ async function handleConsentExpiryCheck(req, res) {
   }
 }
 
-// ── SIMULATION-RUN handler ────────────────────────────────────
+// ── SIMULATION-RUN handler v5.1 ───────────────────────────────
 // POST ?action=simulation-run { userId, regulator }
-// regulator: 'ICO' only for launch (CMA and ASA not yet active).
-// Returns five-stage simulation object for the ICO simulator frontend.
+// regulator: 'ICO' | 'ASA' | 'CMA'
+// All three now fully implemented.
 async function handleSimulationRun(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -711,7 +698,6 @@ async function handleSimulationRun(req, res) {
   const airtableHeaders = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
   const today           = new Date().toISOString().split('T')[0];
 
-  // Stage 1: read pending fixes
   const fixesRes  = await fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`);
   const fixesData = fixesRes.ok ? await fixesRes.json() : null;
 
@@ -723,82 +709,215 @@ async function handleSimulationRun(req, res) {
   const criticalFixes = pendingFixes.filter(f => f.severity === 'critical');
   const highFixes     = pendingFixes.filter(f => f.severity === 'high');
 
-  // Stage 1: deterministic background check items
-  const stage1Checks = [
-    {
-      label:  'ICO Registration',
-      detail: score > 0
-        ? 'Organisation appears to be processing data and should be registered with the ICO.'
-        : 'No compliance data found — ICO registration status unknown.',
-      status: score > 0 ? 'amber' : 'red',
-    },
-    {
-      label:  'Previous Complaint History',
-      detail: completedFixes.length > 0
-        ? `${completedFixes.length} previous fix items resolved — shows some compliance activity.`
-        : 'No resolved compliance items on record.',
-      status: completedFixes.length > 0 ? 'green' : 'amber',
-    },
-    {
-      label:  'Compliance Score',
-      detail: `Current score: ${score}/100. ${score < 50 ? 'Below 50 — investigators would identify a pattern of non-compliance.' : score < 75 ? 'Score indicates partially addressed gaps.' : 'Score indicates active compliance management.'}`,
-      status: score >= 75 ? 'green' : score >= 50 ? 'amber' : 'red',
-    },
-    {
-      label:  'Pending Fix Items',
-      detail: pendingFixes.length > 0
-        ? `${pendingFixes.length} outstanding action item${pendingFixes.length !== 1 ? 's' : ''}, including ${criticalFixes.length} critical and ${highFixes.length} high severity.`
-        : 'No outstanding fix items — good standing.',
-      status: criticalFixes.length > 0 ? 'red' : pendingFixes.length > 3 ? 'amber' : 'green',
-    },
-    {
-      label:  'Sector Risk Profile',
-      detail: 'Email marketing is a priority enforcement sector for the ICO under PECR.',
-      status: 'amber',
-    },
-  ];
+  // ── Stage 1: regulator-aware background checks ─────────────
+  const regulatorChecks = {
+    ICO: [
+      {
+        label:  'ICO Registration',
+        detail: score > 0 ? 'Organisation appears to be processing data and should be registered with the ICO.' : 'No compliance data found — ICO registration status unknown.',
+        status: score > 0 ? 'amber' : 'red',
+      },
+      {
+        label:  'Previous Complaint History',
+        detail: completedFixes.length > 0 ? `${completedFixes.length} previous fix items resolved — shows some compliance activity.` : 'No resolved compliance items on record.',
+        status: completedFixes.length > 0 ? 'green' : 'amber',
+      },
+      {
+        label:  'Compliance Score',
+        detail: `Current score: ${score}/100. ${score < 50 ? 'Below 50 — investigators would identify a pattern of non-compliance.' : score < 75 ? 'Score indicates partially addressed gaps.' : 'Score indicates active compliance management.'}`,
+        status: score >= 75 ? 'green' : score >= 50 ? 'amber' : 'red',
+      },
+      {
+        label:  'Pending Fix Items',
+        detail: pendingFixes.length > 0 ? `${pendingFixes.length} outstanding action item${pendingFixes.length !== 1 ? 's' : ''}, including ${criticalFixes.length} critical and ${highFixes.length} high severity.` : 'No outstanding fix items — good standing.',
+        status: criticalFixes.length > 0 ? 'red' : pendingFixes.length > 3 ? 'amber' : 'green',
+      },
+      {
+        label:  'Sector Risk Profile',
+        detail: 'Email marketing is a priority enforcement sector for the ICO under PECR.',
+        status: 'amber',
+      },
+    ],
+    ASA: [
+      {
+        label:  'Advertiser Record',
+        detail: completedFixes.length > 0 ? 'No prior upheld rulings identified. Resolved fix items suggest some compliance effort.' : 'No prior ASA engagement on record.',
+        status: 'green',
+      },
+      {
+        label:  'Content Compliance Score',
+        detail: `Sendwize compliance score: ${score}/100. ${score < 50 ? 'Multiple potential CAP Code issues identified.' : score < 75 ? 'Some CAP Code gaps identified.' : 'Generally good compliance posture.'}`,
+        status: score >= 75 ? 'green' : score >= 50 ? 'amber' : 'red',
+      },
+      {
+        label:  'CAP Code Issues',
+        detail: (() => {
+          const asaTypes = ['fake_urgency','fake_scarcity','misleading_claim','misleading_reference_price','misleading_free_claim','unauthorised_health_claim','misleading_testimonial','undisclosed_ad'];
+          const asaIssues = pendingFixes.filter(f => asaTypes.includes(f.fixType)).length;
+          return asaIssues > 0 ? `${asaIssues} ASA-relevant issue(s) identified — these would be the primary focus of investigation.` : 'No ASA-specific issues currently flagged.';
+        })(),
+        status: criticalFixes.length > 0 ? 'red' : pendingFixes.length > 2 ? 'amber' : 'green',
+      },
+      {
+        label:  'Pre-Campaign Evidence (CAP 4.1)',
+        detail: 'CAP Code 4.1 requires evidence to be held before the campaign runs. Absence of a pre-campaign evidence file is one of the most common reasons for upheld rulings.',
+        status: 'amber',
+      },
+      {
+        label:  'Ad Status',
+        detail: 'If the challenged ad is still running, the ASA can request it be paused pending investigation for serious breaches. Voluntarily withdrawing the ad before investigation begins is a significant mitigating factor.',
+        status: 'amber',
+      },
+    ],
+    CMA: [
+      {
+        label:  'DMCCA Compliance Sweep',
+        detail: 'The CMA has conducted sweeps of over 400 businesses since April 2025. Drip pricing, fake urgency, and fake reviews are current priority enforcement areas.',
+        status: 'amber',
+      },
+      {
+        label:  'Pricing Practice Risk',
+        detail: (() => {
+          const cmaTypes = ['misleading_reference_price','misleading_pricing','drip_pricing','fake_urgency','dark_pattern'];
+          const cmaIssues = pendingFixes.filter(f => cmaTypes.includes(f.fixType)).length;
+          return cmaIssues > 0 ? `${cmaIssues} pricing or urgency issue(s) flagged — these are the CMA's primary enforcement focus under DMCCA.` : 'No pricing-specific issues currently flagged.';
+        })(),
+        status: pendingFixes.filter(f => ['misleading_reference_price','misleading_pricing','drip_pricing','fake_urgency'].includes(f.fixType)).length > 0 ? 'red' : 'green',
+      },
+      {
+        label:  'Review Practices',
+        detail: pendingFixes.filter(f => f.fixType === 'misleading_testimonial').length > 0 ? 'Potential fake review or testimonial issue identified — Schedule 20 DMCCA banned practice. No context defence available.' : 'No review manipulation issues identified.',
+        status: pendingFixes.filter(f => f.fixType === 'misleading_testimonial').length > 0 ? 'red' : 'green',
+      },
+      {
+        label:  'Compliance Score',
+        detail: `Current score: ${score}/100. ${score < 50 ? 'Multiple consumer law concerns identified.' : score < 75 ? 'Partially addressed compliance gaps.' : 'Generally good compliance posture.'}`,
+        status: score >= 75 ? 'green' : score >= 50 ? 'amber' : 'red',
+      },
+      {
+        label:  'Prior CMA Engagement',
+        detail: 'No prior CMA investigation or undertaking identified. First-time cases with genuine co-operation typically attract lower penalties under DMCCA.',
+        status: 'green',
+      },
+    ],
+  };
 
-  // Stage 2: escalation probability
+  const stage1Checks = regulatorChecks[regulator] || regulatorChecks.ICO;
+
+  // ── Stage 2: regulator-aware escalation probability ─────────
+  const probBase = { ICO: 20, ASA: 15, CMA: 25 }[regulator] || 20;
   const complaintProbability = Math.min(
     95,
-    20 + (criticalFixes.length * 20) + (highFixes.length * 5) + (score < 50 ? 20 : 0)
+    probBase + (criticalFixes.length * 20) + (highFixes.length * 5) + (score < 50 ? 20 : 0)
   );
 
   const escalationFactors = [];
-  if (criticalFixes.length > 0)  escalationFactors.push({ icon: '⛔', text: 'One or more critical unresolved violations — these would be the primary basis for enforcement action.' });
-  if (score < 50)                escalationFactors.push({ icon: '📊', text: `Compliance score of ${score}/100 indicates a systemic pattern rather than an isolated incident.` });
-  if (pendingFixes.length > 5)   escalationFactors.push({ icon: '⚠️', text: `${pendingFixes.length} unresolved fix items suggests ongoing non-compliance rather than a one-off issue.` });
-  if (completedFixes.length > 0) escalationFactors.push({ icon: '✅', text: `${completedFixes.length} resolved fix items demonstrates some compliance effort — this is a mitigating factor.` });
+
+  if (regulator === 'ASA') {
+    const asaTypes  = ['fake_urgency','fake_scarcity','misleading_claim','misleading_reference_price','misleading_free_claim','unauthorised_health_claim','misleading_testimonial','undisclosed_ad'];
+    const asaIssues = pendingFixes.filter(f => asaTypes.includes(f.fixType));
+    if (asaIssues.length > 0) escalationFactors.push({ icon: '⛔', text: `${asaIssues.length} CAP Code violation(s) identified. Competitors as well as consumers can file ASA complaints — this is common in retail and ecommerce.` });
+    if (score < 60)           escalationFactors.push({ icon: '📊', text: 'Multiple compliance gaps increase the likelihood the ASA would find the ad broke the rules rather than treating it as a borderline case.' });
+    escalationFactors.push({ icon: '📋', text: 'The ASA resolves around 80% of complaints without formal investigation — but formal investigation is more likely where evidence was not held before the campaign ran (CAP 4.1).' });
+    if (completedFixes.length > 0) escalationFactors.push({ icon: '✅', text: `${completedFixes.length} resolved issues demonstrates some compliance activity — this supports an informal resolution outcome.` });
+  } else if (regulator === 'CMA') {
+    const cmaTypes  = ['misleading_reference_price','misleading_pricing','drip_pricing','fake_urgency','dark_pattern','misleading_testimonial'];
+    const cmaIssues = pendingFixes.filter(f => cmaTypes.includes(f.fixType));
+    if (cmaIssues.length > 0) escalationFactors.push({ icon: '⛔', text: `${cmaIssues.length} DMCCA-relevant issue(s) identified. The CMA launched its first DMCCA enforcement cases in November 2025 and has signalled further enforcement will follow across all sectors.` });
+    escalationFactors.push({ icon: '🔍', text: 'The CMA conducted proactive sweeps of over 400 businesses in 2025. Businesses do not need to receive a complaint to be investigated — the CMA identifies non-compliance through its own monitoring.' });
+    if (score < 50) escalationFactors.push({ icon: '📊', text: `Compliance score of ${score}/100 indicates a pattern of consumer law concerns — the CMA prioritises systemic non-compliance over isolated incidents.` });
+    escalationFactors.push({ icon: '⚖️', text: 'Under DMCCA, the CMA can fine up to 10% of global turnover without court proceedings. First-time cases with genuine co-operation attract lower penalties and settlement discounts are available.' });
+    if (completedFixes.length > 0) escalationFactors.push({ icon: '✅', text: `${completedFixes.length} resolved issues can be cited as evidence of good-faith compliance effort — a mitigating factor in CMA penalty decisions.` });
+  } else {
+    // ICO
+    if (criticalFixes.length > 0)  escalationFactors.push({ icon: '⛔', text: 'One or more critical unresolved violations — these would be the primary basis for ICO enforcement action.' });
+    if (score < 50)                escalationFactors.push({ icon: '📊', text: `Compliance score of ${score}/100 indicates a systemic pattern rather than an isolated incident.` });
+    if (pendingFixes.length > 5)   escalationFactors.push({ icon: '⚠️', text: `${pendingFixes.length} unresolved fix items suggests ongoing non-compliance rather than a one-off issue.` });
+    if (completedFixes.length > 0) escalationFactors.push({ icon: '✅', text: `${completedFixes.length} resolved fix items demonstrates some compliance effort — this is a mitigating factor.` });
+  }
+
   if (escalationFactors.length === 0) {
     escalationFactors.push({ icon: '✅', text: 'No significant escalation factors identified based on current compliance data.' });
   }
 
-  // Stages 3-5: Claude
+  // ── Stages 3-5: regulator-specific Claude prompt ────────────
+  const regulatorConfig = {
+    ICO: {
+      orgName:    "Information Commissioner's Office",
+      dept:       "Enforcement & Investigations",
+      refPrefix:  "ICO-ENF",
+      signatory:  "Senior Enforcement Officer, Direct Marketing Team",
+      tone:       "formal ICO enforcement tone. References PECR Regulation 22 and UK GDPR specifically by article and regulation number.",
+      letterType: "preliminary enquiry letter",
+      questions:  "5 questions about: (1) consent records and the exact consent wording shown at collection, (2) suppression processes and evidence they were applied, (3) data retention policy and how long marketing data is held, (4) whether every marketing message contained a clear and free opt-out mechanism, (5) the lawful basis under which recipients' data was processed for direct marketing",
+      docs:       "7 documents: consent records, legitimate interest assessment, privacy notice, suppression log, data retention schedule, opt-out mechanism evidence, staff training records",
+      penaltyNote:"ICO PECR max £500,000. UK GDPR max £17,500,000 or 4% global turnover. Base penalty estimates on the severity and volume of violations identified in the compliance data above.",
+      penaltyCtx: "The ICO has broad discretion in setting penalties. For first-time PECR breaches with prompt remedial action and genuine co-operation, penalties are typically at the lower end of the range. Repeated or deliberate breaches, or failure to co-operate, can lead to maximum fines.",
+      disclaimerNote: "Penalty estimates are illustrative ranges based on published ICO enforcement decisions.",
+    },
+    ASA: {
+      orgName:    "Advertising Standards Authority",
+      dept:       "Investigations Executive",
+      refPrefix:  "ASA-ENQ",
+      signatory:  "Investigations Executive, Advertising Standards Authority",
+      tone:       "formal but collaborative ASA tone. References specific CAP Code rules by number (e.g. CAP 3.7, CAP 4.1, CAP 3.17). The ASA prefers working by persuasion and agreement.",
+      letterType: "formal investigation notification — noting that the ASA prefers informal resolution where possible",
+      questions:  "5 questions about: (1) what pre-campaign evidence was held before the campaign ran (CAP 4.1 — evidence must exist before, not after), (2) substantiation for any specific claims made, (3) promotion end dates and evidence the promotion genuinely expired as stated, (4) testimonial authenticity records and whether results claimed are typical, (5) whether the ad has been amended or withdrawn since the complaint",
+      docs:       "7 items: pre-campaign evidence file, promotional end date records, testimonial evidence file, claim substantiation documents, all versions of the campaign creative, advertiser's response to the complaint, confirmation of whether the ad is still running",
+      penaltyNote:"The ASA does not impose financial fines directly. Set penalty.low and penalty.high both to 0. The sanctions are: mandatory ad withdrawal, public ruling published on asa.org.uk every Wednesday (permanently searchable), mandatory pre-vetting of future ads for serious repeat offenders, referral to Trading Standards under DMCCA 2024 for persistent non-compliance.",
+      penaltyCtx: "The ASA does not impose direct financial penalties. However, an upheld ruling is published publicly on asa.org.uk and remains permanently searchable — this is significant reputational and commercial risk. Serious or repeat breaches can result in referral to Trading Standards under DMCCA 2024, who can impose fines up to 10% of global turnover. Voluntarily withdrawing or amending the ad before investigation concludes is a significant mitigating factor.",
+      disclaimerNote: "The ASA does not impose financial fines — sanctions are reputational and operational. Referral to Trading Standards is possible for persistent non-compliance.",
+    },
+    CMA: {
+      orgName:    "Competition and Markets Authority",
+      dept:       "Consumer Protection Directorate",
+      refPrefix:  "CMA-CP",
+      signatory:  "Senior Director, Consumer Protection",
+      tone:       "formal CMA enforcement tone under DMCCA 2024. References specific CPR regulations and DMCCA Schedule 1 banned practices by name. The CMA can act without court proceedings.",
+      letterType: "preliminary enquiry — noting the CMA may proceed to a Provisional Infringement Notice (PIN) if concerns are confirmed",
+      questions:  "5 questions about: (1) pricing history records — evidence that any reference 'was' prices are genuine (held for at least 28 days at sufficient volume), (2) countdown timer systems — technical evidence that timers are linked to actual price changes and end when stated, (3) subscription cancellation processes — evidence that cancellation is as easy as sign-up, (4) consumer review collection and moderation — what steps are taken to prevent fake or misleading reviews (DMCCA Schedule 20), (5) drip pricing — how mandatory charges are disclosed and at what stage of the purchase journey",
+      docs:       "7 items: pricing history records for any reference price claims, countdown timer system technical documentation, subscription cancellation process evidence, consumer review policy and moderation records, full purchase journey screenshots showing price disclosure at each stage, consumer complaint log for the past 12 months, evidence of any compliance officer or compliance framework",
+      penaltyNote:"CMA DMCCA max: the higher of £300,000 or 10% of global annual turnover. No court needed — direct administrative fine. Settlement discounts available for co-operation. Consumer redress orders possible in addition to fines. Base estimates on violation severity.",
+      penaltyCtx: "The CMA can impose direct administrative fines without court proceedings under DMCCA 2024. Businesses that co-operate promptly, acknowledge the issue, and demonstrate genuine remediation can negotiate settlement discounts. The CMA can also order consumer redress payments to affected customers in addition to any fine.",
+      disclaimerNote: "Penalty estimates are based on DMCCA 2024 — the higher of £300,000 or 10% of global annual turnover. First enforcement cases were opened November 2025.",
+    },
+  };
+
+  const cfg = regulatorConfig[regulator] || regulatorConfig.ICO;
+
   const fixSummary = pendingFixes.slice(0, 5).map(f =>
     `- ${f.fixType.replace(/_/g, ' ')} (${f.severity}): ${f.description}`
   ).join('\n');
 
-  const claudePrompt = `You are simulating a ${regulator} direct marketing enforcement investigation.
+  const claudePrompt = `You are simulating a ${regulator} (${cfg.orgName}) direct marketing enforcement investigation.
 
 USER COMPLIANCE DATA:
-- Score: ${score}/100
+- Compliance score: ${score}/100
 - Critical violations: ${criticalFixes.length}
-- Pending fixes: ${pendingFixes.length}
-- Estimated exposure: £${(exposure.pendingHigh || 0).toLocaleString('en-GB')}
+- High violations: ${highFixes.length}
+- Total pending fixes: ${pendingFixes.length}
+- Estimated exposure: £${(exposure.medianHigh || 0).toLocaleString('en-GB')}
 - Top issues:
 ${fixSummary || 'None identified'}
 
-Respond ONLY with this exact JSON (no preamble, no markdown):
+Writing instructions:
+- Tone: ${cfg.tone}
+- Document type: ${cfg.letterType}
+- Questions to ask: ${cfg.questions}
+- Documentation to request: ${cfg.docs}
+- Penalty guidance: ${cfg.penaltyNote}
+
+Respond ONLY with this exact JSON (no preamble, no markdown fences):
 {
   "letter": {
-    "reference": "ICO-ENF-XXXXX",
-    "subject": "subject line referencing the specific concern",
-    "opening": "opening paragraph (2-3 sentences, formal ICO tone)",
-    "context": "context paragraph (1-2 sentences)",
-    "closing": "closing paragraph about 28-day response window",
-    "signatory": "Senior Enforcement Officer, Direct Marketing Team",
+    "reference": "${cfg.refPrefix}-XXXXX",
+    "subject": "subject line referencing the specific concern identified in the compliance data above",
+    "opening": "opening paragraph (2-3 sentences, appropriate tone)",
+    "context": "context paragraph (1-2 sentences explaining what happens next in this regulator's process)",
+    "closing": "closing paragraph about response deadline and consequences of non-response",
+    "signatory": "${cfg.signatory}",
     "questions": [
-      { "question": "Question text", "yesNote": "What yes means for the investigation", "noNote": "What no means for the investigation" },
+      { "question": "Question text", "yesNote": "What yes means — how this helps the investigation outcome", "noNote": "What no means — how this affects the investigation outcome" },
       { "question": "Question text", "yesNote": "...", "noNote": "..." },
       { "question": "Question text", "yesNote": "...", "noNote": "..." },
       { "question": "Question text", "yesNote": "...", "noNote": "..." },
@@ -806,23 +925,21 @@ Respond ONLY with this exact JSON (no preamble, no markdown):
     ]
   },
   "documents": [
-    { "name": "document name", "status": "available|partial|missing", "detail": "brief explanation" }
+    { "name": "document name", "status": "available|partial|missing", "detail": "brief explanation based on user compliance data — be specific about what gaps exist" }
   ],
   "penalty": {
     "low": 0,
     "high": 0,
-    "context": "2-3 sentences on penalty discretion and what affects the range"
+    "context": "${cfg.penaltyCtx}"
   },
   "representations": [
-    "Specific actionable representation strategy item 1",
-    "Specific actionable representation strategy item 2",
-    "Specific actionable representation strategy item 3",
-    "Specific actionable representation strategy item 4",
-    "Specific actionable representation strategy item 5"
+    "Specific actionable representation strategy item tailored to this regulator's process",
+    "Specific actionable representation strategy item",
+    "Specific actionable representation strategy item",
+    "Specific actionable representation strategy item",
+    "Specific actionable representation strategy item"
   ]
-}
-
-Penalty guidance: ICO PECR max £500,000. UK GDPR max £17,500,000 or 4% global turnover. Base estimates on violation severity above. Include 7 documentation items. Include 5 letter questions.`;
+}`;
 
   const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
     method:  'POST',
@@ -881,7 +998,6 @@ Penalty guidance: ICO PECR max £500,000. UK GDPR max £17,500,000 or 4% global 
     console.error('Simulation_Reports write error (non-fatal):', err);
   }
 
-  // Return in the shape the ICO simulator frontend expects
   return res.status(200).json({
     reportId,
     regulator,
@@ -893,7 +1009,7 @@ Penalty guidance: ICO PECR max £500,000. UK GDPR max £17,500,000 or 4% global 
       penalty: claudeOutput.penalty || { low: 0, high: 0, context: '' },
       representations: claudeOutput.representations || [],
     },
-    disclaimer: 'Information only — not legal advice. Penalty estimates are illustrative ranges based on published ICO/CMA/ASA enforcement data.',
+    disclaimer: cfg.disclaimerNote,
   });
 }
 
