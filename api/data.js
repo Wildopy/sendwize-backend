@@ -1,17 +1,22 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v5.1
+// SENDWIZE — data.js v5.6
 // Router: ?action=report | vendors | violations | load | history
 //         | register | summary | score-history | send-alert
 //         | briefing | consent-expiry-check | simulation-run
 //
-// v5.1 changes:
+// v5.6 changes:
+//   - Brief Checker removed (Tool 7 is now Audience Read)
+//   - handleReport: removed brief type → Brief_Checks
+//   - handleHistory: removed brief type, added audience type → Audience_Read_Campaigns
+//   - Header comment updated
+// v5.1 changes (retained):
 //   - simulation-run: ASA and CMA/DMCCA simulators fully implemented
 //   - Stage 1 checks are regulator-aware
 //   - Escalation factors are regulator-aware
 //   - Claude prompt is regulator-specific with correct penalty guidance
 //   - ASA: no financial fine, reputational sanctions explained
 //   - CMA: DMCCA turnover-linked fines, settlement discounts noted
-//   - history: type=ai, type=brief, type=suppression added (were 400ing)
+//   - history: type=ai, type=suppression added
 // ─────────────────────────────────────────────────────────────
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
@@ -28,9 +33,9 @@ async function handleReport(req, res) {
     audit:       'Database_Audits',
     vendor:      'Vendor_Register',
     suppression: 'Suppression_Checks',
-    brief:       'Brief_Checks',
     dossier:     'Campaign_Dossiers',
     pecr:        'Suppression_Checks',
+    audience:    'Audience_Read_Campaigns',
   };
 
   const tableName = tables[type];
@@ -136,12 +141,13 @@ async function handleLoad(req, res) {
 }
 
 // ── HISTORY handler ───────────────────────────────────────────
-// v5.1: added ai, brief, suppression types (were returning 400)
+// v5.6: removed brief type (Brief Checker retired)
+//       added audience type → Audience_Read_Campaigns
 async function handleHistory(req, res) {
   const { type, userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
-  const validTypes = ['audit', 'vendor', 'ai', 'brief', 'suppression'];
+  const validTypes = ['audit', 'vendor', 'ai', 'suppression', 'audience'];
   if (!type || !validTypes.includes(type)) {
     return res.status(400).json({ error: `type must be one of: ${validTypes.join(' | ')}` });
   }
@@ -150,11 +156,11 @@ async function handleHistory(req, res) {
   const BASE_ID        = process.env.BASE_ID;
 
   const tableMap = {
-    audit:       { table: 'Database_Audits',       sort: 'AuditDate'   },
-    vendor:      { table: 'Vendor_Register',        sort: 'LastChecked' },
-    ai:          { table: 'AI_Compliance_Checks',   sort: 'CheckDate'   },
-    brief:       { table: 'Brief_Checks',           sort: 'CreatedDate' },
-    suppression: { table: 'Suppression_Checks',     sort: 'CheckDate'   },
+    audit:       { table: 'Database_Audits',          sort: 'AuditDate'   },
+    vendor:      { table: 'Vendor_Register',           sort: 'LastChecked' },
+    ai:          { table: 'AI_Compliance_Checks',      sort: 'CheckDate'   },
+    suppression: { table: 'Suppression_Checks',        sort: 'CheckDate'   },
+    audience:    { table: 'Audience_Read_Campaigns',   sort: 'SendDate'    },
   };
 
   const { table, sort } = tableMap[type];
@@ -481,6 +487,33 @@ async function handleSendAlert(req, res) {
         </div>
       </div>`;
 
+  } else if (alertType === 'audience_damaged') {
+    // Fired by audience-read.js when sentiment state moves to Damaged or Complaint Risk
+    const { segmentName, sentimentState, regulatoryNote } = req.body;
+    subject = `📊 Sendwize: audience alert — ${segmentName || 'a segment'} needs attention`;
+    html = `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111;">
+        <div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0;">
+          <p style="color:white;font-size:20px;font-weight:700;margin:0;">sendwize</p>
+        </div>
+        <div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px;">
+          <h2 style="margin:0 0 8px;font-size:20px;">Audience Read alert</h2>
+          <p style="color:#555;margin:0 0 8px;font-size:14px;">
+            Your <strong>${segmentName || 'audience'}</strong> segment has moved to
+            <strong>${sentimentState || 'a negative sentiment state'}</strong>.
+          </p>
+          ${regulatoryNote ? `<p style="color:#555;margin:0 0 24px;font-size:13px;background:#fdf4ff;border-left:4px solid #7e22ce;padding:12px 16px;border-radius:4px;">${regulatoryNote}</p>` : ''}
+          <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy"
+             style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block;">
+            View Audience Read →
+          </a>
+          <p style="margin:32px 0 0;font-size:11px;color:#999;line-height:1.5;">
+            Audience Read uses deterministic algorithms on your own data only — no AI.
+            Regulatory notes are illustrative consequences, not legal advice.
+          </p>
+        </div>
+      </div>`;
+
   } else {
     return res.status(400).json({ error: `Unknown alertType: ${alertType}` });
   }
@@ -680,7 +713,6 @@ async function handleConsentExpiryCheck(req, res) {
 // ── SIMULATION-RUN handler v5.1 ───────────────────────────────
 // POST ?action=simulation-run { userId, regulator }
 // regulator: 'ICO' | 'ASA' | 'CMA'
-// All three now fully implemented.
 async function handleSimulationRun(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -709,7 +741,7 @@ async function handleSimulationRun(req, res) {
   const criticalFixes = pendingFixes.filter(f => f.severity === 'critical');
   const highFixes     = pendingFixes.filter(f => f.severity === 'high');
 
-  // ── Stage 1: regulator-aware background checks ─────────────
+  // ── Stage 1: regulator-aware background checks ──────────────
   const regulatorChecks = {
     ICO: [
       {
@@ -752,7 +784,7 @@ async function handleSimulationRun(req, res) {
       {
         label:  'CAP Code Issues',
         detail: (() => {
-          const asaTypes = ['fake_urgency','fake_scarcity','misleading_claim','misleading_reference_price','misleading_free_claim','unauthorised_health_claim','misleading_testimonial','undisclosed_ad'];
+          const asaTypes  = ['fake_urgency','fake_scarcity','misleading_claim','misleading_reference_price','misleading_free_claim','unauthorised_health_claim','misleading_testimonial','undisclosed_ad'];
           const asaIssues = pendingFixes.filter(f => asaTypes.includes(f.fixType)).length;
           return asaIssues > 0 ? `${asaIssues} ASA-relevant issue(s) identified — these would be the primary focus of investigation.` : 'No ASA-specific issues currently flagged.';
         })(),
@@ -778,7 +810,7 @@ async function handleSimulationRun(req, res) {
       {
         label:  'Pricing Practice Risk',
         detail: (() => {
-          const cmaTypes = ['misleading_reference_price','misleading_pricing','drip_pricing','fake_urgency','dark_pattern'];
+          const cmaTypes  = ['misleading_reference_price','misleading_pricing','drip_pricing','fake_urgency','dark_pattern'];
           const cmaIssues = pendingFixes.filter(f => cmaTypes.includes(f.fixType)).length;
           return cmaIssues > 0 ? `${cmaIssues} pricing or urgency issue(s) flagged — these are the CMA's primary enforcement focus under DMCCA.` : 'No pricing-specific issues currently flagged.';
         })(),
