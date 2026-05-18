@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audience Read — Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
+  --bg:#F4F3F0;--w:#fff;--b:#e8e5de;--bm:#d8d4cb;
+  --t:#0c0c0a;--tm:#4a4740;--mu:#9a9590;
+  --r:#dc2626;--rb:#fef2f2;--rc:#fecaca;
+  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
+  --y:#ca8a04;--yb:#fefce8;--yc:#fef08a;
+  --reg:#1d4ed8;--regl:#eff6ff;--regc:#bfdbfe;
+  --pur:#7e22ce;--purl:#fdf4ff;--purc:#e9d5ff;
+  --rad:10px;--rad-lg:14px;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --sh-lg:0 8px 32px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.05);
+}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6}
+
+/* NAV */
+.nav{background:var(--w);border-bottom:1px solid var(--b);height:56px;display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:100;justify-content:space-between}
+.nav-logo{font-size:18px;font-weight:700;color:var(--o);letter-spacing:-.5px;text-decoration:none}
+.nav-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
+.nav-back:hover{color:var(--o);background:var(--ol)}
+
+/* PAGE */
+.page{max-width:860px;margin:0 auto;padding:40px 20px 80px}
+
+/* INTRO */
+.intro{margin-bottom:36px;animation:fadeUp .4s ease}
+.intro-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);background:var(--ol);border:1px solid var(--om);padding:4px 12px;border-radius:20px;margin-bottom:14px}
+.intro h1{font-size:30px;font-weight:700;letter-spacing:-.6px;line-height:1.15;margin-bottom:10px}
+.intro p{font-size:14px;color:var(--tm);line-height:1.7;max-width:580px}
+.intro-note{display:flex;gap:12px;align-items:flex-start;background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:14px 18px;margin-top:18px}
+.intro-note p{font-size:13px;color:#92400e;line-height:1.5}
+
+/* UPLOAD ZONES */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px}
+@media(max-width:600px){.upload-grid{grid-template-columns:1fr}}
+.upload-zone{border:2px dashed var(--b);border-radius:var(--rad-lg);padding:24px 20px;cursor:pointer;transition:all .18s;background:var(--w);position:relative;text-align:center}
+.upload-zone:hover,.upload-zone.hover{border-color:var(--o);background:var(--ol)}
+.upload-zone.loaded{border-color:var(--g);border-style:solid;background:var(--gb)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz-icon{font-size:24px;margin-bottom:8px}
+.uz-req{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:10px;margin-bottom:8px}
+.uz-req.req{background:var(--t);color:#fff}
+.uz-req.opt{background:var(--mu);color:#fff}
+.upload-zone h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.upload-zone p{font-size:12px;color:var(--mu);line-height:1.5}
+.uz-unlock{font-size:11px;color:var(--o);font-style:italic;margin-top:6px;line-height:1.4}
+.uz-fname{font-size:11px;color:var(--g);font-family:'DM Mono',monospace;margin-top:8px;display:none}
+.upload-zone.loaded .uz-fname{display:block}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:11px 22px;border-radius:var(--rad);border:none;cursor:pointer;transition:all .18s;letter-spacing:-.1px}
+.btn-primary{background:var(--o);color:#fff}
+.btn-primary:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,115,23,.3)}
+.btn-primary:active{transform:none}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:transparent;color:var(--t);border:1.5px solid var(--b)}
+.btn-ghost:hover{border-color:var(--t);background:var(--bg)}
+.btn-sm{padding:8px 16px;font-size:13px}
+
+/* FIELD MAPPING */
+.map-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;margin-bottom:14px;box-shadow:var(--sh)}
+.map-card h3{font-size:15px;font-weight:700;margin-bottom:4px}
+.map-card .map-meta{font-size:12px;color:var(--mu);margin-bottom:16px}
+.map-table{width:100%;border-collapse:collapse}
+.map-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);padding:8px 12px;text-align:left;border-bottom:1px solid var(--b)}
+.map-table td{padding:10px 12px;border-bottom:1px solid var(--b);font-size:13px}
+.map-table tr:last-child td{border-bottom:none}
+.map-table select{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 8px;border:1px solid var(--b);border-radius:6px;background:var(--bg);color:var(--t);cursor:pointer}
+.map-table select:focus{outline:none;border-color:var(--o)}
+.samp-pill{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu);background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--b)}
+
+/* DASHBOARD */
+.dash-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:32px;flex-wrap:wrap}
+.dash-title{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.dash-meta{font-size:13px;color:var(--mu);margin-top:4px}
+.dash-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* PANEL LABEL */
+.panel-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:8px}
+.panel-num{width:20px;height:20px;border-radius:50%;background:var(--t);color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.panel{margin-bottom:40px}
+.divider{height:1px;background:var(--b);margin:32px 0}
+
+/* PANEL 1 — CAMPAIGN VERDICTS */
+.c-list{display:flex;flex-direction:column;gap:8px}
+.ccard{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:var(--w);border:1px solid var(--b);border-left:3px solid transparent;border-radius:var(--rad);padding:14px 18px;box-shadow:var(--sh);animation:fadeUp .3s ease}
+.ccard.built{border-left-color:var(--g)}.ccard.neutral{border-left-color:var(--mu)}.ccard.fatigue{border-left-color:var(--y)}.ccard.damaged{border-left-color:var(--r)}
+.cc-date{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;white-space:nowrap}
+.cc-seg{font-size:10px;color:var(--mu);margin-top:1px}
+.cc-name{font-size:13px;font-weight:600}
+.cc-reason{font-size:12px;color:var(--mu);margin-top:2px;line-height:1.4}
+.v-pill{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 10px;border-radius:10px;white-space:nowrap}
+.v-pill.built{background:var(--gb);color:var(--g)}.v-pill.neutral{background:var(--bg);color:var(--mu);border:1px solid var(--b)}.v-pill.fatigue{background:var(--yb);color:var(--y)}.v-pill.damaged{background:var(--rb);color:var(--r)}
+
+/* PANEL 2 — SEGMENT STATES */
+.seg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.seg-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px;box-shadow:var(--sh);animation:fadeUp .35s ease}
+.seg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.seg-name{font-size:16px;font-weight:700}
+.conf-pill{font-size:10px;font-weight:600;color:var(--mu);background:var(--bg);border:1px solid var(--b);padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.dq-pill{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.dq-pill.full{background:var(--gb);color:var(--g)}.dq-pill.partial{background:var(--yb);color:var(--y)}.dq-pill.minimal{background:var(--bg);color:var(--mu);border:1px solid var(--b)}
+.seg-stmt{font-size:13px;color:var(--tm);line-height:1.65;margin-bottom:12px}
+.reg-note{background:var(--purl);border:1px solid var(--purc);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.reg-note-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--pur);margin-bottom:5px}
+.reg-note-txt{font-size:12px;color:#581c87;line-height:1.5}
+.cap-wrap{margin-top:12px;padding-top:12px;border-top:1px solid var(--b)}
+.cap-row{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);margin-bottom:5px}
+.cap-val{font-weight:600}
+.cap-val.pos{color:var(--g)}.cap-val.neg{color:var(--r)}.cap-val.neu{color:var(--mu)}
+.cap-track{height:6px;background:var(--b);border-radius:3px;overflow:hidden}
+.cap-fill{height:100%;border-radius:3px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.cap-fill.pos{background:var(--g)}.cap-fill.neg{background:var(--r)}.cap-fill.neu{background:var(--mu)}
+.seg-action{margin-top:10px;font-size:12px;color:var(--mu);line-height:1.5}
+.seg-action strong{display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:3px}
+
+/* NUDGES */
+.nudge-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.nudge{display:flex;gap:12px;align-items:flex-start;background:var(--regl);border:1px solid var(--regc);border-radius:var(--rad);padding:12px 16px}
+.nudge-txt{font-size:12px;color:#1e3a8a;line-height:1.5}
+.nudge-txt strong{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1d4ed8;margin-bottom:3px}
+
+/* PANEL 3 — RECOMMENDATIONS */
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:20px}
+.rec-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:18px;box-shadow:var(--sh);animation:fadeUp .4s ease}
+.rec-rank{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--o);margin-bottom:8px}
+.rec-seg{font-size:15px;font-weight:700;margin-bottom:4px}
+.rec-action{font-size:12px;color:var(--tm);line-height:1.5;margin-bottom:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--bg);color:var(--mu);border:1px solid var(--b)}
+
+/* PRE-SEND */
+.presend-box{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;box-shadow:var(--sh)}
+.presend-box h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.presend-box > p{font-size:13px;color:var(--mu);margin-bottom:18px}
+.ps-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}
+@media(max-width:640px){.ps-form{grid-template-columns:1fr}}
+.fgrp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:5px}
+.fgrp select,.fgrp input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)}
+.fgrp select:focus,.fgrp input:focus{outline:none;border-color:var(--o)}
+.ps-result{margin-top:18px;border-radius:var(--rad);padding:20px;display:none;animation:fadeUp .3s ease}
+.ps-result.green{background:var(--gb);border:1px solid var(--gc)}.ps-result.amber{background:var(--yb);border:1px solid var(--yc)}.ps-result.red{background:var(--rb);border:1px solid var(--rc)}
+.ps-verdict{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:6px;font-family:'DM Mono',monospace}
+.ps-verdict.green{color:var(--g)}.ps-verdict.amber{color:var(--y)}.ps-verdict.red{color:var(--r)}
+.ps-reason{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:10px}
+.ps-range{font-size:11px;font-family:'DM Mono',monospace;color:var(--mu);margin-bottom:12px}
+.alt-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:8px}
+.alt-item{padding:8px 0;border-top:1px solid rgba(0,0,0,.07)}
+.alt-item strong{display:block;font-size:13px;color:var(--t);margin-bottom:2px}
+.alt-item span{font-size:12px;color:var(--mu)}
+
+/* LOG MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(12,12,10,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--w);border-radius:var(--rad-lg);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-lg);animation:fadeUp .25s ease}
+.modal h2{font-size:20px;font-weight:700;margin-bottom:20px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+@media(max-width:480px){.modal-grid{grid-template-columns:1fr}}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end}
+
+/* LOADING */
+.loading-bg{position:fixed;inset:0;background:rgba(244,243,240,.88);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(2px)}
+.loading-bg.open{display:flex}
+.spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}
+.loading-msg{font-size:13px;color:var(--mu);font-family:'DM Mono',monospace;letter-spacing:.04em}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--mu)}
+.empty h3{font-size:16px;font-weight:700;color:var(--t);margin-bottom:6px}
+.empty p{font-size:13px;max-width:360px;margin:0 auto;line-height:1.6}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
+.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+
+/* SCREENS */
+#upload-screen{display:block}
+#mapping-screen,#dashboard-screen{display:none}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.intro h1{font-size:24px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">sendwize</a>
+  <a class="nav-back" href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+    Dashboard
+  </a>
+</nav>
+
+<!-- LOADING -->
+<div class="loading-bg" id="loadingBg">
+  <div class="spin"></div>
+  <div class="loading-msg" id="loadingMsg">Running algorithms…</div>
+</div>
+
+<!-- LOG MODAL -->
+<div class="modal-bg" id="logModal">
+  <div class="modal">
+    <h2>Log Campaign Result</h2>
+    <div class="modal-grid">
+      <div class="fgrp"><label>Segment</label><select id="logSeg"></select></div>
+      <div class="fgrp"><label>Campaign Name</label><input type="text" id="logName" placeholder="e.g. June Newsletter"></div>
+      <div class="fgrp"><label>Campaign Type</label>
+        <select id="logType">
+          <option value="Newsletter">Newsletter</option>
+          <option value="Promotional">Promotional</option>
+          <option value="Re-engagement">Re-engagement</option>
+          <option value="Transactional">Transactional</option>
+        </select>
+      </div>
+      <div class="fgrp"><label>Send Date</label><input type="date" id="logDate"></div>
+      <div class="fgrp"><label>Volume Sent</label><input type="number" id="logVol" placeholder="e.g. 5000"></div>
+      <div class="fgrp"><label>Unsubscribes</label><input type="number" id="logUnsub" placeholder="e.g. 23"></div>
+      <div class="fgrp"><label>Open Rate (optional)</label><input type="number" id="logOpen" placeholder="e.g. 0.24" step="0.01" min="0" max="1"></div>
+      <div class="fgrp"><label>Click Rate (optional)</label><input type="number" id="logClick" placeholder="e.g. 0.05" step="0.01" min="0" max="1"></div>
+      <div class="fgrp" style="grid-column:1/-1"><label>Complaints / Spam Reports (optional)</label><input type="number" id="logComplaints" placeholder="e.g. 2"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitLog()">Log &amp; Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     UPLOAD SCREEN
+═══════════════════════════════════════ -->
+<div class="page" id="upload-screen">
+  <div class="intro">
+    <div class="intro-tag">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-.25 3h1.5v5h-1.5V7z"/></svg>
+      Audience Read — Sendwize
+    </div>
+    <h1>How is your audience actually feeling?</h1>
+    <p>Upload your marketing data. Seven algorithms build a live picture of audience sentiment and relationship health — and tell you exactly what to do next. Handles incomplete data. Gets more accurate the longer you use it.</p>
+    <div class="intro-note">
+      <div style="font-size:18px;flex-shrink:0;margin-top:1px">📊</div>
+      <p>Minimum viable: one CSV with date, segment name, and unsubscribe count. Everything else unlocks more algorithms. Nothing is ever blocked — you always see something useful.</p>
+    </div>
+  </div>
+
+  <div class="upload-grid">
+    <div class="upload-zone" id="zone-unsubs" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'unsubs')">
+      <input type="file" accept=".csv" id="file-unsubs" onchange="fileChg(this,'unsubs')">
+      <div class="uz-icon">📉</div>
+      <span class="uz-req req">Required</span>
+      <h3>Unsubscribes</h3>
+      <p>Date, segment, unsubscribe count. Three columns is enough to start. Runs algorithms 2, 3, 5 and 7 immediately.</p>
+      <div class="uz-fname" id="fname-unsubs"></div>
+    </div>
+    <div class="upload-zone" id="zone-sends" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'sends')">
+      <input type="file" accept=".csv" id="file-sends" onchange="fileChg(this,'sends')">
+      <div class="uz-icon">📤</div>
+      <span class="uz-req opt">Optional</span>
+      <h3>Send History</h3>
+      <p>Date, segment, campaign name, type, volume sent.</p>
+      <div class="uz-unlock">Unlocks frequency tolerance model and full behavioural fingerprint.</div>
+      <div class="uz-fname" id="fname-sends"></div>
+    </div>
+    <div class="upload-zone" id="zone-engagement" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'engagement')">
+      <input type="file" accept=".csv" id="file-engagement" onchange="fileChg(this,'engagement')">
+      <div class="uz-icon">📈</div>
+      <span class="uz-req opt">Optional</span>
+      <h3>Open &amp; Click Rates</h3>
+      <p>Date, segment, campaign name, open rate, click rate.</p>
+      <div class="uz-unlock">Builds the full engagement decay curve — shows whether audience interest is growing or shrinking.</div>
+      <div class="uz-fname" id="fname-engagement"></div>
+    </div>
+    <div class="upload-zone" id="zone-complaints" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'complaints')">
+      <input type="file" accept=".csv" id="file-complaints" onchange="fileChg(this,'complaints')">
+      <div class="uz-icon">⚠️</div>
+      <span class="uz-req opt">Optional · Highest signal</span>
+      <h3>Complaints &amp; Spam Reports</h3>
+      <p>Date, segment, complaint count, spam report count.</p>
+      <div class="uz-unlock">Complaints carry 50× the weight of an unsubscribe. Significantly improves Trust Velocity accuracy.</div>
+      <div class="uz-fname" id="fname-complaints"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Continue to field mapping →</button>
+    <span style="font-size:13px;color:var(--mu)">Upload unsubscribes file to continue.</span>
+  </div>
+
+  <div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--b)">
+    <p style="font-size:13px;color:var(--mu);margin-bottom:12px">Already uploaded data before?</p>
+    <button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my dashboard →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MAPPING SCREEN
+═══════════════════════════════════════ -->
+<div class="page" id="mapping-screen">
+  <div class="intro" style="margin-bottom:28px">
+    <div class="intro-tag">Step 2 of 2</div>
+    <h1>Confirm field mapping</h1>
+    <p>We've auto-detected your column types from content. Correct any mis-detections using the dropdowns. Saved permanently — you won't see this screen again for this data.</p>
+  </div>
+  <div id="mappingTables"></div>
+  <div style="display:flex;gap:10px;margin-top:8px">
+    <button class="btn btn-primary" onclick="submitUpload()">Run algorithms →</button>
+    <button class="btn btn-ghost" onclick="showScreen('upload')">← Back</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     DASHBOARD SCREEN
+═══════════════════════════════════════ -->
+<div class="page" id="dashboard-screen">
+  <div class="dash-header">
+    <div>
+      <div class="dash-title">Audience Intelligence</div>
+      <div class="dash-meta" id="dashMeta"></div>
+    </div>
+    <div class="dash-actions">
+      <button class="btn btn-ghost btn-sm" onclick="showScreen('upload')">+ Upload new data</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">Log campaign result</button>
+    </div>
+  </div>
+
+  <!-- Panel 1 -->
+  <div class="panel">
+    <div class="panel-lbl"><span class="panel-num">1</span> What just happened</div>
+    <div class="c-list" id="campaignList">
+      <div class="empty"><h3>No campaigns logged yet</h3><p>Upload your send history or log a result above to see campaign impact scores.</p></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Panel 2 -->
+  <div class="panel">
+    <div class="panel-lbl"><span class="panel-num">2</span> How your audience feels right now</div>
+    <div class="seg-grid" id="segGrid">
+      <div class="empty"><h3>No segments detected</h3><p>Upload your data to see segment-level intelligence.</p></div>
+    </div>
+    <div class="nudge-list" id="nudgeList"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Panel 3 -->
+  <div class="panel">
+    <div class="panel-lbl"><span class="panel-num">3</span> What to do next</div>
+    <div class="rec-grid" id="recGrid"></div>
+
+    <div class="presend-box">
+      <h3>Pre-Send Check</h3>
+      <p>Input any planned send before it goes out. 1,000-scenario simulation returns Green / Amber / Red instantly.</p>
+      <div class="ps-form">
+        <div class="fgrp"><label>Segment</label><select id="psSeg"></select></div>
+        <div class="fgrp"><label>Campaign Type</label>
+          <select id="psType">
+            <option value="Newsletter">Newsletter</option>
+            <option value="Promotional">Promotional</option>
+            <option value="Re-engagement">Re-engagement</option>
+            <option value="Transactional">Transactional</option>
+          </select>
+        </div>
+        <div class="fgrp"><label>Planned Send Date</label><input type="date" id="psDate"></div>
+        <button class="btn btn-primary" onclick="runPreSend()">Check →</button>
+      </div>
+      <div class="ps-result" id="psResult"></div>
+    </div>
+  </div>
+
+  <p style="font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.5">Audience Read uses deterministic algorithms on your own data only — no AI, no external data sources. Confidence levels reflect data volume. Regulatory notes are illustrative consequences, not legal advice.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var API  = 'https://sendwize-backend.vercel.app/api/audience-read';
+var DASH = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+var userId = new URLSearchParams(window.location.search).get('userId') || '';
+var uploadedFiles = {}, detectedMaps = {}, dashData = {}, segNames = [];
+
+// ── SCREENS ──────────────────────────────────────────────────
+function showScreen(s) {
+  ['upload','mapping','dashboard'].forEach(function(n) {
+    document.getElementById(n + '-screen').style.display = n === s ? 'block' : 'none';
+  });
+}
+
+// ── DRAG / DROP ──────────────────────────────────────────────
+function drgOver(e, el) { e.preventDefault(); el.classList.add('hover'); }
+function drgLeave(e, el) { el.classList.remove('hover'); }
+function drgDrop(e, el, key) { e.preventDefault(); el.classList.remove('hover'); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0], key); }
+function fileChg(inp, key) { if (inp.files[0]) readFile(inp.files[0], key); }
+function readFile(file, key) {
+  var r = new FileReader();
+  r.onload = function(e) {
+    var p = parseCSV(e.target.result);
+    if (!p.rows.length) { showToast('Could not parse CSV — ensure it has a header row', 'er'); return; }
+    uploadedFiles[key] = p;
+    document.getElementById('zone-' + key).classList.add('loaded');
+    document.getElementById('fname-' + key).textContent = file.name;
+    document.getElementById('btnContinue').disabled = !uploadedFiles['unsubs'];
+  };
+  r.readAsText(file);
+}
+
+// ── CSV ──────────────────────────────────────────────────────
+function parseCSV(text) {
+  var lines = text.trim().split('\n').filter(function(l) { return l.trim(); });
+  if (lines.length < 2) return { headers: [], rows: [] };
+  var headers = parseLine(lines[0]);
+  var rows = lines.slice(1).map(function(l) {
+    var vals = parseLine(l), obj = {};
+    headers.forEach(function(h, i) { obj[h] = (vals[i] || '').trim(); });
+    return obj;
+  });
+  return { headers: headers, rows: rows };
+}
+function parseLine(line) {
+  var res = [], cur = '', inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { res.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  res.push(cur);
+  return res;
+}
+
+// ── FIELD MAPPING ────────────────────────────────────────────
+var TF = [
+  {v:'',l:'— ignore —'},{v:'date',l:'Date'},{v:'segment',l:'Segment / Audience name'},
+  {v:'unsubscribe_count',l:'Unsubscribe count'},{v:'volume_sent',l:'Volume sent'},
+  {v:'open_rate',l:'Open rate'},{v:'click_rate',l:'Click rate'},
+  {v:'complaint_count',l:'Complaint / spam count'},{v:'campaign_name',l:'Campaign name'},
+  {v:'campaign_type',l:'Campaign type'},
+];
+var FILE_LABELS = { unsubs:'Unsubscribes CSV', sends:'Send History CSV', engagement:'Open & Click Rates CSV', complaints:'Complaints CSV' };
+
+async function goMapping() {
+  showLoading('Detecting column types…');
+  try {
+    var container = document.getElementById('mappingTables');
+    container.innerHTML = '';
+    for (var key in uploadedFiles) {
+      var fd = uploadedFiles[key];
+      var resp = await fetch(API + '?userId=' + userId + '&action=detect', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ headers: fd.headers, rows: fd.rows.slice(0,20) })
+      });
+      var json = await resp.json();
+      detectedMaps[key] = json.mapping || {};
+      container.appendChild(buildMapCard(key, fd.headers, fd.rows, json.mapping || {}));
+    }
+    hideLoading();
+    showScreen('mapping');
+  } catch(err) {
+    hideLoading();
+    showToast('Error detecting columns: ' + err.message, 'er');
+  }
+}
+
+function buildMapCard(key, headers, rows, detected) {
+  var samp = rows[0] || {};
+  var card = document.createElement('div');
+  card.className = 'map-card';
+  card.innerHTML = '<h3>' + escH(FILE_LABELS[key] || key) + '</h3>' +
+    '<p class="map-meta">' + headers.length + ' columns detected &nbsp;·&nbsp; ' + rows.length.toLocaleString() + ' rows</p>' +
+    '<table class="map-table"><thead><tr><th>Your Column</th><th>Sample Value</th><th>Maps To</th></tr></thead><tbody>' +
+    headers.map(function(h) {
+      var sId = 'map-' + key + '-' + sid(h);
+      return '<tr><td><strong>' + escH(h) + '</strong></td>' +
+        '<td><span class="samp-pill">' + escH(String(samp[h]||'').slice(0,28)) + '</span></td>' +
+        '<td><select id="' + sId + '">' +
+        TF.map(function(f) {
+          return '<option value="' + f.v + '"' + ((detected[h]||'') === f.v ? ' selected' : '') + '>' + f.l + '</option>';
+        }).join('') + '</select></td></tr>';
+    }).join('') + '</tbody></table>';
+  return card;
+}
+
+// ── SUBMIT UPLOAD ────────────────────────────────────────────
+async function submitUpload() {
+  showLoading('Running seven algorithms…');
+  try {
+    var allRows = [], combinedMap = {};
+    for (var key in uploadedFiles) {
+      var fd = uploadedFiles[key];
+      var mapping = {};
+      fd.headers.forEach(function(h) {
+        var sel = document.getElementById('map-' + key + '-' + sid(h));
+        if (sel && sel.value) mapping[h] = sel.value;
+      });
+      Object.assign(combinedMap, mapping);
+      fd.rows.forEach(function(row) { allRows.push(row); });
+    }
+    var resp = await fetch(API + '?userId=' + userId + '&action=upload', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ rows: allRows, fieldMapping: combinedMap })
+    });
+    var json = await resp.json();
+    if (!json.success) throw new Error(json.error || 'Upload failed');
+    hideLoading();
+    renderDash(json);
+    showScreen('dashboard');
+    showToast(json.campaignsSaved + ' records processed', 'ok');
+  } catch(err) {
+    hideLoading();
+    showToast('Error: ' + err.message, 'er');
+  }
+}
+
+// ── LOAD DASH ────────────────────────────────────────────────
+async function loadDash() {
+  if (!userId) { showToast('No user ID — return to dashboard and re-open this tool', 'er'); return; }
+  showLoading('Loading your audience intelligence…');
+  try {
+    var resp = await fetch(API + '?userId=' + userId + '&action=load');
+    var json = await resp.json();
+    if (!json.success) throw new Error(json.error);
+    hideLoading();
+    renderDash(json);
+    showScreen('dashboard');
+  } catch(err) {
+    hideLoading();
+    showToast('Could not load dashboard: ' + err.message, 'er');
+  }
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function renderDash(data) {
+  dashData = data;
+  segNames = Object.keys(data.segments || {});
+
+  document.getElementById('dashMeta').textContent =
+    segNames.length + ' segment' + (segNames.length !== 1 ? 's' : '') +
+    ' · Updated ' + new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+
+  // Panel 1
+  var allImpacts = [];
+  segNames.forEach(function(seg) {
+    (data.segments[seg].impacts || []).forEach(function(imp) {
+      allImpacts.push(Object.assign({}, imp, { _seg: seg }));
+    });
+  });
+  allImpacts.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+
+  var cl = document.getElementById('campaignList');
+  if (!allImpacts.length) {
+    cl.innerHTML = '<div class="empty"><h3>No campaign history yet</h3><p>Log your first campaign result to see impact scores.</p></div>';
+  } else {
+    cl.innerHTML = allImpacts.slice(0,15).map(function(imp) {
+      var cls = imp.category === 'Built trust' ? 'built' : imp.category === 'Neutral' ? 'neutral' : imp.category === 'Caused fatigue' ? 'fatigue' : 'damaged';
+      var showR = cls === 'fatigue' || cls === 'damaged';
+      return '<div class="ccard ' + cls + '">' +
+        '<div><div class="cc-date">' + fmtDate(imp.date) + '</div><div class="cc-seg">' + escH(imp._seg) + '</div></div>' +
+        '<div><div class="cc-name">' + escH(imp.campaign_name || 'Campaign') + '</div>' +
+        (showR && imp.reason ? '<div class="cc-reason">' + escH(imp.reason.slice(0,120)) + '</div>' : '') + '</div>' +
+        '<span class="v-pill ' + cls + '">' + escH(imp.category) + '</span></div>';
+    }).join('');
+  }
+
+  // Panel 2
+  var sg = document.getElementById('segGrid');
+  if (!segNames.length) {
+    sg.innerHTML = '<div class="empty"><h3>No segments detected</h3><p>Upload your data to see segment-level intelligence.</p></div>';
+  } else {
+    sg.innerHTML = segNames.map(function(seg) {
+      var d = data.segments[seg];
+      var s = d.sentiment || {};
+      var cap = d.capital || 0;
+      var capPct = Math.min(100, Math.abs(cap));
+      var capCls = cap > 10 ? 'pos' : cap < -10 ? 'neg' : 'neu';
+      var dqCls = (d.dataQuality || 'Minimal').toLowerCase();
+      return '<div class="seg-card">' +
+        '<div class="seg-top">' +
+          '<div><span class="seg-name">' + escH(seg) + '</span><span class="dq-pill ' + dqCls + '">' + escH(d.dataQuality || 'Minimal') + '</span></div>' +
+          '<span class="conf-pill">' + Math.round((s.confidence||0)*100) + '% confidence</span>' +
+        '</div>' +
+        '<div class="seg-stmt">' + escH(s.statement || '—') + '</div>' +
+        (s.regulatoryNote ? '<div class="reg-note"><div class="reg-note-lbl">Regulatory context</div><div class="reg-note-txt">' + escH(s.regulatoryNote) + '</div></div>' : '') +
+        '<div class="cap-wrap"><div class="cap-row"><span>Relationship Capital</span><span class="cap-val ' + capCls + '">' + (cap>0?'+':'') + cap.toFixed(0) + '</span></div>' +
+        '<div class="cap-track"><div class="cap-fill ' + capCls + '" style="width:' + capPct + '%"></div></div></div>' +
+        (s.action ? '<div class="seg-action"><strong>Recommended action</strong>' + escH(s.action) + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  // Missing data nudges
+  var nl = document.getElementById('nudgeList');
+  var firstSeg = segNames.length ? data.segments[segNames[0]] : null;
+  var missing = firstSeg ? (firstSeg.missingData || []) : [];
+  nl.innerHTML = missing.map(function(m) {
+    return '<div class="nudge"><div style="font-size:14px;flex-shrink:0;margin-top:1px">💡</div>' +
+      '<div class="nudge-txt"><strong>Unlock: ' + escH(m.field) + '</strong>' + escH(m.message) + '</div></div>';
+  }).join('');
+
+  // Panel 3 recs
+  var recs = data.recommendations || [];
+  var rg = document.getElementById('recGrid');
+  var rankLabels = ['Priority action','Next action','Also consider'];
+  rg.innerHTML = recs.map(function(rec, i) {
+    return '<div class="rec-card">' +
+      '<div class="rec-rank">' + (rankLabels[i]||'Recommendation') + '</div>' +
+      '<div class="rec-seg">' + escH(rec.segment) + '</div>' +
+      '<div class="rec-action">' + escH(rec.action) + '</div>' +
+      '<div class="chips">' +
+        (rec.type ? '<span class="chip">' + escH(rec.type) + '</span>' : '') +
+        (rec.date ? '<span class="chip">From ' + fmtDate(rec.date) + '</span>' : '') +
+        (rec.state ? '<span class="chip">' + escH(rec.state) + '</span>' : '') +
+      '</div></div>';
+  }).join('');
+
+  // Selects
+  var ps = document.getElementById('psSeg');
+  ps.innerHTML = segNames.map(function(s) { return '<option value="' + escH(s) + '">' + escH(s) + '</option>'; }).join('');
+  var ls = document.getElementById('logSeg');
+  ls.innerHTML = '<option value="">Select segment…</option>' +
+    segNames.map(function(s) { return '<option value="' + escH(s) + '">' + escH(s) + '</option>'; }).join('') +
+    '<option value="__new__">+ New segment…</option>';
+  document.getElementById('psDate').value = new Date().toISOString().slice(0,10);
+}
+
+// ── PRE-SEND ─────────────────────────────────────────────────
+async function runPreSend() {
+  var seg  = document.getElementById('psSeg').value;
+  var type = document.getElementById('psType').value;
+  var date = document.getElementById('psDate').value;
+  if (!seg) { showToast('Select a segment', 'er'); return; }
+  showLoading('Running 1,000 scenarios…');
+  try {
+    var resp = await fetch(API + '?userId=' + userId + '&action=presend', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ segment: seg, campaignType: type, sendDate: date })
+    });
+    var json = await resp.json();
+    hideLoading();
+    if (!json.success) throw new Error(json.error);
+    var pred = json.prediction;
+    var v = pred.verdict.toLowerCase();
+    var el = document.getElementById('psResult');
+    el.className = 'ps-result ' + v;
+    el.style.display = 'block';
+    el.innerHTML =
+      '<div class="ps-verdict ' + v + '">' + escH(pred.verdict) + '</div>' +
+      '<div class="ps-reason">' + escH(pred.reason) + '</div>' +
+      (pred.predictedUnsubRange ?
+        '<div class="ps-range">Predicted unsubscribe rate: ' +
+        (pred.predictedUnsubRange.low*100).toFixed(2) + '% – ' +
+        (pred.predictedUnsubRange.high*100).toFixed(2) + '%' +
+        ' &nbsp;·&nbsp; ' + Math.round((pred.spikeProb||0)*100) + '% spike probability' +
+        ' &nbsp;·&nbsp; ' + Math.round((pred.confidence||0)*100) + '% confidence</div>' : '') +
+      (pred.alternatives && pred.alternatives.length ?
+        '<div class="alt-title">Alternatives</div>' +
+        pred.alternatives.map(function(a) {
+          return '<div class="alt-item"><strong>' + escH(a.change) + '</strong><span>' + escH(a.reason) + '</span></div>';
+        }).join('') : '');
+    el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  } catch(err) {
+    hideLoading();
+    showToast('Pre-send check failed: ' + err.message, 'er');
+  }
+}
+
+// ── LOG MODAL ────────────────────────────────────────────────
+function openModal() { document.getElementById('logDate').value = new Date().toISOString().slice(0,10); document.getElementById('logModal').classList.add('open'); }
+function closeModal() { document.getElementById('logModal').classList.remove('open'); }
+
+async function submitLog() {
+  var seg = document.getElementById('logSeg').value;
+  if (!seg) { showToast('Select a segment', 'er'); return; }
+  if (seg === '__new__') { seg = prompt('New segment name:'); if (!seg) return; }
+  var campaign = {
+    segment: seg,
+    campaign_name: document.getElementById('logName').value || 'Untitled',
+    campaign_type: document.getElementById('logType').value,
+    date: document.getElementById('logDate').value,
+    volume_sent: parseInt(document.getElementById('logVol').value) || null,
+    unsubscribe_count: parseInt(document.getElementById('logUnsub').value) || 0,
+    open_rate: parseFloat(document.getElementById('logOpen').value) || null,
+    click_rate: parseFloat(document.getElementById('logClick').value) || null,
+    complaint_count: parseInt(document.getElementById('logComplaints').value) || null,
+  };
+  if (!campaign.date) { showToast('Send date required', 'er'); return; }
+  closeModal();
+  showLoading('Logging and updating algorithms…');
+  try {
+    var resp = await fetch(API + '?userId=' + userId + '&action=log', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ campaign: campaign })
+    });
+    var json = await resp.json();
+    if (!json.success) throw new Error(json.error);
+    hideLoading();
+    await loadDash();
+    showToast('Campaign logged and algorithms updated', 'ok');
+  } catch(err) {
+    hideLoading();
+    showToast('Error: ' + err.message, 'er');
+  }
+}
+
+// ── LOADING / TOAST ──────────────────────────────────────────
+function showLoading(msg) { document.getElementById('loadingMsg').textContent = msg || 'Working…'; document.getElementById('loadingBg').classList.add('open'); }
+function hideLoading() { document.getElementById('loadingBg').classList.remove('open'); }
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (type ? ' ' + type : '');
+  setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+// ── UTILS ────────────────────────────────────────────────────
+function fmtDate(s) { if (!s) return ''; return new Date(s).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}); }
+function sid(s) { return s.replace(/[^a-zA-Z0-9_]/g,'_'); }
+function escH(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── INIT ─────────────────────────────────────────────────────
+document.getElementById('psDate').value = new Date().toISOString().slice(0,10);
+
+if (userId) {
+  fetch(API + '?userId=' + userId + '&action=load')
+    .then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (json.success && Object.keys(json.segments||{}).length > 0) {
+        renderDash(json);
+        showScreen('dashboard');
+      }
+    })
+    .catch(function() {});
+}
+</script>
+</body>
+</html>
