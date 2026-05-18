@@ -25,12 +25,19 @@ async function atGet(table, formula, sort = '', max = 100) {
 }
 
 async function atCreate(table, fields) {
+  // Airtable rejects null values — strip them before posting
+  const clean = Object.fromEntries(
+    Object.entries(fields).filter(([, v]) => v !== null && v !== undefined)
+  );
   const r = await fetch(`${AT_BASE}/${encodeURIComponent(table)}`, {
     method:  'POST',
     headers: AT_HEADERS(),
-    body:    JSON.stringify({ records: [{ fields }] }),
+    body:    JSON.stringify({ records: [{ fields: clean }] }),
   });
-  if (!r.ok) throw new Error(`Airtable POST ${table} failed: ${r.status}`);
+  if (!r.ok) {
+    const body = await r.text();
+    throw new Error(`Airtable POST ${table} failed: ${r.status} — ${body}`);
+  }
   return (await r.json()).records?.[0];
 }
 
