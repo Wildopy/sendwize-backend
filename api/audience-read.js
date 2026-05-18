@@ -515,7 +515,7 @@ async function saveCampaign(userId, segmentName, campaign, impact) {
     UserID:               userId,
     SegmentName:          segmentName,
     CampaignName:         campaign.campaign_name || 'Untitled Campaign',
-    CampaignType:         campaign.campaign_type || 'Unknown',
+    CampaignType:         campaign.campaign_type || null,
     SendDate:             campaign.date,
     VolumeSent:           campaign.volume_sent   || null,
     UnsubscribeCount:     campaign.unsubscribe_count || 0,
