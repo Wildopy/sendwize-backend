@@ -102,26 +102,40 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .v-pill.built{background:var(--gb);color:var(--g)}.v-pill.neutral{background:var(--bg);color:var(--mu);border:1px solid var(--b)}.v-pill.fatigue{background:var(--yb);color:var(--y)}.v-pill.damaged{background:var(--rb);color:var(--r)}
 
 /* PANEL 2 — SEGMENT STATES */
-.seg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-.seg-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px;box-shadow:var(--sh);animation:fadeUp .35s ease}
-.seg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
-.seg-name{font-size:16px;font-weight:700}
-.conf-pill{font-size:10px;font-weight:600;color:var(--mu);background:var(--bg);border:1px solid var(--b);padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.seg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.seg-card{background:var(--w);border:1px solid var(--b);border-left:4px solid var(--b);border-radius:var(--rad-lg);padding:20px 20px 18px;box-shadow:var(--sh);animation:fadeUp .35s ease}
+.seg-card.state-good{border-left-color:var(--g)}
+.seg-card.state-warn{border-left-color:var(--y)}
+.seg-card.state-bad{border-left-color:var(--r)}
+.seg-card.state-neu{border-left-color:var(--mu)}
+.seg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
+.seg-name{font-size:15px;font-weight:700;color:var(--t)}
 .dq-pill{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
 .dq-pill.full{background:var(--gb);color:var(--g)}.dq-pill.partial{background:var(--yb);color:var(--y)}.dq-pill.minimal{background:var(--bg);color:var(--mu);border:1px solid var(--b)}
-.seg-stmt{font-size:13px;color:var(--tm);line-height:1.65;margin-bottom:12px}
-.reg-note{background:var(--purl);border:1px solid var(--purc);border-radius:8px;padding:12px 14px;margin-bottom:12px}
-.reg-note-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--pur);margin-bottom:5px}
+.state-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:3px 10px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.state-badge.good{background:var(--gb);color:var(--g)}
+.state-badge.warn{background:var(--yb);color:var(--y)}
+.state-badge.bad{background:var(--rb);color:var(--r)}
+.state-badge.neu{background:var(--bg);color:var(--mu);border:1px solid var(--b)}
+.seg-stmt{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:14px}
+.seg-action-box{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.seg-action-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px}
+.seg-action-txt{font-size:13px;color:var(--t);line-height:1.5;font-weight:500}
+.cap-wrap{padding-top:12px;border-top:1px solid var(--b)}
+.cap-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mu);margin-bottom:6px}
+.cap-score{font-size:13px;font-weight:700}
+.cap-score.pos{color:var(--g)}.cap-score.neg{color:var(--r)}.cap-score.neu{color:var(--mu)}
+.cap-bar{height:6px;background:var(--b);border-radius:3px;overflow:hidden;position:relative}
+.cap-bar-neg{position:absolute;right:50%;top:0;height:100%;border-radius:3px 0 0 3px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.cap-bar-pos{position:absolute;left:50%;top:0;height:100%;border-radius:0 3px 3px 0;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.cap-context{font-size:11px;color:var(--mu);margin-top:5px;font-style:italic}
+.reg-note{background:var(--purl);border:1px solid var(--purc);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.reg-note-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--pur);margin-bottom:4px}
 .reg-note-txt{font-size:12px;color:#581c87;line-height:1.5}
-.cap-wrap{margin-top:12px;padding-top:12px;border-top:1px solid var(--b)}
-.cap-row{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);margin-bottom:5px}
-.cap-val{font-weight:600}
-.cap-val.pos{color:var(--g)}.cap-val.neg{color:var(--r)}.cap-val.neu{color:var(--mu)}
-.cap-track{height:6px;background:var(--b);border-radius:3px;overflow:hidden}
-.cap-fill{height:100%;border-radius:3px;transition:width .9s cubic-bezier(.4,0,.2,1)}
-.cap-fill.pos{background:var(--g)}.cap-fill.neg{background:var(--r)}.cap-fill.neu{background:var(--mu)}
-.seg-action{margin-top:10px;font-size:12px;color:var(--mu);line-height:1.5}
-.seg-action strong{display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:3px}
+.conf-row{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.conf-bar-wrap{flex:1;height:4px;background:var(--b);border-radius:2px;overflow:hidden}
+.conf-bar-fill{height:100%;border-radius:2px;background:var(--o);transition:width .6s}
+.conf-pct{font-size:10px;color:var(--mu);white-space:nowrap}
 
 /* NUDGES */
 .nudge-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
@@ -581,19 +595,49 @@ function renderDash(data) {
       var d = data.segments[seg];
       var s = d.sentiment || {};
       var cap = d.capital || 0;
-      var capPct = Math.min(100, Math.abs(cap));
-      var capCls = cap > 10 ? 'pos' : cap < -10 ? 'neg' : 'neu';
       var dqCls = (d.dataQuality || 'Minimal').toLowerCase();
-      return '<div class="seg-card">' +
+      var state = s.state || 'Neutral';
+      var conf = Math.round((s.confidence||0)*100);
+
+      // Colour class based on state
+      var goodStates = ['Peak receptiveness','Highly receptive post-gap','Recovering'];
+      var warnStates = ['Cooling','Neutral','Fatigue building'];
+      var badStates  = ['Damaged','Complaint risk'];
+      var cardCls = goodStates.indexOf(state) > -1 ? 'state-good' : badStates.indexOf(state) > -1 ? 'state-bad' : warnStates.indexOf(state) > -1 ? 'state-warn' : 'state-neu';
+      var badgeCls = cardCls === 'state-good' ? 'good' : cardCls === 'state-bad' ? 'bad' : cardCls === 'state-warn' ? 'warn' : 'neu';
+
+      // Capital bar — centred, negative goes left, positive goes right
+      var capPct = Math.min(50, Math.abs(cap) / 2); // 0–50% each side
+      var capScoreCls = cap > 10 ? 'pos' : cap < -10 ? 'neg' : 'neu';
+      var capContext = '';
+      if (cap <= -60) capContext = 'Significant damage accumulated — recovery will take time.';
+      else if (cap <= -30) capContext = 'Relationship under strain. Careful sending recommended.';
+      else if (cap < 10)  capContext = 'Neutral standing — no significant history either way.';
+      else if (cap < 40)  capContext = 'Positive relationship balance — audience receptive.';
+      else                capContext = 'Strong relationship built — high audience trust.';
+
+      return '<div class="seg-card ' + cardCls + '">' +
         '<div class="seg-top">' +
           '<div><span class="seg-name">' + escH(seg) + '</span><span class="dq-pill ' + dqCls + '">' + escH(d.dataQuality || 'Minimal') + '</span></div>' +
-          '<span class="conf-pill">' + Math.round((s.confidence||0)*100) + '% confidence</span>' +
+          '<span class="state-badge ' + badgeCls + '">' + escH(state) + '</span>' +
         '</div>' +
+        // Confidence bar
+        '<div class="conf-row"><div class="conf-bar-wrap"><div class="conf-bar-fill" style="width:' + conf + '%"></div></div><span class="conf-pct">' + conf + '% confidence</span></div>' +
+        // Statement
         '<div class="seg-stmt">' + escH(s.statement || '—') + '</div>' +
-        (s.regulatoryNote ? '<div class="reg-note"><div class="reg-note-lbl">Regulatory context</div><div class="reg-note-txt">' + escH(s.regulatoryNote) + '</div></div>' : '') +
-        '<div class="cap-wrap"><div class="cap-row"><span>Relationship Capital</span><span class="cap-val ' + capCls + '">' + (cap>0?'+':'') + cap.toFixed(0) + '</span></div>' +
-        '<div class="cap-track"><div class="cap-fill ' + capCls + '" style="width:' + capPct + '%"></div></div></div>' +
-        (s.action ? '<div class="seg-action"><strong>Recommended action</strong>' + escH(s.action) + '</div>' : '') +
+        // Regulatory note if present
+        (s.regulatoryNote ? '<div class="reg-note"><div class="reg-note-lbl">⚠ Regulatory context</div><div class="reg-note-txt">' + escH(s.regulatoryNote) + '</div></div>' : '') +
+        // Action box
+        (s.action ? '<div class="seg-action-box"><div class="seg-action-lbl">What to do</div><div class="seg-action-txt">' + escH(s.action) + '</div></div>' : '') +
+        // Capital — below the fold, contextualised
+        '<div class="cap-wrap">' +
+          '<div class="cap-row"><span class="cap-label">Relationship Capital</span><span class="cap-score ' + capScoreCls + '">' + (cap > 0 ? '+' : '') + cap.toFixed(0) + ' / 100</span></div>' +
+          '<div class="cap-bar">' +
+            (cap < 0 ? '<div class="cap-bar-neg" style="width:' + capPct + '%;background:var(--r)"></div>' : '') +
+            (cap > 0 ? '<div class="cap-bar-pos" style="width:' + capPct + '%;background:var(--g)"></div>' : '') +
+          '</div>' +
+          '<div class="cap-context">' + escH(capContext) + '</div>' +
+        '</div>' +
         '</div>';
     }).join('');
   }
