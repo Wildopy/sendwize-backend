@@ -617,22 +617,43 @@ export default async function handler(req, res) {
       const { rows, fieldMapping } = req.body;
       if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
 
-      const campaigns = rows.map(row => {
-        const c = { segment: 'Default', date: null, unsubscribe_count: 0, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null };
+      // Parse every row from every CSV into a normalised object
+      const rawRows = rows.map(row => {
+        const c = { segment: null, date: null, unsubscribe_count: null, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null };
         for (const [header, targetField] of Object.entries(fieldMapping || {})) {
           const val = row[header];
           if      (targetField === 'date')              c.date              = normaliseDate(val);
-          else if (targetField === 'segment')           c.segment           = String(val || 'Default').trim();
-          else if (targetField === 'unsubscribe_count') c.unsubscribe_count = parseInt(val)  || 0;
-          else if (targetField === 'volume_sent')       c.volume_sent       = parseInt(val)  || null;
+          else if (targetField === 'segment')           c.segment           = String(val || '').trim() || null;
+          else if (targetField === 'unsubscribe_count') c.unsubscribe_count = val !== '' && val != null ? (parseInt(val) || 0) : null;
+          else if (targetField === 'volume_sent')       c.volume_sent       = val !== '' && val != null ? (parseInt(val) || null) : null;
           else if (targetField === 'open_rate')         c.open_rate         = normaliseRate(val);
           else if (targetField === 'click_rate')        c.click_rate        = normaliseRate(val);
-          else if (targetField === 'complaint_count')   c.complaint_count   = parseInt(val)  || null;
-          else if (targetField === 'campaign_name')     c.campaign_name     = String(val || '').trim();
-          else if (targetField === 'campaign_type')     c.campaign_type     = String(val || '').trim();
+          else if (targetField === 'complaint_count')   c.complaint_count   = val !== '' && val != null ? (parseInt(val) || null) : null;
+          else if (targetField === 'campaign_name')     c.campaign_name     = String(val || '').trim() || null;
+          else if (targetField === 'campaign_type')     c.campaign_type     = String(val || '').trim() || null;
         }
         return c;
       }).filter(c => c.date);
+
+      // Merge rows from different CSVs by date + segment key — keep best data from each
+      const mergeMap = {};
+      for (const row of rawRows) {
+        const key = (row.date || '') + '|' + (row.segment || 'Default');
+        if (!mergeMap[key]) {
+          mergeMap[key] = { segment: row.segment || 'Default', date: row.date, unsubscribe_count: 0, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null };
+        }
+        const m = mergeMap[key];
+        // Only overwrite with non-null/non-empty values — never blank out existing data
+        if (row.segment)                          m.segment           = row.segment;
+        if (row.unsubscribe_count !== null)       m.unsubscribe_count = row.unsubscribe_count;
+        if (row.volume_sent !== null)             m.volume_sent       = row.volume_sent;
+        if (row.open_rate !== null)               m.open_rate         = row.open_rate;
+        if (row.click_rate !== null)              m.click_rate        = row.click_rate;
+        if (row.complaint_count !== null)         m.complaint_count   = row.complaint_count;
+        if (row.campaign_name)                    m.campaign_name     = row.campaign_name;
+        if (row.campaign_type)                    m.campaign_type     = row.campaign_type;
+      }
+      const campaigns = Object.values(mergeMap);
 
       if (!campaigns.length) return res.status(400).json({ error: 'No valid rows found. Ensure a date column is present and mapped.' });
 
