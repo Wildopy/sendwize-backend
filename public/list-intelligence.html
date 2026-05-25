@@ -170,6 +170,13 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
 .toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
 
+/* ── DEMO BANNER ── */
+.demo-banner{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:12px 18px;margin-bottom:20px;display:none;align-items:center;justify-content:space-between;gap:12px}
+.demo-banner-txt{font-size:13px;color:#92400e;font-weight:500}
+.demo-dl{font-size:12px;font-weight:600;color:var(--o);text-decoration:none;border:1px solid var(--o);padding:5px 10px;border-radius:6px;white-space:nowrap}
+.demo-dl:hover{background:var(--ol)}
+.demo-dismiss{background:var(--o);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+
 /* Screens */
 #upload-screen,#mapping-screen,#results-screen{display:none}
 #upload-screen{display:block}
@@ -211,6 +218,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
     <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Continue →</button>
+    <button class="btn btn-ghost" onclick="loadListDemo()">Try with example data →</button>
   </div>
 
   <div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--b)">
@@ -260,6 +268,13 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <!-- ══ RESULTS SCREEN ══ -->
 <div class="page" id="results-screen">
 
+  <div id="listDemoBanner" class="demo-banner">
+    <div class="demo-banner-txt">📋 You're viewing example data — this is what your real results will look like.</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <a class="demo-dl" id="listDemoDlLink" href="#" download="sendwize-example-contact-list.csv">Download CSV ↓</a>
+      <button class="demo-dismiss" onclick="showScreen('upload')">Upload your own →</button>
+    </div>
+  </div>
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap">
     <div>
       <h1 style="font-size:24px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">Your list analysis</h1>
@@ -647,6 +662,101 @@ function showToast(msg, type) {
 // ── UTILS ────────────────────────────────────────────────────
 function fmtDate(s) { if (!s) return ''; return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
 function capFirst(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+
+
+// ── DEMO DATA ────────────────────────────────────────────────
+var LIST_DEMO_CSV = `email,date_added,last_engagement,engagement_type
+alice@example.com,2023-01-15,2024-05-20,purchase
+bob@gmail.com,2022-06-10,2024-04-01,click
+carol@hotmail.com,2021-03-22,2023-08-15,open
+dave@yahoo.com,2020-11-05,2022-12-01,open
+eve@gmail.com,2023-08-01,2024-05-25,click
+frank@outlook.com,2019-04-12,,
+grace@gmail.com,2023-03-15,2024-05-10,purchase
+henry@gmial.com,2023-07-20,,
+info@company.com,2022-09-01,2023-01-01,open
+jake@mailinator.com,2023-02-14,,
+kate@gmail.com,2022-11-30,2024-03-15,click
+liam@hotmail.com,2020-07-08,2022-05-01,open
+mia@gmail.com,2023-05-12,2024-05-28,purchase
+noah@outlook.com,2021-12-25,2023-06-10,open
+olivia@gmail.com,2023-09-01,2024-04-20,click
+peter@yahoo.com,2018-03-15,,
+quinn@gmail.com,2023-06-14,2024-05-15,purchase
+rose@hotmail.com,2022-01-20,2023-09-01,open
+sam@gmail.com,2023-10-01,2024-05-01,click
+tina@gmail.com,2021-08-18,2022-11-15,open
+admin@business.com,2022-04-05,2023-02-01,open
+uma@outlook.com,2023-02-28,2024-04-10,click
+victor@gmail.com,2019-10-10,,
+wendy@gmail.com,2023-07-07,2024-05-22,purchase
+xander@yaho.com,2022-12-01,2023-08-01,open`;
+
+function loadListDemo() {
+  showLoading('Generating example analysis…');
+  setTimeout(function() {
+    // Simulated results — realistic mix of all four tiers
+    var demoResults = {
+      success: true,
+      totalContacts: 24,
+      duplicatesRemoved: 1,
+      activeCount: 9,
+      recoverableCount: 7,
+      atRiskCount: 4,
+      liabilityCount: 4,
+      assetValue: 2847.50,
+      icoStatus: 'Review recommended — contacts approaching threshold',
+      dataQualityFlags: [
+        '1 disposable domain (mailinator.com)',
+        '2 role-based addresses (info@, admin@)',
+        '2 likely typo domains (gmial.com, yaho.com)',
+        '1 duplicate removed'
+      ],
+      opportunities: [
+        {
+          type: 'Re-engagement campaign',
+          description: '7 contacts have declining consent but are still above the ICO threshold. A targeted re-engagement campaign now could recover this segment before consent expires.',
+          currentValue: 1240.00,
+          estimatedValue: 1240.00,
+          decayRate: 2.5,
+          recommendedAction: 'Send a preference-update or re-consent email to this segment within the next 30 days.',
+        },
+        {
+          type: 'Suppression — liability contacts',
+          description: '4 contacts are below the consent strength threshold and represent ICO enforcement risk. Suppressing them removes liability while preserving deliverability.',
+          currentValue: 0,
+          estimatedValue: 0,
+          decayRate: 0,
+          recommendedAction: 'Add these contacts to your suppression registry immediately. Do not send marketing until re-consent is obtained.',
+        },
+        {
+          type: 'Deliverability clean',
+          description: '4 contacts have poor deliverability signals — role-based addresses, typo domains. Removing them will improve inbox placement for the rest of your list.',
+          currentValue: 0,
+          estimatedValue: 0,
+          decayRate: 0,
+          recommendedAction: 'Remove or quarantine these addresses before your next send.',
+        },
+      ],
+      unrealisedTotal: 1240.00,
+      sector: 'ecommerce',
+      aov: 65,
+      checkDate: new Date().toISOString().split('T')[0],
+    };
+
+    hideLoading();
+    lastResults = demoResults;
+    renderResults(demoResults);
+    showScreen('results');
+
+    // Show demo banner with CSV download
+    var blob = new Blob([LIST_DEMO_CSV], {type:'text/csv'});
+    document.getElementById('listDemoDlLink').href = URL.createObjectURL(blob);
+    document.getElementById('listDemoBanner').style.display = 'flex';
+
+    showToast('Viewing example analysis — upload your own list to see your real results', '');
+  }, 800);
+}
 
 // ── AUTO-LOAD ────────────────────────────────────────────────
 if (userId) {
