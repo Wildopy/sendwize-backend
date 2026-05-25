@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>List Intelligence — Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
+  --bg:#F4F3F0;--w:#fff;--b:#e8e5de;--bm:#d8d4cb;
+  --t:#0c0c0a;--tm:#4a4740;--mu:#9a9590;
+  --r:#dc2626;--rb:#fef2f2;--rc:#fecaca;
+  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
+  --y:#ca8a04;--yb:#fefce8;--yc:#fef08a;
+  --pur:#7e22ce;--purl:#fdf4ff;--purc:#e9d5ff;
+  --rad:10px;--rad-lg:14px;
+  --sh:0 1px 3px rgba(0,0,0,.07);
+  --shm:0 4px 16px rgba(0,0,0,.09);
+  --sh-lg:0 8px 32px rgba(0,0,0,.10);
+}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+/* ── NAV ── */
+.nav{background:var(--w);border-bottom:1px solid var(--b);height:56px;display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:100;justify-content:space-between}
+.nav-logo{font-size:17px;font-weight:700;color:var(--o);letter-spacing:-.4px;text-decoration:none}
+.nav-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
+.nav-back:hover{color:var(--o);background:var(--ol)}
+
+/* ── PAGE ── */
+.page{max-width:820px;margin:0 auto;padding:40px 20px 80px}
+
+/* ── INTRO ── */
+.intro{margin-bottom:36px}
+.intro-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);background:var(--ol);border:1px solid var(--om);padding:4px 12px;border-radius:20px;margin-bottom:14px}
+.intro h1{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.2;margin-bottom:8px}
+.intro p{font-size:14px;color:var(--tm);line-height:1.7;max-width:540px}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{border:2px dashed var(--b);border-radius:var(--rad-lg);padding:40px 32px;cursor:pointer;transition:all .18s;background:var(--w);position:relative;text-align:center;margin-bottom:20px}
+.upload-zone:hover,.upload-zone.hover{border-color:var(--o);background:var(--ol)}
+.upload-zone.loaded{border-color:var(--g);border-style:solid;background:var(--gb)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz-icon{font-size:32px;margin-bottom:12px}
+.uz-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.uz-sub{font-size:13px;color:var(--mu);line-height:1.5}
+.uz-fname{font-size:12px;color:var(--g);font-family:'DM Mono',monospace;margin-top:10px;display:none}
+.upload-zone.loaded .uz-fname{display:block}
+
+/* ── BUSINESS CONTEXT STEP ── */
+.context-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:28px;margin-bottom:20px;box-shadow:var(--sh)}
+.context-card h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.context-card p{font-size:13px;color:var(--tm);margin-bottom:20px;line-height:1.5}
+.ctx-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+@media(max-width:560px){.ctx-grid{grid-template-columns:1fr}}
+.fgrp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:5px}
+.fgrp select,.fgrp input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)}
+.fgrp select:focus,.fgrp input:focus{outline:none;border-color:var(--o)}
+.ctx-note{font-size:11px;color:var(--mu);font-style:italic;margin-top:-8px;margin-bottom:16px}
+
+/* ── FIELD MAPPING ── */
+.map-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;margin-bottom:14px;box-shadow:var(--sh)}
+.map-card h3{font-size:15px;font-weight:700;margin-bottom:4px}
+.map-card .map-meta{font-size:12px;color:var(--mu);margin-bottom:16px}
+.map-table{width:100%;border-collapse:collapse}
+.map-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);padding:8px 12px;text-align:left;border-bottom:1px solid var(--b)}
+.map-table td{padding:10px 12px;border-bottom:1px solid var(--b);font-size:13px}
+.map-table tr:last-child td{border-bottom:none}
+.map-table select{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 8px;border:1px solid var(--b);border-radius:6px;background:var(--bg);color:var(--t);cursor:pointer}
+.map-table select:focus{outline:none;border-color:var(--o)}
+.samp-pill{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu);background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--b)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:11px 22px;border-radius:var(--rad);border:none;cursor:pointer;transition:all .18s}
+.btn-primary{background:var(--o);color:#fff}
+.btn-primary:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,115,23,.3)}
+.btn-primary:active{transform:none}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:transparent;color:var(--t);border:1.5px solid var(--b)}
+.btn-ghost:hover{border-color:var(--t);background:var(--bg)}
+.btn-sm{padding:8px 16px;font-size:13px}
+.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* ── RESULTS ── */
+/* Headline numbers — three big cards */
+.headline-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px}
+@media(max-width:600px){.headline-grid{grid-template-columns:1fr}}
+.hl-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px 18px;box-shadow:var(--sh);text-align:center}
+.hl-num{font-size:36px;font-weight:800;font-family:'DM Mono',monospace;line-height:1;margin-bottom:4px}
+.hl-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--mu)}
+.hl-sub{font-size:11px;color:var(--mu);margin-top:4px;line-height:1.4}
+.hl-card.green .hl-num{color:var(--g)}
+.hl-card.amber .hl-num{color:var(--o)}
+.hl-card.red .hl-num{color:var(--r)}
+.hl-card.blue .hl-num{color:#1d4ed8}
+
+/* Four tiers breakdown */
+.tiers{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px;margin-bottom:20px;box-shadow:var(--sh)}
+.tiers-title{font-size:14px;font-weight:700;margin-bottom:16px}
+.tier-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--b)}
+.tier-row:last-child{border-bottom:none}
+.tier-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.tier-dot.g{background:var(--g)}.tier-dot.a{background:var(--o)}.tier-dot.y{background:var(--y)}.tier-dot.r{background:var(--r)}
+.tier-label{font-size:13px;font-weight:600;width:120px;flex-shrink:0}
+.tier-bar-wrap{flex:1;height:8px;background:var(--b);border-radius:4px;overflow:hidden}
+.tier-bar-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.tier-bar-fill.g{background:var(--g)}.tier-bar-fill.a{background:var(--o)}.tier-bar-fill.y{background:var(--y)}.tier-bar-fill.r{background:var(--r)}
+.tier-count{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;width:60px;text-align:right;flex-shrink:0}
+.tier-desc{font-size:11px;color:var(--mu);flex:1}
+
+/* ICO status */
+.ico-box{border-radius:var(--rad);padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px}
+.ico-box.good{background:var(--gb);border:1px solid var(--gc)}
+.ico-box.warn{background:var(--yb);border:1px solid var(--yc)}
+.ico-box.bad{background:var(--rb);border:1px solid var(--rc)}
+.ico-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.ico-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.ico-box.good .ico-title{color:var(--g)}.ico-box.warn .ico-title{color:var(--y)}.ico-box.bad .ico-title{color:var(--r)}
+.ico-desc{font-size:13px;color:var(--tm);line-height:1.5}
+
+/* Data quality */
+.dq-box{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:18px 20px;margin-bottom:20px;box-shadow:var(--sh)}
+.dq-title{font-size:14px;font-weight:700;margin-bottom:10px}
+.dq-clean{font-size:13px;color:var(--g);font-weight:500}
+.dq-flag{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tm);padding:5px 0;border-bottom:1px solid var(--b)}
+.dq-flag:last-child{border-bottom:none}
+.dq-flag::before{content:'⚠';font-size:12px;color:var(--y);flex-shrink:0}
+
+/* Opportunities */
+.opps-title{font-size:16px;font-weight:700;margin-bottom:14px}
+.opp-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px;margin-bottom:12px;box-shadow:var(--sh)}
+.opp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.opp-type{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--o)}
+.opp-value{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;color:var(--t);white-space:nowrap}
+.opp-value.zero{font-size:14px;color:var(--mu);font-family:'DM Sans',sans-serif;font-weight:500}
+.opp-desc{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:10px}
+.opp-action{background:var(--bg);border-radius:8px;padding:10px 12px}
+.opp-action-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:3px}
+.opp-action-txt{font-size:13px;color:var(--t);font-weight:500;line-height:1.5}
+.opp-decay{font-size:10px;color:var(--mu);margin-top:8px;font-style:italic}
+
+/* Pre-send certificate */
+.cert-box{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;margin-top:28px;box-shadow:var(--sh)}
+.cert-box h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.cert-box > p{font-size:13px;color:var(--mu);margin-bottom:18px;line-height:1.5}
+.cert-form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+@media(max-width:560px){.cert-form{grid-template-columns:1fr}}
+.cert-result{margin-top:16px;padding:18px;border-radius:var(--rad);display:none}
+.cert-result.pass{background:var(--gb);border:1px solid var(--gc)}
+.cert-result.review{background:var(--yb);border:1px solid var(--yc)}
+.cert-result.fail{background:var(--rb);border:1px solid var(--rc)}
+.cert-verdict{font-size:24px;font-weight:800;font-family:'DM Mono',monospace;margin-bottom:4px}
+.cert-result.pass .cert-verdict{color:var(--g)}.cert-result.review .cert-verdict{color:var(--y)}.cert-result.fail .cert-verdict{color:var(--r)}
+.cert-detail{font-size:13px;color:var(--tm);line-height:1.5}
+.cert-id{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:8px}
+
+/* Section header */
+.sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:14px;padding-bottom:10px;border-top:1px solid var(--b);padding-top:24px;margin-top:8px;display:flex;align-items:center;gap:8px}
+.sec-num{width:20px;height:20px;border-radius:50%;background:var(--t);color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* Loading */
+.loading-bg{position:fixed;inset:0;background:rgba(244,243,240,.9);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(2px)}
+.loading-bg.open{display:flex}
+.spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}
+.loading-msg{font-size:13px;color:var(--mu);font-family:'DM Mono',monospace}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
+.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+
+/* Screens */
+#upload-screen,#mapping-screen,#results-screen{display:none}
+#upload-screen{display:block}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">sendwize</a>
+  <a class="nav-back" href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+    Dashboard
+  </a>
+</nav>
+
+<div class="loading-bg" id="loadingBg">
+  <div class="spin"></div>
+  <div class="loading-msg" id="loadingMsg">Analysing your list…</div>
+</div>
+
+<!-- ══ UPLOAD SCREEN ══ -->
+<div class="page" id="upload-screen">
+  <div class="intro">
+    <div class="intro-tag">List Intelligence — Sendwize</div>
+    <h1>Know what your database is worth.</h1>
+    <p>Upload your contact list. We analyse every address across four dimensions — consent health, deliverability, commercial value, and ICO risk — and tell you exactly what's in it, what it's worth, and what to do next.</p>
+  </div>
+
+  <div class="upload-zone" id="uploadZone"
+    ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this)">
+    <input type="file" accept=".csv" id="fileInput" onchange="fileChg(this)">
+    <div class="uz-icon">📋</div>
+    <div class="uz-title">Drop your CSV here or click to upload</div>
+    <div class="uz-sub">One file. We auto-detect email, date added, last engagement, and more.<br>Minimum: email addresses. Everything else adds more insight.</div>
+    <div class="uz-fname" id="uzFname"></div>
+  </div>
+
+  <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Continue →</button>
+  </div>
+
+  <div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--b)">
+    <p style="font-size:13px;color:var(--mu);margin-bottom:12px">Already analysed a list before?</p>
+    <button class="btn btn-ghost btn-sm" onclick="loadResults()">Load my last results →</button>
+  </div>
+</div>
+
+<!-- ══ MAPPING SCREEN ══ -->
+<div class="page" id="mapping-screen">
+  <div class="intro" style="margin-bottom:28px">
+    <div class="intro-tag">Step 2 of 3</div>
+    <h1>Confirm your columns</h1>
+    <p>We've detected your column types automatically. Correct anything that looks wrong.</p>
+  </div>
+  <div id="mappingTable"></div>
+
+  <!-- Business context — collected once, stored to profile -->
+  <div class="context-card" id="contextCard">
+    <h2>One more thing</h2>
+    <p>Tell us about your business so we can calculate the commercial value of your list accurately. We store this to your profile — you won't be asked again.</p>
+    <div class="ctx-grid">
+      <div class="fgrp">
+        <label>Sector</label>
+        <select id="ctxSector">
+          <option value="ecommerce">Ecommerce / Retail</option>
+          <option value="finance">Financial Services</option>
+          <option value="healthcare">Health &amp; Wellness</option>
+          <option value="agency">Agency / B2B Services</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="fgrp">
+        <label>Average Order Value (£)</label>
+        <input type="number" id="ctxAov" placeholder="e.g. 65" min="1" max="100000">
+      </div>
+    </div>
+    <p class="ctx-note">Used only to calculate your list's estimated commercial value. Not shared.</p>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="submitUpload()">Analyse my list →</button>
+    <button class="btn btn-ghost" onclick="showScreen('upload')">← Back</button>
+  </div>
+</div>
+
+<!-- ══ RESULTS SCREEN ══ -->
+<div class="page" id="results-screen">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap">
+    <div>
+      <h1 style="font-size:24px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">Your list analysis</h1>
+      <div id="resultsMeta" style="font-size:13px;color:var(--mu)"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="showScreen('upload')">+ Upload new list</button>
+    </div>
+  </div>
+
+  <!-- Section 1 — What you've got -->
+  <div class="sec-hdr"><span class="sec-num">1</span> What's in your list</div>
+
+  <div class="headline-grid" id="headlineGrid"></div>
+  <div class="tiers" id="tiersBox"></div>
+
+  <!-- Section 2 — ICO picture -->
+  <div class="sec-hdr"><span class="sec-num">2</span> Your ICO compliance picture</div>
+  <div id="icoBox"></div>
+  <div class="dq-box" id="dqBox"></div>
+
+  <!-- Section 3 — What to do -->
+  <div class="sec-hdr"><span class="sec-num">3</span> What to do next</div>
+  <div id="oppsBox"></div>
+
+  <!-- Section 4 — Pre-send certificate -->
+  <div class="sec-hdr"><span class="sec-num">4</span> Pre-send certificate</div>
+  <div class="cert-box">
+    <h3>Generate a pre-send certificate</h3>
+    <p>Creates a compliance record for this send. Auto-links to your Campaign Dossier if you provide a Dossier ID. Green = safe to send. Review = check before sending. Red = do not send until issues are resolved.</p>
+    <div class="cert-form">
+      <div class="fgrp">
+        <label>Segment name</label>
+        <input type="text" id="certSeg" placeholder="e.g. Active customers">
+      </div>
+      <div class="fgrp">
+        <label>Campaign type</label>
+        <select id="certType">
+          <option value="Newsletter">Newsletter</option>
+          <option value="Promotional">Promotional</option>
+          <option value="Re-engagement">Re-engagement</option>
+          <option value="Transactional">Transactional</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="generateCert()">Generate →</button>
+    </div>
+    <div class="cert-result" id="certResult"></div>
+  </div>
+
+  <p style="font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.5">
+    Analysis uses deterministic models on your own data only. Commercial values are estimates based on sector benchmarks — not guarantees.<br>
+    ICO compliance picture reflects consent decay modelling only. Not legal advice. Obtain legal advice before making compliance decisions.
+  </p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var API    = 'https://sendwize-backend.vercel.app/api/list-intelligence';
+var userId = new URLSearchParams(window.location.search).get('userId') || '';
+var parsedCSV = null;
+var detectedMapping = {};
+var lastResults = null;
+
+var TF = [
+  {v:'ignore',l:'— ignore —'},
+  {v:'email',l:'Email address'},
+  {v:'date_added',l:'Date added / joined'},
+  {v:'last_engagement',l:'Last engagement date'},
+  {v:'last_purchase',l:'Last purchase date'},
+  {v:'engagement_type',l:'Engagement type (open/click/purchase)'},
+  {v:'segment',l:'Segment / group'},
+  {v:'status',l:'Subscription status'},
+  {v:'order_value',l:'Order value (£)'},
+  {v:'engagement_count',l:'Engagement count'},
+];
+
+function el(id) { return document.getElementById(id); }
+function fmt(n) { return (n||0).toLocaleString('en-GB'); }
+function fmtGBP(n) { return n ? '£' + fmt(Math.round(n)) : '—'; }
+function escH(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function sid(s) { return s.replace(/[^a-zA-Z0-9_]/g,'_'); }
+
+function showScreen(s) {
+  ['upload','mapping','results'].forEach(function(n) {
+    el(n+'-screen').style.display = n === s ? 'block' : 'none';
+  });
+  window.scrollTo(0,0);
+}
+
+// ── DRAG / DROP ──────────────────────────────────────────────
+function drgOver(e,z) { e.preventDefault(); z.classList.add('hover'); }
+function drgLeave(e,z) { z.classList.remove('hover'); }
+function drgDrop(e,z) { e.preventDefault(); z.classList.remove('hover'); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); }
+function fileChg(inp) { if (inp.files[0]) readFile(inp.files[0]); }
+
+function readFile(file) {
+  var r = new FileReader();
+  r.onload = function(e) {
+    var p = parseCSV(e.target.result);
+    if (!p.rows.length) { showToast('Could not parse CSV — ensure it has a header row', 'er'); return; }
+    parsedCSV = p;
+    el('uploadZone').classList.add('loaded');
+    el('uzFname').textContent = file.name + ' · ' + p.rows.length.toLocaleString() + ' contacts';
+    el('btnContinue').disabled = false;
+  };
+  r.readAsText(file);
+}
+
+function parseCSV(text) {
+  var lines = text.trim().split('\n').filter(function(l){return l.trim();});
+  if (lines.length < 2) return { headers:[], rows:[] };
+  var headers = parseLine(lines[0]);
+  var rows = lines.slice(1).map(function(l) {
+    var vals = parseLine(l), obj = {};
+    headers.forEach(function(h,i){ obj[h] = (vals[i]||'').trim(); });
+    return obj;
+  });
+  return { headers:headers, rows:rows };
+}
+function parseLine(line) {
+  var res=[],cur='',inQ=false;
+  for (var i=0;i<line.length;i++) {
+    var c=line[i];
+    if (c==='"'){inQ=!inQ;}
+    else if (c===','&&!inQ){res.push(cur);cur='';}
+    else{cur+=c;}
+  }
+  res.push(cur);
+  return res;
+}
+
+// ── MAPPING ──────────────────────────────────────────────────
+async function goMapping() {
+  if (!parsedCSV) return;
+  showLoading('Detecting column types…');
+  try {
+    var resp = await fetch(API + '?userId=' + userId + '&action=detect', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ headers: parsedCSV.headers, rows: parsedCSV.rows.slice(0,30) }),
+    });
+    var json = await resp.json();
+    detectedMapping = json.mapping || {};
+    hideLoading();
+    buildMappingTable();
+
+    // Check if profile already has sector/AOV — if so hide the context card
+    try {
+      var pr = await fetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId=' + userId);
+      var pd = await pr.json();
+      if (pd.sector && pd.averageOrderValue) {
+        el('contextCard').style.display = 'none';
+        el('ctxSector').value = pd.sector;
+        el('ctxAov').value   = pd.averageOrderValue;
+      }
+    } catch(e) {}
+
+    showScreen('mapping');
+  } catch(err) {
+    hideLoading();
+    showToast('Error detecting columns: ' + err.message, 'er');
+  }
+}
+
+function buildMappingTable() {
+  var samp = parsedCSV.rows[0] || {};
+  var card = document.createElement('div');
+  card.className = 'map-card';
+  card.innerHTML = '<h3>Your CSV columns</h3>' +
+    '<p class="map-meta">' + parsedCSV.headers.length + ' columns · ' + parsedCSV.rows.length.toLocaleString() + ' rows</p>' +
+    '<table class="map-table"><thead><tr><th>Column</th><th>Sample</th><th>Maps to</th></tr></thead><tbody>' +
+    parsedCSV.headers.map(function(h) {
+      var sId = 'map-' + sid(h);
+      var det = detectedMapping[h] || 'ignore';
+      return '<tr><td><strong>' + escH(h) + '</strong></td>' +
+        '<td><span class="samp-pill">' + escH(String(samp[h]||'').slice(0,26)) + '</span></td>' +
+        '<td><select id="' + sId + '">' +
+        TF.map(function(f){ return '<option value="' + f.v + '"' + (det===f.v?' selected':'') + '>' + f.l + '</option>'; }).join('') +
+        '</select></td></tr>';
+    }).join('') + '</tbody></table>';
+  el('mappingTable').innerHTML = '';
+  el('mappingTable').appendChild(card);
+}
+
+// ── UPLOAD ───────────────────────────────────────────────────
+async function submitUpload() {
+  var mapping = {};
+  parsedCSV.headers.forEach(function(h) {
+    var s = el('map-' + sid(h));
+    if (s && s.value && s.value !== 'ignore') mapping[h] = s.value;
+  });
+
+  var hasEmail = Object.values(mapping).includes('email');
+  if (!hasEmail) { showToast('Please map at least one column to Email address', 'er'); return; }
+
+  var sector = el('ctxSector').value || 'ecommerce';
+  var aov    = parseFloat(el('ctxAov').value) || 50;
+
+  showLoading('Analysing your list across four dimensions…');
+  try {
+    var resp = await fetch(API + '?userId=' + userId + '&action=upload', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        rows:         parsedCSV.rows,
+        fieldMapping: mapping,
+        sector:       sector,
+        aov:          aov,
+        uploadVersion: Date.now(),
+      }),
+    });
+    var json = await resp.json();
+    if (!json.success) throw new Error(json.error || 'Upload failed');
+    hideLoading();
+    lastResults = json;
+    renderResults(json);
+    showScreen('results');
+    showToast('Analysis complete — ' + fmt(json.totalContacts) + ' contacts processed', 'ok');
+  } catch(err) {
+    hideLoading();
+    showToast('Error: ' + err.message, 'er');
+  }
+}
+
+// ── LOAD LAST ────────────────────────────────────────────────
+async function loadResults() {
+  if (!userId) { showToast('No user ID — return to dashboard', 'er'); return; }
+  showLoading('Loading your last analysis…');
+  try {
+    var resp = await fetch(API + '?userId=' + userId + '&action=load');
+    var json = await resp.json();
+    hideLoading();
+    if (!json.hasData) {
+      showToast('No previous analysis found — upload a list to get started', '');
+      return;
+    }
+    lastResults = json;
+    renderResults(json);
+    showScreen('results');
+  } catch(err) {
+    hideLoading();
+    showToast('Could not load — please try again', 'er');
+  }
+}
+
+// ── RENDER RESULTS ────────────────────────────────────────────
+function renderResults(d) {
+  var total = d.totalContacts || 0;
+  var pct   = function(n) { return total > 0 ? Math.round(n/total*100) : 0; };
+
+  // Meta line
+  var metaParts = [];
+  if (d.checkDate) metaParts.push('Analysed ' + fmtDate(d.checkDate));
+  if (d.sector)    metaParts.push(capFirst(d.sector));
+  if (d.aov)       metaParts.push('AOV £' + d.aov);
+  if (d.duplicatesRemoved) metaParts.push(d.duplicatesRemoved + ' duplicates removed');
+  el('resultsMeta').textContent = metaParts.join(' · ');
+
+  // ── Headline numbers ──
+  var assetPct = total > 0 ? Math.round(((d.activeCount||0) + (d.recoverableCount||0)) / total * 100) : 0;
+  el('headlineGrid').innerHTML =
+    hlCard(fmt(total), 'Total contacts', '', 'blue') +
+    hlCard(fmtGBP(d.assetValue), 'Estimated list value', 'Actionable contacts × sector benchmark', 'green') +
+    hlCard(pct(d.liabilityCount||0) + '%', 'Contacts below consent threshold', 'ICO enforcement risk zone', d.liabilityCount > total*0.1 ? 'red' : 'amber');
+
+  // ── Four tiers ──
+  var tiers = [
+    { label:'Active',      count:d.activeCount||0,      cls:'g', desc:'Consent strong, deliverability good. Ready to send.' },
+    { label:'Recoverable', count:d.recoverableCount||0,  cls:'a', desc:'Consent declining but above threshold. Act within 90 days.' },
+    { label:'At risk',     count:d.atRiskCount||0,       cls:'y', desc:'Poor deliverability signals. Likely to bounce or be filtered.' },
+    { label:'Liability',   count:d.liabilityCount||0,    cls:'r', desc:'Below consent threshold. Do not send — ICO enforcement risk.' },
+  ];
+  el('tiersBox').innerHTML = '<div class="tiers-title">Contact breakdown</div>' +
+    tiers.map(function(t) {
+      var barPct = total > 0 ? Math.round(t.count/total*100) : 0;
+      return '<div class="tier-row">' +
+        '<div class="tier-dot ' + t.cls + '"></div>' +
+        '<div class="tier-label">' + t.label + '</div>' +
+        '<div class="tier-bar-wrap"><div class="tier-bar-fill ' + t.cls + '" style="width:' + barPct + '%"></div></div>' +
+        '<div class="tier-count">' + fmt(t.count) + '</div>' +
+        '<div class="tier-desc">' + t.desc + '</div>' +
+        '</div>';
+    }).join('');
+
+  // ── ICO status ──
+  var icoStatus = d.icoStatus || 'Good standing';
+  var icoCls = icoStatus.includes('Good') ? 'good' : icoStatus.includes('High') ? 'bad' : 'warn';
+  var icoIcon = icoCls === 'good' ? '✅' : icoCls === 'bad' ? '⛔' : '⚠️';
+  el('icoBox').innerHTML = '<div class="ico-box ' + icoCls + '">' +
+    '<div class="ico-icon">' + icoIcon + '</div>' +
+    '<div><div class="ico-title">ICO picture: ' + escH(icoStatus) + '</div>' +
+    '<div class="ico-desc">' + icoDescription(icoStatus, d) + '</div></div></div>';
+
+  // ── Data quality ──
+  var flags = d.dataQualityFlags || [];
+  el('dqBox').innerHTML = '<div class="dq-title">Data quality</div>' +
+    (flags.length === 0
+      ? '<div class="dq-clean">✓ No data quality issues detected</div>'
+      : flags.map(function(f){ return '<div class="dq-flag">' + escH(f) + '</div>'; }).join(''));
+
+  // ── Opportunities ──
+  var opps = d.opportunities || [];
+  if (!opps.length) {
+    el('oppsBox').innerHTML = '<div style="font-size:13px;color:var(--mu);padding:16px 0">No specific actions identified for this list.</div>';
+  } else {
+    el('oppsBox').innerHTML = opps.map(function(o) {
+      var hasValue = o.currentValue > 0;
+      return '<div class="opp-card">' +
+        '<div class="opp-top">' +
+          '<div class="opp-type">' + escH(o.type) + '</div>' +
+          (hasValue
+            ? '<div class="opp-value">' + fmtGBP(o.currentValue) + '</div>'
+            : '<div class="opp-value zero">Action required</div>') +
+        '</div>' +
+        '<div class="opp-desc">' + escH(o.description) + '</div>' +
+        '<div class="opp-action"><div class="opp-action-lbl">What to do</div><div class="opp-action-txt">' + escH(o.recommendedAction) + '</div></div>' +
+        (hasValue && o.decayRate ? '<div class="opp-decay">Value decays at ~' + o.decayRate + '% per month — act sooner for a better outcome.</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+}
+
+function hlCard(num, label, sub, cls) {
+  return '<div class="hl-card ' + cls + '">' +
+    '<div class="hl-num">' + escH(String(num)) + '</div>' +
+    '<div class="hl-label">' + escH(label) + '</div>' +
+    (sub ? '<div class="hl-sub">' + escH(sub) + '</div>' : '') +
+    '</div>';
+}
+
+function icoDescription(status, d) {
+  if (status.includes('Good')) {
+    return 'The majority of your contacts are above the consent strength threshold. Your list is in good standing for direct marketing under PECR and UK GDPR. Continue monitoring as consent decays over time.';
+  }
+  if (status.includes('High risk')) {
+    return 'Over 30% of your contacts are below the consent strength threshold. Sending to these contacts carries significant ICO enforcement risk under PECR Regulation 22. Suppress or re-consent this segment before your next send.';
+  }
+  return 'Some contacts are approaching the consent threshold. Review the at-risk tier and consider a re-consent campaign for contacts expiring in the next 90 days.';
+}
+
+// ── PRE-SEND CERTIFICATE ─────────────────────────────────────
+async function generateCert() {
+  var seg  = el('certSeg').value || 'Full list';
+  var type = el('certType').value;
+  showLoading('Generating certificate…');
+  try {
+    var resp = await fetch(API + '?userId=' + userId + '&action=certificate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ segmentName: seg, campaignType: type }),
+    });
+    var json = await resp.json();
+    hideLoading();
+    if (!json.success) throw new Error(json.error);
+    var r   = json.result.toLowerCase();
+    var ce  = el('certResult');
+    ce.className    = 'cert-result ' + r;
+    ce.style.display = 'block';
+    ce.innerHTML =
+      '<div class="cert-verdict">' + escH(json.result) + '</div>' +
+      '<div class="cert-detail">' + certDescription(json.result, json) + '</div>' +
+      '<div class="cert-id">Certificate ID: ' + escH(json.certificateId || '—') + ' · ' + fmtDate(json.date) + '</div>';
+    ce.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    showToast('Certificate generated', 'ok');
+  } catch(err) {
+    hideLoading();
+    showToast('Certificate failed: ' + err.message, 'er');
+  }
+}
+
+function certDescription(result, d) {
+  if (result === 'Pass') return 'Your list passed the pre-send check. ' + fmt(d.contactsChecked) + ' contacts checked. No significant consent or deliverability flags. This certificate has been saved to your account.';
+  if (result === 'Review') return fmt(d.consentFlags) + ' contacts flagged for consent review. Consider suppressing or re-consenting these addresses before sending. Certificate saved for your records.';
+  return fmt(d.consentFlags) + ' contacts are below the consent threshold — this send should not proceed until these are resolved. Certificate saved as evidence of the pre-send check.';
+}
+
+// ── LOADING / TOAST ──────────────────────────────────────────
+function showLoading(msg) { el('loadingMsg').textContent = msg||'Working…'; el('loadingBg').classList.add('open'); }
+function hideLoading() { el('loadingBg').classList.remove('open'); }
+function showToast(msg, type) {
+  var t = el('toast');
+  t.textContent = msg;
+  t.className   = 'toast on' + (type?' '+type:'');
+  setTimeout(function(){ t.className='toast'; }, 3500);
+}
+
+// ── UTILS ────────────────────────────────────────────────────
+function fmtDate(s) { if (!s) return ''; return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function capFirst(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+
+// ── AUTO-LOAD ────────────────────────────────────────────────
+if (userId) {
+  showLoading('Checking for existing analysis…');
+  fetch(API + '?userId=' + userId + '&action=load')
+    .then(function(r){ return r.json(); })
+    .then(function(json) {
+      hideLoading();
+      if (json.hasData) {
+        lastResults = json;
+        renderResults(json);
+        showScreen('results');
+      }
+    })
+    .catch(function(){ hideLoading(); });
+}
+</script>
+</body>
+</html>
