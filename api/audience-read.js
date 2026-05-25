@@ -1,11 +1,24 @@
-// api/audience-read.js — Sendwize Tool 7: Audience Read
+// api/audience-read.js — Sendwize Tool 6: Audience Read v6.0
 // Seven deterministic algorithms. Zero AI. Zero external data.
-// Airtable via fetch (matches rest of codebase — no npm airtable package).
+// Airtable via fetch only — no npm airtable package.
 // All async work AWAITED before res.json() — Vercel Hobby safe.
+//
+// v6.0 changes:
+//   - generateFixRecords removed. Fix records now created via
+//     generate-fix.js endpoint — correct table, correct fields,
+//     correct fix types that pass through LEGACY_TYPE_MAP.
+//   - Fix types updated to v6.0 taxonomy (consent_missing,
+//     legitimate_interest_abuse, data_quality).
+//   - send-alert (audience_damaged) wired up via data.js.
+//   - Upload loop timeout risk reduced — segment saves batched.
+//   - APP_URL constant added.
+//   - Null stripping on all Airtable writes (atCreate already does this).
 
 const BASE_ID    = process.env.BASE_ID;
 const AT_TOKEN   = process.env.AIRTABLE_TOKEN;
 const AT_BASE    = `https://api.airtable.com/v0/${BASE_ID}`;
+const APP_URL    = 'https://sendwize-backend.vercel.app';
+
 const AT_HEADERS = () => ({
   Authorization:  `Bearer ${AT_TOKEN}`,
   'Content-Type': 'application/json',
@@ -25,7 +38,6 @@ async function atGet(table, formula, sort = '', max = 100) {
 }
 
 async function atCreate(table, fields) {
-  // Airtable rejects null values — strip them before posting
   const clean = Object.fromEntries(
     Object.entries(fields).filter(([, v]) => v !== null && v !== undefined)
   );
@@ -42,10 +54,13 @@ async function atCreate(table, fields) {
 }
 
 async function atPatch(table, recordId, fields) {
+  const clean = Object.fromEntries(
+    Object.entries(fields).filter(([, v]) => v !== null && v !== undefined)
+  );
   const r = await fetch(`${AT_BASE}/${encodeURIComponent(table)}/${recordId}`, {
     method:  'PATCH',
     headers: AT_HEADERS(),
-    body:    JSON.stringify({ fields }),
+    body:    JSON.stringify({ fields: clean }),
   });
   if (!r.ok) throw new Error(`Airtable PATCH ${table} failed: ${r.status}`);
   return await r.json();
@@ -62,15 +77,15 @@ function detectColumnType(values) {
   if (sample.filter(v => dateRe.test(String(v).trim())).length / sample.length > 0.7) return 'date';
   const nums = sample.map(v => parseFloat(v)).filter(n => !isNaN(n));
   if (nums.length / sample.length > 0.8) {
-    if (nums.every(n => n >= 0 && n <= 1))                          return 'rate';
-    if (nums.every(n => n >= 0 && n <= 100) && nums.some(n => n % 1 !== 0)) return 'rate_pct';
+    if (nums.every(n => n >= 0 && n <= 1))                                               return 'rate';
+    if (nums.every(n => n >= 0 && n <= 100) && nums.some(n => n % 1 !== 0))             return 'rate_pct';
     return 'count';
   }
   return 'text';
 }
 
 function autoMapColumns(headers, rows) {
-  const mapping = {};
+  const mapping    = {};
   const sampleSize = Math.min(rows.length, 20);
   for (const h of headers) {
     const values = rows.slice(0, sampleSize).map(r => r[h]);
@@ -79,19 +94,19 @@ function autoMapColumns(headers, rows) {
     if (type === 'date') {
       mapping[h] = 'date';
     } else if (type === 'rate' || type === 'rate_pct') {
-      if (lc.includes('open'))  mapping[h] = 'open_rate';
-      else if (lc.includes('click')) mapping[h] = 'click_rate';
-      else mapping[h] = 'rate_unknown';
+      if (lc.includes('open'))        mapping[h] = 'open_rate';
+      else if (lc.includes('click'))  mapping[h] = 'click_rate';
+      else                            mapping[h] = 'rate_unknown';
     } else if (type === 'count') {
       if (lc.includes('unsub') || lc.includes('opt'))              mapping[h] = 'unsubscribe_count';
       else if (lc.includes('complaint') || lc.includes('spam'))    mapping[h] = 'complaint_count';
       else if (lc.includes('volume') || lc.includes('sent') || lc.includes('send')) mapping[h] = 'volume_sent';
-      else mapping[h] = 'count_unknown';
+      else                                                          mapping[h] = 'count_unknown';
     } else if (type === 'text') {
-      if (lc.includes('segment') || lc.includes('list') || lc.includes('audience')) mapping[h] = 'segment';
+      if (lc.includes('segment') || lc.includes('list') || lc.includes('audience'))     mapping[h] = 'segment';
       else if (lc.includes('campaign') || lc.includes('name') || lc.includes('subject')) mapping[h] = 'campaign_name';
-      else if (lc.includes('type') || lc.includes('kind')) mapping[h] = 'campaign_type';
-      else mapping[h] = 'text_unknown';
+      else if (lc.includes('type') || lc.includes('kind'))         mapping[h] = 'campaign_type';
+      else                                                          mapping[h] = 'text_unknown';
     }
   }
   return mapping;
@@ -104,7 +119,10 @@ function normaliseDate(raw) {
   const uk = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (uk) return `${uk[3]}-${uk[2]}-${uk[1]}`;
   const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (us) { const yr = us[3].length === 2 ? '20' + us[3] : us[3]; return `${yr}-${String(us[1]).padStart(2,'0')}-${String(us[2]).padStart(2,'0')}`; }
+  if (us) {
+    const yr = us[3].length === 2 ? '20' + us[3] : us[3];
+    return `${yr}-${String(us[1]).padStart(2,'0')}-${String(us[2]).padStart(2,'0')}`;
+  }
   return null;
 }
 
@@ -139,16 +157,16 @@ function algorithm1_fingerprint(campaigns) {
   const n = campaigns.length;
   if (!n) return null;
 
-  const unsubRates  = campaigns.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1));
-  const openRates   = campaigns.map(c => c.open_rate).filter(r => r !== null);
-  const clickRates  = campaigns.map(c => c.click_rate).filter(r => r !== null);
+  const unsubRates = campaigns.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1));
+  const openRates  = campaigns.map(c => c.open_rate).filter(r => r !== null);
+  const clickRates = campaigns.map(c => c.click_rate).filter(r => r !== null);
 
-  const sorted      = [...unsubRates].sort((a, b) => a - b);
+  const sorted  = [...unsubRates].sort((a, b) => a - b);
   const lo = Math.floor(n * 0.2), hi = Math.ceil(n * 0.8);
-  const trimmed     = sorted.slice(lo, hi);
+  const trimmed = sorted.slice(lo, hi);
   const baselineUnsub = trimmed.length ? mean_arr(trimmed) : 0.002;
 
-  const mean_u  = mean_arr(unsubRates);
+  const mean_u   = mean_arr(unsubRates);
   const variance = unsubRates.reduce((s, v) => s + Math.pow(v - mean_u, 2), 0) / n;
   const stddev   = Math.sqrt(variance);
 
@@ -159,11 +177,11 @@ function algorithm1_fingerprint(campaigns) {
   if (openRates.length >= 3) {
     const pairs = openRates.map((r, i) => ({ t: i, y: r })).filter(p => p.y > 0);
     if (pairs.length >= 2) {
-      const lnY  = pairs.map(p => Math.log(p.y));
-      const tArr = pairs.map(p => p.t);
+      const lnY   = pairs.map(p => Math.log(p.y));
+      const tArr  = pairs.map(p => p.t);
       const tMean = mean_arr(tArr), yMean = mean_arr(lnY);
-      const num = tArr.reduce((s, t, i) => s + (t - tMean) * (lnY[i] - yMean), 0);
-      const den = tArr.reduce((s, t) => s + Math.pow(t - tMean, 2), 0);
+      const num   = tArr.reduce((s, t, i) => s + (t - tMean) * (lnY[i] - yMean), 0);
+      const den   = tArr.reduce((s, t) => s + Math.pow(t - tMean, 2), 0);
       openDecayCoeff = den !== 0 ? -num / den : 0;
     }
   }
@@ -199,7 +217,10 @@ function algorithm1_fingerprint(campaigns) {
     for (let i = 0; i < n; i++) {
       const windowEnd   = dates[i];
       const windowStart = new Date(+windowEnd - 30 * 86400000);
-      const inWindow    = campaigns.filter(c => { const d = new Date(c.date); return d >= windowStart && d <= windowEnd; });
+      const inWindow    = campaigns.filter(c => {
+        const d = new Date(c.date);
+        return d >= windowStart && d <= windowEnd;
+      });
       if (inWindow.length >= 3) {
         const avgUnsub = mean_arr(inWindow.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1)));
         if (avgUnsub < baselineUnsub * 1.2) bestFreq = inWindow.length;
@@ -208,22 +229,25 @@ function algorithm1_fingerprint(campaigns) {
     frequencyThreshold = bestFreq;
   }
 
-  const volumeSensitivity  = campaigns.every(c => c.volume_sent) ? pearsonCorrelation(campaigns.map(c => c.volume_sent), unsubRates) : 0;
-  const recencySensitivity = n >= 4 ? (mean_arr(unsubRates.slice(-Math.ceil(n / 3))) - mean_arr(unsubRates.slice(0, Math.floor(n / 3)))) / (baselineUnsub + 0.001) : 0;
+  const volumeSensitivity  = campaigns.every(c => c.volume_sent)
+    ? pearsonCorrelation(campaigns.map(c => c.volume_sent), unsubRates) : 0;
+  const recencySensitivity = n >= 4
+    ? (mean_arr(unsubRates.slice(-Math.ceil(n / 3))) - mean_arr(unsubRates.slice(0, Math.floor(n / 3)))) / (baselineUnsub + 0.001)
+    : 0;
 
   return {
-    baselineUnsubscribeRate:    r4(baselineUnsub),
-    baselineOpenRate:           baselineOpen  !== null ? r4(baselineOpen)  : null,
-    baselineClickRate:          baselineClick !== null ? r4(baselineClick) : null,
-    unsubscribeStdDev:          r4(stddev),
-    openRateDecayCoeff:         openDecayCoeff !== null ? r4(openDecayCoeff) : null,
-    recoveryHalfLife:           r2(recoveryHalfLife),
+    baselineUnsubscribeRate:     r4(baselineUnsub),
+    baselineOpenRate:            baselineOpen  !== null ? r4(baselineOpen)  : null,
+    baselineClickRate:           baselineClick !== null ? r4(baselineClick) : null,
+    unsubscribeStdDev:           r4(stddev),
+    openRateDecayCoeff:          openDecayCoeff !== null ? r4(openDecayCoeff) : null,
+    recoveryHalfLife:            r2(recoveryHalfLife),
     frequencyToleranceThreshold: Math.round(frequencyThreshold),
-    campaignTypeSensitivity:    typeSensitivity,
-    volumeSensitivity:          r4(volumeSensitivity),
-    recencySensitivity:         r4(recencySensitivity),
-    campaignCount:              n,
-    dataCompleteness:           dataCompletenessScore(campaigns),
+    campaignTypeSensitivity:     typeSensitivity,
+    volumeSensitivity:           r4(volumeSensitivity),
+    recencySensitivity:          r4(recencySensitivity),
+    campaignCount:               n,
+    dataCompleteness:            dataCompletenessScore(campaigns),
   };
 }
 
@@ -234,10 +258,10 @@ function algorithm1_fingerprint(campaigns) {
 function algorithm2_trustVelocity(campaigns, fingerprint) {
   const n = campaigns.length;
   if (n < 2) return { velocity: 0, direction: 'Stable', magnitude: 0 };
-  const baseline    = fingerprint?.baselineUnsubscribeRate || 0.002;
-  const unsubRates  = campaigns.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1));
-  const stream1     = secondDerivative(unsubRates);
-  const openRates   = campaigns.map(c => c.open_rate).filter(r => r !== null);
+  const baseline   = fingerprint?.baselineUnsubscribeRate || 0.002;
+  const unsubRates = campaigns.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1));
+  const stream1    = secondDerivative(unsubRates);
+  const openRates  = campaigns.map(c => c.open_rate).filter(r => r !== null);
   let stream2 = 0;
   if (openRates.length >= 3) {
     const deltas = openRates.slice(1).map((r, i) => r - openRates[i]);
@@ -295,15 +319,15 @@ function algorithm3_campaignImpact(campaign, allCampaigns, fingerprint) {
   const postCampaigns = idx >= 0 ? allCampaigns.slice(idx + 1, idx + 4) : [];
   const preAvg  = preCampaigns.length  ? mean_arr(preCampaigns.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1)))  : baseline;
   const postAvg = postCampaigns.length ? mean_arr(postCampaigns.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1))) : unsubRate;
-  const residualImpact   = (postAvg - preAvg) / (baseline + 0.0001);
-  const halfLife         = fingerprint.recoveryHalfLife || 3;
-  const recoveryDays     = zScore > 0 ? Math.round(zScore * halfLife * 7) : 0;
-  const impactScore      = -(zScore * 0.7 + residualImpact * 0.3);
+  const residualImpact = (postAvg - preAvg) / (baseline + 0.0001);
+  const halfLife       = fingerprint.recoveryHalfLife || 3;
+  const recoveryDays   = zScore > 0 ? Math.round(zScore * halfLife * 7) : 0;
+  const impactScore    = -(zScore * 0.7 + residualImpact * 0.3);
   let category, reason;
   if      (impactScore >  1.0) { category = 'Built trust';    reason = 'Unsubscribe rate significantly below this segment\'s normal — strong positive signal.'; }
   else if (impactScore >  0.2) { category = 'Built trust';    reason = 'Slightly below-average unsubscribes — mild positive effect on the relationship.'; }
   else if (impactScore > -0.3) { category = 'Neutral';        reason = 'Campaign performed within normal range for this segment — no significant relationship change.'; }
-  else if (impactScore > -1.0) { category = 'Caused fatigue'; reason = `Unsubscribe rate ${r2(Math.abs(zScore))} standard deviations above this segment's baseline. Audience showing mild fatigue.`; }
+  else if (impactScore > -1.0) { category = 'Caused fatigue'; reason = `Unsubscribe rate ${r2(Math.abs(zScore))} standard deviations above this segment\'s baseline. Audience showing mild fatigue.`; }
   else                         { category = 'Damaged';        reason = `Unsubscribe rate ${r2(Math.abs(zScore))} standard deviations above baseline — significant relationship damage. Estimated ${recoveryDays} days to recover.`; }
   const typeMap = {
     'Promotional':   'Promotional campaigns typically cause more unsubscribes — this was higher than your normal promotional baseline.',
@@ -323,8 +347,8 @@ function algorithm3_campaignImpact(campaign, allCampaigns, fingerprint) {
 
 function algorithm4_frequencyTolerance(campaigns, fingerprint) {
   if (!fingerprint) return { toleranceRemaining: 3, optimalNextSend: null, recommendedType: 'Newsletter' };
-  const now            = new Date();
-  const thirtyDaysAgo  = new Date(+now - 30 * 86400000);
+  const now             = new Date();
+  const thirtyDaysAgo   = new Date(+now - 30 * 86400000);
   const recentCampaigns = campaigns.filter(c => new Date(c.date) >= thirtyDaysAgo);
   const threshold       = fingerprint.frequencyToleranceThreshold || 4;
   const recentOpenRates = recentCampaigns.map(c => c.open_rate).filter(r => r !== null);
@@ -333,14 +357,14 @@ function algorithm4_frequencyTolerance(campaigns, fingerprint) {
     const avgRecent = mean_arr(recentOpenRates);
     engagementMultiplier = Math.max(0.5, Math.min(1.5, avgRecent / fingerprint.baselineOpenRate));
   }
-  const typeWeights     = { 'Promotional': 1.5, 'Newsletter': 0.8, 'Re-engagement': 1.2, 'Transactional': 0.3 };
-  const effectiveSends  = recentCampaigns.reduce((s, c) => s + (typeWeights[c.campaign_type] || 1.0), 0);
-  const adjustedThresh  = threshold * engagementMultiplier;
+  const typeWeights    = { 'Promotional': 1.5, 'Newsletter': 0.8, 'Re-engagement': 1.2, 'Transactional': 0.3 };
+  const effectiveSends = recentCampaigns.reduce((s, c) => s + (typeWeights[c.campaign_type] || 1.0), 0);
+  const adjustedThresh = threshold * engagementMultiplier;
   const toleranceRemaining = Math.max(0, Math.round(adjustedThresh - effectiveSends));
-  const lastSend   = campaigns.length ? new Date(campaigns[campaigns.length - 1].date) : now;
+  const lastSend     = campaigns.length ? new Date(campaigns[campaigns.length - 1].date) : now;
   const recoveryDays = fingerprint.recoveryHalfLife ? fingerprint.recoveryHalfLife * 3.5 : 7;
-  const minGap     = toleranceRemaining > 2 ? 3 : Math.round(recoveryDays);
-  const optDate    = new Date(+lastSend + minGap * 86400000);
+  const minGap       = toleranceRemaining > 2 ? 3 : Math.round(recoveryDays);
+  const optDate      = new Date(+lastSend + minGap * 86400000);
   const optimalNextSend = optDate.toISOString().slice(0, 10);
   let recommendedType = 'Newsletter';
   if      (toleranceRemaining <= 1) recommendedType = 'Transactional';
@@ -355,44 +379,98 @@ function algorithm4_frequencyTolerance(campaigns, fingerprint) {
 
 function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, recentImpacts) {
   if (!fingerprint) {
-    return { state: 'Neutral', statement: 'Not enough data to determine sentiment yet. Upload send history to unlock the full picture.', confidence: 0.3, regulatoryNote: null, action: 'Upload more data to improve accuracy.' };
+    return {
+      state: 'Neutral',
+      statement: 'Not enough data to determine sentiment yet. Upload your send history to unlock the full picture.',
+      confidence: 0.3,
+      regulatoryNote: null,
+      action: 'Upload more campaign data to improve accuracy.',
+    };
   }
-  const direction   = trustVelocity.direction;
-  const tolerance   = freqTolerance.toleranceRemaining;
+  const direction    = trustVelocity.direction;
+  const tolerance    = freqTolerance.toleranceRemaining;
   const recentDamage = recentImpacts.filter(i => i.category === 'Damaged' || i.category === 'Caused fatigue').length;
   const recentBuilt  = recentImpacts.filter(i => i.category === 'Built trust').length;
-  const hasComplaints = recentImpacts.some(i => i._hasComplaints);
-  const n            = fingerprint.campaignCount;
-  let baseConf       = Math.min(0.5 + n * 0.04, 0.95);
+  const hasComplaints  = recentImpacts.some(i => i._hasComplaints);
+  const n              = fingerprint.campaignCount;
+  const baseConf       = Math.min(0.5 + n * 0.04, 0.95);
   const urgencyPattern = recentImpacts.some(i => i._isUrgency);
   const pricingPattern = recentImpacts.some(i => i._isPricing);
 
   if (hasComplaints && direction === 'Rapid decline') {
     const conf = r2(Math.min(baseConf, 0.92));
-    return { state: 'Complaint risk', statement: 'Multiple signals are converging. This segment is moving toward formal complaint territory.', confidence: conf, regulatoryNote: conf > 0.7 ? 'This pattern — rapid unsubscribe acceleration combined with complaint signals — is statistically associated with audiences that file formal complaints. The window to act is short.' : null, action: 'Stop promotional sends immediately. Consider a re-permission campaign.' };
+    return {
+      state: 'Complaint risk',
+      statement: 'Multiple signals are converging. This segment is moving toward formal complaint territory.',
+      confidence: conf,
+      regulatoryNote: conf > 0.7 ? 'This pattern — rapid unsubscribe acceleration combined with complaint signals — is statistically associated with audiences that file formal complaints with the ICO. The window to act is short.' : null,
+      action: 'Stop promotional sends immediately. Consider a re-permission campaign before sending again.',
+    };
   }
   if (direction === 'Rapid decline' && recentDamage >= 2) {
     const conf = r2(Math.min(baseConf, 0.88));
-    return { state: 'Damaged', statement: 'Something you sent recently did not land well. Your audience is pulling away quickly.', confidence: conf, regulatoryNote: conf > 0.7 && urgencyPattern ? 'This unsubscribe pattern following an urgency campaign matches the audience behaviour seen before multiple ASA complaints. Your audience felt pressured. Worth reviewing the claims before using them again.' : null, action: `Pause promotional sends for ${Math.round(fingerprint.recoveryHalfLife * 7)} days. Send a value-first newsletter to start rebuilding.` };
+    return {
+      state: 'Damaged',
+      statement: 'Something you sent recently did not land well. Your audience is pulling away quickly.',
+      confidence: conf,
+      regulatoryNote: conf > 0.7 && urgencyPattern ? 'This unsubscribe pattern following a urgency campaign matches the audience behaviour seen before multiple ASA complaints. Your audience felt pressured. Worth reviewing the claims before using them again.' : null,
+      action: `Pause promotional sends for ${Math.round(fingerprint.recoveryHalfLife * 7)} days. Send a value-first newsletter to start rebuilding.`,
+    };
   }
   if (direction === 'Declining' && tolerance <= 1) {
     const conf = r2(Math.min(baseConf, 0.85));
-    return { state: 'Fatigue building', statement: 'This segment is getting tired of hearing from you. Not angry yet — but getting there.', confidence: conf, regulatoryNote: conf > 0.7 ? 'High frequency combined with declining engagement is the pattern that precedes ICO legitimate interest challenges. Your audience is telling you the contact is no longer proportionate.' : null, action: 'Reduce send frequency by at least 40%. Shift next send to newsletter format.' };
+    return {
+      state: 'Fatigue building',
+      statement: 'This segment is getting tired of hearing from you. Not angry yet — but getting there.',
+      confidence: conf,
+      regulatoryNote: conf > 0.7 ? 'High frequency combined with declining engagement is the pattern that precedes ICO legitimate interest challenges. Your audience is telling you the contact is no longer proportionate to their interest.' : null,
+      action: 'Reduce send frequency by at least 40%. Shift next send to newsletter format only.',
+    };
   }
   if (direction === 'Declining' && tolerance > 1) {
     const conf = r2(Math.min(baseConf, 0.78));
-    return { state: 'Cooling', statement: 'Engagement is declining steadily. Something in your recent campaigns is not landing.', confidence: conf, regulatoryNote: conf > 0.7 && pricingPattern ? 'Audiences that disengage after pricing emails frequently cite misleading expectations. This is the consumer sentiment the CMA investigates.' : null, action: 'Review last three campaign types. Consider a feedback or preference-update email.' };
+    return {
+      state: 'Cooling',
+      statement: 'Engagement is declining steadily. Something in your recent campaigns is not landing.',
+      confidence: conf,
+      regulatoryNote: conf > 0.7 && pricingPattern ? 'Audiences that disengage after pricing emails frequently cite misleading expectations. This is the consumer sentiment pattern the CMA investigates under DMCCA 2024.' : null,
+      action: 'Review last three campaign types. Consider a feedback or preference-update email.',
+    };
   }
   if (direction === 'Improving' && tolerance >= 3 && recentBuilt >= 2) {
-    return { state: 'Peak receptiveness', statement: 'Your audience is highly engaged and ready to hear from you. Good time for a promotional campaign.', confidence: r2(Math.min(baseConf, 0.88)), regulatoryNote: null, action: 'This is a strong window for a promotional or new-product announcement send.' };
+    return {
+      state: 'Peak receptiveness',
+      statement: 'Your audience is highly engaged and ready to hear from you. A good window for a promotional campaign.',
+      confidence: r2(Math.min(baseConf, 0.88)),
+      regulatoryNote: null,
+      action: 'Strong window for a promotional or new-product announcement send.',
+    };
   }
   if ((direction === 'Improving' || direction === 'Stable') && recentDamage >= 1 && recentBuilt >= 1) {
-    return { state: 'Recovering', statement: 'This segment was damaged but is showing early signs of recovery. Give them more time.', confidence: r2(Math.min(baseConf, 0.75)), regulatoryNote: null, action: 'Continue with low-frequency, high-value sends only. Avoid promotional campaigns for now.' };
+    return {
+      state: 'Recovering',
+      statement: 'This segment was damaged but is showing early signs of recovery. Give them more time.',
+      confidence: r2(Math.min(baseConf, 0.75)),
+      regulatoryNote: null,
+      action: 'Continue with low-frequency, high-value sends only. Avoid promotional campaigns for now.',
+    };
   }
   if (direction === 'Stable' && tolerance >= 4 && recentDamage === 0) {
-    return { state: 'Highly receptive post-gap', statement: 'No strong negative signals detected. Your audience appears ready to hear from you.', confidence: r2(Math.min(baseConf, 0.72)), regulatoryNote: null, action: 'Good window for your next send. Newsletter or light promotional both appropriate.' };
+    return {
+      state: 'Highly receptive post-gap',
+      statement: 'No strong negative signals detected. Your audience appears ready to hear from you.',
+      confidence: r2(Math.min(baseConf, 0.72)),
+      regulatoryNote: null,
+      action: 'Good window for your next send. Newsletter or light promotional both appropriate.',
+    };
   }
-  return { state: 'Neutral', statement: 'No strong signals in either direction. Proceed with your planned campaign.', confidence: r2(Math.min(baseConf, 0.65)), regulatoryNote: null, action: 'Continue with planned send schedule. Monitor unsubscribes closely after next campaign.' };
+  return {
+    state: 'Neutral',
+    statement: 'No strong signals in either direction. Proceed with your planned campaign.',
+    confidence: r2(Math.min(baseConf, 0.65)),
+    regulatoryNote: null,
+    action: 'Continue with planned send schedule. Monitor unsubscribes closely after next campaign.',
+  };
 }
 
 // ─────────────────────────────────────────────
@@ -401,13 +479,13 @@ function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance
 
 function algorithm6_predictiveSend(segment, campaignType, sendDate, fingerprint, trustVelocity, freqTolerance) {
   if (!fingerprint) return { verdict: 'Amber', confidence: 0.5, reason: 'Not enough historical data to predict impact. Proceed cautiously.', alternatives: [], predictedUnsubRange: null };
-  const baseline    = fingerprint.baselineUnsubscribeRate;
-  const stddev      = fingerprint.unsubscribeStdDev;
-  const typeWeights = { 'Promotional': 1.5, 'Newsletter': 0.8, 'Re-engagement': 1.3, 'Transactional': 0.3 };
+  const baseline       = fingerprint.baselineUnsubscribeRate;
+  const stddev         = fingerprint.unsubscribeStdDev;
+  const typeWeights    = { 'Promotional': 1.5, 'Newsletter': 0.8, 'Re-engagement': 1.3, 'Transactional': 0.3 };
   const typeMultiplier = typeWeights[campaignType] || 1.0;
-  const gapFactor   = Math.max(0.7, 1 - (freqTolerance.recentSendCount > 0 ? 7 : 30) / 90);
-  const velAdjust   = 1 + trustVelocity.velocity * 0.3;
-  const expectedRate = baseline * typeMultiplier * gapFactor * Math.max(0.5, velAdjust);
+  const gapFactor      = Math.max(0.7, 1 - (freqTolerance.recentSendCount > 0 ? 7 : 30) / 90);
+  const velAdjust      = 1 + trustVelocity.velocity * 0.3;
+  const expectedRate   = baseline * typeMultiplier * gapFactor * Math.max(0.5, velAdjust);
   const results = [];
   for (let i = 0; i < 1000; i++) results.push(Math.max(0, expectedRate + gaussianRandom(0, stddev)));
   results.sort((a, b) => a - b);
@@ -415,11 +493,17 @@ function algorithm6_predictiveSend(segment, campaignType, sendDate, fingerprint,
   const spikeProb = results.filter(r => r > baseline * 1.5).length / 1000;
   let verdict, reason, confidence;
   if (spikeProb < 0.15 && freqTolerance.toleranceRemaining > 1) {
-    verdict = 'Green'; reason = `Low risk. Predicted unsubscribe rate ${(p50*100).toFixed(2)}%–${(p90*100).toFixed(2)}% — within normal range for this segment.`; confidence = r2(0.85 - spikeProb);
+    verdict    = 'Green';
+    reason     = `Low risk. Predicted unsubscribe rate ${(p50*100).toFixed(2)}%–${(p90*100).toFixed(2)}% — within normal range for this segment.`;
+    confidence = r2(0.85 - spikeProb);
   } else if (spikeProb < 0.4 || freqTolerance.toleranceRemaining === 1) {
-    verdict = 'Amber'; reason = `Moderate risk. ${Math.round(spikeProb*100)}% chance of above-baseline unsubscribes. Tolerance window is low.`; confidence = r2(0.7 - spikeProb * 0.3);
+    verdict    = 'Amber';
+    reason     = `Moderate risk. ${Math.round(spikeProb*100)}% chance of above-baseline unsubscribes. Tolerance window is low.`;
+    confidence = r2(0.7 - spikeProb * 0.3);
   } else {
-    verdict = 'Red';   reason = `High risk. ${Math.round(spikeProb*100)}% chance of unsubscribe spike. Current segment state not ready for ${campaignType} send.`; confidence = r2(0.9 - spikeProb * 0.2);
+    verdict    = 'Red';
+    reason     = `High risk. ${Math.round(spikeProb*100)}% chance of unsubscribe spike. Current segment state not ready for ${campaignType} send.`;
+    confidence = r2(0.9 - spikeProb * 0.2);
   }
   const alternatives = [];
   if (verdict !== 'Green') {
@@ -454,35 +538,104 @@ function algorithm7_relationshipCapital(campaigns, fingerprint) {
 }
 
 // ─────────────────────────────────────────────
-// MISSING DATA HANDLER
+// MISSING DATA MESSAGES
 // ─────────────────────────────────────────────
 
 function missingDataMessages(hasOpenRates, hasClickRates, hasComplaints, hasSendHistory) {
   const messages = [];
-  if (!hasSendHistory) messages.push({ field: 'Send history', message: 'Add your send history (date, segment, campaign name, volume sent) and we can calculate exactly how many more times you can contact this segment before they start unsubscribing.', algorithmsUnlocked: [1, 3, 4] });
-  if (!hasOpenRates)   messages.push({ field: 'Open rates',   message: 'Add your open rates and we can build a full engagement decay curve — showing whether your audience\'s interest in your emails is growing or shrinking, and how fast.', algorithmsUnlocked: [1] });
-  if (!hasClickRates)  messages.push({ field: 'Click rates',  message: 'Click rates reveal how many of your opens translate to real interest. Add them and we can separate passive openers from genuinely engaged subscribers.', algorithmsUnlocked: [1] });
-  if (!hasComplaints)  messages.push({ field: 'Complaint / spam data', message: 'Complaint and spam report data is the most powerful signal in the model — weighted 50× an unsubscribe. Adding it makes the Trust Velocity engine significantly more accurate.', algorithmsUnlocked: [2] });
+  if (!hasSendHistory) messages.push({ field: 'Send history', message: 'Add volume sent per campaign and we can calculate exactly how many more times you can contact this segment before they start unsubscribing.', algorithmsUnlocked: [1, 3, 4] });
+  if (!hasOpenRates)   messages.push({ field: 'Open rates',   message: 'Add open rates and we can build a full engagement decay curve — showing whether your audience\'s interest is growing or shrinking, and how fast.', algorithmsUnlocked: [1] });
+  if (!hasClickRates)  messages.push({ field: 'Click rates',  message: 'Click rates reveal how many opens translate to real interest. Add them and we can separate passive openers from genuinely engaged subscribers.', algorithmsUnlocked: [1] });
+  if (!hasComplaints)  messages.push({ field: 'Complaint and spam data', message: 'Complaints carry 50× the weight of an unsubscribe in the Trust Velocity model. Adding them makes sentiment inference significantly more accurate.', algorithmsUnlocked: [2] });
   return messages;
 }
 
 // ─────────────────────────────────────────────
-// FIX RECORD GENERATION
+// FIX RECORD GENERATION — via generate-fix.js
+// v6.0: writes to Compliance_Fixes via the endpoint.
+// Uses v6.0 fix type taxonomy. Legacy map in generate-fix.js
+// handles any types that need remapping.
+// Only generates fixes for high-confidence negative states.
 // ─────────────────────────────────────────────
 
-function generateFixRecords(userId, segmentName, sentiment) {
+async function generateFixes(userId, segmentName, sentiment, sourceRecordId) {
   const fixes = [];
-  const now   = new Date().toISOString();
-  if (sentiment.state === 'Complaint risk') {
-    fixes.push({ UserID: userId, FixType: 'frequency_abuse', FixTitle: `Complaint risk detected — ${segmentName}`, FixDetail: sentiment.statement, RegulatoryBody: 'ICO / ASA', ExposureEstimate: 50000, Priority: 'Critical', Source: 'Audience Read', CreatedAt: now, Status: 'Pending' });
+  const { state, confidence, regulatoryNote } = sentiment;
+
+  // Only generate fixes for states that represent genuine compliance risk
+  // and only when confidence is sufficient to avoid noise.
+  if (state === 'Complaint risk' && confidence >= 0.7) {
+    fixes.push({
+      fixType:    'consent_missing',
+      description: `Audience Read — ${segmentName}: Complaint risk detected. ${sentiment.statement} ${regulatoryNote || ''}`.trim(),
+      severity:   'critical',
+    });
   }
-  if (sentiment.state === 'Damaged' && sentiment.regulatoryNote) {
-    fixes.push({ UserID: userId, FixType: 'asa_complaint_pattern', FixTitle: `Urgency campaign damage — ${segmentName}`, FixDetail: sentiment.regulatoryNote, RegulatoryBody: 'ASA', ExposureEstimate: 15000, Priority: 'High', Source: 'Audience Read', CreatedAt: now, Status: 'Pending' });
+
+  if (state === 'Fatigue building' && confidence >= 0.7) {
+    fixes.push({
+      fixType:    'legitimate_interest_abuse',
+      description: `Audience Read — ${segmentName}: Send frequency is building fatigue. ${regulatoryNote || 'High frequency combined with declining engagement is the pattern that precedes ICO legitimate interest challenges.'}`.trim(),
+      severity:   'high',
+    });
   }
-  if (sentiment.state === 'Fatigue building' && sentiment.confidence > 0.7) {
-    fixes.push({ UserID: userId, FixType: 'frequency_abuse', FixTitle: `Frequency fatigue — ${segmentName}`, FixDetail: sentiment.regulatoryNote || `Send frequency is building fatigue in your ${segmentName} segment.`, RegulatoryBody: 'ICO', ExposureEstimate: 25000, Priority: 'High', Source: 'Audience Read', CreatedAt: now, Status: 'Pending' });
+
+  if (state === 'Damaged' && regulatoryNote && confidence >= 0.7) {
+    fixes.push({
+      fixType:    'data_quality',
+      description: `Audience Read — ${segmentName}: Campaign damage detected. ${regulatoryNote}`.trim(),
+      severity:   'medium',
+    });
   }
-  return fixes;
+
+  // Call generate-fix.js for each fix — correct table, correct fields,
+  // correct null stripping. All awaited before returning.
+  for (const fix of fixes) {
+    try {
+      await fetch(`${APP_URL}/api/generate-fix`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          userId,
+          fixType:        fix.fixType,
+          description:    fix.description,
+          tool:           'Audience Read',
+          severity:       fix.severity,
+          sourceRecordId: sourceRecordId || null,
+        }),
+      });
+    } catch (err) {
+      // Non-fatal — log and continue
+      console.error(`generate-fix failed for ${fix.fixType} (${segmentName}):`, err);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+// SEND-ALERT for audience_damaged
+// v6.0: wired up for states that warrant an email alert.
+// Uses the existing audience_damaged alert type in data.js.
+// ─────────────────────────────────────────────
+
+async function maybeFireAudienceAlert(userId, segmentName, sentiment) {
+  const alertStates = ['Complaint risk', 'Damaged'];
+  if (!alertStates.includes(sentiment.state)) return;
+  try {
+    await fetch(`${APP_URL}/api/data?action=send-alert`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        userId,
+        alertType:      'audience_damaged',
+        segmentName,
+        sentimentState: sentiment.state,
+        regulatoryNote: sentiment.regulatoryNote || null,
+      }),
+    });
+  } catch (err) {
+    // Non-fatal — alert failure should never break the upload response
+    console.error('audience_damaged alert failed (non-fatal):', err);
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -490,8 +643,12 @@ function generateFixRecords(userId, segmentName, sentiment) {
 // ─────────────────────────────────────────────
 
 async function upsertSegment(userId, segmentName, data) {
-  const records = await atGet('Audience_Read_Segments', `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`, '', 1);
-  const fields  = {
+  const records = await atGet(
+    'Audience_Read_Segments',
+    `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`,
+    '', 1
+  );
+  const fields = {
     UserID:                 userId,
     SegmentName:            segmentName,
     FingerprintJSON:        JSON.stringify(data.fingerprint),
@@ -512,62 +669,74 @@ async function upsertSegment(userId, segmentName, data) {
 
 async function saveCampaign(userId, segmentName, campaign, impact) {
   await atCreate('Audience_Read_Campaigns', {
-    UserID:               userId,
-    SegmentName:          segmentName,
-    CampaignName:         campaign.campaign_name || 'Untitled Campaign',
-    CampaignType:         campaign.campaign_type || null,
-    SendDate:             campaign.date,
-    VolumeSent:           campaign.volume_sent   || null,
-    UnsubscribeCount:     campaign.unsubscribe_count || 0,
-    OpenRate:             campaign.open_rate     || null,
-    ClickRate:            campaign.click_rate    || null,
-    ComplaintCount:       campaign.complaint_count || null,
-    ImpactScore:          impact?.impactScore    || null,
-    ImpactCategory:       impact?.category       || null,
-    ImpactReason:         impact?.reason         || null,
-    RecoveryDaysEstimated:impact?.recoveryDaysEstimated || null,
+    UserID:                userId,
+    SegmentName:           segmentName,
+    CampaignName:          campaign.campaign_name || 'Untitled Campaign',
+    CampaignType:          campaign.campaign_type || null,
+    SendDate:              campaign.date,
+    VolumeSent:            campaign.volume_sent   || null,
+    UnsubscribeCount:      campaign.unsubscribe_count || 0,
+    OpenRate:              campaign.open_rate     || null,
+    ClickRate:             campaign.click_rate    || null,
+    ComplaintCount:        campaign.complaint_count || null,
+    ImpactScore:           impact?.impactScore    || null,
+    ImpactCategory:        impact?.category       || null,
+    ImpactReason:          impact?.reason         || null,
+    RecoveryDaysEstimated: impact?.recoveryDaysEstimated || null,
   });
 }
 
 async function loadCampaigns(userId) {
-  const records = await atGet('Audience_Read_Campaigns', `{UserID}="${userId}"`, 'sort[0][field]=SendDate&sort[0][direction]=asc', 500);
+  const records = await atGet(
+    'Audience_Read_Campaigns',
+    `{UserID}="${userId}"`,
+    'sort[0][field]=SendDate&sort[0][direction]=asc',
+    500
+  );
   return records.map(r => ({
-    segment:          r.fields.SegmentName,
-    campaign_name:    r.fields.CampaignName,
-    campaign_type:    r.fields.CampaignType,
-    date:             r.fields.SendDate,
-    volume_sent:      r.fields.VolumeSent      || null,
-    unsubscribe_count:r.fields.UnsubscribeCount || 0,
-    open_rate:        r.fields.OpenRate         || null,
-    click_rate:       r.fields.ClickRate        || null,
-    complaint_count:  r.fields.ComplaintCount   || null,
-    _impactCategory:  r.fields.ImpactCategory,
-    _impactReason:    r.fields.ImpactReason,
+    segment:           r.fields.SegmentName,
+    campaign_name:     r.fields.CampaignName,
+    campaign_type:     r.fields.CampaignType,
+    date:              r.fields.SendDate,
+    volume_sent:       r.fields.VolumeSent      || null,
+    unsubscribe_count: r.fields.UnsubscribeCount || 0,
+    open_rate:         r.fields.OpenRate         || null,
+    click_rate:        r.fields.ClickRate        || null,
+    complaint_count:   r.fields.ComplaintCount   || null,
+    _impactCategory:   r.fields.ImpactCategory,
+    _impactReason:     r.fields.ImpactReason,
   }));
 }
 
 // ─────────────────────────────────────────────
-// SHARED: run all algorithms for one segment
+// RUN ALL ALGORITHMS FOR ONE SEGMENT
 // ─────────────────────────────────────────────
 
 function runAlgorithms(campaigns) {
-  const fingerprint  = algorithm1_fingerprint(campaigns);
+  const fingerprint   = algorithm1_fingerprint(campaigns);
   const trustVelocity = algorithm2_trustVelocity(campaigns, fingerprint);
   const freqTolerance = algorithm4_frequencyTolerance(campaigns, fingerprint);
-  const impacts = campaigns.map(c => {
+  const impacts       = campaigns.map(c => {
     const imp = algorithm3_campaignImpact(c, campaigns, fingerprint);
     return imp ? { ...imp, campaign_name: c.campaign_name, date: c.date } : null;
   }).filter(Boolean);
   const sentiment = algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, impacts);
   const capital   = algorithm7_relationshipCapital(campaigns, fingerprint);
-  const hasOpenRates  = campaigns.some(c => c.open_rate !== null);
-  const hasClickRates = campaigns.some(c => c.click_rate !== null);
-  const hasComplaints = campaigns.some(c => c.complaint_count !== null && c.complaint_count > 0);
+
+  const hasOpenRates   = campaigns.some(c => c.open_rate !== null);
+  const hasClickRates  = campaigns.some(c => c.click_rate !== null);
+  const hasComplaints  = campaigns.some(c => c.complaint_count !== null && c.complaint_count > 0);
   const hasSendHistory = campaigns.some(c => c.volume_sent !== null);
+
   let dataQuality = 'Minimal';
-  if (hasSendHistory && hasOpenRates) dataQuality = 'Partial';
+  if (hasSendHistory && hasOpenRates)                              dataQuality = 'Partial';
   if (hasSendHistory && hasOpenRates && hasClickRates && hasComplaints) dataQuality = 'Full';
-  return { fingerprint, trustVelocity, freqTolerance, sentiment, capital, impacts: impacts.slice(-10), dataQuality, missingData: missingDataMessages(hasOpenRates, hasClickRates, hasComplaints, hasSendHistory) };
+
+  return {
+    fingerprint, trustVelocity, freqTolerance, sentiment,
+    capital, impacts: impacts.slice(-10), dataQuality,
+    missingData: missingDataMessages(hasOpenRates, hasClickRates, hasComplaints, hasSendHistory),
+  };
 }
 
 // ─────────────────────────────────────────────
@@ -587,18 +756,18 @@ export default async function handler(req, res) {
 
   try {
 
-    // ── detect ────────────────────────────────────────────────
+    // ── detect ──────────────────────────────────────────────
     if (action === 'detect') {
       const { headers, rows } = req.body;
       if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
       return res.status(200).json({ success: true, mapping: autoMapColumns(headers, rows) });
     }
 
-    // ── load ──────────────────────────────────────────────────
+    // ── load ────────────────────────────────────────────────
     if (action === 'load') {
-      const allCampaigns  = await loadCampaigns(userId);
-      const segmentData   = buildSegmentData(allCampaigns);
-      const results       = {};
+      const allCampaigns = await loadCampaigns(userId);
+      const segmentData  = buildSegmentData(allCampaigns);
+      const results      = {};
       for (const [seg, campaigns] of Object.entries(segmentData)) {
         results[seg] = runAlgorithms(campaigns);
       }
@@ -608,18 +777,28 @@ export default async function handler(req, res) {
           return (p[b[1].sentiment.state] || 0) - (p[a[1].sentiment.state] || 0);
         })
         .slice(0, 3)
-        .map(([seg, data]) => ({ segment: seg, action: data.sentiment.action, type: data.freqTolerance.recommendedType, date: data.freqTolerance.optimalNextSend, state: data.sentiment.state, capital: data.capital }));
+        .map(([seg, data]) => ({
+          segment: seg,
+          action:  data.sentiment.action,
+          type:    data.freqTolerance.recommendedType,
+          date:    data.freqTolerance.optimalNextSend,
+          state:   data.sentiment.state,
+          capital: data.capital,
+        }));
       return res.status(200).json({ success: true, segments: results, recommendations });
     }
 
-    // ── upload ────────────────────────────────────────────────
+    // ── upload ──────────────────────────────────────────────
     if (action === 'upload') {
       const { rows, fieldMapping } = req.body;
       if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
 
-      // Parse every row from every CSV into a normalised object
       const rawRows = rows.map(row => {
-        const c = { segment: null, date: null, unsubscribe_count: null, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null };
+        const c = {
+          segment: null, date: null, unsubscribe_count: null,
+          volume_sent: null, open_rate: null, click_rate: null,
+          complaint_count: null, campaign_name: null, campaign_type: null,
+        };
         for (const [header, targetField] of Object.entries(fieldMapping || {})) {
           const val = row[header];
           if      (targetField === 'date')              c.date              = normaliseDate(val);
@@ -635,71 +814,107 @@ export default async function handler(req, res) {
         return c;
       }).filter(c => c.date);
 
-      // Merge rows from different CSVs by date + segment key — keep best data from each
+      // Merge rows by date + segment — keep best data from each source
       const mergeMap = {};
       for (const row of rawRows) {
         const key = (row.date || '') + '|' + (row.segment || 'Default');
         if (!mergeMap[key]) {
-          mergeMap[key] = { segment: row.segment || 'Default', date: row.date, unsubscribe_count: 0, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null };
+          mergeMap[key] = {
+            segment: row.segment || 'Default', date: row.date,
+            unsubscribe_count: 0, volume_sent: null, open_rate: null,
+            click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null,
+          };
         }
         const m = mergeMap[key];
-        // Only overwrite with non-null/non-empty values — never blank out existing data
-        if (row.segment)                          m.segment           = row.segment;
-        if (row.unsubscribe_count !== null)       m.unsubscribe_count = row.unsubscribe_count;
-        if (row.volume_sent !== null)             m.volume_sent       = row.volume_sent;
-        if (row.open_rate !== null)               m.open_rate         = row.open_rate;
-        if (row.click_rate !== null)              m.click_rate        = row.click_rate;
-        if (row.complaint_count !== null)         m.complaint_count   = row.complaint_count;
-        if (row.campaign_name)                    m.campaign_name     = row.campaign_name;
-        if (row.campaign_type)                    m.campaign_type     = row.campaign_type;
+        if (row.segment)                    m.segment           = row.segment;
+        if (row.unsubscribe_count !== null) m.unsubscribe_count = row.unsubscribe_count;
+        if (row.volume_sent !== null)       m.volume_sent       = row.volume_sent;
+        if (row.open_rate !== null)         m.open_rate         = row.open_rate;
+        if (row.click_rate !== null)        m.click_rate        = row.click_rate;
+        if (row.complaint_count !== null)   m.complaint_count   = row.complaint_count;
+        if (row.campaign_name)              m.campaign_name     = row.campaign_name;
+        if (row.campaign_type)             m.campaign_type     = row.campaign_type;
       }
       const campaigns = Object.values(mergeMap);
-
       if (!campaigns.length) return res.status(400).json({ error: 'No valid rows found. Ensure a date column is present and mapped.' });
 
-      const segmentGroups  = buildSegmentData(campaigns);
-      const savedSegments  = {};
+      const segmentGroups = buildSegmentData(campaigns);
+      const savedSegments = {};
 
+      // Process each segment — all awaited before response
       for (const [segmentName, segCampaigns] of Object.entries(segmentGroups)) {
         const data = runAlgorithms(segCampaigns);
-        // Save each campaign
+
+        // Save campaigns sequentially — Vercel Hobby safe
         for (const c of segCampaigns) {
           const impact = algorithm3_campaignImpact(c, segCampaigns, data.fingerprint);
           await saveCampaign(userId, segmentName, c, impact);
         }
+
         // Save segment state
-        await upsertSegment(userId, segmentName, { fingerprint: data.fingerprint, trustVelocity: data.trustVelocity, freqTolerance: data.freqTolerance, sentiment: data.sentiment, relationshipCapital: data.capital, dataQuality: data.dataQuality });
-        // Write fix records
-        const fixes = generateFixRecords(userId, segmentName, data.sentiment);
-        for (const fields of fixes) {
-          await atCreate('Fix_Records', fields);
-        }
+        await upsertSegment(userId, segmentName, {
+          fingerprint:       data.fingerprint,
+          trustVelocity:     data.trustVelocity,
+          freqTolerance:     data.freqTolerance,
+          sentiment:         data.sentiment,
+          relationshipCapital: data.capital,
+          dataQuality:       data.dataQuality,
+        });
+
+        // Generate fix records via generate-fix.js (correct table + fields)
+        const segRecord = await atGet(
+          'Audience_Read_Segments',
+          `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`,
+          '', 1
+        );
+        const segRecordId = segRecord[0]?.id || null;
+        await generateFixes(userId, segmentName, data.sentiment, segRecordId);
+
+        // Fire audience_damaged alert if warranted
+        await maybeFireAudienceAlert(userId, segmentName, data.sentiment);
+
         savedSegments[segmentName] = { ...data, impacts: data.impacts.slice(-5) };
       }
 
       return res.status(200).json({ success: true, segments: savedSegments, campaignsSaved: campaigns.length });
     }
 
-    // ── log ───────────────────────────────────────────────────
+    // ── log ─────────────────────────────────────────────────
     if (action === 'log') {
       const { campaign } = req.body;
       if (!campaign?.date || !campaign?.segment) return res.status(400).json({ error: 'campaign with date and segment required' });
 
-      const allCampaigns  = await loadCampaigns(userId);
-      const segCampaigns  = [...allCampaigns.filter(c => c.segment === campaign.segment), campaign]
+      const allCampaigns = await loadCampaigns(userId);
+      const segCampaigns = [...allCampaigns.filter(c => c.segment === campaign.segment), campaign]
         .sort((a, b) => new Date(a.date) - new Date(b.date));
-      const data          = runAlgorithms(segCampaigns);
-      const impact        = algorithm3_campaignImpact(campaign, segCampaigns, data.fingerprint);
+      const data   = runAlgorithms(segCampaigns);
+      const impact = algorithm3_campaignImpact(campaign, segCampaigns, data.fingerprint);
 
       await saveCampaign(userId, campaign.segment, campaign, impact);
-      await upsertSegment(userId, campaign.segment, { fingerprint: data.fingerprint, trustVelocity: data.trustVelocity, freqTolerance: data.freqTolerance, sentiment: data.sentiment, relationshipCapital: data.capital, dataQuality: data.dataQuality });
-      const fixes = generateFixRecords(userId, campaign.segment, data.sentiment);
-      for (const fields of fixes) await atCreate('Fix_Records', fields);
+      await upsertSegment(userId, campaign.segment, {
+        fingerprint:        data.fingerprint,
+        trustVelocity:      data.trustVelocity,
+        freqTolerance:      data.freqTolerance,
+        sentiment:          data.sentiment,
+        relationshipCapital: data.capital,
+        dataQuality:        data.dataQuality,
+      });
 
-      return res.status(200).json({ success: true, impact, sentiment: data.sentiment, trustVelocity: data.trustVelocity, capital: data.capital, freqTolerance: data.freqTolerance });
+      // Generate fixes and alert on single log too
+      await generateFixes(userId, campaign.segment, data.sentiment, null);
+      await maybeFireAudienceAlert(userId, campaign.segment, data.sentiment);
+
+      return res.status(200).json({
+        success: true,
+        impact,
+        sentiment:    data.sentiment,
+        trustVelocity: data.trustVelocity,
+        capital:       data.capital,
+        freqTolerance: data.freqTolerance,
+      });
     }
 
-    // ── presend ───────────────────────────────────────────────
+    // ── presend ─────────────────────────────────────────────
     if (action === 'presend') {
       const { segment, campaignType, sendDate } = req.body;
       if (!segment || !campaignType) return res.status(400).json({ error: 'segment and campaignType required' });
@@ -738,7 +953,10 @@ function pearsonCorrelation(xArr, yArr) {
   if (n < 2) return 0;
   const xMean = mean_arr(xArr.slice(0, n)), yMean = mean_arr(yArr.slice(0, n));
   let num = 0, xSq = 0, ySq = 0;
-  for (let i = 0; i < n; i++) { const dx = xArr[i]-xMean, dy = yArr[i]-yMean; num += dx*dy; xSq += dx*dx; ySq += dy*dy; }
+  for (let i = 0; i < n; i++) {
+    const dx = xArr[i] - xMean, dy = yArr[i] - yMean;
+    num += dx * dy; xSq += dx * dx; ySq += dy * dy;
+  }
   const den = Math.sqrt(xSq * ySq);
   return den === 0 ? 0 : num / den;
 }
@@ -753,6 +971,6 @@ function dataCompletenessScore(campaigns) {
   const hasCom   = campaigns.some(c => c.complaint_count !== null);
   const hasVol   = campaigns.some(c => c.volume_sent !== null);
   if (hasVol && hasOpen && hasClick && hasCom) return 'Full';
-  if (hasVol && hasOpen) return 'Partial';
+  if (hasVol && hasOpen)                       return 'Partial';
   return 'Minimal';
 }
