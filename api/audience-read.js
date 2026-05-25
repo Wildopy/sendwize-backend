@@ -375,18 +375,29 @@ function algorithm4_frequencyTolerance(campaigns, fingerprint) {
 
 // ─────────────────────────────────────────────
 // ALGORITHM 5 — AUDIENCE SENTIMENT INFERENCE ENGINE
+// v6.1: Rewritten to use relationship capital as a hard differentiator.
+// Capital score breaks tie-breaking between segments with similar
+// velocity — high-capital Recovering ≠ low-capital Recovering.
+// Statements now lead with implication, not label.
+// Commercial and regulatory angle both surfaced per state.
 // ─────────────────────────────────────────────
 
-function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, recentImpacts) {
+function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, recentImpacts, capital) {
+  // capital: relationship capital score -100 to +100 from algorithm 7
+  const cap = capital || 0;
+
   if (!fingerprint) {
     return {
       state: 'Neutral',
-      statement: 'Not enough data to determine sentiment yet. Upload your send history to unlock the full picture.',
+      statement: 'Upload your send history to see how this audience is really responding.',
+      statementCommercial: 'Without campaign history we cannot calculate frequency tolerance or predict unsubscribe risk for your next send.',
+      statementRegulatory: null,
       confidence: 0.3,
       regulatoryNote: null,
-      action: 'Upload more campaign data to improve accuracy.',
+      action: 'Start by uploading a CSV with date, segment name, and unsubscribe count.',
     };
   }
+
   const direction    = trustVelocity.direction;
   const tolerance    = freqTolerance.toleranceRemaining;
   const recentDamage = recentImpacts.filter(i => i.category === 'Damaged' || i.category === 'Caused fatigue').length;
@@ -396,80 +407,162 @@ function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance
   const baseConf       = Math.min(0.5 + n * 0.04, 0.95);
   const urgencyPattern = recentImpacts.some(i => i._isUrgency);
   const pricingPattern = recentImpacts.some(i => i._isPricing);
+  const recoveryDays   = Math.round((fingerprint.recoveryHalfLife || 3) * 7);
+  const baseline       = fingerprint.baselineUnsubscribeRate || 0.002;
+  const baselinePct    = (baseline * 100).toFixed(2);
 
-  if (hasComplaints && direction === 'Rapid decline') {
+  // ── COMPLAINT RISK — highest priority ──────────────────────
+  if (hasComplaints && (direction === 'Rapid decline' || direction === 'Declining')) {
     const conf = r2(Math.min(baseConf, 0.92));
     return {
       state: 'Complaint risk',
-      statement: 'Multiple signals are converging. This segment is moving toward formal complaint territory.',
+      statement: 'This segment is generating complaint signals alongside a rising unsubscribe trend. If this continues, you are likely to receive a formal ICO complaint.',
+      statementCommercial: 'Audiences in complaint territory stop converting first — expect revenue from this segment to drop significantly before any formal action.',
+      statementRegulatory: 'Rapid unsubscribe acceleration combined with complaint signals is the pattern the ICO sees before opening enforcement investigations under PECR Regulation 22.',
       confidence: conf,
-      regulatoryNote: conf > 0.7 ? 'This pattern — rapid unsubscribe acceleration combined with complaint signals — is statistically associated with audiences that file formal complaints with the ICO. The window to act is short.' : null,
-      action: 'Stop promotional sends immediately. Consider a re-permission campaign before sending again.',
+      regulatoryNote: 'This pattern is statistically associated with formal ICO complaints. The window to act without enforcement consequences is short — typically 30–60 days.',
+      action: 'Stop all promotional sends to this segment immediately. Run a re-permission campaign — anyone who does not re-consent should be moved to your suppression list.',
     };
   }
+
+  // ── DAMAGED — rapid decline, multiple bad sends ─────────────
   if (direction === 'Rapid decline' && recentDamage >= 2) {
     const conf = r2(Math.min(baseConf, 0.88));
+    const capContext = cap < 0
+      ? 'The negative relationship capital means this segment has little goodwill left to absorb further sends.'
+      : 'Some positive relationship capital remains — recovery is possible if you act now.';
     return {
       state: 'Damaged',
-      statement: 'Something you sent recently did not land well. Your audience is pulling away quickly.',
+      statement: `Recent sends have caused measurable damage to this segment. Unsubscribes are accelerating — your normal baseline is ${baselinePct}% but recent sends are significantly above that.`,
+      statementCommercial: `You have approximately ${recoveryDays} days before this segment becomes effectively unreachable for promotional sends. ${capContext}`,
+      statementRegulatory: urgencyPattern ? 'The unsubscribe spike following an urgency or scarcity campaign matches the pattern seen before ASA complaints about high-pressure tactics. Review any countdown timers or "limited time" claims before your next send.' : null,
       confidence: conf,
-      regulatoryNote: conf > 0.7 && urgencyPattern ? 'This unsubscribe pattern following a urgency campaign matches the audience behaviour seen before multiple ASA complaints. Your audience felt pressured. Worth reviewing the claims before using them again.' : null,
-      action: `Pause promotional sends for ${Math.round(fingerprint.recoveryHalfLife * 7)} days. Send a value-first newsletter to start rebuilding.`,
+      regulatoryNote: urgencyPattern ? 'ASA upheld multiple complaints against Wowcher (2019, 2024) for countdown timers that reset. If your recent sends included urgency claims, review them against CAP Code 3.7.' : null,
+      action: `Pause all promotional sends for at least ${recoveryDays} days. Send one low-key value-add newsletter only. Do not send promotional content until unsubscribes return to your ${baselinePct}% baseline.`,
     };
   }
+
+  // ── FATIGUE BUILDING — declining + tolerance exhausted ──────
   if (direction === 'Declining' && tolerance <= 1) {
     const conf = r2(Math.min(baseConf, 0.85));
     return {
       state: 'Fatigue building',
-      statement: 'This segment is getting tired of hearing from you. Not angry yet — but getting there.',
+      statement: `You have sent ${freqTolerance.recentSendCount} campaigns to this segment in the last 30 days and tolerance is nearly exhausted. The next promotional send is likely to spike unsubscribes.`,
+      statementCommercial: 'Fatigued audiences stop opening first, then start unsubscribing. Open rates will continue to drop even if you reduce frequency — the damage takes 3–4 weeks to reverse.',
+      statementRegulatory: 'High frequency combined with declining engagement is the pattern the ICO describes as the point where legitimate interest no longer passes the proportionality test. Your audience is signalling the contact is no longer welcome.',
       confidence: conf,
-      regulatoryNote: conf > 0.7 ? 'High frequency combined with declining engagement is the pattern that precedes ICO legitimate interest challenges. Your audience is telling you the contact is no longer proportionate to their interest.' : null,
-      action: 'Reduce send frequency by at least 40%. Shift next send to newsletter format only.',
+      regulatoryNote: cap < -20 ? 'With negative relationship capital and frequency-driven fatigue, this segment is approaching the ICO's threshold for legitimate interest challenges. Documented send frequency and audience response rates would be requested in any investigation.' : null,
+      action: `No promotional sends this month. Switch to one newsletter maximum. Give this segment a ${recoveryDays}-day gap before any commercial content.`,
     };
   }
+
+  // ── COOLING — declining but tolerance not yet exhausted ──────
   if (direction === 'Declining' && tolerance > 1) {
     const conf = r2(Math.min(baseConf, 0.78));
     return {
       state: 'Cooling',
-      statement: 'Engagement is declining steadily. Something in your recent campaigns is not landing.',
+      statement: `Engagement from this segment has been declining steadily over your last ${Math.min(n, 6)} campaigns. Unsubscribes are trending up, though you still have ${tolerance} send${tolerance !== 1 ? 's' : ''} of tolerance remaining.`,
+      statementCommercial: 'Cooling audiences convert at a fraction of their peak rate. Sending more will accelerate the decline — the opportunity is to reverse it now while they are still reachable.',
+      statementRegulatory: pricingPattern ? 'Audiences that disengage after pricing or promotional emails frequently cite misleading expectations as the reason. This is the consumer sentiment the CMA monitors under DMCCA 2024.' : null,
       confidence: conf,
-      regulatoryNote: conf > 0.7 && pricingPattern ? 'Audiences that disengage after pricing emails frequently cite misleading expectations. This is the consumer sentiment pattern the CMA investigates under DMCCA 2024.' : null,
-      action: 'Review last three campaign types. Consider a feedback or preference-update email.',
+      regulatoryNote: null,
+      action: 'Review the content and subject lines from your last three sends. Try a preference-update or feedback email — ask them what they want to hear about. One re-engagement send before resuming your normal schedule.',
     };
   }
+
+  // ── PEAK RECEPTIVENESS — improving + tolerance + recent wins ─
   if (direction === 'Improving' && tolerance >= 3 && recentBuilt >= 2) {
+    const conf = r2(Math.min(baseConf, 0.88));
     return {
       state: 'Peak receptiveness',
-      statement: 'Your audience is highly engaged and ready to hear from you. A good window for a promotional campaign.',
-      confidence: r2(Math.min(baseConf, 0.88)),
+      statement: `This segment is in its best state in recent history — ${recentBuilt} consecutive positive campaigns, improving trust velocity, and ${tolerance} sends of remaining tolerance.`,
+      statementCommercial: 'This is the highest-conversion window in your send cycle. Promotional campaigns sent now will perform measurably better than the same campaign sent after this window closes.',
+      statementRegulatory: null,
+      confidence: conf,
       regulatoryNote: null,
-      action: 'Strong window for a promotional or new-product announcement send.',
+      action: 'Send your highest-value promotional or product announcement campaign now. Do not delay — this window typically lasts 2–3 weeks before tolerance starts recovering.',
     };
   }
+
+  // ── RECOVERING — capital-differentiated ────────────────────
+  // This is where the old version produced identical outputs.
+  // We now split by capital score: strong / moderate / fragile recovery.
   if ((direction === 'Improving' || direction === 'Stable') && recentDamage >= 1 && recentBuilt >= 1) {
-    return {
-      state: 'Recovering',
-      statement: 'This segment was damaged but is showing early signs of recovery. Give them more time.',
-      confidence: r2(Math.min(baseConf, 0.75)),
-      regulatoryNote: null,
-      action: 'Continue with low-frequency, high-value sends only. Avoid promotional campaigns for now.',
-    };
+    const conf = r2(Math.min(baseConf, 0.78));
+
+    if (cap >= 40) {
+      // Strong capital — recovery is real and accelerating
+      return {
+        state: 'Recovering',
+        statement: `This segment was damaged by recent sends but strong relationship capital (+${cap.toFixed(0)}/100) is cushioning the recovery. The goodwill built over time is working in your favour.`,
+        statementCommercial: 'High capital means this audience is more forgiving than their recent behaviour suggests. A well-timed value send could accelerate recovery significantly.',
+        statementRegulatory: null,
+        confidence: conf,
+        regulatoryNote: null,
+        action: `Send one value-first newsletter — no promotional content. If unsubscribes stay below ${baselinePct}%, you can resume normal sending in ${Math.round(recoveryDays * 0.6)} days.`,
+      };
+    } else if (cap >= 10) {
+      // Moderate capital — cautious recovery
+      return {
+        state: 'Recovering',
+        statement: `This segment is showing early signs of recovery after recent damage, but relationship capital (+${cap.toFixed(0)}/100) is moderate — it will not absorb another poor send.`,
+        statementCommercial: 'Revenue from this segment will return, but slowly. One badly timed promotional send now could push it back into damaged territory.',
+        statementRegulatory: null,
+        confidence: conf,
+        regulatoryNote: null,
+        action: `Continue low-frequency, high-value sends only for the next ${recoveryDays} days. No promotional campaigns. Monitor unsubscribes on every send — if they spike above ${(baseline * 150).toFixed(2)}% stop immediately.`,
+      };
+    } else {
+      // Low or negative capital — fragile recovery
+      const capStr = cap < 0 ? `${cap.toFixed(0)}` : `+${cap.toFixed(0)}`;
+      return {
+        state: 'Recovering',
+        statement: `This segment is showing the early mathematical signs of recovery, but relationship capital (${capStr}/100) is low — the goodwill buffer is thin and another damaging send could cause lasting harm.`,
+        statementCommercial: 'Low capital recoveries are fragile. This segment needs significantly more positive campaign history before it will convert at normal rates again.',
+        statementRegulatory: cap < 0 ? 'Negative relationship capital combined with a recovery pattern is a signal the ICO and ASA would note as evidence of repeated audience harm if they reviewed your send history.' : null,
+        confidence: r2(conf * 0.9),
+        regulatoryNote: cap < -20 ? 'With negative capital, your send history would show a pattern of repeated audience damage. If the ICO reviewed your legitimate interest basis, this history would be relevant.' : null,
+        action: `Do not send anything to this segment for at least ${recoveryDays} days. When you resume, start with a single newsletter only and monitor closely. Rebuild capital with 3–4 positive sends before attempting any promotional campaign.`,
+      };
+    }
   }
+
+  // ── HIGHLY RECEPTIVE POST-GAP ───────────────────────────────
   if (direction === 'Stable' && tolerance >= 4 && recentDamage === 0) {
+    const conf = r2(Math.min(baseConf, 0.72));
+    const capContext = cap >= 30
+      ? `Strong relationship capital (+${cap.toFixed(0)}/100) means this segment is well-disposed toward your brand.`
+      : cap <= 0
+      ? 'Relationship capital is low — consider a value-add send before going promotional.'
+      : `Positive relationship capital (+${cap.toFixed(0)}/100) gives you a good foundation.`;
     return {
       state: 'Highly receptive post-gap',
-      statement: 'No strong negative signals detected. Your audience appears ready to hear from you.',
-      confidence: r2(Math.min(baseConf, 0.72)),
+      statement: `No damage signals detected and ${tolerance} sends of remaining tolerance. ${capContext}`,
+      statementCommercial: 'Stable audiences with send capacity remaining are the safest window for promotional campaigns — low risk of unsubscribes, predictable conversion.',
+      statementRegulatory: null,
+      confidence: conf,
       regulatoryNote: null,
-      action: 'Good window for your next send. Newsletter or light promotional both appropriate.',
+      action: cap >= 20
+        ? 'Good window for newsletter or light promotional. Consider a product announcement or re-engagement offer.'
+        : 'Start with a value-add newsletter. If response is positive, follow with a promotional send within 7–10 days.',
     };
   }
+
+  // ── NEUTRAL DEFAULT ─────────────────────────────────────────
+  const capNote = cap > 20
+    ? `Relationship capital is positive (+${cap.toFixed(0)}/100) — your audience is broadly well-disposed.`
+    : cap < -10
+    ? `Relationship capital is negative (${cap.toFixed(0)}/100) — worth reviewing recent campaign performance before sending.`
+    : 'Relationship capital is neutral.';
+
   return {
     state: 'Neutral',
-    statement: 'No strong signals in either direction. Proceed with your planned campaign.',
+    statement: `No strong trend signals in either direction after ${n} campaign${n !== 1 ? 's' : ''}. ${capNote}`,
+    statementCommercial: 'Neutral state means your audience is neither primed nor fatigued — sends should perform at your historical average rates.',
+    statementRegulatory: null,
     confidence: r2(Math.min(baseConf, 0.65)),
     regulatoryNote: null,
-    action: 'Continue with planned send schedule. Monitor unsubscribes closely after next campaign.',
+    action: 'Proceed with your planned campaign. Monitor unsubscribes on the next send — if they spike above 0.5% above your baseline, run the pre-send check before the following campaign.',
   };
 }
 
@@ -720,8 +813,8 @@ function runAlgorithms(campaigns) {
     const imp = algorithm3_campaignImpact(c, campaigns, fingerprint);
     return imp ? { ...imp, campaign_name: c.campaign_name, date: c.date } : null;
   }).filter(Boolean);
-  const sentiment = algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, impacts);
   const capital   = algorithm7_relationshipCapital(campaigns, fingerprint);
+  const sentiment = algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, impacts, capital);
 
   const hasOpenRates   = campaigns.some(c => c.open_rate !== null);
   const hasClickRates  = campaigns.some(c => c.click_rate !== null);
