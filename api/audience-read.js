@@ -18,6 +18,7 @@ const BASE_ID    = process.env.BASE_ID;
 const AT_TOKEN   = process.env.AIRTABLE_TOKEN;
 const AT_BASE    = `https://api.airtable.com/v0/${BASE_ID}`;
 const APP_URL    = 'https://sendwize-backend.vercel.app';
+const APP_URL    = 'https://sendwize-backend.vercel.app';
 
 const AT_HEADERS = () => ({
   Authorization:  `Bearer ${AT_TOKEN}`,
@@ -451,7 +452,7 @@ function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance
       statementCommercial: 'Fatigued audiences stop opening first, then start unsubscribing. Open rates will continue to drop even if you reduce frequency — the damage takes 3–4 weeks to reverse.',
       statementRegulatory: 'High frequency combined with declining engagement is the pattern the ICO describes as the point where legitimate interest no longer passes the proportionality test. Your audience is signalling the contact is no longer welcome.',
       confidence: conf,
-      regulatoryNote: cap < -20 ? 'With negative relationship capital and frequency-driven fatigue, this segment is approaching the ICO's threshold for legitimate interest challenges. Documented send frequency and audience response rates would be requested in any investigation.' : null,
+      regulatoryNote: cap < -20 ? 'With negative relationship capital and frequency-driven fatigue, this segment is approaching the ICO’s threshold for legitimate interest challenges. Documented send frequency and audience response rates would be requested in any investigation.' : null,
       action: `No promotional sends this month. Switch to one newsletter maximum. Give this segment a ${recoveryDays}-day gap before any commercial content.`,
     };
   }
