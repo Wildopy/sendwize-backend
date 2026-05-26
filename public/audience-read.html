@@ -114,7 +114,52 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .conf-bar-wrap{flex:1;height:4px;background:var(--b);border-radius:2px;overflow:hidden}
 .conf-bar-fill{height:100%;border-radius:2px;background:var(--o);transition:width .6s}
 .conf-pct{font-size:10px;color:var(--mu);white-space:nowrap}
-.seg-stmt{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:8px}
+.seg-stmt{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:12px}
+
+/* ── VERDICT — big clear human headline ── */
+.seg-verdict{font-size:17px;font-weight:700;color:var(--t);margin-bottom:8px;letter-spacing:-.2px;line-height:1.3}
+
+/* ── SEND WINDOW ── */
+.seg-send-window{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:12px;display:flex;flex-direction:column;gap:5px}
+.seg-send-stat{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--tm);line-height:1.4}
+.seg-send-icon{flex-shrink:0;font-size:12px}
+
+/* ── WHY THIS MATTERS toggle ── */
+.seg-why-toggle{width:100%;background:none;border:1px solid var(--b);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:12px;font-weight:600;color:var(--mu);cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;transition:all .15s}
+.seg-why-toggle:hover{border-color:var(--o);color:var(--o)}
+.seg-why-chevron{font-size:10px;transition:transform .2s}
+.seg-why-toggle.open .seg-why-chevron{transform:rotate(180deg)}
+.seg-why-body{margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.seg-why-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5;padding:9px 11px;border-radius:7px}
+.seg-why-icon{flex-shrink:0;margin-top:1px}
+.seg-commercial{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.seg-regulatory{background:var(--purl);border:1px solid var(--purc);color:#581c87}
+.seg-regnote{background:#fff7ed;border:1px solid #fed7aa;color:#92400e}
+
+/* ── PRIMARY UPLOAD ZONE ── */
+.upload-zone-primary{border:2px dashed var(--b);border-radius:var(--rad-lg);padding:48px 32px;cursor:pointer;transition:all .18s;background:var(--w);position:relative;text-align:center;margin-bottom:20px}
+.upload-zone-primary:hover,.upload-zone-primary.hover{border-color:var(--o);background:var(--ol)}
+.upload-zone-primary.loaded{border-color:var(--g);border-style:solid;background:var(--gb)}
+.upload-zone-primary input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz-icon-lg{font-size:36px;margin-bottom:14px}
+.uz-primary-title{font-size:18px;font-weight:700;margin-bottom:8px;color:var(--t)}
+.uz-primary-sub{font-size:13px;color:var(--mu);line-height:1.6;max-width:440px;margin:0 auto}
+
+/* ── OPTIONAL EXPANDER ── */
+.optional-expander{margin-bottom:28px}
+.opt-toggle{width:100%;background:var(--bg);border:1px solid var(--b);border-radius:var(--rad);padding:14px 18px;font-family:inherit;cursor:pointer;text-align:left;transition:all .15s;display:flex;flex-direction:column;gap:3px}
+.opt-toggle:hover{border-color:var(--o);background:var(--ol)}
+.opt-toggle span:first-child{font-size:13px;font-weight:600;color:var(--o)}
+.opt-toggle-sub{font-size:12px;color:var(--mu)}
+.optional-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+@media(max-width:600px){.optional-grid{grid-template-columns:1fr}}
+.upload-zone-sm{border:1px dashed var(--b);border-radius:var(--rad);padding:16px;cursor:pointer;transition:all .18s;background:var(--w);position:relative;text-align:center}
+.upload-zone-sm:hover,.upload-zone-sm.hover{border-color:var(--o);background:var(--ol)}
+.upload-zone-sm.loaded{border-color:var(--g);border-style:solid;background:var(--gb)}
+.upload-zone-sm input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz-sm-icon{font-size:20px;margin-bottom:8px}
+.uz-sm-title{font-size:13px;font-weight:700;margin-bottom:4px}
+.uz-sm-sub{font-size:11px;color:var(--mu);line-height:1.5}
 .seg-stmt-sub{font-size:12px;color:var(--tm);line-height:1.5;margin-bottom:8px;display:flex;align-items:flex-start;gap:6px;padding:8px 10px;border-radius:6px}
 .seg-stmt-icon{flex-shrink:0;margin-top:1px}
 .seg-commercial{background:#f0fdf4;border:1px solid #bbf7d0}
@@ -274,60 +319,59 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-.25 3h1.5v5h-1.5V7z"/></svg>
       Audience Read — Sendwize
     </div>
-    <h1>How is your audience actually feeling?</h1>
-    <p>Upload your marketing data. Seven deterministic algorithms build a live picture of audience sentiment and relationship health — and tell you exactly what to do next. Handles incomplete data. Gets more accurate over time.</p>
-    <div class="intro-note">
-      <div style="font-size:18px;flex-shrink:0;margin-top:1px">📊</div>
-      <p>Minimum viable: one CSV with date, segment name, and unsubscribe count. All seven algorithms run immediately. Every additional file adds more accuracy — nothing is ever blocked.</p>
+    <h1>Find out how your audience is really feeling.</h1>
+    <p>Upload one CSV export from your email platform. We analyse your send history and tell you exactly what state each audience segment is in — and precisely what to do about it.</p>
+  </div>
+
+  <!-- Primary upload zone — one file is enough -->
+  <div class="upload-zone upload-zone-primary" id="zone-unsubs"
+    ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'unsubs')">
+    <input type="file" accept=".csv" id="file-unsubs" onchange="fileChg(this,'unsubs')">
+    <div class="uz-icon-lg">📊</div>
+    <div class="uz-primary-title">Drop your CSV here, or click to upload</div>
+    <div class="uz-primary-sub">Works with any export from Klaviyo, Mailchimp, Dotdigital, or any platform.<br>Just needs: <strong>date, segment name, unsubscribe count.</strong> Three columns is enough to start.</div>
+    <div class="uz-fname" id="fname-unsubs" style="margin-top:12px"></div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:32px">
+    <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Analyse my audience →</button>
+    <button class="btn btn-ghost" onclick="loadDemo()">See an example first →</button>
+  </div>
+
+  <!-- Optional files — collapsed by default -->
+  <div class="optional-expander">
+    <button class="opt-toggle" onclick="toggleOptional()" id="optToggleBtn">
+      <span>+ Add more data for higher accuracy</span>
+      <span class="opt-toggle-sub">Open rates, complaints, send volume — each one unlocks more insight</span>
+    </button>
+    <div class="optional-grid" id="optionalGrid" style="display:none">
+      <div class="upload-zone-sm" id="zone-sends" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'sends')">
+        <input type="file" accept=".csv" id="file-sends" onchange="fileChg(this,'sends')">
+        <div class="uz-sm-icon">📤</div>
+        <div class="uz-sm-title">Send History</div>
+        <div class="uz-sm-sub">Adds frequency tolerance — how many more times you can contact each segment before they start unsubscribing.</div>
+        <div class="uz-fname" id="fname-sends"></div>
+      </div>
+      <div class="upload-zone-sm" id="zone-engagement" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'engagement')">
+        <input type="file" accept=".csv" id="file-engagement" onchange="fileChg(this,'engagement')">
+        <div class="uz-sm-icon">📈</div>
+        <div class="uz-sm-title">Open &amp; Click Rates</div>
+        <div class="uz-sm-sub">Shows whether audience interest is growing or shrinking — and how fast. Significantly improves trend accuracy.</div>
+        <div class="uz-fname" id="fname-engagement"></div>
+      </div>
+      <div class="upload-zone-sm" id="zone-complaints" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'complaints')">
+        <input type="file" accept=".csv" id="file-complaints" onchange="fileChg(this,'complaints')">
+        <div class="uz-sm-icon">⚠️</div>
+        <div class="uz-sm-title">Complaints &amp; Spam Reports</div>
+        <div class="uz-sm-sub">Complaints carry 50× the weight of an unsubscribe. This single file makes the biggest difference to accuracy.</div>
+        <div class="uz-fname" id="fname-complaints"></div>
+      </div>
     </div>
   </div>
 
-  <div class="upload-grid">
-    <div class="upload-zone" id="zone-unsubs" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'unsubs')">
-      <input type="file" accept=".csv" id="file-unsubs" onchange="fileChg(this,'unsubs')">
-      <div class="uz-icon">📉</div>
-      <span class="uz-req req">Required</span>
-      <h3>Unsubscribes</h3>
-      <p>Date, segment name, unsubscribe count. Three columns is enough to run all seven algorithms immediately.</p>
-      <div class="uz-fname" id="fname-unsubs"></div>
-    </div>
-    <div class="upload-zone" id="zone-sends" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'sends')">
-      <input type="file" accept=".csv" id="file-sends" onchange="fileChg(this,'sends')">
-      <div class="uz-icon">📤</div>
-      <span class="uz-req opt">Optional</span>
-      <h3>Send History</h3>
-      <p>Date, segment, campaign name, type, volume sent.</p>
-      <div class="uz-unlock">Unlocks frequency tolerance model and full behavioural fingerprint calibration.</div>
-      <div class="uz-fname" id="fname-sends"></div>
-    </div>
-    <div class="upload-zone" id="zone-engagement" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'engagement')">
-      <input type="file" accept=".csv" id="file-engagement" onchange="fileChg(this,'engagement')">
-      <div class="uz-icon">📈</div>
-      <span class="uz-req opt">Optional</span>
-      <h3>Open &amp; Click Rates</h3>
-      <p>Date, segment, campaign name, open rate, click rate.</p>
-      <div class="uz-unlock">Builds the full engagement decay curve — shows whether audience interest is growing or shrinking over time.</div>
-      <div class="uz-fname" id="fname-engagement"></div>
-    </div>
-    <div class="upload-zone" id="zone-complaints" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'complaints')">
-      <input type="file" accept=".csv" id="file-complaints" onchange="fileChg(this,'complaints')">
-      <div class="uz-icon">⚠️</div>
-      <span class="uz-req opt">Optional · Highest signal</span>
-      <h3>Complaints &amp; Spam Reports</h3>
-      <p>Date, segment, complaint count, spam report count.</p>
-      <div class="uz-unlock">Complaints carry 50× the weight of an unsubscribe. This file significantly improves Trust Velocity accuracy.</div>
-      <div class="uz-fname" id="fname-complaints"></div>
-    </div>
-  </div>
-
-  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Continue to field mapping →</button>
-    <span style="font-size:13px;color:var(--mu)">Upload the unsubscribes file to continue.</span>
-  </div>
-
-  <div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--b)">
+  <div style="padding-top:24px;border-top:1px solid var(--b)">
     <p style="font-size:13px;color:var(--mu);margin-bottom:12px">Already uploaded data before?</p>
-    <button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my dashboard →</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last results →</button>
   </div>
 </div>
 
@@ -432,6 +476,27 @@ function showScreen(s) {
   ['upload','mapping','dashboard'].forEach(function(n) {
     document.getElementById(n + '-screen').style.display = n === s ? 'block' : 'none';
   });
+  if (s === 'upload') window.scrollTo(0, 0);
+}
+
+// ── OPTIONAL FILES TOGGLE ────────────────────────────────────
+function toggleOptional() {
+  var grid = document.getElementById('optionalGrid');
+  var btn  = document.getElementById('optToggleBtn');
+  var open = grid.style.display !== 'none';
+  grid.style.display = open ? 'none' : 'grid';
+  btn.querySelector('span:first-child').textContent = open ? '+ Add more data for higher accuracy' : '− Hide optional files';
+}
+
+// ── WHY THIS MATTERS TOGGLE ──────────────────────────────────
+function toggleWhy(uid) {
+  var body = document.getElementById(uid + '-why');
+  var btn  = document.querySelector('#' + uid + ' .seg-why-toggle');
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'flex';
+  body.style.flexDirection = 'column';
+  if (btn) btn.classList.toggle('open', !open);
 }
 
 // ── SEGMENT TAB TOGGLE ───────────────────────────────────────
@@ -628,40 +693,115 @@ function renderDash(data) {
   if (!segNames.length) {
     sg.innerHTML = '<div class="empty"><h3>No segments detected</h3><p>Upload your data to see segment-level intelligence.</p></div>';
   } else {
-    sg.innerHTML = segNames.map(function(seg) {
+    sg.innerHTML = segNames.map(function(seg, segIdx) {
       var d     = data.segments[seg];
       var s     = d.sentiment || {};
       var cap   = d.capital || 0;
-      var dqCls = (d.dataQuality || 'Minimal').toLowerCase();
+      var fp    = d.fingerprint || {};
+      var ft    = d.freqTolerance || {};
       var state = s.state || 'Neutral';
       var conf  = Math.round((s.confidence || 0) * 100);
-      var goodStates = ['Peak receptiveness', 'Highly receptive post-gap', 'Recovering'];
-      var badStates  = ['Damaged', 'Complaint risk'];
-      var cardCls    = goodStates.indexOf(state) > -1 ? 'state-good' : badStates.indexOf(state) > -1 ? 'state-bad' : state === 'Neutral' ? 'state-neu' : 'state-warn';
-      var badgeCls   = cardCls === 'state-good' ? 'good' : cardCls === 'state-bad' ? 'bad' : cardCls === 'state-warn' ? 'warn' : 'neu';
-      var capPct     = Math.min(50, Math.abs(cap) / 2);
-      var capScoreCls = cap > 10 ? 'pos' : cap < -10 ? 'neg' : 'neu';
-      var capContext  = cap <= -60 ? 'Significant damage accumulated — recovery will take time.' : cap <= -30 ? 'Relationship under strain. Careful sending recommended.' : cap < 10 ? 'Neutral standing — no significant history either way.' : cap < 40 ? 'Positive relationship balance — audience receptive.' : 'Strong relationship built — high audience trust.';
+      var n     = fp.campaignCount || 0;
+      var baselinePct = fp.baselineUnsubscribeRate ? (fp.baselineUnsubscribeRate * 100).toFixed(2) + '%' : null;
 
-      return '<div class="seg-card ' + cardCls + '">' +
+      // Colour class
+      var goodStates = ['Peak receptiveness', 'Highly receptive post-gap'];
+      var okStates   = ['Recovering', 'Neutral'];
+      var warnStates = ['Cooling', 'Fatigue building'];
+      var badStates  = ['Damaged', 'Complaint risk'];
+      var cardCls    = badStates.indexOf(state) > -1 ? 'state-bad' : warnStates.indexOf(state) > -1 ? 'state-warn' : goodStates.indexOf(state) > -1 ? 'state-good' : 'state-neu';
+      var badgeCls   = cardCls === 'state-good' ? 'good' : cardCls === 'state-bad' ? 'bad' : cardCls === 'state-warn' ? 'warn' : 'neu';
+
+      // Status emoji
+      var emoji = badStates.indexOf(state) > -1 ? '🔴' : warnStates.indexOf(state) > -1 ? '🟡' : goodStates.indexOf(state) > -1 ? '🟢' : '⚪';
+
+      // Human verdict headline — plain English, no jargon
+      var verdictMap = {
+        'Complaint risk':         'Stop sending to this segment now',
+        'Damaged':                'This segment needs a break from you',
+        'Fatigue building':       'You're sending too much to this segment',
+        'Cooling':                'This segment is losing interest',
+        'Recovering':             cap >= 40 ? 'Recovering well — one more careful send' : cap >= 10 ? 'Recovering slowly — handle with care' : 'Fragile recovery — do not send yet',
+        'Peak receptiveness':     'Best time to send — act this week',
+        'Highly receptive post-gap': 'Ready to hear from you',
+        'Neutral':                'No strong signals — proceed normally',
+      };
+      var verdict = verdictMap[state] || state;
+
+      // Next send recommendation
+      var nextSend = ft.optimalNextSend ? 'Earliest recommended send: ' + fmtDate(ft.optimalNextSend) : null;
+      var sendCapacity = ft.toleranceRemaining !== undefined ? ft.toleranceRemaining + ' send' + (ft.toleranceRemaining !== 1 ? 's' : '') + ' of capacity remaining this month' : null;
+
+      // Confidence context
+      var confContext = conf >= 80 ? 'High confidence — ' + n + ' campaigns analysed'
+        : conf >= 60 ? 'Moderate confidence — ' + n + ' campaigns analysed'
+        : 'Low confidence — upload more data to improve accuracy';
+
+      // Capital plain English
+      var capScoreCls = cap > 10 ? 'pos' : cap < -10 ? 'neg' : 'neu';
+      var capLabel = cap >= 40 ? 'Strong — audience goodwill is high'
+        : cap >= 10 ? 'Positive — audience is broadly receptive'
+        : cap >= -10 ? 'Neutral — no strong goodwill either way'
+        : cap >= -30 ? 'Under strain — recent sends have caused damage'
+        : 'Low — significant damage has accumulated';
+      var capPct = Math.min(50, Math.abs(cap) / 2);
+
+      var uid = 'seg-' + segIdx;
+
+      return '<div class="seg-card ' + cardCls + '" id="' + uid + '">' +
+
+        // ── Header ──
         '<div class="seg-top">' +
-          '<div><span class="seg-name">' + escH(seg) + '</span><span class="dq-pill ' + dqCls + '">' + escH(d.dataQuality || 'Minimal') + '</span></div>' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<span style="font-size:16px">' + emoji + '</span>' +
+            '<span class="seg-name">' + escH(seg) + '</span>' +
+          '</div>' +
           '<span class="state-badge ' + badgeCls + '">' + escH(state) + '</span>' +
         '</div>' +
-        '<div class="conf-row"><div class="conf-bar-wrap"><div class="conf-bar-fill" style="width:' + conf + '%"></div></div><span class="conf-pct">' + conf + '% confidence</span></div>' +
-        '<div class="seg-stmt">' + escH(s.statement || '—') + '</div>' +
-        (s.statementCommercial ? '<div class="seg-stmt-sub seg-commercial"><span class="seg-stmt-icon">💰</span>' + escH(s.statementCommercial) + '</div>' : '') +
-        (s.statementRegulatory ? '<div class="seg-stmt-sub seg-regulatory"><span class="seg-stmt-icon">⚖️</span>' + escH(s.statementRegulatory) + '</div>' : '') +
-        (s.regulatoryNote ? '<div class="reg-note"><div class="reg-note-lbl">⚠ Regulatory context</div><div class="reg-note-txt">' + escH(s.regulatoryNote) + '</div></div>' : '') +
-        (s.action ? '<div class="seg-action-box"><div class="seg-action-lbl">What to do</div><div class="seg-action-txt">' + escH(s.action) + '</div></div>' : '') +
+
+        // ── Human verdict — big and clear ──
+        '<div class="seg-verdict">' + escH(verdict) + '</div>' +
+
+        // ── Plain English statement ──
+        '<div class="seg-stmt">' + escH(s.statement || '') + '</div>' +
+
+        // ── Action box — primary CTA, always present ──
+        (s.action ? '<div class="seg-action-box"><div class="seg-action-lbl">👉 Do this next</div><div class="seg-action-txt">' + escH(s.action) + '</div></div>' : '') +
+
+        // ── Send window ──
+        (nextSend || sendCapacity ? '<div class="seg-send-window">' +
+          (sendCapacity ? '<div class="seg-send-stat"><span class="seg-send-icon">📅</span>' + escH(sendCapacity) + '</div>' : '') +
+          (nextSend    ? '<div class="seg-send-stat"><span class="seg-send-icon">⏱</span>' + escH(nextSend) + '</div>' : '') +
+          (baselinePct ? '<div class="seg-send-stat"><span class="seg-send-icon">📊</span>Normal unsubscribe rate for this segment: ' + baselinePct + '</div>' : '') +
+        '</div>' : '') +
+
+        // ── Why this matters — collapsed by default ──
+        ((s.statementCommercial || s.statementRegulatory || s.regulatoryNote) ?
+          '<button class="seg-why-toggle" onclick="toggleWhy('' + uid + '')">' +
+            '<span>Why this matters</span><span class="seg-why-chevron">▾</span>' +
+          '</button>' +
+          '<div class="seg-why-body" id="' + uid + '-why" style="display:none">' +
+            (s.statementCommercial ? '<div class="seg-why-item seg-commercial"><span class="seg-why-icon">💰</span><div>' + escH(s.statementCommercial) + '</div></div>' : '') +
+            (s.statementRegulatory ? '<div class="seg-why-item seg-regulatory"><span class="seg-why-icon">⚖️</span><div>' + escH(s.statementRegulatory) + '</div></div>' : '') +
+            (s.regulatoryNote ? '<div class="seg-why-item seg-regnote"><span class="seg-why-icon">⚠️</span><div>' + escH(s.regulatoryNote) + '</div></div>' : '') +
+          '</div>'
+        : '') +
+
+        // ── Relationship capital — de-emphasised, at bottom ──
         '<div class="cap-wrap">' +
-          '<div class="cap-row"><span>Relationship Capital</span><span class="cap-score ' + capScoreCls + '">' + (cap > 0 ? '+' : '') + cap.toFixed(0) + ' / 100</span></div>' +
+          '<div class="cap-row"><span style="font-size:11px;color:var(--mu)">Relationship capital</span>' +
+            '<span class="cap-score ' + capScoreCls + '">' + (cap > 0 ? '+' : '') + cap.toFixed(0) + '/100</span>' +
+          '</div>' +
           '<div class="cap-bar">' +
             (cap < 0 ? '<div class="cap-bar-neg" style="width:' + capPct + '%;background:var(--r)"></div>' : '') +
             (cap > 0 ? '<div class="cap-bar-pos" style="width:' + capPct + '%;background:var(--g)"></div>' : '') +
           '</div>' +
-          '<div class="cap-context">' + escH(capContext) + '</div>' +
+          '<div class="cap-context">' + escH(capLabel) + '</div>' +
         '</div>' +
+
+        // ── Confidence — small, at very bottom ──
+        '<div style="font-size:10px;color:var(--mu);margin-top:10px;padding-top:8px;border-top:1px solid var(--b)">' + escH(confContext) + '</div>' +
+
       '</div>';
     }).join('');
   }
@@ -954,7 +1094,7 @@ function buildDemoSegment(campaigns) {
     var z = (rate - baseline) / (0.002 + 0.0001);
     var score = -(z * 0.7);
     var category = score > 0.2 ? 'Built trust' : score > -0.3 ? 'Neutral' : score > -1.0 ? 'Caused fatigue' : 'Damaged';
-    var reason = category === 'Built trust' ? 'Unsubscribe rate below this segment's baseline — positive signal.'
+    var reason = category === 'Built trust' ? 'Unsubscribe rate below this segment\u2019s baseline — positive signal.'
       : category === 'Caused fatigue' ? 'Unsubscribe rate ' + Math.abs(z).toFixed(1) + ' standard deviations above baseline. Audience showing mild fatigue.'
       : category === 'Damaged' ? 'Unsubscribe rate ' + Math.abs(z).toFixed(1) + ' standard deviations above baseline — significant relationship damage.'
       : 'Campaign within normal range for this segment.';
