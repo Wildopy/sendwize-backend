@@ -777,7 +777,7 @@ function renderDash(data) {
 
         // ── Why this matters — collapsed by default ──
         ((s.statementCommercial || s.statementRegulatory || s.regulatoryNote) ?
-          '<button class="seg-why-toggle" onclick="toggleWhy('' + uid + '')">' +
+          '<button class="seg-why-toggle" onclick="toggleWhy(\'' + uid + '\')">' +
             '<span>Why this matters</span><span class="seg-why-chevron">▾</span>' +
           '</button>' +
           '<div class="seg-why-body" id="' + uid + '-why" style="display:none">' +
