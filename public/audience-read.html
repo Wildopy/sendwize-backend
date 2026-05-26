@@ -90,15 +90,33 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .divider{height:1px;background:var(--b);margin:32px 0}
 
 /* ── CAMPAIGN VERDICTS ── */
-.c-list{display:flex;flex-direction:column;gap:8px}
-.ccard{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:var(--w);border:1px solid var(--b);border-left:3px solid transparent;border-radius:var(--rad);padding:14px 18px;box-shadow:var(--sh);animation:fadeUp .3s ease}
-.ccard.built{border-left-color:var(--g)}.ccard.neutral{border-left-color:var(--mu)}.ccard.fatigue{border-left-color:var(--y)}.ccard.damaged{border-left-color:var(--r)}
-.cc-date{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;white-space:nowrap}
-.cc-seg{font-size:10px;color:var(--mu);margin-top:1px}
-.cc-name{font-size:13px;font-weight:600}
-.cc-reason{font-size:12px;color:var(--mu);margin-top:2px;line-height:1.4}
-.v-pill{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 10px;border-radius:10px;white-space:nowrap}
-.v-pill.built{background:var(--gb);color:var(--g)}.v-pill.neutral{background:var(--bg);color:var(--mu);border:1px solid var(--b)}.v-pill.fatigue{background:var(--yb);color:var(--y)}.v-pill.damaged{background:var(--rb);color:var(--r)}
+/* ── WHAT JUST HAPPENED ── */
+.send-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:600px){.send-summary{grid-template-columns:repeat(2,1fr)}}
+.ss-tile{border-radius:var(--rad);padding:14px 16px;text-align:center;border:1px solid var(--b);background:var(--w)}
+.ss-tile.damaged{background:var(--rb);border-color:var(--rc)}
+.ss-tile.fatigue{background:var(--yb);border-color:var(--yc)}
+.ss-tile.built{background:var(--gb);border-color:var(--gc)}
+.ss-tile.neutral{background:var(--bg)}
+.ss-num{font-size:28px;font-weight:800;font-family:'DM Mono',monospace;line-height:1;margin-bottom:3px}
+.ss-tile.damaged .ss-num{color:var(--r)}.ss-tile.fatigue .ss-num{color:var(--y)}.ss-tile.built .ss-num{color:var(--g)}.ss-tile.neutral .ss-num{color:var(--mu)}
+.ss-lbl{font-size:11px;font-weight:600;line-height:1.3}
+.ss-tile.damaged .ss-lbl{color:#991b1b}.ss-tile.fatigue .ss-lbl{color:#78350f}.ss-tile.built .ss-lbl{color:#166534}.ss-tile.neutral .ss-lbl{color:var(--mu)}
+
+.seg-sends{margin-bottom:16px}
+.seg-sends-hdr{font-size:12px;font-weight:700;color:var(--tm);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:6px}
+.seg-sends-hdr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.send-row{display:flex;align-items:stretch;gap:0;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:6px;overflow:hidden;transition:box-shadow .15s}
+.send-row:hover{box-shadow:var(--shm)}
+.send-row-bar{width:4px;flex-shrink:0}
+.send-row-bar.built{background:var(--g)}.send-row-bar.fatigue{background:var(--y)}.send-row-bar.damaged{background:var(--r)}.send-row-bar.neutral{background:var(--b)}
+.send-row-body{flex:1;padding:12px 14px;min-width:0}
+.send-row-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.send-row-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.send-row-verdict{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0}
+.verdict-built{background:var(--gb);color:var(--g)}.verdict-fatigue{background:var(--yb);color:var(--y)}.verdict-damaged{background:var(--rb);color:var(--r)}.verdict-neutral{background:var(--bg);color:var(--mu);border:1px solid var(--b)}
+.send-row-plain{font-size:12px;color:var(--tm);line-height:1.5}
+.send-row-meta{font-size:11px;color:var(--mu);margin-top:4px}
 
 /* ── SEGMENT CARDS ── */
 .seg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
@@ -411,9 +429,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <!-- Panel 1 — What just happened -->
   <div class="panel">
-    <div class="panel-lbl"><span class="panel-num">1</span> What just happened</div>
-    <div class="c-list" id="campaignList">
-      <div class="empty"><h3>No campaigns logged yet</h3><p>Upload your send history or log a result above to see campaign impact scores.</p></div>
+    <div class="panel-lbl"><span class="panel-num">1</span> What your recent sends actually did</div>
+    <div id="campaignList">
+      <div class="empty"><h3>No campaigns logged yet</h3><p>Upload your send history or log a result above to see what each send did to your audience relationship.</p></div>
     </div>
   </div>
 
@@ -664,7 +682,7 @@ function renderDash(data) {
     segNames.length + ' segment' + (segNames.length !== 1 ? 's' : '') +
     ' · Updated ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  // ── Panel 1 — Campaign verdicts ──
+  // ── Panel 1 — What your recent sends did ──
   var allImpacts = [];
   segNames.forEach(function(seg) {
     (data.segments[seg].impacts || []).forEach(function(imp) {
@@ -675,17 +693,89 @@ function renderDash(data) {
 
   var cl = document.getElementById('campaignList');
   if (!allImpacts.length) {
-    cl.innerHTML = '<div class="empty"><h3>No campaign history yet</h3><p>Log your first campaign result to see impact scores.</p></div>';
+    cl.innerHTML = '<div class="empty"><h3>No campaign history yet</h3><p>Log your first campaign result to see what each send did to your audience.</p></div>';
   } else {
-    cl.innerHTML = allImpacts.slice(0, 15).map(function(imp) {
-      var cls = imp.category === 'Built trust' ? 'built' : imp.category === 'Neutral' ? 'neutral' : imp.category === 'Caused fatigue' ? 'fatigue' : 'damaged';
-      var showR = cls === 'fatigue' || cls === 'damaged';
-      return '<div class="ccard ' + cls + '">' +
-        '<div><div class="cc-date">' + fmtDate(imp.date) + '</div><div class="cc-seg">' + escH(imp._seg) + '</div></div>' +
-        '<div><div class="cc-name">' + escH(imp.campaign_name || 'Campaign') + '</div>' +
-        (showR && imp.reason ? '<div class="cc-reason">' + escH(imp.reason.slice(0, 120)) + '</div>' : '') + '</div>' +
-        '<span class="v-pill ' + cls + '">' + escH(imp.category) + '</span></div>';
+    // Summary counts
+    var nDamaged = allImpacts.filter(function(i){return i.category==='Damaged';}).length;
+    var nFatigue = allImpacts.filter(function(i){return i.category==='Caused fatigue';}).length;
+    var nBuilt   = allImpacts.filter(function(i){return i.category==='Built trust';}).length;
+    var nNeutral = allImpacts.filter(function(i){return i.category==='Neutral';}).length;
+
+    // Plain English verdict per impact
+    function plainVerdict(imp) {
+      var cat = imp.category;
+      var type = imp.campaign_name || 'Campaign';
+      if (cat === 'Damaged') {
+        return 'This send caused people to leave. More unsubscribes than normal — your audience did not like something about it.';
+      }
+      if (cat === 'Caused fatigue') {
+        return 'More unsubscribes than usual. Not a crisis, but your audience is signalling they are getting too many emails from you.';
+      }
+      if (cat === 'Built trust') {
+        return 'Fewer unsubscribes than normal — your audience responded well to this one. It strengthened the relationship.';
+      }
+      return 'Normal unsubscribe rate. This send did not move the needle in either direction.';
+    }
+
+    function verdictLabel(cat) {
+      if (cat === 'Damaged') return 'People left';
+      if (cat === 'Caused fatigue') return 'Too many emails';
+      if (cat === 'Built trust') return 'Worked well';
+      return 'Normal';
+    }
+
+    function verdictCls(cat) {
+      if (cat === 'Damaged') return 'damaged';
+      if (cat === 'Caused fatigue') return 'fatigue';
+      if (cat === 'Built trust') return 'built';
+      return 'neutral';
+    }
+
+    // Group by segment
+    var bySeg = {};
+    allImpacts.forEach(function(imp) {
+      if (!bySeg[imp._seg]) bySeg[imp._seg] = [];
+      bySeg[imp._seg].push(imp);
+    });
+
+    var summaryHtml = '<div class="send-summary">' +
+      (nDamaged ? '<div class="ss-tile damaged"><div class="ss-num">' + nDamaged + '</div><div class="ss-lbl">Sends that caused people to leave</div></div>' : '') +
+      (nFatigue ? '<div class="ss-tile fatigue"><div class="ss-num">' + nFatigue + '</div><div class="ss-lbl">Sends that felt like too much</div></div>' : '') +
+      (nBuilt   ? '<div class="ss-tile built"><div class="ss-num">' + nBuilt + '</div><div class="ss-lbl">Sends that worked well</div></div>' : '') +
+      (nNeutral ? '<div class="ss-tile neutral"><div class="ss-num">' + nNeutral + '</div><div class="ss-lbl">Sends with no noticeable effect</div></div>' : '') +
+    '</div>';
+
+    var segHtml = Object.keys(bySeg).map(function(seg) {
+      var segImps = bySeg[seg].slice(0, 8);
+      var hasBad  = segImps.some(function(i){return i.category==='Damaged'||i.category==='Caused fatigue';});
+      var dotCol  = hasBad ? 'var(--r)' : 'var(--g)';
+      var rowsHtml = segImps.map(function(imp) {
+        var cls   = verdictCls(imp.category);
+        var label = verdictLabel(imp.category);
+        var plain = plainVerdict(imp);
+        var type  = imp.campaign_name ? escH(imp.campaign_name) : 'Campaign';
+        return '<div class="send-row">' +
+          '<div class="send-row-bar ' + cls + '"></div>' +
+          '<div class="send-row-body">' +
+            '<div class="send-row-top">' +
+              '<div class="send-row-name">' + type + '</div>' +
+              '<span class="send-row-verdict verdict-' + cls + '">' + label + '</span>' +
+            '</div>' +
+            '<div class="send-row-plain">' + plain + '</div>' +
+            '<div class="send-row-meta">' + fmtDate(imp.date) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      return '<div class="seg-sends">' +
+        '<div class="seg-sends-hdr">' +
+          '<div class="seg-sends-hdr-dot" style="background:' + dotCol + '"></div>' +
+          escH(seg) +
+        '</div>' +
+        rowsHtml +
+      '</div>';
     }).join('');
+
+    cl.innerHTML = summaryHtml + segHtml;
   }
 
   // ── Panel 2 — Segment states ──
