@@ -18,7 +18,6 @@ const BASE_ID    = process.env.BASE_ID;
 const AT_TOKEN   = process.env.AIRTABLE_TOKEN;
 const AT_BASE    = `https://api.airtable.com/v0/${BASE_ID}`;
 const APP_URL    = 'https://sendwize-backend.vercel.app';
-const APP_URL    = 'https://sendwize-backend.vercel.app';
 
 const AT_HEADERS = () => ({
   Authorization:  `Bearer ${AT_TOKEN}`,
