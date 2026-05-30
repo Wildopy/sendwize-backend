@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Welcome to Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
+  --bg:#F4F3F0;--w:#ffffff;--b:#e8e5de;--bm:#d8d4cb;
+  --t:#0c0c0a;--tm:#4a4740;--mu:#9a9590;
+  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
+  --rad:12px;--rad-lg:16px;
+  --sh:0 1px 3px rgba(0,0,0,.06);
+  --shm:0 4px 16px rgba(0,0,0,.08);
+  --shl:0 12px 40px rgba(0,0,0,.12);
+}
+body{font-family:'DM Sans',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--t);line-height:1.6}
+
+/* ── SLIDE CONTAINER ── */
+.slides{width:100%;height:100vh;position:relative;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 24px 100px;opacity:0;pointer-events:none;transition:opacity .45s cubic-bezier(.4,0,.2,1),transform .45s cubic-bezier(.4,0,.2,1);transform:translateX(40px)}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.out{opacity:0;transform:translateX(-40px)}
+
+/* Each slide keeps the same background — accent is in content */
+.slide{background:var(--bg)}
+
+/* ── SLIDE INNER ── */
+.slide-inner{max-width:640px;width:100%;text-align:center}
+
+/* ── TOOL BADGE ── */
+.tool-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:20px;background:var(--ol);border:1px solid var(--om);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);margin-bottom:20px}
+
+/* ── EMOJI ── */
+.slide-emoji{font-size:52px;margin-bottom:16px;display:block;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes popIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+
+/* ── HEADINGS ── */
+.slide-h1{font-size:clamp(26px,4.5vw,40px);font-weight:700;letter-spacing:-.7px;line-height:1.15;margin-bottom:14px;color:var(--t)}
+.slide-h1 em{color:var(--o);font-style:normal}
+.slide-sub{font-size:15px;color:var(--tm);line-height:1.75;margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto}
+
+/* ── PRODUCES CARD ── */
+.produces{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:var(--rad);border:1px solid var(--b);background:var(--w);font-size:13px;color:var(--tm);margin-bottom:24px;box-shadow:var(--sh)}
+.produces-icon{font-size:16px}
+.produces strong{color:var(--t)}
+
+/* ── CHAIN ── */
+.chain{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.chain-node{font-size:11px;font-weight:500;padding:4px 10px;border-radius:6px;border:1px solid var(--b);color:var(--mu);background:var(--w);white-space:nowrap;transition:all .3s}
+.chain-node.active-node{color:var(--o);border-color:var(--o);background:var(--ol);font-weight:700}
+.chain-arrow{color:var(--bm);font-size:11px}
+
+/* ── WELCOME SPECIFIC ── */
+.sw-logo{font-size:24px;font-weight:700;color:var(--o);letter-spacing:-.5px;margin-bottom:28px;display:block}
+.welcome-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px;text-align:left}
+@media(max-width:500px){.welcome-cards{grid-template-columns:1fr}}
+.wc{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:16px;box-shadow:var(--sh)}
+.wc-step{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--o);margin-bottom:6px}
+.wc-txt{font-size:12px;color:var(--tm);line-height:1.5}
+
+/* ── COMPLETE CHAIN DIAGRAM ── */
+.chain-diagram{display:flex;flex-direction:column;gap:6px;margin-bottom:28px;text-align:left;width:100%}
+.cd-row{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:var(--rad);border:1px solid var(--b);background:var(--w);box-shadow:var(--sh)}
+.cd-emoji{font-size:20px;flex-shrink:0;margin-top:2px}
+.cd-body{flex:1;min-width:0}
+.cd-name{font-size:13px;font-weight:700;color:var(--t);margin-bottom:2px}
+.cd-desc{font-size:11px;color:var(--mu);line-height:1.4}
+.cd-arrow{text-align:center;color:var(--bm);font-size:13px;padding:1px 0}
+
+/* ── PROGRESS BAR ── */
+.progress-bar{height:3px;background:var(--b);border-radius:2px;position:fixed;top:0;left:0;right:0;z-index:100}
+.progress-fill{height:100%;background:var(--o);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* ── NAV BAR ── */
+.nav-bar{position:fixed;bottom:0;left:0;right:0;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to top,var(--bg) 80%,transparent);z-index:50}
+.dots{display:flex;gap:5px;align-items:center}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--b);transition:all .3s;cursor:pointer;border:none;padding:0}
+.dot.on{width:22px;border-radius:3px;background:var(--o)}
+.dot:hover:not(.on){background:var(--bm)}
+.nav-btns{display:flex;gap:8px;align-items:center}
+.btn-skip{background:none;border:none;color:var(--mu);font-size:13px;cursor:pointer;font-family:inherit;padding:8px 10px;transition:color .15s}
+.btn-skip:hover{color:var(--tm)}
+.btn-back{background:var(--w);border:1px solid var(--b);color:var(--tm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;padding:10px 18px;border-radius:var(--rad-sm,8px);transition:all .15s}
+.btn-back:hover{border-color:var(--bm);color:var(--t)}
+.btn-next{background:var(--o);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;padding:11px 26px;border-radius:var(--rad-sm,8px);transition:all .2s;letter-spacing:-.1px;display:inline-flex;align-items:center;gap:8px}
+.btn-next:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 4px 14px rgba(234,115,23,.35)}
+.btn-next:active{transform:none}
+
+/* ── CTA on complete screen ── */
+.cta-wrap{margin-top:4px}
+.btn-cta{background:var(--o);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;padding:14px 32px;border-radius:var(--rad);transition:all .2s;letter-spacing:-.2px;display:inline-flex;align-items:center;gap:10px}
+.btn-cta:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 6px 20px rgba(234,115,23,.35)}
+
+/* ── SKIP TOP ── */
+.skip-top{position:fixed;top:16px;right:20px;background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;font-family:inherit;transition:color .15s;z-index:200;padding:6px 10px;border-radius:6px}
+.skip-top:hover{color:var(--tm);background:var(--w)}
+
+@media(max-width:500px){
+  .slide-h1{font-size:24px}
+  .slide-sub{font-size:13px}
+  .chain{display:none}
+  .welcome-cards{gap:8px}
+  .nav-bar{padding:14px 16px}
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+<button class="skip-top" onclick="finish()">Skip tour</button>
+
+<div class="slides" id="slides">
+
+  <!-- ── SLIDE 0 — WELCOME ── -->
+  <div class="slide active" data-idx="0">
+    <div class="slide-inner">
+      <span class="sw-logo">sendwize</span>
+      <div class="tool-badge">Welcome</div>
+      <div class="slide-h1">Your complete UK marketing<br><em>compliance picture.</em></div>
+      <div class="slide-sub">Six tools. Each one builds on the last. By the end you will have a live compliance score, a regulatory risk picture, and a clear action list — all updated every time you use Sendwize.</div>
+      <div class="welcome-cards">
+        <div class="wc"><div class="wc-step">Tools 1–3</div><div class="wc-txt">Scan your copy, check your vendors, and document every campaign before it goes out.</div></div>
+        <div class="wc"><div class="wc-step">Tools 4–5</div><div class="wc-txt">Understand your audience health and find out what your contact database is really worth.</div></div>
+        <div class="wc"><div class="wc-step">Tool 6</div><div class="wc-txt">See exactly how a regulator would investigate your business today — and what to fix first.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 1 — AI SCANNER ── -->
+  <div class="slide" data-idx="1">
+    <div class="slide-inner">
+      <span class="slide-emoji">🤖</span>
+      <div class="tool-badge">Tool 1 of 6 — AI Scanner</div>
+      <div class="slide-h1">Start here.<br><em>Scan your marketing copy.</em></div>
+      <div class="slide-sub">Paste any email, ad, or campaign copy. The AI Scanner checks it against ICO, ASA, and CMA rules and flags exactly what needs fixing — before you send it to a single contact.</div>
+      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>compliance fixes</strong> that feed your score and exposure tracker</span></div>
+      <div class="chain">
+        <div class="chain-node active-node">🤖 AI Scanner</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🏢 Vendors</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📁 Dossier</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📊 Audience</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📋 List</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🔍 Simulator</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 2 — VENDOR CHECKER ── -->
+  <div class="slide" data-idx="2">
+    <div class="slide-inner">
+      <span class="slide-emoji">🏢</span>
+      <div class="tool-badge">Tool 2 of 6 — Vendor Checker</div>
+      <div class="slide-h1">Check every tool<br><em>you share data with.</em></div>
+      <div class="slide-sub">Every ESP, CRM, and ad platform you use processes personal data on your behalf. Vendor Checker scores each one for ICO registration, DPA status, and data transfer compliance — gaps become fixes on your dashboard.</div>
+      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>vendor risk scores</strong> and DPA gap fixes</span></div>
+      <div class="chain">
+        <div class="chain-node">🤖 AI Scanner</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node active-node">🏢 Vendors</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📁 Dossier</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📊 Audience</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📋 List</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🔍 Simulator</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 3 — CAMPAIGN DOSSIER ── -->
+  <div class="slide" data-idx="3">
+    <div class="slide-inner">
+      <span class="slide-emoji">📁</span>
+      <div class="tool-badge">Tool 3 of 6 — Campaign Dossier</div>
+      <div class="slide-h1">Build evidence files<br><em>for every campaign.</em></div>
+      <div class="slide-sub">If the ICO, ASA, or CMA ever investigate a campaign, you need to prove you checked it before it went out. Campaign Dossier creates a structured evidence file covering list provenance, consent basis, content sign-off, and suppression confirmation.</div>
+      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>a signed compliance record</strong> for every campaign you run</span></div>
+      <div class="chain">
+        <div class="chain-node">🤖 AI Scanner</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🏢 Vendors</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node active-node">📁 Dossier</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📊 Audience</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📋 List</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🔍 Simulator</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 4 — AUDIENCE READ ── -->
+  <div class="slide" data-idx="4">
+    <div class="slide-inner">
+      <span class="slide-emoji">📊</span>
+      <div class="tool-badge">Tool 4 of 6 — Audience Read</div>
+      <div class="slide-h1">Find out how your<br><em>audience actually feels.</em></div>
+      <div class="slide-sub">Upload your send history and seven deterministic algorithms analyse every segment — trust velocity, relationship capital, frequency tolerance. You get a plain English verdict on each segment and exactly what to do before your next send.</div>
+      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>per-segment verdicts</strong> and send recommendations</span></div>
+      <div class="chain">
+        <div class="chain-node">🤖 AI Scanner</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🏢 Vendors</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📁 Dossier</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node active-node">📊 Audience</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📋 List</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🔍 Simulator</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5 — LIST INTELLIGENCE ── -->
+  <div class="slide" data-idx="5">
+    <div class="slide-inner">
+      <span class="slide-emoji">📋</span>
+      <div class="tool-badge">Tool 5 of 6 — List Intelligence</div>
+      <div class="slide-h1">Find out what your<br><em>database is really worth.</em></div>
+      <div class="slide-sub">Upload your contact list. Every address is scored across four dimensions — consent health, deliverability, commercial value, and ICO risk. You see which contacts are assets, which are liabilities, and exactly what to do about each group.</div>
+      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>list value, suppression flags,</strong> and pre-send certificates</span></div>
+      <div class="chain">
+        <div class="chain-node">🤖 AI Scanner</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🏢 Vendors</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📁 Dossier</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📊 Audience</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node active-node">📋 List</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🔍 Simulator</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6 — REGULATOR SIMULATOR ── -->
+  <div class="slide" data-idx="6">
+    <div class="slide-inner">
+      <span class="slide-emoji">🔍</span>
+      <div class="tool-badge">Tool 6 of 6 — Regulator Simulator</div>
+      <div class="slide-h1">See yourself through<br><em>a regulator's eyes.</em></div>
+      <div class="slide-sub">Choose ICO, ASA, or CMA. The simulator runs a five-stage investigation using your actual compliance posture — background check, escalation probability, a real-format first-contact letter, documentation checklist, and penalty estimate.</div>
+      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>a full simulated investigation</strong> based on your live compliance data</span></div>
+      <div class="chain">
+        <div class="chain-node">🤖 AI Scanner</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">🏢 Vendors</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📁 Dossier</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📊 Audience</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">📋 List</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node active-node">🔍 Simulator</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 7 — COMPLETE ── -->
+  <div class="slide" data-idx="7">
+    <div class="slide-inner">
+      <span class="slide-emoji">✅</span>
+      <div class="tool-badge">You're ready</div>
+      <div class="slide-h1">Your compliance picture,<br><em>all in one place.</em></div>
+      <div class="slide-sub" style="margin-bottom:18px">Every tool feeds the next. Together they give you a live score, a real regulatory risk picture, and a clear action list — updated every time you use Sendwize.</div>
+      <div class="chain-diagram">
+        <div class="cd-row"><div class="cd-emoji">🤖</div><div class="cd-body"><div class="cd-name">AI Scanner</div><div class="cd-desc">Flags copy issues → creates compliance fixes → raises your score</div></div></div>
+        <div class="cd-arrow">↓</div>
+        <div class="cd-row"><div class="cd-emoji">🏢</div><div class="cd-body"><div class="cd-name">Vendor Checker</div><div class="cd-desc">Audits your data processors → closes DPA gaps → reduces ICO risk</div></div></div>
+        <div class="cd-arrow">↓</div>
+        <div class="cd-row"><div class="cd-emoji">📁</div><div class="cd-body"><div class="cd-name">Campaign Dossier</div><div class="cd-desc">Documents every send → creates evidence files → protects you if investigated</div></div></div>
+        <div class="cd-arrow">↓</div>
+        <div class="cd-row"><div class="cd-emoji">📊</div><div class="cd-body"><div class="cd-name">Audience Read</div><div class="cd-desc">Analyses send history → surfaces fatigue signals → tells you when to send</div></div></div>
+        <div class="cd-arrow">↓</div>
+        <div class="cd-row"><div class="cd-emoji">📋</div><div class="cd-body"><div class="cd-name">List Intelligence</div><div class="cd-desc">Scores every contact → identifies ICO risk → shows your list value</div></div></div>
+        <div class="cd-arrow">↓</div>
+        <div class="cd-row"><div class="cd-emoji">🔍</div><div class="cd-body"><div class="cd-name">Regulator Simulator</div><div class="cd-desc">Uses all your data → shows real regulatory exposure → tells you what to fix first</div></div></div>
+      </div>
+      <div class="cta-wrap">
+        <button class="btn-cta" onclick="finish()">
+          <span>Start building my compliance picture</span>
+          <span>→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── NAV BAR ── -->
+<div class="nav-bar">
+  <div class="dots" id="dots"></div>
+  <div class="nav-btns">
+    <button class="btn-skip" onclick="finish()" id="btnSkip">Skip</button>
+    <button class="btn-back" id="btnBack" onclick="go(-1)" style="display:none">← Back</button>
+    <button class="btn-next" id="btnNext" onclick="go(1)">Next →</button>
+  </div>
+</div>
+
+<script>
+var DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+var APP_URL   = 'https://sendwize-backend.vercel.app';
+var userId    = new URLSearchParams(window.location.search).get('userId') || '';
+var slides    = document.querySelectorAll('.slide');
+var TOTAL     = slides.length;
+var current   = 0;
+
+// Build dots
+var dotsEl = document.getElementById('dots');
+for (var i = 0; i < TOTAL; i++) {
+  (function(idx) {
+    var d = document.createElement('button');
+    d.className = 'dot' + (idx === 0 ? ' on' : '');
+    d.onclick = function() { jumpTo(idx); };
+    dotsEl.appendChild(d);
+  })(i);
+}
+
+function go(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  jumpTo(next);
+}
+
+function jumpTo(idx) {
+  slides[current].classList.remove('active');
+  slides[current].classList.add('out');
+  var prev = current;
+  setTimeout(function() { slides[prev].classList.remove('out'); }, 450);
+
+  current = idx;
+  slides[current].classList.add('active');
+
+  // Dots
+  document.querySelectorAll('.dot').forEach(function(d, i) {
+    d.classList.toggle('on', i === current);
+  });
+
+  // Progress bar
+  document.getElementById('progressFill').style.width = ((current / (TOTAL - 1)) * 100) + '%';
+
+  // Buttons
+  var isLast = current === TOTAL - 1;
+  document.getElementById('btnBack').style.display  = current > 0 ? '' : 'none';
+  document.getElementById('btnNext').style.display  = isLast ? 'none' : '';
+  document.getElementById('btnSkip').style.display  = isLast ? 'none' : '';
+
+  // Re-trigger emoji animation
+  var emoji = slides[current].querySelector('.slide-emoji');
+  if (emoji) { emoji.style.animation = 'none'; emoji.offsetHeight; emoji.style.animation = ''; }
+}
+
+async function finish() {
+  if (userId) {
+    try {
+      await fetch(APP_URL + '/api/profile?action=save', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ userId: userId, onboardingComplete: true }),
+      });
+    } catch(e) { console.warn('Onboarding save failed (non-fatal):', e); }
+  }
+  window.location.href = DASHBOARD + (userId ? '?userId=' + userId : '');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+  if (e.key === 'Escape') finish();
+});
+</script>
+</body>
+</html>
