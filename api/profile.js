@@ -61,7 +61,8 @@ function fmt(record, userId) {
     longestStreak:    f.LongestStreak    || 0,
     lastCheckDate:    f.LastCheckDate    || null,
     lastAlertSent:    f.LastAlertSent    || null,
-    lastBriefingSent: f.LastBriefingSent || null,
+    lastBriefingSent:    f.LastBriefingSent    || null,
+    onboardingComplete:  f.OnboardingComplete  || false,
   };
 }
 
@@ -109,7 +110,7 @@ async function handleGet(req, res) {
 
 // ── SAVE ──────────────────────────────────────────────────────
 async function handleSave(req, res) {
-  const { userId, revenueBand, sector, businessSize, emailVolume, email } = req.body ?? {};
+  const { userId, revenueBand, sector, businessSize, emailVolume, email, onboardingComplete } = req.body ?? {};
   if (!userId) return res.status(400).json({ error: 'userId is required' });
 
   // v6.0: RevenueBand — must match Airtable single select options exactly.
@@ -130,12 +131,14 @@ async function handleSave(req, res) {
 
   // Build fields — null strip so we never overwrite existing values with null.
   const rawFields = {
-    UserID:       userId,
-    RevenueBand:  revenueBand  || null,
-    Sector:       sector       || null,
-    BusinessSize: businessSize || null,
-    EmailVolume:  emailVolume  || null,
-    Email:        email        || null,
+    UserID:             userId,
+    RevenueBand:        revenueBand        || null,
+    Sector:             sector             || null,
+    BusinessSize:       businessSize       || null,
+    EmailVolume:        emailVolume        || null,
+    Email:              email              || null,
+    // OnboardingComplete is a checkbox — only set if explicitly passed
+    ...(typeof onboardingComplete === 'boolean' ? { OnboardingComplete: onboardingComplete } : {}),
   };
 
   const fields = Object.fromEntries(
