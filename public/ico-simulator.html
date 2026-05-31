@@ -183,7 +183,19 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.5}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
 .toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
-/* Demo notice banner */
+
+    .gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
+    .gate-screen.show{display:flex}
+    .gate-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+    .gate-logo{font-size:22px;font-weight:700;color:var(--orange);letter-spacing:-.5px;margin-bottom:24px}
+    .gate-icon{font-size:40px;margin-bottom:16px}
+    .gate-title{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)}
+    .gate-sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:28px}
+    .gate-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}
+    .gate-btn:hover{background:#d4660f}
+    .gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--white);color:var(--muted);border:1px solid var(--border-mid);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+    .gate-demo-btn:hover{border-color:var(--orange);color:var(--text)}
+    /* Demo notice banner */
 .demo-notice{display:flex;align-items:center;gap:10px;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad);padding:12px 16px;margin-bottom:24px;font-size:13px;color:#92400e}
 .demo-notice strong{font-weight:700}
 @media(max-width:600px){.penalty-amt{font-size:36px}.intro h1{font-size:24px}.reg-grid{grid-template-columns:1fr}.btn-row{flex-direction:column;align-items:flex-start}}
@@ -200,6 +212,19 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </nav>
 
 <div class="page">
+
+
+  <div class="gate-screen" id="gateScreen">
+    <div class="gate-card">
+      <div class="gate-logo">sendwize</div>
+      <div class="gate-icon">&#128274;</div>
+      <div class="gate-title">Regulator Simulator</div>
+      <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
+      <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
+      <button class="gate-demo-btn" onclick="startDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--orange)">DEMO</span> Try with example data</button>
+    </div>
+  </div>
+
   <div class="err-box" id="errBox"></div>
 
   <div class="intro">
@@ -448,10 +473,9 @@ function applyRegConfig() {
 function init() {
   userId = new URLSearchParams(window.location.search).get('userId');
   if (!userId) {
-    // Show demo button prominently; disable real start
-    el('btnStart').disabled = true;
-    el('errBox').textContent = 'You need to be signed in to run a live simulation. Use \u201cTry with example data\u201d to explore the tool.';
-    el('errBox').classList.add('show');
+    el('gateScreen').classList.add('show');
+    el('startWrap').style.display = 'none';
+    return;
   }
 }
 
