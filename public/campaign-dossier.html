@@ -264,7 +264,19 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 .btn-back-dash:hover{border-color:var(--o);color:var(--o)}
 .btn-new-dossier-cert{background:var(--ol);color:var(--o);border:1px solid var(--om);padding:11px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 
-.disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px}
+
+    .gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
+    .gate-screen.show{display:flex}
+    .gate-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+    .gate-logo{font-size:22px;font-weight:700;color:var(--orange);letter-spacing:-.5px;margin-bottom:24px}
+    .gate-icon{font-size:40px;margin-bottom:16px}
+    .gate-title{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)}
+    .gate-sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:28px}
+    .gate-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}
+    .gate-btn:hover{background:#d4660f}
+    .gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--white);color:var(--muted);border:1px solid var(--border-mid);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+    .gate-demo-btn:hover{border-color:var(--orange);color:var(--text)}
+    .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px}
 @media print{.nav,.stepper,.progress-row,.module-card,.submit-card,.cert-actions,.disc,.toast,.health-bar-wrap,.reg-lens,.incomplete-banner{display:none!important}.cert-section{display:block!important}.cert-card{border:none;box-shadow:none;padding:20px}body{background:#fff}}
 @media(max-width:600px){.tf-row,.fields-grid.two-col,.cert-footer,.reg-spotlight-grid{grid-template-columns:1fr}.stepper::before{display:none}.step-label{display:none}.cert-header{flex-direction:column}}
 </style>
@@ -280,6 +292,19 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 </nav>
 
 <div class="page">
+
+
+  <div class="gate-screen" id="gateScreen">
+    <div class="gate-card">
+      <div class="gate-logo">sendwize</div>
+      <div class="gate-icon">&#128274;</div>
+      <div class="gate-title">Campaign Dossier</div>
+      <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
+      <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
+      <button class="gate-demo-btn" onclick="runDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--orange)">DEMO</span> Try with example data</button>
+    </div>
+  </div>
+
   <div class="err-box" id="errBox"></div>
 
   <!-- LIST VIEW -->
@@ -673,14 +698,7 @@ function init() {
   userId    = params.get('userId');
   dossierId = params.get('dossierId');
   if (!userId) {
-    // No userId — show list view with demo option visible, suppress error
-    showListView();
-    el('dossierListContent').innerHTML = `<div class="empty-list">
-      <div class="empty-icon">📁</div>
-      <div class="empty-title">No dossiers yet</div>
-      <div class="empty-sub">Sign in via the dashboard to create compliance evidence files, or try the demo to see how a completed dossier looks.</div>
-      <button class="btn-new-dossier" onclick="runDemo()" style="margin-top:4px">👁 Try demo dossier</button>
-    </div>`;
+    el('gateScreen').classList.add('show');
     return;
   }
   if (dossierId) { showEditorView(); loadDossier(); }
