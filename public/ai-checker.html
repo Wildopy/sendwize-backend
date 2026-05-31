@@ -26,7 +26,6 @@
     .control-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--orange); }
     select { width: 100%; padding: 10px 12px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 14px; font-family: inherit; background: var(--white); color: var(--text); transition: border-color .15s; appearance: none; cursor: pointer; }
     select:focus { outline: none; border-color: var(--orange); }
-    .mode-toggle { display: flex; gap: 8px; }
     label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text); }
     .form-group { margin-bottom: 18px; }
     input[type="text"], textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 14px; font-family: inherit; background: var(--white); color: var(--text); transition: border-color .15s; resize: vertical; }
@@ -37,6 +36,12 @@
     .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
     .btn-secondary { padding: 8px 16px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-weight: 500; background: var(--white); color: var(--text); cursor: pointer; font-family: inherit; transition: border-color .15s; }
     .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+    /* Demo button */
+    .btn-demo { width: 100%; padding: 12px 20px; background: var(--white); color: var(--muted); border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; transition: all .15s; font-family: inherit; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-demo:hover { border-color: var(--orange); color: var(--text); }
+    .demo-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #FFF4EA; color: var(--orange); letter-spacing: .04em; }
+    .demo-notice { display: flex; align-items: flex-start; gap: 10px; background: #FFF4EA; border: 1px solid #fed7aa; border-radius: var(--radius); padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #92400e; }
+    .demo-notice strong { font-weight: 700; }
 
     /* ── SENDING CONTEXT PANEL ───────────────────────────────────────── */
     .context-panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; overflow: hidden; }
@@ -70,7 +75,6 @@
     .context-skip { font-size: 12px; color: var(--muted); text-decoration: underline; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
     .context-skip:hover { color: var(--orange); }
 
-    /* ── REST OF EXISTING STYLES ─────────────────────────────────────── */
     .loading { display: none; text-align: center; padding: 48px 20px; }
     .loading.show { display: block; }
     .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
@@ -97,11 +101,6 @@
     .risk-verdict p  { font-size: 13px; color: var(--muted); }
     .email-score-bar { display: none; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px; }
     .email-score-bar.show { display: block; }
-    .esb-row { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
-    .esb-label { font-size: 13px; font-weight: 600; min-width: 140px; }
-    .esb-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
-    .esb-fill  { height: 100%; border-radius: 4px; transition: width .6s ease; }
-    .esb-val   { font-size: 13px; font-weight: 700; min-width: 36px; text-align: right; }
     .rewrite-panel { display: none; gap: 16px; margin-bottom: 20px; }
     .rewrite-panel.show { display: grid; grid-template-columns: 1fr 1fr; }
     .rewrite-col-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
@@ -118,7 +117,6 @@
     .violation-item.high     { border-left-color: #ea580c; }
     .violation-item.medium   { border-left-color: #d97706; }
     .violation-item.low      { border-left-color: #16a34a; }
-    /* Context-sourced violation — slightly different background */
     .violation-item.from-context { background: #fefbf3; }
     .violation-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
     .violation-type { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; }
@@ -135,25 +133,9 @@
     .no-violations-icon { font-size: 32px; margin-bottom: 10px; }
     .checks-section { display: none; }
     .checks-section.show { display: block; }
-    .check-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .check-row:last-child { border-bottom: none; }
-    .check-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; text-transform: uppercase; }
-    .check-status.pass { background: #d1fae5; color: #065f46; }
-    .check-status.warn, .check-status.warning { background: #fef3c7; color: #92400e; }
-    .check-status.fail { background: #fee2e2; color: #991b1b; }
-    .check-body { flex: 1; }
-    .check-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-    .check-desc  { font-size: 12px; color: var(--muted); line-height: 1.4; }
     .error-box { display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); padding: 16px; margin-bottom: 20px; font-size: 13px; color: #dc2626; }
     .error-box.show { display: block; }
     .disclaimer { font-size: 11px; color: var(--muted); font-style: italic; text-align: center; margin-top: 24px; }
-    @media (max-width: 640px) {
-      .controls-row { grid-template-columns: 1fr; }
-      .rewrite-panel.show { grid-template-columns: 1fr; }
-      .risk-banner { flex-direction: column; text-align: center; gap: 14px; }
-      .mode-toggle { flex-direction: column; }
-      .radio-group { gap: 6px; }
-    }
     .image-upload-area { border: 1.5px dashed var(--border-mid); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: border-color .15s, background .15s; text-align: center; }
     .image-upload-area:hover { border-color: var(--orange); background: var(--orange-light); }
     .image-upload-prompt { display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -162,6 +144,11 @@
     .image-preview-item img { width: 100%; height: 100%; object-fit: cover; }
     .image-preview-remove { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(0,0,0,.6); color: white; border: none; border-radius: 50%; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
     .image-count-badge { font-size: 11px; color: var(--orange); font-weight: 600; margin-top: 6px; }
+    @media (max-width: 640px) {
+      .controls-row { grid-template-columns: 1fr; }
+      .rewrite-panel.show { grid-template-columns: 1fr; }
+      .risk-banner { flex-direction: column; text-align: center; gap: 14px; }
+    }
   </style>
 </head>
 <body>
@@ -180,7 +167,6 @@
 
   <div id="formSection">
 
-    <!-- ── SENDING CONTEXT PANEL ──────────────────────────────────────── -->
     <div class="context-panel" id="contextPanel">
       <div class="context-header" onclick="toggleContext()" id="contextHeader">
         <div class="context-header-left">
@@ -189,7 +175,7 @@
               <span class="context-title">Sending Context</span>
               <span class="context-badge">Recommended</span>
             </div>
-            <div class="context-subtitle" id="contextSubtitle">4 quick questions — catches consent chain violations invisible in copy</div>
+            <div class="context-subtitle" id="contextSubtitle">4 quick questions &mdash; catches consent chain violations invisible in copy</div>
           </div>
         </div>
         <svg class="context-chevron open" id="contextChevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
@@ -197,118 +183,45 @@
 
       <div class="context-body" id="contextBody">
         <p class="context-intro">
-          The most expensive PECR violations are <strong>not visible in the email copy</strong>. ZMLUK was fined £105,000 — the copy was fine, the consent chain was broken. Saga was fined £225,000 — the emails looked fine, the list source was wrong. Answer these 4 questions so the AI can check what content analysis alone cannot see.
+          The most expensive PECR violations are <strong>not visible in the email copy</strong>. ZMLUK was fined &pound;105,000 &mdash; the copy was fine, the consent chain was broken. Saga was fined &pound;225,000 &mdash; the emails looked fine, the list source was wrong. Answer these 4 questions so the AI can check what content analysis alone cannot see.
           <br><br>
-          <button class="context-skip" onclick="skipContext(event)">Skip — analyse copy only</button>
+          <button class="context-skip" onclick="skipContext(event)">Skip &mdash; analyse copy only</button>
         </p>
 
-        <!-- Q1 -->
         <div class="context-question">
-          <div class="context-q-label">
-            <span class="context-q-num">1</span>
-            Who is sending this?
-          </div>
+          <div class="context-q-label"><span class="context-q-num">1</span>Who is sending this?</div>
           <div class="radio-group">
-            <label class="radio-option" id="q1_direct_label">
-              <input type="radio" name="senderRelationship" value="direct" onchange="onContextChange()">
-              <div class="radio-option-text">We are sending it directly from our own platform or ESP</div>
-            </label>
-            <label class="radio-option" id="q1_thirdParty_label">
-              <input type="radio" name="senderRelationship" value="thirdParty" onchange="onContextChange()">
-              <div class="radio-option-text">
-                A third-party agency or platform is sending on our behalf
-                <div class="radio-option-risk">⚠ From name must match the organisation that collected consent</div>
-              </div>
-            </label>
+            <label class="radio-option"><input type="radio" name="senderRelationship" value="direct" onchange="onContextChange()"><div class="radio-option-text">We are sending it directly from our own platform or ESP</div></label>
+            <label class="radio-option"><input type="radio" name="senderRelationship" value="thirdParty" onchange="onContextChange()"><div class="radio-option-text">A third-party agency or platform is sending on our behalf<div class="radio-option-risk">&#9888; From name must match the organisation that collected consent</div></div></label>
           </div>
         </div>
 
-        <!-- Q2 -->
         <div class="context-question">
-          <div class="context-q-label">
-            <span class="context-q-num">2</span>
-            Where did this contact list come from?
-          </div>
+          <div class="context-q-label"><span class="context-q-num">2</span>Where did this contact list come from?</div>
           <div class="radio-group">
-            <label class="radio-option">
-              <input type="radio" name="listSource" value="direct" onchange="onContextChange()">
-              <div class="radio-option-text">We collected it directly from our own customers or website sign-ups</div>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="listSource" value="purchased" onchange="onContextChange()">
-              <div class="radio-option-text">
-                Purchased or rented from a third party
-                <div class="radio-option-risk">⚠ High risk — ZMLUK fined £105,000 for this in 2025</div>
-              </div>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="listSource" value="partner" onchange="onContextChange()">
-              <div class="radio-option-text">
-                Provided by a partner or affiliate
-                <div class="radio-option-risk">⚠ Indirect consent is not valid for email/SMS (Saga, £225,000, 2021)</div>
-              </div>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="listSource" value="mixed" onchange="onContextChange()">
-              <div class="radio-option-text">Mixed sources</div>
-            </label>
+            <label class="radio-option"><input type="radio" name="listSource" value="direct" onchange="onContextChange()"><div class="radio-option-text">We collected it directly from our own customers or website sign-ups</div></label>
+            <label class="radio-option"><input type="radio" name="listSource" value="purchased" onchange="onContextChange()"><div class="radio-option-text">Purchased or rented from a third party<div class="radio-option-risk">&#9888; High risk &mdash; ZMLUK fined &pound;105,000 for this in 2025</div></div></label>
+            <label class="radio-option"><input type="radio" name="listSource" value="partner" onchange="onContextChange()"><div class="radio-option-text">Provided by a partner or affiliate<div class="radio-option-risk">&#9888; Indirect consent is not valid for email/SMS (Saga, &pound;225,000, 2021)</div></div></label>
+            <label class="radio-option"><input type="radio" name="listSource" value="mixed" onchange="onContextChange()"><div class="radio-option-text">Mixed sources</div></label>
           </div>
         </div>
 
-        <!-- Q3 -->
         <div class="context-question">
-          <div class="context-q-label">
-            <span class="context-q-num">3</span>
-            Did recipients specifically consent to receive marketing from your organisation by name?
-          </div>
+          <div class="context-q-label"><span class="context-q-num">3</span>Did recipients specifically consent to receive marketing from your organisation by name?</div>
           <div class="radio-group">
-            <label class="radio-option">
-              <input type="radio" name="consentSpecificity" value="specific" onchange="onContextChange()">
-              <div class="radio-option-text">Yes — they specifically consented to our organisation by name</div>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="consentSpecificity" value="softOptIn" onchange="onContextChange()">
-              <div class="radio-option-text">Soft opt-in — existing customers, marketing for similar products/services</div>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="consentSpecificity" value="thirdParty" onchange="onContextChange()">
-              <div class="radio-option-text">
-                They consented to a third party or to "our partners" — not specifically our organisation
-                <div class="radio-option-risk">⚠ Critical — not valid consent under PECR</div>
-              </div>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="consentSpecificity" value="notSure" onchange="onContextChange()">
-              <div class="radio-option-text">
-                Not sure
-                <div class="radio-option-risk">⚠ If unsure, assume consent is not valid and do not send</div>
-              </div>
-            </label>
+            <label class="radio-option"><input type="radio" name="consentSpecificity" value="specific" onchange="onContextChange()"><div class="radio-option-text">Yes &mdash; they specifically consented to our organisation by name</div></label>
+            <label class="radio-option"><input type="radio" name="consentSpecificity" value="softOptIn" onchange="onContextChange()"><div class="radio-option-text">Soft opt-in &mdash; existing customers, marketing for similar products/services</div></label>
+            <label class="radio-option"><input type="radio" name="consentSpecificity" value="thirdParty" onchange="onContextChange()"><div class="radio-option-text">They consented to a third party or to &ldquo;our partners&rdquo; &mdash; not specifically our organisation<div class="radio-option-risk">&#9888; Critical &mdash; not valid consent under PECR</div></div></label>
+            <label class="radio-option"><input type="radio" name="consentSpecificity" value="notSure" onchange="onContextChange()"><div class="radio-option-text">Not sure<div class="radio-option-risk">&#9888; If unsure, assume consent is not valid and do not send</div></div></label>
           </div>
         </div>
 
-        <!-- Q4 -->
         <div class="context-question">
-          <div class="context-q-label">
-            <span class="context-q-num">4</span>
-            Does the From name match the organisation that collected the consent?
-          </div>
+          <div class="context-q-label"><span class="context-q-num">4</span>Does the From name match the organisation that collected the consent?</div>
           <div class="radio-group">
-            <label class="radio-option">
-              <input type="radio" name="fromNameMatch" value="yes" onchange="onContextChange()">
-              <div class="radio-option-text">Yes — the From name is the same organisation that collected consent</div>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="fromNameMatch" value="no" onchange="onContextChange()">
-              <div class="radio-option-text">
-                No — different sender
-                <div class="radio-option-risk">⚠ Sender identity may be concealed — PECR Reg 23</div>
-              </div>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="fromNameMatch" value="notSure" onchange="onContextChange()">
-              <div class="radio-option-text">Not sure</div>
-            </label>
+            <label class="radio-option"><input type="radio" name="fromNameMatch" value="yes" onchange="onContextChange()"><div class="radio-option-text">Yes &mdash; the From name is the same organisation that collected consent</div></label>
+            <label class="radio-option"><input type="radio" name="fromNameMatch" value="no" onchange="onContextChange()"><div class="radio-option-text">No &mdash; different sender<div class="radio-option-risk">&#9888; Sender identity may be concealed &mdash; PECR Reg 23</div></div></label>
+            <label class="radio-option"><input type="radio" name="fromNameMatch" value="notSure" onchange="onContextChange()"><div class="radio-option-text">Not sure</div></label>
           </div>
         </div>
 
@@ -318,7 +231,6 @@
         </div>
       </div>
     </div>
-    <!-- ── END SENDING CONTEXT PANEL ─────────────────────────────────── -->
 
     <div class="card">
       <div class="card-label">Check Settings</div>
@@ -336,33 +248,38 @@
       </div>
       <div class="form-group">
         <label for="campaignName">Campaign / file name</label>
-        <input type="text" id="campaignName" placeholder="e.g. Summer Sale Email — June 2026" />
+        <input type="text" id="campaignName" placeholder="e.g. Summer Sale Email &mdash; June 2026" />
       </div>
       <div class="form-group" id="copyGroup">
         <label for="copyText" id="copyLabel">Marketing copy</label>
-        <textarea id="copyText" placeholder="Paste your copy here…"></textarea>
+        <textarea id="copyText" placeholder="Paste your copy here&hellip;"></textarea>
       </div>
 
       <div class="form-group" id="imageGroup">
-        <label>Images <span style="color:var(--muted);font-weight:400;">(optional — up to 3, max 5MB each)</span></label>
+        <label>Images <span style="color:var(--muted);font-weight:400;">(optional &mdash; up to 3, max 5MB each)</span></label>
         <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
           <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none;" onchange="onImagesSelected(event)">
           <div class="image-upload-prompt" id="imageUploadPrompt">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--muted)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span style="font-size:13px;color:var(--muted);">Upload images — social ads, direct mail, banners, mockups</span>
-            <span style="font-size:11px;color:var(--muted);margin-top:2px;">JPEG, PNG, GIF, WebP · max 3 images · 5MB each</span>
+            <span style="font-size:13px;color:var(--muted);">Upload images &mdash; social ads, direct mail, banners, mockups</span>
+            <span style="font-size:11px;color:var(--muted);margin-top:2px;">JPEG, PNG, GIF, WebP &middot; max 3 images &middot; 5MB each</span>
           </div>
           <div class="image-previews" id="imagePreviews" style="display:none;"></div>
         </div>
       </div>
     </div>
+
     <button class="btn-primary" id="submitBtn" onclick="runCheck()">Run Compliance Check</button>
-    <p class="disclaimer">Information only — not legal advice.</p>
+    <button class="btn-demo" id="demoBtn" onclick="runDemo()">
+      <span class="demo-pill">DEMO</span>
+      Try with example data
+    </button>
+    <p class="disclaimer">Information only &mdash; not legal advice.</p>
   </div>
 
   <div class="loading" id="loadingSection">
     <div class="spinner"></div>
-    <div class="loading-text">Analysing your copy…</div>
+    <div class="loading-text">Analysing your copy&hellip;</div>
     <div class="loading-steps" id="loadingSteps">Checking for compliance issues</div>
   </div>
 
@@ -373,29 +290,26 @@
     </button>
     <div class="risk-banner" id="riskBanner">
       <div class="risk-score-circle" id="riskCircle">
-        <span class="risk-score-num" id="riskNum">—</span>
+        <span class="risk-score-num" id="riskNum">&mdash;</span>
         <span class="risk-score-label">SCORE</span>
       </div>
       <div class="risk-verdict">
-        <h2 id="verdictText">—</h2>
-        <p id="verdictSub">—</p>
+        <h2 id="verdictText">&mdash;</h2>
+        <p id="verdictSub">&mdash;</p>
       </div>
     </div>
-    <div class="email-score-bar card" id="emailScoreBar">
-      <div class="section-title">Email Deliverability Score</div>
-      <div id="emailScoreRows"></div>
-    </div>
+    <div class="email-score-bar card" id="emailScoreBar"></div>
     <div class="rewrite-panel" id="rewritePanel">
       <div class="rewrite-col">
-        <div class="rewrite-col-label original">📄 Original copy</div>
+        <div class="rewrite-col-label original">&#x1F4C4; Original copy</div>
         <div class="rewrite-box" id="originalBox"></div>
       </div>
       <div class="rewrite-col">
-        <div class="rewrite-col-label fixed">✅ Compliant rewrite</div>
+        <div class="rewrite-col-label fixed">&#x2705; Compliant rewrite</div>
         <div class="rewrite-box fixed-box" id="fixedBox"></div>
         <div class="copy-actions">
           <button class="btn-secondary" onclick="copyCopy()">Copy to clipboard</button>
-          <span class="copy-success" id="copySuccess">✓ Copied!</span>
+          <span class="copy-success" id="copySuccess">&#x2713; Copied!</span>
         </div>
       </div>
     </div>
@@ -407,7 +321,7 @@
       <div class="section-title">Email Technical Checks</div>
       <div id="checksList"></div>
     </div>
-    <p class="disclaimer">Information only — not legal advice.</p>
+    <p class="disclaimer">Information only &mdash; not legal advice.</p>
   </div>
 
 </div>
@@ -418,18 +332,88 @@
   let lastCopy = '';
   let contextSkipped = false;
 
-  // ── AUTH v4.25 — URL param ────────────────────────────────────────────
+  // ── AUTH ──────────────────────────────────────────────────────────────
   function init() {
     userId = new URLSearchParams(window.location.search).get('userId');
     if (!userId) {
-      showError('You need to be signed in. Please return to the dashboard and open this tool from there.');
-      // dashboard: https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy
+      document.getElementById('errorBox').textContent = 'You need to be signed in to run a live check. Use \u201cTry with example data\u201d to explore the tool.';
+      document.getElementById('errorBox').classList.add('show');
       document.getElementById('submitBtn').disabled = true;
     }
   }
   document.readyState === 'loading'
     ? document.addEventListener('DOMContentLoaded', init)
     : init();
+
+  // ── DEMO MODE ─────────────────────────────────────────────────────────
+  var DEMO_COPY = 'Subject: Last chance \u2014 offer ends TONIGHT\n\nHi there,\n\nUK\u2019s best-value service is here. Our exclusive summer deal was \u00a3149, now just \u00a379 \u2014 but only until midnight tonight.\n\nDon\u2019t miss out!\n\nDeals Team';
+
+  var DEMO_RESULT = {
+    score: 44,
+    verdict: 'High Risk \u2014 do not send without changes',
+    violations: [
+      {
+        severity: 'critical',
+        regulation: 'PECR Reg 22',
+        issue: 'This email relies on a purchased list from a data broker. Purchased lists do not constitute valid consent under PECR \u2014 recipients have not consented to receive marketing from your organisation by name.',
+        location: 'Sending Context \u2014 List Source',
+        recommendation: 'Do not send to this list. Obtain direct, specific consent from each recipient before sending any marketing email.',
+        enforcement_note: 'ZMLUK Ltd fined \u00a3105,000 (2025) for sending marketing emails to a purchased list. The ICO does not accept \u201clegitimate interest\u201d as a basis for cold email marketing.'
+      },
+      {
+        severity: 'high',
+        regulation: 'ASA CAP 8.17',
+        issue: 'Subject line reads \u201cLast chance \u2014 offer ends TONIGHT\u201d but no evidence this offer genuinely ends tonight. Artificial urgency is a misleading claim.',
+        location: 'Subject line',
+        recommendation: 'Either remove the time-limit claim or ensure the offer genuinely closes tonight with technical controls preventing access after that time.',
+        enforcement_note: 'The ASA has upheld multiple complaints about countdown timers and \u201ctonight only\u201d offers that were not genuine (Fashion retailer ruling, March 2024).'
+      },
+      {
+        severity: 'high',
+        regulation: 'DMCCA 2024 / CMA',
+        issue: 'Headline reads \u201cWas \u00a3149, now \u00a379\u201d but no evidence the \u00a3149 price was genuine for the required 28-day period. Reference pricing requires a genuine previous price.',
+        location: 'Email body \u2014 hero section',
+        recommendation: 'Provide evidence the \u00a3149 price was active for at least 28 consecutive days at meaningful sales volume, or remove the reference price claim.',
+        enforcement_note: 'The CMA has named reference pricing as a priority enforcement area. Under DMCCA 2024 the statutory maximum is \u00a3300,000 or 10% of global turnover.'
+      },
+      {
+        severity: 'medium',
+        regulation: 'PECR Reg 23',
+        issue: 'The \u201cFrom\u201d name in the email header is \u201cDeals Team\u201d \u2014 this does not clearly identify your organisation. The recipient cannot tell who is sending this.',
+        location: 'Email sender name',
+        recommendation: 'Change the From name to your registered trading name or a clearly identifiable variant of it.',
+        enforcement_note: 'Concealed sender identity is an automatic PECR Reg 23 breach. The ICO includes this in penalty calculations.'
+      },
+      {
+        severity: 'medium',
+        regulation: 'ASA CAP 3.1',
+        issue: 'The claim \u201cUK\u2019s best-value service\u201d is a superlative claim. You must hold documentary evidence proving this before sending \u2014 e.g. a price comparison from a recognised source.',
+        location: 'Email body \u2014 paragraph 2',
+        recommendation: 'Remove the superlative or hold a price-comparison study as evidence. The ASA requires this evidence to exist before the ad runs, not gathered afterwards.',
+        enforcement_note: ''
+      },
+    ],
+    fixedVersion: 'Subject: Your exclusive summer offer \u2014 save 47% this week\n\nHi [First Name],\n\nWe\u2019re pleased to offer you a saving on [Product Name] this week. This offer is available until [genuine end date].\n\nCurrently \u00a379 (regular price \u00a3149, held from [date] to [date])\n\nShop now \u00bb\n\n[Company Name] | [Address]\nUnsubscribe | Privacy Policy',
+    checks: [],
+    emailScore: null,
+  };
+
+  function runDemo() {
+    // Pre-fill copy field so the original box has something to show
+    document.getElementById('copyText').value = DEMO_COPY;
+    lastCopy = DEMO_COPY;
+
+    // Show demo notice in results
+    const notice = document.createElement('div');
+    notice.className = 'demo-notice';
+    notice.innerHTML = '<span style="font-size:16px">\uD83D\uDC41\uFE0F</span><span><strong>Demo mode</strong> \u2014 example copy with common UK compliance issues. <a href="?" style="color:var(--orange);font-weight:600">Sign in</a> to check your own copy against your live compliance data.</span>';
+
+    document.getElementById('formSection').style.display = 'none';
+    renderResults(DEMO_RESULT);
+
+    // Insert notice before results
+    document.getElementById('resultsSection').prepend(notice);
+  }
 
   // ── SENDING CONTEXT PANEL ─────────────────────────────────────────────
   let contextOpen = true;
@@ -446,8 +430,7 @@
     contextOpen = false;
     document.getElementById('contextBody').style.display = 'none';
     document.getElementById('contextChevron').classList.remove('open');
-    document.getElementById('contextSubtitle').textContent = 'Skipped — copy-only analysis';
-    document.getElementById('contextBadge') && (document.getElementById('contextBadge').textContent = 'Skipped');
+    document.getElementById('contextSubtitle').textContent = 'Skipped \u2014 copy-only analysis';
   }
 
   function onContextChange() {
@@ -456,28 +439,20 @@
     const q3 = document.querySelector('input[name="consentSpecificity"]:checked')?.value;
     const q4 = document.querySelector('input[name="fromNameMatch"]:checked')?.value;
     const answered = [q1, q2, q3, q4].filter(Boolean).length;
-
-    // Update radio option styling
     document.querySelectorAll('.radio-option').forEach(el => {
-      const radio = el.querySelector('input[type="radio"]');
-      el.classList.toggle('selected', radio?.checked || false);
+      el.classList.toggle('selected', el.querySelector('input[type="radio"]')?.checked || false);
     });
-
-    // Detect high-risk answers
     const isHighRisk = q2 === 'purchased' || q2 === 'partner' || q3 === 'thirdParty' || q3 === 'notSure' || q4 === 'no';
-
     const dot  = document.getElementById('contextDot');
     const text = document.getElementById('contextStatusText');
     dot.className = 'context-status-dot ' + (answered === 0 ? '' : isHighRisk ? 'risk' : 'answered');
     text.textContent = answered === 4
-      ? (isHighRisk ? '⚠ Potential consent chain issues detected — AI will flag these' : '✓ All answered — no context issues detected')
-      : `${answered} of 4 questions answered`;
-
-    // Update subtitle
+      ? (isHighRisk ? '\u26a0 Potential consent chain issues detected \u2014 AI will flag these' : '\u2713 All answered \u2014 no context issues detected')
+      : answered + ' of 4 questions answered';
     if (answered > 0) {
       document.getElementById('contextSubtitle').textContent = answered === 4
-        ? (isHighRisk ? 'Issues detected — will be included in analysis' : 'Complete — no context issues')
-        : `${answered} of 4 answered`;
+        ? (isHighRisk ? 'Issues detected \u2014 will be included in analysis' : 'Complete \u2014 no context issues')
+        : answered + ' of 4 answered';
     }
   }
 
@@ -487,29 +462,16 @@
     const q2 = document.querySelector('input[name="listSource"]:checked')?.value;
     const q3 = document.querySelector('input[name="consentSpecificity"]:checked')?.value;
     const q4 = document.querySelector('input[name="fromNameMatch"]:checked')?.value;
-    if (!q1 && !q2 && !q3 && !q4) return null; // not answered — skip
-    return {
-      senderRelationship: q1 || null,
-      listSource:         q2 || null,
-      consentSpecificity: q3 || null,
-      fromNameMatch:      q4 || null,
-    };
+    if (!q1 && !q2 && !q3 && !q4) return null;
+    return { senderRelationship: q1||null, listSource: q2||null, consentSpecificity: q3||null, fromNameMatch: q4||null };
   }
 
-  // ── CONTENT TYPE ──────────────────────────────────────────────────────
-  const typeDescriptions = {
-    email:      'Scan email copy for misleading claims, fake urgency, missing opt-out language, and ASA CAP Code violations.',
-    sms:        'Scan SMS copy for PECR compliance, STOP opt-out requirement, and misleading claims.',
-    push:       'Scan push notification copy for misleading claims and ASA CAP Code violations.',
-    social:     'Scan social ad copy for ASA CAP Code compliance, misleading pricing, and fake urgency.',
-    directmail: 'Scan direct mail copy for PECR, UK GDPR compliance, and misleading claims.',
-  };
   const typePlaceholders = {
-    email:      'Paste your email subject line and body copy here…',
-    sms:        'Paste your SMS message text here…',
-    push:       'Paste your push notification title and body here…',
-    social:     'Paste your social ad headline and copy here…',
-    directmail: 'Paste your direct mail copy here…',
+    email: 'Paste your email subject line and body copy here\u2026',
+    sms: 'Paste your SMS message text here\u2026',
+    push: 'Paste your push notification title and body here\u2026',
+    social: 'Paste your social ad headline and copy here\u2026',
+    directmail: 'Paste your direct mail copy here\u2026',
   };
 
   function onContentTypeChange() {
@@ -518,7 +480,6 @@
     document.getElementById('copyText').placeholder = typePlaceholders[currentContentType] || typePlaceholders.email;
     document.getElementById('copyLabel').textContent = isEmail ? 'Email copy (subject + body text)' : 'Marketing copy';
   }
-
 
   const loadingSteps = [
     'Checking sending context for consent chain issues',
@@ -537,23 +498,17 @@
   }
   function stopLoading() { clearInterval(loadingInterval); }
 
-
-  // ── IMAGE UPLOAD ──────────────────────────────────────────────────────
-  let uploadedImages = []; // [{ data: base64, mediaType: string, name: string }]
+  let uploadedImages = [];
 
   function onImagesSelected(event) {
     const files = Array.from(event.target.files || []);
     const remaining = 3 - uploadedImages.length;
-    const toProcess = files.slice(0, remaining);
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-
-    toProcess.forEach(file => {
-      if (!validTypes.includes(file.type)) { showError(`${file.name}: unsupported type. Use JPEG, PNG, GIF, or WebP.`); return; }
-      if (file.size > 5 * 1024 * 1024) { showError(`${file.name} exceeds 5MB limit.`); return; }
+    files.slice(0, remaining).forEach(file => {
+      if (!['image/jpeg','image/png','image/gif','image/webp'].includes(file.type)) return;
+      if (file.size > 5 * 1024 * 1024) return;
       const reader = new FileReader();
       reader.onload = e => {
-        const base64 = e.target.result.split(',')[1];
-        uploadedImages.push({ data: base64, mediaType: file.type, name: file.name });
+        uploadedImages.push({ data: e.target.result.split(',')[1], mediaType: file.type, name: file.name });
         renderImagePreviews();
       };
       reader.readAsDataURL(file);
@@ -561,46 +516,31 @@
     event.target.value = '';
   }
 
-  function removeImage(index) {
-    uploadedImages.splice(index, 1);
-    renderImagePreviews();
-  }
+  function removeImage(index) { uploadedImages.splice(index, 1); renderImagePreviews(); }
 
   function renderImagePreviews() {
-    const area   = document.getElementById('imageUploadArea');
+    const area = document.getElementById('imageUploadArea');
     const prompt = document.getElementById('imageUploadPrompt');
-    const prev   = document.getElementById('imagePreviews');
-    if (uploadedImages.length === 0) {
-      prompt.style.display = 'flex';
-      prev.style.display = 'none';
-      area.style.cursor = uploadedImages.length >= 3 ? 'not-allowed' : 'pointer';
-      return;
-    }
-    prompt.style.display = 'none';
-    prev.style.display = 'flex';
+    const prev = document.getElementById('imagePreviews');
+    if (!uploadedImages.length) { prompt.style.display = 'flex'; prev.style.display = 'none'; return; }
+    prompt.style.display = 'none'; prev.style.display = 'flex';
     prev.innerHTML = uploadedImages.map((img, i) =>
-      `<div class="image-preview-item">
-        <img src="data:${img.mediaType};base64,${img.data}" alt="${escH(img.name)}">
-        <button class="image-preview-remove" onclick="removeImage(${i});event.stopPropagation();">×</button>
-      </div>`
+      `<div class="image-preview-item"><img src="data:${img.mediaType};base64,${img.data}" alt="${escH(img.name)}"><button class="image-preview-remove" onclick="removeImage(${i});event.stopPropagation();">&times;</button></div>`
     ).join('') + (uploadedImages.length < 3
       ? `<div class="image-preview-item" style="border:1.5px dashed var(--border-mid);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="document.getElementById('imageFileInput').click();event.stopPropagation();"><span style="font-size:20px;color:var(--muted);">+</span></div>`
-      : '') +
-      `<div class="image-count-badge" style="width:100%">${uploadedImages.length} of 3 image${uploadedImages.length!==1?'s':''} added</div>`;
+      : '');
   }
 
   async function runCheck() {
     if (!userId) { showError('Please return to the dashboard and open this tool from there.'); return; }
     clearError();
-    const copy    = document.getElementById('copyText').value.trim();
-    const subject = document.getElementById('emailSubject')?.value.trim() || '';
+    const copy = document.getElementById('copyText').value.trim();
     if (!copy) { showError('Please paste your marketing copy before running a check.'); return; }
     lastCopy = copy;
     setLoadingState(true);
     try {
       const sendingContext = getSendingContext();
       const payload = { userId, contentType: currentContentType, content: copy, autoFix: true };
-      if (currentContentType === 'email' && subject) payload.subject = subject;
       if (sendingContext) payload.sendingContext = sendingContext;
       if (uploadedImages.length > 0) payload.images = uploadedImages.map(i => ({ data: i.data, mediaType: i.mediaType }));
       const res = await fetch(`${APP_URL}/api/analyze-copy`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -616,37 +556,35 @@
   function renderResults(data) {
     stopLoading();
     const score = data.score ?? 0, verdict = data.verdict ?? '', violations = data.violations ?? [];
-    const fixed = data.fixedVersion ?? '', checks = data.checks ?? [], emailScore = data.emailScore ?? null;
-    const isEmail = currentContentType === 'email';
+    const fixed = data.fixedVersion ?? '';
     const riskScore = 100 - score;
     let level = riskScore >= 75 ? 'critical' : riskScore >= 50 ? 'high' : riskScore >= 25 ? 'medium' : 'low';
     document.getElementById('riskBanner').className = `risk-banner ${level}`;
     document.getElementById('riskNum').textContent = score;
     document.getElementById('verdictText').textContent = verdict || riskLabel(level);
     document.getElementById('verdictSub').textContent  = riskSub(level, violations.length);
-
     document.getElementById('emailScoreBar').classList.remove('show');
 
     const panel = document.getElementById('rewritePanel');
-    if (fixed) { document.getElementById('originalBox').textContent = lastCopy; document.getElementById('fixedBox').textContent = fixed; panel.classList.add('show'); }
-    else { panel.classList.remove('show'); }
+    if (fixed) {
+      document.getElementById('originalBox').textContent = lastCopy;
+      document.getElementById('fixedBox').textContent = fixed;
+      panel.classList.add('show');
+    } else { panel.classList.remove('show'); }
 
     const vEl = document.getElementById('violationsList');
-    document.getElementById('violationsTitle').textContent = isEmail ? 'AI Compliance Issues' : 'Compliance Issues';
+    document.getElementById('violationsTitle').textContent = 'AI Compliance Issues';
 
     if (!violations.length) {
-      vEl.innerHTML = `<div class="no-violations"><div class="no-violations-icon">✅</div><div>No compliance issues detected.</div></div>`;
+      vEl.innerHTML = `<div class="no-violations"><div class="no-violations-icon">&#x2705;</div><div>No compliance issues detected.</div></div>`;
     } else {
-      // Sort: context violations first, then by severity
       const sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
       const sorted = [...violations].sort((a, b) => {
-        // context violations first
         const aCtx = a.location?.toLowerCase().includes('context') ? 0 : 1;
         const bCtx = b.location?.toLowerCase().includes('context') ? 0 : 1;
         if (aCtx !== bCtx) return aCtx - bCtx;
         return (sevOrder[a.severity] ?? 4) - (sevOrder[b.severity] ?? 4);
       });
-
       vEl.innerHTML = sorted.map(v => {
         const sev = (v.severity || 'medium').toLowerCase();
         const isFromCtx = v.location?.toLowerCase().includes('context');
@@ -657,15 +595,14 @@
             <span class="violation-reg">${escH(v.regulation || '')}</span>
           </div>
           <div class="violation-text">${escH(v.issue || '')}</div>
-          ${v.location ? `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">📍 ${escH(v.location)}</div>` : ''}
+          ${v.location ? `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">&#x1F4CD; ${escH(v.location)}</div>` : ''}
           ${v.recommendation ? `<div class="violation-quote">Fix: ${escH(v.recommendation)}</div>` : ''}
-          ${v.enforcement_note ? `<div class="violation-enforcement">📋 ${escH(v.enforcement_note)}</div>` : ''}
+          ${v.enforcement_note ? `<div class="violation-enforcement">&#x1F4CB; ${escH(v.enforcement_note)}</div>` : ''}
         </div>`;
       }).join('');
     }
 
     document.getElementById('checksSection').classList.remove('show');
-
     setLoadingState(false);
     document.getElementById('resultsSection').classList.add('show');
     document.getElementById('formSection').style.display = 'none';
@@ -685,16 +622,16 @@
     document.getElementById('rewritePanel').classList.remove('show');
     document.getElementById('emailScoreBar').classList.remove('show');
     document.getElementById('checksSection').classList.remove('show');
-    ['copyText','campaignName','emailSubject'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    // Remove any demo notice
+    document.querySelectorAll('.demo-notice').forEach(n => n.remove());
+    ['copyText','campaignName'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     uploadedImages = []; renderImagePreviews();
-    // Reset context
     document.querySelectorAll('.radio-option input[type="radio"]').forEach(r => r.checked = false);
     document.querySelectorAll('.radio-option').forEach(el => el.classList.remove('selected'));
-    contextSkipped = false;
-    contextOpen = true;
+    contextSkipped = false; contextOpen = true;
     document.getElementById('contextBody').style.display = '';
     document.getElementById('contextChevron').classList.add('open');
-    document.getElementById('contextSubtitle').textContent = '4 quick questions — catches consent chain violations invisible in copy';
+    document.getElementById('contextSubtitle').textContent = '4 quick questions \u2014 catches consent chain violations invisible in copy';
     document.getElementById('contextDot').className = 'context-status-dot';
     document.getElementById('contextStatusText').textContent = '0 of 4 questions answered';
     clearError(); lastCopy = '';
@@ -711,7 +648,7 @@
   function escH(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function riskLabel(l) { return { low:'Low Risk', medium:'Medium Risk', high:'High Risk', critical:'Critical Risk' }[l] || l; }
   function riskSub(l, n) {
-    if (l === 'low')      return n === 0 ? 'No issues detected — we could not identify any obvious concerns. This is not a guarantee of compliance.' : `${n} minor issue${n!==1?'s':''} to review.`;
+    if (l === 'low')      return n === 0 ? 'No issues detected \u2014 no obvious concerns identified. This is not a guarantee of compliance.' : `${n} minor issue${n!==1?'s':''} to review.`;
     if (l === 'medium')   return `${n} issue${n!==1?'s':''} detected. Review before sending.`;
     if (l === 'high')     return `${n} serious issue${n!==1?'s':''} found. Fix before sending.`;
     if (l === 'critical') return `${n} critical issue${n!==1?'s':''} found. Do not send this copy.`;
