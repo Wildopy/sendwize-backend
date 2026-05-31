@@ -31,6 +31,19 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 /* ── PAGE ── */
 .page{max-width:820px;margin:0 auto;padding:40px 20px 80px}
 
+/* ── GATE ── */
+.gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
+.gate-screen.show{display:flex}
+.gate-card{background:var(--w);border:1px solid var(--b);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.gate-logo{font-size:22px;font-weight:700;color:var(--o);letter-spacing:-.5px;margin-bottom:24px}
+.gate-icon{font-size:40px;margin-bottom:16px}
+.gate-title{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--t)}
+.gate-sub{font-size:14px;color:var(--mu);line-height:1.6;margin-bottom:28px}
+.gate-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;background:var(--o);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}
+.gate-btn:hover{background:var(--od)}
+.gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--w);color:var(--mu);border:1px solid var(--bm);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.gate-demo-btn:hover{border-color:var(--o);color:var(--t)}
+
 /* ── INTRO ── */
 .intro{margin-bottom:36px}
 .intro-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);background:var(--ol);border:1px solid var(--om);padding:4px 12px;border-radius:20px;margin-bottom:14px}
@@ -83,7 +96,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 
 /* ── RESULTS ── */
-/* Headline numbers — three big cards */
 .headline-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px}
 @media(max-width:600px){.headline-grid{grid-template-columns:1fr}}
 .hl-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px 18px;box-shadow:var(--sh);text-align:center}
@@ -95,7 +107,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .hl-card.red .hl-num{color:var(--r)}
 .hl-card.blue .hl-num{color:#1d4ed8}
 
-/* Four tiers breakdown */
 .tiers{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px;margin-bottom:20px;box-shadow:var(--sh)}
 .tiers-title{font-size:14px;font-weight:700;margin-bottom:16px}
 .tier-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--b)}
@@ -109,7 +120,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .tier-count{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;width:60px;text-align:right;flex-shrink:0}
 .tier-desc{font-size:11px;color:var(--mu);flex:1}
 
-/* ICO status */
 .ico-box{border-radius:var(--rad);padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px}
 .ico-box.good{background:var(--gb);border:1px solid var(--gc)}
 .ico-box.warn{background:var(--yb);border:1px solid var(--yc)}
@@ -119,7 +129,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ico-box.good .ico-title{color:var(--g)}.ico-box.warn .ico-title{color:var(--y)}.ico-box.bad .ico-title{color:var(--r)}
 .ico-desc{font-size:13px;color:var(--tm);line-height:1.5}
 
-/* Data quality */
 .dq-box{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:18px 20px;margin-bottom:20px;box-shadow:var(--sh)}
 .dq-title{font-size:14px;font-weight:700;margin-bottom:10px}
 .dq-clean{font-size:13px;color:var(--g);font-weight:500}
@@ -127,8 +136,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .dq-flag:last-child{border-bottom:none}
 .dq-flag::before{content:'⚠';font-size:12px;color:var(--y);flex-shrink:0}
 
-/* Opportunities */
-.opps-title{font-size:16px;font-weight:700;margin-bottom:14px}
 .opp-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px;margin-bottom:12px;box-shadow:var(--sh)}
 .opp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
 .opp-type{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--o)}
@@ -140,7 +147,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .opp-action-txt{font-size:13px;color:var(--t);font-weight:500;line-height:1.5}
 .opp-decay{font-size:10px;color:var(--mu);margin-top:8px;font-style:italic}
 
-/* Pre-send certificate */
 .cert-box{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;margin-top:28px;box-shadow:var(--sh)}
 .cert-box h3{font-size:16px;font-weight:700;margin-bottom:4px}
 .cert-box > p{font-size:13px;color:var(--mu);margin-bottom:18px;line-height:1.5}
@@ -155,31 +161,26 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .cert-detail{font-size:13px;color:var(--tm);line-height:1.5}
 .cert-id{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:8px}
 
-/* Section header */
 .sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:14px;padding-bottom:10px;border-top:1px solid var(--b);padding-top:24px;margin-top:8px;display:flex;align-items:center;gap:8px}
 .sec-num{width:20px;height:20px;border-radius:50%;background:var(--t);color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 
-/* Loading */
 .loading-bg{position:fixed;inset:0;background:rgba(244,243,240,.9);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(2px)}
 .loading-bg.open{display:flex}
 .spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}
 .loading-msg{font-size:13px;color:var(--mu);font-family:'DM Mono',monospace}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Toast */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
 .toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
 
-/* ── DEMO BANNER ── */
 .demo-banner{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:12px 18px;margin-bottom:20px;display:none;align-items:center;justify-content:space-between;gap:12px}
 .demo-banner-txt{font-size:13px;color:#92400e;font-weight:500}
 .demo-dl{font-size:12px;font-weight:600;color:var(--o);text-decoration:none;border:1px solid var(--o);padding:5px 10px;border-radius:6px;white-space:nowrap}
 .demo-dl:hover{background:var(--ol)}
 .demo-dismiss{background:var(--o);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 
-/* Screens */
+/* Screens — gate replaces upload when no userId */
 #upload-screen,#mapping-screen,#results-screen{display:none}
-#upload-screen{display:block}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 </style>
@@ -197,6 +198,18 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="loading-bg" id="loadingBg">
   <div class="spin"></div>
   <div class="loading-msg" id="loadingMsg">Analysing your list…</div>
+</div>
+
+<!-- ── GATE SCREEN ── -->
+<div class="gate-screen" id="gateScreen" style="max-width:820px;margin:0 auto;padding:0 20px">
+  <div class="gate-card">
+    <div class="gate-logo">sendwize</div>
+    <div class="gate-icon">🔒</div>
+    <div class="gate-title">List Intelligence</div>
+    <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
+    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard →</a>
+    <button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> Try with example data</button>
+  </div>
 </div>
 
 <!-- ══ UPLOAD SCREEN ══ -->
@@ -236,7 +249,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
   <div id="mappingTable"></div>
 
-  <!-- Business context — collected once, stored to profile -->
   <div class="context-card" id="contextCard">
     <h2>One more thing</h2>
     <p>Tell us about your business so we can calculate the commercial value of your list accurately. We store this to your profile — you won't be asked again.</p>
@@ -275,6 +287,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <button class="demo-dismiss" onclick="showScreen('upload')">Upload your own →</button>
     </div>
   </div>
+
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap">
     <div>
       <h1 style="font-size:24px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">Your list analysis</h1>
@@ -285,22 +298,17 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
-  <!-- Section 1 — What you've got -->
   <div class="sec-hdr"><span class="sec-num">1</span> What's in your list</div>
-
   <div class="headline-grid" id="headlineGrid"></div>
   <div class="tiers" id="tiersBox"></div>
 
-  <!-- Section 2 — ICO picture -->
   <div class="sec-hdr"><span class="sec-num">2</span> Your ICO compliance picture</div>
   <div id="icoBox"></div>
   <div class="dq-box" id="dqBox"></div>
 
-  <!-- Section 3 — What to do -->
   <div class="sec-hdr"><span class="sec-num">3</span> What to do next</div>
   <div id="oppsBox"></div>
 
-  <!-- Section 4 — Pre-send certificate -->
   <div class="sec-hdr"><span class="sec-num">4</span> Pre-send certificate</div>
   <div class="cert-box">
     <h3>Generate a pre-send certificate</h3>
@@ -357,6 +365,13 @@ function fmt(n) { return (n||0).toLocaleString('en-GB'); }
 function fmtGBP(n) { return n ? '£' + fmt(Math.round(n)) : '—'; }
 function escH(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function sid(s) { return s.replace(/[^a-zA-Z0-9_]/g,'_'); }
+
+// ── GATE ─────────────────────────────────────────────────────
+function hideGateAndDemo() {
+  el('gateScreen').classList.remove('show');
+  showScreen('upload');
+  loadListDemo();
+}
 
 function showScreen(s) {
   ['upload','mapping','results'].forEach(function(n) {
@@ -420,8 +435,6 @@ async function goMapping() {
     detectedMapping = json.mapping || {};
     hideLoading();
     buildMappingTable();
-
-    // Check if profile already has sector/AOV — if so hide the context card
     try {
       var pr = await fetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId=' + userId);
       var pd = await pr.json();
@@ -431,7 +444,6 @@ async function goMapping() {
         el('ctxAov').value   = pd.averageOrderValue;
       }
     } catch(e) {}
-
     showScreen('mapping');
   } catch(err) {
     hideLoading();
@@ -466,24 +478,15 @@ async function submitUpload() {
     var s = el('map-' + sid(h));
     if (s && s.value && s.value !== 'ignore') mapping[h] = s.value;
   });
-
   var hasEmail = Object.values(mapping).includes('email');
   if (!hasEmail) { showToast('Please map at least one column to Email address', 'er'); return; }
-
   var sector = el('ctxSector').value || 'ecommerce';
   var aov    = parseFloat(el('ctxAov').value) || 50;
-
   showLoading('Analysing your list across four dimensions…');
   try {
     var resp = await fetch(API + '?userId=' + userId + '&action=upload', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        rows:         parsedCSV.rows,
-        fieldMapping: mapping,
-        sector:       sector,
-        aov:          aov,
-        uploadVersion: Date.now(),
-      }),
+      body: JSON.stringify({ rows: parsedCSV.rows, fieldMapping: mapping, sector: sector, aov: aov, uploadVersion: Date.now() }),
     });
     var json = await resp.json();
     if (!json.success) throw new Error(json.error || 'Upload failed');
@@ -506,10 +509,7 @@ async function loadResults() {
     var resp = await fetch(API + '?userId=' + userId + '&action=load');
     var json = await resp.json();
     hideLoading();
-    if (!json.hasData) {
-      showToast('No previous analysis found — upload a list to get started', '');
-      return;
-    }
+    if (!json.hasData) { showToast('No previous analysis found — upload a list to get started', ''); return; }
     lastResults = json;
     renderResults(json);
     showScreen('results');
@@ -523,8 +523,6 @@ async function loadResults() {
 function renderResults(d) {
   var total = d.totalContacts || 0;
   var pct   = function(n) { return total > 0 ? Math.round(n/total*100) : 0; };
-
-  // Meta line
   var metaParts = [];
   if (d.checkDate) metaParts.push('Analysed ' + fmtDate(d.checkDate));
   if (d.sector)    metaParts.push(capFirst(d.sector));
@@ -532,14 +530,11 @@ function renderResults(d) {
   if (d.duplicatesRemoved) metaParts.push(d.duplicatesRemoved + ' duplicates removed');
   el('resultsMeta').textContent = metaParts.join(' · ');
 
-  // ── Headline numbers ──
-  var assetPct = total > 0 ? Math.round(((d.activeCount||0) + (d.recoverableCount||0)) / total * 100) : 0;
   el('headlineGrid').innerHTML =
     hlCard(fmt(total), 'Total contacts', '', 'blue') +
     hlCard(fmtGBP(d.assetValue), 'Estimated list value', 'Actionable contacts × sector benchmark', 'green') +
-    hlCard(pct(d.liabilityCount||0) + '%', 'Contacts below consent threshold', 'ICO enforcement risk zone', d.liabilityCount > total*0.1 ? 'red' : 'amber');
+    hlCard(pct(d.liabilityCount||0) + '%', 'Contacts below consent threshold', 'ICO enforcement risk zone', (d.liabilityCount||0) > total*0.1 ? 'red' : 'amber');
 
-  // ── Four tiers ──
   var tiers = [
     { label:'Active',      count:d.activeCount||0,      cls:'g', desc:'Consent strong, deliverability good. Ready to send.' },
     { label:'Recoverable', count:d.recoverableCount||0,  cls:'a', desc:'Consent declining but above threshold. Act within 90 days.' },
@@ -549,68 +544,34 @@ function renderResults(d) {
   el('tiersBox').innerHTML = '<div class="tiers-title">Contact breakdown</div>' +
     tiers.map(function(t) {
       var barPct = total > 0 ? Math.round(t.count/total*100) : 0;
-      return '<div class="tier-row">' +
-        '<div class="tier-dot ' + t.cls + '"></div>' +
-        '<div class="tier-label">' + t.label + '</div>' +
-        '<div class="tier-bar-wrap"><div class="tier-bar-fill ' + t.cls + '" style="width:' + barPct + '%"></div></div>' +
-        '<div class="tier-count">' + fmt(t.count) + '</div>' +
-        '<div class="tier-desc">' + t.desc + '</div>' +
-        '</div>';
+      return '<div class="tier-row"><div class="tier-dot ' + t.cls + '"></div><div class="tier-label">' + t.label + '</div><div class="tier-bar-wrap"><div class="tier-bar-fill ' + t.cls + '" style="width:' + barPct + '%"></div></div><div class="tier-count">' + fmt(t.count) + '</div><div class="tier-desc">' + t.desc + '</div></div>';
     }).join('');
 
-  // ── ICO status ──
   var icoStatus = d.icoStatus || 'Good standing';
   var icoCls = icoStatus.includes('Good') ? 'good' : icoStatus.includes('High') ? 'bad' : 'warn';
   var icoIcon = icoCls === 'good' ? '✅' : icoCls === 'bad' ? '⛔' : '⚠️';
-  el('icoBox').innerHTML = '<div class="ico-box ' + icoCls + '">' +
-    '<div class="ico-icon">' + icoIcon + '</div>' +
-    '<div><div class="ico-title">ICO picture: ' + escH(icoStatus) + '</div>' +
-    '<div class="ico-desc">' + icoDescription(icoStatus, d) + '</div></div></div>';
+  el('icoBox').innerHTML = '<div class="ico-box ' + icoCls + '"><div class="ico-icon">' + icoIcon + '</div><div><div class="ico-title">ICO picture: ' + escH(icoStatus) + '</div><div class="ico-desc">' + icoDescription(icoStatus, d) + '</div></div></div>';
 
-  // ── Data quality ──
   var flags = d.dataQualityFlags || [];
   el('dqBox').innerHTML = '<div class="dq-title">Data quality</div>' +
-    (flags.length === 0
-      ? '<div class="dq-clean">✓ No data quality issues detected</div>'
-      : flags.map(function(f){ return '<div class="dq-flag">' + escH(f) + '</div>'; }).join(''));
+    (flags.length === 0 ? '<div class="dq-clean">✓ No data quality issues detected</div>' : flags.map(function(f){ return '<div class="dq-flag">' + escH(f) + '</div>'; }).join(''));
 
-  // ── Opportunities ──
   var opps = d.opportunities || [];
-  if (!opps.length) {
-    el('oppsBox').innerHTML = '<div style="font-size:13px;color:var(--mu);padding:16px 0">No specific actions identified for this list.</div>';
-  } else {
-    el('oppsBox').innerHTML = opps.map(function(o) {
-      var hasValue = o.currentValue > 0;
-      return '<div class="opp-card">' +
-        '<div class="opp-top">' +
-          '<div class="opp-type">' + escH(o.type) + '</div>' +
-          (hasValue
-            ? '<div class="opp-value">' + fmtGBP(o.currentValue) + '</div>'
-            : '<div class="opp-value zero">Action required</div>') +
-        '</div>' +
-        '<div class="opp-desc">' + escH(o.description) + '</div>' +
-        '<div class="opp-action"><div class="opp-action-lbl">What to do</div><div class="opp-action-txt">' + escH(o.recommendedAction) + '</div></div>' +
-        (hasValue && o.decayRate ? '<div class="opp-decay">Value decays at ~' + o.decayRate + '% per month — act sooner for a better outcome.</div>' : '') +
-        '</div>';
-    }).join('');
-  }
+  el('oppsBox').innerHTML = !opps.length
+    ? '<div style="font-size:13px;color:var(--mu);padding:16px 0">No specific actions identified for this list.</div>'
+    : opps.map(function(o) {
+        var hasValue = o.currentValue > 0;
+        return '<div class="opp-card"><div class="opp-top"><div class="opp-type">' + escH(o.type) + '</div>' + (hasValue ? '<div class="opp-value">' + fmtGBP(o.currentValue) + '</div>' : '<div class="opp-value zero">Action required</div>') + '</div><div class="opp-desc">' + escH(o.description) + '</div><div class="opp-action"><div class="opp-action-lbl">What to do</div><div class="opp-action-txt">' + escH(o.recommendedAction) + '</div></div>' + (hasValue && o.decayRate ? '<div class="opp-decay">Value decays at ~' + o.decayRate + '% per month — act sooner for a better outcome.</div>' : '') + '</div>';
+      }).join('');
 }
 
 function hlCard(num, label, sub, cls) {
-  return '<div class="hl-card ' + cls + '">' +
-    '<div class="hl-num">' + escH(String(num)) + '</div>' +
-    '<div class="hl-label">' + escH(label) + '</div>' +
-    (sub ? '<div class="hl-sub">' + escH(sub) + '</div>' : '') +
-    '</div>';
+  return '<div class="hl-card ' + cls + '"><div class="hl-num">' + escH(String(num)) + '</div><div class="hl-label">' + escH(label) + '</div>' + (sub ? '<div class="hl-sub">' + escH(sub) + '</div>' : '') + '</div>';
 }
 
 function icoDescription(status, d) {
-  if (status.includes('Good')) {
-    return 'The majority of your contacts are above the consent strength threshold. Your list is in good standing for direct marketing under PECR and UK GDPR. Continue monitoring as consent decays over time.';
-  }
-  if (status.includes('High risk')) {
-    return 'Over 30% of your contacts are below the consent strength threshold. Sending to these contacts carries significant ICO enforcement risk under PECR Regulation 22. Suppress or re-consent this segment before your next send.';
-  }
+  if (status.includes('Good')) return 'The majority of your contacts are above the consent strength threshold. Your list is in good standing for direct marketing under PECR and UK GDPR. Continue monitoring as consent decays over time.';
+  if (status.includes('High risk')) return 'Over 30% of your contacts are below the consent strength threshold. Sending to these contacts carries significant ICO enforcement risk under PECR Regulation 22. Suppress or re-consent this segment before your next send.';
   return 'Some contacts are approaching the consent threshold. Review the at-risk tier and consider a re-consent campaign for contacts expiring in the next 90 days.';
 }
 
@@ -627,14 +588,11 @@ async function generateCert() {
     var json = await resp.json();
     hideLoading();
     if (!json.success) throw new Error(json.error);
-    var r   = json.result.toLowerCase();
-    var ce  = el('certResult');
+    var r  = json.result.toLowerCase();
+    var ce = el('certResult');
     ce.className    = 'cert-result ' + r;
     ce.style.display = 'block';
-    ce.innerHTML =
-      '<div class="cert-verdict">' + escH(json.result) + '</div>' +
-      '<div class="cert-detail">' + certDescription(json.result, json) + '</div>' +
-      '<div class="cert-id">Certificate ID: ' + escH(json.certificateId || '—') + ' · ' + fmtDate(json.date) + '</div>';
+    ce.innerHTML = '<div class="cert-verdict">' + escH(json.result) + '</div><div class="cert-detail">' + certDescription(json.result, json) + '</div><div class="cert-id">Certificate ID: ' + escH(json.certificateId || '—') + ' · ' + fmtDate(json.date) + '</div>';
     ce.scrollIntoView({ behavior:'smooth', block:'nearest' });
     showToast('Certificate generated', 'ok');
   } catch(err) {
@@ -659,10 +617,8 @@ function showToast(msg, type) {
   setTimeout(function(){ t.className='toast'; }, 3500);
 }
 
-// ── UTILS ────────────────────────────────────────────────────
 function fmtDate(s) { if (!s) return ''; return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
 function capFirst(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
-
 
 // ── DEMO DATA ────────────────────────────────────────────────
 var LIST_DEMO_CSV = `email,date_added,last_engagement,engagement_type
@@ -695,7 +651,6 @@ xander@yaho.com,2022-12-01,2023-08-01,open`;
 function loadListDemo() {
   showLoading('Generating example analysis…');
   setTimeout(function() {
-    // Simulated results — realistic mix of all four tiers
     var demoResults = {
       success: true,
       totalContacts: 24,
@@ -713,63 +668,37 @@ function loadListDemo() {
         '1 duplicate removed'
       ],
       opportunities: [
-        {
-          type: 'Re-engagement campaign',
-          description: '7 contacts have declining consent but are still above the ICO threshold. A targeted re-engagement campaign now could recover this segment before consent expires.',
-          currentValue: 1240.00,
-          estimatedValue: 1240.00,
-          decayRate: 2.5,
-          recommendedAction: 'Send a preference-update or re-consent email to this segment within the next 30 days.',
-        },
-        {
-          type: 'Suppression — liability contacts',
-          description: '4 contacts are below the consent strength threshold and represent ICO enforcement risk. Suppressing them removes liability while preserving deliverability.',
-          currentValue: 0,
-          estimatedValue: 0,
-          decayRate: 0,
-          recommendedAction: 'Add these contacts to your suppression registry immediately. Do not send marketing until re-consent is obtained.',
-        },
-        {
-          type: 'Deliverability clean',
-          description: '4 contacts have poor deliverability signals — role-based addresses, typo domains. Removing them will improve inbox placement for the rest of your list.',
-          currentValue: 0,
-          estimatedValue: 0,
-          decayRate: 0,
-          recommendedAction: 'Remove or quarantine these addresses before your next send.',
-        },
+        { type: 'Re-engagement campaign', description: '7 contacts have declining consent but are still above the ICO threshold. A targeted re-engagement campaign now could recover this segment before consent expires.', currentValue: 1240.00, estimatedValue: 1240.00, decayRate: 2.5, recommendedAction: 'Send a preference-update or re-consent email to this segment within the next 30 days.' },
+        { type: 'Suppression — liability contacts', description: '4 contacts are below the consent strength threshold and represent ICO enforcement risk. Suppressing them removes liability while preserving deliverability.', currentValue: 0, estimatedValue: 0, decayRate: 0, recommendedAction: 'Add these contacts to your suppression registry immediately. Do not send marketing until re-consent is obtained.' },
+        { type: 'Deliverability clean', description: '4 contacts have poor deliverability signals — role-based addresses, typo domains. Removing them will improve inbox placement for the rest of your list.', currentValue: 0, estimatedValue: 0, decayRate: 0, recommendedAction: 'Remove or quarantine these addresses before your next send.' },
       ],
       unrealisedTotal: 1240.00,
       sector: 'ecommerce',
       aov: 65,
       checkDate: new Date().toISOString().split('T')[0],
     };
-
     hideLoading();
     lastResults = demoResults;
     renderResults(demoResults);
     showScreen('results');
-
-    // Show demo banner with CSV download
     var blob = new Blob([LIST_DEMO_CSV], {type:'text/csv'});
     document.getElementById('listDemoDlLink').href = URL.createObjectURL(blob);
     document.getElementById('listDemoBanner').style.display = 'flex';
-
     showToast('Viewing example analysis — upload your own list to see your real results', '');
   }, 800);
 }
 
-// ── AUTO-LOAD ────────────────────────────────────────────────
-if (userId) {
+// ── INIT ─────────────────────────────────────────────────────
+if (!userId) {
+  el('gateScreen').classList.add('show');
+} else {
+  showScreen('upload');
   showLoading('Checking for existing analysis…');
   fetch(API + '?userId=' + userId + '&action=load')
     .then(function(r){ return r.json(); })
     .then(function(json) {
       hideLoading();
-      if (json.hasData) {
-        lastResults = json;
-        renderResults(json);
-        showScreen('results');
-      }
+      if (json.hasData) { lastResults = json; renderResults(json); showScreen('results'); }
     })
     .catch(function(){ hideLoading(); });
 }
