@@ -178,11 +178,35 @@
     .export-btn:hover { border-color: var(--orange); color: var(--orange); }
     .reg-loading { text-align: center; padding: 48px 20px; }
     .reg-search-wrap { position: relative; } .reg-search-wrap .dropdown { z-index: 30; }
-    .disc { font-size: 11px; color: var(--muted); font-style: italic; text-align: center; margin-top: 24px; }
+
+    .gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
+    .gate-screen.show{display:flex}
+    .gate-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+    .gate-logo{font-size:22px;font-weight:700;color:var(--orange);letter-spacing:-.5px;margin-bottom:24px}
+    .gate-icon{font-size:40px;margin-bottom:16px}
+    .gate-title{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)}
+    .gate-sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:28px}
+    .gate-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}
+    .gate-btn:hover{background:#d4660f}
+    .gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--white);color:var(--muted);border:1px solid var(--border-mid);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+    .gate-demo-btn:hover{border-color:var(--orange);color:var(--text)}
+        .disc { font-size: 11px; color: var(--muted); font-style: italic; text-align: center; margin-top: 24px; }
   </style>
 </head>
 <body>
 <div class="container">
+
+
+  <div class="gate-screen" id="gateScreen">
+    <div class="gate-card">
+      <div class="gate-logo">sendwize</div>
+      <div class="gate-icon">&#128274;</div>
+      <div class="gate-title">Vendor Checker</div>
+      <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
+      <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
+      <button class="gate-demo-btn" onclick="runDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--orange)">DEMO</span> Try with example data</button>
+    </div>
+  </div>
 
   <a href="https://www.sendwize.co.uk/dashboard" class="back-link">
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
@@ -435,7 +459,14 @@ function runDemo() {
 function init() {
   userId = new URLSearchParams(window.location.search).get('userId');
   if (!userId) {
-    showError('You need to be signed in to run a live check. Use \u201cTry with example data\u201d to explore the tool.');
+    document.getElementById('gateScreen').classList.add('show');
+    document.getElementById('panel-checker').style.display = 'none';
+    document.querySelector('.tabs').style.display = 'none';
+    document.querySelector('.page-subtitle').style.display = 'none';
+    document.querySelector('.page-title').style.display = 'none';
+    document.querySelector('.back-link').style.display = 'none';
+    loadVendors();
+    return;
   }
   loadVendors();
 }
