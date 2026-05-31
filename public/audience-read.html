@@ -21,41 +21,38 @@
 }
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-/* ── NAV ── */
 .nav{background:var(--w);border-bottom:1px solid var(--b);height:56px;display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:100;justify-content:space-between}
 .nav-logo{font-size:17px;font-weight:700;color:var(--o);letter-spacing:-.4px;text-decoration:none}
 .nav-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
 .nav-back:hover{color:var(--o);background:var(--ol)}
 
-/* ── PAGE ── */
 .page{max-width:860px;margin:0 auto;padding:40px 20px 80px}
 
-/* ── INTRO ── */
+/* ── GATE SCREEN ── */
+.gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
+.gate-screen.show{display:flex}
+.gate-card{background:var(--w);border:1px solid var(--b);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.gate-logo{font-size:22px;font-weight:700;color:var(--o);letter-spacing:-.5px;margin-bottom:24px}
+.gate-icon{font-size:40px;margin-bottom:16px}
+.gate-title{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--t)}
+.gate-sub{font-size:14px;color:var(--mu);line-height:1.6;margin-bottom:28px}
+.gate-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;background:var(--o);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}
+.gate-btn:hover{background:var(--od)}
+.gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--w);color:var(--mu);border:1px solid var(--bm);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.gate-demo-btn:hover{border-color:var(--o);color:var(--t)}
+
 .intro{margin-bottom:36px;animation:fadeUp .4s ease}
 .intro-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);background:var(--ol);border:1px solid var(--om);padding:4px 12px;border-radius:20px;margin-bottom:14px}
 .intro h1{font-size:30px;font-weight:700;letter-spacing:-.6px;line-height:1.15;margin-bottom:10px}
 .intro p{font-size:14px;color:var(--tm);line-height:1.7;max-width:580px}
-.intro-note{display:flex;gap:12px;align-items:flex-start;background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:14px 18px;margin-top:18px}
-.intro-note p{font-size:13px;color:#92400e;line-height:1.5}
 
-/* ── UPLOAD ZONES ── */
-.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px}
-@media(max-width:600px){.upload-grid{grid-template-columns:1fr}}
 .upload-zone{border:2px dashed var(--b);border-radius:var(--rad-lg);padding:24px 20px;cursor:pointer;transition:all .18s;background:var(--w);position:relative;text-align:center}
 .upload-zone:hover,.upload-zone.hover{border-color:var(--o);background:var(--ol)}
 .upload-zone.loaded{border-color:var(--g);border-style:solid;background:var(--gb)}
 .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.uz-icon{font-size:24px;margin-bottom:8px}
-.uz-req{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:10px;margin-bottom:8px}
-.uz-req.req{background:var(--t);color:#fff}
-.uz-req.opt{background:var(--mu);color:#fff}
-.upload-zone h3{font-size:14px;font-weight:700;margin-bottom:4px}
-.upload-zone p{font-size:12px;color:var(--mu);line-height:1.5}
-.uz-unlock{font-size:11px;color:var(--o);font-style:italic;margin-top:6px;line-height:1.4}
 .uz-fname{font-size:11px;color:var(--g);font-family:'DM Mono',monospace;margin-top:8px;display:none}
 .upload-zone.loaded .uz-fname{display:block}
 
-/* ── BUTTONS ── */
 .btn{display:inline-flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:11px 22px;border-radius:var(--rad);border:none;cursor:pointer;transition:all .18s;letter-spacing:-.1px}
 .btn-primary{background:var(--o);color:#fff}
 .btn-primary:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,115,23,.3)}
@@ -65,7 +62,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .btn-ghost:hover{border-color:var(--t);background:var(--bg)}
 .btn-sm{padding:8px 16px;font-size:13px}
 
-/* ── FIELD MAPPING ── */
 .map-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;margin-bottom:14px;box-shadow:var(--sh)}
 .map-card h3{font-size:15px;font-weight:700;margin-bottom:4px}
 .map-card .map-meta{font-size:12px;color:var(--mu);margin-bottom:16px}
@@ -77,20 +73,16 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .map-table select:focus{outline:none;border-color:var(--o)}
 .samp-pill{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu);background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--b)}
 
-/* ── DASHBOARD ── */
 .dash-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:32px;flex-wrap:wrap}
 .dash-title{font-size:26px;font-weight:700;letter-spacing:-.5px}
 .dash-meta{font-size:13px;color:var(--mu);margin-top:4px}
 .dash-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-/* ── PANEL ── */
 .panel-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:8px}
 .panel-num{width:20px;height:20px;border-radius:50%;background:var(--t);color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .panel{margin-bottom:40px}
 .divider{height:1px;background:var(--b);margin:32px 0}
 
-/* ── CAMPAIGN VERDICTS ── */
-/* ── WHAT JUST HAPPENED ── */
 .send-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
 @media(max-width:600px){.send-summary{grid-template-columns:repeat(2,1fr)}}
 .ss-tile{border-radius:var(--rad);padding:14px 16px;text-align:center;border:1px solid var(--b);background:var(--w)}
@@ -107,7 +99,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .seg-sends-hdr{font-size:12px;font-weight:700;color:var(--tm);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:6px}
 .seg-sends-hdr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .send-row{display:flex;align-items:stretch;gap:0;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:6px;overflow:hidden;transition:box-shadow .15s}
-.send-row:hover{box-shadow:var(--shm)}
+.send-row:hover{box-shadow:var(--sh)}
 .send-row-bar{width:4px;flex-shrink:0}
 .send-row-bar.built{background:var(--g)}.send-row-bar.fatigue{background:var(--y)}.send-row-bar.damaged{background:var(--r)}.send-row-bar.neutral{background:var(--b)}
 .send-row-body{flex:1;padding:12px 14px;min-width:0}
@@ -118,31 +110,17 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .send-row-plain{font-size:12px;color:var(--tm);line-height:1.5}
 .send-row-meta{font-size:11px;color:var(--mu);margin-top:4px}
 
-/* ── SEGMENT CARDS ── */
 .seg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
 .seg-card{background:var(--w);border:1px solid var(--b);border-left:4px solid var(--b);border-radius:var(--rad-lg);padding:20px 20px 18px;box-shadow:var(--sh);animation:fadeUp .35s ease}
 .seg-card.state-good{border-left-color:var(--g)}.seg-card.state-warn{border-left-color:var(--y)}.seg-card.state-bad{border-left-color:var(--r)}.seg-card.state-neu{border-left-color:var(--mu)}
 .seg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
 .seg-name{font-size:15px;font-weight:700;color:var(--t)}
-.dq-pill{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
-.dq-pill.full{background:var(--gb);color:var(--g)}.dq-pill.partial{background:var(--yb);color:var(--y)}.dq-pill.minimal{background:var(--bg);color:var(--mu);border:1px solid var(--b)}
 .state-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:3px 10px;border-radius:10px;white-space:nowrap;flex-shrink:0}
 .state-badge.good{background:var(--gb);color:var(--g)}.state-badge.warn{background:var(--yb);color:var(--y)}.state-badge.bad{background:var(--rb);color:var(--r)}.state-badge.neu{background:var(--bg);color:var(--mu);border:1px solid var(--b)}
-.conf-row{display:flex;align-items:center;gap:6px;margin-bottom:10px}
-.conf-bar-wrap{flex:1;height:4px;background:var(--b);border-radius:2px;overflow:hidden}
-.conf-bar-fill{height:100%;border-radius:2px;background:var(--o);transition:width .6s}
-.conf-pct{font-size:10px;color:var(--mu);white-space:nowrap}
-.seg-stmt{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:12px}
-
-/* ── VERDICT — big clear human headline ── */
 .seg-verdict{font-size:17px;font-weight:700;color:var(--t);margin-bottom:8px;letter-spacing:-.2px;line-height:1.3}
-
-/* ── SEND WINDOW ── */
 .seg-send-window{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:12px;display:flex;flex-direction:column;gap:5px}
 .seg-send-stat{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--tm);line-height:1.4}
 .seg-send-icon{flex-shrink:0;font-size:12px}
-
-/* ── WHY THIS MATTERS toggle ── */
 .seg-why-toggle{width:100%;background:none;border:1px solid var(--b);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:12px;font-weight:600;color:var(--mu);cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;transition:all .15s}
 .seg-why-toggle:hover{border-color:var(--o);color:var(--o)}
 .seg-why-chevron{font-size:10px;transition:transform .2s}
@@ -153,8 +131,19 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .seg-commercial{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
 .seg-regulatory{background:var(--purl);border:1px solid var(--purc);color:#581c87}
 .seg-regnote{background:#fff7ed;border:1px solid #fed7aa;color:#92400e}
+.seg-stmt{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:12px}
+.seg-action-box{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.seg-action-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px}
+.seg-action-txt{font-size:13px;color:var(--t);line-height:1.5;font-weight:500}
+.cap-wrap{padding-top:12px;border-top:1px solid var(--b)}
+.cap-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mu);margin-bottom:6px}
+.cap-score{font-size:13px;font-weight:700}
+.cap-score.pos{color:var(--g)}.cap-score.neg{color:var(--r)}.cap-score.neu{color:var(--mu)}
+.cap-bar{height:6px;background:var(--b);border-radius:3px;overflow:hidden;position:relative}
+.cap-bar-neg{position:absolute;right:50%;top:0;height:100%;border-radius:3px 0 0 3px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.cap-bar-pos{position:absolute;left:50%;top:0;height:100%;border-radius:0 3px 3px 0;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.cap-context{font-size:11px;color:var(--mu);margin-top:5px;font-style:italic}
 
-/* ── PRIMARY UPLOAD ZONE ── */
 .upload-zone-primary{border:2px dashed var(--b);border-radius:var(--rad-lg);padding:48px 32px;cursor:pointer;transition:all .18s;background:var(--w);position:relative;text-align:center;margin-bottom:20px}
 .upload-zone-primary:hover,.upload-zone-primary.hover{border-color:var(--o);background:var(--ol)}
 .upload-zone-primary.loaded{border-color:var(--g);border-style:solid;background:var(--gb)}
@@ -162,8 +151,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .uz-icon-lg{font-size:36px;margin-bottom:14px}
 .uz-primary-title{font-size:18px;font-weight:700;margin-bottom:8px;color:var(--t)}
 .uz-primary-sub{font-size:13px;color:var(--mu);line-height:1.6;max-width:440px;margin:0 auto}
+.uz-fname{font-size:11px;color:var(--g);font-family:'DM Mono',monospace;margin-top:8px;display:none}
+.upload-zone-primary.loaded .uz-fname{display:block}
 
-/* ── OPTIONAL EXPANDER ── */
 .optional-expander{margin-bottom:28px}
 .opt-toggle{width:100%;background:var(--bg);border:1px solid var(--b);border-radius:var(--rad);padding:14px 18px;font-family:inherit;cursor:pointer;text-align:left;transition:all .15s;display:flex;flex-direction:column;gap:3px}
 .opt-toggle:hover{border-color:var(--o);background:var(--ol)}
@@ -178,40 +168,19 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .uz-sm-icon{font-size:20px;margin-bottom:8px}
 .uz-sm-title{font-size:13px;font-weight:700;margin-bottom:4px}
 .uz-sm-sub{font-size:11px;color:var(--mu);line-height:1.5}
-.seg-stmt-sub{font-size:12px;color:var(--tm);line-height:1.5;margin-bottom:8px;display:flex;align-items:flex-start;gap:6px;padding:8px 10px;border-radius:6px}
-.seg-stmt-icon{flex-shrink:0;margin-top:1px}
-.seg-commercial{background:#f0fdf4;border:1px solid #bbf7d0}
-.seg-regulatory{background:var(--purl);border:1px solid var(--purc)}
-.seg-regulatory .seg-stmt-sub{color:#581c87}
-/* ── DEMO BANNER ── */
+
 .demo-banner{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .demo-banner-txt{font-size:13px;color:#92400e;font-weight:500}
 .demo-banner-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
 .demo-dl{font-size:12px;font-weight:600;color:var(--o);text-decoration:none;border:1px solid var(--o);padding:5px 10px;border-radius:6px;white-space:nowrap}
 .demo-dl:hover{background:var(--ol)}
 .demo-dismiss{background:var(--o);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
-.seg-action-box{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:12px}
-.seg-action-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px}
-.seg-action-txt{font-size:13px;color:var(--t);line-height:1.5;font-weight:500}
-.reg-note{background:var(--purl);border:1px solid var(--purc);border-radius:8px;padding:10px 12px;margin-bottom:12px}
-.reg-note-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--pur);margin-bottom:4px}
-.reg-note-txt{font-size:12px;color:#581c87;line-height:1.5}
-.cap-wrap{padding-top:12px;border-top:1px solid var(--b)}
-.cap-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mu);margin-bottom:6px}
-.cap-score{font-size:13px;font-weight:700}
-.cap-score.pos{color:var(--g)}.cap-score.neg{color:var(--r)}.cap-score.neu{color:var(--mu)}
-.cap-bar{height:6px;background:var(--b);border-radius:3px;overflow:hidden;position:relative}
-.cap-bar-neg{position:absolute;right:50%;top:0;height:100%;border-radius:3px 0 0 3px;transition:width .9s cubic-bezier(.4,0,.2,1)}
-.cap-bar-pos{position:absolute;left:50%;top:0;height:100%;border-radius:0 3px 3px 0;transition:width .9s cubic-bezier(.4,0,.2,1)}
-.cap-context{font-size:11px;color:var(--mu);margin-top:5px;font-style:italic}
 
-/* ── MISSING DATA NUDGES ── */
 .nudge-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .nudge{display:flex;gap:12px;align-items:flex-start;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--rad);padding:12px 16px}
 .nudge-txt{font-size:12px;color:#1e3a8a;line-height:1.5}
 .nudge-txt strong{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1d4ed8;margin-bottom:3px}
 
-/* ── RECOMMENDATIONS ── */
 .rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:20px}
 .rec-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:18px;box-shadow:var(--sh);animation:fadeUp .4s ease}
 .rec-rank{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--o);margin-bottom:8px}
@@ -220,7 +189,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--bg);color:var(--mu);border:1px solid var(--b)}
 
-/* ── PRE-SEND ── */
 .presend-box{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;box-shadow:var(--sh)}
 .presend-box h3{font-size:16px;font-weight:700;margin-bottom:4px}
 .presend-box > p{font-size:13px;color:var(--mu);margin-bottom:18px}
@@ -240,7 +208,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .alt-item strong{display:block;font-size:13px;color:var(--t);margin-bottom:2px}
 .alt-item span{font-size:12px;color:var(--mu)}
 
-/* ── LOG MODAL ── */
 .modal-bg{position:fixed;inset:0;background:rgba(12,12,10,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
 .modal-bg.open{display:flex}
 .modal{background:var(--w);border-radius:var(--rad-lg);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-lg);animation:fadeUp .25s ease}
@@ -248,28 +215,23 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
 @media(max-width:480px){.modal-grid{grid-template-columns:1fr}}
 .modal-foot{display:flex;gap:8px;justify-content:flex-end}
-/* New segment toggle inside modal */
 .seg-toggle{display:flex;gap:6px;margin-bottom:8px}
 .seg-tab{font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;border:1px solid var(--b);background:transparent;color:var(--mu);cursor:pointer;font-family:inherit;transition:all .15s}
 .seg-tab.on{background:var(--t);color:#fff;border-color:var(--t)}
 
-/* ── LOADING ── */
 .loading-bg{position:fixed;inset:0;background:rgba(244,243,240,.88);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(2px)}
 .loading-bg.open{display:flex}
 .spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}
 .loading-msg{font-size:13px;color:var(--mu);font-family:'DM Mono',monospace;letter-spacing:.04em}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── EMPTY ── */
 .empty{text-align:center;padding:48px 20px;color:var(--mu)}
 .empty h3{font-size:16px;font-weight:700;color:var(--t);margin-bottom:6px}
 .empty p{font-size:13px;max-width:360px;margin:0 auto;line-height:1.6}
 
-/* ── TOAST ── */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
 .toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
 
-/* ── SCREENS ── */
 #upload-screen{display:block}
 #mapping-screen,#dashboard-screen{display:none}
 
@@ -289,14 +251,13 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <div class="loading-bg" id="loadingBg">
   <div class="spin"></div>
-  <div class="loading-msg" id="loadingMsg">Running algorithms…</div>
+  <div class="loading-msg" id="loadingMsg">Running algorithms&hellip;</div>
 </div>
 
 <!-- LOG MODAL -->
 <div class="modal-bg" id="logModal">
   <div class="modal">
     <h2>Log Campaign Result</h2>
-    <!-- Segment selector with existing / new toggle -->
     <div class="fgrp" style="margin-bottom:12px;grid-column:1/-1">
       <label>Segment</label>
       <div class="seg-toggle">
@@ -304,7 +265,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <button class="seg-tab" id="segTabNew" onclick="switchSegTab('new')">+ New segment</button>
       </div>
       <select id="logSeg" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)"></select>
-      <input type="text" id="logSegNew" placeholder="Enter new segment name…" style="display:none;width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t);margin-top:6px">
+      <input type="text" id="logSegNew" placeholder="Enter new segment name&hellip;" style="display:none;width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t);margin-top:6px">
     </div>
     <div class="modal-grid">
       <div class="fgrp"><label>Campaign Name</label><input type="text" id="logName" placeholder="e.g. June Newsletter"></div>
@@ -325,63 +286,73 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary btn-sm" onclick="submitLog()">Log &amp; update →</button>
+      <button class="btn btn-primary btn-sm" onclick="submitLog()">Log &amp; update &rarr;</button>
     </div>
   </div>
 </div>
 
-<!-- ══ UPLOAD SCREEN ══ -->
-<div class="page" id="upload-screen">
+<!-- GATE SCREEN -->
+<div class="gate-screen" id="gateScreen" style="max-width:860px;margin:0 auto;padding:0 20px">
+  <div class="gate-card">
+    <div class="gate-logo">sendwize</div>
+    <div class="gate-icon">&#128274;</div>
+    <div class="gate-title">Audience Read</div>
+    <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
+    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
+    <button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> Try with example data</button>
+  </div>
+</div>
+
+<!-- UPLOAD SCREEN -->
+<div class="page" id="upload-screen" style="display:none">
   <div class="intro">
     <div class="intro-tag">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-.25 3h1.5v5h-1.5V7z"/></svg>
-      Audience Read — Sendwize
+      Audience Read &mdash; Sendwize
     </div>
     <h1>Find out how your audience is really feeling.</h1>
-    <p>Upload one CSV export from your email platform. We analyse your send history and tell you exactly what state each audience segment is in — and precisely what to do about it.</p>
+    <p>Upload one CSV export from your email platform. We analyse your send history and tell you exactly what state each audience segment is in &mdash; and precisely what to do about it.</p>
   </div>
 
-  <!-- Primary upload zone — one file is enough -->
   <div class="upload-zone upload-zone-primary" id="zone-unsubs"
     ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'unsubs')">
     <input type="file" accept=".csv" id="file-unsubs" onchange="fileChg(this,'unsubs')">
-    <div class="uz-icon-lg">📊</div>
+    <div class="uz-icon-lg">&#128202;</div>
     <div class="uz-primary-title">Drop your CSV here, or click to upload</div>
     <div class="uz-primary-sub">Works with any export from Klaviyo, Mailchimp, Dotdigital, or any platform.<br>Just needs: <strong>date, segment name, unsubscribe count.</strong> Three columns is enough to start.</div>
     <div class="uz-fname" id="fname-unsubs" style="margin-top:12px"></div>
   </div>
 
   <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:32px">
-    <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Analyse my audience →</button>
-    <button class="btn btn-ghost" onclick="loadDemo()">See an example first →</button>
+    <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Analyse my audience &rarr;</button>
+    <button class="btn btn-ghost" onclick="loadDemo()">See an example first &rarr;</button>
   </div>
 
-  <!-- Optional files — collapsed by default -->
   <div class="optional-expander">
     <button class="opt-toggle" onclick="toggleOptional()" id="optToggleBtn">
       <span>+ Add more data for higher accuracy</span>
-      <span class="opt-toggle-sub">Open rates, complaints, send volume — each one unlocks more insight</span>
+      <span class="opt-toggle-sub">Open rates, complaints, send volume &mdash; each one unlocks more insight</span>
     </button>
     <div class="optional-grid" id="optionalGrid" style="display:none">
       <div class="upload-zone-sm" id="zone-sends" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'sends')">
         <input type="file" accept=".csv" id="file-sends" onchange="fileChg(this,'sends')">
-        <div class="uz-sm-icon">📤</div>
+        <div class="uz-sm-icon">&#128228;</div>
         <div class="uz-sm-title">Send History</div>
-        <div class="uz-sm-sub">Adds frequency tolerance — how many more times you can contact each segment before they start unsubscribing.</div>
+        <div class="uz-sm-sub">Adds frequency tolerance &mdash; how many more times you can contact each segment before they start unsubscribing.</div>
         <div class="uz-fname" id="fname-sends"></div>
       </div>
       <div class="upload-zone-sm" id="zone-engagement" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'engagement')">
         <input type="file" accept=".csv" id="file-engagement" onchange="fileChg(this,'engagement')">
-        <div class="uz-sm-icon">📈</div>
+        <div class="uz-sm-icon">&#128200;</div>
         <div class="uz-sm-title">Open &amp; Click Rates</div>
-        <div class="uz-sm-sub">Shows whether audience interest is growing or shrinking — and how fast. Significantly improves trend accuracy.</div>
+        <div class="uz-sm-sub">Shows whether audience interest is growing or shrinking &mdash; and how fast. Significantly improves trend accuracy.</div>
         <div class="uz-fname" id="fname-engagement"></div>
       </div>
       <div class="upload-zone-sm" id="zone-complaints" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'complaints')">
         <input type="file" accept=".csv" id="file-complaints" onchange="fileChg(this,'complaints')">
-        <div class="uz-sm-icon">⚠️</div>
+        <div class="uz-sm-icon">&#9888;&#65039;</div>
         <div class="uz-sm-title">Complaints &amp; Spam Reports</div>
-        <div class="uz-sm-sub">Complaints carry 50× the weight of an unsubscribe. This single file makes the biggest difference to accuracy.</div>
+        <div class="uz-sm-sub">Complaints carry 50&times; the weight of an unsubscribe. This single file makes the biggest difference to accuracy.</div>
         <div class="uz-fname" id="fname-complaints"></div>
       </div>
     </div>
@@ -389,31 +360,31 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <div style="padding-top:24px;border-top:1px solid var(--b)">
     <p style="font-size:13px;color:var(--mu);margin-bottom:12px">Already uploaded data before?</p>
-    <button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last results →</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last results &rarr;</button>
   </div>
 </div>
 
-<!-- ══ MAPPING SCREEN ══ -->
+<!-- MAPPING SCREEN -->
 <div class="page" id="mapping-screen">
   <div class="intro" style="margin-bottom:28px">
     <div class="intro-tag">Step 2 of 2</div>
     <h1>Confirm field mapping</h1>
-    <p>We've auto-detected your column types from content. Correct any mis-detections using the dropdowns before running the algorithms.</p>
+    <p>We&apos;ve auto-detected your column types from content. Correct any mis-detections using the dropdowns before running the algorithms.</p>
   </div>
   <div id="mappingTables"></div>
   <div style="display:flex;gap:10px;margin-top:8px">
-    <button class="btn btn-primary" onclick="submitUpload()">Run algorithms →</button>
-    <button class="btn btn-ghost" onclick="showScreen('upload')">← Back</button>
+    <button class="btn btn-primary" onclick="submitUpload()">Run algorithms &rarr;</button>
+    <button class="btn btn-ghost" onclick="showScreen('upload')">&#8592; Back</button>
   </div>
 </div>
 
-<!-- ══ DASHBOARD SCREEN ══ -->
+<!-- DASHBOARD SCREEN -->
 <div class="page" id="dashboard-screen">
   <div id="demoBanner" class="demo-banner" style="display:none">
-    <div class="demo-banner-txt">📊 You're viewing example data — this is what your real results will look like.</div>
+    <div class="demo-banner-txt">&#128202; You&apos;re viewing example data &mdash; this is what your real results will look like.</div>
     <div class="demo-banner-actions">
-      <a class="demo-dl" id="demoDlLink" href="#" download="sendwize-example-audience-data.csv">Download CSV ↓</a>
-      <button class="demo-dismiss" onclick="showScreen('upload')">Upload your own →</button>
+      <a class="demo-dl" id="demoDlLink" href="#" download="sendwize-example-audience-data.csv">Download CSV &#8595;</a>
+      <button class="demo-dismiss" onclick="showScreen('upload')">Upload your own &rarr;</button>
     </div>
   </div>
   <div class="dash-header">
@@ -427,7 +398,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
-  <!-- Panel 1 — What just happened -->
   <div class="panel">
     <div class="panel-lbl"><span class="panel-num">1</span> What your recent sends actually did</div>
     <div id="campaignList">
@@ -437,7 +407,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <div class="divider"></div>
 
-  <!-- Panel 2 — How your audience feels -->
   <div class="panel">
     <div class="panel-lbl"><span class="panel-num">2</span> How your audience feels right now</div>
     <div class="seg-grid" id="segGrid">
@@ -448,7 +417,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <div class="divider"></div>
 
-  <!-- Panel 3 — What to do next -->
   <div class="panel">
     <div class="panel-lbl"><span class="panel-num">3</span> What to do next</div>
     <div class="rec-grid" id="recGrid"></div>
@@ -467,15 +435,15 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
           </select>
         </div>
         <div class="fgrp"><label>Planned Send Date</label><input type="date" id="psDate"></div>
-        <button class="btn btn-primary" onclick="runPreSend()">Check →</button>
+        <button class="btn btn-primary" onclick="runPreSend()">Check &rarr;</button>
       </div>
       <div class="ps-result" id="psResult"></div>
     </div>
   </div>
 
   <p style="font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.5">
-    Audience Read uses deterministic algorithms on your own data only — no AI, no external data sources.<br>
-    Confidence levels reflect data volume — results improve as more campaign history is logged.<br>
+    Audience Read uses deterministic algorithms on your own data only &mdash; no AI, no external data sources.<br>
+    Confidence levels reflect data volume &mdash; results improve as more campaign history is logged.<br>
     Regulatory notes are illustrative consequences of observed patterns, not legal advice.
   </p>
 </div>
@@ -487,7 +455,14 @@ var API    = 'https://sendwize-backend.vercel.app/api/audience-read';
 var DASH   = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 var userId = new URLSearchParams(window.location.search).get('userId') || '';
 var uploadedFiles = {}, detectedMaps = {}, dashData = {}, segNames = [];
-var segTabMode = 'exist'; // 'exist' | 'new'
+var segTabMode = 'exist';
+
+// ── GATE ─────────────────────────────────────────────────────
+function hideGateAndDemo() {
+  document.getElementById('gateScreen').classList.remove('show');
+  document.getElementById('upload-screen').style.display = 'block';
+  loadDemo();
+}
 
 // ── SCREENS ──────────────────────────────────────────────────
 function showScreen(s) {
@@ -497,16 +472,14 @@ function showScreen(s) {
   if (s === 'upload') window.scrollTo(0, 0);
 }
 
-// ── OPTIONAL FILES TOGGLE ────────────────────────────────────
 function toggleOptional() {
   var grid = document.getElementById('optionalGrid');
   var btn  = document.getElementById('optToggleBtn');
   var open = grid.style.display !== 'none';
   grid.style.display = open ? 'none' : 'grid';
-  btn.querySelector('span:first-child').textContent = open ? '+ Add more data for higher accuracy' : '− Hide optional files';
+  btn.querySelector('span:first-child').textContent = open ? '+ Add more data for higher accuracy' : '\u2212 Hide optional files';
 }
 
-// ── WHY THIS MATTERS TOGGLE ──────────────────────────────────
 function toggleWhy(uid) {
   var body = document.getElementById(uid + '-why');
   var btn  = document.querySelector('#' + uid + ' .seg-why-toggle');
@@ -517,7 +490,6 @@ function toggleWhy(uid) {
   if (btn) btn.classList.toggle('open', !open);
 }
 
-// ── SEGMENT TAB TOGGLE ───────────────────────────────────────
 function switchSegTab(mode) {
   segTabMode = mode;
   document.getElementById('segTabExist').className = 'seg-tab' + (mode === 'exist' ? ' on' : '');
@@ -526,7 +498,6 @@ function switchSegTab(mode) {
   document.getElementById('logSegNew').style.display = mode === 'new'   ? '' : 'none';
 }
 
-// ── DRAG / DROP ──────────────────────────────────────────────
 function drgOver(e, el)  { e.preventDefault(); el.classList.add('hover'); }
 function drgLeave(e, el) { el.classList.remove('hover'); }
 function drgDrop(e, el, key) { e.preventDefault(); el.classList.remove('hover'); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0], key); }
@@ -536,7 +507,7 @@ function readFile(file, key) {
   var r = new FileReader();
   r.onload = function(e) {
     var p = parseCSV(e.target.result);
-    if (!p.rows.length) { showToast('Could not parse CSV — ensure it has a header row', 'er'); return; }
+    if (!p.rows.length) { showToast('Could not parse CSV \u2014 ensure it has a header row', 'er'); return; }
     uploadedFiles[key] = p;
     document.getElementById('zone-' + key).classList.add('loaded');
     document.getElementById('fname-' + key).textContent = file.name;
@@ -545,7 +516,6 @@ function readFile(file, key) {
   r.readAsText(file);
 }
 
-// ── CSV PARSER ───────────────────────────────────────────────
 function parseCSV(text) {
   var lines = text.trim().split('\n').filter(function(l) { return l.trim(); });
   if (lines.length < 2) return { headers: [], rows: [] };
@@ -569,9 +539,8 @@ function parseLine(line) {
   return res;
 }
 
-// ── FIELD MAPPING ────────────────────────────────────────────
 var TF = [
-  {v:'',l:'— ignore —'},{v:'date',l:'Date'},{v:'segment',l:'Segment / Audience name'},
+  {v:'',l:'\u2014 ignore \u2014'},{v:'date',l:'Date'},{v:'segment',l:'Segment / Audience name'},
   {v:'unsubscribe_count',l:'Unsubscribe count'},{v:'volume_sent',l:'Volume sent'},
   {v:'open_rate',l:'Open rate'},{v:'click_rate',l:'Click rate'},
   {v:'complaint_count',l:'Complaint / spam count'},{v:'campaign_name',l:'Campaign name'},
@@ -580,7 +549,7 @@ var TF = [
 var FILE_LABELS = { unsubs:'Unsubscribes CSV', sends:'Send History CSV', engagement:'Open & Click Rates CSV', complaints:'Complaints CSV' };
 
 async function goMapping() {
-  showLoading('Detecting column types…');
+  showLoading('Detecting column types\u2026');
   try {
     var container = document.getElementById('mappingTables');
     container.innerHTML = '';
@@ -607,7 +576,7 @@ function buildMapCard(key, headers, rows, detected) {
   var card = document.createElement('div');
   card.className = 'map-card';
   card.innerHTML = '<h3>' + escH(FILE_LABELS[key] || key) + '</h3>' +
-    '<p class="map-meta">' + headers.length + ' columns · ' + rows.length.toLocaleString() + ' rows</p>' +
+    '<p class="map-meta">' + headers.length + ' columns \u00b7 ' + rows.length.toLocaleString() + ' rows</p>' +
     '<table class="map-table"><thead><tr><th>Your Column</th><th>Sample Value</th><th>Maps To</th></tr></thead><tbody>' +
     headers.map(function(h) {
       var sId = 'map-' + key + '-' + sid(h);
@@ -621,9 +590,8 @@ function buildMapCard(key, headers, rows, detected) {
   return card;
 }
 
-// ── SUBMIT UPLOAD ────────────────────────────────────────────
 async function submitUpload() {
-  showLoading('Running seven algorithms…');
+  showLoading('Running seven algorithms\u2026');
   try {
     var allRows = [], combinedMap = {};
     for (var key in uploadedFiles) {
@@ -651,38 +619,35 @@ async function submitUpload() {
   }
 }
 
-// ── LOAD DASH ────────────────────────────────────────────────
 async function loadDash() {
-  if (!userId) { showToast('No user ID — return to dashboard and re-open this tool', 'er'); return; }
-  showLoading('Loading your audience intelligence…');
+  if (!userId) { showToast('No user ID \u2014 return to dashboard and re-open this tool', 'er'); return; }
+  showLoading('Loading your audience intelligence\u2026');
   try {
     var resp = await fetch(API + '?userId=' + userId + '&action=load');
     var json = await resp.json();
     if (!json.success) throw new Error(json.error);
     hideLoading();
     if (!Object.keys(json.segments || {}).length) {
-      showToast('No audience data found — upload your first CSV to get started', '');
+      showToast('No audience data found \u2014 upload your first CSV to get started', '');
       return;
     }
     renderDash(json);
     showScreen('dashboard');
   } catch(err) {
     hideLoading();
-    showToast('Could not load dashboard — please try again', 'er');
+    showToast('Could not load dashboard \u2014 please try again', 'er');
     console.error('loadDash error:', err);
   }
 }
 
-// ── RENDER DASHBOARD ─────────────────────────────────────────
 function renderDash(data) {
   dashData = data;
   segNames = Object.keys(data.segments || {});
 
   document.getElementById('dashMeta').textContent =
     segNames.length + ' segment' + (segNames.length !== 1 ? 's' : '') +
-    ' · Updated ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    ' \u00b7 Updated ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  // ── Panel 1 — What your recent sends did ──
   var allImpacts = [];
   segNames.forEach(function(seg) {
     (data.segments[seg].impacts || []).forEach(function(imp) {
@@ -695,43 +660,30 @@ function renderDash(data) {
   if (!allImpacts.length) {
     cl.innerHTML = '<div class="empty"><h3>No campaign history yet</h3><p>Log your first campaign result to see what each send did to your audience.</p></div>';
   } else {
-    // Summary counts
     var nDamaged = allImpacts.filter(function(i){return i.category==='Damaged';}).length;
     var nFatigue = allImpacts.filter(function(i){return i.category==='Caused fatigue';}).length;
     var nBuilt   = allImpacts.filter(function(i){return i.category==='Built trust';}).length;
     var nNeutral = allImpacts.filter(function(i){return i.category==='Neutral';}).length;
 
-    // Plain English verdict per impact
     function plainVerdict(imp) {
       var cat = imp.category;
-      var type = imp.campaign_name || 'Campaign';
-      if (cat === 'Damaged') {
-        return 'This send caused people to leave. More unsubscribes than normal — your audience did not like something about it.';
-      }
-      if (cat === 'Caused fatigue') {
-        return 'More unsubscribes than usual. Not a crisis, but your audience is signalling they are getting too many emails from you.';
-      }
-      if (cat === 'Built trust') {
-        return 'Fewer unsubscribes than normal — your audience responded well to this one. It strengthened the relationship.';
-      }
+      if (cat === 'Damaged') return 'This send caused people to leave. More unsubscribes than normal \u2014 your audience did not like something about it.';
+      if (cat === 'Caused fatigue') return 'More unsubscribes than usual. Not a crisis, but your audience is signalling they are getting too many emails from you.';
+      if (cat === 'Built trust') return 'Fewer unsubscribes than normal \u2014 your audience responded well to this one. It strengthened the relationship.';
       return 'Normal unsubscribe rate. This send did not move the needle in either direction.';
     }
-
     function verdictLabel(cat) {
       if (cat === 'Damaged') return 'People left';
       if (cat === 'Caused fatigue') return 'Too many emails';
       if (cat === 'Built trust') return 'Worked well';
       return 'Normal';
     }
-
     function verdictCls(cat) {
       if (cat === 'Damaged') return 'damaged';
       if (cat === 'Caused fatigue') return 'fatigue';
       if (cat === 'Built trust') return 'built';
       return 'neutral';
     }
-
-    // Group by segment
     var bySeg = {};
     allImpacts.forEach(function(imp) {
       if (!bySeg[imp._seg]) bySeg[imp._seg] = [];
@@ -754,183 +706,94 @@ function renderDash(data) {
         var label = verdictLabel(imp.category);
         var plain = plainVerdict(imp);
         var type  = imp.campaign_name ? escH(imp.campaign_name) : 'Campaign';
-        return '<div class="send-row">' +
-          '<div class="send-row-bar ' + cls + '"></div>' +
-          '<div class="send-row-body">' +
-            '<div class="send-row-top">' +
-              '<div class="send-row-name">' + type + '</div>' +
-              '<span class="send-row-verdict verdict-' + cls + '">' + label + '</span>' +
-            '</div>' +
-            '<div class="send-row-plain">' + plain + '</div>' +
-            '<div class="send-row-meta">' + fmtDate(imp.date) + '</div>' +
-          '</div>' +
-        '</div>';
+        return '<div class="send-row"><div class="send-row-bar ' + cls + '"></div><div class="send-row-body"><div class="send-row-top"><div class="send-row-name">' + type + '</div><span class="send-row-verdict verdict-' + cls + '">' + label + '</span></div><div class="send-row-plain">' + plain + '</div><div class="send-row-meta">' + fmtDate(imp.date) + '</div></div></div>';
       }).join('');
-      return '<div class="seg-sends">' +
-        '<div class="seg-sends-hdr">' +
-          '<div class="seg-sends-hdr-dot" style="background:' + dotCol + '"></div>' +
-          escH(seg) +
-        '</div>' +
-        rowsHtml +
-      '</div>';
+      return '<div class="seg-sends"><div class="seg-sends-hdr"><div class="seg-sends-hdr-dot" style="background:' + dotCol + '"></div>' + escH(seg) + '</div>' + rowsHtml + '</div>';
     }).join('');
 
     cl.innerHTML = summaryHtml + segHtml;
   }
 
-  // ── Panel 2 — Segment states ──
   var sg = document.getElementById('segGrid');
   if (!segNames.length) {
     sg.innerHTML = '<div class="empty"><h3>No segments detected</h3><p>Upload your data to see segment-level intelligence.</p></div>';
   } else {
     sg.innerHTML = segNames.map(function(seg, segIdx) {
-      var d     = data.segments[seg];
-      var s     = d.sentiment || {};
-      var cap   = d.capital || 0;
-      var fp    = d.fingerprint || {};
-      var ft    = d.freqTolerance || {};
+      var d = data.segments[seg];
+      var s = d.sentiment || {};
+      var cap = d.capital || 0;
+      var fp = d.fingerprint || {};
+      var ft = d.freqTolerance || {};
       var state = s.state || 'Neutral';
-      var conf  = Math.round((s.confidence || 0) * 100);
-      var n     = fp.campaignCount || 0;
+      var conf = Math.round((s.confidence || 0) * 100);
+      var n = fp.campaignCount || 0;
       var baselinePct = fp.baselineUnsubscribeRate ? (fp.baselineUnsubscribeRate * 100).toFixed(2) + '%' : null;
 
-      // Colour class
       var goodStates = ['Peak receptiveness', 'Highly receptive post-gap'];
-      var okStates   = ['Recovering', 'Neutral'];
       var warnStates = ['Cooling', 'Fatigue building'];
       var badStates  = ['Damaged', 'Complaint risk'];
       var cardCls    = badStates.indexOf(state) > -1 ? 'state-bad' : warnStates.indexOf(state) > -1 ? 'state-warn' : goodStates.indexOf(state) > -1 ? 'state-good' : 'state-neu';
       var badgeCls   = cardCls === 'state-good' ? 'good' : cardCls === 'state-bad' ? 'bad' : cardCls === 'state-warn' ? 'warn' : 'neu';
+      var emoji = badStates.indexOf(state) > -1 ? '\uD83D\uDD34' : warnStates.indexOf(state) > -1 ? '\uD83D\uDFE1' : goodStates.indexOf(state) > -1 ? '\uD83D\uDFE2' : '\u26AA';
 
-      // Status emoji
-      var emoji = badStates.indexOf(state) > -1 ? '🔴' : warnStates.indexOf(state) > -1 ? '🟡' : goodStates.indexOf(state) > -1 ? '🟢' : '⚪';
-
-      // Human verdict headline — plain English, no jargon
       var verdictMap = {
-        'Complaint risk':         'Stop sending to this segment now',
-        'Damaged':                'This segment needs a break from you',
-        'Fatigue building':       'You’re sending too much to this segment',
-        'Cooling':                'This segment is losing interest',
-        'Recovering':             cap >= 40 ? 'Recovering well — one more careful send' : cap >= 10 ? 'Recovering slowly — handle with care' : 'Fragile recovery — do not send yet',
-        'Peak receptiveness':     'Best time to send — act this week',
+        'Complaint risk': 'Stop sending to this segment now',
+        'Damaged': 'This segment needs a break from you',
+        'Fatigue building': 'You\u2019re sending too much to this segment',
+        'Cooling': 'This segment is losing interest',
+        'Recovering': cap >= 40 ? 'Recovering well \u2014 one more careful send' : cap >= 10 ? 'Recovering slowly \u2014 handle with care' : 'Fragile recovery \u2014 do not send yet',
+        'Peak receptiveness': 'Best time to send \u2014 act this week',
         'Highly receptive post-gap': 'Ready to hear from you',
-        'Neutral':                'No strong signals — proceed normally',
+        'Neutral': 'No strong signals \u2014 proceed normally',
       };
       var verdict = verdictMap[state] || state;
 
-      // Next send recommendation
       var nextSend = ft.optimalNextSend ? 'Earliest recommended send: ' + fmtDate(ft.optimalNextSend) : null;
       var sendCapacity = ft.toleranceRemaining !== undefined ? ft.toleranceRemaining + ' send' + (ft.toleranceRemaining !== 1 ? 's' : '') + ' of capacity remaining this month' : null;
+      var confContext = conf >= 80 ? 'High confidence \u2014 ' + n + ' campaigns analysed' : conf >= 60 ? 'Moderate confidence \u2014 ' + n + ' campaigns analysed' : 'Low confidence \u2014 upload more data to improve accuracy';
 
-      // Confidence context
-      var confContext = conf >= 80 ? 'High confidence — ' + n + ' campaigns analysed'
-        : conf >= 60 ? 'Moderate confidence — ' + n + ' campaigns analysed'
-        : 'Low confidence — upload more data to improve accuracy';
-
-      // Capital plain English
       var capScoreCls = cap > 10 ? 'pos' : cap < -10 ? 'neg' : 'neu';
-      var capLabel = cap >= 40 ? 'Strong — audience goodwill is high'
-        : cap >= 10 ? 'Positive — audience is broadly receptive'
-        : cap >= -10 ? 'Neutral — no strong goodwill either way'
-        : cap >= -30 ? 'Under strain — recent sends have caused damage'
-        : 'Low — significant damage has accumulated';
+      var capLabel = cap >= 40 ? 'Strong \u2014 audience goodwill is high' : cap >= 10 ? 'Positive \u2014 audience is broadly receptive' : cap >= -10 ? 'Neutral \u2014 no strong goodwill either way' : cap >= -30 ? 'Under strain \u2014 recent sends have caused damage' : 'Low \u2014 significant damage has accumulated';
       var capPct = Math.min(50, Math.abs(cap) / 2);
-
       var uid = 'seg-' + segIdx;
 
       return '<div class="seg-card ' + cardCls + '" id="' + uid + '">' +
-
-        // ── Header ──
-        '<div class="seg-top">' +
-          '<div style="display:flex;align-items:center;gap:8px">' +
-            '<span style="font-size:16px">' + emoji + '</span>' +
-            '<span class="seg-name">' + escH(seg) + '</span>' +
-          '</div>' +
-          '<span class="state-badge ' + badgeCls + '">' + escH(state) + '</span>' +
-        '</div>' +
-
-        // ── Human verdict — big and clear ──
+        '<div class="seg-top"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px">' + emoji + '</span><span class="seg-name">' + escH(seg) + '</span></div><span class="state-badge ' + badgeCls + '">' + escH(state) + '</span></div>' +
         '<div class="seg-verdict">' + escH(verdict) + '</div>' +
-
-        // ── Plain English statement ──
         '<div class="seg-stmt">' + escH(s.statement || '') + '</div>' +
-
-        // ── Action box — primary CTA, always present ──
-        (s.action ? '<div class="seg-action-box"><div class="seg-action-lbl">👉 Do this next</div><div class="seg-action-txt">' + escH(s.action) + '</div></div>' : '') +
-
-        // ── Send window ──
-        (nextSend || sendCapacity ? '<div class="seg-send-window">' +
-          (sendCapacity ? '<div class="seg-send-stat"><span class="seg-send-icon">📅</span>' + escH(sendCapacity) + '</div>' : '') +
-          (nextSend    ? '<div class="seg-send-stat"><span class="seg-send-icon">⏱</span>' + escH(nextSend) + '</div>' : '') +
-          (baselinePct ? '<div class="seg-send-stat"><span class="seg-send-icon">📊</span>Normal unsubscribe rate for this segment: ' + baselinePct + '</div>' : '') +
-        '</div>' : '') +
-
-        // ── Why this matters — collapsed by default ──
+        (s.action ? '<div class="seg-action-box"><div class="seg-action-lbl">\uD83D\uDC49 Do this next</div><div class="seg-action-txt">' + escH(s.action) + '</div></div>' : '') +
+        (nextSend || sendCapacity ? '<div class="seg-send-window">' + (sendCapacity ? '<div class="seg-send-stat"><span class="seg-send-icon">\uD83D\uDCC5</span>' + escH(sendCapacity) + '</div>' : '') + (nextSend ? '<div class="seg-send-stat"><span class="seg-send-icon">\u23F1</span>' + escH(nextSend) + '</div>' : '') + (baselinePct ? '<div class="seg-send-stat"><span class="seg-send-icon">\uD83D\uDCCA</span>Normal unsubscribe rate for this segment: ' + baselinePct + '</div>' : '') + '</div>' : '') +
         ((s.statementCommercial || s.statementRegulatory || s.regulatoryNote) ?
-          '<button class="seg-why-toggle" onclick="toggleWhy(\'' + uid + '\')">' +
-            '<span>Why this matters</span><span class="seg-why-chevron">▾</span>' +
-          '</button>' +
+          '<button class="seg-why-toggle" onclick="toggleWhy(\'' + uid + '\')"><span>Why this matters</span><span class="seg-why-chevron">\u25BE</span></button>' +
           '<div class="seg-why-body" id="' + uid + '-why" style="display:none">' +
-            (s.statementCommercial ? '<div class="seg-why-item seg-commercial"><span class="seg-why-icon">💰</span><div>' + escH(s.statementCommercial) + '</div></div>' : '') +
-            (s.statementRegulatory ? '<div class="seg-why-item seg-regulatory"><span class="seg-why-icon">⚖️</span><div>' + escH(s.statementRegulatory) + '</div></div>' : '') +
-            (s.regulatoryNote ? '<div class="seg-why-item seg-regnote"><span class="seg-why-icon">⚠️</span><div>' + escH(s.regulatoryNote) + '</div></div>' : '') +
-          '</div>'
-        : '') +
-
-        // ── Relationship capital — de-emphasised, at bottom ──
-        '<div class="cap-wrap">' +
-          '<div class="cap-row"><span style="font-size:11px;color:var(--mu)">Relationship capital</span>' +
-            '<span class="cap-score ' + capScoreCls + '">' + (cap > 0 ? '+' : '') + cap.toFixed(0) + '/100</span>' +
-          '</div>' +
-          '<div class="cap-bar">' +
-            (cap < 0 ? '<div class="cap-bar-neg" style="width:' + capPct + '%;background:var(--r)"></div>' : '') +
-            (cap > 0 ? '<div class="cap-bar-pos" style="width:' + capPct + '%;background:var(--g)"></div>' : '') +
-          '</div>' +
-          '<div class="cap-context">' + escH(capLabel) + '</div>' +
-        '</div>' +
-
-        // ── Confidence — small, at very bottom ──
+          (s.statementCommercial ? '<div class="seg-why-item seg-commercial"><span class="seg-why-icon">\uD83D\uDCB0</span><div>' + escH(s.statementCommercial) + '</div></div>' : '') +
+          (s.statementRegulatory ? '<div class="seg-why-item seg-regulatory"><span class="seg-why-icon">\u2696\uFE0F</span><div>' + escH(s.statementRegulatory) + '</div></div>' : '') +
+          (s.regulatoryNote ? '<div class="seg-why-item seg-regnote"><span class="seg-why-icon">\u26A0\uFE0F</span><div>' + escH(s.regulatoryNote) + '</div></div>' : '') +
+          '</div>' : '') +
+        '<div class="cap-wrap"><div class="cap-row"><span style="font-size:11px;color:var(--mu)">Relationship capital</span><span class="cap-score ' + capScoreCls + '">' + (cap > 0 ? '+' : '') + cap.toFixed(0) + '/100</span></div><div class="cap-bar">' + (cap < 0 ? '<div class="cap-bar-neg" style="width:' + capPct + '%;background:var(--r)"></div>' : '') + (cap > 0 ? '<div class="cap-bar-pos" style="width:' + capPct + '%;background:var(--g)"></div>' : '') + '</div><div class="cap-context">' + escH(capLabel) + '</div></div>' +
         '<div style="font-size:10px;color:var(--mu);margin-top:10px;padding-top:8px;border-top:1px solid var(--b)">' + escH(confContext) + '</div>' +
-
       '</div>';
     }).join('');
   }
 
-  // ── Missing data nudges — aggregate across all segments ──
-  // Collect unique missing fields across all segments rather than just the first.
   var nl = document.getElementById('nudgeList');
-  var seenFields = {};
-  var allNudges  = [];
+  var seenFields = {}, allNudges = [];
   segNames.forEach(function(seg) {
     (data.segments[seg].missingData || []).forEach(function(m) {
-      if (!seenFields[m.field]) {
-        seenFields[m.field] = true;
-        allNudges.push(m);
-      }
+      if (!seenFields[m.field]) { seenFields[m.field] = true; allNudges.push(m); }
     });
   });
   nl.innerHTML = allNudges.map(function(m) {
-    return '<div class="nudge"><div style="font-size:14px;flex-shrink:0;margin-top:1px">💡</div>' +
-      '<div class="nudge-txt"><strong>Unlock: ' + escH(m.field) + '</strong>' + escH(m.message) + '</div></div>';
+    return '<div class="nudge"><div style="font-size:14px;flex-shrink:0;margin-top:1px">\uD83D\uDCA1</div><div class="nudge-txt"><strong>Unlock: ' + escH(m.field) + '</strong>' + escH(m.message) + '</div></div>';
   }).join('');
 
-  // ── Panel 3 — Recommendations ──
   var recs = data.recommendations || [];
   var rg   = document.getElementById('recGrid');
   var rankLabels = ['Priority action', 'Next action', 'Also consider'];
   rg.innerHTML = recs.map(function(rec, i) {
-    return '<div class="rec-card">' +
-      '<div class="rec-rank">' + (rankLabels[i] || 'Recommendation') + '</div>' +
-      '<div class="rec-seg">' + escH(rec.segment) + '</div>' +
-      '<div class="rec-action">' + escH(rec.action) + '</div>' +
-      '<div class="chips">' +
-        (rec.type  ? '<span class="chip">' + escH(rec.type)  + '</span>' : '') +
-        (rec.date  ? '<span class="chip">From ' + fmtDate(rec.date) + '</span>' : '') +
-        (rec.state ? '<span class="chip">' + escH(rec.state) + '</span>' : '') +
-      '</div></div>';
+    return '<div class="rec-card"><div class="rec-rank">' + (rankLabels[i] || 'Recommendation') + '</div><div class="rec-seg">' + escH(rec.segment) + '</div><div class="rec-action">' + escH(rec.action) + '</div><div class="chips">' + (rec.type ? '<span class="chip">' + escH(rec.type) + '</span>' : '') + (rec.date ? '<span class="chip">From ' + fmtDate(rec.date) + '</span>' : '') + (rec.state ? '<span class="chip">' + escH(rec.state) + '</span>' : '') + '</div></div>';
   }).join('');
 
-  // ── Populate segment selects ──
   var ps = document.getElementById('psSeg');
   ps.innerHTML = segNames.map(function(s) { return '<option value="' + escH(s) + '">' + escH(s) + '</option>'; }).join('');
   var ls = document.getElementById('logSeg');
@@ -938,13 +801,12 @@ function renderDash(data) {
   document.getElementById('psDate').value = new Date().toISOString().slice(0, 10);
 }
 
-// ── PRE-SEND ─────────────────────────────────────────────────
 async function runPreSend() {
   var seg  = document.getElementById('psSeg').value;
   var type = document.getElementById('psType').value;
   var date = document.getElementById('psDate').value;
   if (!seg) { showToast('Select a segment', 'er'); return; }
-  showLoading('Running 1,000 scenarios…');
+  showLoading('Running 1,000 scenarios\u2026');
   try {
     var resp = await fetch(API + '?userId=' + userId + '&action=presend', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -958,20 +820,9 @@ async function runPreSend() {
     var el   = document.getElementById('psResult');
     el.className    = 'ps-result ' + v;
     el.style.display = 'block';
-    el.innerHTML =
-      '<div class="ps-verdict ' + v + '">' + escH(pred.verdict) + '</div>' +
-      '<div class="ps-reason">' + escH(pred.reason) + '</div>' +
-      (pred.predictedUnsubRange ?
-        '<div class="ps-range">Predicted unsubscribe rate: ' +
-        (pred.predictedUnsubRange.low * 100).toFixed(2) + '% – ' +
-        (pred.predictedUnsubRange.high * 100).toFixed(2) + '%' +
-        ' · ' + Math.round((pred.spikeProb || 0) * 100) + '% spike probability' +
-        ' · ' + Math.round((pred.confidence || 0) * 100) + '% confidence</div>' : '') +
-      (pred.alternatives && pred.alternatives.length ?
-        '<div class="alt-title">Alternatives to consider</div>' +
-        pred.alternatives.map(function(a) {
-          return '<div class="alt-item"><strong>' + escH(a.change) + '</strong><span>' + escH(a.reason) + '</span></div>';
-        }).join('') : '');
+    el.innerHTML = '<div class="ps-verdict ' + v + '">' + escH(pred.verdict) + '</div><div class="ps-reason">' + escH(pred.reason) + '</div>' +
+      (pred.predictedUnsubRange ? '<div class="ps-range">Predicted unsubscribe rate: ' + (pred.predictedUnsubRange.low * 100).toFixed(2) + '% \u2013 ' + (pred.predictedUnsubRange.high * 100).toFixed(2) + '% \u00b7 ' + Math.round((pred.spikeProb || 0) * 100) + '% spike probability \u00b7 ' + Math.round((pred.confidence || 0) * 100) + '% confidence</div>' : '') +
+      (pred.alternatives && pred.alternatives.length ? '<div class="alt-title">Alternatives to consider</div>' + pred.alternatives.map(function(a) { return '<div class="alt-item"><strong>' + escH(a.change) + '</strong><span>' + escH(a.reason) + '</span></div>'; }).join('') : '');
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch(err) {
     hideLoading();
@@ -979,15 +830,8 @@ async function runPreSend() {
   }
 }
 
-// ── LOG MODAL ────────────────────────────────────────────────
-function openModal() {
-  document.getElementById('logDate').value = new Date().toISOString().slice(0, 10);
-  switchSegTab('exist'); // reset to existing tab
-  document.getElementById('logModal').classList.add('open');
-}
-function closeModal() {
-  document.getElementById('logModal').classList.remove('open');
-}
+function openModal() { document.getElementById('logDate').value = new Date().toISOString().slice(0, 10); switchSegTab('exist'); document.getElementById('logModal').classList.add('open'); }
+function closeModal() { document.getElementById('logModal').classList.remove('open'); }
 
 async function submitLog() {
   var seg;
@@ -999,23 +843,21 @@ async function submitLog() {
     if (!seg) { showToast('Select a segment', 'er'); return; }
   }
   var campaign = {
-    segment:          seg,
-    campaign_name:    document.getElementById('logName').value || 'Untitled',
-    campaign_type:    document.getElementById('logType').value,
-    date:             document.getElementById('logDate').value,
-    volume_sent:      parseInt(document.getElementById('logVol').value) || null,
-    unsubscribe_count:parseInt(document.getElementById('logUnsub').value) || 0,
-    open_rate:        parseFloat(document.getElementById('logOpen').value) || null,
-    click_rate:       parseFloat(document.getElementById('logClick').value) || null,
-    complaint_count:  parseInt(document.getElementById('logComplaints').value) || null,
+    segment: seg, campaign_name: document.getElementById('logName').value || 'Untitled',
+    campaign_type: document.getElementById('logType').value, date: document.getElementById('logDate').value,
+    volume_sent: parseInt(document.getElementById('logVol').value) || null,
+    unsubscribe_count: parseInt(document.getElementById('logUnsub').value) || 0,
+    open_rate: parseFloat(document.getElementById('logOpen').value) || null,
+    click_rate: parseFloat(document.getElementById('logClick').value) || null,
+    complaint_count: parseInt(document.getElementById('logComplaints').value) || null,
   };
   if (!campaign.date) { showToast('Send date required', 'er'); return; }
   closeModal();
-  showLoading('Logging and updating algorithms…');
+  showLoading('Logging and updating algorithms\u2026');
   try {
     var resp = await fetch(API + '?userId=' + userId + '&action=log', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body:   JSON.stringify({ campaign: campaign }),
+      body: JSON.stringify({ campaign: campaign }),
     });
     var json = await resp.json();
     if (!json.success) throw new Error(json.error);
@@ -1028,14 +870,8 @@ async function submitLog() {
   }
 }
 
-// ── LOADING / TOAST ──────────────────────────────────────────
-function showLoading(msg) {
-  document.getElementById('loadingMsg').textContent = msg || 'Working…';
-  document.getElementById('loadingBg').classList.add('open');
-}
-function hideLoading() {
-  document.getElementById('loadingBg').classList.remove('open');
-}
+function showLoading(msg) { document.getElementById('loadingMsg').textContent = msg || 'Working\u2026'; document.getElementById('loadingBg').classList.add('open'); }
+function hideLoading() { document.getElementById('loadingBg').classList.remove('open'); }
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
@@ -1043,97 +879,39 @@ function showToast(msg, type) {
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
 
-// ── UTILS ────────────────────────────────────────────────────
-function fmtDate(s) {
-  if (!s) return '';
-  return new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
+function fmtDate(s) { if (!s) return ''; return new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
 function sid(s)  { return s.replace(/[^a-zA-Z0-9_]/g, '_'); }
 function escH(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-
-// ── DEMO DATA ────────────────────────────────────────────────
-// Three segments with genuinely different states so the output
-// is interesting and differentiated. No backend calls — nothing
-// saves to Airtable or affects the user's dashboard.
-
-var DEMO_CSV_CONTENT = `segment,campaign_name,campaign_type,date,volume_sent,unsubscribe_count,open_rate,click_rate
-Loyal Buyers,Spring Newsletter,Newsletter,2024-03-04,4200,8,0.38,0.09
-Loyal Buyers,April Promo,Promotional,2024-04-01,4100,14,0.32,0.07
-Loyal Buyers,May Newsletter,Newsletter,2024-05-06,4300,7,0.41,0.10
-Loyal Buyers,Summer Sale,Promotional,2024-06-03,4200,9,0.39,0.11
-Loyal Buyers,June Newsletter,Newsletter,2024-06-17,4100,6,0.43,0.12
-Casual Browsers,Spring Email,Promotional,2024-03-04,8500,102,0.18,0.03
-Casual Browsers,April Campaign,Promotional,2024-04-01,8300,128,0.16,0.02
-Casual Browsers,May Promo,Promotional,2024-05-06,8400,145,0.14,0.02
-Casual Browsers,Flash Sale,Promotional,2024-06-10,8200,198,0.11,0.01
-Casual Browsers,End of Season,Promotional,2024-06-17,8100,231,0.09,0.01
-Lapsed Customers,Re-engagement 1,Re-engagement,2024-03-11,2100,63,0.12,0.02
-Lapsed Customers,Newsletter,Newsletter,2024-04-08,2000,38,0.16,0.03
-Lapsed Customers,Re-engagement 2,Re-engagement,2024-05-13,1900,42,0.19,0.04
-Lapsed Customers,Win-back Offer,Promotional,2024-06-03,1850,55,0.17,0.03
-Lapsed Customers,Re-engagement 3,Re-engagement,2024-06-17,1800,34,0.21,0.05`;
+// ── DEMO DATA ─────────────────────────────────────────────────
+var DEMO_CSV_CONTENT = 'segment,campaign_name,campaign_type,date,volume_sent,unsubscribe_count,open_rate,click_rate\nLoyal Buyers,Spring Newsletter,Newsletter,2024-03-04,4200,8,0.38,0.09\nLoyal Buyers,April Promo,Promotional,2024-04-01,4100,14,0.32,0.07\nLoyal Buyers,May Newsletter,Newsletter,2024-05-06,4300,7,0.41,0.10\nLoyal Buyers,Summer Sale,Promotional,2024-06-03,4200,9,0.39,0.11\nLoyal Buyers,June Newsletter,Newsletter,2024-06-17,4100,6,0.43,0.12\nCasual Browsers,Spring Email,Promotional,2024-03-04,8500,102,0.18,0.03\nCasual Browsers,April Campaign,Promotional,2024-04-01,8300,128,0.16,0.02\nCasual Browsers,May Promo,Promotional,2024-05-06,8400,145,0.14,0.02\nCasual Browsers,Flash Sale,Promotional,2024-06-10,8200,198,0.11,0.01\nCasual Browsers,End of Season,Promotional,2024-06-17,8100,231,0.09,0.01\nLapsed Customers,Re-engagement 1,Re-engagement,2024-03-11,2100,63,0.12,0.02\nLapsed Customers,Newsletter,Newsletter,2024-04-08,2000,38,0.16,0.03\nLapsed Customers,Re-engagement 2,Re-engagement,2024-05-13,1900,42,0.19,0.04\nLapsed Customers,Win-back Offer,Promotional,2024-06-03,1850,55,0.17,0.03\nLapsed Customers,Re-engagement 3,Re-engagement,2024-06-17,1800,34,0.21,0.05';
 
 function loadDemo() {
-  // Parse demo CSV
   var p = parseCSV(DEMO_CSV_CONTENT);
   if (!p.rows.length) { showToast('Demo data failed to load', 'er'); return; }
 
-  // Build field mapping directly
-  var mapping = {
-    segment: 'segment', campaign_name: 'campaign_name', campaign_type: 'campaign_type',
-    date: 'date', volume_sent: 'volume_sent', unsubscribe_count: 'unsubscribe_count',
-    open_rate: 'open_rate', click_rate: 'click_rate',
-  };
-
-  // Parse into campaign objects
   var campaigns = p.rows.map(function(row) {
-    return {
-      segment:           row.segment,
-      campaign_name:     row.campaign_name,
-      campaign_type:     row.campaign_type,
-      date:              row.date,
-      volume_sent:       parseInt(row.volume_sent) || null,
-      unsubscribe_count: parseInt(row.unsubscribe_count) || 0,
-      open_rate:         parseFloat(row.open_rate) || null,
-      click_rate:        parseFloat(row.click_rate) || null,
-      complaint_count:   null,
-    };
+    return { segment: row.segment, campaign_name: row.campaign_name, campaign_type: row.campaign_type, date: row.date, volume_sent: parseInt(row.volume_sent) || null, unsubscribe_count: parseInt(row.unsubscribe_count) || 0, open_rate: parseFloat(row.open_rate) || null, click_rate: parseFloat(row.click_rate) || null, complaint_count: null };
   }).filter(function(c){ return c.date; });
 
-  // Group by segment
   var bySegment = {};
-  campaigns.forEach(function(c) {
-    if (!bySegment[c.segment]) bySegment[c.segment] = [];
-    bySegment[c.segment].push(c);
-  });
+  campaigns.forEach(function(c) { if (!bySegment[c.segment]) bySegment[c.segment] = []; bySegment[c.segment].push(c); });
 
-  // Build results object mimicking API response — client-side only, no saves
   var segments = {};
   var recommendations = [];
   Object.keys(bySegment).forEach(function(seg) {
     var segCampaigns = bySegment[seg].sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
     segments[seg] = buildDemoSegment(segCampaigns);
-    recommendations.push({
-      segment: seg,
-      action:  segments[seg].sentiment.action,
-      type:    segments[seg].freqTolerance.recommendedType,
-      date:    segments[seg].freqTolerance.optimalNextSend,
-      state:   segments[seg].sentiment.state,
-      capital: segments[seg].capital,
-    });
+    recommendations.push({ segment: seg, action: segments[seg].sentiment.action, type: segments[seg].freqTolerance.recommendedType, date: segments[seg].freqTolerance.optimalNextSend, state: segments[seg].sentiment.state, capital: segments[seg].capital });
   });
 
-  // Sort recommendations by urgency
   var urgencyOrder = {'Complaint risk':5,'Damaged':4,'Fatigue building':3,'Cooling':2,'Recovering':1};
   recommendations.sort(function(a,b){ return (urgencyOrder[b.state]||0)-(urgencyOrder[a.state]||0); });
   recommendations = recommendations.slice(0,3);
 
-  // Render
   renderDash({ segments: segments, recommendations: recommendations });
   showScreen('dashboard');
 
-  // Show demo banner with CSV download
   var blob = new Blob([DEMO_CSV_CONTENT], {type:'text/csv'});
   var url  = URL.createObjectURL(blob);
   document.getElementById('demoDlLink').href = url;
@@ -1141,34 +919,25 @@ function loadDemo() {
 }
 
 function buildDemoSegment(campaigns) {
-  // Client-side algorithm approximation for demo
-  // Uses the same logic structure as the backend but simplified
   var n = campaigns.length;
   var unsubRates = campaigns.map(function(c){ return c.unsubscribe_count / Math.max(c.volume_sent||1000,1); });
   var sorted = unsubRates.slice().sort(function(a,b){return a-b;});
   var baseline = sorted[Math.floor(sorted.length/2)] || 0.002;
-  var openRates = campaigns.map(function(c){return c.open_rate;}).filter(function(r){return r!==null;});
   var mean = function(arr){ return arr.length ? arr.reduce(function(a,b){return a+b;},0)/arr.length : 0; };
-
-  // Velocity
   var recent = unsubRates.slice(-3), older = unsubRates.slice(0,3);
   var velocitySign = mean(recent) > mean(older) * 1.15 ? 1 : mean(recent) < mean(older) * 0.85 ? -1 : 0;
   var velocityMag  = Math.abs(mean(recent) - mean(older)) / (baseline + 0.001);
-  var direction = velocityMag > 0.5 && velocitySign > 0 ? 'Rapid decline'
-    : velocityMag > 0.1 && velocitySign > 0 ? 'Declining'
-    : velocitySign < 0 ? 'Improving' : 'Stable';
+  var direction = velocityMag > 0.5 && velocitySign > 0 ? 'Rapid decline' : velocityMag > 0.1 && velocitySign > 0 ? 'Declining' : velocitySign < 0 ? 'Improving' : 'Stable';
   var trustVelocity = { velocity: velocitySign * velocityMag * 0.3, direction: direction, magnitude: velocityMag * 0.3 };
 
-  // Frequency tolerance
   var recentCount = campaigns.filter(function(c){ return (new Date() - new Date(c.date)) < 30*86400000; }).length;
   var toleranceRemaining = Math.max(0, 4 - recentCount);
   var lastSend = campaigns[campaigns.length-1].date;
   var nextDate = new Date(new Date(lastSend).getTime() + 7*86400000).toISOString().slice(0,10);
   var freqTolerance = { toleranceRemaining: toleranceRemaining, optimalNextSend: nextDate, recommendedType: toleranceRemaining <= 1 ? 'Newsletter' : 'Promotional', recentSendCount: recentCount };
 
-  // Capital
   var cap = 0;
-  campaigns.forEach(function(c, i) {
+  campaigns.forEach(function(c) {
     var daysAgo = (new Date() - new Date(c.date)) / 86400000;
     var decay = Math.pow(0.5, daysAgo/60);
     var rate = c.unsubscribe_count / Math.max(c.volume_sent||1000,1);
@@ -1178,58 +947,47 @@ function buildDemoSegment(campaigns) {
   });
   cap = Math.round(cap * 100) / 100;
 
-  // Impacts
   var impacts = campaigns.map(function(c) {
     var rate = c.unsubscribe_count / Math.max(c.volume_sent||1000,1);
     var z = (rate - baseline) / (0.002 + 0.0001);
     var score = -(z * 0.7);
     var category = score > 0.2 ? 'Built trust' : score > -0.3 ? 'Neutral' : score > -1.0 ? 'Caused fatigue' : 'Damaged';
-    var reason = category === 'Built trust' ? 'Unsubscribe rate below this segment\u2019s baseline — positive signal.'
-      : category === 'Caused fatigue' ? 'Unsubscribe rate ' + Math.abs(z).toFixed(1) + ' standard deviations above baseline. Audience showing mild fatigue.'
-      : category === 'Damaged' ? 'Unsubscribe rate ' + Math.abs(z).toFixed(1) + ' standard deviations above baseline — significant relationship damage.'
-      : 'Campaign within normal range for this segment.';
+    var reason = category === 'Built trust' ? 'Unsubscribe rate below this segment\u2019s baseline \u2014 positive signal.' : category === 'Caused fatigue' ? 'Unsubscribe rate ' + Math.abs(z).toFixed(1) + ' standard deviations above baseline. Audience showing mild fatigue.' : category === 'Damaged' ? 'Unsubscribe rate ' + Math.abs(z).toFixed(1) + ' standard deviations above baseline \u2014 significant relationship damage.' : 'Campaign within normal range for this segment.';
     return { campaign_name: c.campaign_name, date: c.date, category: category, reason: reason, impactScore: score };
   });
 
-  // Sentiment (simplified client-side version)
   var recentDamage = impacts.slice(-3).filter(function(i){return i.category==='Damaged'||i.category==='Caused fatigue';}).length;
   var recentBuilt  = impacts.slice(-3).filter(function(i){return i.category==='Built trust';}).length;
   var baseConf = Math.min(0.5 + n * 0.04, 0.95);
   var sentiment;
 
   if (direction === 'Rapid decline' && recentDamage >= 2) {
-    sentiment = { state:'Damaged', statement:'Recent sends have caused measurable damage. Unsubscribes are accelerating beyond your normal baseline.', statementCommercial:'You have approximately 3 weeks before this segment becomes unreachable for promotional sends. Relationship capital is your buffer — act now.', statementRegulatory:null, action:'Pause all promotional sends for 3 weeks. Send one value-add newsletter only.', confidence: Math.round(Math.min(baseConf,0.88)*100)/100, regulatoryNote:null };
+    sentiment = { state:'Damaged', statement:'Recent sends have caused measurable damage. Unsubscribes are accelerating beyond your normal baseline.', statementCommercial:'You have approximately 3 weeks before this segment becomes unreachable for promotional sends. Relationship capital is your buffer \u2014 act now.', statementRegulatory:null, action:'Pause all promotional sends for 3 weeks. Send one value-add newsletter only.', confidence: Math.round(Math.min(baseConf,0.88)*100)/100, regulatoryNote:null };
   } else if (direction === 'Declining' && toleranceRemaining <= 1) {
-    sentiment = { state:'Fatigue building', statement:'Frequency tolerance is nearly exhausted. Your next promotional send is likely to spike unsubscribes above your normal rate.', statementCommercial:'Fatigued audiences stop opening first, then unsubscribe. Open rate will keep declining even if you pause — recovery takes 3–4 weeks.', statementRegulatory:'High frequency combined with declining open rates is the pattern the ICO references when assessing whether legitimate interest is still proportionate.', action:'No promotional sends this month. One newsletter maximum. Give this segment a 2-week gap.', confidence: Math.round(Math.min(baseConf,0.85)*100)/100, regulatoryNote:null };
+    sentiment = { state:'Fatigue building', statement:'Frequency tolerance is nearly exhausted. Your next promotional send is likely to spike unsubscribes above your normal rate.', statementCommercial:'Fatigued audiences stop opening first, then unsubscribe. Open rate will keep declining even if you pause \u2014 recovery takes 3\u20134 weeks.', statementRegulatory:'High frequency combined with declining open rates is the pattern the ICO references when assessing whether legitimate interest is still proportionate.', action:'No promotional sends this month. One newsletter maximum. Give this segment a 2-week gap.', confidence: Math.round(Math.min(baseConf,0.85)*100)/100, regulatoryNote:null };
   } else if ((direction==='Improving'||direction==='Stable') && recentDamage>=1 && recentBuilt>=1) {
     var capStr = cap >= 40 ? 'strong' : cap >= 10 ? 'moderate' : 'thin';
-    sentiment = { state:'Recovering', statement: cap >= 40 ? 'This segment was damaged but strong relationship capital (+'+cap.toFixed(0)+'/100) is cushioning the recovery. The goodwill built over time is working.' : cap >= 10 ? 'Showing early recovery signs, but relationship capital (+'+cap.toFixed(0)+'/100) is moderate — another poor send would push it back to damaged.' : 'Early recovery signs are present, but relationship capital is low. This recovery is fragile.', statementCommercial: capStr === 'strong' ? 'High capital means this audience is more forgiving. A well-timed value send could accelerate recovery.' : capStr === 'moderate' ? 'Revenue will return slowly. One poorly timed promotional send now could push the segment back into damaged territory.' : 'Low capital means this segment needs significantly more positive history before converting at normal rates.', statementRegulatory:null, action: cap>=40 ? 'Send one value-first newsletter. If unsubscribes stay normal, resume sending in 2 weeks.' : 'Low-frequency, high-value sends only for 3 weeks. No promotional campaigns.', confidence: Math.round(Math.min(baseConf,0.78)*100)/100, regulatoryNote:null };
+    sentiment = { state:'Recovering', statement: cap >= 40 ? 'This segment was damaged but strong relationship capital (+'+cap.toFixed(0)+'/100) is cushioning the recovery.' : cap >= 10 ? 'Showing early recovery signs, but relationship capital (+'+cap.toFixed(0)+'/100) is moderate \u2014 another poor send would push it back to damaged.' : 'Early recovery signs are present, but relationship capital is low. This recovery is fragile.', statementCommercial: capStr === 'strong' ? 'High capital means this audience is more forgiving. A well-timed value send could accelerate recovery.' : capStr === 'moderate' ? 'Revenue will return slowly. One poorly timed promotional send now could push the segment back into damaged territory.' : 'Low capital means this segment needs significantly more positive history before converting at normal rates.', statementRegulatory:null, action: cap>=40 ? 'Send one value-first newsletter. If unsubscribes stay normal, resume sending in 2 weeks.' : 'Low-frequency, high-value sends only for 3 weeks. No promotional campaigns.', confidence: Math.round(Math.min(baseConf,0.78)*100)/100, regulatoryNote:null };
   } else if (direction==='Improving' && toleranceRemaining>=3 && recentBuilt>=2) {
-    sentiment = { state:'Peak receptiveness', statement:'This segment is in its best state — consecutive positive campaigns, improving trust velocity, and strong remaining tolerance.', statementCommercial:'This is your highest-conversion window. Promotional campaigns now will outperform the same campaign sent after this window closes.', statementRegulatory:null, action:'Send your best promotional or product announcement now. This window typically lasts 2–3 weeks.', confidence: Math.round(Math.min(baseConf,0.88)*100)/100, regulatoryNote:null };
+    sentiment = { state:'Peak receptiveness', statement:'This segment is in its best state \u2014 consecutive positive campaigns, improving trust velocity, and strong remaining tolerance.', statementCommercial:'This is your highest-conversion window. Promotional campaigns now will outperform the same campaign sent after this window closes.', statementRegulatory:null, action:'Send your best promotional or product announcement now. This window typically lasts 2\u20133 weeks.', confidence: Math.round(Math.min(baseConf,0.88)*100)/100, regulatoryNote:null };
   } else {
-    sentiment = { state:'Neutral', statement:'No strong trend in either direction. Relationship capital: '+cap.toFixed(0)+'/100.', statementCommercial:'Neutral state — sends will perform at your historical average rates.', statementRegulatory:null, action:'Proceed with your planned campaign. Monitor unsubscribes on the next send.', confidence: Math.round(Math.min(baseConf,0.65)*100)/100, regulatoryNote:null };
+    sentiment = { state:'Neutral', statement:'No strong trend in either direction. Relationship capital: '+cap.toFixed(0)+'/100.', statementCommercial:'Neutral state \u2014 sends will perform at your historical average rates.', statementRegulatory:null, action:'Proceed with your planned campaign. Monitor unsubscribes on the next send.', confidence: Math.round(Math.min(baseConf,0.65)*100)/100, regulatoryNote:null };
   }
 
-  var hasOpenRates = campaigns.some(function(c){return c.open_rate!==null;});
-  var dataQuality  = hasOpenRates ? 'Partial' : 'Minimal';
-
-  return {
-    fingerprint:  { campaignCount: n, baselineUnsubscribeRate: baseline },
-    trustVelocity: trustVelocity,
-    freqTolerance: freqTolerance,
-    sentiment:    sentiment,
-    capital:      cap,
-    impacts:      impacts.slice(-8),
-    dataQuality:  dataQuality,
-    missingData:  [{ field:'Complaint and spam data', message:'Complaints carry 50× the weight of an unsubscribe in the Trust Velocity model. Adding them makes sentiment inference significantly more accurate.' }],
-  };
+  return { fingerprint: { campaignCount: n, baselineUnsubscribeRate: baseline }, trustVelocity: trustVelocity, freqTolerance: freqTolerance, sentiment: sentiment, capital: cap, impacts: impacts.slice(-8), dataQuality: 'Partial', missingData: [{ field:'Complaint and spam data', message:'Complaints carry 50\u00d7 the weight of an unsubscribe in the Trust Velocity model. Adding them makes sentiment inference significantly more accurate.' }] };
 }
 
-// ── INIT — auto-load if userId present ───────────────────────
+// ── INIT ─────────────────────────────────────────────────────
 document.getElementById('psDate').value = new Date().toISOString().slice(0, 10);
 
-if (userId) {
-  showLoading('Checking for existing data…');
+if (!userId) {
+  // Show gate screen — hide all tool screens
+  document.getElementById('gateScreen').classList.add('show');
+  document.getElementById('upload-screen').style.display = 'none';
+} else {
+  // Authenticated — show upload screen and attempt auto-load
+  document.getElementById('upload-screen').style.display = 'block';
+  showLoading('Checking for existing data\u2026');
   fetch(API + '?userId=' + userId + '&action=load')
     .then(function(r) { return r.json(); })
     .then(function(json) {
@@ -1242,7 +1000,7 @@ if (userId) {
     .catch(function(err) {
       hideLoading();
       console.warn('Auto-load failed:', err);
-      showToast('Could not check for existing data — you can still upload a new file', '');
+      showToast('Could not check for existing data \u2014 you can still upload a new file', '');
     });
 }
 </script>
