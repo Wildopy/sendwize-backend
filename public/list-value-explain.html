@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How your list value is calculated — Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fed7aa;
+  --bg:#F4F3F0;--w:#ffffff;--b:#E8E6E1;--bm:#D8D5CE;
+  --t:#0C0B09;--tm:#5C5852;--mu:#9C9890;
+  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
+  --r:#dc2626;--rb:#fef2f2;
+  --y:#ca8a04;--yb:#fefce8;
+  --pur:#7c3aed;--purb:#f5f3ff;
+  --rad:12px;--rad-sm:8px;
+  --sh:0 1px 3px rgba(0,0,0,.06);
+  --shm:0 4px 16px rgba(0,0,0,.08);
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+
+/* ── NAV ── */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.nav-logo{font-size:16px;font-weight:700;color:var(--o);letter-spacing:-.3px}
+.nav-back{background:none;border:1px solid var(--b);color:var(--tm);font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.nav-back:hover{border-color:var(--o);color:var(--o)}
+
+/* ── LAYOUT ── */
+.page{max-width:780px;margin:0 auto;padding:40px 24px 80px}
+
+/* ── HERO ── */
+.hero{margin-bottom:48px}
+.hero-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);margin-bottom:10px}
+.hero-title{font-size:clamp(26px,4vw,38px);font-weight:700;letter-spacing:-.6px;line-height:1.15;margin-bottom:12px}
+.hero-sub{font-size:15px;color:var(--tm);line-height:1.7;max-width:560px}
+
+/* ── YOUR NUMBERS ── */
+.your-numbers{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:24px;margin-bottom:40px;box-shadow:var(--sh)}
+.yn-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin-bottom:16px}
+.yn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.yn-item{padding:14px 16px;background:var(--bg);border-radius:var(--rad-sm);border:1px solid var(--b)}
+.yn-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:4px}
+.yn-val{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t)}
+.yn-val.green{color:var(--g)}
+.yn-val.orange{color:var(--o)}
+.yn-note{font-size:11px;color:var(--mu);margin-top:12px;padding-top:12px;border-top:1px solid var(--b);line-height:1.5}
+.yn-loading{color:var(--mu);font-size:13px;font-style:italic}
+
+/* ── SECTION ── */
+.section{margin-bottom:44px}
+.section-title{font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px}
+.section-sub{font-size:13px;color:var(--tm);margin-bottom:20px;line-height:1.6}
+
+/* ── FORMULA BLOCK ── */
+.formula-wrap{background:var(--t);border-radius:var(--rad);padding:24px;margin-bottom:20px;overflow-x:auto}
+.formula{font-family:'DM Mono',monospace;font-size:13px;color:#fff;white-space:nowrap;line-height:2}
+.formula .var{color:#fbbf24}
+.formula .op{color:#9ca3af}
+.formula .eq{color:#34d399}
+.formula-note{font-size:11px;color:var(--mu);line-height:1.6;margin-top:8px}
+
+/* ── STEPS ── */
+.steps{display:flex;flex-direction:column;gap:1px;border:1px solid var(--b);border-radius:var(--rad);overflow:hidden;margin-bottom:20px}
+.step{background:var(--w);padding:18px 20px;display:flex;gap:14px;align-items:flex-start}
+.step:not(:last-child){border-bottom:1px solid var(--b)}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--ol);color:var(--o);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;border:1px solid var(--om)}
+.step-body{flex:1}
+.step-title{font-size:13px;font-weight:700;margin-bottom:3px}
+.step-desc{font-size:12px;color:var(--tm);line-height:1.6}
+.step-example{font-family:'DM Mono',monospace;font-size:11px;color:var(--o);background:var(--ol);padding:4px 8px;border-radius:4px;display:inline-block;margin-top:6px}
+
+/* ── BENCHMARKS TABLE ── */
+.bench-table{width:100%;border-collapse:collapse;border:1px solid var(--b);border-radius:var(--rad);overflow:hidden;font-size:12px}
+.bench-table th{background:var(--bg);padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);border-bottom:1px solid var(--b)}
+.bench-table td{padding:11px 14px;border-bottom:1px solid var(--b);color:var(--t)}
+.bench-table tr:last-child td{border-bottom:none}
+.bench-table tr.active-row td{background:var(--ol)}
+.bench-table tr.active-row .sector-badge{background:var(--o);color:#fff}
+.sector-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--bg);border:1px solid var(--b);color:var(--mu)}
+.mono{font-family:'DM Mono',monospace}
+
+/* ── ENGAGEMENT TABLE ── */
+.eng-table{width:100%;border-collapse:collapse;border:1px solid var(--b);border-radius:var(--rad);overflow:hidden;font-size:12px;margin-bottom:12px}
+.eng-table th{background:var(--bg);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);border-bottom:1px solid var(--b)}
+.eng-table td{padding:10px 14px;border-bottom:1px solid var(--b);color:var(--t)}
+.eng-table tr:last-child td{border-bottom:none}
+.mult-high{color:var(--g);font-weight:700;font-family:'DM Mono',monospace}
+.mult-mid{color:var(--y);font-weight:700;font-family:'DM Mono',monospace}
+.mult-low{color:var(--r);font-weight:700;font-family:'DM Mono',monospace}
+
+/* ── DECAY SECTION ── */
+.decay-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:22px;box-shadow:var(--sh)}
+.decay-chart{margin:16px 0;position:relative}
+.decay-svg{width:100%;display:block}
+.decay-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--mu);margin-top:4px;font-family:'DM Mono',monospace}
+
+/* ── TIERS ── */
+.tiers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+@media(max-width:500px){.tiers{grid-template-columns:1fr}}
+.tier{padding:16px;border-radius:var(--rad-sm);border:1px solid var(--b)}
+.tier.active{background:var(--gb);border-color:var(--gc)}
+.tier.recoverable{background:#fff7ed;border-color:var(--om)}
+.tier.at-risk{background:var(--yb);border-color:#fef08a}
+.tier.liability{background:var(--rb);border-color:#fecaca}
+.tier-name{font-size:12px;font-weight:700;margin-bottom:3px}
+.tier.active .tier-name{color:var(--g)}
+.tier.recoverable .tier-name{color:var(--o)}
+.tier.at-risk .tier-name{color:var(--y)}
+.tier.liability .tier-name{color:var(--r)}
+.tier-desc{font-size:11px;color:var(--tm);line-height:1.5}
+.tier-rule{font-family:'DM Mono',monospace;font-size:10px;color:var(--mu);margin-top:6px;background:rgba(0,0,0,.04);padding:3px 7px;border-radius:4px;display:inline-block}
+
+/* ── DISCLAIMER ── */
+.disclaimer{background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;font-size:11px;color:var(--mu);line-height:1.6;margin-bottom:40px}
+.disclaimer strong{color:var(--tm)}
+
+/* ── WORKED EXAMPLE ── */
+.example-card{background:var(--w);border:2px solid var(--o);border-radius:var(--rad);padding:24px;margin-bottom:24px}
+.example-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--o);margin-bottom:14px}
+.example-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--b);font-size:13px}
+.example-row:last-child{border-bottom:none;font-weight:700;font-size:14px;padding-top:12px}
+.example-row span:last-child{font-family:'DM Mono',monospace;color:var(--t)}
+.example-row.result span:last-child{color:var(--g);font-size:16px}
+
+/* ── BACK LINK ── */
+.back-wrap{text-align:center;margin-top:40px}
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:var(--o);color:#fff;border:none;padding:12px 24px;border-radius:var(--rad-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:all .15s}
+.back-btn:hover{background:var(--od)}
+
+.tag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.tag.your{background:var(--ol);color:var(--o);border:1px solid var(--om)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-logo">sendwize</span>
+  <a class="nav-back" id="navBack" href="#">← Back to dashboard</a>
+</nav>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-eyebrow">List Intelligence — Methodology</div>
+    <div class="hero-title">How your list value<br>is calculated</div>
+    <div class="hero-sub">Every figure shown in List Intelligence is derived from your actual contact data using a four-dimensional model. This page explains exactly what goes into the number — and why it decays over time.</div>
+  </div>
+
+  <!-- YOUR NUMBERS -->
+  <div class="your-numbers">
+    <div class="yn-title">Your inputs at last upload</div>
+    <div class="yn-grid" id="ynGrid">
+      <div class="yn-loading">Loading your data…</div>
+    </div>
+    <div class="yn-note" id="ynNote"></div>
+  </div>
+
+  <!-- STEP 1: THE FORMULA -->
+  <div class="section">
+    <div class="section-title">Step 1 — The core formula</div>
+    <div class="section-sub">Every contact in your list gets a commercial value score. The formula is the same for everyone — what changes is the inputs, which come from your sector, your average order value, and that contact's engagement history.</div>
+    <div class="formula-wrap">
+      <div class="formula">
+        <span class="var">commercialValue</span> <span class="op">=</span><br>
+        &nbsp;&nbsp;<span class="var">conversionRate</span> <span class="op">×</span> <span class="var">averageOrderValue</span> <span class="op">×</span> <span class="var">sectorMultiplier</span> <span class="op">×</span> <span class="var">engagementMultiplier</span>
+      </div>
+    </div>
+    <div class="formula-note">This gives the expected revenue contribution of a single contact, adjusted for how likely they are to convert given their recent behaviour. Contacts with no engagement data use a conservative base multiplier of 0.5.</div>
+  </div>
+
+  <!-- STEP 2: SECTOR BENCHMARKS -->
+  <div class="section">
+    <div class="section-title">Step 2 — Sector conversion rates</div>
+    <div class="section-sub">The conversion rate is the starting assumption for what proportion of contacts in your sector will purchase from a given campaign. These are industry benchmarks — your actual rate may differ, but they give a consistent, comparable baseline.</div>
+    <div style="overflow-x:auto;margin-bottom:8px">
+      <table class="bench-table" id="benchTable">
+        <thead>
+          <tr>
+            <th>Sector</th>
+            <th>Conversion rate</th>
+            <th>Order multiplier</th>
+            <th>Base value per contact (at £100 AOV)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-sector="ecommerce"><td><span class="sector-badge">Ecommerce</span></td><td class="mono">2.5%</td><td class="mono">1.0×</td><td class="mono">£2.50</td></tr>
+          <tr data-sector="finance"><td><span class="sector-badge">Finance</span></td><td class="mono">0.8%</td><td class="mono">4.0×</td><td class="mono">£3.20</td></tr>
+          <tr data-sector="healthcare"><td><span class="sector-badge">Healthcare</span></td><td class="mono">1.2%</td><td class="mono">2.5×</td><td class="mono">£3.00</td></tr>
+          <tr data-sector="agency"><td><span class="sector-badge">Agency</span></td><td class="mono">1.5%</td><td class="mono">3.0×</td><td class="mono">£4.50</td></tr>
+          <tr data-sector="other"><td><span class="sector-badge">Other</span></td><td class="mono">1.8%</td><td class="mono">1.2×</td><td class="mono">£2.16</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="formula-note">The order multiplier accounts for typical deal sizes relative to the base AOV. Finance contacts tend to convert less often but at much higher value — so both factors are needed to reflect the real commercial picture.</div>
+  </div>
+
+  <!-- STEP 3: ENGAGEMENT MULTIPLIER -->
+  <div class="section">
+    <div class="section-title">Step 3 — Engagement multiplier</div>
+    <div class="section-sub">The base value is then adjusted upward or downward based on each contact's most recent engagement. A contact who purchased last month is worth significantly more than one who last opened an email two years ago.</div>
+    <table class="eng-table">
+      <thead>
+        <tr><th>Last action</th><th>Within 90 days</th><th>90–180 days</th><th>180+ days</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Purchase / order</td><td class="mult-high">2.5×</td><td class="mult-high">1.8×</td><td class="mult-mid">1.2×</td></tr>
+        <tr><td>Click</td><td class="mult-high">1.5×</td><td class="mult-mid">1.1×</td><td class="mult-low">0.8×</td></tr>
+        <tr><td>Open</td><td class="mult-mid">1.1×</td><td class="mult-low">0.9×</td><td class="mult-low">0.6×</td></tr>
+        <tr><td>Other engagement</td><td class="mult-low">0.9×</td><td class="mult-low">0.7×</td><td class="mult-low">0.4×</td></tr>
+        <tr><td>No engagement data</td><td colspan="3" style="color:var(--mu);font-family:'DM Mono',monospace">0.5× (conservative base)</td></tr>
+      </tbody>
+    </table>
+    <div class="formula-note">Multipliers are applied to the base value from Step 2. A contact with no data defaults to 0.5× — below base — because the absence of engagement data is itself a signal of lower conversion likelihood.</div>
+  </div>
+
+  <!-- WORKED EXAMPLE -->
+  <div class="section">
+    <div class="section-title">Worked example</div>
+    <div class="section-sub">Here is how a single ecommerce contact with a click in the last 60 days would be valued, assuming a £75 average order value.</div>
+    <div class="example-card" id="workedExample">
+      <div class="example-title">Single contact calculation</div>
+      <div class="example-row"><span>Sector conversion rate (ecommerce)</span><span>2.5%</span></div>
+      <div class="example-row"><span>Average order value</span><span>£75</span></div>
+      <div class="example-row"><span>Sector order multiplier</span><span>1.0×</span></div>
+      <div class="example-row"><span>Base value (2.5% × £75 × 1.0)</span><span>£1.88</span></div>
+      <div class="example-row"><span>Engagement: click within 90 days</span><span>1.5×</span></div>
+      <div class="example-row result"><span>Commercial value of this contact</span><span>£2.81</span></div>
+    </div>
+    <div class="formula-note">This is repeated for every contact in your list. The total asset value shown on your dashboard is the sum of all active and recoverable contacts' commercial values.</div>
+  </div>
+
+  <!-- STEP 4: TIERS -->
+  <div class="section">
+    <div class="section-title">Step 4 — Contact tiers</div>
+    <div class="section-sub">Contacts are then sorted into four tiers based on two dimensions: consent strength (which decays over time since signup) and deliverability score (derived from email address signals). Only active and recoverable contacts contribute to your list value figure.</div>
+    <div class="tiers">
+      <div class="tier active">
+        <div class="tier-name">Active</div>
+        <div class="tier-desc">High consent, good deliverability. Full commercial value. Your core sendable list.</div>
+        <div class="tier-rule">consent ≥60 · deliverability ≥60</div>
+      </div>
+      <div class="tier recoverable">
+        <div class="tier-name">Recoverable</div>
+        <div class="tier-desc">Consent declining but above ICO threshold. Value is the intervention value — what you can recover with a re-engagement campaign.</div>
+        <div class="tier-rule">consent 20–60 · deliverability ≥40</div>
+      </div>
+      <div class="tier at-risk">
+        <div class="tier-name">At risk</div>
+        <div class="tier-desc">Above consent threshold but poor deliverability signals. Not included in list value — deliverability risk outweighs commercial potential.</div>
+        <div class="tier-rule">consent ≥20 · deliverability &lt;40</div>
+      </div>
+      <div class="tier liability">
+        <div class="tier-name">Liability</div>
+        <div class="tier-desc">Below ICO consent threshold. Not included in list value. Generates a compliance fix and is added to your suppression registry.</div>
+        <div class="tier-rule">consent &lt;20</div>
+      </div>
+    </div>
+    <div class="formula-note">Consent strength decays exponentially from signup date — it halves every 12 months with no engagement. Purchases, clicks, and opens reset the decay clock, with purchases having the strongest reset effect.</div>
+  </div>
+
+  <!-- STEP 5: DECAY -->
+  <div class="section">
+    <div class="section-title">Step 5 — Why the value decays over time</div>
+    <div class="section-sub">The unrealised value shown on your dashboard is not static. Each opportunity decays at a set rate per month — because the longer you wait to act, the lower the conversion likelihood becomes as engagement fades.</div>
+    <div class="decay-card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Opportunity value over time</div>
+      <div style="font-size:11px;color:var(--mu);margin-bottom:12px">Re-engagement campaign opportunity at 2.5% monthly decay rate</div>
+      <div class="decay-chart">
+        <svg class="decay-svg" viewBox="0 0 600 160" preserveAspectRatio="none" height="160">
+          <defs>
+            <linearGradient id="decayGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#EA7317" stop-opacity=".18"/>
+              <stop offset="100%" stop-color="#EA7317" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Grid lines -->
+          <line x1="0" y1="40" x2="600" y2="40" stroke="#E8E6E1" stroke-width="1"/>
+          <line x1="0" y1="80" x2="600" y2="80" stroke="#E8E6E1" stroke-width="1"/>
+          <line x1="0" y1="120" x2="600" y2="120" stroke="#E8E6E1" stroke-width="1"/>
+          <!-- Decay curve area -->
+          <path d="M0,20 C60,22 120,30 180,44 C240,58 300,75 360,93 C420,110 480,124 600,138 L600,155 L0,155 Z" fill="url(#decayGrad)"/>
+          <!-- Decay curve line -->
+          <path d="M0,20 C60,22 120,30 180,44 C240,58 300,75 360,93 C420,110 480,124 600,138" fill="none" stroke="#EA7317" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Now marker -->
+          <circle cx="0" cy="20" r="5" fill="#EA7317" stroke="#fff" stroke-width="2"/>
+          <!-- 6mo marker -->
+          <circle cx="300" cy="75" r="4" fill="#EA7317" stroke="#fff" stroke-width="2"/>
+          <line x1="300" y1="0" x2="300" y2="155" stroke="#E8E6E1" stroke-width="1" stroke-dasharray="4,3"/>
+          <!-- 12mo marker -->
+          <circle cx="600" cy="138" r="4" fill="#9C9890" stroke="#fff" stroke-width="2"/>
+          <!-- Labels -->
+          <text x="4" y="14" font-family="DM Mono,monospace" font-size="10" fill="#EA7317" font-weight="600">100%</text>
+          <text x="304" y="70" font-family="DM Mono,monospace" font-size="10" fill="#EA7317">~86%</text>
+          <text x="552" y="133" font-family="DM Mono,monospace" font-size="10" fill="#9C9890">~74%</text>
+          <text x="2" y="37" font-family="DM Mono,monospace" font-size="9" fill="#9C9890">75%</text>
+          <text x="2" y="77" font-family="DM Mono,monospace" font-size="9" fill="#9C9890">50%</text>
+          <text x="2" y="117" font-family="DM Mono,monospace" font-size="9" fill="#9C9890">25%</text>
+        </svg>
+        <div class="decay-labels"><span>Now</span><span>3 months</span><span>6 months</span><span>9 months</span><span>12 months</span></div>
+      </div>
+      <div style="font-size:11px;color:var(--mu);line-height:1.6;margin-top:8px">Each opportunity has its own decay rate stored at creation. Re-engagement opportunities decay at 2.5%/month. Priority send windows decay faster at 3%/month — because high-engagement windows close quickly. The value shown on your dashboard reflects today's decayed figure, not the original estimate.</div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer">
+    <strong>Important:</strong> List value figures are estimates based on sector benchmark conversion rates and your stated average order value. They are not a guarantee of revenue. Actual results depend on campaign quality, send timing, offer relevance, and market conditions. Sendwize list value figures are intended as a comparative tool to prioritise contact segments — not as a financial projection. They should not be used as the basis for financial reporting or investor presentations without independent validation.
+  </div>
+
+  <div class="back-wrap">
+    <a class="back-btn" id="backBtn" href="#">← Back to dashboard</a>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var AU = 'https://sendwize-backend.vercel.app';
+  var userId = new URLSearchParams(window.location.search).get('userId') || '';
+  var dashUrl = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy'
+    + (userId ? '?userId=' + userId : '');
+
+  document.getElementById('navBack').href = dashUrl;
+  document.getElementById('backBtn').href = dashUrl;
+
+  // Sector benchmarks (mirrors list-intelligence.js)
+  var BENCHMARKS = {
+    ecommerce:  { conversionRate: 0.025, avgOrderMultiplier: 1.0 },
+    finance:    { conversionRate: 0.008, avgOrderMultiplier: 4.0 },
+    healthcare: { conversionRate: 0.012, avgOrderMultiplier: 2.5 },
+    agency:     { conversionRate: 0.015, avgOrderMultiplier: 3.0 },
+    other:      { conversionRate: 0.018, avgOrderMultiplier: 1.2 },
+  };
+
+  function fmtGBP(n) {
+    if (!n && n !== 0) return '—';
+    return '\u00a3' + Number(n).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  function fmtPct(n) { return (n * 100).toFixed(1) + '%'; }
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '—'; }
+
+  // Highlight active sector row in table
+  function highlightSector(sector) {
+    document.querySelectorAll('.bench-table tbody tr').forEach(function(tr) {
+      if (tr.dataset.sector === sector) {
+        tr.classList.add('active-row');
+        var badge = tr.querySelector('.sector-badge');
+        if (badge) badge.innerHTML = cap(sector) + ' <span class="tag your">yours</span>';
+      }
+    });
+  }
+
+  // Update worked example with real AOV + sector
+  function updateWorkedExample(sector, aov) {
+    var b = BENCHMARKS[sector] || BENCHMARKS.other;
+    var base = b.conversionRate * aov * b.avgOrderMultiplier;
+    var engMult = 1.5; // click within 90 days — illustrative
+    var result = base * engMult;
+    var el = document.getElementById('workedExample');
+    el.innerHTML = '<div class="example-title">Single contact calculation — your sector & AOV</div>'
+      + '<div class="example-row"><span>Sector conversion rate (' + cap(sector) + ')</span><span>' + fmtPct(b.conversionRate) + '</span></div>'
+      + '<div class="example-row"><span>Your average order value</span><span>' + fmtGBP(aov) + '</span></div>'
+      + '<div class="example-row"><span>Sector order multiplier</span><span>' + b.avgOrderMultiplier.toFixed(1) + '\u00d7</span></div>'
+      + '<div class="example-row"><span>Base value (' + fmtPct(b.conversionRate) + ' \u00d7 ' + fmtGBP(aov) + ' \u00d7 ' + b.avgOrderMultiplier.toFixed(1) + ')</span><span>' + fmtGBP(base) + '</span></div>'
+      + '<div class="example-row"><span>Engagement: click within 90 days (illustrative)</span><span>1.5\u00d7</span></div>'
+      + '<div class="example-row result"><span>Commercial value of this contact</span><span>' + fmtGBP(result) + '</span></div>';
+  }
+
+  async function load() {
+    if (!userId) {
+      document.getElementById('ynGrid').innerHTML = '<div class="yn-loading">No user session — open from the Sendwize dashboard.</div>';
+      return;
+    }
+    try {
+      const r = await fetch(AU + '/api/list-intelligence?action=load&userId=' + userId);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      if (!d.hasData) {
+        document.getElementById('ynGrid').innerHTML = '<div class="yn-loading">No list uploaded yet. Run List Intelligence to see your personalised inputs here.</div>';
+        return;
+      }
+      var sector = d.sector || 'other';
+      var aov    = d.aov    || 50;
+      var b      = BENCHMARKS[sector] || BENCHMARKS.other;
+      document.getElementById('ynGrid').innerHTML =
+        yn('Your sector', cap(sector)) +
+        yn('Avg order value', fmtGBP(aov)) +
+        yn('Conversion rate', fmtPct(b.conversionRate)) +
+        yn('Order multiplier', b.avgOrderMultiplier.toFixed(1) + '\u00d7') +
+        yn('Active contacts', (d.activeCount || 0).toLocaleString(), 'green') +
+        yn('Recoverable', (d.recoverableCount || 0).toLocaleString(), 'orange') +
+        yn('Unrealised value', fmtGBP(d.unrealisedTotal), 'green') +
+        yn('Last uploaded', d.checkDate ? new Date(d.checkDate).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—');
+
+      document.getElementById('ynNote').textContent =
+        'These are the exact inputs used to calculate your list value. Sector and AOV are taken from your profile — update them in List Intelligence if they have changed.';
+
+      highlightSector(sector);
+      updateWorkedExample(sector, aov);
+    } catch(e) {
+      document.getElementById('ynGrid').innerHTML = '<div class="yn-loading">Could not load your data — please refresh.</div>';
+      console.warn(e);
+    }
+  }
+
+  function yn(label, val, color) {
+    return '<div class="yn-item"><div class="yn-label">' + label + '</div><div class="yn-val' + (color ? ' ' + color : '') + '">' + val + '</div></div>';
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
