@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How exposure figures are calculated — Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fed7aa;
+  --bg:#F4F3F0;--w:#ffffff;--b:#E8E6E1;--bm:#D8D5CE;
+  --t:#0C0B09;--tm:#5C5852;--mu:#9C9890;
+  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
+  --r:#dc2626;--rb:#fef2f2;
+  --y:#ca8a04;--yb:#fefce8;
+  --pur:#7c3aed;--purb:#f5f3ff;
+  --rad:12px;--rad-sm:8px;
+  --sh:0 1px 3px rgba(0,0,0,.06);
+  --shm:0 4px 16px rgba(0,0,0,.08);
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+
+.nav{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.nav-logo{font-size:16px;font-weight:700;color:var(--o);letter-spacing:-.3px}
+.nav-back{background:none;border:1px solid var(--b);color:var(--tm);font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.nav-back:hover{border-color:var(--o);color:var(--o)}
+
+.page{max-width:780px;margin:0 auto;padding:40px 24px 80px}
+
+.hero{margin-bottom:48px}
+.hero-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);margin-bottom:10px}
+.hero-title{font-size:clamp(26px,4vw,38px);font-weight:700;letter-spacing:-.6px;line-height:1.15;margin-bottom:12px}
+.hero-sub{font-size:15px;color:var(--tm);line-height:1.7;max-width:560px}
+
+/* ── YOUR PROFILE ── */
+.your-profile{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:24px;margin-bottom:40px;box-shadow:var(--sh)}
+.yp-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin-bottom:16px}
+.yp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.yp-item{padding:14px 16px;background:var(--bg);border-radius:var(--rad-sm);border:1px solid var(--b)}
+.yp-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:4px}
+.yp-val{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t)}
+
+/* ── SECTION ── */
+.section{margin-bottom:44px}
+.section-title{font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px}
+.section-sub{font-size:13px;color:var(--tm);margin-bottom:20px;line-height:1.6}
+
+/* ── REGULATOR TABS ── */
+.reg-tabs{display:flex;gap:6px;margin-bottom:20px}
+.reg-tab{background:var(--w);border:2px solid var(--b);color:var(--mu);padding:8px 18px;border-radius:var(--rad-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.03em}
+.reg-tab.ico.on{border-color:#991b1b;color:#991b1b;background:#fee2e2}
+.reg-tab.asa.on{border-color:var(--pur);color:var(--pur);background:var(--purb)}
+.reg-tab.cma.on{border-color:#92400e;color:#92400e;background:#fef3c7}
+.reg-panel{display:none}.reg-panel.on{display:block}
+
+/* ── BAND CARD ── */
+.band-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:16px}
+.band-card{padding:14px 16px;border-radius:var(--rad-sm);border:2px solid var(--b);background:var(--w);transition:all .2s}
+.band-card.yours{border-color:#991b1b;background:#fee2e2}
+.band-card.yours .band-name{color:#991b1b}
+.band-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}
+.band-range{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t);margin-bottom:2px}
+.band-yours{font-size:10px;font-weight:700;color:#991b1b;margin-top:4px}
+
+/* ── FIX ROWS ── */
+.fix-rows{display:flex;flex-direction:column;gap:1px;border:1px solid var(--b);border-radius:var(--rad);overflow:hidden;margin-bottom:16px}
+.fix-row{background:var(--w);padding:14px 18px;display:flex;align-items:center;gap:12px}
+.fix-row:not(:last-child){border-bottom:1px solid var(--b)}
+.fix-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;letter-spacing:.04em}
+.fix-badge.ico{background:#fee2e2;color:#991b1b}
+.fix-badge.asa{background:var(--purb);color:var(--pur)}
+.fix-badge.cma{background:#fef3c7;color:#92400e}
+.fix-name{font-size:12px;font-weight:600;flex:1;min-width:0}
+.fix-ranges{text-align:right;flex-shrink:0}
+.fix-range{font-size:11px;font-family:'DM Mono',monospace;color:var(--t);font-weight:600}
+.fix-range-label{font-size:10px;color:var(--mu)}
+
+/* ── CASE BOXES ── */
+.case-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+@media(max-width:500px){.case-grid{grid-template-columns:1fr}}
+.case-card{padding:16px;border-radius:var(--rad-sm);border:1px solid var(--b);background:var(--w)}
+.case-fine{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:#991b1b;margin-bottom:4px}
+.case-who{font-size:12px;font-weight:600;color:var(--t);margin-bottom:2px}
+.case-what{font-size:11px;color:var(--mu);line-height:1.5}
+.case-year{font-size:10px;color:var(--mu);margin-top:6px;font-family:'DM Mono',monospace}
+
+/* ── ASA REFERRAL ── */
+.referral-rows{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.referral-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--rad-sm);border:1px solid var(--b);background:var(--w)}
+.risk-pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;flex-shrink:0;margin-top:2px;white-space:nowrap}
+.risk-pill.high{background:#fee2e2;color:#991b1b}
+.risk-pill.medium{background:var(--ol);color:var(--o)}
+.risk-pill.low{background:var(--yb);color:var(--y)}
+.referral-body{flex:1}
+.referral-type{font-size:12px;font-weight:700;margin-bottom:2px}
+.referral-note{font-size:11px;color:var(--mu);line-height:1.5}
+
+/* ── DUAA ALERT ── */
+.duaa-alert{background:#fff7ed;border:1px solid var(--om);border-left:3px solid var(--o);border-radius:var(--rad-sm);padding:14px 16px;margin-bottom:16px}
+.duaa-alert-title{font-size:12px;font-weight:700;color:#92400e;margin-bottom:4px}
+.duaa-alert-body{font-size:11px;color:#78350f;line-height:1.6}
+
+/* ── MIDPOINT EXPLAINER ── */
+.midpoint-box{background:var(--t);border-radius:var(--rad);padding:20px 24px;margin-bottom:16px;color:#fff}
+.midpoint-title{font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.midpoint-formula{font-family:'DM Mono',monospace;font-size:13px;color:#fbbf24;line-height:2}
+.midpoint-desc{font-size:11px;color:#9ca3af;margin-top:8px;line-height:1.6}
+
+/* ── DISCLAIMER ── */
+.disclaimer{background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;font-size:11px;color:var(--mu);line-height:1.6;margin-bottom:40px}
+.disclaimer strong{color:var(--tm)}
+
+.back-wrap{text-align:center;margin-top:40px}
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:var(--o);color:#fff;border:none;padding:12px 24px;border-radius:var(--rad-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:all .15s}
+.back-btn:hover{background:var(--od)}
+
+.info-note{font-size:11px;color:var(--mu);line-height:1.6;margin-top:8px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-logo">sendwize</span>
+  <a class="nav-back" id="navBack" href="#">← Back to dashboard</a>
+</nav>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-eyebrow">Regulatory Exposure — Methodology</div>
+    <div class="hero-title">How exposure figures<br>are calculated</div>
+    <div class="hero-sub">Every exposure figure in Sendwize is anchored on published enforcement decisions — not invented. This page explains exactly which decisions we use, how your revenue band narrows the range, and what the figures mean legally.</div>
+  </div>
+
+  <!-- YOUR PROFILE -->
+  <div class="your-profile">
+    <div class="yp-title">Your profile</div>
+    <div class="yp-grid" id="ypGrid">
+      <div style="color:var(--mu);font-size:13px;font-style:italic">Loading…</div>
+    </div>
+  </div>
+
+  <!-- REGULATOR TABS -->
+  <div class="section">
+    <div class="section-title">Exposure by regulator</div>
+    <div class="section-sub">Sendwize tracks three regulators. Each one operates differently — ICO uses realistic case ranges, ASA uses reputational risk with referral likelihood, and CMA uses the statutory maximum only.</div>
+
+    <div class="reg-tabs">
+      <button class="reg-tab ico on" onclick="showTab('ico')">ICO</button>
+      <button class="reg-tab asa" onclick="showTab('asa')">ASA</button>
+      <button class="reg-tab cma" onclick="showTab('cma')">CMA</button>
+    </div>
+
+    <!-- ICO PANEL -->
+    <div class="reg-panel on" id="panel-ico">
+      <div class="section-sub" style="margin-bottom:16px">ICO ranges are based on published pre-DUAA enforcement decisions, narrowed by your revenue band. We look at what organisations your size were actually fined for each breach type — not the statutory maximum, which has almost never been applied at full value in PECR cases.</div>
+
+      <div class="band-grid" id="bandGrid">
+        <div class="band-card"><div class="band-name">Loading…</div></div>
+      </div>
+
+      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--t)">Ranges by fix type — your band</div>
+      <div class="fix-rows">
+        <div class="fix-row"><span class="fix-badge ico">ICO</span><span class="fix-name">Consent missing</span><div class="fix-ranges" id="r-consent_missing"><span class="fix-range">—</span></div></div>
+        <div class="fix-row"><span class="fix-badge ico">ICO</span><span class="fix-name">Consent expired</span><div class="fix-ranges" id="r-consent_expired"><span class="fix-range">—</span></div></div>
+        <div class="fix-row"><span class="fix-badge ico">ICO</span><span class="fix-name">Suppression breach</span><div class="fix-ranges" id="r-suppression_breach"><span class="fix-range">—</span></div></div>
+        <div class="fix-row"><span class="fix-badge ico">ICO</span><span class="fix-name">DPA breach</span><div class="fix-ranges" id="r-dpa_breach"><span class="fix-range">—</span></div></div>
+        <div class="fix-row"><span class="fix-badge ico">ICO</span><span class="fix-name">Legitimate interest abuse</span><div class="fix-ranges" id="r-legitimate_interest_abuse"><span class="fix-range">—</span></div></div>
+        <div class="fix-row"><span class="fix-badge ico">ICO</span><span class="fix-name">Data quality</span><div class="fix-ranges" id="r-data_quality"><span class="fix-range">—</span></div></div>
+      </div>
+
+      <div class="midpoint-box">
+        <div class="midpoint-title">How "risk addressed" is calculated</div>
+        <div class="midpoint-formula">
+          riskAddressed = &sum; midpoint(realisticLow + realisticHigh) / 2<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for each completed ICO fix
+        </div>
+        <div class="midpoint-desc">The "comparable case risk addressed" figure on your dashboard is the sum of realistic midpoints for completed ICO fixes in the current month. It represents the centre of the range for what comparable organisations were fined in published decisions — not a prediction of what you would have been fined.</div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px">Published cases used to anchor ranges</div>
+      <div class="case-grid">
+        <div class="case-card">
+          <div class="case-fine">£100,000</div>
+          <div class="case-who">DSG Retail (Currys)</div>
+          <div class="case-what">Failure to implement appropriate technical security measures. Data of approximately 14 million people affected.</div>
+          <div class="case-year">2020 — ICO enforcement</div>
+        </div>
+        <div class="case-card">
+          <div class="case-fine">£130,000</div>
+          <div class="case-who">Doorstep Dispensaree</div>
+          <div class="case-what">Unsecured personal data including special category health data left in unlocked containers.</div>
+          <div class="case-year">2019 — ICO enforcement</div>
+        </div>
+        <div class="case-card">
+          <div class="case-fine">£200,000</div>
+          <div class="case-who">Construction firm (PECR)</div>
+          <div class="case-what">Sending over 107 million unsolicited marketing texts without valid consent. Classic suppression failure.</div>
+          <div class="case-year">2017 — ICO enforcement</div>
+        </div>
+        <div class="case-card">
+          <div class="case-fine">£500,000</div>
+          <div class="case-who">Facebook (pre-GDPR)</div>
+          <div class="case-what">Maximum pre-GDPR fine. Inadequate safeguards allowing Cambridge Analytica to access data of 87 million users.</div>
+          <div class="case-year">2018 — ICO enforcement</div>
+        </div>
+      </div>
+      <div class="info-note">These are representative cases used to anchor the shape of the ranges. Full enforcement decisions are published at <a href="https://ico.org.uk/action-weve-taken/enforcement/" target="_blank" rel="noopener" style="color:var(--o)">ico.org.uk/action-weve-taken/enforcement</a>.</div>
+
+      <div class="duaa-alert" style="margin-top:16px">
+        <div class="duaa-alert-title">⚠️ DUAA 2025 — ranges will increase</div>
+        <div class="duaa-alert-body">The Data Use and Access Act 2025 significantly raised the ICO's maximum fine for PECR breaches to £17.5M or 4% of global annual turnover — whichever is higher. All ranges shown are based on pre-DUAA decisions. The first post-DUAA PECR enforcement decisions will be used to update the ranges as they are published. The current ranges are therefore conservative — actual future fines may be substantially higher.</div>
+      </div>
+    </div>
+
+    <!-- ASA PANEL -->
+    <div class="reg-panel" id="panel-asa">
+      <div class="section-sub" style="margin-bottom:16px">The ASA cannot directly fine businesses. Instead, an upheld ruling is published permanently on asa.org.uk — searchable by name, indexed by search engines, and visible to customers, investors, and competitors. The financial risk comes from reputational damage and, for serious or repeat breaches, referral to Trading Standards under DMCCA 2024.</div>
+
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Referral risk by fix type</div>
+      <div class="referral-rows">
+        <div class="referral-row">
+          <span class="risk-pill high">High referral risk</span>
+          <div class="referral-body">
+            <div class="referral-type">Misleading reference price</div>
+            <div class="referral-note">Fake 'was/now' pricing is a specific DMCCA 2024 enforcement target. The CMA has signalled active enforcement. High likelihood of Trading Standards referral for repeat or widespread breaches.</div>
+          </div>
+        </div>
+        <div class="referral-row">
+          <span class="risk-pill medium">Medium referral risk</span>
+          <div class="referral-body">
+            <div class="referral-type">Fake urgency / Misleading claim</div>
+            <div class="referral-note">Common ASA complaint triggers. Deliberate or repeated misrepresentation increases referral risk significantly. Single first-time breaches usually result in an upheld ruling and compliance request only.</div>
+          </div>
+        </div>
+        <div class="referral-row">
+          <span class="risk-pill low">Low referral risk</span>
+          <div class="referral-body">
+            <div class="referral-type">Undisclosed ad</div>
+            <div class="referral-note">Failure to label marketing as advertising is a common first-time finding. Prompt remediation typically results in an upheld ruling and compliance request only — without Trading Standards referral.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="duaa-alert">
+        <div class="duaa-alert-title">If referred to Trading Standards — CMA penalties apply</div>
+        <div class="duaa-alert-body">When the ASA refers a case to Trading Standards under DMCCA 2024, it becomes a CMA matter. The CMA can impose fines directly without court proceedings — up to £300,000 or 10% of global annual turnover, whichever is higher. This is why medium and high ASA referral risk fixes surface a conditional CMA figure on your dashboard.</div>
+      </div>
+    </div>
+
+    <!-- CMA PANEL -->
+    <div class="reg-panel" id="panel-cma">
+      <div class="section-sub" style="margin-bottom:16px">The CMA can impose fines directly without going to court — a significant change brought in by DMCCA 2024. The statutory maximum is the higher of £300,000 or 10% of global annual turnover. No realistic range is shown because there are insufficient published post-DMCCA decisions to anchor one responsibly.</div>
+
+      <div class="fix-rows" style="margin-bottom:16px">
+        <div class="fix-row"><span class="fix-badge cma">CMA</span><span class="fix-name">Drip pricing — hidden fees not shown upfront</span><div class="fix-ranges"><span class="fix-range">Up to £300k or 10% turnover</span></div></div>
+        <div class="fix-row"><span class="fix-badge cma">CMA</span><span class="fix-name">Fake reviews — fabricated or incentivised</span><div class="fix-ranges"><span class="fix-range">Up to £300k or 10% turnover</span></div></div>
+      </div>
+
+      <div class="duaa-alert">
+        <div class="duaa-alert-title">Co-operation discount</div>
+        <div class="duaa-alert-body">The CMA has indicated that businesses which co-operate promptly and demonstrate genuine remediation can negotiate settlement discounts. Consumer redress orders may be issued in addition to any fine — requiring direct compensation to affected customers. Fixing these issues before any investigation is substantially better than fixing them after contact from the CMA.</div>
+      </div>
+
+      <div class="info-note" style="margin-top:12px">CMA enforcement decisions are published at <a href="https://www.gov.uk/government/organisations/competition-and-markets-authority" target="_blank" rel="noopener" style="color:var(--o)">gov.uk/cma</a>. Sendwize will add realistic CMA ranges as post-DMCCA decisions are published.</div>
+    </div>
+  </div>
+
+  <!-- WHAT NOT LEGAL ADVICE MEANS -->
+  <div class="section">
+    <div class="section-title">What "not legal advice" means</div>
+    <div class="section-sub">Every exposure figure in Sendwize carries this label. Here is exactly what it means in practice.</div>
+    <div class="fix-rows">
+      <div class="fix-row" style="align-items:flex-start;gap:14px">
+        <div style="font-size:20px;flex-shrink:0">✓</div>
+        <div><div style="font-size:13px;font-weight:600;margin-bottom:2px">These figures are illustrative — based on published data</div><div style="font-size:12px;color:var(--mu);line-height:1.6">The ranges reflect what comparable organisations were actually fined. They are anchored on real decisions, not invented. Using them to understand and prioritise your compliance posture is exactly what they are designed for.</div></div>
+      </div>
+      <div class="fix-row" style="align-items:flex-start;gap:14px;border-top:1px solid var(--b)">
+        <div style="font-size:20px;flex-shrink:0">✗</div>
+        <div><div style="font-size:13px;font-weight:600;margin-bottom:2px">These figures are not predictions of your fine</div><div style="font-size:12px;color:var(--mu);line-height:1.6">Many factors affect an actual enforcement outcome: your co-operation, the ICO's current enforcement priorities, the volume of contacts affected, whether the breach was deliberate, and your remediation speed. No software can predict these. A solicitor who specialises in data protection law can provide a proper assessment.</div></div>
+      </div>
+      <div class="fix-row" style="align-items:flex-start;gap:14px;border-top:1px solid var(--b)">
+        <div style="font-size:20px;flex-shrink:0">✗</div>
+        <div><div style="font-size:13px;font-weight:600;margin-bottom:2px">These figures should not be used in financial reporting</div><div style="font-size:12px;color:var(--mu);line-height:1.6">Do not use Sendwize exposure figures as the basis for regulatory provisions in financial statements or investor documents without independent legal and financial advice.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer">
+    <strong>Illustrative ranges based on published enforcement data. Not a prediction. Not legal advice.</strong> Comparable case ranges are based on ICO enforcement decisions issued before the Data Use and Access Act 2025 came into force. DUAA significantly increases the statutory maximum for PECR breaches. Sendwize will update ranges as post-DUAA decisions are published. For a legal assessment of your specific position, consult a solicitor specialising in UK data protection law.
+  </div>
+
+  <div class="back-wrap">
+    <a class="back-btn" id="backBtn" href="#">← Back to dashboard</a>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var AU = 'https://sendwize-backend.vercel.app';
+  var userId = new URLSearchParams(window.location.search).get('userId') || '';
+  var dashUrl = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy'
+    + (userId ? '?userId=' + userId : '');
+
+  document.getElementById('navBack').href = dashUrl;
+  document.getElementById('backBtn').href = dashUrl;
+
+  // ICO bands — mirrors fixes.js v6.1 exactly
+  var ICO_BANDS = {
+    consent_missing:           { under_1m:{low:8000,high:40000},   '1m_10m':{low:20000,high:80000},   '10m_50m':{low:40000,high:120000},  over_50m:{low:70000,high:140000}  },
+    consent_expired:           { under_1m:{low:5000,high:25000},   '1m_10m':{low:12000,high:50000},   '10m_50m':{low:25000,high:70000},   over_50m:{low:45000,high:80000}   },
+    suppression_breach:        { under_1m:{low:12000,high:50000},  '1m_10m':{low:30000,high:100000},  '10m_50m':{low:60000,high:160000},  over_50m:{low:100000,high:200000} },
+    dpa_breach:                { under_1m:{low:20000,high:100000}, '1m_10m':{low:50000,high:250000},  '10m_50m':{low:100000,high:400000}, over_50m:{low:200000,high:500000} },
+    legitimate_interest_abuse: { under_1m:{low:5000,high:30000},   '1m_10m':{low:15000,high:60000},   '10m_50m':{low:30000,high:85000},   over_50m:{low:55000,high:100000}  },
+    data_quality:              { under_1m:{low:2000,high:10000},   '1m_10m':{low:5000,high:18000},    '10m_50m':{low:10000,high:25000},   over_50m:{low:15000,high:30000}   },
+  };
+
+  var BAND_LABELS = {
+    under_1m:  'Under £1M',
+    '1m_10m':  '£1M – £10M',
+    '10m_50m': '£10M – £50M',
+    over_50m:  'Over £50M',
+  };
+
+  var BAND_MAP = {
+    'Under \u00a31M': 'under_1m',
+    '\u00a31M\u2013\u00a310M': '1m_10m',
+    '\u00a31M\u2013\u00a310M': '1m_10m',
+    '\u00a310M\u2013\u00a350M': '10m_50m',
+    'Over \u00a350M': 'over_50m',
+    under_1m: 'under_1m', '1m_10m': '1m_10m', '10m_50m': '10m_50m', over_50m: 'over_50m',
+  };
+
+  function normaliseBand(raw) { return BAND_MAP[raw] || 'under_1m'; }
+  function fmtGBP(n) { return '\u00a3' + Number(n).toLocaleString('en-GB'); }
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '—'; }
+
+  function renderBands(yourBand) {
+    var bands = ['under_1m','1m_10m','10m_50m','over_50m'];
+    // Use consent_missing as representative fix for band display
+    var fix = ICO_BANDS.consent_missing;
+    var html = bands.map(function(b) {
+      var r = fix[b];
+      var isYours = b === yourBand;
+      return '<div class="band-card' + (isYours ? ' yours' : '') + '">'
+        + '<div class="band-name">' + BAND_LABELS[b] + (isYours ? ' \u2014 yours' : '') + '</div>'
+        + '<div class="band-range">' + fmtGBP(r.low) + '\u2013' + fmtGBP(r.high) + '</div>'
+        + '<div style="font-size:10px;color:var(--mu);margin-top:2px">consent missing · comparable cases</div>'
+        + (isYours ? '<div class="band-yours">\u25b2 Your revenue band</div>' : '')
+        + '</div>';
+    }).join('');
+    document.getElementById('bandGrid').innerHTML = html;
+  }
+
+  function renderFixRanges(yourBand) {
+    Object.keys(ICO_BANDS).forEach(function(fixType) {
+      var el = document.getElementById('r-' + fixType);
+      if (!el) return;
+      var r = ICO_BANDS[fixType][yourBand] || ICO_BANDS[fixType]['under_1m'];
+      el.innerHTML = '<div class="fix-range">' + fmtGBP(r.low) + ' \u2013 ' + fmtGBP(r.high) + '</div>'
+        + '<div class="fix-range-label">comparable cases at your scale</div>';
+    });
+  }
+
+  function showTab(tab) {
+    ['ico','asa','cma'].forEach(function(t) {
+      document.querySelector('.reg-tab.' + t).classList.toggle('on', t === tab);
+      document.getElementById('panel-' + t).classList.toggle('on', t === tab);
+    });
+  }
+  window.showTab = showTab;
+
+  async function load() {
+    if (!userId) {
+      document.getElementById('ypGrid').innerHTML = '<div style="color:var(--mu);font-size:13px;font-style:italic">No user session — open from the Sendwize dashboard.</div>';
+      renderBands('under_1m'); renderFixRanges('under_1m');
+      return;
+    }
+    try {
+      const r = await fetch(AU + '/api/fixes?action=get&userId=' + userId);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      var band = normaliseBand(d.revenueBand || 'under_1m');
+      var pending = d.counts?.pending || 0;
+      var completed = d.counts?.completed || 0;
+      document.getElementById('ypGrid').innerHTML =
+        yp('Revenue band', BAND_LABELS[band] || 'Under £1M') +
+        yp('Compliance score', (d.score || 0) + '/100') +
+        yp('Pending fixes', pending) +
+        yp('Completed fixes', completed) +
+        yp('Score band', d.scoreBand || '—');
+      renderBands(band);
+      renderFixRanges(band);
+    } catch(e) {
+      document.getElementById('ypGrid').innerHTML = '<div style="color:var(--mu);font-size:13px">Could not load — please refresh.</div>';
+      renderBands('under_1m'); renderFixRanges('under_1m');
+      console.warn(e);
+    }
+  }
+
+  function yp(label, val) {
+    return '<div class="yp-item"><div class="yp-label">' + label + '</div><div class="yp-val">' + val + '</div></div>';
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
