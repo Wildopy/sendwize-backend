@@ -1,133 +1,299 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — fixes.js v6.0
+// SENDWIZE — fixes.js v6.2
 // GET  /api/fixes?action=get&userId=x      → list + score + exposure
 // POST /api/fixes?action=complete          → mark fix done
 // POST /api/fixes?action=dismiss           → exclude from score
 //
-// v6.0 changes:
-//   - Exposure model replaced. Three categories: ICO, ASA, CMA.
-//   - EXPOSURE_CONSTANTS: hardcoded realistic ranges from published
-//     enforcement decisions. One object per fix type. Trivially updatable.
-//   - ICO: realistic range (comparable cases) + legal max (£17.5M or
-//     4% of global annual turnover, whichever is higher — DUAA 2025).
-//   - ASA: no £ figure. Reputational risk label only.
-//   - CMA: legal max only (higher of £300k or 10% global turnover,
-//     DMCCA 2024). No realistic range — insufficient published decisions.
-//   - Framing: "comparable cases" not "your exposure". Never a prediction.
-//   - Actioned fixes return completedDate + midpoint so dashboard can
-//     sum any time window (monthly reset lives in dashboard, not here).
-//   - ContactVolume added to formatFix (backwards compatible, null if absent).
-//   - Null stripping on all Airtable writes.
-//   - Score band labels updated for legal disclaimer policy.
+// v6.2 changes from v6.1:
+//   - Exposure model rebuilt around three honest layers:
+//
+//     LAYER 1 — Revenue-banded comparable case range
+//     Unchanged from v6.1. Anchored on published pre-DUAA ICO
+//     enforcement decisions. Labelled explicitly as historical.
+//
+//     LAYER 2 — Contextual factors
+//     Two lists: what pushes a case toward the LOW end of the range,
+//     what pushes it toward the HIGH end. Derived from the user's
+//     specific processing context (data types, volume, breach history,
+//     DPA status, documented assessment). Shown alongside the range
+//     so users can self-assess where they sit. Not a prediction.
+//
+//     LAYER 3 — DUAA warning (unmissable)
+//     The comparable case ranges are pre-DUAA. DUAA 2025 raised the
+//     ICO maximum to £17.5M or 4% global turnover. No post-DUAA PECR
+//     decisions published yet — when they are, ranges will be updated.
+//     This warning is a first-class field on every ICO exposure object,
+//     not a footnote. It renders prominently in dashboard and fix cards.
+//
+//   - buildExposureForFix() now accepts processingContext (optional).
+//     If provided, derives contextual factors specific to that
+//     processing relationship. If absent, returns generic factors
+//     from lowDriver/highDriver — backwards compatible.
+//
+//   - ASA referral risk model unchanged from v6.1.
+//   - CMA legal max only unchanged.
+//   - getRealisticMidpoint() unchanged — still band-based for
+//     actioned risk sum. No processing context applied to midpoint
+//     to avoid liability from over-precise completed fix values.
+//
+// LEGAL POSITION:
+//   Ranges = comparable published cases, not a prediction.
+//   Contextual factors = educational framing, not a personalised
+//   fine estimate. DUAA caveat is unmissable on every ICO display.
+//   Nothing in this file constitutes legal advice.
 // ─────────────────────────────────────────────────────────────
 
-// ── EXPOSURE CONSTANTS ────────────────────────────────────────
-// Source: published ICO/ASA/CMA enforcement decisions pre-DUAA 2025.
-// Review quarterly against ico.org.uk/action-weve-taken/enforcement.
-// First post-DUAA PECR decision = trigger to update ICO ranges upward.
-// To update a range: change realisticLow / realisticHigh. Deploy. Done.
-//
-// ICO legal max: £17.5M or 4% of global annual turnover — whichever is
-// higher. DUAA 2025. Same for all users — it is a statement of law,
-// not a personalised assessment.
-//
-// CMA legal max: higher of £300,000 or 10% of global annual turnover.
-// DMCCA 2024. No realistic range yet — first enforcement wave Nov 2025,
-// insufficient decisions to anchor a range. Legal max only.
-//
-// ASA: no £ figure. Reputational sanctions only. Purple badge in UI.
+// ── REVENUE BAND NORMALISATION ────────────────────────────────
+const REVENUE_BAND_MAP = {
+  'Under \u00a31M':             'under_1m',
+  '\u00a31M \u2013 \u00a310M':  '1m_10m',
+  '\u00a310M \u2013 \u00a350M': '10m_50m',
+  'Over \u00a350M':             'over_50m',
+  under_1m: 'under_1m',
+  '1m_10m': '1m_10m',
+  '10m_50m':'10m_50m',
+  over_50m: 'over_50m',
+};
 
-const ICO_LEGAL_MAX  = '£17.5M or 4% of global annual turnover — whichever is higher (DUAA 2025)';
-const CMA_LEGAL_MAX  = 'Higher of £300,000 or 10% of global annual turnover (DMCCA 2024)';
-const DUAA_CAVEAT    = 'Comparable case ranges are based on ICO enforcement decisions issued before the Data Use and Access Act 2025 came into force. DUAA significantly increases the statutory maximum for PECR breaches. The ICO is expected to use these new powers in future enforcement actions. Sendwize will update these ranges as new decisions are published.';
+function normaliseBand(raw) {
+  return REVENUE_BAND_MAP[raw] || 'under_1m';
+}
+
+// ── LEGAL STRINGS ─────────────────────────────────────────────
+const ICO_LEGAL_MAX    = '\u00a317.5M or 4% of global annual turnover \u2014 whichever is higher (DUAA 2025)';
+const CMA_LEGAL_MAX    = 'Higher of \u00a3300,000 or 10% of global annual turnover (DMCCA 2024)';
 const NOT_LEGAL_ADVICE = 'Illustrative ranges based on published enforcement data. Not a prediction. Not legal advice.';
+
+const DUAA_WARNING = [
+  'These ranges are based on ICO enforcement decisions issued before the Data Use and Access Act 2025.',
+  'DUAA has significantly increased the ICO\u2019s maximum PECR fine to \u00a317.5M or 4% of global turnover.',
+  'The ICO is expected to use these new powers. Sendwize will update ranges as post-DUAA decisions are published.',
+  'Your actual exposure under DUAA could be substantially higher than these historical ranges suggest.',
+].join(' ');
+
+// ── EXPOSURE CONSTANTS ────────────────────────────────────────
+// Revenue-banded ranges anchored on published pre-DUAA ICO decisions.
+// lowDriver / highDriver = generic contextual factors used when no
+// processingContext is provided. buildExposureForFix() derives
+// specific factors when processingContext is available.
+//
+// Band rationale:
+//   under_1m  — ICO has never fined a <£1M business above ~£40k for
+//               a first PECR offence in published pre-DUAA decisions.
+//   1m_10m    — Mid-market. Most published £20k–£80k decisions here.
+//   10m_50m   — Upper mid-market. Decisions trend £40k–£120k.
+//   over_50m  — Largest published PECR fines approach legal max.
+//
+// Review quarterly: ico.org.uk/action-weve-taken/enforcement
+// First post-DUAA PECR decision = update ALL ranges upward.
 
 const EXPOSURE_CONSTANTS = {
 
-  // ── ICO violations ──────────────────────────────────────────
   consent_missing: {
-    category:     'ICO',
-    realisticLow:  8000,
-    realisticHigh: 140000,
-    lowDriver:    'First offence, small volume, prompt remediation',
-    highDriver:   'Repeated, deliberate, large volume, prior ICO history',
+    category: 'ICO',
+    bands: {
+      under_1m:  { low: 8000,   high: 40000  },
+      '1m_10m':  { low: 20000,  high: 80000  },
+      '10m_50m': { low: 40000,  high: 120000 },
+      over_50m:  { low: 70000,  high: 140000 },
+    },
+    lowDriver:  'First offence, small contact volume, prompt remediation on discovery, full ICO cooperation',
+    highDriver: 'Repeated or deliberate breach, large contact volume, prior ICO enforcement history, complaints received',
   },
   consent_expired: {
-    category:     'ICO',
-    realisticLow:  5000,
-    realisticHigh: 80000,
-    lowDriver:    'First offence, aging consent, good co-operation',
-    highDriver:   'Deliberate inaction, large expired volume, complaints received',
+    category: 'ICO',
+    bands: {
+      under_1m:  { low: 5000,   high: 25000  },
+      '1m_10m':  { low: 12000,  high: 50000  },
+      '10m_50m': { low: 25000,  high: 70000  },
+      over_50m:  { low: 45000,  high: 80000  },
+    },
+    lowDriver:  'First offence, prompt action on discovery, aging consent identified and suppressed quickly',
+    highDriver: 'Deliberate inaction, large expired consent volume, complaints received from contacts',
   },
   suppression_breach: {
-    category:     'ICO',
-    realisticLow:  12000,
-    realisticHigh: 200000,
-    lowDriver:    'Small post opt-out volume, isolated incident',
-    highDriver:   'Systematic failure, large volume, deliberate disregard',
+    category: 'ICO',
+    bands: {
+      under_1m:  { low: 12000,  high: 50000  },
+      '1m_10m':  { low: 30000,  high: 100000 },
+      '10m_50m': { low: 60000,  high: 160000 },
+      over_50m:  { low: 100000, high: 200000 },
+    },
+    lowDriver:  'Small post opt-out contact volume, isolated incident, no prior suppression failures',
+    highDriver: 'Systematic suppression failure, large volume, deliberate disregard for opt-out requests',
   },
   dpa_breach: {
-    category:     'ICO',
-    realisticLow:  20000,
-    realisticHigh: 500000,
-    lowDriver:    'Minor technical breach, prompt remediation',
-    highDriver:   'Sensitive data, large scale, negligent security',
+    category: 'ICO',
+    bands: {
+      under_1m:  { low: 20000,  high: 100000 },
+      '1m_10m':  { low: 50000,  high: 250000 },
+      '10m_50m': { low: 100000, high: 400000 },
+      over_50m:  { low: 200000, high: 500000 },
+    },
+    lowDriver:  'Minor technical breach, no data exposed, prompt remediation, DPA obtained quickly on discovery',
+    highDriver: 'Sensitive or special category data involved, large scale exposure, negligent security, vendor has prior enforcement history',
   },
   legitimate_interest_abuse: {
-    category:     'ICO',
-    realisticLow:  5000,
-    realisticHigh: 100000,
-    lowDriver:    'Proportionality marginally failed, low volume',
-    highDriver:   'Clearly disproportionate, high frequency, complaints',
+    category: 'ICO',
+    bands: {
+      under_1m:  { low: 5000,   high: 30000  },
+      '1m_10m':  { low: 15000,  high: 60000  },
+      '10m_50m': { low: 30000,  high: 85000  },
+      over_50m:  { low: 55000,  high: 100000 },
+    },
+    lowDriver:  'Proportionality marginally failed, low contact volume, LI assessment documented',
+    highDriver: 'Clearly disproportionate processing, high frequency, multiple complaints, no LI assessment documented',
   },
   data_quality: {
-    category:     'ICO',
-    realisticLow:  2000,
-    realisticHigh: 30000,
-    lowDriver:    'Minor data quality issues, prompt remediation',
-    highDriver:   'Systemic data quality failures, large volume affected',
+    category: 'ICO',
+    bands: {
+      under_1m:  { low: 2000,   high: 10000  },
+      '1m_10m':  { low: 5000,   high: 18000  },
+      '10m_50m': { low: 10000,  high: 25000  },
+      over_50m:  { low: 15000,  high: 30000  },
+    },
+    lowDriver:  'Minor data quality issues, isolated, prompt remediation',
+    highDriver: 'Systemic data quality failures, large volume affected, no remediation plan',
   },
 
-  // ── ASA violations — no £ figure ───────────────────────────
+  // ── ASA — referral risk model, no £ figure ──────────────────
   fake_urgency: {
-    category: 'ASA',
+    category:     'ASA',
+    referralRisk: 'medium',
+    referralNote: 'Countdown timers and urgency claims without genuine scarcity are a common ASA complaint trigger. Repeat or widespread breaches can be referred to Trading Standards under DMCCA 2024.',
   },
   misleading_claim: {
-    category: 'ASA',
+    category:     'ASA',
+    referralRisk: 'medium',
+    referralNote: 'Substantiated product or service claims that cannot be proven are among the most frequently upheld ASA rulings. Deliberate or systemic misrepresentation increases referral risk.',
   },
   misleading_reference_price: {
-    category: 'ASA',
+    category:     'ASA',
+    referralRisk: 'high',
+    referralNote: 'Reference pricing is a specific DMCCA 2024 target. The CMA has signalled active enforcement of fake \u2018was/now\u2019 pricing. High likelihood of Trading Standards referral for repeat offences.',
   },
   undisclosed_ad: {
-    category: 'ASA',
+    category:     'ASA',
+    referralRisk: 'low',
+    referralNote: 'Failure to label marketing as advertising is a common first-time finding. Prompt remediation typically results in a compliance request without Trading Standards referral.',
   },
 
-  // ── CMA violations — legal max only ────────────────────────
-  drip_pricing: {
-    category: 'CMA',
-  },
-  fake_reviews: {
-    category: 'CMA',
-  },
+  // ── CMA — legal max only ─────────────────────────────────────
+  drip_pricing: { category: 'CMA' },
+  fake_reviews:  { category: 'CMA' },
 };
 
 // ── EXPOSURE HELPERS ──────────────────────────────────────────
-// Returns the constants entry for a fixType, or null if unknown.
 function getExposureConstants(fixType) {
   return EXPOSURE_CONSTANTS[(fixType || '').toLowerCase()] || null;
 }
 
-// Returns the realistic midpoint for a fix type.
-// Used by dashboard to sum actioned risk by time window.
-// ASA and CMA return 0 — no realistic range.
-function getRealisticMidpoint(fixType) {
-  const def = getExposureConstants(fixType);
-  if (!def || def.category !== 'ICO') return 0;
-  return Math.round((def.realisticLow + def.realisticHigh) / 2);
+function getICORange(def, revenueBand) {
+  const band = normaliseBand(revenueBand || 'under_1m');
+  return def.bands[band] || def.bands['under_1m'];
 }
 
-// Returns the full exposure object for a fix, ready for UI consumption.
-function buildExposureForFix(fixType) {
+function getRealisticMidpoint(fixType, revenueBand) {
+  const def = getExposureConstants(fixType);
+  if (!def || def.category !== 'ICO') return 0;
+  const range = getICORange(def, revenueBand);
+  return Math.round((range.low + range.high) / 2);
+}
+
+// ── CONTEXTUAL FACTORS ────────────────────────────────────────
+// Derives specific low/high drivers from processing context.
+// Returns { lowFactors: string[], highFactors: string[] }
+// Used to show users what puts their case toward low vs high end.
+// This is educational framing — NOT a personalised fine estimate.
+//
+// processingContext shape (all optional):
+// {
+//   dataTypes:               string[]  — e.g. ['Email addresses','Purchase history']
+//   contactVolume:           number    — contacts affected
+//   vendorBreachHistory:     string    — breach text or 'None identified'
+//   dpaStatus:               string    — 'Confirmed','On Request','Refused','Unknown'
+//   hasDocumentedAssessment: boolean
+//   vendorName:              string
+// }
+function deriveContextualFactors(fixType, def, ctx) {
+  if (!ctx) {
+    return {
+      lowFactors:  [def.lowDriver].filter(Boolean),
+      highFactors: [def.highDriver].filter(Boolean),
+    };
+  }
+
+  const lowFactors  = [];
+  const highFactors = [];
+
+  const dataTypes    = Array.isArray(ctx.dataTypes) ? ctx.dataTypes : [];
+  const volume       = typeof ctx.contactVolume === 'number' ? ctx.contactVolume : null;
+  const breach       = (ctx.vendorBreachHistory || '').toLowerCase();
+  const dpaStatus    = (ctx.dpaStatus || '').toLowerCase();
+  const hasDoc       = !!ctx.hasDocumentedAssessment;
+  const breachKnown  = breach && !['none identified','none','no','unknown',''].includes(breach);
+
+  const hasSensitive   = dataTypes.some(d => /special category|health|biometric|political|religion|sexual/i.test(d));
+  const hasBehavioural = dataTypes.some(d => /behavioural|behaviour|purchase|financial/i.test(d));
+  const emailOnly      = dataTypes.length > 0 && dataTypes.every(d => /email/i.test(d));
+
+  // Data type factors
+  if (emailOnly) {
+    lowFactors.push('Email addresses only — lower sensitivity data type in published ICO decisions');
+  } else if (hasSensitive) {
+    highFactors.push('Special category or sensitive data involved — ICO applies significantly higher scrutiny');
+  } else if (hasBehavioural) {
+    highFactors.push('Behavioural or purchase data included — higher value personal data increases severity');
+  }
+
+  // Volume factors
+  if (volume !== null) {
+    if (volume < 10000) {
+      lowFactors.push(`Small contact volume (${volume.toLocaleString()} contacts) — published decisions show volume is a significant mitigating factor`);
+    } else if (volume > 100000) {
+      highFactors.push(`Large contact volume (${volume.toLocaleString()} contacts) — scale is a consistent aggravating factor in ICO decisions`);
+    }
+  }
+
+  // Breach history
+  if (breachKnown) {
+    highFactors.push('Confirmed breach or enforcement history at this vendor — using a processor with known enforcement history is an aggravating factor if ICO investigates');
+  } else {
+    lowFactors.push('No confirmed breach history at this vendor — clean enforcement record is a mitigating factor');
+  }
+
+  // DPA status
+  if (dpaStatus === 'confirmed') {
+    lowFactors.push('DPA in place — Article 28 compliance confirmed, significantly reduces exposure for this specific breach type');
+  } else if (dpaStatus === 'refused') {
+    highFactors.push('Vendor has refused to sign a DPA — continuing to share data after refusal is a serious aggravating factor');
+  } else if (dpaStatus === 'on request') {
+    lowFactors.push('DPA in progress — actively seeking a DPA demonstrates good faith, mitigates somewhat');
+  }
+
+  // Documented assessment
+  if (hasDoc) {
+    lowFactors.push('Documented assessment on file — demonstrable due diligence is consistently cited as a mitigating factor by the ICO');
+  } else {
+    highFactors.push('No documented assessment — absence of due diligence records removes a key mitigating argument');
+  }
+
+  // Fall back to generic drivers if nothing derived
+  if (!lowFactors.length)  lowFactors.push(def.lowDriver);
+  if (!highFactors.length) highFactors.push(def.highDriver);
+
+  return { lowFactors, highFactors };
+}
+
+// ── BUILD EXPOSURE FOR FIX ────────────────────────────────────
+// Main function used by formatFix() and dashboard rendering.
+// processingContext is optional — backwards compatible with v6.1.
+//
+// Returns full exposure object with three layers:
+//   1. Revenue-banded range (historical comparable cases)
+//   2. Contextual factors (low/high drivers)
+//   3. DUAA warning (unmissable for all ICO items)
+function buildExposureForFix(fixType, revenueBand, processingContext) {
   const def = getExposureConstants(fixType);
 
   if (!def) {
@@ -135,36 +301,52 @@ function buildExposureForFix(fixType) {
       category:      'unknown',
       hasRange:      false,
       legalMax:      null,
-      legalMaxLabel: null,
       disclaimer:    NOT_LEGAL_ADVICE,
     };
   }
 
   if (def.category === 'ICO') {
+    const range   = getICORange(def, revenueBand);
+    const ctx     = processingContext || null;
+    const factors = deriveContextualFactors(fixType, def, ctx);
+
     return {
       category:      'ICO',
       hasRange:      true,
-      realisticLow:  def.realisticLow,
-      realisticHigh: def.realisticHigh,
-      midpoint:      Math.round((def.realisticLow + def.realisticHigh) / 2),
-      lowDriver:     def.lowDriver,
-      highDriver:    def.highDriver,
+      realisticLow:  range.low,
+      realisticHigh: range.high,
+      midpoint:      Math.round((range.low + range.high) / 2),
+      revenueBand:   normaliseBand(revenueBand || 'under_1m'),
+
+      // Layer 2 — contextual factors
+      lowFactors:    factors.lowFactors,
+      highFactors:   factors.highFactors,
+      hasContext:    !!ctx,
+
+      // Layer 3 — DUAA warning (unmissable)
+      duaaWarning:   DUAA_WARNING,
       legalMax:      ICO_LEGAL_MAX,
       legalMaxLabel: 'ICO statutory maximum (DUAA 2025)',
-      duaaCaveat:    DUAA_CAVEAT,
+
       disclaimer:    NOT_LEGAL_ADVICE,
+      rangeLabel:    'Comparable published cases (pre-DUAA) \u00b7 not a prediction \u00b7 not legal advice',
     };
   }
 
   if (def.category === 'ASA') {
+    const riskLabel = { low: 'Low referral risk', medium: 'Medium referral risk', high: 'High referral risk' };
+    const riskColour = { low: 'green', medium: 'amber', high: 'red' };
     return {
-      category:           'ASA',
-      hasRange:           false,
-      reputationalRisk:   true,
-      legalMax:           null,
-      legalMaxLabel:      null,
-      reputationalNote:   'ASA does not impose direct financial fines. An upheld ruling is published permanently on asa.org.uk every Wednesday — searchable by customers, investors, and competitors. Serious or repeat breaches referred to Trading Standards under DMCCA 2024.',
-      disclaimer:         NOT_LEGAL_ADVICE,
+      category:        'ASA',
+      hasRange:        false,
+      reputationalRisk: true,
+      referralRisk:    def.referralRisk || 'medium',
+      referralRiskLabel: riskLabel[def.referralRisk] || 'Medium referral risk',
+      referralRiskColour: riskColour[def.referralRisk] || 'amber',
+      referralNote:    def.referralNote || '',
+      cmaIfReferred:   CMA_LEGAL_MAX,
+      reputationalNote: 'ASA does not impose direct financial fines. An upheld ruling is published permanently on asa.org.uk \u2014 searchable by customers, investors, and competitors. Serious or repeat breaches can be referred to Trading Standards under DMCCA 2024, at which point CMA fines apply.',
+      disclaimer:      NOT_LEGAL_ADVICE,
     };
   }
 
@@ -174,7 +356,7 @@ function buildExposureForFix(fixType) {
       hasRange:      false,
       legalMax:      CMA_LEGAL_MAX,
       legalMaxLabel: 'CMA statutory maximum (DMCCA 2024)',
-      cmaNote:       'The CMA can impose fines directly without court proceedings. Businesses that co-operate promptly and demonstrate genuine remediation can negotiate settlement discounts. Consumer redress orders may be issued in addition to any fine.',
+      cmaNote:       'The CMA can impose fines directly without court proceedings under DMCCA 2024. Businesses that co-operate promptly and demonstrate genuine remediation can negotiate settlement discounts.',
       disclaimer:    NOT_LEGAL_ADVICE,
     };
   }
@@ -183,7 +365,6 @@ function buildExposureForFix(fixType) {
 }
 
 // ── SCORE BAND ────────────────────────────────────────────────
-// 'Compliant' removed — no binary verdict per legal disclaimer policy.
 function getScoreBand(s) {
   if (s === 0)  return { label: 'Not Started',     colour: '#9ca3af' };
   if (s <= 25)  return { label: 'At Risk',         colour: '#ef4444' };
@@ -194,24 +375,26 @@ function getScoreBand(s) {
 }
 
 // ── FORMAT FIX ────────────────────────────────────────────────
-// Exposure fields (ExposureLow, ExposureHigh, ExposureBasis) retained
-// in Airtable for backwards compat but exposure object is now derived
-// from EXPOSURE_CONSTANTS, not from stored field values.
-function formatFix(r) {
-  const fixType  = (r.fields.FixType || '').toLowerCase();
-  const exposure = buildExposureForFix(fixType);
+function formatFix(r, revenueBand) {
+  const fixType          = (r.fields.FixType || '').toLowerCase();
+  const processingContext = (() => {
+    try { return r.fields.ProcessingContext ? JSON.parse(r.fields.ProcessingContext) : null; }
+    catch(e) { return null; }
+  })();
+  const exposure = buildExposureForFix(fixType, revenueBand, processingContext);
 
   return {
-    id:             r.id,
+    id:               r.id,
     fixType,
-    description:    r.fields.Description   || '',
-    tool:           r.fields.Tool          || '',
-    severity:       r.fields.Severity      || '',
-    status:         r.fields.Status        || 'pending',
-    contactVolume:  r.fields.ContactVolume || null,   // v6.0 — null if absent, backwards compat
-    sourceRecordId: r.fields.SourceRecordID || null,
-    completedDate:  r.fields.CompletedDate  || null,
-    createdDate:    r.fields.CreatedDate    || null,
+    description:      r.fields.Description    || '',
+    tool:             r.fields.Tool           || '',
+    severity:         r.fields.Severity       || '',
+    status:           r.fields.Status         || 'pending',
+    contactVolume:    r.fields.ContactVolume  || null,
+    sourceRecordId:   r.fields.SourceRecordID || null,
+    completedDate:    r.fields.CompletedDate  || null,
+    createdDate:      r.fields.CreatedDate    || null,
+    processingContext,
     exposure,
   };
 }
@@ -223,20 +406,30 @@ async function handleGet(req, res) {
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
+  const base           = `https://api.airtable.com/v0/${BASE_ID}`;
 
-  const r = await fetch(
-    `https://api.airtable.com/v0/${BASE_ID}/Compliance_Fixes` +
-    `?filterByFormula={UserID}='${userId}'` +
-    `&sort[0][field]=CreatedDate&sort[0][direction]=desc`,
-    { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
-  );
+  // Fetch User_Profile and Compliance_Fixes in parallel
+  const [profileRes, fixesRes] = await Promise.all([
+    fetch(`${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
+      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }),
+    fetch(`${base}/Compliance_Fixes?filterByFormula={UserID}='${userId}'&sort[0][field]=CreatedDate&sort[0][direction]=desc`,
+      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }),
+  ]);
 
-  if (!r.ok) {
-    console.error('Compliance_Fixes fetch failed:', r.status);
-    return res.status(r.status).json({ error: 'Failed to retrieve fixes' });
+  if (!fixesRes.ok) {
+    console.error('Compliance_Fixes fetch failed:', fixesRes.status);
+    return res.status(fixesRes.status).json({ error: 'Failed to retrieve fixes' });
   }
 
-  const all       = (await r.json()).records || [];
+  let revenueBand = 'under_1m';
+  try {
+    if (profileRes.ok) {
+      const pd = await profileRes.json();
+      revenueBand = pd.records?.[0]?.fields?.RevenueBand || 'under_1m';
+    }
+  } catch(e) { console.error('Profile parse failed (non-fatal):', e); }
+
+  const all       = (await fixesRes.json()).records || [];
   const pending   = all.filter(x => x.fields.Status === 'pending');
   const completed = all.filter(x => x.fields.Status === 'completed');
   const dismissed = all.filter(x => x.fields.Status === 'dismissed');
@@ -244,43 +437,18 @@ async function handleGet(req, res) {
   const score     = active > 0 ? Math.round((completed.length / active) * 100) : 0;
   const band      = getScoreBand(score);
 
-  // ── Format all fix lists ───────────────────────────────────
-  const pendingFormatted   = pending.map(formatFix);
-  const completedFormatted = completed.map(formatFix);
-  const dismissedFormatted = dismissed.map(formatFix);
-
-  // ── Actioned risk calculation ──────────────────────────────
-  // Sum of realistic midpoints for completed ICO fixes.
-  // ASA and CMA contribute 0 — no reliable realistic range.
-  // Dashboard uses completedDate to window this by month.
-  // This is "comparable case risk addressed" — the boss slide number.
-  // It is a sum of what has happened in comparable published cases,
-  // not a prediction of what would have happened to this user.
+  const pendingFormatted   = pending.map(r => formatFix(r, revenueBand));
+  const completedFormatted = completed.map(r => formatFix(r, revenueBand));
+  const dismissedFormatted = dismissed.map(r => formatFix(r, revenueBand));
 
   const actionedTotal = completedFormatted.reduce((sum, f) => {
-    return sum + (f.exposure.midpoint || 0);
+    return sum + getRealisticMidpoint(f.fixType, revenueBand);
   }, 0);
 
-  // ── Pending risk summary ───────────────────────────────────
-  // Returned as individual fix objects with their own exposure ranges.
-  // Never summed into one headline figure — each fix is its own
-  // comparable case reference, not a cumulative prediction.
+  const icoP = pendingFormatted.filter(f => f.exposure?.category === 'ICO').length;
+  const asaP = pendingFormatted.filter(f => f.exposure?.category === 'ASA').length;
+  const cmaP = pendingFormatted.filter(f => f.exposure?.category === 'CMA').length;
 
-  const icoCount = pendingFormatted.filter(f => f.exposure.category === 'ICO').length;
-  const asaCount = pendingFormatted.filter(f => f.exposure.category === 'ASA').length;
-  const cmaCount = pendingFormatted.filter(f => f.exposure.category === 'CMA').length;
-
-  // ── Category counts for dashboard breakdown ────────────────
-  const categoryCounts = {
-    pending:   { ico: icoCount, asa: asaCount, cma: cmaCount },
-    completed: {
-      ico: completedFormatted.filter(f => f.exposure.category === 'ICO').length,
-      asa: completedFormatted.filter(f => f.exposure.category === 'ASA').length,
-      cma: completedFormatted.filter(f => f.exposure.category === 'CMA').length,
-    },
-  };
-
-  // ── assessedMonth — for dashboard monthly refresh gate ─────
   const now           = new Date();
   const assessedMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -289,16 +457,13 @@ async function handleGet(req, res) {
     score,
     scoreBand:    band.label,
     scoreColour:  band.colour,
+    revenueBand:  normaliseBand(revenueBand),
     counts: {
       pending:   pending.length,
       completed: completed.length,
       dismissed: dismissed.length,
       active,
     },
-    // ── Actioned risk ────────────────────────────────────────
-    // actionedTotal: sum of ICO realistic midpoints for completed fixes.
-    // Dashboard windows this by completedDate for monthly reset display.
-    // Label in UI: "comparable case risk addressed"
     actioned: {
       total:         actionedTotal,
       count:         completedFormatted.length,
@@ -306,8 +471,16 @@ async function handleGet(req, res) {
       disclaimer:    NOT_LEGAL_ADVICE,
       legalMax:      ICO_LEGAL_MAX,
       legalMaxLabel: 'ICO statutory maximum (DUAA 2025)',
+      duaaWarning:   DUAA_WARNING,
     },
-    categoryCounts,
+    categoryCounts: {
+      pending:   { ico: icoP, asa: asaP, cma: cmaP },
+      completed: {
+        ico: completedFormatted.filter(f => f.exposure?.category === 'ICO').length,
+        asa: completedFormatted.filter(f => f.exposure?.category === 'ASA').length,
+        cma: completedFormatted.filter(f => f.exposure?.category === 'CMA').length,
+      },
+    },
     fixes: {
       pending:   pendingFormatted,
       completed: completedFormatted,
@@ -326,44 +499,30 @@ async function handleComplete(req, res) {
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
   const authH          = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
 
-  const gr = await fetch(`${base}/Compliance_Fixes/${fixId}`, {
-    headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
-  });
+  const gr = await fetch(`${base}/Compliance_Fixes/${fixId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
   if (!gr.ok) return res.status(404).json({ error: 'Fix not found' });
 
   const fix = await gr.json();
   if (fix.fields.UserID  !== userId)      return res.status(403).json({ error: 'Fix does not belong to this user' });
   if (fix.fields.Status  === 'completed') return res.json({ success: true, message: 'Fix already marked complete' });
 
-  const fields = Object.fromEntries(Object.entries({
-    Status:        'completed',
-    CompletedDate: new Date().toISOString().split('T')[0],
-  }).filter(([, v]) => v !== null && v !== undefined));
-
   const ur = await fetch(`${base}/Compliance_Fixes/${fixId}`, {
-    method: 'PATCH',
-    headers: authH,
-    body: JSON.stringify({ fields }),
+    method: 'PATCH', headers: authH,
+    body: JSON.stringify({ fields: { Status: 'completed', CompletedDate: new Date().toISOString().split('T')[0] } }),
   });
+  if (!ur.ok) return res.status(ur.status).json({ error: 'Failed to complete fix' });
 
-  if (!ur.ok) {
-    console.error('Fix complete failed:', ur.status);
-    return res.status(ur.status).json({ error: 'Failed to complete fix' });
-  }
+  // Fetch revenue band for accurate midpoint
+  let revenueBand = 'under_1m';
+  try {
+    const pr = await fetch(`${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    if (pr.ok) { const pd = await pr.json(); revenueBand = pd.records?.[0]?.fields?.RevenueBand || 'under_1m'; }
+  } catch(e) {}
 
-  // Return the exposure midpoint so dashboard can update actioned total
-  // immediately without a full reload.
   const fixType = (fix.fields.FixType || '').toLowerCase();
-  const midpoint = getRealisticMidpoint(fixType);
+  const midpoint = getRealisticMidpoint(fixType, revenueBand);
 
-  return res.json({
-    success:   true,
-    fixId,
-    fixType,
-    midpoint,
-    disclaimer: NOT_LEGAL_ADVICE,
-    message:   'Fix marked as complete.',
-  });
+  return res.json({ success: true, fixId, fixType, midpoint, disclaimer: NOT_LEGAL_ADVICE, message: 'Fix marked as complete.' });
 }
 
 // ── DISMISS ───────────────────────────────────────────────────
@@ -376,51 +535,34 @@ async function handleDismiss(req, res) {
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
   const authH          = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
 
-  const gr = await fetch(`${base}/Compliance_Fixes/${fixId}`, {
-    headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
-  });
+  const gr = await fetch(`${base}/Compliance_Fixes/${fixId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
   if (!gr.ok) return res.status(404).json({ error: 'Fix not found' });
 
   const fix = await gr.json();
   if (fix.fields.UserID  !== userId)      return res.status(403).json({ error: 'Fix does not belong to this user' });
   if (fix.fields.Status  === 'dismissed') return res.json({ success: true, message: 'Fix already dismissed' });
 
-  const fields = Object.fromEntries(Object.entries({
-    Status: 'dismissed',
-  }).filter(([, v]) => v !== null && v !== undefined));
-
   const ur = await fetch(`${base}/Compliance_Fixes/${fixId}`, {
-    method: 'PATCH',
-    headers: authH,
-    body: JSON.stringify({ fields }),
+    method: 'PATCH', headers: authH,
+    body: JSON.stringify({ fields: { Status: 'dismissed' } }),
   });
-
-  if (!ur.ok) {
-    console.error('Fix dismiss failed:', ur.status);
-    return res.status(ur.status).json({ error: 'Failed to dismiss fix' });
-  }
+  if (!ur.ok) return res.status(ur.status).json({ error: 'Failed to dismiss fix' });
 
   return res.json({ success: true, fixId, message: 'Fix dismissed.' });
 }
 
-// ── Router ────────────────────────────────────────────────────
+// ── ROUTER ────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   const { action } = req.query;
-
   try {
-    if (req.method === 'GET'  && action === 'get')      return await handleGet(req, res);
-    if (req.method === 'POST' && action === 'complete')  return await handleComplete(req, res);
-    if (req.method === 'POST' && action === 'dismiss')   return await handleDismiss(req, res);
-
-    return res.status(400).json({
-      error: 'Unknown action. Use ?action=get|complete|dismiss',
-    });
-
+    if (req.method === 'GET'  && action === 'get')     return await handleGet(req, res);
+    if (req.method === 'POST' && action === 'complete') return await handleComplete(req, res);
+    if (req.method === 'POST' && action === 'dismiss')  return await handleDismiss(req, res);
+    return res.status(400).json({ error: 'Unknown action. Use ?action=get|complete|dismiss' });
   } catch (error) {
     console.error('fixes.js error:', error);
     return res.status(500).json({ error: 'Internal server error' });
