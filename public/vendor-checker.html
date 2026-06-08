@@ -352,6 +352,10 @@ body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;backgroun
         <div class="form-group-reg"><label>Category</label><select id="reg-category"><option value="">Select&hellip;</option><option>Email Service Provider</option><option>CRM</option><option>Analytics</option><option>Forms</option><option>Advertising</option><option>Marketing Agency</option><option>Media Agency</option><option>Performance Agency</option><option>Other</option></select></div>
         <div class="form-group-reg"><label>Data location</label><input type="text" id="reg-data-location" placeholder="e.g. EU, UK, US"/></div>
       </div>
+      <div class="form-row">
+        <div class="form-group-reg"><label>Approx. contact volume</label><input type="number" id="reg-contact-volume" placeholder="e.g. 25000" min="0"/></div>
+        <div class="form-group-reg"><label>&nbsp;</label><p style="font-size:11px;color:var(--subtle);padding-top:8px;line-height:1.5">How many contacts' data does this vendor process? Used to contextualise your compliance exposure.</p></div>
+      </div>
       <div class="form-group-reg">
         <label>Data processed</label>
         <div class="checkbox-group">
@@ -743,19 +747,39 @@ var OB_CATS=[
 function showRegOnboarding(){
   document.getElementById('ob-categories').innerHTML=OB_CATS.map(function(cat){
     return'<div class="ob-category"><div class="ob-cat-label">'+escH(cat.label)+'</div><div class="ob-vendor-btns">'+
-      cat.vendors.map(function(v){return'<button class="ob-vendor-btn" onclick="obAddVendor('+JSON.stringify(v)+','+JSON.stringify(cat.label)+',this)">'+escH(v)+'</button>';}).join('')+
-      '<button class="ob-vendor-btn" onclick="showAddForm({category:'+JSON.stringify(cat.label)+'},true)">+ Other</button>'+
+      cat.vendors.map(function(v){return'<button class="ob-vendor-btn" data-vendor="'+escH(v)+'" data-cat="'+escH(cat.label)+'" onclick="obAddVendorBtn(this)">'+escH(v)+'</button>';}).join('')+
+      '<button class="ob-vendor-btn" data-cat="'+escH(cat.label)+'" onclick="showAddForm({category:this.dataset.cat},true)">+ Other</button>'+
       '</div></div>';
   }).join('');
   document.getElementById('reg-onboarding').style.display='block';
 }
+function obAddVendorBtn(btn){
+  var name=btn.dataset.vendor,category=btn.dataset.cat;
+  if(!name)return;
+  obAddVendor(name,category,btn);
+}
 
 function obAddVendor(name,category,btn){
+  if(!userId){showError('Please sign in via the dashboard.');return;}
   btn.classList.add('added');btn.textContent='\u2713 '+name;btn.disabled=true;
   var v=allVendors.find(function(av){return av.name===name;})||{};
-  saveVendorDirect({VendorName:name,Category:category,DataLocation:v.dataLocation||'',AgreementType:v.dpaLink?'Data Processing Addendum':'Unknown',AgreementStatus:v.dpaLink?'In place':'Not yet',AgreementLink:v.dpaLink||''},null);
-  localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
-  setTimeout(function(){document.getElementById('reg-onboarding').style.display='none';registerLoaded=false;loadRegister();},600);
+  saveVendorDirect({
+    VendorName:name,
+    Category:category,
+    DataLocation:v.dataLocation||'',
+    AgreementType:'Unknown',
+    AgreementStatus:'Not yet',
+    AgreementLink:v.dpaLink||'',
+    LastChecked:new Date().toISOString().split('T')[0]
+  },null).then(function(){
+    localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
+    document.getElementById('reg-onboarding').style.display='none';
+    registerLoaded=false;
+    loadRegister();
+  }).catch(function(e){
+    console.error('obAddVendor save failed:',e);
+    btn.classList.remove('added');btn.textContent=name;btn.disabled=false;
+  });
 }
 function skipOnboarding(){document.getElementById('reg-onboarding').style.display='none';registerLoaded=true;registerRecords=[];renderRegisterMain();}
 function renderRegisterMain(){document.getElementById('reg-main').style.display='block';renderHealthSummary();renderStaleAlert();renderRegisterTable();}
@@ -852,6 +876,7 @@ function showEditForm(id){
   document.getElementById('reg-search-input').value=f.VendorName||'';
   document.getElementById('reg-category').value=f.Category||'';
   document.getElementById('reg-data-location').value=f.DataLocation||'';
+  if(f.ContactVolume)document.getElementById('reg-contact-volume').value=f.ContactVolume;
   document.getElementById('reg-agreement-type').value=f.AgreementType||'';
   document.getElementById('reg-agreement-status').value=f.AgreementStatus||'';
   document.getElementById('reg-agreement-link').value=f.AgreementLink||'';
@@ -864,7 +889,7 @@ function showEditForm(id){
 }
 function hideAddForm(){document.getElementById('reg-add-panel').classList.remove('show');clearRegForm();editingRecordId=null;}
 function clearRegForm(){
-  ['reg-search-input','reg-category','reg-data-location','reg-agreement-type','reg-agreement-status','reg-agreement-link','reg-agreement-date','reg-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+  ['reg-search-input','reg-category','reg-data-location','reg-contact-volume','reg-agreement-type','reg-agreement-status','reg-agreement-link','reg-agreement-date','reg-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
   document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]').forEach(function(cb){cb.checked=false;});
 }
 function saveVendor(){
@@ -873,7 +898,9 @@ function saveVendor(){
   if(!name){alert('Please enter a vendor name.');return;}
   if(!status){alert('Please select an agreement status.');return;}
   var dp=Array.from(document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]:checked')).map(function(cb){return cb.value;});
-  var vendor={VendorName:name,Category:document.getElementById('reg-category').value,DataProcessed:dp,AgreementType:document.getElementById('reg-agreement-type').value,AgreementStatus:status,AgreementLink:document.getElementById('reg-agreement-link').value,AgreementDate:document.getElementById('reg-agreement-date').value,DataLocation:document.getElementById('reg-data-location').value,Notes:document.getElementById('reg-notes').value};
+  var cvRaw=document.getElementById('reg-contact-volume').value.trim();
+  var cv=cvRaw?parseInt(cvRaw,10)||null:null;
+  var vendor={VendorName:name,Category:document.getElementById('reg-category').value,DataProcessed:dp,AgreementType:document.getElementById('reg-agreement-type').value,AgreementStatus:status,AgreementLink:document.getElementById('reg-agreement-link').value,AgreementDate:document.getElementById('reg-agreement-date').value,DataLocation:document.getElementById('reg-data-location').value,ContactVolume:cv,Notes:document.getElementById('reg-notes').value};
   saveVendorDirect(vendor,editingRecordId).then(function(){hideAddForm();registerLoaded=false;loadRegister();localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');});
   if(['Requested','Not yet','None in place'].includes(status)&&userId){
     fetch(APP_URL+'/api/generate-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:userId,fixType:'dpa_breach',description:'No written agreement in place for '+name+'. UK GDPR Article 28 requires a written contract before sharing personal data with this processor.',tool:'Vendor Register',severity:'high',volume:null,sourceRecordId:null})}).catch(function(){});
