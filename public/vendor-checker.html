@@ -530,9 +530,9 @@ function init(){
     document.getElementById('gateScreen').classList.add('show');
     document.getElementById('panel-scanner').style.display='none';
     document.getElementById('panel-register').style.display='none';
-    document.querySelector('.tabs').style.display='none';
-    document.querySelector('.page-header').style.display='none';
-    document.querySelector('.back-link').style.display='none';
+    var tabs=document.querySelector('.tabs');if(tabs)tabs.style.display='none';
+    var ph=document.querySelector('.page-header');if(ph)ph.style.display='none';
+    var bl=document.querySelector('.back-link');if(bl)bl.style.display='none';
     loadVendors();
     return;
   }
@@ -749,7 +749,8 @@ function stopLoadingAnimation(){
 // ── RUN SCAN ──────────────────────────────────────────────────
 function showStep(id){
   ['step-add','step-loading','step-verdict'].forEach(function(s){
-    document.getElementById(s).classList.toggle('active',s===id);
+    var el=document.getElementById(s);
+    if(el)el.classList.toggle('active',s===id);
   });
 }
 
@@ -1227,7 +1228,7 @@ function exportRegisterCSV(){
   a.click();
 }
 
-init();
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 </script>
 </body>
 </html>
