@@ -539,6 +539,7 @@ function init(){
   loadVendors();
   var hasReg=localStorage.getItem(HAS_REGISTER_KEY+':'+userId);
   if(hasReg){switchTab('register');}else{switchTab('scanner');}
+  showStep('step-add');
 }
 
 function switchTab(tab){
@@ -546,6 +547,7 @@ function switchTab(tab){
   document.getElementById('tab-register').classList.toggle('active',tab==='register');
   document.getElementById('panel-scanner').classList.toggle('active',tab==='scanner');
   document.getElementById('panel-register').classList.toggle('active',tab==='register');
+  if(tab==='scanner')showStep('step-add');
   if(tab==='register'&&!registerLoaded){registerLoaded=true;loadRegister();}
 }
 
@@ -793,8 +795,11 @@ function runScan(){
 function runDemo(){
   if(document.getElementById('gateScreen').classList.contains('show')){
     document.getElementById('gateScreen').classList.remove('show');
-    document.getElementById('panel-scanner').style.display='block';
-    document.getElementById('tabs') && (document.querySelector('.tabs').style.display='flex');
+    document.getElementById('panel-scanner').style.display='';
+    document.getElementById('panel-register').style.display='';
+    document.querySelector('.tabs').style.display='';
+    document.querySelector('.page-header').style.display='';
+    document.querySelector('.back-link').style.display='';
   }
   switchTab('scanner');
   showStep('step-loading');
