@@ -1,18 +1,27 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — check-vendors.js v4.27
-// POST { vendors: [{ name, isCustom }], userId }
+// SENDWIZE — check-vendors.js v4.28
+// POST { vendors: [{ name, isCustom, dpaStatus, dataTypes, contactVolume }], userId }
 //
-// v4.27 changes from v4.26:
-//   - processingContext now built and passed to every generate-fix
-//     call. Pulls DataProcessed, ContactVolume, DPAStatus from
-//     Vendor_Register for the user's existing register entry.
-//     Falls back to vendor dimensions if no register entry exists.
-//   - Option A pattern: reads Vendor_Register after upsert so
-//     context always reflects saved state, not transient UI.
-//   - processingContext shape:
-//     { dataTypes, contactVolume, vendorBreachHistory,
-//       dpaStatus, hasDocumentedAssessment, vendorName }
-//   - All other logic unchanged from v4.26.
+// v4.28 changes from v4.27:
+//   - Frontend now sends dpaStatus (yes/no/unsure), dataTypes[],
+//     contactVolume per vendor directly in request body.
+//   - buildProcessingContext() now reads from incoming vendor
+//     object first — no longer depends on Vendor_Register read
+//     for these fields. Falls back to register if not provided.
+//   - buildFixesForResult() now driven by user-provided dpaStatus:
+//       'no'    → dpa_breach fix (user confirmed no DPA)
+//       'unsure'→ dpa_breach fix (unconfirmed = not confirmed)
+//       'yes'   → no DPA fix; check breach history + transfer only
+//     This is more accurate and defensible than library-derived
+//     dpaConfirmed flag which reflected vendor's published position
+//     not the user's actual signed agreement status.
+//   - Fix severity now considers user's data types and volume:
+//       sensitive data (behavioural/purchase/special) + no DPA = critical
+//       high volume (>50k) + no DPA = critical
+//       otherwise = high
+//   - processingContext built from request body, not register read.
+//     Vendor_Register upsert still happens for score/history.
+//   - Tool label: "Processor Risk Scanner — {VendorName}"
 // ─────────────────────────────────────────────────────────────
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -52,34 +61,22 @@ export default async function handler(req, res) {
       } catch (e) { console.error('Marketing_Vendors fetch failed (non-fatal):', e); }
     }
 
-    // ── 2. Fetch existing Vendor_Register entries for this user ─
-    // Used in Option A to read DataProcessed, ContactVolume, DPAStatus
-    // for processingContext. Fetched once, keyed by VendorName.
-    let registerEntries = {};
-    try {
-      const regRes = await fetch(
-        `${atBase}/Vendor_Register?filterByFormula={UserID}='${userId}'&maxRecords=100`,
-        { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
-      );
-      if (regRes.ok) {
-        for (const r of ((await regRes.json()).records || [])) {
-          if (r.fields.VendorName) {
-            registerEntries[r.fields.VendorName.toLowerCase()] = { id: r.id, fields: r.fields };
-          }
-        }
-      }
-    } catch (e) { console.error('Vendor_Register pre-fetch failed (non-fatal):', e); }
-
-    // ── 3. Analyse each vendor ────────────────────────────────
+    // ── 2. Analyse each vendor ────────────────────────────────
     const results = [];
     for (const vendor of vendors) {
       const result = vendor.isCustom
         ? await analyzeVendorWithAI(vendor.name)
         : handleKnownVendor(vendor.name, vendorLibrary[vendor.name.toLowerCase()] || null);
+      // Attach user-provided context to result for fix generation
+      result.userInput = {
+        dpaStatus:     vendor.dpaStatus     || 'unsure',
+        dataTypes:     vendor.dataTypes     || [],
+        contactVolume: vendor.contactVolume || null,
+      };
       results.push(result);
     }
 
-    // ── 4. Save to Vendor_Checks ──────────────────────────────
+    // ── 3. Save to Vendor_Checks ──────────────────────────────
     let sourceRecordId = null;
     try {
       const avgScore = results.length > 0
@@ -100,16 +97,30 @@ export default async function handler(req, res) {
       if (saveRes.ok) sourceRecordId = (await saveRes.json()).records?.[0]?.id ?? null;
     } catch (e) { console.error('Vendor_Checks save error:', e); }
 
-    // ── 5. Upsert Vendor_Register ─────────────────────────────
+    // ── 4. Upsert Vendor_Register ─────────────────────────────
     const today = new Date().toISOString().split('T')[0];
     for (const result of results) {
       try {
-        const existing = registerEntries[result.name.toLowerCase()];
+        const ui = result.userInput || {};
+        const existingRes = await fetch(
+          `${atBase}/Vendor_Register?filterByFormula=AND({UserID}='${userId}',{VendorName}='${result.name}')&maxRecords=1`,
+          { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+        );
+        const existing = (existingRes.ok ? await existingRes.json() : { records: [] }).records?.[0];
+
+        // Map user dpaStatus to register AgreementStatus
+        const agreementStatusMap = { yes: 'In place', no: 'Not yet', unsure: 'Unknown' };
+        const dataProcessed = ui.dataTypes?.length
+          ? JSON.stringify(ui.dataTypes)
+          : null;
+
         const updateFields = Object.fromEntries(Object.entries({
           LastChecked:     today,
           Category:        result.vendorType || null,
           ComplianceScore: result.score ?? null,
-          CheckResults:    JSON.stringify(result),
+          AgreementStatus: agreementStatusMap[ui.dpaStatus] || null,
+          DataProcessed:   dataProcessed,
+          ContactVolume:   ui.contactVolume || null,
         }).filter(([, v]) => v !== null && v !== undefined));
 
         if (existing) {
@@ -118,32 +129,21 @@ export default async function handler(req, res) {
             headers: atH,
             body:    JSON.stringify({ fields: updateFields }),
           });
-          // Update local cache with new score
-          registerEntries[result.name.toLowerCase()].fields = {
-            ...existing.fields, ...updateFields
-          };
         } else {
-          const createRes = await fetch(`${atBase}/Vendor_Register`, {
+          await fetch(`${atBase}/Vendor_Register`, {
             method:  'POST',
             headers: atH,
             body:    JSON.stringify({ records: [{ fields: {
-              UserID:     userId,
-              VendorName: result.name,
-              ...updateFields
+              UserID: userId, VendorName: result.name, ...updateFields
             }}]}),
           });
-          if (createRes.ok) {
-            const created = (await createRes.json()).records?.[0];
-            if (created) registerEntries[result.name.toLowerCase()] = { id: created.id, fields: created.fields };
-          }
         }
-      } catch (e) { console.error(`Vendor_Register upsert failed for ${result.name} (non-fatal):`, e); }
+      } catch (e) { console.error(`Vendor_Register upsert failed for ${result.name}:`, e); }
     }
 
-    // ── 6. Generate fix records with processingContext ────────
+    // ── 5. Generate fix records ───────────────────────────────
     for (const result of results) {
-      const regEntry = registerEntries[result.name.toLowerCase()];
-      const fixes = buildFixesForResult(result, userId, sourceRecordId, regEntry?.fields || null);
+      const fixes = buildFixesForResult(result, userId, sourceRecordId);
       for (const fix of fixes) {
         try {
           await fetch(`${APP_URL}/api/generate-fix`, {
@@ -155,7 +155,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 7. Streak ─────────────────────────────────────────────
+    // ── 6. Streak ─────────────────────────────────────────────
     fetch(`${APP_URL}/api/profile?action=streak`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body:   JSON.stringify({ userId })
@@ -171,158 +171,129 @@ export default async function handler(req, res) {
 
 // ─────────────────────────────────────────────────────────────
 // buildProcessingContext
-// Builds the processingContext object for generate-fix.
-// Option A: reads from Vendor_Register fields (already saved).
-// Falls back to vendor dimensions if register entry is absent.
+// v4.28: reads from result.userInput first (sent by frontend).
+// Falls back to empty arrays — no longer reads Vendor_Register.
+// The frontend now owns this data; register is updated from it.
 // ─────────────────────────────────────────────────────────────
-function buildProcessingContext(result, regFields) {
-  const d = result.dimensions || {};
+function buildProcessingContext(result) {
+  const ui      = result.userInput || {};
+  const d       = result.dimensions || {};
 
-  // Data types — from register (most accurate) or fall back to empty
-  let dataTypes = [];
-  if (regFields?.DataProcessed) {
-    try {
-      const parsed = JSON.parse(regFields.DataProcessed);
-      dataTypes = Array.isArray(parsed) ? parsed : [regFields.DataProcessed];
-    } catch(e) {
-      // DataProcessed stored as plain string
-      dataTypes = regFields.DataProcessed
-        ? regFields.DataProcessed.split(',').map(s => s.trim()).filter(Boolean)
-        : [];
-    }
-  }
-
-  // Contact volume — from register
-  const contactVolume = regFields?.ContactVolume
-    ? parseInt(regFields.ContactVolume, 10) || null
-    : null;
-
-  // DPA status — register DPAStatus (structured select) takes priority
-  // Maps register options → canonical values for processingContext
-  const regDPA = regFields?.DPAStatus || '';
-  const dpaMap = {
-    'Signed':      'Confirmed',
-    'Requested':   'On Request',
-    'Not yet':     'Unknown',
-    'N/A':         'Unknown',
-  };
-  const dpaStatus = dpaMap[regDPA] || d.dpaStatus || 'Unknown';
-
-  // Breach history — from vendor dimensions (library data)
-  const breachHistory = d.breachHistory || 'None identified';
-  const breachKnown   = breachHistory &&
-    !['none identified','none','no','unknown',''].includes(breachHistory.toLowerCase());
-
-  // Documented assessment — true if register has notes or DPA link
-  const hasDocumentedAssessment = !!(regFields?.Notes || regFields?.DPALink);
+  const dataTypes    = Array.isArray(ui.dataTypes) ? ui.dataTypes : [];
+  const contactVolume = ui.contactVolume || null;
+  const dpaStatus    = ui.dpaStatus === 'yes' ? 'Confirmed'
+                     : ui.dpaStatus === 'no'  ? 'Unknown'
+                     : 'Unknown';
+  const breach       = d.breachHistory || '';
+  const breachKnown  = breach && !['none identified','none','no','unknown',''].includes(breach.toLowerCase());
+  const hasDoc       = false; // user hasn't documented yet — defaults false on new scan
 
   return {
     vendorName:              result.name,
     dataTypes,
     contactVolume,
-    vendorBreachHistory:     breachKnown ? breachHistory : 'None identified',
+    vendorBreachHistory:     breachKnown ? breach : 'None identified',
     dpaStatus,
-    hasDocumentedAssessment,
+    hasDocumentedAssessment: hasDoc,
   };
 }
 
 // ─────────────────────────────────────────────────────────────
 // buildFixesForResult
-// v4.27: passes processingContext to every generate-fix call.
+// v4.28: fix generation now driven by user-provided dpaStatus.
+// 'yes' → no DPA fix; check breach + transfer only.
+// 'no'/'unsure' → dpa_breach fix with severity based on data.
 // ─────────────────────────────────────────────────────────────
-function buildFixesForResult(result, userId, sourceRecordId, regFields) {
+function buildFixesForResult(result, userId, sourceRecordId) {
   const fixes = [];
   const name  = result.name;
   const d     = result.dimensions || {};
-  let   dpaBreach = false;
+  const ui    = result.userInput || {};
 
-  const icoStatus      = (d.icoRegistered        || '').toLowerCase();
-  const dpaStatus      = (d.dpaStatus            || '').toLowerCase();
-  const transferOccurs = (d.intlTransferOccurs   || '').toLowerCase();
-  const transferMech   = (d.internationalTransfer|| '').toLowerCase();
-  const breach         = (d.breachHistory        || '').trim();
+  const userDPA        = ui.dpaStatus || 'unsure'; // yes / no / unsure
+  const dataTypes      = Array.isArray(ui.dataTypes) ? ui.dataTypes : [];
+  const volume         = ui.contactVolume || null;
+  const transferOccurs = (d.intlTransferOccurs    || '').toLowerCase();
+  const transferMech   = (d.internationalTransfer || '').toLowerCase();
+  const icoStatus      = (d.icoRegistered         || '').toLowerCase();
+  const breach         = (d.breachHistory         || '').trim();
 
   const breachIsKnown = breach &&
     !['none identified','none','no','unknown',''].includes(breach.toLowerCase());
 
-  // Build processing context once — shared across all fixes for this vendor
-  const processingContext = buildProcessingContext(result, regFields);
+  const hasSensitive = dataTypes.some(d =>
+    /special category|behavioural|behaviour|purchase|financial/i.test(d));
+  const highVolume   = volume && volume > 50000;
 
-  // ICO not registered — critical
-  if (icoStatus === 'no' || icoStatus === 'not found') {
+  const processingContext = buildProcessingContext(result);
+
+  // ── DPA fix — driven by user's answer ─────────────────────
+  if (userDPA === 'no' || userDPA === 'unsure') {
+    const severity = (hasSensitive || highVolume) ? 'critical' : 'high';
+
+    let description;
+    if (userDPA === 'no') {
+      const hint = d.dpaStatus === 'Confirmed' && d.dpaLink
+        ? `${name}'s DPA is self-serve at ${d.dpaLink}`
+        : d.dpaStatus === 'On Request'
+        ? `Contact ${name} directly to obtain their DPA.`
+        : `Contact ${name}'s privacy team to obtain a Data Processing Agreement.`;
+      description = `Processor Risk Scanner: You confirmed you don't have a signed DPA with ${name}. UK GDPR Article 28 requires a written contract before sharing personal data with any processor. ${hint}`;
+    } else {
+      description = `Processor Risk Scanner: DPA status with ${name} is unconfirmed. UK GDPR Article 28 requires a written contract before sharing personal data. Check your files for a signed DPA — if you can't find one, treat it as not in place and request one now.`;
+    }
+
+    if (hasSensitive) {
+      description += ` You're sharing sensitive data types (${dataTypes.filter(t => /behavioural|purchase|special/i.test(t)).join(', ')}) which increases the severity of this gap.`;
+    }
+    if (highVolume) {
+      description += ` Volume of ${volume.toLocaleString()} contacts is a significant aggravating factor in ICO enforcement decisions.`;
+    }
+
+    fixes.push({
+      userId, sourceRecordId, processingContext,
+      fixType:       'dpa_breach',
+      description,
+      tool:          `Processor Risk Scanner \u2014 ${name}`,
+      severity,
+      contactVolume: volume,
+    });
+  }
+
+  // ── ICO not registered — always flag regardless of DPA status
+  if (icoStatus === 'no') {
     fixes.push({
       userId, sourceRecordId, processingContext,
       fixType:     'dpa_breach',
-      description: `Vendor Checker: ${name} does not appear to be registered with the ICO. UK processors handling personal data must register. Verify at ico.org.uk/ESDWebPages/Search before sharing any contact data.`,
-      tool:        `Vendor Checker — ${name}`,
+      description: `Processor Risk Scanner: ${name} does not appear to be registered with the ICO. UK processors handling personal data must be registered. Verify at ico.org.uk/ESDWebPages/Search before sharing any contact data.`,
+      tool:        `Processor Risk Scanner \u2014 ${name}`,
       severity:    'critical',
-      contactVolume: processingContext.contactVolume,
-    });
-    dpaBreach = true;
-  }
-
-  // DPA refused — critical
-  if (dpaStatus === 'refused') {
-    fixes.push({
-      userId, sourceRecordId, processingContext,
-      fixType:     'dpa_breach',
-      description: `Vendor Checker: ${name} has refused to sign a Data Processing Agreement. Transferring personal data to them is a UK GDPR Article 28 breach. Stop sharing personal data with this vendor immediately.`,
-      tool:        `Vendor Checker — ${name}`,
-      severity:    'critical',
-      contactVolume: processingContext.contactVolume,
-    });
-    dpaBreach = true;
-  }
-
-  // No DPA confirmed — high
-  if (!result.dpaConfirmed && !dpaBreach) {
-    const hint = dpaStatus === 'on request'
-      ? `Contact ${name} to obtain and sign their DPA.`
-      : `Check their website for a DPA or contact their privacy team.`;
-    fixes.push({
-      userId, sourceRecordId, processingContext,
-      fixType:     'dpa_breach',
-      description: `Vendor Checker: No confirmed Data Processing Agreement for ${name}. UK GDPR Article 28 requires a written DPA before sharing personal data with any processor. ${hint}`,
-      tool:        `Vendor Checker — ${name}`,
-      severity:    'high',
-      contactVolume: processingContext.contactVolume,
-    });
-    dpaBreach = true;
-  }
-
-  // Score < 60 — high (only if no specific fix already generated)
-  if (!dpaBreach && (result.score || 0) < 60) {
-    fixes.push({
-      userId, sourceRecordId, processingContext,
-      fixType:     'dpa_breach',
-      description: `Vendor Checker: ${name} scored ${result.score}/100 — multiple compliance gaps identified. Review the vendor card for specific issues and contact ${name} to address them.`,
-      tool:        `Vendor Checker — ${name}`,
-      severity:    'high',
-      contactVolume: processingContext.contactVolume,
+      contactVolume: volume,
     });
   }
 
-  // International transfer with no mechanism — medium
-  if (transferOccurs === 'yes' && (transferMech === 'none' || transferMech === 'unknown' || transferMech === '')) {
-    fixes.push({
-      userId, sourceRecordId, processingContext,
-      fixType:     'dpa_breach',
-      description: `Vendor Checker: ${name} transfers data internationally but no confirmed transfer mechanism (SCCs, Adequacy, UK-US Data Bridge) has been identified. UK GDPR Chapter V requires a lawful transfer mechanism. Contact ${name} to confirm their transfer basis.`,
-      tool:        `Vendor Checker — ${name}`,
-      severity:    'medium',
-      contactVolume: processingContext.contactVolume,
-    });
-  }
-
-  // Breach history — medium (always its own fix)
+  // ── Breach history — flag if user has DPA but vendor has breach
   if (breachIsKnown) {
     fixes.push({
       userId, sourceRecordId, processingContext,
       fixType:     'legitimate_interest_abuse',
-      description: `Vendor Checker: ${name} has a known breach or enforcement history: ${breach.slice(0, 200)}. UK GDPR requires you to assess whether continued use of this vendor is proportionate. Document your assessment and consider whether a DPIA is required.`,
-      tool:        `Vendor Checker — ${name}`,
+      description: `Processor Risk Scanner: ${name} has a confirmed breach or enforcement history: ${breach.slice(0, 200)}. UK GDPR requires you to document your assessment of continued use of a processor with a known history. Without this documented assessment you're missing a key piece of due diligence that would protect you if the ICO investigated.`,
+      tool:        `Processor Risk Scanner \u2014 ${name}`,
       severity:    'medium',
-      contactVolume: processingContext.contactVolume,
+      contactVolume: volume,
+    });
+  }
+
+  // ── International transfer with no mechanism
+  if (transferOccurs === 'yes' &&
+      (transferMech === 'none' || transferMech === 'unknown' || transferMech === '')) {
+    fixes.push({
+      userId, sourceRecordId, processingContext,
+      fixType:     'dpa_breach',
+      description: `Processor Risk Scanner: ${name} transfers data internationally but no confirmed transfer mechanism (SCCs, Adequacy, UK-US Data Bridge) has been identified from their public pages. UK GDPR Chapter V requires a lawful transfer mechanism. Confirm this in your DPA or contact ${name} directly.`,
+      tool:        `Processor Risk Scanner \u2014 ${name}`,
+      severity:    'medium',
+      contactVolume: volume,
     });
   }
 
@@ -362,12 +333,11 @@ function handleKnownVendor(name, fields) {
   if (!fields) {
     return {
       name, score: 50, riskRating: 'Medium', isAI: false, dpaConfirmed: false, vendorType: '',
-      details: [{ status: 'warning', label: 'Not in vendor library',
-        description: `${name} is not yet in the Sendwize vendor library. Check their website for a DPA and complete a manual review.` }],
+      details: [{ status: 'warning', label: 'Not in library',
+        description: `${name} is not in the Sendwize vendor library. Assessment based on what you've provided.` }],
       actionItems: [
-        'Search for their Data Processing Agreement or Privacy Policy',
-        'Check ICO register: https://ico.org.uk/ESDWebPages/Search',
-        'Confirm data storage location and international transfer mechanism',
+        'Confirm their ICO registration at ico.org.uk/ESDWebPages/Search',
+        'Request their Data Processing Agreement and confirm the transfer mechanism',
       ],
       dimensions: {}
     };
@@ -378,49 +348,47 @@ function handleKnownVendor(name, fields) {
 
   // ICO Registration
   const icoStatus = fields.ICORegistered || 'Unknown';
-  if      (icoStatus === 'Yes')    { details.push({ status: 'pass',    label: 'ICO Registration', description: `Registered with ICO${fields.ICORegNumber ? ` (${fields.ICORegNumber})` : ''}.` }); }
-  else if (icoStatus === 'Exempt') { details.push({ status: 'info',    label: 'ICO Registration', description: 'Exempt from ICO registration — verify exemption applies to their UK processing activities.' }); }
-  else if (icoStatus === 'No')     { details.push({ status: 'fail',    label: 'ICO Registration', description: 'Not found on ICO register. UK processors handling personal data are generally required to register.' }); score -= 20; }
-  else                             { details.push({ status: 'info',    label: 'ICO Registration', description: 'ICO registration status not confirmed — verify at ico.org.uk/ESDWebPages/Search.' }); score -= 5; }
+  if      (icoStatus === 'Yes')    { details.push({ status: 'pass', label: 'ICO Registration', description: `Registered with ICO${fields.ICORegNumber ? ` (${fields.ICORegNumber})` : ''}.` }); }
+  else if (icoStatus === 'Exempt') { details.push({ status: 'info', label: 'ICO Registration', description: 'Exempt from ICO registration — verify exemption applies.' }); }
+  else if (icoStatus === 'No')     { details.push({ status: 'fail', label: 'ICO Registration', description: 'Not found on ICO register. UK processors must register.' }); score -= 20; }
+  else                             { details.push({ status: 'info', label: 'ICO Registration', description: 'ICO registration not confirmed — verify at ico.org.uk/ESDWebPages/Search.' }); score -= 5; }
 
-  // DPA
+  // DPA (library position — not user's signed status)
   const dpaStatus    = fields.DPAStatus || 'Unknown';
   const dpaConfirmed = dpaStatus === 'Confirmed';
   const privacyUrl   = fields.PrivacyPolicyUrl || null;
-  if      (dpaConfirmed)               { details.push({ status: 'pass',    label: 'Data Processing Agreement', description: `DPA confirmed${privacyUrl ? ` — ${privacyUrl}` : ''}.` }); }
-  else if (dpaStatus === 'On Request') { details.push({ status: 'warning', label: 'Data Processing Agreement', description: 'DPA available on request — contact vendor to obtain and sign before sharing personal data.' }); score -= 15; }
-  else if (dpaStatus === 'Refused')    { details.push({ status: 'fail',    label: 'Data Processing Agreement', description: 'Vendor has declined to sign a DPA. Transferring personal data to them is a UK GDPR Article 28 breach.' }); score -= 35; }
-  else                                 { details.push({ status: 'warning', label: 'Data Processing Agreement', description: 'DPA status not confirmed — contact vendor before sharing personal data.' }); score -= 15; }
+  if      (dpaConfirmed)               { details.push({ status: 'pass',    label: 'DPA Available', description: `DPA publicly available${privacyUrl ? ` at ${privacyUrl}` : ''}.` }); }
+  else if (dpaStatus === 'On Request') { details.push({ status: 'warning', label: 'DPA Available', description: 'DPA available on request — contact vendor directly.' }); score -= 15; }
+  else if (dpaStatus === 'Refused')    { details.push({ status: 'fail',    label: 'DPA Available', description: 'Vendor has declined to sign a DPA.' }); score -= 35; }
+  else                                 { details.push({ status: 'warning', label: 'DPA Available', description: 'DPA status not confirmed from public pages.' }); score -= 15; }
 
   // International Transfers
   const transferOccurs = fields.IntlTransferOccurs         || 'Unknown';
   const transferDest   = fields.TransferDestination        || '';
   const transferMech   = fields.TransferMechanismConfirmed || 'Unknown';
-  if      (transferOccurs === 'No')                                                        { details.push({ status: 'pass', label: 'International Transfers', description: 'Processing confirmed as UK/EEA only — no international transfer mechanism required.' }); }
-  else if (['Adequacy','SCCs','BCRs','UK-US Bridge'].includes(transferMech))               { details.push({ status: 'pass', label: 'International Transfers', description: `Transfer mechanism confirmed: ${transferMech}${transferDest ? ` (${transferDest})` : ''}.` }); }
-  else if (transferOccurs === 'Yes' && (transferMech === 'None' || transferMech === 'Unknown')) { details.push({ status: 'fail', label: 'International Transfers', description: `International transfer to ${transferDest || 'unknown destination'} with no confirmed mechanism.` }); score -= 20; }
-  else                                                                                     { details.push({ status: 'info', label: 'International Transfers', description: 'International transfer status not confirmed — verify if data leaves UK/EEA.' }); score -= 5; }
+  if      (transferOccurs === 'No') { details.push({ status: 'pass', label: 'International Transfers', description: 'Processing confirmed as UK/EEA only.' }); }
+  else if (['Adequacy','SCCs','BCRs','UK-US Bridge'].includes(transferMech)) { details.push({ status: 'pass', label: 'International Transfers', description: `Transfer mechanism: ${transferMech}${transferDest ? ` (${transferDest})` : ''}.` }); }
+  else if (transferOccurs === 'Yes' && (transferMech === 'None' || transferMech === 'Unknown')) { details.push({ status: 'fail', label: 'International Transfers', description: `International transfer to ${transferDest || 'unknown destination'} — mechanism not confirmed from public pages.` }); score -= 20; }
+  else { details.push({ status: 'info', label: 'International Transfers', description: 'Transfer status not confirmed from public pages.' }); score -= 5; }
 
   // Breach History
   const breachHistory = fields.BreachHistory || '';
   const breachIsKnown = breachHistory && !['none identified','none','no','unknown',''].includes(breachHistory.toLowerCase());
-  if (!breachIsKnown) { details.push({ status: 'pass',    label: 'Breach History', description: 'No publicly known significant breaches or enforcement actions identified.' }); }
+  if (!breachIsKnown) { details.push({ status: 'pass',    label: 'Breach History', description: 'No publicly known breaches or enforcement actions identified.' }); }
   else                { details.push({ status: 'warning', label: 'Breach History', description: breachHistory }); score -= 15; }
 
   // DPO
   const dpoStatus = fields.DPOConfirmed || 'Unknown';
-  if      (dpoStatus === 'Yes') { details.push({ status: 'pass', label: 'DPO', description: 'Named DPO or controller representative confirmed.' }); }
-  else if (dpoStatus === 'No')  { details.push({ status: 'info', label: 'DPO', description: 'No named DPO identified — advisory only for most processors.' }); }
-  else                          { details.push({ status: 'info', label: 'DPO', description: 'DPO status not confirmed.' }); }
+  if (dpoStatus === 'Yes') details.push({ status: 'pass', label: 'DPO', description: 'Named DPO confirmed.' });
+  else details.push({ status: 'info', label: 'DPO', description: 'DPO status not confirmed.' });
 
-  // Security Certification
+  // Security Cert
   const certStatus = fields.RelevantSecurityCertification || 'Unknown';
-  if      (certStatus === 'Yes') { details.push({ status: 'pass', label: 'Security Certification', description: 'Relevant security certification confirmed (ISO 27001, SOC 2 or equivalent).' }); }
-  else if (certStatus === 'No')  { details.push({ status: 'info', label: 'Security Certification', description: 'No ISO 27001, SOC 2 or equivalent identified — advisory only.' }); score -= 5; }
-  else                           { details.push({ status: 'info', label: 'Security Certification', description: 'Security certification not confirmed.' }); }
+  if      (certStatus === 'Yes') { details.push({ status: 'pass', label: 'Security Certification', description: 'ISO 27001, SOC 2 or equivalent confirmed.' }); }
+  else if (certStatus === 'No')  { details.push({ status: 'info', label: 'Security Certification', description: 'No certification identified — advisory only.' }); score -= 5; }
+  else                           { details.push({ status: 'info', label: 'Security Certification', description: 'Certification status not confirmed.' }); }
 
-  // Privacy Policy URL
-  if (privacyUrl) { details.push({ status: 'info', label: 'Privacy Policy / DPA', description: `Available at: ${privacyUrl}` }); }
+  if (privacyUrl) details.push({ status: 'info', label: 'Privacy Policy / DPA', description: `Available at: ${privacyUrl}` });
 
   const riskRating = fields.RiskRating || calculateRiskRating({
     icoRegistered: icoStatus, dpaStatus, intlTransferOccurs: transferOccurs,
@@ -429,13 +397,13 @@ function handleKnownVendor(name, fields) {
   });
 
   const actionItems = [];
-  if (!dpaConfirmed && dpaStatus !== 'Refused') actionItems.push('Obtain and sign a Data Processing Agreement with this vendor');
-  if (dpaStatus === 'Refused')    actionItems.push('Stop sharing personal data with this vendor — find a compliant alternative');
-  if (transferOccurs === 'Yes' && transferMech === 'Unknown') actionItems.push('Confirm which international transfer mechanism applies');
-  if (icoStatus === 'Unknown')    actionItems.push('Verify ICO registration at: https://ico.org.uk/ESDWebPages/Search');
-  if (breachIsKnown)              actionItems.push('Document your assessment of continued use of this vendor given their breach history');
-  if (fields.LastVerified)        actionItems.push(`Library data last verified: ${fields.LastVerified} — re-verify if older than 12 months`);
-  if (privacyUrl)                 actionItems.push(`Review privacy policy / DPA at: ${privacyUrl}`);
+  if (dpaStatus === 'On Request') actionItems.push(`Contact ${name} to obtain and sign their DPA`);
+  if (dpaStatus === 'Refused')    actionItems.push(`Stop sharing personal data — find a compliant alternative`);
+  if (transferOccurs === 'Yes' && transferMech === 'Unknown') actionItems.push('Confirm transfer mechanism in your DPA');
+  if (icoStatus === 'Unknown')    actionItems.push('Verify ICO registration at ico.org.uk/ESDWebPages/Search');
+  if (breachIsKnown)              actionItems.push('Document your assessment of continued use given breach history');
+  if (privacyUrl)                 actionItems.push(`DPA / privacy policy: ${privacyUrl}`);
+  if (fields.LastVerified)        actionItems.push(`Library data last reviewed: ${fields.LastVerified}`);
 
   return {
     name,
@@ -545,8 +513,13 @@ Risk: High if ICO not registered OR known breach OR intl transfer no mechanism t
       name: vendorName, vendorType: 'Other', score: 50, riskRating: 'Medium',
       isAI: true, dpaConfirmed: false,
       confidenceCaveat: 'Automated analysis failed. Please verify this vendor manually.',
-      details: [{ status: 'warning', label: 'Analysis incomplete', description: 'Unable to automatically analyse this vendor. Please verify compliance manually.' }],
-      actionItems: ['Contact vendor for their Data Processing Agreement', 'Check ICO register: https://ico.org.uk/ESDWebPages/Search', 'Confirm data storage location and international transfer mechanism'],
+      details: [{ status: 'warning', label: 'Analysis incomplete',
+        description: 'Unable to automatically assess this vendor. Please verify compliance manually.' }],
+      actionItems: [
+        'Confirm their ICO registration at ico.org.uk/ESDWebPages/Search',
+        'Request their Data Processing Agreement',
+        'Confirm data storage location and international transfer mechanism',
+      ],
       dimensions: {},
     };
   }
