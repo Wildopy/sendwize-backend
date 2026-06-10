@@ -2,265 +2,306 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vendor Checker — Sendwize</title>
+<title>Processor Risk Scanner — Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --orange:#EA7317;--orange-dark:#c85f0f;--orange-light:#FFF4EA;--orange-mid:#fed7aa;
-  --bg:#F4F3F0;--white:#ffffff;
-  --border:#E8E6E1;--border-mid:#D8D5CE;
-  --text:#0C0B09;--muted:#5C5852;--subtle:#9C9890;
-  --green:#16a34a;--green-bg:#f0fdf4;--green-bd:#bbf7d0;
-  --yellow:#ca8a04;--yellow-bg:#fefce8;--yellow-bd:#fef08a;
-  --red:#dc2626;--red-bg:#fef2f2;--red-bd:#fecaca;
-  --blue:#1d4ed8;--blue-bg:#eff6ff;--blue-bd:#bfdbfe;
-  --grey-bg:#f3f4f6;--grey-bd:#d1d5db;
-  --radius:10px;--radius-sm:7px;
-  --shadow:0 1px 3px rgba(0,0,0,.06);
-  --shadow-md:0 4px 14px rgba(0,0,0,.08);
-  --shadow-lg:0 8px 28px rgba(0,0,0,.10);
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fed7aa;
+  --bg:#F4F3F0;--w:#ffffff;--b:#E8E6E1;--bm:#D8D5CE;
+  --t:#0C0B09;--tm:#5C5852;--mu:#9C9890;
+  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
+  --r:#dc2626;--rb:#fef2f2;--rc:#fecaca;
+  --y:#ca8a04;--yb:#fefce8;--yc:#fef08a;
+  --blue:#1d4ed8;--blueb:#eff6ff;--bluebd:#bfdbfe;
+  --rad:12px;--rad-sm:8px;
+  --sh:0 1px 3px rgba(0,0,0,.06);
+  --shm:0 4px 16px rgba(0,0,0,.08);
+  --shl:0 8px 32px rgba(0,0,0,.12);
 }
-body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:32px 20px 64px;-webkit-font-smoothing:antialiased}
-.container{max-width:780px;margin:0 auto}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;padding:32px 20px 80px;-webkit-font-smoothing:antialiased}
+.container{max-width:800px;margin:0 auto}
 
-/* ── BACK LINK ── */
-.back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--subtle);text-decoration:none;margin-bottom:18px;transition:color .15s;font-weight:500}
-.back-link:hover{color:var(--orange)}
+/* ── BACK ── */
+.back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--mu);text-decoration:none;margin-bottom:20px;font-weight:500;transition:color .15s}
+.back-link:hover{color:var(--o)}
 
 /* ── PAGE HEADER ── */
-.page-title{font-size:24px;font-weight:700;margin-bottom:5px;letter-spacing:-.3px}
-.page-subtitle{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:6px}
-.monitor-pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 9px;border-radius:20px;background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);margin-bottom:20px}
-.monitor-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:mpulse 2s infinite}
-@keyframes mpulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* ── TABS ── */
-.tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:24px}
-.tab-btn{padding:10px 20px;font-size:13px;font-weight:600;font-family:inherit;background:none;border:none;cursor:pointer;color:var(--subtle);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s}
-.tab-btn.active{color:var(--orange);border-bottom-color:var(--orange)}
-.tab-btn:hover:not(.active){color:var(--text)}
-.tab-panel{display:none}.tab-panel.active{display:block}
+.page-header{margin-bottom:32px}
+.page-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--o);margin-bottom:8px}
+.page-title{font-size:30px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px;line-height:1.2}
+.page-sub{font-size:14px;color:var(--tm);line-height:1.65;max-width:560px}
 
 /* ── GATE ── */
-.gate-screen{display:none;min-height:78vh;align-items:center;justify-content:center;padding:40px 20px}
+.gate-screen{display:none;min-height:75vh;align-items:center;justify-content:center;padding:40px 20px}
 .gate-screen.show{display:flex}
-.gate-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:48px 40px;max-width:430px;width:100%;text-align:center;box-shadow:var(--shadow-lg)}
-.gate-logo{font-size:15px;font-weight:700;color:var(--orange);margin-bottom:20px;letter-spacing:-.2px}
-.gate-icon{font-size:38px;margin-bottom:14px}
-.gate-title{font-size:20px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
-.gate-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px}
-.gate-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px 20px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:8px}
-.gate-btn:hover{background:var(--orange-dark)}
-.gate-demo-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:11px 20px;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
-.gate-demo-btn:hover{border-color:var(--orange);color:var(--text)}
+.gate-card{background:var(--w);border:1px solid var(--b);border-radius:16px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:var(--shl)}
+.gate-logo{font-size:15px;font-weight:700;color:var(--o);margin-bottom:20px}
+.gate-icon{font-size:40px;margin-bottom:14px}
+.gate-title{font-size:22px;font-weight:700;margin-bottom:8px;letter-spacing:-.3px}
+.gate-sub{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:28px}
+.gate-btn{display:flex;align-items:center;justify-content:center;width:100%;padding:13px 20px;background:var(--o);color:#fff;border:none;border-radius:var(--rad);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:all .2s;margin-bottom:10px}
+.gate-btn:hover{background:var(--od)}
+.gate-demo-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:12px 20px;background:var(--bg);color:var(--tm);border:1px solid var(--b);border-radius:var(--rad);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.gate-demo-btn:hover{border-color:var(--o);color:var(--t)}
 
-/* ── CARD ── */
-.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:var(--shadow)}
-.card-label{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--subtle);margin-bottom:14px}
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:2px solid var(--b);margin-bottom:28px}
+.tab-btn{padding:10px 20px;font-size:13px;font-weight:600;font-family:inherit;background:none;border:none;cursor:pointer;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab-btn.active{color:var(--o);border-bottom-color:var(--o)}
+.tab-btn:hover:not(.active){color:var(--t)}
+.tab-panel{display:none}.tab-panel.active{display:block}
 
-/* ── SEARCH ── */
-.search-row{display:flex;gap:8px;margin-bottom:12px}
+/* ── SCANNER STEPS ── */
+.step{display:none}.step.active{display:block}
+
+/* STEP 1 — Add vendors */
+.search-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:28px;margin-bottom:16px;box-shadow:var(--sh)}
+.search-card-title{font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px}
+.search-card-sub{font-size:13px;color:var(--tm);margin-bottom:20px;line-height:1.6}
+.search-row{display:flex;gap:8px;margin-bottom:14px}
 .search-wrap{position:relative;flex:1}
-.search-input{width:100%;padding:10px 13px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;color:var(--text);background:var(--white);transition:border-color .15s;outline:none}
-.search-input:focus{border-color:var(--orange)}
-.search-input::placeholder{color:var(--subtle)}
-.btn-add{padding:10px 18px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;flex-shrink:0}
-.btn-add:hover{background:var(--orange-dark)}
-.dropdown{display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;background:var(--white);border:1px solid var(--border-mid);border-radius:var(--radius);z-index:20;box-shadow:var(--shadow-md);max-height:260px;overflow-y:auto}
+.search-input{width:100%;padding:11px 14px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:13px;font-family:inherit;color:var(--t);background:var(--w);transition:border-color .15s;outline:none}
+.search-input:focus{border-color:var(--o)}
+.search-input::placeholder{color:var(--mu)}
+.btn-add{padding:11px 20px;background:var(--o);color:#fff;border:none;border-radius:var(--rad-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;flex-shrink:0}
+.btn-add:hover{background:var(--od)}
+.dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--w);border:1.5px solid var(--b);border-radius:var(--rad);z-index:30;box-shadow:var(--shm);max-height:260px;overflow-y:auto}
 .dropdown.show{display:block}
-.dropdown-item{padding:10px 13px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.dropdown-item{padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--b);transition:background .1s}
 .dropdown-item:last-child{border-bottom:none}
-.dropdown-item:hover,.dropdown-item.highlighted{background:var(--orange-light)}
-.dropdown-name{font-size:13px;font-weight:600;color:var(--text)}
-.dropdown-cat{font-size:11px;color:var(--subtle);margin-top:1px}
-.dropdown-custom{color:var(--orange)}
+.dropdown-item:hover,.dropdown-item.highlighted{background:var(--ol)}
+.dropdown-name{font-size:13px;font-weight:600;color:var(--t)}
+.dropdown-cat{font-size:11px;color:var(--mu);margin-top:1px}
+.dropdown-custom{color:var(--o)}
+.selected-list{display:flex;flex-direction:column;gap:0;margin-bottom:16px}
+.vendor-row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);border:1.5px solid var(--b);border-radius:var(--rad-sm);margin-bottom:8px;transition:border-color .2s}
+.vendor-row.complete{border-color:var(--gc);background:var(--gb)}
+.vendor-row.hasrisk{border-color:var(--yc);background:var(--yb)}
+.vendor-row-left{flex:1;min-width:0}
+.vendor-row-name{font-size:14px;font-weight:600;color:var(--t);margin-bottom:2px}
+.vendor-row-cat{font-size:11px;color:var(--mu)}
+.vendor-row-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.vendor-remove{background:none;border:none;cursor:pointer;color:var(--mu);font-size:18px;padding:0;line-height:1;transition:color .15s}
+.vendor-remove:hover{color:var(--r)}
+.ai-tag{font-size:9px;font-weight:700;padding:2px 6px;background:var(--blueb);color:var(--blue);border-radius:3px;letter-spacing:.04em}
 
-/* ── VENDOR TAGS ── */
-.selected-list{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px;min-height:4px}
-.vendor-tag{display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);padding:5px 9px;border-radius:6px;font-size:12px;font-weight:600}
-.vendor-tag.custom{background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue)}
-.ai-pill{font-size:9px;font-weight:700;padding:1px 5px;background:var(--blue-bg);color:var(--blue);border-radius:3px;letter-spacing:.04em}
-.tag-remove{background:none;border:none;cursor:pointer;font-size:14px;color:inherit;opacity:.5;padding:0;line-height:1;transition:opacity .15s}
-.tag-remove:hover{opacity:1}
-.selected-hint{font-size:11px;color:var(--subtle);margin-top:6px}
+/* Context questions inline */
+.vendor-questions{display:none;padding:14px 16px;border-top:1px solid var(--b);background:var(--w);border-radius:0 0 var(--rad-sm) var(--rad-sm);margin-top:-8px;margin-bottom:8px;border:1.5px solid var(--b);border-top:none}
+.vendor-questions.show{display:block}
+.q-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+@media(max-width:560px){.q-row{grid-template-columns:1fr}}
+.q-group label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:5px}
+.q-group select,.q-group input[type="number"]{width:100%;padding:8px 10px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:12px;font-family:inherit;background:var(--w);color:var(--t);outline:none;transition:border-color .15s}
+.q-group select:focus,.q-group input:focus{border-color:var(--o)}
+.q-data-types{margin-bottom:12px}
+.q-data-types label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:6px}
+.data-type-btns{display:flex;flex-wrap:wrap;gap:6px}
+.dt-btn{padding:5px 11px;border:1.5px solid var(--b);border-radius:20px;font-size:11px;font-weight:500;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
+.dt-btn:hover{border-color:var(--o);color:var(--o)}
+.dt-btn.on{border-color:var(--o);background:var(--ol);color:var(--o);font-weight:700}
+.dt-btn.high-risk.on{border-color:var(--r);background:var(--rb);color:var(--r)}
 
-/* ── BUTTONS ── */
-.btn-primary{width:100%;padding:12px 20px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;transition:background .15s}
-.btn-primary:hover:not(:disabled){background:var(--orange-dark)}
-.btn-primary:disabled{opacity:.45;cursor:not-allowed}
-.btn-demo{width:100%;padding:11px 20px;background:var(--white);color:var(--muted);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
-.btn-demo:hover{border-color:var(--orange);color:var(--text)}
-.demo-pill{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--orange-light);color:var(--orange);letter-spacing:.04em}
-.btn-secondary{padding:8px 15px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);font-size:12px;font-weight:600;background:var(--white);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
-.btn-secondary:hover{border-color:var(--orange);color:var(--orange)}
-.btn-link{padding:6px 11px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);font-size:11px;font-weight:500;background:var(--white);color:var(--subtle);cursor:pointer;font-family:inherit;transition:all .15s;text-decoration:none;display:inline-block}
-.btn-link:hover{border-color:var(--orange);color:var(--orange)}
+/* ── SCAN BUTTON ── */
+.scan-btn{width:100%;padding:16px 24px;background:var(--o);color:#fff;border:none;border-radius:var(--rad);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;letter-spacing:-.2px;position:relative;overflow:hidden}
+.scan-btn:hover:not(:disabled){background:var(--od);transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,115,23,.3)}
+.scan-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.scan-btn-sub{font-size:11px;font-weight:500;opacity:.8;display:block;margin-top:2px}
+.demo-link{text-align:center;margin-top:12px}
+.demo-link button{background:none;border:none;font-size:12px;color:var(--mu);cursor:pointer;font-family:inherit;text-decoration:underline;transition:color .15s}
+.demo-link button:hover{color:var(--t)}
 
-/* ── ERROR / LOADING / RESULTS ── */
-.error-box{display:none;background:var(--red-bg);border:1px solid var(--red-bd);border-radius:var(--radius-sm);padding:12px 15px;margin-bottom:16px;font-size:13px;color:var(--red)}
-.error-box.show{display:block}
-.loading{display:none;text-align:center;padding:52px 20px}
+/* ── LOADING ── */
+.loading{display:none;text-align:center;padding:60px 20px}
 .loading.show{display:block}
-.spinner{width:32px;height:32px;border:2.5px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+.scan-animation{margin:0 auto 24px;width:56px;height:56px;position:relative}
+.scan-ring{width:56px;height:56px;border:3px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:13px;color:var(--subtle)}
-.results{display:none}.results.show{display:block}
-.new-check-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 15px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);font-size:12px;font-weight:600;background:var(--white);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s;margin-bottom:18px}
-.new-check-btn:hover{border-color:var(--orange);color:var(--orange)}
+.loading-title{font-size:18px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
+.loading-sub{font-size:13px;color:var(--mu)}
+.loading-steps{margin-top:20px;display:flex;flex-direction:column;gap:6px;max-width:280px;margin-left:auto;margin-right:auto}
+.loading-step{font-size:12px;color:var(--mu);display:flex;align-items:center;gap:8px;opacity:.4;transition:opacity .3s}
+.loading-step.active{opacity:1;color:var(--t)}
+.loading-step.done{opacity:.6;color:var(--g)}
+.ls-dot{width:6px;height:6px;border-radius:50%;background:var(--b);flex-shrink:0}
+.loading-step.active .ls-dot{background:var(--o)}
+.loading-step.done .ls-dot{background:var(--g)}
 
-/* ── SUMMARY BAR ── */
-.summary-bar{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;gap:16px;flex-wrap:wrap;box-shadow:var(--shadow)}
-.summary-score{font-size:34px;font-weight:700;font-family:'DM Mono',monospace;line-height:1}
-.summary-label{font-size:11px;color:var(--subtle);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
-.summary-stats{display:flex;gap:20px}
-.stat{text-align:center}
-.stat-num{font-size:20px;font-weight:700;font-family:'DM Mono',monospace}
-.stat-lbl{font-size:10px;color:var(--subtle);text-transform:uppercase;letter-spacing:.04em;margin-top:1px}
-.stat.good .stat-num{color:var(--green)}.stat.warn .stat-num{color:var(--yellow)}.stat.bad .stat-num{color:var(--red)}
+/* ── VERDICT ── */
+.verdict{display:none}.verdict.show{display:block}
+.verdict-header{border-radius:var(--rad);padding:28px 32px;margin-bottom:20px;position:relative;overflow:hidden}
+.verdict-header.green{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1.5px solid var(--gc)}
+.verdict-header.amber{background:linear-gradient(135deg,#fefce8 0%,#fef9c3 100%);border:1.5px solid var(--yc)}
+.verdict-header.red{background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);border:1.5px solid var(--rc)}
+.verdict-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.verdict-header.green .verdict-eyebrow{color:var(--g)}
+.verdict-header.amber .verdict-eyebrow{color:var(--y)}
+.verdict-header.red .verdict-eyebrow{color:var(--r)}
+.verdict-headline{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px;line-height:1.3}
+.verdict-header.green .verdict-headline{color:#14532d}
+.verdict-header.amber .verdict-headline{color:#713f12}
+.verdict-header.red .verdict-headline{color:#7f1d1d}
+.verdict-sub{font-size:13px;line-height:1.6}
+.verdict-header.green .verdict-sub{color:#166534}
+.verdict-header.amber .verdict-sub{color:#92400e}
+.verdict-header.red .verdict-sub{color:#991b1b}
+.verdict-exposure{margin-top:16px;display:inline-flex;align-items:center;gap:10px;background:rgba(0,0,0,.06);border-radius:8px;padding:10px 16px}
+.ve-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.7}
+.ve-range{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:-.5px}
+.ve-note{font-size:10px;opacity:.6;margin-top:1px}
+.verdict-decoration{position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;opacity:.08}
+.verdict-header.green .verdict-decoration{background:var(--g)}
+.verdict-header.amber .verdict-decoration{background:var(--y)}
+.verdict-header.red .verdict-decoration{background:var(--r)}
 
-/* ── VENDOR CARDS ── */
-.vendor-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:box-shadow .2s}
-.vendor-card:hover{box-shadow:var(--shadow-md)}
-.vendor-card.open{border-color:var(--border-mid)}
-.vendor-header{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;cursor:pointer;gap:12px;transition:background .1s}
-.vendor-header:hover{background:var(--bg)}
-.vendor-left{flex:1;min-width:0}
-.vendor-name{font-size:15px;font-weight:700;margin-bottom:5px;letter-spacing:-.15px}
-.vendor-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.vendor-cat{font-size:11px;color:var(--subtle)}
-.score-badge{display:inline-block;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700}
-.score-high{background:var(--green-bg);color:var(--green)}.score-medium{background:var(--yellow-bg);color:var(--yellow)}.score-low{background:var(--red-bg);color:var(--red)}
-.risk-pill{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.03em}
-.risk-low{background:var(--green-bg);color:var(--green)}.risk-medium{background:var(--yellow-bg);color:var(--yellow)}.risk-high{background:var(--red-bg);color:var(--red)}
-.ai-badge{font-size:9px;font-weight:700;padding:2px 6px;background:var(--blue-bg);color:var(--blue);border-radius:3px;letter-spacing:.04em}
-.monitored-badge{font-size:9px;font-weight:700;padding:2px 6px;background:var(--green-bg);color:var(--green);border-radius:3px;letter-spacing:.04em}
-.chevron{color:var(--subtle);transition:transform .25s;flex-shrink:0}
-.vendor-card.open .chevron{transform:rotate(180deg)}
-.vendor-body{max-height:0;overflow:hidden;transition:max-height .35s ease;border-top:1px solid var(--border)}
-.vendor-card.open .vendor-body{max-height:2400px}
-.vendor-body-inner{padding:18px 20px}
+/* ── RISK ITEMS ── */
+.risk-section{margin-bottom:20px}
+.risk-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:12px}
+.risk-item{background:var(--w);border:1.5px solid var(--b);border-radius:var(--rad);margin-bottom:10px;overflow:hidden;transition:all .2s;cursor:pointer}
+.risk-item:hover{border-color:var(--bm);box-shadow:var(--shm)}
+.risk-item.open{border-color:var(--o)}
+.risk-item.severity-critical{border-left:4px solid var(--r)}
+.risk-item.severity-high{border-left:4px solid var(--o)}
+.risk-item.severity-medium{border-left:4px solid var(--y)}
+.risk-item.resolved{border-left:4px solid var(--g);opacity:.7}
+.ri-header{display:flex;align-items:center;gap:14px;padding:16px 20px}
+.ri-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ri-icon.critical{background:var(--rb);color:var(--r)}
+.ri-icon.high{background:var(--ol);color:var(--o)}
+.ri-icon.medium{background:var(--yb);color:var(--y)}
+.ri-icon.resolved{background:var(--gb);color:var(--g)}
+.ri-left{flex:1;min-width:0}
+.ri-vendor{font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.ri-title{font-size:14px;font-weight:600;color:var(--t);line-height:1.4}
+.ri-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.ri-exposure{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--r)}
+.ri-exposure.medium{color:var(--y)}
+.ri-exposure.resolved{color:var(--g)}
+.ri-chevron{color:var(--mu);transition:transform .25s;flex-shrink:0}
+.risk-item.open .ri-chevron{transform:rotate(180deg)}
+.ri-body{max-height:0;overflow:hidden;transition:max-height .35s ease;border-top:1px solid var(--b)}
+.risk-item.open .ri-body{max-height:800px}
+.ri-body-inner{padding:20px}
+.ri-what{font-size:13px;color:var(--tm);line-height:1.65;margin-bottom:16px}
+.ri-fix-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--o);margin-bottom:10px}
+.ri-fix-step{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--ol);border-radius:var(--rad-sm);margin-bottom:6px;border:1px solid var(--om)}
+.ri-fix-step:last-child{margin-bottom:0}
+.ri-step-num{width:20px;height:20px;border-radius:50%;background:var(--o);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.ri-step-text{font-size:12px;color:var(--t);line-height:1.55;flex:1}
+.ri-step-link{color:var(--o);font-weight:600;text-decoration:none}
+.ri-step-link:hover{text-decoration:underline}
+.ri-impact{display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 14px;background:var(--gb);border:1px solid var(--gc);border-radius:var(--rad-sm)}
+.ri-impact-text{font-size:12px;color:#166534;flex:1;line-height:1.4}
+.ri-impact-num{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--g);white-space:nowrap}
+.ri-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.ri-btn-fix{padding:9px 18px;background:var(--o);color:#fff;border:none;border-radius:var(--rad-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.ri-btn-fix:hover{background:var(--od)}
+.ri-btn-fix.done{background:var(--g)}
+.ri-btn-dismiss{padding:9px 14px;background:var(--w);color:var(--mu);border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.ri-btn-dismiss:hover{border-color:var(--bm);color:var(--t)}
+.ri-context{font-size:11px;color:var(--mu);margin-top:10px;padding-top:10px;border-top:1px solid var(--b);line-height:1.5}
 
-/* ── BODY ELEMENTS ── */
-.ai-warn{background:var(--yellow-bg);border-left:3px solid var(--yellow);padding:11px 13px;border-radius:var(--radius-sm);margin-bottom:14px;font-size:12px;color:#78350f;line-height:1.55}
-.dpa-widget{display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--border-mid);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:14px;flex-wrap:wrap}
-.dpa-widget-label{font-size:11px;font-weight:700;color:var(--text);flex-shrink:0;text-transform:uppercase;letter-spacing:.04em}
-.dpa-toggle{display:flex;gap:5px}
-.dpa-btn{font-size:11px;font-weight:700;padding:4px 11px;border-radius:5px;border:1px solid var(--border-mid);background:var(--white);cursor:pointer;transition:all .15s;color:var(--subtle);font-family:inherit}
-.dpa-btn.yes-on{background:var(--green-bg);border-color:var(--green-bd);color:var(--green)}
-.dpa-btn.no-on{background:var(--red-bg);border-color:var(--red-bd);color:var(--red)}
-.dpa-link-wrap{flex:1;min-width:150px}
-.dpa-link-input{width:100%;font-size:12px;padding:5px 8px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);font-family:inherit;outline:none;transition:border-color .15s}
-.dpa-link-input:focus{border-color:var(--orange)}
-.dpa-save-btn{font-size:11px;font-weight:700;padding:5px 11px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s}
-.dpa-save-btn:hover{background:var(--orange-dark)}
-.dpa-saved-tick{font-size:11px;color:var(--green);display:none;font-weight:600}
-.dpa-saved-tick.show{display:inline}
+/* ── ALL CLEAR ── */
+.all-clear{text-align:center;padding:48px 24px;background:var(--w);border:1.5px solid var(--gc);border-radius:var(--rad);box-shadow:var(--sh)}
+.ac-icon{font-size:40px;margin-bottom:14px}
+.ac-title{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px;color:#14532d}
+.ac-sub{font-size:13px;color:#166534;line-height:1.6;max-width:420px;margin:0 auto}
 
-.sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--subtle);margin-bottom:9px;margin-top:16px}
-.dimensions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
-@media(max-width:480px){.dimensions-grid{grid-template-columns:1fr}}
-.dim-item{border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;background:var(--bg)}
-.dim-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin-bottom:3px}
-.dim-val{font-size:12px;font-weight:500;color:var(--text);line-height:1.4}
-.dim-val.good{color:var(--green)}.dim-val.warn{color:var(--yellow)}.dim-val.bad{color:var(--red)}
+/* ── NEW SCAN BTN ── */
+.new-scan-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:12px;font-weight:600;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s;margin-bottom:20px}
+.new-scan-btn:hover{border-color:var(--o);color:var(--o)}
 
-.detail-list{display:flex;flex-direction:column}
-.detail-item{display:flex;align-items:flex-start;gap:9px;padding:10px 0;border-bottom:1px solid var(--border)}
-.detail-item:last-child{border-bottom:none}
-.detail-icon{flex-shrink:0;margin-top:1px}
-.status-dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
-.dot-pass{background:var(--green-bg);color:var(--green)}.dot-warn{background:var(--yellow-bg);color:var(--yellow)}.dot-fail{background:var(--red-bg);color:var(--red)}.dot-info{background:var(--grey-bg);color:var(--subtle);border:1px solid var(--grey-bd)}
-.detail-label{font-size:13px;font-weight:600;margin-bottom:1px}
-.detail-desc{font-size:12px;color:var(--muted);line-height:1.55}
+/* ── DEMO NOTICE ── */
+.demo-notice{display:flex;align-items:flex-start;gap:10px;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad-sm);padding:12px 16px;margin-bottom:20px;font-size:12px;color:#92400e;line-height:1.55}
 
-.action-box{background:var(--orange-light);border-radius:var(--radius-sm);padding:13px 15px;margin-top:13px;border:1px solid var(--orange-mid)}
-.action-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);margin-bottom:8px}
-.action-list{padding-left:15px}
-.action-list li{font-size:12px;color:var(--text);margin-bottom:5px;line-height:1.55}
-
-.demo-notice{display:flex;align-items:flex-start;gap:9px;background:var(--orange-light);border:1px solid var(--orange-mid);border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:18px;font-size:12px;color:#92400e}
-.disc{font-size:11px;color:var(--subtle);font-style:italic;text-align:center;margin-top:20px}
-
-/* ── REGISTER ── */
-.disclaimer-info{font-size:11px;color:var(--subtle);background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:18px;line-height:1.55}
+/* ── REGISTER (unchanged styles) ── */
+.card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:22px;margin-bottom:16px;box-shadow:var(--sh)}
+.card-label{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--mu);margin-bottom:14px}
+.disclaimer-info{font-size:11px;color:var(--mu);background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:10px 13px;margin-bottom:18px;line-height:1.55}
 .health-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
 @media(max-width:540px){.health-grid{grid-template-columns:repeat(2,1fr)}}
-.health-tile{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;box-shadow:var(--shadow)}
-.health-num{font-size:24px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text)}
-.health-num.warn{color:var(--yellow)}.health-num.bad{color:var(--red)}.health-num.good{color:var(--green)}
-.health-lbl{font-size:10px;color:var(--subtle);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
-
-.stale-alert{background:var(--yellow-bg);border:1px solid var(--yellow-bd);border-left:3px solid var(--yellow);border-radius:var(--radius-sm);padding:12px 15px;margin-bottom:14px;font-size:12px;color:#78350f;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.health-tile{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:14px;text-align:center;box-shadow:var(--sh)}
+.health-num{font-size:24px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t)}
+.health-num.warn{color:var(--y)}.health-num.bad{color:var(--r)}.health-num.good{color:var(--g)}
+.health-lbl{font-size:10px;color:var(--mu);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+.stale-alert{background:var(--yb);border:1px solid var(--yc);border-left:3px solid var(--y);border-radius:var(--rad-sm);padding:12px 15px;margin-bottom:14px;font-size:12px;color:#78350f;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .stale-vendors{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}
 .stale-tag{font-size:10px;font-weight:600;padding:2px 7px;background:rgba(0,0,0,.05);border-radius:4px}
-.recheck-all-btn{padding:6px 12px;background:var(--yellow);color:#fff;border:none;border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s}
-.recheck-all-btn:hover{background:#a16207}
-
+.recheck-all-btn{padding:6px 12px;background:var(--y);color:#fff;border:none;border-radius:var(--rad-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
 .onboarding-card{text-align:center;padding:34px 24px}
 .onboarding-icon{font-size:38px;margin-bottom:12px}
 .onboarding-title{font-size:17px;font-weight:700;margin-bottom:7px;letter-spacing:-.2px}
-.onboarding-sub{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.65;max-width:480px;margin-left:auto;margin-right:auto}
+.onboarding-sub{font-size:13px;color:var(--tm);margin-bottom:26px;line-height:1.65;max-width:480px;margin-left:auto;margin-right:auto}
 .ob-category{margin-bottom:18px;text-align:left}
-.ob-cat-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle);margin-bottom:7px}
+.ob-cat-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:7px}
 .ob-vendor-btns{display:flex;flex-wrap:wrap;gap:6px}
-.ob-vendor-btn{padding:6px 12px;border:1px solid var(--border-mid);border-radius:18px;font-size:12px;font-weight:500;background:var(--white);color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s}
-.ob-vendor-btn:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-light)}
-.ob-vendor-btn.added{border-color:var(--green);color:var(--green);background:var(--green-bg)}
-.ob-skip{font-size:12px;color:var(--subtle);cursor:pointer;background:none;border:none;font-family:inherit;text-decoration:underline;margin-top:12px}
-
+.ob-vendor-btn{padding:6px 12px;border:1px solid var(--bm);border-radius:18px;font-size:12px;font-weight:500;background:var(--w);color:var(--t);cursor:pointer;font-family:inherit;transition:all .15s}
+.ob-vendor-btn:hover{border-color:var(--o);color:var(--o);background:var(--ol)}
+.ob-vendor-btn.added{border-color:var(--g);color:var(--g);background:var(--gb)}
+.ob-skip{font-size:12px;color:var(--mu);cursor:pointer;background:none;border:none;font-family:inherit;text-decoration:underline;margin-top:12px}
+.btn-secondary{padding:8px 15px;border:1px solid var(--bm);border-radius:var(--rad-sm);font-size:12px;font-weight:600;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-secondary:hover{border-color:var(--o);color:var(--o)}
 .register-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
 .register-wrap{overflow-x:auto}
 .register-table{width:100%;border-collapse:collapse;font-size:12px;min-width:640px}
-.register-table th{text-align:left;padding:8px 11px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--subtle);border-bottom:2px solid var(--border);white-space:nowrap;background:var(--bg)}
-.register-table td{padding:11px 11px;border-bottom:1px solid var(--border);vertical-align:top}
+.register-table th{text-align:left;padding:8px 11px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);border-bottom:2px solid var(--b);white-space:nowrap;background:var(--bg)}
+.register-table td{padding:11px 11px;border-bottom:1px solid var(--b);vertical-align:top}
 .register-table tr:last-child td{border-bottom:none}
 .register-table tr:hover td{background:var(--bg)}
 .reg-vendor-name{font-weight:700;font-size:13px}
-.reg-vendor-cat{font-size:11px;color:var(--subtle);margin-top:1px}
-.stale-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;background:var(--yellow-bg);color:var(--yellow);margin-left:6px;letter-spacing:.03em}
+.reg-vendor-cat{font-size:11px;color:var(--mu);margin-top:1px}
+.stale-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;background:var(--yb);color:var(--y);margin-left:6px;letter-spacing:.03em}
 .agreement-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
-.ap-green{background:var(--green-bg);color:var(--green)}.ap-amber{background:var(--yellow-bg);color:var(--yellow)}.ap-red{background:var(--red-bg);color:var(--red)}.ap-grey{background:var(--grey-bg);color:var(--subtle)}
+.ap-green{background:var(--gb);color:var(--g)}.ap-amber{background:var(--yb);color:var(--y)}.ap-red{background:var(--rb);color:var(--r)}.ap-grey{background:#f3f4f6;color:var(--mu)}
 .reg-score{font-size:12px;font-weight:700;font-family:'DM Mono',monospace}
-.reg-score.high{color:var(--green)}.reg-score.mid{color:var(--yellow)}.reg-score.low{color:var(--red)}
+.reg-score.high{color:var(--g)}.reg-score.mid{color:var(--y)}.reg-score.low{color:var(--r)}
 .reg-actions{display:flex;gap:4px;flex-wrap:wrap}
-.reg-action-btn{padding:4px 9px;font-size:10px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);color:var(--subtle);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
-.reg-action-btn:hover{border-color:var(--orange);color:var(--orange)}
-.reg-action-btn.remove:hover{border-color:var(--red);color:var(--red)}
-.export-btn{padding:7px 13px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);font-size:11px;font-weight:600;background:var(--white);color:var(--subtle);cursor:pointer;font-family:inherit;transition:all .15s}
-.export-btn:hover{border-color:var(--orange);color:var(--orange)}
+.reg-action-btn{padding:4px 9px;font-size:10px;font-weight:600;border:1px solid var(--b);border-radius:var(--rad-sm);background:var(--w);color:var(--mu);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.reg-action-btn:hover{border-color:var(--o);color:var(--o)}
+.reg-action-btn.remove:hover{border-color:var(--r);color:var(--r)}
+.export-btn{padding:7px 13px;border:1px solid var(--bm);border-radius:var(--rad-sm);font-size:11px;font-weight:600;background:var(--w);color:var(--mu);cursor:pointer;font-family:inherit;transition:all .15s}
+.export-btn:hover{border-color:var(--o);color:var(--o)}
 .reg-loading{text-align:center;padding:44px 20px}
+.spinner{width:32px;height:32px;border:2.5px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+.loading-text{font-size:13px;color:var(--mu)}
 .add-vendor-panel{display:none}.add-vendor-panel.show{display:block}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 @media(max-width:480px){.form-row{grid-template-columns:1fr}}
 .form-group-reg{margin-bottom:12px}
-.form-group-reg label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;color:var(--muted)}
-.form-group-reg select,.form-group-reg input[type="text"],.form-group-reg input[type="url"],.form-group-reg input[type="date"],.form-group-reg textarea{width:100%;padding:9px 11px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--white);color:var(--text);transition:border-color .15s;outline:none}
-.form-group-reg select:focus,.form-group-reg input:focus,.form-group-reg textarea:focus{border-color:var(--orange)}
+.form-group-reg label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;color:var(--tm)}
+.form-group-reg select,.form-group-reg input[type="text"],.form-group-reg input[type="url"],.form-group-reg input[type="date"],.form-group-reg input[type="number"],.form-group-reg textarea{width:100%;padding:9px 11px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:13px;font-family:inherit;background:var(--w);color:var(--t);transition:border-color .15s;outline:none}
+.form-group-reg select:focus,.form-group-reg input:focus,.form-group-reg textarea:focus{border-color:var(--o)}
 .form-group-reg textarea{resize:vertical;min-height:68px;line-height:1.5}
 .checkbox-group{display:flex;flex-wrap:wrap;gap:6px}
-.checkbox-label{display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:5px 9px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);background:var(--white);transition:all .15s;font-weight:500}
-.checkbox-label:hover{border-color:var(--orange)}
-.checkbox-label input[type="checkbox"]{accent-color:var(--orange)}
+.checkbox-label{display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:5px 9px;border:1.5px solid var(--b);border-radius:var(--rad-sm);background:var(--w);transition:all .15s;font-weight:500}
+.checkbox-label:hover{border-color:var(--o)}
+.checkbox-label input[type="checkbox"]{accent-color:var(--o)}
 .form-actions{display:flex;gap:8px;margin-top:6px}
-.btn-save{flex:1;padding:10px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
-.btn-save:hover{background:var(--orange-dark)}
-.btn-cancel{padding:10px 18px;border:1px solid var(--border-mid);border-radius:var(--radius);font-size:13px;font-weight:500;background:var(--white);color:var(--muted);cursor:pointer;font-family:inherit}
+.btn-save{flex:1;padding:10px;background:var(--o);color:#fff;border:none;border-radius:var(--rad);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.btn-save:hover{background:var(--od)}
+.btn-cancel{padding:10px 18px;border:1.5px solid var(--b);border-radius:var(--rad);font-size:13px;font-weight:500;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit}
 .reg-search-wrap{position:relative;margin-bottom:12px}.reg-search-wrap .dropdown{z-index:30}
+.error-box{display:none;background:var(--rb);border:1px solid var(--rc);border-radius:var(--rad-sm);padding:12px 15px;margin-bottom:16px;font-size:13px;color:var(--r)}
+.error-box.show{display:block}
+.disc{font-size:10px;color:var(--mu);font-style:italic;text-align:center;margin-top:20px;line-height:1.6}
 </style>
 </head>
 <body>
 <div class="container">
 
+<!-- GATE -->
 <div class="gate-screen" id="gateScreen">
   <div class="gate-card">
     <div class="gate-logo">sendwize</div>
-    <div class="gate-icon">&#128274;</div>
-    <div class="gate-title">Vendor Checker</div>
-    <div class="gate-sub">Available to Sendwize subscribers. Sign in via the dashboard to access your compliance data and vendor register.</div>
-    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
-    <button class="gate-demo-btn" onclick="runDemo()"><span class="demo-pill">DEMO</span> Try with example data</button>
+    <div class="gate-icon">🔒</div>
+    <div class="gate-title">Processor Risk Scanner</div>
+    <div class="gate-sub">Find out if your marketing tools and agencies are putting you at risk. Available to Sendwize subscribers.</div>
+    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard →</a>
+    <button class="gate-demo-btn" onclick="runDemo()">
+      <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--ol);color:var(--o);letter-spacing:.04em">DEMO</span>
+      See an example scan
+    </button>
   </div>
 </div>
 
@@ -269,57 +310,78 @@ body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;backgroun
   Dashboard
 </a>
 
-<h1 class="page-title">Vendor Checker</h1>
-<p class="page-subtitle">Check your marketing tools and agencies for UK GDPR compliance &mdash; DPAs, data location, certifications and breach history. Platforms you manage yourself (Mailchimp, Klaviyo etc.) are data processors under UK GDPR even if you operate the account. Custom vendors are analysed by Claude AI.</p>
-<div class="monitor-pill"><span class="monitor-dot"></span> Vendor policies monitored continuously &mdash; changes flagged automatically</div>
-
-<div class="tabs">
-  <button class="tab-btn" id="tab-checker" onclick="switchTab('checker')">Vendor Checker</button>
-  <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Data Processor Register</button>
+<div class="page-header">
+  <div class="page-eyebrow">Processor Risk Scanner</div>
+  <h1 class="page-title">Are your marketing tools putting you at risk?</h1>
+  <p class="page-sub">Tell us what tools and agencies you use and what data you share. We'll tell you exactly where you're exposed and what to do about it — based on your specific situation, not generic advice.</p>
 </div>
 
-<div class="tab-panel" id="panel-checker">
+<div class="tabs">
+  <button class="tab-btn" id="tab-scanner" onclick="switchTab('scanner')">Risk Scanner</button>
+  <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Processor Register</button>
+</div>
+
+<!-- SCANNER TAB -->
+<div class="tab-panel" id="panel-scanner">
   <div class="error-box" id="errorBox"></div>
-  <div id="formSection">
-    <div class="card">
-      <div class="card-label">Search vendors</div>
-      <p style="font-size:12px;color:var(--subtle);margin-bottom:12px;line-height:1.6">Search for any platform or agency you use for marketing &mdash; including tools you manage yourself. 40 verified vendors in our library. Unknown vendors are analysed by Claude AI.</p>
+
+  <!-- STEP 1 — Add vendors -->
+  <div class="step" id="step-add">
+    <div class="search-card">
+      <div class="search-card-title">Which tools and agencies do you use?</div>
+      <div class="search-card-sub">Add every platform or agency you share personal data with — including tools you manage yourself like Mailchimp or Klaviyo. These are all data processors under UK GDPR.</div>
       <div class="search-row">
         <div class="search-wrap" id="searchWrap">
-          <input type="text" class="search-input" id="searchInput" placeholder="Type vendor name e.g. Mailchimp, Ogilvy, HubSpot&hellip;" autocomplete="off" oninput="onSearch(this.value)" onkeydown="onSearchKey(event)"/>
+          <input type="text" class="search-input" id="searchInput"
+            placeholder="Search by name — e.g. Mailchimp, Ogilvy, HubSpot…"
+            autocomplete="off" oninput="onSearch(this.value)" onkeydown="onSearchKey(event)"/>
           <div class="dropdown" id="dropdown"></div>
         </div>
         <button class="btn-add" onclick="addFromInput()">Add</button>
       </div>
       <div class="selected-list" id="selectedList"></div>
-      <div class="selected-hint" id="selectedHint" style="display:none"></div>
     </div>
-    <button class="btn-primary" id="submitBtn" disabled onclick="runCheck()">Check Vendors</button>
-    <button class="btn-demo" onclick="runDemo()"><span class="demo-pill">DEMO</span> Try with example data</button>
-  </div>
-  <div class="loading" id="loadingSection"><div class="spinner"></div><div class="loading-text" id="loadingText">Checking vendors&hellip;</div></div>
-  <div class="results" id="resultsSection">
-    <button class="new-check-btn" onclick="resetForm()">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
-      New check
+    <button class="scan-btn" id="scanBtn" disabled onclick="runScan()">
+      Scan my processors
+      <span class="scan-btn-sub">Takes about 30 seconds</span>
     </button>
-    <div class="summary-bar" id="summaryBar"></div>
-    <div id="vendorCards"></div>
+    <div class="demo-link"><button onclick="runDemo()">See an example scan instead</button></div>
   </div>
-  <p class="disc">Information only &mdash; not legal advice.</p>
+
+  <!-- STEP 2 — Loading -->
+  <div class="step" id="step-loading">
+    <div style="text-align:center;padding:60px 20px">
+      <div class="scan-animation"><div class="scan-ring"></div></div>
+      <div class="loading-title">Scanning your processors…</div>
+      <div class="loading-sub">Cross-referencing against our compliance database</div>
+      <div class="loading-steps" id="loadingSteps"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3 — Verdict -->
+  <div class="step" id="step-verdict">
+    <button class="new-scan-btn" onclick="resetScanner()">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
+      New scan
+    </button>
+    <div id="verdictContent"></div>
+  </div>
+
+  <p class="disc">Information only — not legal advice. Data sourced from publicly available pages. Always verify directly with each vendor. Sendwize has not reviewed vendor DPAs or contracts and cannot confirm the compliance of any specific processing relationship.</p>
 </div>
 
+<!-- REGISTER TAB -->
 <div class="tab-panel" id="panel-register">
-  <div class="disclaimer-info">Information only &mdash; not legal advice. Sendwize surfaces publicly available compliance information and monitors vendor policy pages automatically. Always verify directly with your vendor and seek independent legal advice if unsure.</div>
-  <div id="reg-loading" class="reg-loading"><div class="spinner"></div><div class="loading-text">Loading your register&hellip;</div></div>
+  <div class="disclaimer-info">Information only — not legal advice. Data sourced from publicly available pages only. Sendwize has not reviewed vendor DPAs or contracts and cannot confirm the compliance of any specific processing relationship. Always verify directly with your vendor and seek independent legal advice before sharing personal data.</div>
+  <div id="reg-loading" class="reg-loading"><div class="spinner"></div><div class="loading-text">Loading your register…</div></div>
   <div id="reg-onboarding" style="display:none">
     <div class="card onboarding-card">
-      <div class="onboarding-icon">&#128194;</div>
-      <div class="onboarding-title">Build your data processor register</div>
-      <div class="onboarding-sub">UK GDPR Article 28 requires a record of all processors you share personal data with. Add your tools below to get started &mdash; this includes platforms you manage yourself.</div>
+      <div class="onboarding-icon">📁</div>
+      <div class="onboarding-title">Build your processor register</div>
+      <div class="onboarding-sub">UK GDPR Article 28 requires a record of all processors you share personal data with. Add your tools below to get started.</div>
       <div id="ob-categories"></div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-        <button class="btn-secondary" onclick="showAddForm(null,true)">+ Add vendor manually</button>
+        <button class="btn-secondary" onclick="showAddForm(null,true)">+ Add manually</button>
         <button class="ob-skip" onclick="skipOnboarding()">Skip for now</button>
       </div>
     </div>
@@ -345,16 +407,16 @@ body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;backgroun
     <div class="card add-vendor-panel" id="reg-add-panel">
       <div class="card-label" id="reg-form-title">Add Vendor</div>
       <div class="reg-search-wrap">
-        <input type="text" class="search-input" id="reg-search-input" placeholder="Search vendor name or type a custom one&hellip;" autocomplete="off" oninput="onRegSearch(this.value)"/>
+        <input type="text" class="search-input" id="reg-search-input" placeholder="Search vendor name…" autocomplete="off" oninput="onRegSearch(this.value)"/>
         <div class="dropdown" id="reg-dropdown"></div>
       </div>
       <div class="form-row">
-        <div class="form-group-reg"><label>Category</label><select id="reg-category"><option value="">Select&hellip;</option><option>Email Service Provider</option><option>CRM</option><option>Analytics</option><option>Forms</option><option>Advertising</option><option>Marketing Agency</option><option>Media Agency</option><option>Performance Agency</option><option>Other</option></select></div>
+        <div class="form-group-reg"><label>Category</label><select id="reg-category"><option value="">Select…</option><option>Email Service Provider</option><option>CRM</option><option>Analytics</option><option>Forms</option><option>Advertising</option><option>Marketing Agency</option><option>Media Agency</option><option>Performance Agency</option><option>Other</option></select></div>
         <div class="form-group-reg"><label>Data location</label><input type="text" id="reg-data-location" placeholder="e.g. EU, UK, US"/></div>
       </div>
       <div class="form-row">
         <div class="form-group-reg"><label>Approx. contact volume</label><input type="number" id="reg-contact-volume" placeholder="e.g. 25000" min="0"/></div>
-        <div class="form-group-reg"><label>&nbsp;</label><p style="font-size:11px;color:var(--subtle);padding-top:8px;line-height:1.5">How many contacts' data does this vendor process? Used to contextualise your compliance exposure.</p></div>
+        <div class="form-group-reg"><label>&nbsp;</label><p style="font-size:11px;color:var(--mu);padding-top:8px;line-height:1.5">Used to contextualise your compliance exposure.</p></div>
       </div>
       <div class="form-group-reg">
         <label>Data processed</label>
@@ -367,14 +429,14 @@ body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;backgroun
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group-reg"><label>Agreement type</label><select id="reg-agreement-type"><option value="">Select&hellip;</option><option>Standalone DPA</option><option>Data Processing Addendum</option><option>Article 28 terms in ToS</option><option>Article 28 terms in Privacy Policy</option><option>Master Service Agreement</option><option>None in place</option><option>Unknown</option></select></div>
-        <div class="form-group-reg"><label>Agreement status</label><select id="reg-agreement-status"><option value="">Select&hellip;</option><option>In place</option><option>Requested</option><option>Not yet</option><option>N/A</option></select></div>
+        <div class="form-group-reg"><label>Agreement type</label><select id="reg-agreement-type"><option value="">Select…</option><option>Standalone DPA</option><option>Data Processing Addendum</option><option>Article 28 terms in ToS</option><option>Master Service Agreement</option><option>None in place</option><option>Unknown</option></select></div>
+        <div class="form-group-reg"><label>Agreement status</label><select id="reg-agreement-status"><option value="">Select…</option><option>In place</option><option>Requested</option><option>Not yet</option><option>N/A</option></select></div>
       </div>
       <div class="form-row">
-        <div class="form-group-reg"><label>Agreement link (optional)</label><input type="url" id="reg-agreement-link" placeholder="https://&hellip;"/></div>
+        <div class="form-group-reg"><label>Agreement link (optional)</label><input type="url" id="reg-agreement-link" placeholder="https://…"/></div>
         <div class="form-group-reg"><label>Agreement date (optional)</label><input type="date" id="reg-agreement-date"/></div>
       </div>
-      <div class="form-group-reg"><label>Notes (optional)</label><textarea id="reg-notes" placeholder="Any additional notes&hellip;"></textarea></div>
+      <div class="form-group-reg"><label>Notes (optional)</label><textarea id="reg-notes" placeholder="Any additional notes…"></textarea></div>
       <div class="form-actions">
         <button class="btn-save" onclick="saveVendor()">Save vendor</button>
         <button class="btn-cancel" onclick="hideAddForm()">Cancel</button>
@@ -387,73 +449,102 @@ body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;backgroun
 <script>
 var APP_URL='https://sendwize-backend.vercel.app';
 var userId=null,allVendors=[],selectedVendors=[],registerLoaded=false,registerRecords=[],editingRecordId=null;
-var highlightedIndex=-1,currentDropdownItems=[],dpaState={};
+var highlightedIndex=-1,currentDropdownItems=[];
 var HAS_REGISTER_KEY='sw_has_register';
 
-// ── DEMO DATA ─────────────────────────────────────────────────
-var DEMO_VENDORS=[
-  {name:'Klaviyo',vendorType:'Self-Serve ESP',score:90,riskRating:'Low',isAI:false,dpaConfirmed:true,
-    dimensions:{icoRegistered:'Yes',icoRegNumber:'',dpaStatus:'Confirmed',dpaLink:'https://www.klaviyo.com/legal/data-processing-agreement',intlTransferOccurs:'Yes',transferDestination:'US',internationalTransfer:'SCCs + EU-US Data Privacy Framework',breachHistory:'None identified',dpoConfirmed:'Yes',relevantSecurityCertification:'Yes',lastVerified:'June 2026'},
-    details:[{status:'pass',label:'ICO Registration',description:'Registered with the ICO for UK data processing activities.'},{status:'pass',label:'Data Processing Agreement',description:'Standard DPA available and self-serve at klaviyo.com/legal/data-processing-agreement.'},{status:'pass',label:'International Transfers',description:'SCCs and EU-US Data Privacy Framework (UK Extension) in place for US transfers.'},{status:'pass',label:'Security Certifications',description:'SOC 2 Type II and ISO 27001 certified.'}],
-    actionItems:['Sign and store the Klaviyo DPA — available at klaviyo.com/legal/data-processing-agreement.','Verify the DPA covers all data types you process (email addresses, behavioural data).']},
-  {name:'Hotjar',vendorType:'Analytics',score:82,riskRating:'Low',isAI:false,dpaConfirmed:true,
-    dimensions:{icoRegistered:'Yes',icoRegNumber:'',dpaStatus:'Confirmed',dpaLink:'https://www.hotjar.com/legal/support/dpa/',intlTransferOccurs:'Yes',transferDestination:'US',internationalTransfer:'SCCs',breachHistory:'None identified',dpoConfirmed:'Yes',relevantSecurityCertification:'Yes',lastVerified:'June 2026'},
-    details:[{status:'pass',label:'ICO Registration',description:'Registered (Maltese entity covers UK processing).'},{status:'pass',label:'DPA Available',description:'DPA available and can be countersigned via hotjar.com/legal/support/dpa/.'},{status:'warning',label:'International Transfers',description:'EU SCCs in place. UK IDTA addendum status should be confirmed directly with Hotjar.'},{status:'pass',label:'Security Certifications',description:'SOC 2 Type II confirmed.'}],
-    actionItems:['Confirm UK IDTA addendum status directly with Hotjar before relying on EU SCCs for UK transfers.','Configure Hotjar data suppression for all form fields containing personal data.']},
-  {name:'SendGrid (Twilio)',vendorType:'Self-Serve ESP',score:65,riskRating:'Medium',isAI:false,dpaConfirmed:true,
-    dimensions:{icoRegistered:'Yes',icoRegNumber:'',dpaStatus:'Confirmed',dpaLink:'https://www.twilio.com/en-us/legal/data-protection-addendum',intlTransferOccurs:'Yes',transferDestination:'US',internationalTransfer:'SCCs + EU-US Data Privacy Framework',breachHistory:'August 2022: Twilio confirmed a data breach via smishing attack targeting employee credentials. A subset of customer data was accessed. Source: Twilio public disclosure August 2022.',dpoConfirmed:'Yes',relevantSecurityCertification:'Yes',lastVerified:'June 2026'},
-    details:[{status:'pass',label:'ICO Registration',description:'Registered under Twilio Inc.'},{status:'pass',label:'DPA Available',description:'DPA included in Twilio master terms — countersign and store a copy.'},{status:'warning',label:'International Transfers',description:'US-based. Confirm the UK–US data bridge applies as your transfer mechanism.'},{status:'fail',label:'Breach History',description:'Twilio confirmed a data breach in August 2022 via smishing. Customer data was accessed. Confirm whether your account was in scope.'}],
-    actionItems:['Review the August 2022 Twilio breach notification and confirm whether your account was in scope.','Confirm the UK–US data bridge applies to your SendGrid data transfers.','Countersign and store the Twilio DPA.']},
-  {name:'RetentionHQ',vendorType:'Other',score:28,riskRating:'High',isAI:true,dpaConfirmed:false,
-    dimensions:{icoRegistered:'Unknown',icoRegNumber:null,dpaStatus:'Unknown',dpaLink:null,intlTransferOccurs:'Unknown',transferDestination:'Unknown',internationalTransfer:'Unknown',breachHistory:'Unknown',dpoConfirmed:'Unknown',relevantSecurityCertification:'Unknown',lastVerified:null},
-    details:[{status:'fail',label:'ICO Registration',description:'No ICO registration found. All processors handling UK personal data must be registered.'},{status:'fail',label:'Data Processing Agreement',description:'No standard DPA found on their public website. A written Article 28 contract is mandatory.'},{status:'fail',label:'International Transfers',description:'Data storage location not publicly disclosed — lawful transfer cannot be confirmed.'},{status:'warning',label:'Security Certifications',description:'No ISO 27001 or SOC 2 identified. Request evidence of security controls before onboarding.'}],
-    actionItems:['Do not share personal data until a signed DPA is in place.','Request ICO registration number directly from the vendor.','Request confirmation of data storage location and transfer mechanism.','Request ISO 27001 or SOC 2 certification before proceeding.']}
+// ── DATA TYPES ────────────────────────────────────────────────
+var DATA_TYPES=[
+  {id:'email',label:'Email addresses',highRisk:false},
+  {id:'contact',label:'Contact details',highRisk:false},
+  {id:'behavioural',label:'Behavioural data',highRisk:true},
+  {id:'purchase',label:'Purchase history',highRisk:true},
+  {id:'special',label:'Special category data',highRisk:true},
 ];
 
-function runDemo(){
-  document.getElementById('formSection').style.display='none';
-  document.getElementById('loadingSection').classList.add('show');
-  document.getElementById('loadingText').textContent='Loading example vendor data\u2026';
-  setTimeout(function(){
-    document.getElementById('loadingSection').classList.remove('show');
-    renderResults(DEMO_VENDORS);
-    var n=document.createElement('div');
-    n.className='demo-notice';
-    n.innerHTML='<span style="font-size:15px">\uD83D\uDC41\uFE0F</span><span><strong>Demo mode</strong> \u2014 4 example vendors from our verified library. <a href="?" style="color:var(--o);font-weight:600">Sign in</a> to check your own vendors.</span>';
-    document.getElementById('resultsSection').prepend(n);
-  },700);
-}
+// ── VENDOR STATE — tracks per-vendor context questions ────────
+var vendorContext={};  // { name: { dpaStatus, dataTypes, contactVolume } }
 
-// ── AUTH + INIT ───────────────────────────────────────────────
+// ── DEMO DATA ─────────────────────────────────────────────────
+var DEMO_RESULTS=[
+  {
+    name:'Mailchimp',vendorType:'Self-Serve ESP',score:85,riskRating:'Low',isAI:false,dpaConfirmed:false,
+    userContext:{dpaStatus:'no',dataTypes:['Email addresses'],contactVolume:22000},
+    dimensions:{icoRegistered:'Yes',dpaStatus:'Confirmed',internationalTransfer:'SCCs + EU-US Data Privacy Framework (UK Extension)',breachHistory:'None identified',lastVerified:'June 2026',dpaLink:'https://mailchimp.com/legal/data-processing-addendum/'},
+    issue:{
+      severity:'high',
+      title:'No signed DPA on file',
+      what:'You told us you haven\'t signed a DPA with Mailchimp. Mailchimp\'s standard DPA exists and is self-serve — but it only protects you once you\'ve signed and stored a copy. Without a signed DPA you\'re in breach of UK GDPR Article 28 regardless of what Mailchimp publishes.',
+      exposureLow:50000,exposureHigh:250000,
+      fixSteps:[
+        {text:'Go to Mailchimp\'s DPA page',link:'https://mailchimp.com/legal/data-processing-addendum/',linkLabel:'mailchimp.com/legal/dpa'},
+        {text:'Sign the Data Processing Addendum — it\'s self-serve, no negotiation needed. Takes 5 minutes.'},
+        {text:'Download a copy and store it. Add the link to your processor register in Sendwize.'},
+      ],
+      impactText:'Signing removes the Article 28 breach entirely',
+      impactDrop:'£50,000–£250,000 exposure eliminated',
+    }
+  },
+  {
+    name:'Merkle UK',vendorType:'Data/CRM Agency',score:45,riskRating:'High',isAI:false,dpaConfirmed:false,
+    userContext:{dpaStatus:'no',dataTypes:['Email addresses','Contact details','Purchase history','Behavioural data'],contactVolume:95000},
+    dimensions:{icoRegistered:'Unknown',dpaStatus:'On Request',internationalTransfer:'Unknown',breachHistory:'None identified',lastVerified:'June 2026'},
+    issue:{
+      severity:'critical',
+      title:'No DPA with an agency processing sensitive data for 95,000 contacts',
+      what:'You\'re sharing purchase history and behavioural data for 95,000 contacts with Merkle UK and you don\'t have a signed DPA. This is the highest-risk gap in your processor relationships. Agencies handling large volumes of behavioural and purchase data are exactly what the ICO looks at when investigating processor compliance. The combination of data sensitivity, volume, and no written contract puts you in serious exposure.',
+      exposureLow:100000,exposureHigh:400000,
+      fixSteps:[
+        {text:'Contact Merkle UK\'s data protection team directly and request their standard Data Processing Agreement.'},
+        {text:'Confirm the DPA covers your specific processing: purchase history and behavioural data for UK contacts.'},
+        {text:'Confirm their transfer mechanism — their group privacy policy references SCCs but this must be confirmed in your specific contract.'},
+        {text:'Once signed, add to your processor register with the agreement date and a link.'},
+      ],
+      impactText:'Getting a signed DPA in place removes the core Article 28 breach',
+      impactDrop:'Reduces exposure from £100,000–£400,000 to near zero for this gap',
+    }
+  },
+  {
+    name:'SendGrid (Twilio)',vendorType:'Self-Serve ESP',score:65,riskRating:'Medium',isAI:false,dpaConfirmed:true,
+    userContext:{dpaStatus:'yes',dataTypes:['Email addresses'],contactVolume:18000},
+    dimensions:{icoRegistered:'Yes',dpaStatus:'Confirmed',internationalTransfer:'SCCs + EU-US Data Privacy Framework',breachHistory:'August 2022: Twilio confirmed a data breach via smishing attack targeting employee credentials. A subset of customer data was accessed. Source: Twilio public disclosure August 2022.',lastVerified:'June 2026',dpaLink:'https://www.twilio.com/en-us/legal/data-protection-addendum'},
+    issue:{
+      severity:'medium',
+      title:'Vendor has confirmed breach history — document your assessment',
+      what:'You have a signed DPA with SendGrid which is good. But Twilio — SendGrid\'s parent company — had a confirmed data breach in August 2022. You\'re not in breach just because your vendor was breached. But UK GDPR requires you to document that you assessed the risk of continuing to use a processor with a known breach history. Without that documented assessment, you\'re missing a due diligence record that would protect you if the ICO investigated.',
+      exposureLow:15000,exposureHigh:60000,
+      fixSteps:[
+        {text:'Write a brief documented assessment: you reviewed the August 2022 Twilio breach, confirmed your account was not in scope (or document the outcome if it was), and concluded that continued use is proportionate given Twilio\'s remediation.'},
+        {text:'Store the assessment with a date. It doesn\'t need to be long — a paragraph is enough. The ICO looks for evidence you thought about it, not a legal treatise.'},
+        {text:'Add a note to your Sendwize processor register entry for SendGrid referencing the assessment.'},
+      ],
+      impactText:'Documented assessment removes the due diligence gap',
+      impactDrop:'Eliminates the aggravating factor if ICO investigates',
+    }
+  },
+];
+
+// ── INIT ──────────────────────────────────────────────────────
 function init(){
   userId=new URLSearchParams(window.location.search).get('userId');
   if(!userId){
     document.getElementById('gateScreen').classList.add('show');
-    document.getElementById('panel-checker').style.display='none';
+    document.getElementById('panel-scanner').style.display='none';
     document.getElementById('panel-register').style.display='none';
     document.querySelector('.tabs').style.display='none';
-    document.querySelector('.page-sub').style.display='none';
-    document.querySelector('.page-title').style.display='none';
-    document.querySelector('.page-header .monitor-badge').style.display='none';
+    document.querySelector('.page-header').style.display='none';
     document.querySelector('.back-link').style.display='none';
     loadVendors();
     return;
   }
   loadVendors();
-  // Default tab: register for returning users, checker for first-time
-  var hasRegister=localStorage.getItem(HAS_REGISTER_KEY+':'+userId);
-  if(hasRegister){
-    switchTab('register');
-  } else {
-    switchTab('checker');
-  }
+  var hasReg=localStorage.getItem(HAS_REGISTER_KEY+':'+userId);
+  if(hasReg){switchTab('register');}else{switchTab('scanner');}
 }
 
-// ── TABS ──────────────────────────────────────────────────────
 function switchTab(tab){
-  document.getElementById('tab-checker').classList.toggle('active',tab==='checker');
+  document.getElementById('tab-scanner').classList.toggle('active',tab==='scanner');
   document.getElementById('tab-register').classList.toggle('active',tab==='register');
-  document.getElementById('panel-checker').classList.toggle('active',tab==='checker');
+  document.getElementById('panel-scanner').classList.toggle('active',tab==='scanner');
   document.getElementById('panel-register').classList.toggle('active',tab==='register');
   if(tab==='register'&&!registerLoaded){registerLoaded=true;loadRegister();}
 }
@@ -464,53 +555,26 @@ function loadVendors(){
     .then(function(r){if(!r.ok)throw r;return r.json();})
     .then(function(d){allVendors=d.vendors||[];})
     .catch(function(){
-      // Full 40-vendor fallback — matches Marketing_Vendors library
       allVendors=[
-        // SaaS ESP
-        {name:'Mailchimp',category:'Email Service Provider'},
-        {name:'Klaviyo',category:'Email Service Provider'},
-        {name:'Brevo',category:'Email Service Provider'},
-        {name:'ActiveCampaign',category:'Email Service Provider'},
-        {name:'SendGrid (Twilio)',category:'Email Service Provider'},
-        {name:'Dotdigital',category:'Email Service Provider'},
-        {name:'Salesforce Marketing Cloud',category:'Email Service Provider'},
-        {name:'Omnisend',category:'Email Service Provider'},
-        {name:'Drip',category:'Email Service Provider'},
-        {name:'Mailgun (Sinch)',category:'Email Service Provider'},
-        {name:'Campaign Monitor',category:'Email Service Provider'},
-        // CRM
-        {name:'HubSpot',category:'CRM'},
-        {name:'Salesforce CRM',category:'CRM'},
-        {name:'Pipedrive',category:'CRM'},
-        {name:'Zoho CRM',category:'CRM'},
-        // Analytics
-        {name:'Google Analytics',category:'Analytics'},
-        {name:'Hotjar',category:'Analytics'},
-        // Advertising
-        {name:'Meta Ads Manager',category:'Advertising'},
-        {name:'Google Ads',category:'Advertising'},
-        // Forms
-        {name:'Typeform',category:'Forms'},
-        // UK Agencies
-        {name:'Ogilvy UK',category:'Marketing Agency'},
-        {name:'VCCP',category:'Marketing Agency'},
-        {name:'Wunderman Thompson UK',category:'Marketing Agency'},
-        {name:'Merkle UK',category:'Data/CRM Agency'},
-        {name:'Carat UK',category:'Media Agency'},
-        {name:'MediaCom UK',category:'Media Agency'},
-        {name:'Mindshare UK',category:'Media Agency'},
-        {name:'PHD UK',category:'Media Agency'},
-        {name:'Havas UK',category:'Marketing Agency'},
-        {name:'Jellyfish',category:'Performance Agency'},
-        {name:'Brainlabs',category:'Performance Agency'},
-        {name:'Impression Digital',category:'Performance Agency'},
-        {name:'Roast',category:'Performance Agency'},
-        {name:'The Specialist Works',category:'Media Agency'},
-        {name:'Publicis Sapient UK',category:'Digital Agency'},
-        {name:'AKQA UK',category:'Digital Agency'},
-        {name:'Lucky Generals',category:'Creative Agency'},
-        {name:'Wolfgang Digital',category:'Performance Agency'},
-        {name:'Zeal Digital',category:'SEO Agency'},
+        {name:'Mailchimp',category:'Email Service Provider'},{name:'Klaviyo',category:'Email Service Provider'},
+        {name:'Brevo',category:'Email Service Provider'},{name:'ActiveCampaign',category:'Email Service Provider'},
+        {name:'SendGrid (Twilio)',category:'Email Service Provider'},{name:'Dotdigital',category:'Email Service Provider'},
+        {name:'Salesforce Marketing Cloud',category:'Email Service Provider'},{name:'Omnisend',category:'Email Service Provider'},
+        {name:'Drip',category:'Email Service Provider'},{name:'Mailgun (Sinch)',category:'Email Service Provider'},
+        {name:'Campaign Monitor',category:'Email Service Provider'},{name:'HubSpot',category:'CRM'},
+        {name:'Salesforce CRM',category:'CRM'},{name:'Pipedrive',category:'CRM'},{name:'Zoho CRM',category:'CRM'},
+        {name:'Google Analytics',category:'Analytics'},{name:'Hotjar',category:'Analytics'},
+        {name:'Meta Ads Manager',category:'Advertising'},{name:'Google Ads',category:'Advertising'},
+        {name:'Typeform',category:'Forms'},{name:'Ogilvy UK',category:'Marketing Agency'},
+        {name:'VCCP',category:'Marketing Agency'},{name:'Wunderman Thompson UK',category:'Marketing Agency'},
+        {name:'Merkle UK',category:'Data/CRM Agency'},{name:'Carat UK',category:'Media Agency'},
+        {name:'MediaCom UK',category:'Media Agency'},{name:'Mindshare UK',category:'Media Agency'},
+        {name:'PHD UK',category:'Media Agency'},{name:'Havas UK',category:'Marketing Agency'},
+        {name:'Jellyfish',category:'Performance Agency'},{name:'Brainlabs',category:'Performance Agency'},
+        {name:'Impression Digital',category:'Performance Agency'},{name:'Roast',category:'Performance Agency'},
+        {name:'The Specialist Works',category:'Media Agency'},{name:'Publicis Sapient UK',category:'Digital Agency'},
+        {name:'AKQA UK',category:'Digital Agency'},{name:'Lucky Generals',category:'Creative Agency'},
+        {name:'Wolfgang Digital',category:'Performance Agency'},{name:'Zeal Digital',category:'SEO Agency'},
         {name:'MG OMD',category:'Media Agency'},
       ];
     });
@@ -525,195 +589,443 @@ function onSearch(val){
   currentDropdownItems=matches.slice(0,10).map(function(v){return{name:v.name,category:v.category,isCustom:false};});
   if(!allVendors.find(function(v){return v.name.toLowerCase()===q;})){
     var custom=val.trim().charAt(0).toUpperCase()+val.trim().slice(1);
-    currentDropdownItems.push({name:custom,category:'Claude AI will analyse this vendor',isCustom:true});
+    currentDropdownItems.push({name:custom,category:'Will be assessed using publicly available information',isCustom:true});
   }
   var html=currentDropdownItems.map(function(item,idx){
-    if(item.isCustom)return'<div class="dropdown-item" data-idx="'+idx+'" onclick="selectFromDropdown('+idx+')"><div class="dropdown-name custom">Add \u201c'+escH(item.name)+'\u201d as custom vendor</div><div class="dropdown-cat">'+escH(item.category)+'</div></div>';
+    if(item.isCustom)return'<div class="dropdown-item" data-idx="'+idx+'" onclick="selectFromDropdown('+idx+')"><div class="dropdown-name dropdown-custom">Add \u201c'+escH(item.name)+'\u201d</div><div class="dropdown-cat">'+escH(item.category)+'</div></div>';
     return'<div class="dropdown-item" data-idx="'+idx+'" onclick="selectFromDropdown('+idx+')"><div class="dropdown-name">'+escH(item.name)+'</div><div class="dropdown-cat">'+escH(item.category||'')+'</div></div>';
   }).join('');
   if(!html)html='<div class="dropdown-item"><div class="dropdown-name" style="color:var(--mu)">No vendors found</div></div>';
   dd.innerHTML=html;dd.classList.add('show');
 }
-
 function onSearchKey(e){
-  var dd=document.getElementById('dropdown');
-  var items=dd.querySelectorAll('.dropdown-item[data-idx]');
+  var dd=document.getElementById('dropdown'),items=dd.querySelectorAll('.dropdown-item[data-idx]');
   if(e.key==='ArrowDown'){e.preventDefault();highlightedIndex=Math.min(highlightedIndex+1,items.length-1);updateHighlight(items);}
   else if(e.key==='ArrowUp'){e.preventDefault();highlightedIndex=Math.max(highlightedIndex-1,0);updateHighlight(items);}
   else if(e.key==='Enter'){e.preventDefault();if(highlightedIndex>=0&&currentDropdownItems[highlightedIndex])selectFromDropdown(highlightedIndex);else addFromInput();}
   else if(e.key==='Escape')dd.classList.remove('show');
 }
 function updateHighlight(items){items.forEach(function(el,i){el.classList.toggle('highlighted',i===highlightedIndex);});}
-function selectFromDropdown(idx){var item=currentDropdownItems[idx];if(!item)return;if(item.isCustom)addCustomVendor(item.name);else{var v=allVendors.find(function(v){return v.name===item.name;});if(v&&!selectedVendors.find(function(s){return s.name===v.name;})){selectedVendors.push({name:v.name,category:v.category,isCustom:false});afterSelect();}}}
-function addFromInput(){var val=document.getElementById('searchInput').value.trim();if(!val)return;var match=allVendors.find(function(v){return v.name.toLowerCase()===val.toLowerCase();});if(match){if(!selectedVendors.find(function(s){return s.name===match.name;})){selectedVendors.push({name:match.name,category:match.category,isCustom:false});afterSelect();}}else{var partial=allVendors.find(function(v){return v.name.toLowerCase().includes(val.toLowerCase());});if(partial&&!selectedVendors.find(function(s){return s.name===partial.name;})){selectedVendors.push({name:partial.name,category:partial.category,isCustom:false});afterSelect();}else{var name=val.charAt(0).toUpperCase()+val.slice(1);addCustomVendor(name);}}}
-function addCustomVendor(name){if(!name||selectedVendors.find(function(s){return s.name.toLowerCase()===name.toLowerCase();}))return;selectedVendors.push({name:name,category:'Custom Vendor',isCustom:true});afterSelect();}
-function afterSelect(){document.getElementById('searchInput').value='';document.getElementById('dropdown').classList.remove('show');currentDropdownItems=[];highlightedIndex=-1;renderTags();}
-function removeVendor(name){selectedVendors=selectedVendors.filter(function(v){return v.name!==name;});renderTags();}
-function renderTags(){
-  var list=document.getElementById('selectedList'),hint=document.getElementById('selectedHint'),btn=document.getElementById('submitBtn');
-  if(!selectedVendors.length){list.innerHTML='';hint.style.display='none';btn.disabled=true;return;}
-  list.innerHTML=selectedVendors.map(function(v){return'<span class="vendor-tag'+(v.isCustom?' custom':'')+'">'+escH(v.name)+(v.isCustom?'<span class="ai-pill">AI</span>':'')+'<button class="tag-remove" onclick="removeVendor('+JSON.stringify(v.name)+')">&#215;</button></span>';}).join('');
-  hint.style.display='block';
-  hint.textContent=selectedVendors.length+' vendor'+(selectedVendors.length!==1?'s':'')+' selected'+(selectedVendors.some(function(v){return v.isCustom;})?'\u00a0\u2014 custom vendors will be analysed by Claude AI':'');
-  btn.disabled=false;
+function selectFromDropdown(idx){
+  var item=currentDropdownItems[idx];if(!item)return;
+  if(item.isCustom)addVendorToList(item.name,item.category,true);
+  else{var v=allVendors.find(function(v){return v.name===item.name;});if(v&&!selectedVendors.find(function(s){return s.name===v.name;}))addVendorToList(v.name,v.category,false);}
 }
+function addFromInput(){
+  var val=document.getElementById('searchInput').value.trim();if(!val)return;
+  var match=allVendors.find(function(v){return v.name.toLowerCase()===val.toLowerCase();});
+  if(match){if(!selectedVendors.find(function(s){return s.name===match.name;}))addVendorToList(match.name,match.category,false);}
+  else{var partial=allVendors.find(function(v){return v.name.toLowerCase().includes(val.toLowerCase());});
+    if(partial&&!selectedVendors.find(function(s){return s.name===partial.name;}))addVendorToList(partial.name,partial.category,false);
+    else addVendorToList(val.charAt(0).toUpperCase()+val.slice(1),'Custom vendor',true);}
+}
+function addCustomVendor(name){if(!name||selectedVendors.find(function(s){return s.name.toLowerCase()===name.toLowerCase();}))return;addVendorToList(name,'Custom vendor',true);}
+
+function addVendorToList(name,category,isCustom){
+  selectedVendors.push({name:name,category:category,isCustom:isCustom});
+  vendorContext[name]={dpaStatus:'',dataTypes:[],contactVolume:''};
+  document.getElementById('searchInput').value='';
+  document.getElementById('dropdown').classList.remove('show');
+  currentDropdownItems=[];highlightedIndex=-1;
+  renderVendorList();
+}
+function removeVendor(name){
+  selectedVendors=selectedVendors.filter(function(v){return v.name!==name;});
+  delete vendorContext[name];
+  renderVendorList();
+}
+
+// ── VENDOR LIST WITH INLINE QUESTIONS ────────────────────────
+function renderVendorList(){
+  var list=document.getElementById('selectedList');
+  var btn=document.getElementById('scanBtn');
+  if(!selectedVendors.length){list.innerHTML='';btn.disabled=true;return;}
+  list.innerHTML=selectedVendors.map(function(v){
+    var ctx=vendorContext[v.name]||{};
+    var hasCtx=ctx.dpaStatus&&ctx.dataTypes&&ctx.dataTypes.length;
+    return renderVendorEntry(v,ctx,hasCtx);
+  }).join('');
+  // Check if all vendors have answered the key question (DPA status)
+  var allAnswered=selectedVendors.every(function(v){return vendorContext[v.name]&&vendorContext[v.name].dpaStatus;});
+  btn.disabled=!allAnswered;
+}
+
+function renderVendorEntry(v,ctx,hasCtx){
+  var dtBtns=DATA_TYPES.map(function(dt){
+    var on=(ctx.dataTypes||[]).includes(dt.label);
+    return'<button class="dt-btn'+(on?' on':'')+(dt.highRisk?' high-risk':'')+'" onclick="toggleDataType('+JSON.stringify(v.name)+','+JSON.stringify(dt.label)+',this)">'+escH(dt.label)+'</button>';
+  }).join('');
+
+  return'<div class="vendor-row'+(hasCtx?' complete':'')+'" id="vrow-'+escH(v.name.replace(/\s+/g,'-'))+'">'+
+    '<div class="vendor-row-left">'+
+    '<div class="vendor-row-name">'+escH(v.name)+(v.isCustom?'<span class="ai-tag" style="margin-left:6px">AI</span>':'')+'</div>'+
+    '<div class="vendor-row-cat">'+escH(v.category||'')+'</div>'+
+    '</div>'+
+    '<div class="vendor-row-right">'+
+    // DPA question — inline toggle
+    '<div style="display:flex;align-items:center;gap:6px">'+
+    '<span style="font-size:11px;color:var(--mu);font-weight:600">DPA signed?</span>'+
+    '<button class="dt-btn'+(ctx.dpaStatus==='yes'?' on':'')+'" onclick="setDPAStatus('+JSON.stringify(v.name)+',' + JSON.stringify('yes') + ')">Yes</button>'+
+    '<button class="dt-btn'+(ctx.dpaStatus==='no'?' on high-risk':'')+'" onclick="setDPAStatus('+JSON.stringify(v.name)+',' + JSON.stringify('no') + ')">No</button>'+
+    '<button class="dt-btn'+(ctx.dpaStatus==='unsure'?' on':'')+'" onclick="setDPAStatus('+JSON.stringify(v.name)+',' + JSON.stringify('unsure') + ')">Not sure</button>'+
+    '</div>'+
+    '<button class="vendor-remove" onclick="removeVendor('+JSON.stringify(v.name)+')">&#215;</button>'+
+    '</div>'+
+    '</div>'+
+    // Data types + volume — shown after DPA answered
+    '<div class="vendor-questions'+(ctx.dpaStatus?' show':'')+'" id="vq-'+escH(v.name.replace(/\s+/g,'-'))+'">'+
+    '<div class="q-data-types">'+
+    '<label>What data do you send them?</label>'+
+    '<div class="data-type-btns">'+dtBtns+'</div>'+
+    '</div>'+
+    '<div class="q-row">'+
+    '<div class="q-group"><label>Approx. contacts</label>'+
+    '<input type="number" placeholder="e.g. 25000" min="0" value="'+escH(String(ctx.contactVolume||''))+'" oninput="setContactVolume('+JSON.stringify(v.name)+',this.value)"/></div>'+
+    '</div>'+
+    '</div>';
+}
+
+function setDPAStatus(vendorName,status){
+  if(!vendorContext[vendorName])vendorContext[vendorName]={dataTypes:[],contactVolume:''};
+  vendorContext[vendorName].dpaStatus=status;
+  renderVendorList();
+}
+function toggleDataType(vendorName,label,btn){
+  if(!vendorContext[vendorName])vendorContext[vendorName]={dpaStatus:'',dataTypes:[],contactVolume:''};
+  var types=vendorContext[vendorName].dataTypes||[];
+  var idx=types.indexOf(label);
+  if(idx>-1)types.splice(idx,1);else types.push(label);
+  vendorContext[vendorName].dataTypes=types;
+  renderVendorList();
+}
+function setContactVolume(vendorName,val){
+  if(!vendorContext[vendorName])vendorContext[vendorName]={dpaStatus:'',dataTypes:[],contactVolume:''};
+  vendorContext[vendorName].contactVolume=val;
+}
+
 document.addEventListener('click',function(e){
   if(!e.target.closest('#searchWrap'))document.getElementById('dropdown').classList.remove('show');
   if(!e.target.closest('.reg-search-wrap'))document.getElementById('reg-dropdown').classList.remove('show');
 });
 
-// ── RUN CHECK ─────────────────────────────────────────────────
-function runCheck(){
-  clearError();if(!selectedVendors.length)return;
+// ── LOADING ANIMATION ─────────────────────────────────────────
+var loadingStepsList=[
+  'Identifying your processor relationships',
+  'Cross-referencing vendor compliance library',
+  'Analysing your specific data types and volumes',
+  'Calculating exposure based on your situation',
+  'Generating your personalised verdict',
+];
+var loadingTimer=null,currentStep=0;
+
+function startLoadingAnimation(){
+  var stepsEl=document.getElementById('loadingSteps');
+  stepsEl.innerHTML=loadingStepsList.map(function(s,i){
+    return'<div class="loading-step" id="ls-'+i+'"><span class="ls-dot"></span>'+escH(s)+'</div>';
+  }).join('');
+  currentStep=0;
+  activateLoadingStep(0);
+}
+
+function activateLoadingStep(i){
+  if(i>=loadingStepsList.length)return;
+  var prev=document.getElementById('ls-'+(i-1));
+  if(prev)prev.classList.remove('active'),prev.classList.add('done');
+  var curr=document.getElementById('ls-'+i);
+  if(curr)curr.classList.add('active');
+  loadingTimer=setTimeout(function(){activateLoadingStep(i+1);},900);
+}
+
+function stopLoadingAnimation(){
+  if(loadingTimer)clearTimeout(loadingTimer);
+  loadingStepsList.forEach(function(_,i){
+    var el=document.getElementById('ls-'+i);
+    if(el){el.classList.remove('active');el.classList.add('done');}
+  });
+}
+
+// ── RUN SCAN ──────────────────────────────────────────────────
+function showStep(id){
+  ['step-add','step-loading','step-verdict'].forEach(function(s){
+    document.getElementById(s).classList.toggle('active',s===id);
+  });
+}
+
+function runScan(){
+  clearError();
   if(!userId){showError('Please sign in via the dashboard.');return;}
-  var cc=selectedVendors.filter(function(v){return v.isCustom;}).length;
-  document.getElementById('loadingText').textContent=cc>0?'Checking vendors \u2014 Claude AI is analysing '+cc+' custom vendor'+(cc!==1?'s':'')+'\u2026':'Checking vendors\u2026';
-  document.getElementById('formSection').style.display='none';
-  document.getElementById('loadingSection').classList.add('show');
-  fetch(APP_URL+'/api/check-vendors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vendors:selectedVendors,userId:userId})})
-    .then(function(r){if(!r.ok)return r.json().then(function(e){throw new Error(e.error||'Server error '+r.status);});return r.json();})
-    .then(function(data){
-      renderResults(data.results);
-      // Mark as having used the checker — register becomes default next visit
+  showStep('step-loading');
+  startLoadingAnimation();
+
+  // Build vendors array with context
+  var vendors=selectedVendors.map(function(v){
+    var ctx=vendorContext[v.name]||{};
+    return{
+      name:v.name,
+      isCustom:v.isCustom,
+      dpaStatus:ctx.dpaStatus||'unsure',
+      dataTypes:ctx.dataTypes||[],
+      contactVolume:ctx.contactVolume?parseInt(ctx.contactVolume,10)||null:null,
+    };
+  });
+
+  fetch(APP_URL+'/api/check-vendors',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({vendors:vendors,userId:userId})
+  })
+  .then(function(r){if(!r.ok)return r.json().then(function(e){throw new Error(e.error||'Server error '+r.status);});return r.json();})
+  .then(function(data){
+    stopLoadingAnimation();
+    setTimeout(function(){
+      renderVerdict(data.results,vendors);
+      showStep('step-verdict');
       localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
-    })
-    .catch(function(e){
-      showError('Check failed: '+e.message);
-      document.getElementById('formSection').style.display='block';
-      document.getElementById('loadingSection').classList.remove('show');
+    },400);
+  })
+  .catch(function(e){
+    stopLoadingAnimation();
+    showError('Scan failed: '+e.message);
+    showStep('step-add');
+  });
+}
+
+function runDemo(){
+  if(document.getElementById('gateScreen').classList.contains('show')){
+    document.getElementById('gateScreen').classList.remove('show');
+    document.getElementById('panel-scanner').style.display='block';
+    document.getElementById('tabs') && (document.querySelector('.tabs').style.display='flex');
+  }
+  switchTab('scanner');
+  showStep('step-loading');
+  startLoadingAnimation();
+  setTimeout(function(){
+    stopLoadingAnimation();
+    var demoVendors=DEMO_RESULTS.map(function(r){return{name:r.name,isCustom:r.isCustom||false,dpaStatus:r.userContext.dpaStatus,dataTypes:r.userContext.dataTypes,contactVolume:r.userContext.contactVolume};});
+    setTimeout(function(){
+      renderVerdict(DEMO_RESULTS,demoVendors,true);
+      showStep('step-verdict');
+    },400);
+  },4500);
+}
+
+// ── RENDER VERDICT ────────────────────────────────────────────
+function renderVerdict(results,vendorInputs,isDemo){
+  var issues=[];
+  var cleanCount=0;
+
+  results.forEach(function(result,idx){
+    var input=vendorInputs[idx]||{};
+    var userDPA=input.dpaStatus||result.userContext&&result.userContext.dpaStatus||'unsure';
+    var dataTypes=input.dataTypes||result.userContext&&result.userContext.dataTypes||[];
+    var volume=input.contactVolume||result.userContext&&result.userContext.contactVolume||null;
+    var d=result.dimensions||{};
+
+    // Does the user have a signed DPA?
+    var hasDPA=userDPA==='yes';
+    var noResponse=userDPA==='no';
+    var unsure=userDPA==='unsure';
+
+    // Build issue if needed
+    var issue=result.issue||null; // demo has pre-built issues
+
+    if(!issue){
+      // Build issue from scan results + user context
+      var hasSensitive=dataTypes.some(function(t){return/special category|behavioural|purchase/i.test(t);});
+      var breachKnown=d.breachHistory&&!['none identified','none','no','unknown',''].includes((d.breachHistory||'').toLowerCase());
+      var transferUnconfirmed=d.intlTransferOccurs==='Yes'&&['None','Unknown'].includes(d.internationalTransfer||'');
+
+      // Priority 1: No DPA
+      if(!hasDPA){
+        var sev=hasSensitive||(volume&&volume>50000)?'critical':'high';
+        var expLow,expHigh;
+        if(hasSensitive&&volume>50000){expLow=100000;expHigh=400000;}
+        else if(hasSensitive||volume>50000){expLow=50000;expHigh=250000;}
+        else{expLow=20000;expHigh=100000;}
+
+        var fixSteps=[];
+        if(d.dpaLink){
+          fixSteps.push({text:'Sign the DPA at their website — self-serve, no negotiation needed',link:d.dpaLink,linkLabel:'View DPA'});
+        }else if(d.dpaStatus==='On Request'){
+          fixSteps.push({text:'Contact '+escH(result.name)+' to request their Data Processing Agreement. Ask specifically for an Article 28 contract covering UK GDPR.'});
+        }else{
+          fixSteps.push({text:'Contact '+escH(result.name)+'\'s privacy or legal team and request a Data Processing Agreement before sharing any more personal data.'});
+        }
+        fixSteps.push({text:'Once signed, store a copy and add the link to your Sendwize processor register.'});
+
+        issue={
+          severity:sev,
+          title:unsure?'DPA status unconfirmed — verify before your next campaign':'No signed DPA with '+result.name,
+          what:unsure
+            ?'You\'re not sure whether you have a signed DPA with '+result.name+'. UK GDPR Article 28 requires a written contract before sharing personal data with any processor. If you can\'t find a signed DPA on file, treat it as not in place and request one now.'
+            :'You\'ve told us you don\'t have a signed DPA with '+result.name+'. UK GDPR Article 28 requires a written contract before sharing any personal data with a processor. This is a direct breach regardless of how compliant '+result.name+' is as a company.',
+          exposureLow:expLow,
+          exposureHigh:expHigh,
+          fixSteps:fixSteps,
+          impactText:'Signing removes the Article 28 breach entirely',
+          impactDrop:'Eliminates £'+fmtNum(expLow)+'\u2013£'+fmtNum(expHigh)+' of exposure',
+        };
+      }
+      // Priority 2: Breach history with no documented assessment
+      else if(breachKnown&&hasDPA){
+        issue={
+          severity:'medium',
+          title:result.name+' has a confirmed breach history — document your assessment',
+          what:'You have a DPA in place which is good. But '+result.name+' has a confirmed breach or enforcement history: '+d.breachHistory+'. UK GDPR requires you to document that you assessed the risk of continuing to use a processor with a known history. Without that documented assessment you\'re missing a key piece of due diligence.',
+          exposureLow:15000,exposureHigh:60000,
+          fixSteps:[
+            {text:'Write a brief documented assessment: you reviewed the breach, confirmed your account status, and concluded continued use is proportionate given their remediation.'},
+            {text:'Store the assessment with a date and add a note to your Sendwize processor register.'},
+          ],
+          impactText:'Documented assessment covers your due diligence',
+          impactDrop:'Removes the aggravating factor if ICO investigates',
+        };
+      }
+      // Priority 3: Transfer mechanism unconfirmed
+      else if(transferUnconfirmed&&hasDPA){
+        issue={
+          severity:'medium',
+          title:'International transfer mechanism unconfirmed with '+result.name,
+          what:'You have a DPA but the international transfer mechanism for '+result.name+' couldn\'t be confirmed from their public pages. UK GDPR Chapter V requires a lawful basis for any transfer of personal data outside the UK/EEA.',
+          exposureLow:20000,exposureHigh:80000,
+          fixSteps:[
+            {text:'Contact '+result.name+' and ask which transfer mechanism applies to your account: SCCs, UK-US Data Bridge, or Adequacy.'},
+            {text:'Get this confirmed in writing and add it to your processor register.'},
+          ],
+          impactText:'Confirming the mechanism closes the transfer gap',
+          impactDrop:'Removes the Chapter V exposure',
+        };
+      }
+      else{
+        cleanCount++;
+        issue=null;
+      }
+    }
+
+    if(issue){
+      issues.push({result:result,issue:issue,dataTypes:dataTypes,volume:volume,userDPA:userDPA});
+    }else{
+      cleanCount++;
+    }
+  });
+
+  // Sort by severity
+  var sevOrder={critical:0,high:1,medium:2};
+  issues.sort(function(a,b){return(sevOrder[a.issue.severity]||3)-(sevOrder[b.issue.severity]||3);});
+
+  // Calculate total exposure
+  var totalLow=issues.reduce(function(s,i){return s+(i.issue.exposureLow||0);},0);
+  var totalHigh=issues.reduce(function(s,i){return s+(i.issue.exposureHigh||0);},0);
+
+  var html='';
+
+  // Demo notice
+  if(isDemo){
+    html+='<div class="demo-notice"><span style="font-size:15px">👁️</span><span><strong>Demo scan</strong> — showing 3 example processor relationships. <a href="?" style="color:var(--o);font-weight:600">Sign in</a> to scan your own.</span></div>';
+  }
+
+  // Verdict header
+  if(!issues.length){
+    html+='<div class="all-clear"><div class="ac-icon">✓</div><div class="ac-title">No issues found across your processor relationships</div><div class="ac-sub">All '+results.length+' processors you\'ve added have a confirmed DPA status. Keep your register up to date as you add new tools and agencies.</div></div>';
+  }else{
+    var verdictClass=issues[0].issue.severity==='critical'?'red':issues[0].issue.severity==='high'?'amber':'amber';
+    var verdictEye=issues.length===1?'1 issue found':issues.length+' issues found';
+    var verdictHead=issues.length===1
+      ?'You have one processor relationship that needs attention'
+      :'You have '+issues.length+' processor relationships that need attention';
+    var verdictSub=cleanCount>0
+      ?issues.length+' of your '+results.length+' processors have gaps. '+cleanCount+' look fine based on what you\'ve told us.'
+      :'All '+results.length+' processors you\'ve added have compliance gaps to address.';
+
+    html+='<div class="verdict-header '+verdictClass+'">'+
+      '<div class="verdict-decoration"></div>'+
+      '<div class="verdict-eyebrow">'+escH(verdictEye)+'</div>'+
+      '<div class="verdict-headline">'+escH(verdictHead)+'</div>'+
+      '<div class="verdict-sub">'+escH(verdictSub)+'</div>'+
+      (totalLow>0?'<div class="verdict-exposure">'+
+        '<div><div class="ve-label">Unaddressed exposure</div><div class="ve-range">\u00a3'+fmtNum(totalLow)+'\u2013\u00a3'+fmtNum(totalHigh)+'</div><div class="ve-note">Comparable published ICO cases \u00b7 pre-DUAA \u00b7 not a prediction</div></div>'+
+        '</div>':'')
+      +'</div>';
+  }
+
+  // Risk items
+  if(issues.length){
+    html+='<div class="risk-section"><div class="risk-section-title">What needs fixing</div>';
+    issues.forEach(function(item,i){
+      html+=renderRiskItem(item,i);
     });
+    html+='</div>';
+  }
+
+  document.getElementById('verdictContent').innerHTML=html;
 }
 
-// ── RENDER RESULTS ────────────────────────────────────────────
-function renderResults(results){
-  if(!results||!results.length){showError('No results returned.');return;}
-  var avg=Math.round(results.reduce(function(s,r){return s+(r.score||0);},0)/results.length);
-  var hi=results.filter(function(r){return(r.score||0)>=80;}).length;
-  var mi=results.filter(function(r){return(r.score||0)>=60&&(r.score||0)<80;}).length;
-  var lo=results.filter(function(r){return(r.score||0)<60;}).length;
-  var avgCol=avg>=80?'var(--g)':avg>=60?'var(--y)':'var(--r)';
-  document.getElementById('summaryBar').innerHTML=
-    '<div><div class="summary-score" style="color:'+avgCol+'">'+avg+'<span style="font-size:18px;color:var(--mu);font-family:\'DM Sans\',sans-serif">/100</span></div><div class="summary-score-lbl">Average compliance score</div></div>'+
-    '<div class="summary-stats">'+
-    '<div class="stat good"><div class="stat-num">'+hi+'</div><div class="stat-lbl">Compliant</div></div>'+
-    '<div class="stat warn"><div class="stat-num">'+mi+'</div><div class="stat-lbl">Review</div></div>'+
-    '<div class="stat bad"><div class="stat-num">'+lo+'</div><div class="stat-lbl">At risk</div></div>'+
-    '</div>';
-  document.getElementById('vendorCards').innerHTML=results.sort(function(a,b){return(a.score||0)-(b.score||0);}).map(function(v,i){return renderVendorCard(v,i);}).join('');
-  document.getElementById('loadingSection').classList.remove('show');
-  document.getElementById('resultsSection').classList.add('show');
-}
+function renderRiskItem(item,i){
+  var issue=item.issue;
+  var sev=issue.severity||'medium';
+  var sevIcon=sev==='critical'?'✕':sev==='high'?'!':'~';
+  var expText=issue.exposureLow?'\u00a3'+fmtNum(issue.exposureLow)+'\u2013\u00a3'+fmtNum(issue.exposureHigh):'';
 
-function renderVendorCard(v,i){
-  var score=v.score||0;
-  var scoreCls=score>=80?'score-high':score>=60?'score-medium':'score-low';
-  var scoreLbl=score>=80?'Compliant':score>=60?'Review needed':'At risk';
-  var risk=v.riskRating||'Unknown';
-  var riskCls=risk==='Low'?'risk-low':risk==='High'?'risk-high':'risk-medium';
-  var d=v.dimensions||{};
-
-  var dimItems=[
-    {label:'ICO Registration',val:d.icoRegistered||d.icoRegistration||'Unknown',cls:dimClass(d.icoRegistered||d.icoRegistration,false)},
-    {label:'DPA Status',val:d.dpaStatus||'Unknown',cls:dimClass(d.dpaStatus,false)},
-    {label:'Intl Transfer',val:d.internationalTransfer||'Unknown',cls:dimClass(d.internationalTransfer,false)},
-    {label:'Breach History',val:d.breachHistory||'None identified',cls:dimClass(d.breachHistory,true)},
-    {label:'DPO',val:d.dpoConfirmed||d.dpoPresence||'Unknown',cls:dimClass(d.dpoConfirmed||d.dpoPresence,false)},
-    {label:'Security Cert',val:d.relevantSecurityCertification||d.isoAccreditation||'Unknown',cls:dimClass(d.relevantSecurityCertification||d.isoAccreditation,false)},
-    {label:'Last verified',val:d.lastVerified||'Unknown',cls:''},
-  ];
-  var dpaUrl=d.dpaLink||'';
-  var dimsHtml='<div class="sec-title">Seven compliance dimensions</div><div class="dimensions-grid">'+
-    dimItems.map(function(di){return'<div class="dim-item"><div class="dim-label">'+di.label+'</div><div class="dim-val '+di.cls+'">'+escH(di.val)+'</div></div>';}).join('')+
-    '</div>'+(dpaUrl&&dpaUrl.startsWith('http')?'<a class="btn-link" href="'+escH(dpaUrl)+'" target="_blank" rel="noopener">View DPA \u2192</a>':'');
-
-  var regRecord=registerRecords.find(function(r){return r.fields&&r.fields.VendorName===v.name;});
-  var dpaSigned=regRecord?regRecord.fields.DPASigned:undefined;
-  var existingLink=(regRecord&&regRecord.fields&&regRecord.fields.DPALink)?regRecord.fields.DPALink:(dpaUrl||'');
-  var dpaWidget='<div class="dpa-widget"><div class="dpa-widget-label">DPA signed?</div>'+
-    '<div class="dpa-toggle">'+
-    '<button class="dpa-btn'+(dpaSigned===true?' yes-on':'')+'" id="dpabtn-yes-'+i+'" onclick="setDPA('+i+','+JSON.stringify(v.name)+',true)">Yes</button>'+
-    '<button class="dpa-btn'+(dpaSigned===false?' no-on':'')+'" id="dpabtn-no-'+i+'" onclick="setDPA('+i+','+JSON.stringify(v.name)+',false)">No</button>'+
-    '</div>'+
-    '<div class="dpa-link-wrap"><input class="dpa-link-input" id="dpalink-'+i+'" type="url" placeholder="DPA link (optional)" value="'+escH(existingLink)+'"></div>'+
-    '<button class="dpa-save-btn" onclick="saveDPA('+i+','+JSON.stringify(v.name)+')">Save to register</button>'+
-    '<span class="dpa-saved" id="dpatick-'+i+'">\u2713 Saved</span>'+
-    '</div>';
-
-  var detailsHtml=(v.details||[]).map(function(det){
-    var dotCls=det.status==='pass'?'dot-pass':det.status==='warning'?'dot-warn':det.status==='info'?'dot-info':'dot-fail';
-    var dotLbl=det.status==='pass'?'\u2713':det.status==='warning'?'!':det.status==='info'?'i':'\u00d7';
-    return'<div class="detail-item">'+
-      '<div class="detail-icon"><span class="status-dot '+dotCls+'">'+dotLbl+'</span></div>'+
-      '<div><div class="detail-label">'+escH(det.label||'')+'</div><div class="detail-desc">'+escH(det.description||'')+'</div></div>'+
+  var fixStepsHtml=(issue.fixSteps||[]).map(function(step,si){
+    return'<div class="ri-fix-step">'+
+      '<div class="ri-step-num">'+(si+1)+'</div>'+
+      '<div class="ri-step-text">'+escH(step.text)+(step.link?'<br><a class="ri-step-link" href="'+escH(step.link)+'" target="_blank" rel="noopener">'+escH(step.linkLabel||step.link)+' \u2192</a>':'')+'</div>'+
       '</div>';
   }).join('');
 
-  var actionsHtml=v.actionItems&&v.actionItems.length?'<div class="action-box"><div class="action-title">Action items</div><ol class="action-list">'+v.actionItems.map(function(a){return'<li>'+escH(a)+'</li>';}).join('')+'</ol></div>':'';
-  var aiWarn=v.isAI?'<div class="ai-warn"><strong>AI analysis</strong> \u2014 this vendor is not in our verified library. Claude analysed their public information. Verify directly with the vendor before relying on this assessment and before sharing any personal data.</div>':'';
-  var monBadge=!v.isAI?'<span class="monitor-badge-sm">Monitored</span>':'';
+  var contextParts=[];
+  if(item.dataTypes&&item.dataTypes.length)contextParts.push('Data: '+item.dataTypes.join(', '));
+  if(item.volume)contextParts.push('~'+fmtNum(item.volume)+' contacts');
+  var contextHtml=contextParts.length?'<div class="ri-context">Your context: '+escH(contextParts.join(' \u00b7 '))+' \u00b7 Sourced from publicly available pages \u00b7 not legal advice</div>':'';
 
-  return'<div class="vendor-card" id="vc_'+i+'">'+
-    '<div class="vendor-header" onclick="toggleCard(\'vc_'+i+'\')">'+
-    '<div class="vendor-left">'+
-    '<div class="vendor-name">'+escH(v.name)+(v.isAI?' <span class="ai-badge">AI</span>':'')+'</div>'+
-    '<div class="vendor-meta">'+
-    '<span class="score-badge '+scoreCls+'">'+score+'/100 \u2014 '+scoreLbl+'</span>'+
-    '<span class="risk-badge '+riskCls+'">'+risk+' risk</span>'+
-    '<span class="vendor-cat">'+escH(v.vendorType||v.category||'')+'</span>'+
-    monBadge+
+  return'<div class="risk-item severity-'+sev+'" id="ri-'+i+'">'+
+    '<div class="ri-header" onclick="toggleRiskItem('+i+')">'+
+    '<div class="ri-icon '+sev+'">'+sevIcon+'</div>'+
+    '<div class="ri-left">'+
+    '<div class="ri-vendor">'+escH(item.result.name)+'</div>'+
+    '<div class="ri-title">'+escH(issue.title)+'</div>'+
     '</div>'+
+    '<div class="ri-right">'+
+    (expText?'<div class="ri-exposure'+(sev==='medium'?' medium':'')+'">'+expText+'</div>':'')
+    +'</div>'+
+    '<svg class="ri-chevron" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5"/></svg>'+
     '</div>'+
-    '<svg class="chevron" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5"/></svg>'+
-    '</div>'+
-    '<div class="vendor-body"><div class="vendor-body-inner">'+
-    aiWarn+dpaWidget+dimsHtml+
-    (detailsHtml?'<div class="sec-title">Compliance details</div><div class="detail-list">'+detailsHtml+'</div>':'')+
-    actionsHtml+
-    '</div></div></div>';
+    '<div class="ri-body"><div class="ri-body-inner">'+
+    '<div class="ri-what">'+escH(issue.what)+'</div>'+
+    '<div class="ri-fix-title">How to fix this</div>'+
+    fixStepsHtml+
+    (issue.impactText?'<div class="ri-impact"><div class="ri-impact-text">\u2713 '+escH(issue.impactText)+'</div><div class="ri-impact-num">'+escH(issue.impactDrop||'')+'</div></div>':'')+
+    contextHtml+
+    '</div></div>'+
+    '</div>';
 }
 
-function dimClass(val,invertBad){
-  if(!val||val==='Unknown'||val==='unknown')return'';
-  var low=val.toLowerCase();
-  if(invertBad){
-    var isKnownBreach=low&&low!=='none identified'&&low!=='none'&&low!=='no'&&low!=='unknown';
-    return isKnownBreach?'bad':'good';
-  }
-  if(low==='yes'||low.includes('confirmed')||low.includes('in place')||low.includes('adequacy')||low.includes('sccs')||low.includes('bcrs')||low.includes('bridge'))return'good';
-  if(low.includes('on request')||low.includes('partial')||low.includes('pending')||low.includes('us'))return'warn';
-  if(low==='no'||low.includes('refused')||low.includes('not found'))return'bad';
-  return'';
+function toggleRiskItem(i){
+  var el=document.getElementById('ri-'+i);
+  if(el)el.classList.toggle('open');
 }
 
-function setDPA(i,vendorName,val){
-  dpaState[vendorName]=val;
-  document.getElementById('dpabtn-yes-'+i).className='dpa-btn'+(val===true?' yes-on':'');
-  document.getElementById('dpabtn-no-'+i).className='dpa-btn'+(val===false?' no-on':'');
-}
-function saveDPA(i,vendorName){
-  if(!userId)return;
-  var signed=dpaState[vendorName];
-  var linkEl=document.getElementById('dpalink-'+i);
-  var link=linkEl?linkEl.value.trim():'';
-  fetch(APP_URL+'/api/data?action=register',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({userId:userId,vendor:{VendorName:vendorName,DPASigned:signed,DPALink:link,LastChecked:new Date().toISOString().split('T')[0]}})})
-  .then(function(){
-    var tick=document.getElementById('dpatick-'+i);
-    if(tick){tick.classList.add('show');setTimeout(function(){tick.classList.remove('show');},2500);}
-    if(registerLoaded){registerLoaded=false;loadRegister();}
-    localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
-  }).catch(function(e){console.error('DPA save failed:',e);});
-}
-function toggleCard(id){document.getElementById(id).classList.toggle('open');}
-function resetForm(){
-  selectedVendors=[];renderTags();
-  document.getElementById('resultsSection').classList.remove('show');
-  document.querySelectorAll('.demo-notice').forEach(function(n){n.remove();});
-  document.getElementById('formSection').style.display='block';
-  clearError();window.scrollTo({top:0,behavior:'smooth'});
+function fmtNum(n){
+  if(!n)return'0';
+  if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n>=1000)return(n/1000).toFixed(0)+'k';
+  return String(n);
 }
 
-// ── REGISTER ──────────────────────────────────────────────────
+function resetScanner(){
+  selectedVendors=[];vendorContext={};
+  showStep('step-add');
+  document.getElementById('selectedList').innerHTML='';
+  document.getElementById('scanBtn').disabled=true;
+  clearError();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showError(msg){var e=document.getElementById('errorBox');e.textContent=msg;e.classList.add('show');}
+function clearError(){document.getElementById('errorBox').classList.remove('show');}
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── REGISTER (all existing functions) ─────────────────────────
 function loadRegister(){
   if(!userId){document.getElementById('reg-loading').style.display='none';showRegOnboarding();return;}
   fetch(APP_URL+'/api/data?action=history&type=vendor&userId='+encodeURIComponent(userId))
@@ -721,17 +1033,11 @@ function loadRegister(){
     .then(function(data){
       registerRecords=data.records||[];
       document.getElementById('reg-loading').style.display='none';
-      if(registerRecords.length){
-        localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
-        renderRegisterMain();
-      }else{
-        showRegOnboarding();
-      }
+      if(registerRecords.length){localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');renderRegisterMain();}
+      else showRegOnboarding();
     })
     .catch(function(){document.getElementById('reg-loading').style.display='none';showRegOnboarding();});
 }
-
-// ── ONBOARDING CATEGORIES — full 40-vendor library ────────────
 var OB_CATS=[
   {label:'Email marketing',vendors:['Mailchimp','Klaviyo','Brevo','HubSpot','ActiveCampaign','SendGrid (Twilio)','Dotdigital','Omnisend','Campaign Monitor']},
   {label:'CRM',vendors:['HubSpot','Salesforce CRM','Pipedrive','Zoho CRM']},
@@ -743,7 +1049,6 @@ var OB_CATS=[
   {label:'Performance agencies',vendors:['Jellyfish','Brainlabs','Impression Digital','Roast','Wolfgang Digital','Zeal Digital']},
   {label:'Data & CRM agencies',vendors:['Merkle UK','Publicis Sapient UK']},
 ];
-
 function showRegOnboarding(){
   document.getElementById('ob-categories').innerHTML=OB_CATS.map(function(cat){
     return'<div class="ob-category"><div class="ob-cat-label">'+escH(cat.label)+'</div><div class="ob-vendor-btns">'+
@@ -753,37 +1058,16 @@ function showRegOnboarding(){
   }).join('');
   document.getElementById('reg-onboarding').style.display='block';
 }
-function obAddVendorBtn(btn){
-  var name=btn.dataset.vendor,category=btn.dataset.cat;
-  if(!name)return;
-  obAddVendor(name,category,btn);
-}
-
+function obAddVendorBtn(btn){var name=btn.dataset.vendor,category=btn.dataset.cat;if(!name)return;obAddVendor(name,category,btn);}
 function obAddVendor(name,category,btn){
-  if(!userId){showError('Please sign in via the dashboard.');return;}
+  if(!userId){showError('Please sign in.');return;}
   btn.classList.add('added');btn.textContent='\u2713 '+name;btn.disabled=true;
-  var v=allVendors.find(function(av){return av.name===name;})||{};
-  saveVendorDirect({
-    VendorName:name,
-    Category:category,
-    DataLocation:v.dataLocation||'',
-    AgreementType:'Unknown',
-    AgreementStatus:'Not yet',
-    AgreementLink:v.dpaLink||'',
-    LastChecked:new Date().toISOString().split('T')[0]
-  },null).then(function(){
-    localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
-    document.getElementById('reg-onboarding').style.display='none';
-    registerLoaded=false;
-    loadRegister();
-  }).catch(function(e){
-    console.error('obAddVendor save failed:',e);
-    btn.classList.remove('added');btn.textContent=name;btn.disabled=false;
-  });
+  saveVendorDirect({VendorName:name,Category:category,AgreementType:'Unknown',AgreementStatus:'Not yet',LastChecked:new Date().toISOString().split('T')[0]},null)
+    .then(function(){localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');document.getElementById('reg-onboarding').style.display='none';registerLoaded=false;loadRegister();})
+    .catch(function(e){btn.classList.remove('added');btn.textContent=name;btn.disabled=false;});
 }
 function skipOnboarding(){document.getElementById('reg-onboarding').style.display='none';registerLoaded=true;registerRecords=[];renderRegisterMain();}
 function renderRegisterMain(){document.getElementById('reg-main').style.display='block';renderHealthSummary();renderStaleAlert();renderRegisterTable();}
-
 function renderHealthSummary(){
   var tot=registerRecords.length;
   var noAg=registerRecords.filter(function(r){var s=r.fields.AgreementStatus||'';return s==='Not yet'||s==='None in place'||s==='';}).length;
@@ -791,68 +1075,55 @@ function renderHealthSummary(){
   var sc=registerRecords.map(function(r){return r.fields.ComplianceScore||0;}).filter(Boolean);
   var avg=sc.length?Math.round(sc.reduce(function(a,b){return a+b;},0)/sc.length):'?';
   document.getElementById('reg-health').innerHTML=
-    '<div class="health-tile"><div class="health-num">'+tot+'</div><div class="health-lbl">Total vendors</div></div>'+
+    '<div class="health-tile"><div class="health-num">'+tot+'</div><div class="health-lbl">Total</div></div>'+
     '<div class="health-tile"><div class="health-num'+(noAg>0?' bad':'')+'">'+noAg+'</div><div class="health-lbl">No agreement</div></div>'+
-    '<div class="health-tile"><div class="health-num'+(stale>0?' warn':'')+'">'+stale+'</div><div class="health-lbl">Stale (90+ days)</div></div>'+
+    '<div class="health-tile"><div class="health-num'+(stale>0?' warn':'')+'">'+stale+'</div><div class="health-lbl">Stale</div></div>'+
     '<div class="health-tile"><div class="health-num'+(typeof avg==='number'?(avg>=80?' good':avg>=60?' ':' bad'):'')+'">'+avg+(typeof avg==='number'?'/100':'')+'</div><div class="health-lbl">Avg score</div></div>';
 }
-
 function renderStaleAlert(){
   var staleRecs=registerRecords.filter(function(r){return isStale(r.fields.LastChecked)&&r.fields.VendorName;});
   var wrap=document.getElementById('stale-alert-wrap');
   if(!staleRecs.length){wrap.innerHTML='';return;}
-  wrap.innerHTML='<div class="stale-alert">'+
-    '<div><strong>'+staleRecs.length+' vendor'+(staleRecs.length!==1?'s':'')+' due for re-check</strong> \u2014 last checked over 90 days ago'+
-    '<div class="stale-vendors">'+staleRecs.map(function(r){return'<span class="stale-tag">'+escH(r.fields.VendorName)+'</span>';}).join('')+'</div></div>'+
-    '<button class="recheck-all-btn" onclick="recheckAll()">Re-check all</button>'+
-    '</div>';
+  wrap.innerHTML='<div class="stale-alert"><div><strong>'+staleRecs.length+' vendor'+(staleRecs.length!==1?'s':'')+' due for re-scan</strong><div class="stale-vendors">'+staleRecs.map(function(r){return'<span class="stale-tag">'+escH(r.fields.VendorName)+'</span>';}).join('')+'</div></div><button class="recheck-all-btn" onclick="recheckAll()">Re-scan all</button></div>';
 }
-
 function recheckAll(){
   var staleRecs=registerRecords.filter(function(r){return isStale(r.fields.LastChecked)&&r.fields.VendorName;});
-  if(!staleRecs.length)return;
-  if(!confirm('Re-check '+staleRecs.length+' stale vendor'+(staleRecs.length!==1?'s':'')+' now?'))return;
+  if(!staleRecs.length||!confirm('Re-scan '+staleRecs.length+' vendors?'))return;
   var vendors=staleRecs.map(function(r){return{name:r.fields.VendorName,isCustom:!allVendors.find(function(v){return v.name===r.fields.VendorName;})};});
   fetch(APP_URL+'/api/check-vendors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vendors:vendors,userId:userId})})
     .then(function(r){if(!r.ok)throw r;return r.json();})
     .then(function(data){
-      var promises=(data.results||[]).map(function(res){
+      return Promise.all((data.results||[]).map(function(res){
         var rec=registerRecords.find(function(r){return r.fields.VendorName===res.name;});
         if(!rec)return Promise.resolve();
         return saveVendorDirect({VendorName:res.name,ComplianceScore:res.score,LastChecked:new Date().toISOString().split('T')[0]},rec.id);
-      });
-      return Promise.all(promises);
+      }));
     })
     .then(function(){registerLoaded=false;loadRegister();})
-    .catch(function(){alert('Re-check failed. Please try again.');});
+    .catch(function(){alert('Re-scan failed.');});
 }
-
 function isStale(d){if(!d)return false;return(Date.now()-new Date(d).getTime())>90*24*60*60*1000;}
-
 function renderRegisterTable(){
   var tbody=document.getElementById('reg-tbody');
-  if(!registerRecords.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mu);padding:28px;font-size:13px">No vendors yet. Click \u201c+ Add vendor\u201d to get started.</td></tr>';return;}
+  if(!registerRecords.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mu);padding:28px;font-size:13px">No vendors yet. Click \u201c+ Add vendor\u201d.</td></tr>';return;}
   tbody.innerHTML=registerRecords.map(function(r){
     var f=r.fields,stale=isStale(f.LastChecked),agPill=agreementPill(f.AgreementStatus);
     var sc=f.ComplianceScore,scc=sc>=80?'high':sc>=60?'mid':'low';
     var dp='';try{dp=JSON.parse(f.DataProcessed||'[]').join(', ');}catch(e){dp=f.DataProcessed||'';}
-    return'<tr><td>'+
+    return'<tr onclick="showEditForm(\''+r.id+'\')" style="cursor:pointer"><td>'+
       '<div class="reg-vendor-name">'+escH(f.VendorName||'')+(stale?'<span class="stale-badge">Stale</span>':'')+'</div>'+
-      '<div class="reg-vendor-cat">'+escH(f.Category||'')+'</div>'+
-      '</td>'+
+      '<div class="reg-vendor-cat">'+escH(f.Category||'')+'</div></td>'+
       '<td style="color:var(--mu);font-size:11px">'+escH(dp||'\u2014')+'</td>'+
       '<td>'+agPill+'</td>'+
       '<td style="font-size:11px;color:var(--mu)">'+escH(f.DataLocation||'\u2014')+'</td>'+
       '<td>'+(sc!=null?'<span class="reg-score '+scc+'">'+sc+'/100</span>':'<span style="color:var(--mu)">\u2014</span>')+'</td>'+
       '<td style="font-size:11px;color:var(--mu)">'+escH(f.LastChecked||'\u2014')+'</td>'+
-      '<td><div class="reg-actions">'+
-      '<button class="reg-action-btn" onclick="reCheckVendor('+JSON.stringify(r.id)+','+JSON.stringify(f.VendorName)+')">Re-check</button>'+
-      '<button class="reg-action-btn" onclick="showEditForm('+JSON.stringify(r.id)+')">Edit</button>'+
-      '<button class="reg-action-btn remove" onclick="removeVendorReg('+JSON.stringify(r.id)+','+JSON.stringify(f.VendorName)+')">Remove</button>'+
+      '<td onclick="event.stopPropagation()"><div class="reg-actions">'+
+      '<button class="reg-action-btn" onclick="reCheckVendor(\''+r.id+'\','+JSON.stringify(f.VendorName)+')">Re-scan</button>'+
+      '<button class="reg-action-btn remove" onclick="removeVendorReg(\''+r.id+'\','+JSON.stringify(f.VendorName)+')">Remove</button>'+
       '</div></td></tr>';
   }).join('');
 }
-
 function agreementPill(s){
   if(!s)return'<span class="agreement-pill ap-grey">Unknown</span>';
   if(s==='In place')return'<span class="agreement-pill ap-green">In place</span>';
@@ -860,7 +1131,6 @@ function agreementPill(s){
   if(s==='N/A')return'<span class="agreement-pill ap-grey">N/A</span>';
   return'<span class="agreement-pill ap-red">Not in place</span>';
 }
-
 function showAddForm(defaults,scrollTo){
   editingRecordId=null;clearRegForm();
   document.getElementById('reg-form-title').textContent='Add Vendor';
@@ -912,39 +1182,31 @@ function saveVendorDirect(vendor,recordId){
   return fetch(APP_URL+'/api/data?action=register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(function(e){console.error(e);});
 }
 function reCheckVendor(recordId,vendorName){
-  if(!confirm('Re-check compliance data for '+vendorName+'?'))return;
+  if(!confirm('Re-scan '+vendorName+'?'))return;
   fetch(APP_URL+'/api/check-vendors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vendors:[{name:vendorName,isCustom:!allVendors.find(function(v){return v.name===vendorName;})}],userId:userId})})
     .then(function(r){if(!r.ok)throw r;return r.json();})
-    .then(function(data){
-      var res=data.results&&data.results[0];
-      if(res){saveVendorDirect({VendorName:vendorName,ComplianceScore:res.score,LastChecked:new Date().toISOString().split('T')[0]},recordId);registerLoaded=false;loadRegister();}
-    })
-    .catch(function(){alert('Re-check failed. Please try again.');});
+    .then(function(data){var res=data.results&&data.results[0];if(res){saveVendorDirect({VendorName:vendorName,ComplianceScore:res.score,LastChecked:new Date().toISOString().split('T')[0]},recordId);registerLoaded=false;loadRegister();}})
+    .catch(function(){alert('Re-scan failed.');});
 }
 function removeVendorReg(recordId,name){
-  if(!confirm('Remove '+name+' from your register?'))return;
+  if(!confirm('Remove '+name+'?'))return;
   fetch(APP_URL+'/api/data?action=register&recordId='+encodeURIComponent(recordId),{method:'DELETE'})
     .then(function(){registerLoaded=false;loadRegister();})
     .catch(function(){alert('Remove failed.');});
 }
-
 function onRegSearch(val){
   var q=val.trim().toLowerCase(),dd=document.getElementById('reg-dropdown');
   if(q.length<2){dd.classList.remove('show');return;}
   var matches=allVendors.filter(function(v){return v.name.toLowerCase().includes(q);});
-  var html=matches.slice(0,8).map(function(v){return'<div class="dropdown-item" onclick="selectRegVendor('+JSON.stringify(v.name)+','+JSON.stringify(v.category||'')+',\'\')"><div class="dropdown-name">'+escH(v.name)+'</div><div class="dropdown-cat">'+escH(v.category||'')+'</div></div>';}).join('');
-  if(!allVendors.find(function(v){return v.name.toLowerCase()===q;})){var d=val.trim().charAt(0).toUpperCase()+val.trim().slice(1);html+='<div class="dropdown-item" onclick="selectRegVendor('+JSON.stringify(d)+',\'\',\'\')"><div class="dropdown-name custom">Use \u201c'+escH(d)+'\u201d</div></div>';}
+  var html=matches.slice(0,8).map(function(v){return'<div class="dropdown-item" onclick="selectRegVendor('+JSON.stringify(v.name)+','+JSON.stringify(v.category||'')+')"><div class="dropdown-name">'+escH(v.name)+'</div><div class="dropdown-cat">'+escH(v.category||'')+'</div></div>';}).join('');
+  if(!allVendors.find(function(v){return v.name.toLowerCase()===q;})){var d=val.trim().charAt(0).toUpperCase()+val.trim().slice(1);html+='<div class="dropdown-item" onclick="selectRegVendor('+JSON.stringify(d)+',\'\')"><div class="dropdown-name dropdown-custom">Use \u201c'+escH(d)+'\u201d</div></div>';}
   dd.innerHTML=html;dd.classList.add('show');
 }
-function selectRegVendor(name,category,dataLocation){
+function selectRegVendor(name,category){
   document.getElementById('reg-search-input').value=name;
   document.getElementById('reg-dropdown').classList.remove('show');
   if(category&&!document.getElementById('reg-category').value)document.getElementById('reg-category').value=category;
-  if(dataLocation&&!document.getElementById('reg-data-location').value)document.getElementById('reg-data-location').value=dataLocation;
-  var v=allVendors.find(function(v){return v.name===name;});
-  if(v&&v.dpaLink&&!document.getElementById('reg-agreement-link').value)document.getElementById('reg-agreement-link').value=v.dpaLink;
 }
-
 function exportRegisterCSV(){
   if(!registerRecords.length)return;
   var hdrs=['Vendor','Category','Data Processed','Agreement Type','Agreement Status','Agreement Link','Data Location','Compliance Score','Last Checked','Notes'];
@@ -956,13 +1218,9 @@ function exportRegisterCSV(){
   var csv=['Information only \u2014 not legal advice.',hdrs.join(',')].concat(rows).join('\n');
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download='data-processor-register-'+new Date().toISOString().split('T')[0]+'.csv';
+  a.download='processor-register-'+new Date().toISOString().split('T')[0]+'.csv';
   a.click();
 }
-
-function showError(msg){var e=document.getElementById('errorBox');e.textContent=msg;e.classList.add('show');}
-function clearError(){document.getElementById('errorBox').classList.remove('show');}
-function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 init();
 </script>
