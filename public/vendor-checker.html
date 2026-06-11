@@ -15,23 +15,23 @@
   --r:#dc2626;--rb:#fef2f2;--rc:#fecaca;
   --y:#ca8a04;--yb:#fefce8;--yc:#fef08a;
   --blue:#1d4ed8;--blueb:#eff6ff;--bluebd:#bfdbfe;
+  --pur:#7c3aed;--purb:#f5f3ff;--purbd:#ddd6fe;
   --rad:12px;--rad-sm:8px;
   --sh:0 1px 3px rgba(0,0,0,.06);
   --shm:0 4px 16px rgba(0,0,0,.08);
   --shl:0 8px 32px rgba(0,0,0,.12);
 }
-body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;padding:32px 20px 80px;-webkit-font-smoothing:antialiased}
-.container{max-width:800px;margin:0 auto}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;padding:0 0 80px;-webkit-font-smoothing:antialiased}
+.page-wrap{max-width:860px;margin:0 auto;padding:32px 20px 0}
 
 /* ── BACK ── */
 .back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--mu);text-decoration:none;margin-bottom:20px;font-weight:500;transition:color .15s}
 .back-link:hover{color:var(--o)}
 
 /* ── PAGE HEADER ── */
-.page-header{margin-bottom:32px}
-.page-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--o);margin-bottom:8px}
-.page-title{font-size:30px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px;line-height:1.2}
-.page-sub{font-size:14px;color:var(--tm);line-height:1.65;max-width:560px}
+.page-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--o);margin-bottom:6px}
+.page-title{font-size:28px;font-weight:700;letter-spacing:-.4px;margin-bottom:6px;line-height:1.2}
+.page-sub{font-size:13px;color:var(--tm);line-height:1.65;max-width:580px;margin-bottom:24px}
 
 /* ── GATE ── */
 .gate-screen{display:none;min-height:75vh;align-items:center;justify-content:center;padding:40px 20px}
@@ -48,17 +48,17 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 /* ── TABS ── */
 .tabs{display:flex;border-bottom:2px solid var(--b);margin-bottom:28px}
-.tab-btn{padding:10px 20px;font-size:13px;font-weight:600;font-family:inherit;background:none;border:none;cursor:pointer;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab-btn{padding:10px 18px;font-size:13px;font-weight:600;font-family:inherit;background:none;border:none;cursor:pointer;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
 .tab-btn.active{color:var(--o);border-bottom-color:var(--o)}
 .tab-btn:hover:not(.active){color:var(--t)}
 .tab-panel{display:none}.tab-panel.active{display:block}
 
-/* ── SCANNER STEPS ── */
+/* ── STEPS ── */
 .step{display:none}.step.active{display:block}
 
-/* STEP 1 — Add vendors */
+/* ── SEARCH CARD ── */
 .search-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:28px;margin-bottom:16px;box-shadow:var(--sh)}
-.search-card-title{font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px}
+.search-card-title{font-size:17px;font-weight:700;letter-spacing:-.3px;margin-bottom:5px}
 .search-card-sub{font-size:13px;color:var(--tm);margin-bottom:20px;line-height:1.6}
 .search-row{display:flex;gap:8px;margin-bottom:14px}
 .search-wrap{position:relative;flex:1}
@@ -75,147 +75,156 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .dropdown-name{font-size:13px;font-weight:600;color:var(--t)}
 .dropdown-cat{font-size:11px;color:var(--mu);margin-top:1px}
 .dropdown-custom{color:var(--o)}
-.selected-list{display:flex;flex-direction:column;gap:0;margin-bottom:16px}
-.vendor-row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);border:1.5px solid var(--b);border-radius:var(--rad-sm);margin-bottom:8px;transition:border-color .2s}
-.vendor-row.complete{border-color:var(--gc);background:var(--gb)}
-.vendor-row.hasrisk{border-color:var(--yc);background:var(--yb)}
-.vendor-row-left{flex:1;min-width:0}
-.vendor-row-name{font-size:14px;font-weight:600;color:var(--t);margin-bottom:2px}
-.vendor-row-cat{font-size:11px;color:var(--mu)}
-.vendor-row-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.vendor-remove{background:none;border:none;cursor:pointer;color:var(--mu);font-size:18px;padding:0;line-height:1;transition:color .15s}
-.vendor-remove:hover{color:var(--r)}
-.ai-tag{font-size:9px;font-weight:700;padding:2px 6px;background:var(--blueb);color:var(--blue);border-radius:3px;letter-spacing:.04em}
 
-/* Context questions inline */
-.vendor-questions{display:none;padding:14px 16px;border-top:1px solid var(--b);background:var(--w);border-radius:0 0 var(--rad-sm) var(--rad-sm);margin-top:-8px;margin-bottom:8px;border:1.5px solid var(--b);border-top:none}
-.vendor-questions.show{display:block}
-.q-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
-@media(max-width:560px){.q-row{grid-template-columns:1fr}}
-.q-group label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:5px}
-.q-group select,.q-group input[type="number"]{width:100%;padding:8px 10px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:12px;font-family:inherit;background:var(--w);color:var(--t);outline:none;transition:border-color .15s}
-.q-group select:focus,.q-group input:focus{border-color:var(--o)}
-.q-data-types{margin-bottom:12px}
-.q-data-types label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:6px}
-.data-type-btns{display:flex;flex-wrap:wrap;gap:6px}
-.dt-btn{padding:5px 11px;border:1.5px solid var(--b);border-radius:20px;font-size:11px;font-weight:500;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
-.dt-btn:hover{border-color:var(--o);color:var(--o)}
-.dt-btn.on{border-color:var(--o);background:var(--ol);color:var(--o);font-weight:700}
-.dt-btn.high-risk.on{border-color:var(--r);background:var(--rb);color:var(--r)}
+/* ── VENDOR ENTRY ROW ── */
+.vendor-entry{background:var(--bg);border:1.5px solid var(--b);border-radius:var(--rad-sm);margin-bottom:8px;overflow:hidden;transition:border-color .2s}
+.vendor-entry.answered{border-color:var(--gc)}
+.vendor-entry.has-risk{border-color:var(--yc)}
+.ve-header{display:flex;align-items:center;gap:12px;padding:13px 16px}
+.ve-name{font-size:13px;font-weight:600;flex:1}
+.ve-cat{font-size:11px;color:var(--mu)}
+.ve-remove{background:none;border:none;cursor:pointer;color:var(--mu);font-size:18px;line-height:1;transition:color .15s}
+.ve-remove:hover{color:var(--r)}
+.ai-tag{font-size:9px;font-weight:700;padding:2px 5px;background:var(--blueb);color:var(--blue);border-radius:3px}
+.ve-questions{padding:0 16px 14px;border-top:1px solid var(--b)}
+
+/* ── INLINE QUESTIONS ── */
+.q-section{margin-top:12px}
+.q-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:7px;display:block}
+.q-toggle{display:flex;flex-wrap:wrap;gap:5px}
+.q-btn{padding:5px 12px;border:1.5px solid var(--b);border-radius:20px;font-size:11px;font-weight:500;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
+.q-btn:hover{border-color:var(--o);color:var(--o)}
+.q-btn.on{border-color:var(--o);background:var(--ol);color:var(--o);font-weight:700}
+.q-btn.on.risk{border-color:var(--r);background:var(--rb);color:var(--r)}
+.q-btn.on.yes-good{border-color:var(--g);background:var(--gb);color:var(--g)}
+.dt-grid{display:flex;flex-wrap:wrap;gap:5px}
+.dt-btn{padding:4px 10px;border:1.5px solid var(--b);border-radius:16px;font-size:11px;font-weight:500;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
+.dt-btn:hover{border-color:var(--o)}
+.dt-btn.on{border-color:var(--o);background:var(--ol);color:var(--o);font-weight:600}
+.dt-btn.on.sensitive{border-color:var(--r);background:var(--rb);color:var(--r)}
+.vol-input{padding:6px 10px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:12px;font-family:inherit;width:150px;outline:none;transition:border-color .15s}
+.vol-input:focus{border-color:var(--o)}
+.q-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.q-group{flex:1;min-width:160px}
 
 /* ── SCAN BUTTON ── */
-.scan-btn{width:100%;padding:16px 24px;background:var(--o);color:#fff;border:none;border-radius:var(--rad);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;letter-spacing:-.2px;position:relative;overflow:hidden}
+.scan-btn{width:100%;padding:15px 24px;background:var(--o);color:#fff;border:none;border-radius:var(--rad);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;position:relative}
 .scan-btn:hover:not(:disabled){background:var(--od);transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,115,23,.3)}
 .scan-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .scan-btn-sub{font-size:11px;font-weight:500;opacity:.8;display:block;margin-top:2px}
-.demo-link{text-align:center;margin-top:12px}
-.demo-link button{background:none;border:none;font-size:12px;color:var(--mu);cursor:pointer;font-family:inherit;text-decoration:underline;transition:color .15s}
+.demo-link{text-align:center;margin-top:10px}
+.demo-link button{background:none;border:none;font-size:12px;color:var(--mu);cursor:pointer;font-family:inherit;text-decoration:underline}
 .demo-link button:hover{color:var(--t)}
 
 /* ── LOADING ── */
-.loading{display:none;text-align:center;padding:60px 20px}
-.loading.show{display:block}
-.scan-animation{margin:0 auto 24px;width:56px;height:56px;position:relative}
-.scan-ring{width:56px;height:56px;border:3px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .9s linear infinite}
+.loading-wrap{text-align:center;padding:60px 20px}
+.scan-ring{width:48px;height:48px;border:3px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 20px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-title{font-size:18px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
-.loading-sub{font-size:13px;color:var(--mu)}
-.loading-steps{margin-top:20px;display:flex;flex-direction:column;gap:6px;max-width:280px;margin-left:auto;margin-right:auto}
-.loading-step{font-size:12px;color:var(--mu);display:flex;align-items:center;gap:8px;opacity:.4;transition:opacity .3s}
-.loading-step.active{opacity:1;color:var(--t)}
-.loading-step.done{opacity:.6;color:var(--g)}
-.ls-dot{width:6px;height:6px;border-radius:50%;background:var(--b);flex-shrink:0}
-.loading-step.active .ls-dot{background:var(--o)}
-.loading-step.done .ls-dot{background:var(--g)}
+.loading-title{font-size:18px;font-weight:700;margin-bottom:5px;letter-spacing:-.2px}
+.loading-sub{font-size:12px;color:var(--mu)}
+.loading-steps{margin-top:18px;display:flex;flex-direction:column;gap:5px;max-width:260px;margin-left:auto;margin-right:auto}
+.ls{font-size:11px;color:var(--mu);display:flex;align-items:center;gap:7px;opacity:.35;transition:opacity .3s}
+.ls.active{opacity:1;color:var(--t)}.ls.done{opacity:.6;color:var(--g)}
+.ls-dot{width:5px;height:5px;border-radius:50%;background:var(--b);flex-shrink:0}
+.ls.active .ls-dot{background:var(--o)}.ls.done .ls-dot{background:var(--g)}
 
 /* ── VERDICT ── */
-.verdict{display:none}.verdict.show{display:block}
-.verdict-header{border-radius:var(--rad);padding:28px 32px;margin-bottom:20px;position:relative;overflow:hidden}
-.verdict-header.green{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1.5px solid var(--gc)}
-.verdict-header.amber{background:linear-gradient(135deg,#fefce8 0%,#fef9c3 100%);border:1.5px solid var(--yc)}
-.verdict-header.red{background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);border:1.5px solid var(--rc)}
-.verdict-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
-.verdict-header.green .verdict-eyebrow{color:var(--g)}
-.verdict-header.amber .verdict-eyebrow{color:var(--y)}
-.verdict-header.red .verdict-eyebrow{color:var(--r)}
-.verdict-headline{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px;line-height:1.3}
-.verdict-header.green .verdict-headline{color:#14532d}
-.verdict-header.amber .verdict-headline{color:#713f12}
-.verdict-header.red .verdict-headline{color:#7f1d1d}
+.verdict-header{border-radius:var(--rad);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden}
+.verdict-header.green{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid var(--gc)}
+.verdict-header.amber{background:linear-gradient(135deg,#fefce8,#fef9c3);border:1.5px solid var(--yc)}
+.verdict-header.red{background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1.5px solid var(--rc)}
+.verdict-eye{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.verdict-header.green .verdict-eye{color:var(--g)}.verdict-header.amber .verdict-eye{color:var(--y)}.verdict-header.red .verdict-eye{color:var(--r)}
+.verdict-head{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:5px;line-height:1.3}
+.verdict-header.green .verdict-head{color:#14532d}.verdict-header.amber .verdict-head{color:#713f12}.verdict-header.red .verdict-head{color:#7f1d1d}
 .verdict-sub{font-size:13px;line-height:1.6}
-.verdict-header.green .verdict-sub{color:#166534}
-.verdict-header.amber .verdict-sub{color:#92400e}
-.verdict-header.red .verdict-sub{color:#991b1b}
-.verdict-exposure{margin-top:16px;display:inline-flex;align-items:center;gap:10px;background:rgba(0,0,0,.06);border-radius:8px;padding:10px 16px}
-.ve-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.7}
-.ve-range{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:-.5px}
-.ve-note{font-size:10px;opacity:.6;margin-top:1px}
-.verdict-decoration{position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;opacity:.08}
-.verdict-header.green .verdict-decoration{background:var(--g)}
-.verdict-header.amber .verdict-decoration{background:var(--y)}
-.verdict-header.red .verdict-decoration{background:var(--r)}
+.verdict-header.green .verdict-sub{color:#166534}.verdict-header.amber .verdict-sub{color:#92400e}.verdict-header.red .verdict-sub{color:#991b1b}
+.verdict-exp{margin-top:14px;display:inline-flex;align-items:center;gap:10px;background:rgba(0,0,0,.06);border-radius:8px;padding:9px 14px}
+.ve-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.7}
+.ve-range{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:-.3px}
+.ve-note{font-size:9px;opacity:.6;margin-top:1px}
+.verdict-deco{position:absolute;right:-20px;top:-20px;width:110px;height:110px;border-radius:50%;opacity:.07}
+.verdict-header.green .verdict-deco{background:var(--g)}.verdict-header.amber .verdict-deco{background:var(--y)}.verdict-header.red .verdict-deco{background:var(--r)}
 
 /* ── RISK ITEMS ── */
-.risk-section{margin-bottom:20px}
-.risk-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:12px}
-.risk-item{background:var(--w);border:1.5px solid var(--b);border-radius:var(--rad);margin-bottom:10px;overflow:hidden;transition:all .2s;cursor:pointer}
+.risk-section{margin-bottom:18px}
+.risk-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:10px}
+.risk-item{background:var(--w);border:1.5px solid var(--b);border-radius:var(--rad);margin-bottom:8px;overflow:hidden;cursor:pointer;transition:all .2s}
 .risk-item:hover{border-color:var(--bm);box-shadow:var(--shm)}
 .risk-item.open{border-color:var(--o)}
-.risk-item.severity-critical{border-left:4px solid var(--r)}
-.risk-item.severity-high{border-left:4px solid var(--o)}
-.risk-item.severity-medium{border-left:4px solid var(--y)}
-.risk-item.resolved{border-left:4px solid var(--g);opacity:.7}
-.ri-header{display:flex;align-items:center;gap:14px;padding:16px 20px}
-.ri-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.ri-icon.critical{background:var(--rb);color:var(--r)}
-.ri-icon.high{background:var(--ol);color:var(--o)}
-.ri-icon.medium{background:var(--yb);color:var(--y)}
-.ri-icon.resolved{background:var(--gb);color:var(--g)}
+.risk-item.sev-critical{border-left:4px solid var(--r)}
+.risk-item.sev-high{border-left:4px solid var(--o)}
+.risk-item.sev-medium{border-left:4px solid var(--y)}
+.ri-head{display:flex;align-items:center;gap:12px;padding:14px 18px}
+.ri-icon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.ri-icon.critical{background:var(--rb);color:var(--r)}.ri-icon.high{background:var(--ol);color:var(--o)}.ri-icon.medium{background:var(--yb);color:var(--y)}
 .ri-left{flex:1;min-width:0}
-.ri-vendor{font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
-.ri-title{font-size:14px;font-weight:600;color:var(--t);line-height:1.4}
-.ri-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
-.ri-exposure{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--r)}
-.ri-exposure.medium{color:var(--y)}
-.ri-exposure.resolved{color:var(--g)}
-.ri-chevron{color:var(--mu);transition:transform .25s;flex-shrink:0}
-.risk-item.open .ri-chevron{transform:rotate(180deg)}
+.ri-reg{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:3px}
+.ri-title{font-size:13px;font-weight:600;color:var(--t);line-height:1.4}
+.ri-vendor-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--bg);color:var(--mu);margin-left:6px;border:1px solid var(--b)}
+.ri-exp{font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--r);flex-shrink:0}
+.ri-exp.medium{color:var(--y)}
+.ri-chev{color:var(--mu);transition:transform .25s;flex-shrink:0}
+.risk-item.open .ri-chev{transform:rotate(180deg)}
 .ri-body{max-height:0;overflow:hidden;transition:max-height .35s ease;border-top:1px solid var(--b)}
-.risk-item.open .ri-body{max-height:800px}
-.ri-body-inner{padding:20px}
-.ri-what{font-size:13px;color:var(--tm);line-height:1.65;margin-bottom:16px}
-.ri-fix-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--o);margin-bottom:10px}
-.ri-fix-step{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--ol);border-radius:var(--rad-sm);margin-bottom:6px;border:1px solid var(--om)}
-.ri-fix-step:last-child{margin-bottom:0}
-.ri-step-num{width:20px;height:20px;border-radius:50%;background:var(--o);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.ri-step-text{font-size:12px;color:var(--t);line-height:1.55;flex:1}
-.ri-step-link{color:var(--o);font-weight:600;text-decoration:none}
-.ri-step-link:hover{text-decoration:underline}
-.ri-impact{display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 14px;background:var(--gb);border:1px solid var(--gc);border-radius:var(--rad-sm)}
+.risk-item.open .ri-body{max-height:900px}
+.ri-body-inner{padding:18px}
+.ri-what{font-size:12px;color:var(--tm);line-height:1.65;margin-bottom:14px}
+.fix-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--o);margin-bottom:8px}
+.fix-step{display:flex;align-items:flex-start;gap:9px;padding:9px 12px;background:var(--ol);border-radius:var(--rad-sm);margin-bottom:5px;border:1px solid var(--om)}
+.fix-step:last-child{margin-bottom:0}
+.fix-num{width:18px;height:18px;border-radius:50%;background:var(--o);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.fix-text{font-size:12px;color:var(--t);line-height:1.55;flex:1}
+.fix-link{color:var(--o);font-weight:600;text-decoration:none}
+.fix-link:hover{text-decoration:underline}
+.ri-impact{display:flex;align-items:center;gap:8px;margin-top:12px;padding:9px 12px;background:var(--gb);border:1px solid var(--gc);border-radius:var(--rad-sm)}
 .ri-impact-text{font-size:12px;color:#166534;flex:1;line-height:1.4}
-.ri-impact-num{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--g);white-space:nowrap}
-.ri-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
-.ri-btn-fix{padding:9px 18px;background:var(--o);color:#fff;border:none;border-radius:var(--rad-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
-.ri-btn-fix:hover{background:var(--od)}
-.ri-btn-fix.done{background:var(--g)}
-.ri-btn-dismiss{padding:9px 14px;background:var(--w);color:var(--mu);border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
-.ri-btn-dismiss:hover{border-color:var(--bm);color:var(--t)}
-.ri-context{font-size:11px;color:var(--mu);margin-top:10px;padding-top:10px;border-top:1px solid var(--b);line-height:1.5}
+.ri-impact-num{font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--g);white-space:nowrap}
+.ri-ctx{font-size:10px;color:var(--mu);margin-top:10px;padding-top:8px;border-top:1px solid var(--b);line-height:1.5}
+
+/* ── REGULATOR BADGE ── */
+.reg-badge{display:inline-flex;align-items:center;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.05em}
+.reg-ico{background:#eff6ff;color:#1d4ed8}.reg-asa{background:var(--purb);color:var(--pur)}.reg-cma{background:var(--rb);color:var(--r)}.reg-com{background:var(--gb);color:var(--g)}
 
 /* ── ALL CLEAR ── */
-.all-clear{text-align:center;padding:48px 24px;background:var(--w);border:1.5px solid var(--gc);border-radius:var(--rad);box-shadow:var(--sh)}
-.ac-icon{font-size:40px;margin-bottom:14px}
-.ac-title{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px;color:#14532d}
-.ac-sub{font-size:13px;color:#166534;line-height:1.6;max-width:420px;margin:0 auto}
+.all-clear{text-align:center;padding:44px 24px;background:var(--w);border:1.5px solid var(--gc);border-radius:var(--rad);box-shadow:var(--sh)}
+.ac-icon{font-size:38px;margin-bottom:12px}
+.ac-title{font-size:19px;font-weight:700;letter-spacing:-.3px;margin-bottom:5px;color:#14532d}
+.ac-sub{font-size:13px;color:#166534;line-height:1.6;max-width:400px;margin:0 auto}
 
 /* ── NEW SCAN BTN ── */
-.new-scan-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:12px;font-weight:600;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s;margin-bottom:20px}
+.new-scan-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:12px;font-weight:600;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s;margin-bottom:18px}
 .new-scan-btn:hover{border-color:var(--o);color:var(--o)}
 
 /* ── DEMO NOTICE ── */
-.demo-notice{display:flex;align-items:flex-start;gap:10px;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad-sm);padding:12px 16px;margin-bottom:20px;font-size:12px;color:#92400e;line-height:1.55}
+.demo-notice{display:flex;align-items:flex-start;gap:9px;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad-sm);padding:11px 14px;margin-bottom:18px;font-size:12px;color:#92400e;line-height:1.55}
 
-/* ── REGISTER (unchanged styles) ── */
+/* ── THREE REGULATOR SUMMARY ── */
+.reg-summary{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:20px}
+@media(max-width:540px){.reg-summary{grid-template-columns:1fr 1fr}}
+.reg-tile{background:var(--w);border:1.5px solid var(--b);border-radius:var(--rad-sm);padding:12px 14px;text-align:center;box-shadow:var(--sh)}
+.reg-tile-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px}
+.reg-tile-val{font-size:14px;font-weight:700}
+.reg-tile-val.green{color:var(--g)}.reg-tile-val.amber{color:var(--y)}.reg-tile-val.red{color:var(--r)}.reg-tile-val.na{color:var(--mu)}
+
+/* ── CONTRACT CHECKLIST ── */
+.contract-section{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+.contract-title{font-size:14px;font-weight:700;margin-bottom:4px;letter-spacing:-.2px}
+.contract-sub{font-size:12px;color:var(--tm);margin-bottom:16px;line-height:1.5}
+.clause-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--b);cursor:pointer}
+.clause-item:last-child{border-bottom:none}
+.clause-check{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--b);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:var(--w)}
+.clause-check.yes{border-color:var(--g);background:var(--gb);color:var(--g)}
+.clause-check.no{border-color:var(--r);background:var(--rb);color:var(--r)}
+.clause-text{font-size:12px;color:var(--t);line-height:1.5;flex:1}
+.clause-sev{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;margin-left:6px;flex-shrink:0}
+.sev-critical{background:var(--rb);color:var(--r)}.sev-high{background:var(--ol);color:var(--o)}.sev-medium{background:var(--yb);color:var(--y)}
+.clause-toggle{display:flex;gap:5px;margin-left:auto;flex-shrink:0}
+.ct-btn{padding:3px 9px;border:1.5px solid var(--b);border-radius:4px;font-size:10px;font-weight:600;background:var(--w);cursor:pointer;font-family:inherit;transition:all .15s;color:var(--mu)}
+.ct-btn.yes{border-color:var(--g);background:var(--gb);color:var(--g)}
+.ct-btn.no{border-color:var(--r);background:var(--rb);color:var(--r)}
+
+/* ── REGISTER (unchanged) ── */
 .card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:22px;margin-bottom:16px;box-shadow:var(--sh)}
 .card-label{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--mu);margin-bottom:14px}
 .disclaimer-info{font-size:11px;color:var(--mu);background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:10px 13px;margin-bottom:18px;line-height:1.55}
@@ -229,31 +238,31 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .stale-vendors{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}
 .stale-tag{font-size:10px;font-weight:600;padding:2px 7px;background:rgba(0,0,0,.05);border-radius:4px}
 .recheck-all-btn{padding:6px 12px;background:var(--y);color:#fff;border:none;border-radius:var(--rad-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
-.onboarding-card{text-align:center;padding:34px 24px}
-.onboarding-icon{font-size:38px;margin-bottom:12px}
-.onboarding-title{font-size:17px;font-weight:700;margin-bottom:7px;letter-spacing:-.2px}
-.onboarding-sub{font-size:13px;color:var(--tm);margin-bottom:26px;line-height:1.65;max-width:480px;margin-left:auto;margin-right:auto}
+.ob-card{text-align:center;padding:34px 24px}
+.ob-icon{font-size:38px;margin-bottom:12px}
+.ob-title{font-size:17px;font-weight:700;margin-bottom:7px;letter-spacing:-.2px}
+.ob-sub{font-size:13px;color:var(--tm);margin-bottom:26px;line-height:1.65;max-width:480px;margin-left:auto;margin-right:auto}
 .ob-category{margin-bottom:18px;text-align:left}
 .ob-cat-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:7px}
-.ob-vendor-btns{display:flex;flex-wrap:wrap;gap:6px}
-.ob-vendor-btn{padding:6px 12px;border:1px solid var(--bm);border-radius:18px;font-size:12px;font-weight:500;background:var(--w);color:var(--t);cursor:pointer;font-family:inherit;transition:all .15s}
-.ob-vendor-btn:hover{border-color:var(--o);color:var(--o);background:var(--ol)}
-.ob-vendor-btn.added{border-color:var(--g);color:var(--g);background:var(--gb)}
+.ob-btns{display:flex;flex-wrap:wrap;gap:6px}
+.ob-btn{padding:6px 12px;border:1px solid var(--bm);border-radius:18px;font-size:12px;font-weight:500;background:var(--w);color:var(--t);cursor:pointer;font-family:inherit;transition:all .15s}
+.ob-btn:hover{border-color:var(--o);color:var(--o);background:var(--ol)}
+.ob-btn.added{border-color:var(--g);color:var(--g);background:var(--gb)}
 .ob-skip{font-size:12px;color:var(--mu);cursor:pointer;background:none;border:none;font-family:inherit;text-decoration:underline;margin-top:12px}
 .btn-secondary{padding:8px 15px;border:1px solid var(--bm);border-radius:var(--rad-sm);font-size:12px;font-weight:600;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
 .btn-secondary:hover{border-color:var(--o);color:var(--o)}
 .register-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
 .register-wrap{overflow-x:auto}
-.register-table{width:100%;border-collapse:collapse;font-size:12px;min-width:640px}
+.register-table{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}
 .register-table th{text-align:left;padding:8px 11px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);border-bottom:2px solid var(--b);white-space:nowrap;background:var(--bg)}
 .register-table td{padding:11px 11px;border-bottom:1px solid var(--b);vertical-align:top}
 .register-table tr:last-child td{border-bottom:none}
 .register-table tr:hover td{background:var(--bg)}
 .reg-vendor-name{font-weight:700;font-size:13px}
 .reg-vendor-cat{font-size:11px;color:var(--mu);margin-top:1px}
-.stale-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;background:var(--yb);color:var(--y);margin-left:6px;letter-spacing:.03em}
-.agreement-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
-.ap-green{background:var(--gb);color:var(--g)}.ap-amber{background:var(--yb);color:var(--y)}.ap-red{background:var(--rb);color:var(--r)}.ap-grey{background:#f3f4f6;color:var(--mu)}
+.stale-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;background:var(--yb);color:var(--y);margin-left:6px}
+.risk-pill{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap}
+.rp-low{background:var(--gb);color:var(--g)}.rp-medium{background:var(--yb);color:var(--y)}.rp-high{background:var(--rb);color:var(--r)}.rp-na{background:var(--bg);color:var(--mu)}
 .reg-score{font-size:12px;font-weight:700;font-family:'DM Mono',monospace}
 .reg-score.high{color:var(--g)}.reg-score.mid{color:var(--y)}.reg-score.low{color:var(--r)}
 .reg-actions{display:flex;gap:4px;flex-wrap:wrap}
@@ -262,21 +271,20 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .reg-action-btn.remove:hover{border-color:var(--r);color:var(--r)}
 .export-btn{padding:7px 13px;border:1px solid var(--bm);border-radius:var(--rad-sm);font-size:11px;font-weight:600;background:var(--w);color:var(--mu);cursor:pointer;font-family:inherit;transition:all .15s}
 .export-btn:hover{border-color:var(--o);color:var(--o)}
-.reg-loading{text-align:center;padding:44px 20px}
 .spinner{width:32px;height:32px;border:2.5px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
 .loading-text{font-size:13px;color:var(--mu)}
 .add-vendor-panel{display:none}.add-vendor-panel.show{display:block}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 @media(max-width:480px){.form-row{grid-template-columns:1fr}}
-.form-group-reg{margin-bottom:12px}
-.form-group-reg label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;color:var(--tm)}
-.form-group-reg select,.form-group-reg input[type="text"],.form-group-reg input[type="url"],.form-group-reg input[type="date"],.form-group-reg input[type="number"],.form-group-reg textarea{width:100%;padding:9px 11px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:13px;font-family:inherit;background:var(--w);color:var(--t);transition:border-color .15s;outline:none}
-.form-group-reg select:focus,.form-group-reg input:focus,.form-group-reg textarea:focus{border-color:var(--o)}
-.form-group-reg textarea{resize:vertical;min-height:68px;line-height:1.5}
-.checkbox-group{display:flex;flex-wrap:wrap;gap:6px}
-.checkbox-label{display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:5px 9px;border:1.5px solid var(--b);border-radius:var(--rad-sm);background:var(--w);transition:all .15s;font-weight:500}
-.checkbox-label:hover{border-color:var(--o)}
-.checkbox-label input[type="checkbox"]{accent-color:var(--o)}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;color:var(--tm)}
+.fg select,.fg input[type="text"],.fg input[type="url"],.fg input[type="date"],.fg input[type="number"],.fg textarea{width:100%;padding:9px 11px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:13px;font-family:inherit;background:var(--w);color:var(--t);transition:border-color .15s;outline:none}
+.fg select:focus,.fg input:focus,.fg textarea:focus{border-color:var(--o)}
+.fg textarea{resize:vertical;min-height:68px;line-height:1.5}
+.cb-group{display:flex;flex-wrap:wrap;gap:6px}
+.cb-label{display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:5px 9px;border:1.5px solid var(--b);border-radius:var(--rad-sm);background:var(--w);transition:all .15s;font-weight:500}
+.cb-label:hover{border-color:var(--o)}
+.cb-label input{accent-color:var(--o)}
 .form-actions{display:flex;gap:8px;margin-top:6px}
 .btn-save{flex:1;padding:10px;background:var(--o);color:#fff;border:none;border-radius:var(--rad);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
 .btn-save:hover{background:var(--od)}
@@ -284,243 +292,294 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .reg-search-wrap{position:relative;margin-bottom:12px}.reg-search-wrap .dropdown{z-index:30}
 .error-box{display:none;background:var(--rb);border:1px solid var(--rc);border-radius:var(--rad-sm);padding:12px 15px;margin-bottom:16px;font-size:13px;color:var(--r)}
 .error-box.show{display:block}
-.disc{font-size:10px;color:var(--mu);font-style:italic;text-align:center;margin-top:20px;line-height:1.6}
+.disc{font-size:10px;color:var(--mu);font-style:italic;text-align:center;margin-top:20px;line-height:1.6;padding:0 20px}
+
+/* ── CAMPAIGN TAB ── */
+.campaign-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.campaign-new-btn{padding:9px 16px;background:var(--o);color:#fff;border:none;border-radius:var(--rad-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
+.campaign-new-btn:hover{background:var(--od)}
+.campaign-card{background:var(--w);border:1.5px solid var(--b);border-radius:var(--rad);padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;box-shadow:var(--sh)}
+.campaign-card:hover{border-color:var(--bm);box-shadow:var(--shm)}
+.cc-left{flex:1;min-width:0}
+.cc-name{font-size:14px;font-weight:700;margin-bottom:3px}
+.cc-meta{font-size:11px;color:var(--mu);display:flex;gap:10px;flex-wrap:wrap}
+.cc-verdict{font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
+.cv-cleared{background:var(--gb);color:var(--g)}.cv-issues{background:var(--yb);color:var(--y)}.cv-critical{background:var(--rb);color:var(--r)}.cv-unchecked{background:var(--bg);color:var(--mu);border:1px solid var(--b)}
+.cc-check-btn{padding:7px 13px;background:var(--o);color:#fff;border:none;border-radius:var(--rad-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s}
+.cc-check-btn:hover{background:var(--od)}
+.campaign-form{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px;margin-bottom:16px;box-shadow:var(--sh);display:none}
+.campaign-form.show{display:block}
+.campaign-form-title{font-size:14px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px}
+.vendor-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.vp-btn{padding:5px 11px;border:1.5px solid var(--b);border-radius:16px;font-size:11px;font-weight:500;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
+.vp-btn:hover{border-color:var(--o);color:var(--o)}
+.vp-btn.on{border-color:var(--o);background:var(--ol);color:var(--o);font-weight:700}
+.campaign-verdict-wrap{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+
+/* ── RSS FINDINGS ── */
+.rss-findings{background:var(--blueb);border:1px solid var(--bluebd);border-radius:var(--rad-sm);padding:12px 14px;margin-top:12px}
+.rss-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:8px}
+.rss-item{font-size:11px;color:var(--t);margin-bottom:5px;line-height:1.5}
+.rss-item:last-child{margin-bottom:0}
+.rss-source{font-size:9px;color:var(--mu);margin-top:1px}
 </style>
 </head>
 <body>
-<div class="container">
 
 <!-- GATE -->
 <div class="gate-screen" id="gateScreen">
   <div class="gate-card">
     <div class="gate-logo">sendwize</div>
-    <div class="gate-icon">🔒</div>
+    <div class="gate-icon">&#128274;</div>
     <div class="gate-title">Processor Risk Scanner</div>
-    <div class="gate-sub">Find out if your marketing tools and agencies are putting you at risk. Available to Sendwize subscribers.</div>
-    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard →</a>
+    <div class="gate-sub">Find out if your marketing tools and agencies are putting you at risk across ICO, ASA and CMA — based on your specific situation.</div>
+    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &#8594;</a>
     <button class="gate-demo-btn" onclick="runDemo()">
-      <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--ol);color:var(--o);letter-spacing:.04em">DEMO</span>
+      <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--ol);color:var(--o)">DEMO</span>
       See an example scan
     </button>
   </div>
 </div>
 
-<a href="https://www.sendwize.co.uk/dashboard" class="back-link">
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
-  Dashboard
-</a>
+<div class="page-wrap" id="mainWrap">
+  <a href="https://www.sendwize.co.uk/dashboard" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+    Dashboard
+  </a>
 
-<div class="page-header">
   <div class="page-eyebrow">Processor Risk Scanner</div>
-  <h1 class="page-title">Are your marketing tools putting you at risk?</h1>
-  <p class="page-sub">Tell us what tools and agencies you use and what data you share. We'll tell you exactly where you're exposed and what to do about it — based on your specific situation, not generic advice.</p>
-</div>
+  <h1 class="page-title">Are your marketing vendors safe to use?</h1>
+  <p class="page-sub">ICO, ASA and CMA compliance — across every vendor and agency in your marketing stack. Tell us what you use and what you do with them. We tell you exactly where you&#8217;re exposed and what to do.</p>
 
-<div class="tabs">
-  <button class="tab-btn" id="tab-scanner" onclick="switchTab('scanner')">Risk Scanner</button>
-  <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Processor Register</button>
-</div>
+  <div class="tabs">
+    <button class="tab-btn" id="tab-scanner" onclick="switchTab('scanner')">Risk Scanner</button>
+    <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Processor Register</button>
+    <button class="tab-btn" id="tab-campaigns" onclick="switchTab('campaigns')">Campaigns</button>
+  </div>
 
-<!-- SCANNER TAB -->
-<div class="tab-panel" id="panel-scanner">
-  <div class="error-box" id="errorBox"></div>
+  <!-- SCANNER TAB -->
+  <div class="tab-panel" id="panel-scanner">
+    <div class="error-box" id="errorBox"></div>
 
-  <!-- STEP 1 — Add vendors -->
-  <div class="step" id="step-add">
-    <div class="search-card">
-      <div class="search-card-title">Which tools and agencies do you use?</div>
-      <div class="search-card-sub">Add every platform or agency you share personal data with — including tools you manage yourself like Mailchimp or Klaviyo. These are all data processors under UK GDPR.</div>
-      <div class="search-row">
-        <div class="search-wrap" id="searchWrap">
-          <input type="text" class="search-input" id="searchInput"
-            placeholder="Search by name — e.g. Mailchimp, Ogilvy, HubSpot…"
-            autocomplete="off" oninput="onSearch(this.value)" onkeydown="onSearchKey(event)"/>
-          <div class="dropdown" id="dropdown"></div>
+    <div class="step" id="step-add">
+      <div class="search-card">
+        <div class="search-card-title">Which vendors does your marketing touch?</div>
+        <div class="search-card-sub">Add every tool and agency that handles your customer data or produces marketing on your behalf. This includes platforms you manage yourself.</div>
+        <div class="search-row">
+          <div class="search-wrap" id="searchWrap">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search &#8212; Mailchimp, Ogilvy UK, HubSpot&#8230;" autocomplete="off" oninput="onSearch(this.value)" onkeydown="onSearchKey(event)"/>
+            <div class="dropdown" id="dropdown"></div>
+          </div>
+          <button class="btn-add" onclick="addFromInput()">Add</button>
         </div>
-        <button class="btn-add" onclick="addFromInput()">Add</button>
+        <div id="selectedList"></div>
       </div>
-      <div class="selected-list" id="selectedList"></div>
+      <button class="scan-btn" id="scanBtn" disabled onclick="runScan()">
+        Scan my vendors
+        <span class="scan-btn-sub">ICO &#183; ASA &#183; CMA &#183; Contract gaps &#183; Public findings</span>
+      </button>
+      <div class="demo-link"><button onclick="runDemo()">See an example scan</button></div>
     </div>
-    <button class="scan-btn" id="scanBtn" disabled onclick="runScan()">
-      Scan my processors
-      <span class="scan-btn-sub">Takes about 30 seconds</span>
-    </button>
-    <div class="demo-link"><button onclick="runDemo()">See an example scan instead</button></div>
-  </div>
 
-  <!-- STEP 2 — Loading -->
-  <div class="step" id="step-loading">
-    <div style="text-align:center;padding:60px 20px">
-      <div class="scan-animation"><div class="scan-ring"></div></div>
-      <div class="loading-title">Scanning your processors…</div>
-      <div class="loading-sub">Cross-referencing against our compliance database</div>
-      <div class="loading-steps" id="loadingSteps"></div>
-    </div>
-  </div>
-
-  <!-- STEP 3 — Verdict -->
-  <div class="step" id="step-verdict">
-    <button class="new-scan-btn" onclick="resetScanner()">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
-      New scan
-    </button>
-    <div id="verdictContent"></div>
-  </div>
-
-  <p class="disc">Information only — not legal advice. Data sourced from publicly available pages. Always verify directly with each vendor. Sendwize has not reviewed vendor DPAs or contracts and cannot confirm the compliance of any specific processing relationship.</p>
-</div>
-
-<!-- REGISTER TAB -->
-<div class="tab-panel" id="panel-register">
-  <div class="disclaimer-info">Information only — not legal advice. Data sourced from publicly available pages only. Sendwize has not reviewed vendor DPAs or contracts and cannot confirm the compliance of any specific processing relationship. Always verify directly with your vendor and seek independent legal advice before sharing personal data.</div>
-  <div id="reg-loading" class="reg-loading"><div class="spinner"></div><div class="loading-text">Loading your register…</div></div>
-  <div id="reg-onboarding" style="display:none">
-    <div class="card onboarding-card">
-      <div class="onboarding-icon">📁</div>
-      <div class="onboarding-title">Build your processor register</div>
-      <div class="onboarding-sub">UK GDPR Article 28 requires a record of all processors you share personal data with. Add your tools below to get started.</div>
-      <div id="ob-categories"></div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-        <button class="btn-secondary" onclick="showAddForm(null,true)">+ Add manually</button>
-        <button class="ob-skip" onclick="skipOnboarding()">Skip for now</button>
+    <div class="step" id="step-loading">
+      <div class="loading-wrap">
+        <div class="scan-ring"></div>
+        <div class="loading-title">Scanning your vendors&#8230;</div>
+        <div class="loading-sub">Running ICO, ASA and CMA assessment</div>
+        <div class="loading-steps" id="loadingSteps"></div>
       </div>
     </div>
+
+    <div class="step" id="step-verdict">
+      <button class="new-scan-btn" onclick="resetScanner()">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8a6 6 0 1 0 6-6"/><path d="M2 4v4h4"/></svg>
+        New scan
+      </button>
+      <div id="verdictContent"></div>
+    </div>
+
+    <p class="disc">Information only &#8212; not legal advice. Data sourced from publicly available pages. Sendwize has not reviewed vendor DPAs or contracts. Always verify directly with each vendor and seek independent legal advice.</p>
   </div>
-  <div id="reg-main" style="display:none">
-    <div class="health-grid" id="reg-health"></div>
-    <div id="stale-alert-wrap"></div>
-    <div class="card">
-      <div class="register-header-row">
-        <div class="card-label" style="margin:0">Data Processors</div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap">
-          <button class="export-btn" onclick="exportRegisterCSV()">Export CSV</button>
-          <button class="btn-secondary" onclick="showAddForm()">+ Add vendor</button>
+
+  <!-- REGISTER TAB -->
+  <div class="tab-panel" id="panel-register">
+    <div class="disclaimer-info">Information only &#8212; not legal advice. Sendwize has not reviewed vendor DPAs or contracts and cannot confirm the compliance of any specific processing relationship. Always verify directly and seek independent legal advice.</div>
+    <div id="reg-loading" style="text-align:center;padding:44px 20px"><div class="spinner"></div><div class="loading-text">Loading register&#8230;</div></div>
+    <div id="reg-onboarding" style="display:none">
+      <div class="card ob-card">
+        <div class="ob-icon">&#128194;</div>
+        <div class="ob-title">Build your processor register</div>
+        <div class="ob-sub">UK GDPR Article 28 requires a record of all processors you share personal data with. Add your tools below to get started.</div>
+        <div id="ob-categories"></div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+          <button class="btn-secondary" onclick="showAddForm(null,true)">+ Add manually</button>
+          <button class="ob-skip" onclick="skipOnboarding()">Skip for now</button>
         </div>
       </div>
-      <div class="register-wrap">
-        <table class="register-table">
-          <thead><tr><th>Vendor</th><th>Data processed</th><th>Agreement</th><th>Data location</th><th>Score</th><th>Last checked</th><th>Actions</th></tr></thead>
-          <tbody id="reg-tbody"></tbody>
-        </table>
-      </div>
     </div>
-    <div class="card add-vendor-panel" id="reg-add-panel">
-      <div class="card-label" id="reg-form-title">Add Vendor</div>
-      <div class="reg-search-wrap">
-        <input type="text" class="search-input" id="reg-search-input" placeholder="Search vendor name…" autocomplete="off" oninput="onRegSearch(this.value)"/>
-        <div class="dropdown" id="reg-dropdown"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group-reg"><label>Category</label><select id="reg-category"><option value="">Select…</option><option>Email Service Provider</option><option>CRM</option><option>Analytics</option><option>Forms</option><option>Advertising</option><option>Marketing Agency</option><option>Media Agency</option><option>Performance Agency</option><option>Other</option></select></div>
-        <div class="form-group-reg"><label>Data location</label><input type="text" id="reg-data-location" placeholder="e.g. EU, UK, US"/></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group-reg"><label>Approx. contact volume</label><input type="number" id="reg-contact-volume" placeholder="e.g. 25000" min="0"/></div>
-        <div class="form-group-reg"><label>&nbsp;</label><p style="font-size:11px;color:var(--mu);padding-top:8px;line-height:1.5">Used to contextualise your compliance exposure.</p></div>
-      </div>
-      <div class="form-group-reg">
-        <label>Data processed</label>
-        <div class="checkbox-group">
-          <label class="checkbox-label"><input type="checkbox" value="Email addresses"> Email addresses</label>
-          <label class="checkbox-label"><input type="checkbox" value="Contact details"> Contact details</label>
-          <label class="checkbox-label"><input type="checkbox" value="Behavioural data"> Behavioural data</label>
-          <label class="checkbox-label"><input type="checkbox" value="Purchase history"> Purchase history</label>
-          <label class="checkbox-label"><input type="checkbox" value="Special category data"> Special category data</label>
+    <div id="reg-main" style="display:none">
+      <div class="health-grid" id="reg-health"></div>
+      <div id="stale-alert-wrap"></div>
+      <div class="card">
+        <div class="register-header-row">
+          <div class="card-label" style="margin:0">Data Processors</div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
+            <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+            <button class="btn-secondary" onclick="showAddForm()">+ Add vendor</button>
+          </div>
+        </div>
+        <div class="register-wrap">
+          <table class="register-table">
+            <thead><tr><th>Vendor</th><th>Use case</th><th>ICO</th><th>ASA</th><th>CMA</th><th>Agreement</th><th>Score</th><th>Last checked</th><th>Actions</th></tr></thead>
+            <tbody id="reg-tbody"></tbody>
+          </table>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group-reg"><label>Agreement type</label><select id="reg-agreement-type"><option value="">Select…</option><option>Standalone DPA</option><option>Data Processing Addendum</option><option>Article 28 terms in ToS</option><option>Master Service Agreement</option><option>None in place</option><option>Unknown</option></select></div>
-        <div class="form-group-reg"><label>Agreement status</label><select id="reg-agreement-status"><option value="">Select…</option><option>In place</option><option>Requested</option><option>Not yet</option><option>N/A</option></select></div>
+      <div class="card add-vendor-panel" id="reg-add-panel">
+        <div class="card-label" id="reg-form-title">Add Vendor</div>
+        <div class="reg-search-wrap">
+          <input type="text" class="search-input" id="reg-search-input" placeholder="Search vendor name&#8230;" autocomplete="off" oninput="onRegSearch(this.value)"/>
+          <div class="dropdown" id="reg-dropdown"></div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><label>Category</label><select id="reg-category"><option value="">Select&#8230;</option><option>Email Service Provider</option><option>CRM</option><option>Analytics</option><option>Forms</option><option>Advertising</option><option>Marketing Agency</option><option>Media Agency</option><option>Performance Agency</option><option>Other</option></select></div>
+          <div class="fg"><label>Use case</label><select id="reg-usecase"><option value="">Select&#8230;</option><option>Email deployment</option><option>Paid media</option><option>Creative &amp; content</option><option>Analytics</option><option>Reviews &amp; UGC</option><option>Pricing &amp; promotions</option><option>Data enrichment</option><option>Other</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><label>Data location</label><input type="text" id="reg-data-location" placeholder="e.g. EU, UK, US"/></div>
+          <div class="fg"><label>Approx. contacts</label><input type="number" id="reg-contact-volume" placeholder="e.g. 25000" min="0"/></div>
+        </div>
+        <div class="fg">
+          <label>Data processed</label>
+          <div class="cb-group">
+            <label class="cb-label"><input type="checkbox" value="Email addresses"> Email addresses</label>
+            <label class="cb-label"><input type="checkbox" value="Contact details"> Contact details</label>
+            <label class="cb-label"><input type="checkbox" value="Behavioural data"> Behavioural data</label>
+            <label class="cb-label"><input type="checkbox" value="Purchase history"> Purchase history</label>
+            <label class="cb-label"><input type="checkbox" value="Special category data"> Special category data</label>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><label>Produces content on your behalf?</label><select id="reg-produces-content"><option value="">Select&#8230;</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div class="fg"><label>Handles promotions or reviews?</label><select id="reg-handles-promotions"><option value="">Select&#8230;</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><label>Agreement type</label><select id="reg-agreement-type"><option value="">Select&#8230;</option><option>Standalone DPA</option><option>Data Processing Addendum</option><option>Article 28 terms in ToS</option><option>Master Service Agreement</option><option>None in place</option><option>Unknown</option></select></div>
+          <div class="fg"><label>Agreement status</label><select id="reg-agreement-status"><option value="">Select&#8230;</option><option>In place</option><option>Requested</option><option>Not yet</option><option>N/A</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><label>Agreement link (optional)</label><input type="url" id="reg-agreement-link" placeholder="https://&#8230;"/></div>
+          <div class="fg"><label>Agreement date (optional)</label><input type="date" id="reg-agreement-date"/></div>
+        </div>
+        <div class="fg"><label>Notes (optional)</label><textarea id="reg-notes" placeholder="Any additional notes&#8230;"></textarea></div>
+        <div class="form-actions">
+          <button class="btn-save" onclick="saveVendor()">Save vendor</button>
+          <button class="btn-cancel" onclick="hideAddForm()">Cancel</button>
+        </div>
       </div>
-      <div class="form-row">
-        <div class="form-group-reg"><label>Agreement link (optional)</label><input type="url" id="reg-agreement-link" placeholder="https://…"/></div>
-        <div class="form-group-reg"><label>Agreement date (optional)</label><input type="date" id="reg-agreement-date"/></div>
+    </div>
+  </div>
+
+  <!-- CAMPAIGNS TAB -->
+  <div class="tab-panel" id="panel-campaigns">
+    <div class="campaign-header">
+      <div>
+        <div style="font-size:17px;font-weight:700;letter-spacing:-.2px;margin-bottom:3px">Campaign Compliance</div>
+        <div style="font-size:12px;color:var(--mu)">Check every vendor touching your campaign before it goes out</div>
       </div>
-      <div class="form-group-reg"><label>Notes (optional)</label><textarea id="reg-notes" placeholder="Any additional notes…"></textarea></div>
+      <button class="campaign-new-btn" onclick="showCampaignForm()">+ New campaign</button>
+    </div>
+    <div class="campaign-form" id="campaignForm">
+      <div class="campaign-form-title">New campaign</div>
+      <div class="form-row">
+        <div class="fg"><label>Campaign name</label><input type="text" id="cf-name" placeholder="e.g. Summer sale email"/></div>
+        <div class="fg"><label>Campaign type</label><select id="cf-type"><option value="">Select&#8230;</option><option>Email</option><option>SMS</option><option>Push</option><option>Social</option><option>Other</option></select></div>
+      </div>
+      <div class="fg"><label>Send date (optional)</label><input type="date" id="cf-date"/></div>
+      <div class="fg">
+        <label>Which vendors does this campaign touch?</label>
+        <div class="vendor-picker" id="cf-vendor-picker"></div>
+      </div>
       <div class="form-actions">
-        <button class="btn-save" onclick="saveVendor()">Save vendor</button>
-        <button class="btn-cancel" onclick="hideAddForm()">Cancel</button>
+        <button class="btn-save" onclick="createCampaign()">Save &amp; check compliance</button>
+        <button class="btn-cancel" onclick="hideCampaignForm()">Cancel</button>
       </div>
     </div>
+    <div id="campaigns-list"></div>
+    <div id="campaign-verdict-wrap"></div>
   </div>
-</div>
 
-</div>
+</div><!-- /page-wrap -->
+
 <script>
 var APP_URL='https://sendwize-backend.vercel.app';
 var userId=null,allVendors=[],selectedVendors=[],registerLoaded=false,registerRecords=[],editingRecordId=null;
-var highlightedIndex=-1,currentDropdownItems=[];
+var highlightedIndex=-1,currentDropdownItems=[],vendorContext={};
 var HAS_REGISTER_KEY='sw_has_register';
+var loadingTimer=null;
 
-// ── DATA TYPES ────────────────────────────────────────────────
+// ── USE CASES ────────────────────────────────────────────────
+var USE_CASES=['Email deployment','Paid media','Creative & content','Analytics','Reviews & UGC','Pricing & promotions','Data enrichment','Other'];
 var DATA_TYPES=[
-  {id:'email',label:'Email addresses',highRisk:false},
-  {id:'contact',label:'Contact details',highRisk:false},
-  {id:'behavioural',label:'Behavioural data',highRisk:true},
-  {id:'purchase',label:'Purchase history',highRisk:true},
-  {id:'special',label:'Special category data',highRisk:true},
+  {label:'Email addresses',sensitive:false},
+  {label:'Contact details',sensitive:false},
+  {label:'Behavioural data',sensitive:true},
+  {label:'Purchase history',sensitive:true},
+  {label:'Special category data',sensitive:true},
 ];
 
-// ── VENDOR STATE — tracks per-vendor context questions ────────
-var vendorContext={};  // { name: { dpaStatus, dataTypes, contactVolume } }
+// ── CONTRACT CLAUSES (mirrors backend) ───────────────────────
+var CLAUSES_DATA_PROCESSOR=[
+  {id:'dp1',label:'Subject matter, duration and nature of processing defined',severity:'high'},
+  {id:'dp2',label:'Sub-processor notification requirement included',severity:'high'},
+  {id:'dp3',label:'Data return or deletion on termination clause included',severity:'high'},
+  {id:'dp4',label:'Audit rights included',severity:'medium'},
+  {id:'dp5',label:'Security measures specification included',severity:'high'},
+  {id:'dp6',label:'Controller instructions must be followed clause included',severity:'medium'},
+  {id:'dp7',label:'Breach notification timeframe specified (72 hours)',severity:'high'},
+  {id:'dp8',label:'Data subject rights assistance obligation included',severity:'medium'},
+];
+var CLAUSES_AGENCY=[
+  {id:'ag1',label:'IP ownership of all creative assets assigned to you',severity:'high'},
+  {id:'ag2',label:'Data return on termination clause included',severity:'high'},
+  {id:'ag3',label:'ASA compliance obligation placed on agency',severity:'high'},
+  {id:'ag4',label:'Written approval process for all marketing claims defined',severity:'high'},
+  {id:'ag5',label:'Sub-contractor disclosure obligation included',severity:'medium'},
+  {id:'ag6',label:'Confidentiality covering customer data included',severity:'high'},
+  {id:'ag7',label:'GDPR processor obligations if agency accesses customer data',severity:'high'},
+];
+var CLAUSES_REVIEWS=[
+  {id:'rv1',label:'CMA consumer reviews compliance confirmation included',severity:'critical'},
+  {id:'rv2',label:'No incentivised reviews without clear disclosure',severity:'critical'},
+  {id:'rv3',label:'Fake review removal process defined',severity:'high'},
+  {id:'rv4',label:'Data processing terms for reviewer personal data included',severity:'high'},
+];
+var CLAUSES_PRICING=[
+  {id:'pp1',label:'Reference pricing methodology compliant with DMCCA 2024',severity:'critical'},
+  {id:'pp2',label:'Countdown timer accuracy and genuine scarcity requirement',severity:'high'},
+  {id:'pp3',label:'Promotional terms and conditions accessible to consumers',severity:'high'},
+  {id:'pp4',label:'Drip pricing prohibition — full price shown upfront',severity:'critical'},
+];
 
 // ── DEMO DATA ─────────────────────────────────────────────────
 var DEMO_RESULTS=[
-  {
-    name:'Mailchimp',vendorType:'Self-Serve ESP',score:85,riskRating:'Low',isAI:false,dpaConfirmed:false,
-    userContext:{dpaStatus:'no',dataTypes:['Email addresses'],contactVolume:22000},
-    dimensions:{icoRegistered:'Yes',dpaStatus:'Confirmed',internationalTransfer:'SCCs + EU-US Data Privacy Framework (UK Extension)',breachHistory:'None identified',lastVerified:'June 2026',dpaLink:'https://mailchimp.com/legal/data-processing-addendum/'},
-    issue:{
-      severity:'high',
-      title:'No signed DPA on file',
-      what:'You told us you haven\'t signed a DPA with Mailchimp. Mailchimp\'s standard DPA exists and is self-serve — but it only protects you once you\'ve signed and stored a copy. Without a signed DPA you\'re in breach of UK GDPR Article 28 regardless of what Mailchimp publishes.',
-      exposureLow:50000,exposureHigh:250000,
-      fixSteps:[
-        {text:'Go to Mailchimp\'s DPA page',link:'https://mailchimp.com/legal/data-processing-addendum/',linkLabel:'mailchimp.com/legal/dpa'},
-        {text:'Sign the Data Processing Addendum — it\'s self-serve, no negotiation needed. Takes 5 minutes.'},
-        {text:'Download a copy and store it. Add the link to your processor register in Sendwize.'},
-      ],
-      impactText:'Signing removes the Article 28 breach entirely',
-      impactDrop:'£50,000–£250,000 exposure eliminated',
-    }
-  },
-  {
-    name:'Merkle UK',vendorType:'Data/CRM Agency',score:45,riskRating:'High',isAI:false,dpaConfirmed:false,
-    userContext:{dpaStatus:'no',dataTypes:['Email addresses','Contact details','Purchase history','Behavioural data'],contactVolume:95000},
+  {name:'Mailchimp',vendorType:'Self-Serve ESP',score:85,riskRating:'Low',isAI:false,dpaConfirmed:false,
+    userInput:{dpaStatus:'no',useCase:'Email deployment',dataTypes:['Email addresses'],contactVolume:22000,producesContent:false,handlesPromotions:false},
+    dimensions:{icoRegistered:'Yes',dpaStatus:'Confirmed',dpaLink:'https://mailchimp.com/legal/data-processing-addendum/',internationalTransfer:'SCCs + EU-US Data Privacy Framework',breachHistory:'None identified',lastVerified:'June 2026'},
+    issue:{severity:'high',regulator:'ICO',title:'No signed DPA on file',
+      what:'You told us you haven\'t signed a DPA with Mailchimp. Their standard DPA is self-serve at the link below — it protects you once signed and stored. Without it you\'re in breach of UK GDPR Article 28.',
+      fixSteps:[{text:'Go to Mailchimp\'s DPA page and sign it — self-serve, no negotiation needed. Takes 5 minutes.',link:'https://mailchimp.com/legal/data-processing-addendum/',linkLabel:'mailchimp.com/legal/dpa'},{text:'Store a signed copy. Add the link to your processor register in Sendwize.'}],
+      exposureLow:50000,exposureHigh:250000,impactDrop:'Eliminates the Article 28 breach and most of this exposure'}},
+  {name:'Merkle UK',vendorType:'Data/CRM Agency',score:40,riskRating:'High',isAI:false,dpaConfirmed:false,
+    userInput:{dpaStatus:'no',useCase:'Creative & content',dataTypes:['Email addresses','Contact details','Purchase history','Behavioural data'],contactVolume:95000,producesContent:true,handlesPromotions:false},
     dimensions:{icoRegistered:'Unknown',dpaStatus:'On Request',internationalTransfer:'Unknown',breachHistory:'None identified',lastVerified:'June 2026'},
-    issue:{
-      severity:'critical',
-      title:'No DPA with an agency processing sensitive data for 95,000 contacts',
-      what:'You\'re sharing purchase history and behavioural data for 95,000 contacts with Merkle UK and you don\'t have a signed DPA. This is the highest-risk gap in your processor relationships. Agencies handling large volumes of behavioural and purchase data are exactly what the ICO looks at when investigating processor compliance. The combination of data sensitivity, volume, and no written contract puts you in serious exposure.',
-      exposureLow:100000,exposureHigh:400000,
-      fixSteps:[
-        {text:'Contact Merkle UK\'s data protection team directly and request their standard Data Processing Agreement.'},
-        {text:'Confirm the DPA covers your specific processing: purchase history and behavioural data for UK contacts.'},
-        {text:'Confirm their transfer mechanism — their group privacy policy references SCCs but this must be confirmed in your specific contract.'},
-        {text:'Once signed, add to your processor register with the agreement date and a link.'},
-      ],
-      impactText:'Getting a signed DPA in place removes the core Article 28 breach',
-      impactDrop:'Reduces exposure from £100,000–£400,000 to near zero for this gap',
-    }
-  },
-  {
-    name:'SendGrid (Twilio)',vendorType:'Self-Serve ESP',score:65,riskRating:'Medium',isAI:false,dpaConfirmed:true,
-    userContext:{dpaStatus:'yes',dataTypes:['Email addresses'],contactVolume:18000},
-    dimensions:{icoRegistered:'Yes',dpaStatus:'Confirmed',internationalTransfer:'SCCs + EU-US Data Privacy Framework',breachHistory:'August 2022: Twilio confirmed a data breach via smishing attack targeting employee credentials. A subset of customer data was accessed. Source: Twilio public disclosure August 2022.',lastVerified:'June 2026',dpaLink:'https://www.twilio.com/en-us/legal/data-protection-addendum'},
-    issue:{
-      severity:'medium',
-      title:'Vendor has confirmed breach history — document your assessment',
-      what:'You have a signed DPA with SendGrid which is good. But Twilio — SendGrid\'s parent company — had a confirmed data breach in August 2022. You\'re not in breach just because your vendor was breached. But UK GDPR requires you to document that you assessed the risk of continuing to use a processor with a known breach history. Without that documented assessment, you\'re missing a due diligence record that would protect you if the ICO investigated.',
-      exposureLow:15000,exposureHigh:60000,
-      fixSteps:[
-        {text:'Write a brief documented assessment: you reviewed the August 2022 Twilio breach, confirmed your account was not in scope (or document the outcome if it was), and concluded that continued use is proportionate given Twilio\'s remediation.'},
-        {text:'Store the assessment with a date. It doesn\'t need to be long — a paragraph is enough. The ICO looks for evidence you thought about it, not a legal treatise.'},
-        {text:'Add a note to your Sendwize processor register entry for SendGrid referencing the assessment.'},
-      ],
-      impactText:'Documented assessment removes the due diligence gap',
-      impactDrop:'Eliminates the aggravating factor if ICO investigates',
-    }
-  },
+    issue:{severity:'critical',regulator:'ICO',title:'No DPA — agency processing sensitive data for 95,000 contacts',
+      what:'You\'re sharing purchase history and behavioural data for 95,000 contacts with Merkle UK under no written agreement. Agencies handling large volumes of sensitive data for targeting are exactly what the ICO investigates. The combination of data sensitivity, volume, and no contract is your highest-risk gap.',
+      fixSteps:[{text:'Contact Merkle UK\'s data protection team and request their standard DPA covering purchase history and behavioural data.'},{text:'Confirm the DPA covers your specific data types and that the US transfer via Dentsu group SCCs applies to your account.'},{text:'Once signed, add to your Sendwize register with the agreement date.'}],
+      exposureLow:100000,exposureHigh:400000,impactDrop:'Signed DPA removes the core Article 28 breach'},
+    asaIssue:{severity:'high',regulator:'ASA',title:'No written sign-off process for content Merkle produces on your behalf',
+      what:'Merkle produces content for you. Under ASA rules you are responsible for all marketing claims made on your behalf, even when an agency produces them. Without a written approval process you have no defence if a claim is upheld.',
+      fixSteps:[{text:'Add a clause to your agency agreement requiring written sign-off on all marketing claims before publication.'},{text:'Document your internal approval process — the ASA looks for evidence that a proper review happened.'}]}},
 ];
 
 // ── INIT ──────────────────────────────────────────────────────
@@ -528,11 +587,7 @@ function init(){
   userId=new URLSearchParams(window.location.search).get('userId');
   if(!userId){
     document.getElementById('gateScreen').classList.add('show');
-    document.getElementById('panel-scanner').style.display='none';
-    document.getElementById('panel-register').style.display='none';
-    var tabs=document.querySelector('.tabs');if(tabs)tabs.style.display='none';
-    var ph=document.querySelector('.page-header');if(ph)ph.style.display='none';
-    var bl=document.querySelector('.back-link');if(bl)bl.style.display='none';
+    document.getElementById('mainWrap').style.display='none';
     loadVendors();
     return;
   }
@@ -543,12 +598,22 @@ function init(){
 }
 
 function switchTab(tab){
-  document.getElementById('tab-scanner').classList.toggle('active',tab==='scanner');
-  document.getElementById('tab-register').classList.toggle('active',tab==='register');
-  document.getElementById('panel-scanner').classList.toggle('active',tab==='scanner');
-  document.getElementById('panel-register').classList.toggle('active',tab==='register');
+  ['scanner','register','campaigns'].forEach(function(t){
+    var tb=document.getElementById('tab-'+t);
+    var p=document.getElementById('panel-'+t);
+    if(tb)tb.classList.toggle('active',t===tab);
+    if(p)p.classList.toggle('active',t===tab);
+  });
   if(tab==='scanner')showStep('step-add');
   if(tab==='register'&&!registerLoaded){registerLoaded=true;loadRegister();}
+  if(tab==='campaigns')loadCampaigns();
+}
+
+function showStep(id){
+  ['step-add','step-loading','step-verdict'].forEach(function(s){
+    var el=document.getElementById(s);
+    if(el)el.classList.toggle('active',s===id);
+  });
 }
 
 // ── VENDOR LIBRARY ────────────────────────────────────────────
@@ -594,7 +659,7 @@ function onSearch(val){
     currentDropdownItems.push({name:custom,category:'Will be assessed using publicly available information',isCustom:true});
   }
   var html=currentDropdownItems.map(function(item,idx){
-    if(item.isCustom)return'<div class="dropdown-item" data-idx="'+idx+'" onclick="selectFromDropdown('+idx+')"><div class="dropdown-name dropdown-custom">Add \u201c'+escH(item.name)+'\u201d</div><div class="dropdown-cat">'+escH(item.category)+'</div></div>';
+    if(item.isCustom)return'<div class="dropdown-item" data-idx="'+idx+'" onclick="selectFromDropdown('+idx+')"><div class="dropdown-name dropdown-custom">Add "'+escH(item.name)+'"</div><div class="dropdown-cat">'+escH(item.category)+'</div></div>';
     return'<div class="dropdown-item" data-idx="'+idx+'" onclick="selectFromDropdown('+idx+')"><div class="dropdown-name">'+escH(item.name)+'</div><div class="dropdown-cat">'+escH(item.category||'')+'</div></div>';
   }).join('');
   if(!html)html='<div class="dropdown-item"><div class="dropdown-name" style="color:var(--mu)">No vendors found</div></div>';
@@ -617,15 +682,15 @@ function addFromInput(){
   var val=document.getElementById('searchInput').value.trim();if(!val)return;
   var match=allVendors.find(function(v){return v.name.toLowerCase()===val.toLowerCase();});
   if(match){if(!selectedVendors.find(function(s){return s.name===match.name;}))addVendorToList(match.name,match.category,false);}
-  else{var partial=allVendors.find(function(v){return v.name.toLowerCase().includes(val.toLowerCase());});
+  else{
+    var partial=allVendors.find(function(v){return v.name.toLowerCase().includes(val.toLowerCase());});
     if(partial&&!selectedVendors.find(function(s){return s.name===partial.name;}))addVendorToList(partial.name,partial.category,false);
-    else addVendorToList(val.charAt(0).toUpperCase()+val.slice(1),'Custom vendor',true);}
+    else addVendorToList(val.charAt(0).toUpperCase()+val.slice(1),'Custom vendor',true);
+  }
 }
-function addCustomVendor(name){if(!name||selectedVendors.find(function(s){return s.name.toLowerCase()===name.toLowerCase();}))return;addVendorToList(name,'Custom vendor',true);}
-
 function addVendorToList(name,category,isCustom){
   selectedVendors.push({name:name,category:category,isCustom:isCustom});
-  vendorContext[name]={dpaStatus:'',dataTypes:[],contactVolume:''};
+  vendorContext[name]={dpaStatus:'',useCase:'',dataTypes:[],contactVolume:'',producesContent:null,handlesPromotions:null};
   document.getElementById('searchInput').value='';
   document.getElementById('dropdown').classList.remove('show');
   currentDropdownItems=[];highlightedIndex=-1;
@@ -642,325 +707,314 @@ function renderVendorList(){
   var list=document.getElementById('selectedList');
   var btn=document.getElementById('scanBtn');
   if(!selectedVendors.length){list.innerHTML='';btn.disabled=true;return;}
+
   list.innerHTML=selectedVendors.map(function(v){
     var ctx=vendorContext[v.name]||{};
-    var hasCtx=ctx.dpaStatus&&ctx.dataTypes&&ctx.dataTypes.length;
-    return renderVendorEntry(v,ctx,hasCtx);
+    var answered=ctx.dpaStatus&&ctx.useCase;
+    return renderVendorEntry(v,ctx,answered);
   }).join('');
-  // Check if all vendors have answered the key question (DPA status)
-  var allAnswered=selectedVendors.every(function(v){return vendorContext[v.name]&&vendorContext[v.name].dpaStatus;});
+
+  var allAnswered=selectedVendors.every(function(v){
+    var ctx=vendorContext[v.name]||{};
+    return ctx.dpaStatus&&ctx.useCase;
+  });
   btn.disabled=!allAnswered;
 }
 
-function renderVendorEntry(v,ctx,hasCtx){
-  var dtBtns=DATA_TYPES.map(function(dt){
-    var on=(ctx.dataTypes||[]).includes(dt.label);
-    return'<button class="dt-btn'+(on?' on':'')+(dt.highRisk?' high-risk':'')+'" onclick="toggleDataType('+JSON.stringify(v.name)+','+JSON.stringify(dt.label)+',this)">'+escH(dt.label)+'</button>';
-  }).join('');
+function renderVendorEntry(v,ctx,answered){
+  var safeName=v.name.replace(/[^a-zA-Z0-9]/g,'-');
 
-  return'<div class="vendor-row'+(hasCtx?' complete':'')+'" id="vrow-'+escH(v.name.replace(/\s+/g,'-'))+'">'+
-    '<div class="vendor-row-left">'+
-    '<div class="vendor-row-name">'+escH(v.name)+(v.isCustom?'<span class="ai-tag" style="margin-left:6px">AI</span>':'')+'</div>'+
-    '<div class="vendor-row-cat">'+escH(v.category||'')+'</div>'+
+  // DPA buttons
+  var dpaHtml='<div class="q-section"><span class="q-label">Have you signed a DPA with them?</span><div class="q-toggle">'+
+    ['yes','no','unsure'].map(function(s){
+      var lbl=s==='yes'?'Yes, signed':s==='no'?'No, not signed':'Not sure';
+      var on=ctx.dpaStatus===s;
+      var cls=on?(s==='yes'?'on yes-good':s==='no'?'on risk':'on'):'';
+      return'<button class="q-btn '+cls+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('dpaStatus') + ',' + JSON.stringify(s) + ')">'+lbl+'</button>';
+    }).join('')+'</div></div>';
+
+  // Use case buttons
+  var ucHtml='<div class="q-section"><span class="q-label">What do you use them for?</span><div class="q-toggle">'+
+    USE_CASES.map(function(uc){
+      var on=ctx.useCase===uc;
+      return'<button class="q-btn'+(on?' on':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('useCase') + ',' + JSON.stringify(uc) + ')">'+escH(uc)+'</button>';
+    }).join('')+'</div></div>';
+
+  // Data types (shown after use case selected)
+  var dtHtml='';
+  if(ctx.useCase){
+    dtHtml='<div class="q-section"><span class="q-label">What data do you share with them?</span><div class="dt-grid">'+
+      DATA_TYPES.map(function(dt){
+        var on=(ctx.dataTypes||[]).includes(dt.label);
+        return'<button class="dt-btn'+(on?' on'+(dt.sensitive?' sensitive':''):'')+'" onclick="toggleDT('+JSON.stringify(v.name)+','+JSON.stringify(dt.label)+')">'+escH(dt.label)+'</button>';
+      }).join('')+'</div></div>';
+  }
+
+  // Extra questions based on use case
+  var extraHtml='';
+  if(ctx.useCase==='Creative & content'||ctx.useCase==='Paid media'){
+    var pc=ctx.producesContent;
+    extraHtml+='<div class="q-section"><span class="q-label">Do they produce creative or copy for you?</span><div class="q-toggle">'+
+      '<button class="q-btn'+(pc===true?' on risk':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('producesContent') + ',true)">Yes</button>'+
+      '<button class="q-btn'+(pc===false?' on yes-good':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('producesContent') + ',false)">No</button>'+
+      '</div></div>';
+  }
+  if(ctx.useCase==='Pricing & promotions'||ctx.useCase==='Reviews & UGC'){
+    var hp=ctx.handlesPromotions;
+    extraHtml+='<div class="q-section"><span class="q-label">Do they run promotions, reviews or pricing for you?</span><div class="q-toggle">'+
+      '<button class="q-btn'+(hp===true?' on risk':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('handlesPromotions') + ',true)">Yes</button>'+
+      '<button class="q-btn'+(hp===false?' on yes-good':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('handlesPromotions') + ',false)">No</button>'+
+      '</div></div>';
+  }
+
+  // Volume
+  var volHtml='';
+  if(ctx.useCase){
+    volHtml='<div class="q-section"><div class="q-row"><div class="q-group"><span class="q-label">Approx. contacts (optional)</span>'+
+      '<input class="vol-input" type="number" placeholder="e.g. 25000" value="'+escH(String(ctx.contactVolume||''))+'" oninput="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('contactVolume') + ',this.value)"/></div></div></div>';
+  }
+
+  return'<div class="vendor-entry'+(answered?' answered':'')+'" id="ve-'+safeName+'">'+
+    '<div class="ve-header">'+
+    '<div><div class="ve-name">'+escH(v.name)+(v.isCustom?'<span class="ai-tag" style="margin-left:5px">AI</span>':'')+'</div>'+
+    '<div class="ve-cat">'+escH(v.category||'')+'</div></div>'+
+    '<button class="ve-remove" onclick="removeVendor('+JSON.stringify(v.name)+')">&#215;</button>'+
     '</div>'+
-    '<div class="vendor-row-right">'+
-    // DPA question — inline toggle
-    '<div style="display:flex;align-items:center;gap:6px">'+
-    '<span style="font-size:11px;color:var(--mu);font-weight:600">DPA signed?</span>'+
-    '<button class="dt-btn'+(ctx.dpaStatus==='yes'?' on':'')+'" onclick="setDPAStatus('+JSON.stringify(v.name)+',' + JSON.stringify('yes') + ')">Yes</button>'+
-    '<button class="dt-btn'+(ctx.dpaStatus==='no'?' on high-risk':'')+'" onclick="setDPAStatus('+JSON.stringify(v.name)+',' + JSON.stringify('no') + ')">No</button>'+
-    '<button class="dt-btn'+(ctx.dpaStatus==='unsure'?' on':'')+'" onclick="setDPAStatus('+JSON.stringify(v.name)+',' + JSON.stringify('unsure') + ')">Not sure</button>'+
-    '</div>'+
-    '<button class="vendor-remove" onclick="removeVendor('+JSON.stringify(v.name)+')">&#215;</button>'+
-    '</div>'+
-    '</div>'+
-    // Data types + volume — shown after DPA answered
-    '<div class="vendor-questions'+(ctx.dpaStatus?' show':'')+'" id="vq-'+escH(v.name.replace(/\s+/g,'-'))+'">'+
-    '<div class="q-data-types">'+
-    '<label>What data do you send them?</label>'+
-    '<div class="data-type-btns">'+dtBtns+'</div>'+
-    '</div>'+
-    '<div class="q-row">'+
-    '<div class="q-group"><label>Approx. contacts</label>'+
-    '<input type="number" placeholder="e.g. 25000" min="0" value="'+escH(String(ctx.contactVolume||''))+'" oninput="setContactVolume('+JSON.stringify(v.name)+',this.value)"/></div>'+
-    '</div>'+
+    '<div class="ve-questions">'+dpaHtml+ucHtml+dtHtml+extraHtml+volHtml+'</div>'+
     '</div>';
 }
 
-function setDPAStatus(vendorName,status){
-  if(!vendorContext[vendorName])vendorContext[vendorName]={dataTypes:[],contactVolume:''};
-  vendorContext[vendorName].dpaStatus=status;
+function setCtx(vendorName,field,value){
+  if(!vendorContext[vendorName])vendorContext[vendorName]={dpaStatus:'',useCase:'',dataTypes:[],contactVolume:'',producesContent:null,handlesPromotions:null};
+  vendorContext[vendorName][field]=value;
   renderVendorList();
 }
-function toggleDataType(vendorName,label,btn){
-  if(!vendorContext[vendorName])vendorContext[vendorName]={dpaStatus:'',dataTypes:[],contactVolume:''};
+function toggleDT(vendorName,label){
+  if(!vendorContext[vendorName])vendorContext[vendorName]={dpaStatus:'',useCase:'',dataTypes:[],contactVolume:'',producesContent:null,handlesPromotions:null};
   var types=vendorContext[vendorName].dataTypes||[];
   var idx=types.indexOf(label);
   if(idx>-1)types.splice(idx,1);else types.push(label);
   vendorContext[vendorName].dataTypes=types;
   renderVendorList();
 }
-function setContactVolume(vendorName,val){
-  if(!vendorContext[vendorName])vendorContext[vendorName]={dpaStatus:'',dataTypes:[],contactVolume:''};
-  vendorContext[vendorName].contactVolume=val;
-}
 
 document.addEventListener('click',function(e){
   if(!e.target.closest('#searchWrap'))document.getElementById('dropdown').classList.remove('show');
-  if(!e.target.closest('.reg-search-wrap'))document.getElementById('reg-dropdown').classList.remove('show');
+  if(!e.target.closest('.reg-search-wrap')){var rd=document.getElementById('reg-dropdown');if(rd)rd.classList.remove('show');}
 });
 
 // ── LOADING ANIMATION ─────────────────────────────────────────
-var loadingStepsList=[
-  'Identifying your processor relationships',
-  'Cross-referencing vendor compliance library',
-  'Analysing your specific data types and volumes',
-  'Calculating exposure based on your situation',
-  'Generating your personalised verdict',
-];
-var loadingTimer=null,currentStep=0;
+var LOADING_STEPS=['Checking ICO registration and DPA status','Assessing ASA liability based on use case','Checking CMA exposure for promotions and reviews','Scanning ICO and ASA public enforcement feeds','Building your three-regulator verdict'];
 
-function startLoadingAnimation(){
-  var stepsEl=document.getElementById('loadingSteps');
-  stepsEl.innerHTML=loadingStepsList.map(function(s,i){
-    return'<div class="loading-step" id="ls-'+i+'"><span class="ls-dot"></span>'+escH(s)+'</div>';
-  }).join('');
-  currentStep=0;
-  activateLoadingStep(0);
+function startLoading(){
+  var el=document.getElementById('loadingSteps');
+  el.innerHTML=LOADING_STEPS.map(function(s,i){return'<div class="ls" id="ls-'+i+'"><span class="ls-dot"></span>'+escH(s)+'</div>';}).join('');
+  activateStep(0);
 }
-
-function activateLoadingStep(i){
-  if(i>=loadingStepsList.length)return;
+function activateStep(i){
+  if(i>=LOADING_STEPS.length)return;
   var prev=document.getElementById('ls-'+(i-1));
-  if(prev)prev.classList.remove('active'),prev.classList.add('done');
+  if(prev){prev.classList.remove('active');prev.classList.add('done');}
   var curr=document.getElementById('ls-'+i);
   if(curr)curr.classList.add('active');
-  loadingTimer=setTimeout(function(){activateLoadingStep(i+1);},900);
+  loadingTimer=setTimeout(function(){activateStep(i+1);},1000);
 }
-
-function stopLoadingAnimation(){
+function stopLoading(){
   if(loadingTimer)clearTimeout(loadingTimer);
-  loadingStepsList.forEach(function(_,i){
-    var el=document.getElementById('ls-'+i);
-    if(el){el.classList.remove('active');el.classList.add('done');}
-  });
+  LOADING_STEPS.forEach(function(_,i){var el=document.getElementById('ls-'+i);if(el){el.classList.remove('active');el.classList.add('done');}});
 }
 
 // ── RUN SCAN ──────────────────────────────────────────────────
-function showStep(id){
-  ['step-add','step-loading','step-verdict'].forEach(function(s){
-    var el=document.getElementById(s);
-    if(el)el.classList.toggle('active',s===id);
-  });
-}
-
 function runScan(){
   clearError();
   if(!userId){showError('Please sign in via the dashboard.');return;}
   showStep('step-loading');
-  startLoadingAnimation();
+  startLoading();
 
-  // Build vendors array with context
   var vendors=selectedVendors.map(function(v){
     var ctx=vendorContext[v.name]||{};
     return{
-      name:v.name,
-      isCustom:v.isCustom,
+      name:v.name,isCustom:v.isCustom,
       dpaStatus:ctx.dpaStatus||'unsure',
+      useCase:ctx.useCase||'',
       dataTypes:ctx.dataTypes||[],
       contactVolume:ctx.contactVolume?parseInt(ctx.contactVolume,10)||null:null,
+      producesContent:ctx.producesContent===true,
+      handlesPromotions:ctx.handlesPromotions===true,
     };
   });
 
-  fetch(APP_URL+'/api/check-vendors',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({vendors:vendors,userId:userId})
-  })
-  .then(function(r){if(!r.ok)return r.json().then(function(e){throw new Error(e.error||'Server error '+r.status);});return r.json();})
-  .then(function(data){
-    stopLoadingAnimation();
-    setTimeout(function(){
-      renderVerdict(data.results,vendors);
-      showStep('step-verdict');
-      localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
-    },400);
-  })
-  .catch(function(e){
-    stopLoadingAnimation();
-    showError('Scan failed: '+e.message);
-    showStep('step-add');
-  });
+  fetch(APP_URL+'/api/check-vendors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vendors:vendors,userId:userId})})
+    .then(function(r){if(!r.ok)return r.json().then(function(e){throw new Error(e.error||'Server error '+r.status);});return r.json();})
+    .then(function(data){
+      stopLoading();
+      setTimeout(function(){
+        renderVerdict(data.results,vendors);
+        showStep('step-verdict');
+        localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
+      },400);
+    })
+    .catch(function(e){
+      stopLoading();
+      showError('Scan failed: '+e.message);
+      showStep('step-add');
+    });
 }
 
+// ── DEMO ──────────────────────────────────────────────────────
 function runDemo(){
-  if(document.getElementById('gateScreen').classList.contains('show')){
-    document.getElementById('gateScreen').classList.remove('show');
-    document.getElementById('panel-scanner').style.display='';
-    document.getElementById('panel-register').style.display='';
-    document.querySelector('.tabs').style.display='';
-    document.querySelector('.page-header').style.display='';
-    document.querySelector('.back-link').style.display='';
-  }
+  document.getElementById('gateScreen').classList.remove('show');
+  document.getElementById('mainWrap').style.display='';
   switchTab('scanner');
   showStep('step-loading');
-  startLoadingAnimation();
+  startLoading();
   setTimeout(function(){
-    stopLoadingAnimation();
-    var demoVendors=DEMO_RESULTS.map(function(r){return{name:r.name,isCustom:r.isCustom||false,dpaStatus:r.userContext.dpaStatus,dataTypes:r.userContext.dataTypes,contactVolume:r.userContext.contactVolume};});
+    stopLoading();
     setTimeout(function(){
-      renderVerdict(DEMO_RESULTS,demoVendors,true);
+      renderVerdict(DEMO_RESULTS,DEMO_RESULTS.map(function(r){return r.userInput||{};}),true);
       showStep('step-verdict');
     },400);
-  },4500);
+  },5500);
 }
 
 // ── RENDER VERDICT ────────────────────────────────────────────
-function renderVerdict(results,vendorInputs,isDemo){
-  var issues=[];
-  var cleanCount=0;
+function renderVerdict(results,inputs,isDemo){
+  var allIssues=[];
+  var cleared=0;
 
   results.forEach(function(result,idx){
-    var input=vendorInputs[idx]||{};
-    var userDPA=input.dpaStatus||result.userContext&&result.userContext.dpaStatus||'unsure';
-    var dataTypes=input.dataTypes||result.userContext&&result.userContext.dataTypes||[];
-    var volume=input.contactVolume||result.userContext&&result.userContext.contactVolume||null;
+    var ui=inputs[idx]||result.userInput||{};
+    var userDPA=ui.dpaStatus||'unsure';
+    var useCase=ui.useCase||'';
+    var dataTypes=ui.dataTypes||[];
+    var volume=ui.contactVolume||null;
+    var producesContent=ui.producesContent===true;
+    var handlesPromotions=ui.handlesPromotions===true;
     var d=result.dimensions||{};
 
-    // Does the user have a signed DPA?
-    var hasDPA=userDPA==='yes';
-    var noResponse=userDPA==='no';
-    var unsure=userDPA==='unsure';
-
-    // Build issue if needed
-    var issue=result.issue||null; // demo has pre-built issues
-
-    if(!issue){
-      // Build issue from scan results + user context
-      var hasSensitive=dataTypes.some(function(t){return/special category|behavioural|purchase/i.test(t);});
-      var breachKnown=d.breachHistory&&!['none identified','none','no','unknown',''].includes((d.breachHistory||'').toLowerCase());
-      var transferUnconfirmed=d.intlTransferOccurs==='Yes'&&['None','Unknown'].includes(d.internationalTransfer||'');
-
-      // Priority 1: No DPA
-      if(!hasDPA){
-        var sev=hasSensitive||(volume&&volume>50000)?'critical':'high';
-        var expLow,expHigh;
-        if(hasSensitive&&volume>50000){expLow=100000;expHigh=400000;}
-        else if(hasSensitive||volume>50000){expLow=50000;expHigh=250000;}
-        else{expLow=20000;expHigh=100000;}
-
-        var fixSteps=[];
-        if(d.dpaLink){
-          fixSteps.push({text:'Sign the DPA at their website — self-serve, no negotiation needed',link:d.dpaLink,linkLabel:'View DPA'});
-        }else if(d.dpaStatus==='On Request'){
-          fixSteps.push({text:'Contact '+escH(result.name)+' to request their Data Processing Agreement. Ask specifically for an Article 28 contract covering UK GDPR.'});
-        }else{
-          fixSteps.push({text:'Contact '+escH(result.name)+'\'s privacy or legal team and request a Data Processing Agreement before sharing any more personal data.'});
-        }
-        fixSteps.push({text:'Once signed, store a copy and add the link to your Sendwize processor register.'});
-
-        issue={
-          severity:sev,
-          title:unsure?'DPA status unconfirmed — verify before your next campaign':'No signed DPA with '+result.name,
-          what:unsure
-            ?'You\'re not sure whether you have a signed DPA with '+result.name+'. UK GDPR Article 28 requires a written contract before sharing personal data with any processor. If you can\'t find a signed DPA on file, treat it as not in place and request one now.'
-            :'You\'ve told us you don\'t have a signed DPA with '+result.name+'. UK GDPR Article 28 requires a written contract before sharing any personal data with a processor. This is a direct breach regardless of how compliant '+result.name+' is as a company.',
-          exposureLow:expLow,
-          exposureHigh:expHigh,
-          fixSteps:fixSteps,
-          impactText:'Signing removes the Article 28 breach entirely',
-          impactDrop:'Eliminates £'+fmtNum(expLow)+'\u2013£'+fmtNum(expHigh)+' of exposure',
-        };
-      }
-      // Priority 2: Breach history with no documented assessment
-      else if(breachKnown&&hasDPA){
-        issue={
-          severity:'medium',
-          title:result.name+' has a confirmed breach history — document your assessment',
-          what:'You have a DPA in place which is good. But '+result.name+' has a confirmed breach or enforcement history: '+d.breachHistory+'. UK GDPR requires you to document that you assessed the risk of continuing to use a processor with a known history. Without that documented assessment you\'re missing a key piece of due diligence.',
-          exposureLow:15000,exposureHigh:60000,
-          fixSteps:[
-            {text:'Write a brief documented assessment: you reviewed the breach, confirmed your account status, and concluded continued use is proportionate given their remediation.'},
-            {text:'Store the assessment with a date and add a note to your Sendwize processor register.'},
-          ],
-          impactText:'Documented assessment covers your due diligence',
-          impactDrop:'Removes the aggravating factor if ICO investigates',
-        };
-      }
-      // Priority 3: Transfer mechanism unconfirmed
-      else if(transferUnconfirmed&&hasDPA){
-        issue={
-          severity:'medium',
-          title:'International transfer mechanism unconfirmed with '+result.name,
-          what:'You have a DPA but the international transfer mechanism for '+result.name+' couldn\'t be confirmed from their public pages. UK GDPR Chapter V requires a lawful basis for any transfer of personal data outside the UK/EEA.',
-          exposureLow:20000,exposureHigh:80000,
-          fixSteps:[
-            {text:'Contact '+result.name+' and ask which transfer mechanism applies to your account: SCCs, UK-US Data Bridge, or Adequacy.'},
-            {text:'Get this confirmed in writing and add it to your processor register.'},
-          ],
-          impactText:'Confirming the mechanism closes the transfer gap',
-          impactDrop:'Removes the Chapter V exposure',
-        };
-      }
-      else{
-        cleanCount++;
-        issue=null;
-      }
+    // Use pre-built demo issue if present
+    if(result.issue){
+      allIssues.push({result:result,issue:result.issue,dataTypes:dataTypes,volume:volume,regulator:'ICO'});
+      if(result.asaIssue)allIssues.push({result:result,issue:result.asaIssue,dataTypes:dataTypes,volume:volume,regulator:'ASA'});
+      return;
     }
 
-    if(issue){
-      issues.push({result:result,issue:issue,dataTypes:dataTypes,volume:volume,userDPA:userDPA});
-    }else{
-      cleanCount++;
+    var hasSensitive=dataTypes.some(function(t){return/special|behavioural|purchase/i.test(t);});
+    var breachKnown=d.breachHistory&&!['none identified','none','no','unknown',''].includes((d.breachHistory||'').toLowerCase());
+    var transferBad=d.intlTransferOccurs==='Yes'&&['None','Unknown'].includes(d.internationalTransfer||'');
+
+    var hasIssue=false;
+
+    // ICO — DPA check
+    if(userDPA!=='yes'){
+      var sev=(hasSensitive||(volume&&volume>50000))?'critical':'high';
+      var expLow=hasSensitive&&volume>50000?100000:hasSensitive||volume>50000?50000:20000;
+      var expHigh=hasSensitive&&volume>50000?400000:hasSensitive||volume>50000?250000:100000;
+      var hint=d.dpaLink?'Their DPA is available at '+d.dpaLink:d.dpaStatus==='On Request'?'Contact '+result.name+' directly to request their DPA.':'Contact their privacy team to request a Data Processing Agreement.';
+      allIssues.push({result:result,dataTypes:dataTypes,volume:volume,regulator:'ICO',issue:{
+        severity:sev,regulator:'ICO',
+        title:userDPA==='no'?'No signed DPA with '+result.name:'DPA status unconfirmed with '+result.name,
+        what:userDPA==='no'?'You confirmed no signed DPA. UK GDPR Article 28 requires a written contract before sharing any personal data with a processor.':'You\'re unsure whether a DPA exists. If you can\'t find a signed copy, treat it as not in place and request one now. '+hint,
+        fixSteps:d.dpaLink?[{text:'Sign their DPA — available at the link below.',link:d.dpaLink,linkLabel:'View DPA'},{text:'Store a signed copy and add the link to your Sendwize register.'}]:[{text:hint},{text:'Once signed, store a copy and add to your Sendwize processor register.'}],
+        exposureLow:expLow,exposureHigh:expHigh,impactDrop:'Signing removes the Article 28 breach',
+      }});
+      hasIssue=true;
     }
+
+    // ASA — content producers
+    if(producesContent&&(useCase==='Creative & content'||useCase==='Paid media')){
+      allIssues.push({result:result,dataTypes:dataTypes,volume:volume,regulator:'ASA',issue:{
+        severity:'high',regulator:'ASA',
+        title:'No confirmed written sign-off process with '+result.name,
+        what:'You told us '+result.name+' produces content on your behalf. Under ASA rules you\'re responsible for all claims they make in your marketing. Without a written sign-off process you have no defence if a claim is upheld.',
+        fixSteps:[{text:'Add a clause to your agency agreement requiring written approval on all claims, testimonials and comparative statements before publication.'},{text:'Document your internal approval process — the ASA looks for evidence that a proper review happened.'}],
+        exposureLow:0,exposureHigh:0,impactDrop:'Written sign-off process removes your primary ASA liability',
+      }});
+      hasIssue=true;
+    }
+
+    // CMA — promotions/reviews
+    if(handlesPromotions&&(useCase==='Reviews & UGC'||useCase==='Pricing & promotions')){
+      allIssues.push({result:result,dataTypes:dataTypes,volume:volume,regulator:'CMA',issue:{
+        severity:'high',regulator:'CMA',
+        title:'CMA compliance not confirmed for '+result.name,
+        what:'You told us '+result.name+' handles promotions or reviews for you. Under DMCCA 2024 you\'re responsible for ensuring review and pricing practices are compliant regardless of which vendor operates them.',
+        fixSteps:[{text:'Confirm with '+result.name+' that their practices comply with DMCCA 2024 — specifically reference pricing, countdown timers, and consumer reviews.'},{text:'Get their compliance confirmation in writing and file it.'}],
+        exposureLow:0,exposureHigh:0,impactDrop:'Documented CMA compliance confirmation removes your primary exposure',
+      }});
+      hasIssue=true;
+    }
+
+    // Breach history
+    if(breachKnown&&userDPA==='yes'){
+      allIssues.push({result:result,dataTypes:dataTypes,volume:volume,regulator:'ICO',issue:{
+        severity:'medium',regulator:'ICO',
+        title:result.name+' has confirmed breach history — document your assessment',
+        what:'You have a DPA in place. But '+result.name+' has a confirmed breach: '+d.breachHistory+'. UK GDPR requires you to document that you assessed the risk of continued use.',
+        fixSteps:[{text:'Write a brief documented assessment: you reviewed the breach, confirmed your account status, and concluded continued use is proportionate.'},{text:'Store it with a date and note it in your Sendwize register.'}],
+        exposureLow:15000,exposureHigh:60000,impactDrop:'Documented assessment removes the due diligence gap',
+      }});
+      hasIssue=true;
+    }
+
+    if(!hasIssue)cleared++;
   });
 
   // Sort by severity
-  var sevOrder={critical:0,high:1,medium:2};
-  issues.sort(function(a,b){return(sevOrder[a.issue.severity]||3)-(sevOrder[b.issue.severity]||3);});
+  var sevOrd={critical:0,high:1,medium:2,low:3};
+  allIssues.sort(function(a,b){return(sevOrd[a.issue.severity]||4)-(sevOrd[b.issue.severity]||4);});
 
-  // Calculate total exposure
-  var totalLow=issues.reduce(function(s,i){return s+(i.issue.exposureLow||0);},0);
-  var totalHigh=issues.reduce(function(s,i){return s+(i.issue.exposureHigh||0);},0);
+  // Calculate exposure
+  var totalLow=allIssues.reduce(function(s,i){return s+(i.issue.exposureLow||0);},0);
+  var totalHigh=allIssues.reduce(function(s,i){return s+(i.issue.exposureHigh||0);},0);
+
+  // Regulator summary
+  var icoIssues=allIssues.filter(function(i){return i.issue.regulator==='ICO';}).length;
+  var asaIssues=allIssues.filter(function(i){return i.issue.regulator==='ASA';}).length;
+  var cmaIssues=allIssues.filter(function(i){return i.issue.regulator==='CMA';}).length;
 
   var html='';
+  if(isDemo)html+='<div class="demo-notice"><span style="font-size:14px">&#128065;&#65039;</span><span><strong>Demo scan</strong> &#8212; 2 example vendors. <a href="?" style="color:var(--o);font-weight:600">Sign in</a> to scan your own.</span></div>';
 
-  // Demo notice
-  if(isDemo){
-    html+='<div class="demo-notice"><span style="font-size:15px">👁️</span><span><strong>Demo scan</strong> — showing 3 example processor relationships. <a href="?" style="color:var(--o);font-weight:600">Sign in</a> to scan your own.</span></div>';
-  }
+  // Regulator summary tiles
+  html+='<div class="reg-summary">'+
+    '<div class="reg-tile"><div class="reg-tile-label">ICO</div><div class="reg-tile-val '+(icoIssues?'red':'green')+'">'+(icoIssues?icoIssues+' issue'+(icoIssues!==1?'s':''):'Clear')+'</div></div>'+
+    '<div class="reg-tile"><div class="reg-tile-label">ASA</div><div class="reg-tile-val '+(asaIssues?'amber':'green')+'">'+(asaIssues?asaIssues+' issue'+(asaIssues!==1?'s':''):'Clear')+'</div></div>'+
+    '<div class="reg-tile"><div class="reg-tile-label">CMA</div><div class="reg-tile-val '+(cmaIssues?'amber':'green')+'">'+(cmaIssues?cmaIssues+' issue'+(cmaIssues!==1?'s':''):'Clear')+'</div></div>'+
+    '<div class="reg-tile"><div class="reg-tile-label">Vendors cleared</div><div class="reg-tile-val '+(cleared>0?'green':'na')+'">'+cleared+' of '+results.length+'</div></div>'+
+    '</div>';
 
   // Verdict header
-  if(!issues.length){
-    html+='<div class="all-clear"><div class="ac-icon">✓</div><div class="ac-title">No issues found across your processor relationships</div><div class="ac-sub">All '+results.length+' processors you\'ve added have a confirmed DPA status. Keep your register up to date as you add new tools and agencies.</div></div>';
+  if(!allIssues.length){
+    html+='<div class="all-clear"><div class="ac-icon">&#10003;</div><div class="ac-title">No compliance issues found</div><div class="ac-sub">All '+results.length+' vendor'+( results.length!==1?'s':'')+' you\'ve added look fine based on what you\'ve told us. Keep your register up to date as you add new tools.</div></div>';
   }else{
-    var verdictClass=issues[0].issue.severity==='critical'?'red':issues[0].issue.severity==='high'?'amber':'amber';
-    var verdictEye=issues.length===1?'1 issue found':issues.length+' issues found';
-    var verdictHead=issues.length===1
-      ?'You have one processor relationship that needs attention'
-      :'You have '+issues.length+' processor relationships that need attention';
-    var verdictSub=cleanCount>0
-      ?issues.length+' of your '+results.length+' processors have gaps. '+cleanCount+' look fine based on what you\'ve told us.'
-      :'All '+results.length+' processors you\'ve added have compliance gaps to address.';
-
-    html+='<div class="verdict-header '+verdictClass+'">'+
-      '<div class="verdict-decoration"></div>'+
-      '<div class="verdict-eyebrow">'+escH(verdictEye)+'</div>'+
-      '<div class="verdict-headline">'+escH(verdictHead)+'</div>'+
-      '<div class="verdict-sub">'+escH(verdictSub)+'</div>'+
-      (totalLow>0?'<div class="verdict-exposure">'+
-        '<div><div class="ve-label">Unaddressed exposure</div><div class="ve-range">\u00a3'+fmtNum(totalLow)+'\u2013\u00a3'+fmtNum(totalHigh)+'</div><div class="ve-note">Comparable published ICO cases \u00b7 pre-DUAA \u00b7 not a prediction</div></div>'+
-        '</div>':'')
+    var hasCritical=allIssues.some(function(i){return i.issue.severity==='critical';});
+    var vClass=hasCritical?'red':'amber';
+    var vEye=allIssues.length+' issue'+(allIssues.length!==1?'s':'')+' found across '+results.length+' vendor'+(results.length!==1?'s':'');
+    var vHead=hasCritical?'You have critical compliance gaps to fix before your next campaign':'You have compliance gaps to address';
+    var vSub=cleared>0?cleared+' vendor'+(cleared!==1?'s':'')+' cleared. '+allIssues.length+' issue'+(allIssues.length!==1?'s':'')+' need attention.':'All vendors scanned have issues to address.';
+    html+='<div class="verdict-header '+vClass+'"><div class="verdict-deco"></div>'+
+      '<div class="verdict-eye">'+escH(vEye)+'</div>'+
+      '<div class="verdict-head">'+escH(vHead)+'</div>'+
+      '<div class="verdict-sub">'+escH(vSub)+'</div>'+
+      (totalLow>0?'<div class="verdict-exp"><div><div class="ve-lbl">Unaddressed ICO exposure</div><div class="ve-range">&#163;'+fmtN(totalLow)+'&#8211;&#163;'+fmtN(totalHigh)+'</div><div class="ve-note">Comparable pre-DUAA cases &#183; not a prediction &#183; DUAA max now &#163;17.5M</div></div></div>':'')
       +'</div>';
   }
 
   // Risk items
-  if(issues.length){
-    html+='<div class="risk-section"><div class="risk-section-title">What needs fixing</div>';
-    issues.forEach(function(item,i){
-      html+=renderRiskItem(item,i);
-    });
+  if(allIssues.length){
+    html+='<div class="risk-section"><div class="risk-section-title">What to fix</div>';
+    allIssues.forEach(function(item,i){html+=renderRiskItem(item,i);});
     html+='</div>';
+  }
+
+  // Contract checklist prompt
+  if(allIssues.length){
+    html+='<div style="background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:16px 20px;margin-top:16px;box-shadow:var(--sh)">'+
+      '<div style="font-size:13px;font-weight:700;margin-bottom:4px;letter-spacing:-.2px">Check your contract clauses</div>'+
+      '<div style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.5">Go to your processor register, click a vendor, and use the contract checklist to confirm which Article 28 clauses are in place. Missing clauses generate specific fix records on your dashboard.</div>'+
+      '<button onclick="switchTab(\'register\')" style="padding:8px 16px;background:var(--o);color:#fff;border:none;border-radius:var(--rad-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Open register</button>'+
+      '</div>';
   }
 
   document.getElementById('verdictContent').innerHTML=html;
@@ -969,69 +1023,53 @@ function renderVerdict(results,vendorInputs,isDemo){
 function renderRiskItem(item,i){
   var issue=item.issue;
   var sev=issue.severity||'medium';
-  var sevIcon=sev==='critical'?'✕':sev==='high'?'!':'~';
-  var expText=issue.exposureLow?'\u00a3'+fmtNum(issue.exposureLow)+'\u2013\u00a3'+fmtNum(issue.exposureHigh):'';
+  var icon=sev==='critical'?'&#10005;':sev==='high'?'!':'~';
+  var regCls={'ICO':'reg-ico','ASA':'reg-asa','CMA':'reg-cma','Commercial':'reg-com'}[issue.regulator]||'reg-ico';
+  var expText=issue.exposureLow?'&#163;'+fmtN(issue.exposureLow)+'&#8211;&#163;'+fmtN(issue.exposureHigh):'';
 
-  var fixStepsHtml=(issue.fixSteps||[]).map(function(step,si){
-    return'<div class="ri-fix-step">'+
-      '<div class="ri-step-num">'+(si+1)+'</div>'+
-      '<div class="ri-step-text">'+escH(step.text)+(step.link?'<br><a class="ri-step-link" href="'+escH(step.link)+'" target="_blank" rel="noopener">'+escH(step.linkLabel||step.link)+' \u2192</a>':'')+'</div>'+
-      '</div>';
+  var stepsHtml=(issue.fixSteps||[]).map(function(step,si){
+    return'<div class="fix-step"><div class="fix-num">'+(si+1)+'</div>'+
+      '<div class="fix-text">'+escH(step.text)+(step.link?'<br><a class="fix-link" href="'+escH(step.link)+'" target="_blank" rel="noopener">'+escH(step.linkLabel||step.link)+' &#8594;</a>':'')+'</div></div>';
   }).join('');
 
-  var contextParts=[];
-  if(item.dataTypes&&item.dataTypes.length)contextParts.push('Data: '+item.dataTypes.join(', '));
-  if(item.volume)contextParts.push('~'+fmtNum(item.volume)+' contacts');
-  var contextHtml=contextParts.length?'<div class="ri-context">Your context: '+escH(contextParts.join(' \u00b7 '))+' \u00b7 Sourced from publicly available pages \u00b7 not legal advice</div>':'';
+  var ctx=[];
+  if(item.dataTypes&&item.dataTypes.length)ctx.push('Data: '+item.dataTypes.join(', '));
+  if(item.volume)ctx.push('~'+fmtN(item.volume)+' contacts');
+  var ctxHtml=ctx.length?'<div class="ri-ctx">Your context: '+escH(ctx.join(' &#183; '))+' &#183; Sourced from publicly available pages &#183; not legal advice</div>':'';
 
-  return'<div class="risk-item severity-'+sev+'" id="ri-'+i+'">'+
-    '<div class="ri-header" onclick="toggleRiskItem('+i+')">'+
-    '<div class="ri-icon '+sev+'">'+sevIcon+'</div>'+
+  return'<div class="risk-item sev-'+sev+'" id="ri-'+i+'">'+
+    '<div class="ri-head" onclick="toggleRI('+i+')">'+
+    '<div class="ri-icon '+sev+'">'+icon+'</div>'+
     '<div class="ri-left">'+
-    '<div class="ri-vendor">'+escH(item.result.name)+'</div>'+
+    '<div class="ri-reg"><span class="reg-badge '+regCls+'">'+escH(issue.regulator)+'</span><span class="ri-vendor-badge">'+escH(item.result.name)+'</span></div>'+
     '<div class="ri-title">'+escH(issue.title)+'</div>'+
     '</div>'+
-    '<div class="ri-right">'+
-    (expText?'<div class="ri-exposure'+(sev==='medium'?' medium':'')+'">'+expText+'</div>':'')
-    +'</div>'+
-    '<svg class="ri-chevron" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5"/></svg>'+
+    (expText?'<div class="ri-exp'+(sev==='medium'?' medium':'')+'">'+expText+'</div>':'')+
+    '<svg class="ri-chev" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5"/></svg>'+
     '</div>'+
     '<div class="ri-body"><div class="ri-body-inner">'+
     '<div class="ri-what">'+escH(issue.what)+'</div>'+
-    '<div class="ri-fix-title">How to fix this</div>'+
-    fixStepsHtml+
-    (issue.impactText?'<div class="ri-impact"><div class="ri-impact-text">\u2713 '+escH(issue.impactText)+'</div><div class="ri-impact-num">'+escH(issue.impactDrop||'')+'</div></div>':'')+
-    contextHtml+
-    '</div></div>'+
-    '</div>';
+    '<div class="fix-title">How to fix this</div>'+
+    stepsHtml+
+    (issue.impactDrop?'<div class="ri-impact"><div class="ri-impact-text">&#10003; '+escH(issue.impactDrop)+'</div></div>':'')+
+    ctxHtml+
+    '</div></div></div>';
 }
 
-function toggleRiskItem(i){
-  var el=document.getElementById('ri-'+i);
-  if(el)el.classList.toggle('open');
-}
-
-function fmtNum(n){
-  if(!n)return'0';
-  if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
-  if(n>=1000)return(n/1000).toFixed(0)+'k';
-  return String(n);
-}
+function toggleRI(i){var el=document.getElementById('ri-'+i);if(el)el.classList.toggle('open');}
+function fmtN(n){if(!n)return'0';if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';if(n>=1000)return(n/1000).toFixed(0)+'k';return String(n);}
 
 function resetScanner(){
   selectedVendors=[];vendorContext={};
   showStep('step-add');
   document.getElementById('selectedList').innerHTML='';
   document.getElementById('scanBtn').disabled=true;
+  document.querySelectorAll('.demo-notice').forEach(function(n){n.remove();});
   clearError();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function showError(msg){var e=document.getElementById('errorBox');e.textContent=msg;e.classList.add('show');}
-function clearError(){document.getElementById('errorBox').classList.remove('show');}
-function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-// ── REGISTER (all existing functions) ─────────────────────────
+// ── REGISTER ──────────────────────────────────────────────────
 function loadRegister(){
   if(!userId){document.getElementById('reg-loading').style.display='none';showRegOnboarding();return;}
   fetch(APP_URL+'/api/data?action=history&type=vendor&userId='+encodeURIComponent(userId))
@@ -1044,6 +1082,7 @@ function loadRegister(){
     })
     .catch(function(){document.getElementById('reg-loading').style.display='none';showRegOnboarding();});
 }
+
 var OB_CATS=[
   {label:'Email marketing',vendors:['Mailchimp','Klaviyo','Brevo','HubSpot','ActiveCampaign','SendGrid (Twilio)','Dotdigital','Omnisend','Campaign Monitor']},
   {label:'CRM',vendors:['HubSpot','Salesforce CRM','Pipedrive','Zoho CRM']},
@@ -1057,41 +1096,45 @@ var OB_CATS=[
 ];
 function showRegOnboarding(){
   document.getElementById('ob-categories').innerHTML=OB_CATS.map(function(cat){
-    return'<div class="ob-category"><div class="ob-cat-label">'+escH(cat.label)+'</div><div class="ob-vendor-btns">'+
-      cat.vendors.map(function(v){return'<button class="ob-vendor-btn" data-vendor="'+escH(v)+'" data-cat="'+escH(cat.label)+'" onclick="obAddVendorBtn(this)">'+escH(v)+'</button>';}).join('')+
-      '<button class="ob-vendor-btn" data-cat="'+escH(cat.label)+'" onclick="showAddForm({category:this.dataset.cat},true)">+ Other</button>'+
+    return'<div class="ob-category"><div class="ob-cat-label">'+escH(cat.label)+'</div><div class="ob-btns">'+
+      cat.vendors.map(function(v){return'<button class="ob-btn" data-vendor="'+escH(v)+'" data-cat="'+escH(cat.label)+'" onclick="obAddBtn(this)">'+escH(v)+'</button>';}).join('')+
+      '<button class="ob-btn" data-cat="'+escH(cat.label)+'" onclick="showAddForm({category:this.dataset.cat},true)">+ Other</button>'+
       '</div></div>';
   }).join('');
   document.getElementById('reg-onboarding').style.display='block';
 }
-function obAddVendorBtn(btn){var name=btn.dataset.vendor,category=btn.dataset.cat;if(!name)return;obAddVendor(name,category,btn);}
-function obAddVendor(name,category,btn){
+function obAddBtn(btn){var name=btn.dataset.vendor,cat=btn.dataset.cat;if(!name)return;obAdd(name,cat,btn);}
+function obAdd(name,category,btn){
   if(!userId){showError('Please sign in.');return;}
   btn.classList.add('added');btn.textContent='\u2713 '+name;btn.disabled=true;
   saveVendorDirect({VendorName:name,Category:category,AgreementType:'Unknown',AgreementStatus:'Not yet',LastChecked:new Date().toISOString().split('T')[0]},null)
     .then(function(){localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');document.getElementById('reg-onboarding').style.display='none';registerLoaded=false;loadRegister();})
-    .catch(function(e){btn.classList.remove('added');btn.textContent=name;btn.disabled=false;});
+    .catch(function(){btn.classList.remove('added');btn.textContent=name;btn.disabled=false;});
 }
 function skipOnboarding(){document.getElementById('reg-onboarding').style.display='none';registerLoaded=true;registerRecords=[];renderRegisterMain();}
 function renderRegisterMain(){document.getElementById('reg-main').style.display='block';renderHealthSummary();renderStaleAlert();renderRegisterTable();}
+
 function renderHealthSummary(){
   var tot=registerRecords.length;
   var noAg=registerRecords.filter(function(r){var s=r.fields.AgreementStatus||'';return s==='Not yet'||s==='None in place'||s==='';}).length;
   var stale=registerRecords.filter(function(r){return isStale(r.fields.LastChecked);}).length;
   var sc=registerRecords.map(function(r){return r.fields.ComplianceScore||0;}).filter(Boolean);
   var avg=sc.length?Math.round(sc.reduce(function(a,b){return a+b;},0)/sc.length):'?';
+  var highRisk=registerRecords.filter(function(r){return r.fields.ICORiskLevel==='High'||r.fields.ASARiskLevel==='High'||r.fields.CMARiskLevel==='High';}).length;
   document.getElementById('reg-health').innerHTML=
     '<div class="health-tile"><div class="health-num">'+tot+'</div><div class="health-lbl">Total</div></div>'+
+    '<div class="health-tile"><div class="health-num'+(highRisk>0?' bad':'')+'">'+highRisk+'</div><div class="health-lbl">High risk</div></div>'+
     '<div class="health-tile"><div class="health-num'+(noAg>0?' bad':'')+'">'+noAg+'</div><div class="health-lbl">No agreement</div></div>'+
-    '<div class="health-tile"><div class="health-num'+(stale>0?' warn':'')+'">'+stale+'</div><div class="health-lbl">Stale</div></div>'+
     '<div class="health-tile"><div class="health-num'+(typeof avg==='number'?(avg>=80?' good':avg>=60?' ':' bad'):'')+'">'+avg+(typeof avg==='number'?'/100':'')+'</div><div class="health-lbl">Avg score</div></div>';
 }
+
 function renderStaleAlert(){
   var staleRecs=registerRecords.filter(function(r){return isStale(r.fields.LastChecked)&&r.fields.VendorName;});
   var wrap=document.getElementById('stale-alert-wrap');
   if(!staleRecs.length){wrap.innerHTML='';return;}
   wrap.innerHTML='<div class="stale-alert"><div><strong>'+staleRecs.length+' vendor'+(staleRecs.length!==1?'s':'')+' due for re-scan</strong><div class="stale-vendors">'+staleRecs.map(function(r){return'<span class="stale-tag">'+escH(r.fields.VendorName)+'</span>';}).join('')+'</div></div><button class="recheck-all-btn" onclick="recheckAll()">Re-scan all</button></div>';
 }
+
 function recheckAll(){
   var staleRecs=registerRecords.filter(function(r){return isStale(r.fields.LastChecked)&&r.fields.VendorName;});
   if(!staleRecs.length||!confirm('Re-scan '+staleRecs.length+' vendors?'))return;
@@ -1108,20 +1151,31 @@ function recheckAll(){
     .then(function(){registerLoaded=false;loadRegister();})
     .catch(function(){alert('Re-scan failed.');});
 }
+
 function isStale(d){if(!d)return false;return(Date.now()-new Date(d).getTime())>90*24*60*60*1000;}
+
+function riskPill(level){
+  if(!level||level==='N/A')return'<span class="risk-pill rp-na">N/A</span>';
+  if(level==='Low')return'<span class="risk-pill rp-low">Low</span>';
+  if(level==='Medium')return'<span class="risk-pill rp-medium">Medium</span>';
+  return'<span class="risk-pill rp-high">High</span>';
+}
+
 function renderRegisterTable(){
   var tbody=document.getElementById('reg-tbody');
-  if(!registerRecords.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mu);padding:28px;font-size:13px">No vendors yet. Click \u201c+ Add vendor\u201d.</td></tr>';return;}
+  if(!registerRecords.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--mu);padding:28px;font-size:13px">No vendors yet. Click "+ Add vendor" to get started.</td></tr>';return;}
   tbody.innerHTML=registerRecords.map(function(r){
-    var f=r.fields,stale=isStale(f.LastChecked),agPill=agreementPill(f.AgreementStatus);
+    var f=r.fields,stale=isStale(f.LastChecked);
     var sc=f.ComplianceScore,scc=sc>=80?'high':sc>=60?'mid':'low';
-    var dp='';try{dp=JSON.parse(f.DataProcessed||'[]').join(', ');}catch(e){dp=f.DataProcessed||'';}
+    var agPill=agmtPill(f.AgreementStatus);
     return'<tr onclick="showEditForm(\''+r.id+'\')" style="cursor:pointer"><td>'+
       '<div class="reg-vendor-name">'+escH(f.VendorName||'')+(stale?'<span class="stale-badge">Stale</span>':'')+'</div>'+
       '<div class="reg-vendor-cat">'+escH(f.Category||'')+'</div></td>'+
-      '<td style="color:var(--mu);font-size:11px">'+escH(dp||'\u2014')+'</td>'+
+      '<td style="font-size:11px;color:var(--mu)">'+escH(f.VendorUseCase||'\u2014')+'</td>'+
+      '<td>'+riskPill(f.ICORiskLevel)+'</td>'+
+      '<td>'+riskPill(f.ASARiskLevel)+'</td>'+
+      '<td>'+riskPill(f.CMARiskLevel)+'</td>'+
       '<td>'+agPill+'</td>'+
-      '<td style="font-size:11px;color:var(--mu)">'+escH(f.DataLocation||'\u2014')+'</td>'+
       '<td>'+(sc!=null?'<span class="reg-score '+scc+'">'+sc+'/100</span>':'<span style="color:var(--mu)">\u2014</span>')+'</td>'+
       '<td style="font-size:11px;color:var(--mu)">'+escH(f.LastChecked||'\u2014')+'</td>'+
       '<td onclick="event.stopPropagation()"><div class="reg-actions">'+
@@ -1130,18 +1184,19 @@ function renderRegisterTable(){
       '</div></td></tr>';
   }).join('');
 }
-function agreementPill(s){
-  if(!s)return'<span class="agreement-pill ap-grey">Unknown</span>';
-  if(s==='In place')return'<span class="agreement-pill ap-green">In place</span>';
-  if(s==='Requested')return'<span class="agreement-pill ap-amber">Requested</span>';
-  if(s==='N/A')return'<span class="agreement-pill ap-grey">N/A</span>';
-  return'<span class="agreement-pill ap-red">Not in place</span>';
+
+function agmtPill(s){
+  if(!s)return'<span class="risk-pill rp-na">Unknown</span>';
+  if(s==='In place')return'<span class="risk-pill rp-low">In place</span>';
+  if(s==='Requested')return'<span class="risk-pill rp-medium">Requested</span>';
+  if(s==='N/A')return'<span class="risk-pill rp-na">N/A</span>';
+  return'<span class="risk-pill rp-high">Not in place</span>';
 }
+
 function showAddForm(defaults,scrollTo){
   editingRecordId=null;clearRegForm();
   document.getElementById('reg-form-title').textContent='Add Vendor';
   if(defaults&&defaults.category)document.getElementById('reg-category').value=defaults.category;
-  if(defaults&&defaults.name)document.getElementById('reg-search-input').value=defaults.name;
   document.getElementById('reg-add-panel').classList.add('show');
   if(scrollTo)document.getElementById('reg-add-panel').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -1151,6 +1206,7 @@ function showEditForm(id){
   document.getElementById('reg-form-title').textContent='Edit Vendor';
   document.getElementById('reg-search-input').value=f.VendorName||'';
   document.getElementById('reg-category').value=f.Category||'';
+  document.getElementById('reg-usecase').value=f.VendorUseCase||'';
   document.getElementById('reg-data-location').value=f.DataLocation||'';
   if(f.ContactVolume)document.getElementById('reg-contact-volume').value=f.ContactVolume;
   document.getElementById('reg-agreement-type').value=f.AgreementType||'';
@@ -1158,54 +1214,73 @@ function showEditForm(id){
   document.getElementById('reg-agreement-link').value=f.AgreementLink||'';
   document.getElementById('reg-agreement-date').value=f.AgreementDate||'';
   document.getElementById('reg-notes').value=f.Notes||'';
+  document.getElementById('reg-produces-content').value=f.ProducesContent?'yes':'no';
+  document.getElementById('reg-handles-promotions').value=f.HandlesPromotions?'yes':'no';
   var dp=[];try{dp=JSON.parse(f.DataProcessed||'[]');}catch(e){}
-  document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]').forEach(function(cb){cb.checked=dp.includes(cb.value);});
+  document.querySelectorAll('#reg-add-panel .cb-group input[type="checkbox"]').forEach(function(cb){cb.checked=dp.includes(cb.value);});
   document.getElementById('reg-add-panel').classList.add('show');
   document.getElementById('reg-add-panel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function hideAddForm(){document.getElementById('reg-add-panel').classList.remove('show');clearRegForm();editingRecordId=null;}
 function clearRegForm(){
-  ['reg-search-input','reg-category','reg-data-location','reg-contact-volume','reg-agreement-type','reg-agreement-status','reg-agreement-link','reg-agreement-date','reg-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
-  document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]').forEach(function(cb){cb.checked=false;});
+  ['reg-search-input','reg-category','reg-usecase','reg-data-location','reg-contact-volume','reg-produces-content','reg-handles-promotions','reg-agreement-type','reg-agreement-status','reg-agreement-link','reg-agreement-date','reg-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+  document.querySelectorAll('#reg-add-panel .cb-group input[type="checkbox"]').forEach(function(cb){cb.checked=false;});
 }
 function saveVendor(){
   var name=document.getElementById('reg-search-input').value.trim();
   var status=document.getElementById('reg-agreement-status').value;
   if(!name){alert('Please enter a vendor name.');return;}
   if(!status){alert('Please select an agreement status.');return;}
-  var dp=Array.from(document.querySelectorAll('#reg-add-panel .checkbox-group input[type="checkbox"]:checked')).map(function(cb){return cb.value;});
+  var dp=Array.from(document.querySelectorAll('#reg-add-panel .cb-group input[type="checkbox"]:checked')).map(function(cb){return cb.value;});
   var cvRaw=document.getElementById('reg-contact-volume').value.trim();
   var cv=cvRaw?parseInt(cvRaw,10)||null:null;
-  var vendor={VendorName:name,Category:document.getElementById('reg-category').value,DataProcessed:dp,AgreementType:document.getElementById('reg-agreement-type').value,AgreementStatus:status,AgreementLink:document.getElementById('reg-agreement-link').value,AgreementDate:document.getElementById('reg-agreement-date').value,DataLocation:document.getElementById('reg-data-location').value,ContactVolume:cv,Notes:document.getElementById('reg-notes').value};
-  saveVendorDirect(vendor,editingRecordId).then(function(){hideAddForm();registerLoaded=false;loadRegister();localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');});
+  var pcVal=document.getElementById('reg-produces-content').value;
+  var hpVal=document.getElementById('reg-handles-promotions').value;
+  var vendor={
+    VendorName:name,Category:document.getElementById('reg-category').value,
+    VendorUseCase:document.getElementById('reg-usecase').value||null,
+    DataProcessed:dp,AgreementType:document.getElementById('reg-agreement-type').value,
+    AgreementStatus:status,AgreementLink:document.getElementById('reg-agreement-link').value,
+    AgreementDate:document.getElementById('reg-agreement-date').value,
+    DataLocation:document.getElementById('reg-data-location').value,
+    ContactVolume:cv,Notes:document.getElementById('reg-notes').value,
+    ProducesContent:pcVal==='yes',HandlesPromotions:hpVal==='yes',
+  };
+  saveVendorDirect(vendor,editingRecordId).then(function(){
+    hideAddForm();registerLoaded=false;loadRegister();
+    localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
+    // Trigger profile generation
+    if(userId)fetch(APP_URL+'/api/vendor-profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:userId,vendorName:name})}).catch(function(){});
+  });
   if(['Requested','Not yet','None in place'].includes(status)&&userId){
-    fetch(APP_URL+'/api/generate-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:userId,fixType:'dpa_breach',description:'No written agreement in place for '+name+'. UK GDPR Article 28 requires a written contract before sharing personal data with this processor.',tool:'Vendor Register',severity:'high',volume:null,sourceRecordId:null})}).catch(function(){});
+    fetch(APP_URL+'/api/generate-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:userId,fixType:'dpa_breach',description:'No written agreement in place for '+name+'. UK GDPR Article 28 requires a written contract before sharing personal data.',tool:'Vendor Register',severity:'high',volume:null,sourceRecordId:null})}).catch(function(){});
   }
 }
 function saveVendorDirect(vendor,recordId){
-  var body={userId:userId,vendor:vendor};
-  if(recordId)body.recordId=recordId;
+  var body={userId:userId,vendor:vendor};if(recordId)body.recordId=recordId;
   return fetch(APP_URL+'/api/data?action=register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(function(e){console.error(e);});
 }
 function reCheckVendor(recordId,vendorName){
   if(!confirm('Re-scan '+vendorName+'?'))return;
   fetch(APP_URL+'/api/check-vendors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vendors:[{name:vendorName,isCustom:!allVendors.find(function(v){return v.name===vendorName;})}],userId:userId})})
     .then(function(r){if(!r.ok)throw r;return r.json();})
-    .then(function(data){var res=data.results&&data.results[0];if(res){saveVendorDirect({VendorName:vendorName,ComplianceScore:res.score,LastChecked:new Date().toISOString().split('T')[0]},recordId);registerLoaded=false;loadRegister();}})
+    .then(function(data){
+      var res=data.results&&data.results[0];
+      if(res)saveVendorDirect({VendorName:vendorName,ComplianceScore:res.score,LastChecked:new Date().toISOString().split('T')[0]},recordId).then(function(){registerLoaded=false;loadRegister();});
+    })
     .catch(function(){alert('Re-scan failed.');});
 }
 function removeVendorReg(recordId,name){
   if(!confirm('Remove '+name+'?'))return;
   fetch(APP_URL+'/api/data?action=register&recordId='+encodeURIComponent(recordId),{method:'DELETE'})
-    .then(function(){registerLoaded=false;loadRegister();})
-    .catch(function(){alert('Remove failed.');});
+    .then(function(){registerLoaded=false;loadRegister();}).catch(function(){alert('Remove failed.');});
 }
 function onRegSearch(val){
   var q=val.trim().toLowerCase(),dd=document.getElementById('reg-dropdown');
   if(q.length<2){dd.classList.remove('show');return;}
   var matches=allVendors.filter(function(v){return v.name.toLowerCase().includes(q);});
   var html=matches.slice(0,8).map(function(v){return'<div class="dropdown-item" onclick="selectRegVendor('+JSON.stringify(v.name)+','+JSON.stringify(v.category||'')+')"><div class="dropdown-name">'+escH(v.name)+'</div><div class="dropdown-cat">'+escH(v.category||'')+'</div></div>';}).join('');
-  if(!allVendors.find(function(v){return v.name.toLowerCase()===q;})){var d=val.trim().charAt(0).toUpperCase()+val.trim().slice(1);html+='<div class="dropdown-item" onclick="selectRegVendor('+JSON.stringify(d)+',\'\')"><div class="dropdown-name dropdown-custom">Use \u201c'+escH(d)+'\u201d</div></div>';}
+  if(!allVendors.find(function(v){return v.name.toLowerCase()===q;})){var d=val.trim().charAt(0).toUpperCase()+val.trim().slice(1);html+='<div class="dropdown-item" onclick="selectRegVendor('+JSON.stringify(d)+',\'\')"><div class="dropdown-name dropdown-custom">Use "'+escH(d)+'"</div></div>';}
   dd.innerHTML=html;dd.classList.add('show');
 }
 function selectRegVendor(name,category){
@@ -1213,13 +1288,13 @@ function selectRegVendor(name,category){
   document.getElementById('reg-dropdown').classList.remove('show');
   if(category&&!document.getElementById('reg-category').value)document.getElementById('reg-category').value=category;
 }
-function exportRegisterCSV(){
+function exportCSV(){
   if(!registerRecords.length)return;
-  var hdrs=['Vendor','Category','Data Processed','Agreement Type','Agreement Status','Agreement Link','Data Location','Compliance Score','Last Checked','Notes'];
+  var hdrs=['Vendor','Category','Use Case','ICO Risk','ASA Risk','CMA Risk','Agreement Status','Score','Last Checked'];
   var rows=registerRecords.map(function(r){
-    var f=r.fields,dp='';
-    try{dp=JSON.parse(f.DataProcessed||'[]').join('; ');}catch(e){dp=f.DataProcessed||'';}
-    return[f.VendorName,f.Category,dp,f.AgreementType,f.AgreementStatus,f.AgreementLink,f.DataLocation,f.ComplianceScore,f.LastChecked,f.Notes].map(function(v){return'"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+    var f=r.fields;
+    return[f.VendorName,f.Category,f.VendorUseCase,f.ICORiskLevel,f.ASARiskLevel,f.CMARiskLevel,f.AgreementStatus,f.ComplianceScore,f.LastChecked]
+      .map(function(v){return'"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
   });
   var csv=['Information only \u2014 not legal advice.',hdrs.join(',')].concat(rows).join('\n');
   var a=document.createElement('a');
@@ -1227,6 +1302,124 @@ function exportRegisterCSV(){
   a.download='processor-register-'+new Date().toISOString().split('T')[0]+'.csv';
   a.click();
 }
+
+// ── CAMPAIGNS ─────────────────────────────────────────────────
+var campaigns=[];
+function loadCampaigns(){
+  if(!userId){document.getElementById('campaigns-list').innerHTML='<p style="font-size:13px;color:var(--mu)">Sign in to see your campaigns.</p>';return;}
+  fetch(APP_URL+'/api/campaign-check?action=list&userId='+encodeURIComponent(userId))
+    .then(function(r){if(!r.ok)throw r;return r.json();})
+    .then(function(data){
+      campaigns=data.campaigns||[];
+      renderCampaignList();
+      renderVendorPicker();
+    })
+    .catch(function(){document.getElementById('campaigns-list').innerHTML='<p style="font-size:13px;color:var(--mu)">Could not load campaigns.</p>';});
+}
+function renderCampaignList(){
+  var el=document.getElementById('campaigns-list');
+  if(!campaigns.length){el.innerHTML='<div style="text-align:center;padding:44px 20px;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);box-shadow:var(--sh)"><div style="font-size:32px;margin-bottom:12px">&#128197;</div><div style="font-size:15px;font-weight:700;margin-bottom:5px;letter-spacing:-.2px">No campaigns yet</div><div style="font-size:13px;color:var(--mu);max-width:320px;margin:0 auto">Create a campaign to run a compliance check across every vendor it touches before it goes out.</div></div>';return;}
+  el.innerHTML=campaigns.map(function(c){
+    var f=c.fields;
+    var verdict=f.ComplianceVerdict||'Not Checked';
+    var vCls=verdict==='Cleared'?'cv-cleared':verdict==='Critical issues'?'cv-critical':verdict==='Issues found'?'cv-issues':'cv-unchecked';
+    return'<div class="campaign-card" onclick="checkCampaign(\''+c.id+'\')">'+
+      '<div class="cc-left">'+
+      '<div class="cc-name">'+escH(f.CampaignName||'Unnamed campaign')+'</div>'+
+      '<div class="cc-meta">'+
+      (f.CampaignType?'<span>'+escH(f.CampaignType)+'</span>':'')+
+      (f.SendDate?'<span>Send: '+escH(f.SendDate)+'</span>':'')+
+      (f.VendorCheckDate?'<span>Last checked: '+escH(f.VendorCheckDate)+'</span>':'<span>Not yet checked</span>')+
+      '</div></div>'+
+      '<span class="cc-verdict '+vCls+'">'+escH(verdict)+'</span>'+
+      '<button class="cc-check-btn" onclick="event.stopPropagation();checkCampaign(\''+c.id+'\')">Check compliance</button>'+
+      '</div>';
+  }).join('');
+}
+function renderVendorPicker(){
+  var el=document.getElementById('cf-vendor-picker');
+  if(!registerRecords.length){el.innerHTML='<p style="font-size:12px;color:var(--mu)">Add vendors to your register first.</p>';return;}
+  el.innerHTML=registerRecords.map(function(r){
+    return'<button class="vp-btn" data-vendor="'+escH(r.fields.VendorName)+'" onclick="toggleVP(this)">'+escH(r.fields.VendorName)+'</button>';
+  }).join('');
+}
+function toggleVP(btn){btn.classList.toggle('on');}
+function showCampaignForm(){
+  if(!registerLoaded){loadRegister();}
+  document.getElementById('campaignForm').classList.add('show');
+  renderVendorPicker();
+  document.getElementById('campaignForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function hideCampaignForm(){document.getElementById('campaignForm').classList.remove('show');}
+function createCampaign(){
+  var name=document.getElementById('cf-name').value.trim();
+  if(!name){alert('Please enter a campaign name.');return;}
+  var type=document.getElementById('cf-type').value;
+  var date=document.getElementById('cf-date').value;
+  var vendors=Array.from(document.querySelectorAll('#cf-vendor-picker .vp-btn.on')).map(function(b){return b.dataset.vendor;});
+  fetch(APP_URL+'/api/campaign-check?action=create',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({userId:userId,campaignName:name,campaignType:type,sendDate:date,vendorNames:vendors})})
+    .then(function(r){if(!r.ok)throw r;return r.json();})
+    .then(function(data){
+      hideCampaignForm();
+      if(vendors.length&&data.campaign){
+        return checkCampaign(data.campaign.id);
+      }else{
+        loadCampaigns();
+      }
+    })
+    .catch(function(){alert('Failed to create campaign.');});
+}
+function checkCampaign(campaignId){
+  fetch(APP_URL+'/api/campaign-check?action=check',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({userId:userId,campaignId:campaignId})})
+    .then(function(r){if(!r.ok)throw r;return r.json();})
+    .then(function(data){
+      renderCampaignVerdict(data.result);
+      loadCampaigns();
+    })
+    .catch(function(){alert('Campaign check failed.');});
+}
+function renderCampaignVerdict(result){
+  if(!result)return;
+  var wrap=document.getElementById('campaign-verdict-wrap');
+  var colour=result.verdictColour||'amber';
+  var html='<div class="campaign-verdict-wrap">'+
+    '<div class="verdict-header '+colour+'" style="margin-bottom:14px">'+
+    '<div class="verdict-deco"></div>'+
+    '<div class="verdict-eye">Campaign compliance check</div>'+
+    '<div class="verdict-head">'+escH(result.verdict)+'</div>'+
+    '<div class="verdict-sub">'+escH(result.summary)+'</div>'+
+    '</div>';
+
+  if(result.issues&&result.issues.length){
+    html+='<div style="margin-bottom:14px">';
+    result.issues.forEach(function(issue){
+      var regCls={'ICO':'reg-ico','ASA':'reg-asa','CMA':'reg-cma'}[issue.regulator]||'reg-ico';
+      var sevCols={critical:'var(--r)',high:'var(--o)',medium:'var(--y)',low:'var(--mu)'};
+      html+='<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);margin-bottom:6px">'+
+        '<span class="reg-badge '+regCls+'">'+escH(issue.regulator)+'</span>'+
+        '<div><div style="font-size:12px;font-weight:600;color:'+sevCols[issue.severity]+';margin-bottom:2px">'+escH(issue.vendor)+'</div>'+
+        '<div style="font-size:12px;color:var(--tm)">'+escH(issue.issue)+'</div>'+
+        '<div style="font-size:11px;color:var(--o);margin-top:3px">'+escH(issue.action)+'</div></div>'+
+        '</div>';
+    });
+    html+='</div>';
+  }
+
+  if(result.cleared&&result.cleared.length){
+    html+='<div style="font-size:11px;color:var(--g);padding:8px 12px;background:var(--gb);border-radius:var(--rad-sm);border:1px solid var(--gc)">'+
+      '&#10003; Cleared: '+result.cleared.map(function(c){return escH(c.vendor);}).join(', ')+'</div>';
+  }
+  html+='</div>';
+  wrap.innerHTML=html;
+  wrap.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function showError(msg){var e=document.getElementById('errorBox');if(e){e.textContent=msg;e.classList.add('show');}}
+function clearError(){var e=document.getElementById('errorBox');if(e)e.classList.remove('show');}
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 </script>
