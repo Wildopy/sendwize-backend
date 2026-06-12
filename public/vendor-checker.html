@@ -1305,21 +1305,37 @@ function exportCSV(){
 
 // ── CAMPAIGNS ─────────────────────────────────────────────────
 var campaigns=[];
+var DEMO_CAMPAIGNS=[
+  {id:'demo1',fields:{CampaignName:'Summer Sale Email',CampaignType:'Email',SendDate:'2026-07-01',Status:'Planned',VendorsInvolved:JSON.stringify(['Mailchimp','Merkle UK']),VendorCheckDone:true,VendorCheckDate:'2026-06-10',ComplianceVerdict:'Critical issues',ComplianceNotes:'[ICO] Merkle UK: No signed DPA in place\n[ASA] Merkle UK: No written sign-off process for content they produce on your behalf'}},
+  {id:'demo2',fields:{CampaignName:'Re-engagement Campaign',CampaignType:'Email',SendDate:'2026-06-20',Status:'Checks Complete',VendorsInvolved:JSON.stringify(['Klaviyo','Google Analytics']),VendorCheckDone:true,VendorCheckDate:'2026-06-09',ComplianceVerdict:'Cleared',ComplianceNotes:'All vendors cleared.'}},
+  {id:'demo3',fields:{CampaignName:'Paid Social \u2014 Q3 Brand',CampaignType:'Social',SendDate:'2026-07-15',Status:'Planned',VendorsInvolved:JSON.stringify(['Meta Ads Manager','AKQA UK']),VendorCheckDone:false,VendorCheckDate:null,ComplianceVerdict:'Not Checked',ComplianceNotes:''}},
+];
+
 function loadCampaigns(){
-  if(!userId){document.getElementById('campaigns-list').innerHTML='<p style="font-size:13px;color:var(--mu)">Sign in to see your campaigns.</p>';return;}
+  if(!userId){
+    campaigns=DEMO_CAMPAIGNS;
+    renderCampaignList(true);
+    renderVendorPicker();
+    return;
+  }
   fetch(APP_URL+'/api/campaign-check?action=list&userId='+encodeURIComponent(userId))
     .then(function(r){if(!r.ok)throw r;return r.json();})
     .then(function(data){
       campaigns=data.campaigns||[];
-      renderCampaignList();
+      if(!campaigns.length){campaigns=DEMO_CAMPAIGNS;renderCampaignList(true);}
+      else renderCampaignList(false);
       renderVendorPicker();
     })
     .catch(function(){document.getElementById('campaigns-list').innerHTML='<p style="font-size:13px;color:var(--mu)">Could not load campaigns.</p>';});
 }
-function renderCampaignList(){
+function renderCampaignList(isDemo){
   var el=document.getElementById('campaigns-list');
-  if(!campaigns.length){el.innerHTML='<div style="text-align:center;padding:44px 20px;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);box-shadow:var(--sh)"><div style="font-size:32px;margin-bottom:12px">&#128197;</div><div style="font-size:15px;font-weight:700;margin-bottom:5px;letter-spacing:-.2px">No campaigns yet</div><div style="font-size:13px;color:var(--mu);max-width:320px;margin:0 auto">Create a campaign to run a compliance check across every vendor it touches before it goes out.</div></div>';return;}
-  el.innerHTML=campaigns.map(function(c){
+  if(!campaigns.length){
+    el.innerHTML='<div style="text-align:center;padding:44px 20px;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);box-shadow:var(--sh)"><div style="font-size:32px;margin-bottom:12px">&#128197;</div><div style="font-size:15px;font-weight:700;margin-bottom:5px;letter-spacing:-.2px">No campaigns yet</div><div style="font-size:13px;color:var(--mu);max-width:320px;margin:0 auto">Create a campaign to run a compliance check across every vendor it touches before it goes out.</div></div>';
+    return;
+  }
+  var demoBar=isDemo?'<div class="demo-notice" style="margin-bottom:14px"><span style="font-size:14px">&#128065;&#65039;</span><span><strong>Example campaigns</strong> &#8212; showing how campaign compliance works. Create your first campaign above to check your real vendors.</span></div>':'';
+  el.innerHTML=demoBar+campaigns.map(function(c){
     var f=c.fields;
     var verdict=f.ComplianceVerdict||'Not Checked';
     var vCls=verdict==='Cleared'?'cv-cleared':verdict==='Critical issues'?'cv-critical':verdict==='Issues found'?'cv-issues':'cv-unchecked';
@@ -1371,6 +1387,23 @@ function createCampaign(){
     .catch(function(){alert('Failed to create campaign.');});
 }
 function checkCampaign(campaignId){
+  if(campaignId.indexOf('demo')===0){
+    var demo=DEMO_CAMPAIGNS.find(function(c){return c.id===campaignId;});
+    if(demo){
+      renderCampaignVerdict({
+        verdict:demo.fields.ComplianceVerdict,
+        verdictColour:demo.fields.ComplianceVerdict==='Cleared'?'green':demo.fields.ComplianceVerdict==='Critical issues'?'red':'amber',
+        summary:'Example campaign check \u2014 sign in and create a real campaign to check your vendors',
+        issues:demo.fields.ComplianceNotes?demo.fields.ComplianceNotes.split('\n').filter(Boolean).map(function(line){
+          var match=line.match(/^\[([A-Z]+)\] ([^:]+): (.+)$/);
+          return match?{regulator:match[1],vendor:match[2],severity:'high',issue:match[3],action:'See vendor register for details.'}:null;
+        }).filter(Boolean):[],
+        cleared:demo.fields.ComplianceVerdict==='Cleared'?[{vendor:'All vendors'}]:[],
+        notChecked:[],
+      });
+    }
+    return;
+  }
   fetch(APP_URL+'/api/campaign-check?action=check',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({userId:userId,campaignId:campaignId})})
     .then(function(r){if(!r.ok)throw r;return r.json();})
