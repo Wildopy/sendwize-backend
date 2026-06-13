@@ -268,6 +268,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div style="padding-top:24px;border-top:1px solid var(--b)">
     <p style="font-size:13px;color:var(--mu);margin-bottom:10px">Previously analysed a list?</p>
     <button class="btn btn-ghost btn-sm" onclick="loadResults()">Load my last valuation &rarr;</button>
+    <div id="lastValuationLink" style="display:none;margin-top:8px">
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--g);font-weight:600">&#10003; Previous valuation available &mdash; <button onclick="loadResults()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--o);cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">view it</button></span>
+    </div>
   </div>
 </div>
 
@@ -449,6 +452,7 @@ async function submitUpload(){
   }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
 }
 async function loadResults(){
+  if(lastResults){renderResults(lastResults);showScreen('results');return;}
   if(!userId){showToast('No user ID \u2014 return to dashboard','er');return;}
   showLoading('Loading your last valuation\u2026');
   try{
@@ -633,11 +637,16 @@ function loadListDemo(){
 if(!userId){el('gateScreen').classList.add('show');}
 else{
   showScreen('upload');
-  showLoading('Checking for existing analysis\u2026');
   fetch(API+'?userId='+userId+'&action=load')
     .then(function(r){return r.json();})
-    .then(function(json){hideLoading();if(json.hasData){lastResults=json;renderResults(json);showScreen('results');}})
-    .catch(function(){hideLoading();});
+    .then(function(json){
+      if(json.hasData){
+        lastResults=json;
+        var link=el('lastValuationLink');
+        if(link)link.style.display='block';
+      }
+    })
+    .catch(function(){});
 }
 </script>
 </body>
