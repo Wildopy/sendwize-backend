@@ -724,20 +724,22 @@ function renderVendorList(){
 function renderVendorEntry(v,ctx,answered){
   var safeName=v.name.replace(/[^a-zA-Z0-9]/g,'-');
 
+  var safeName=encodeURIComponent(v.name);
+
   // DPA buttons
   var dpaHtml='<div class="q-section"><span class="q-label">Have you signed a DPA with them?</span><div class="q-toggle">'+
     ['yes','no','unsure'].map(function(s){
       var lbl=s==='yes'?'Yes, signed':s==='no'?'No, not signed':'Not sure';
       var on=ctx.dpaStatus===s;
       var cls=on?(s==='yes'?'on yes-good':s==='no'?'on risk':'on'):'';
-      return'<button class="q-btn '+cls+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('dpaStatus') + ',' + JSON.stringify(s) + ')">'+lbl+'</button>';
+      return'<button class="q-btn '+cls+'" data-vendor="'+safeName+'" data-field="dpaStatus" data-value="'+s+'" onclick="handleQBtn(this)">'+lbl+'</button>';
     }).join('')+'</div></div>';
 
   // Use case buttons
   var ucHtml='<div class="q-section"><span class="q-label">What do you use them for?</span><div class="q-toggle">'+
     USE_CASES.map(function(uc){
       var on=ctx.useCase===uc;
-      return'<button class="q-btn'+(on?' on':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('useCase') + ',' + JSON.stringify(uc) + ')">'+escH(uc)+'</button>';
+      return'<button class="q-btn'+(on?' on':'')+'" data-vendor="'+safeName+'" data-field="useCase" data-value="'+encodeURIComponent(uc)+'" onclick="handleQBtn(this)">'+escH(uc)+'</button>';
     }).join('')+'</div></div>';
 
   // Data types (shown after use case selected)
@@ -746,7 +748,7 @@ function renderVendorEntry(v,ctx,answered){
     dtHtml='<div class="q-section"><span class="q-label">What data do you share with them?</span><div class="dt-grid">'+
       DATA_TYPES.map(function(dt){
         var on=(ctx.dataTypes||[]).includes(dt.label);
-        return'<button class="dt-btn'+(on?' on'+(dt.sensitive?' sensitive':''):'')+'" onclick="toggleDT('+JSON.stringify(v.name)+','+JSON.stringify(dt.label)+')">'+escH(dt.label)+'</button>';
+        return'<button class="dt-btn'+(on?' on'+(dt.sensitive?' sensitive':''):'')+'" data-vendor="'+safeName+'" data-field="dataType" data-value="'+encodeURIComponent(dt.label)+'" onclick="handleDTBtn(this)">'+escH(dt.label)+'</button>';
       }).join('')+'</div></div>';
   }
 
@@ -755,15 +757,15 @@ function renderVendorEntry(v,ctx,answered){
   if(ctx.useCase==='Creative & content'||ctx.useCase==='Paid media'){
     var pc=ctx.producesContent;
     extraHtml+='<div class="q-section"><span class="q-label">Do they produce creative or copy for you?</span><div class="q-toggle">'+
-      '<button class="q-btn'+(pc===true?' on risk':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('producesContent') + ',true)">Yes</button>'+
-      '<button class="q-btn'+(pc===false?' on yes-good':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('producesContent') + ',false)">No</button>'+
+      '<button class="q-btn'+(pc===true?' on risk':'')+'" data-vendor="'+safeName+'" data-field="producesContent" data-value="true" onclick="handleQBtn(this)">Yes</button>'+
+      '<button class="q-btn'+(pc===false?' on yes-good':'')+'" data-vendor="'+safeName+'" data-field="producesContent" data-value="false" onclick="handleQBtn(this)">No</button>'+
       '</div></div>';
   }
   if(ctx.useCase==='Pricing & promotions'||ctx.useCase==='Reviews & UGC'){
     var hp=ctx.handlesPromotions;
     extraHtml+='<div class="q-section"><span class="q-label">Do they run promotions, reviews or pricing for you?</span><div class="q-toggle">'+
-      '<button class="q-btn'+(hp===true?' on risk':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('handlesPromotions') + ',true)">Yes</button>'+
-      '<button class="q-btn'+(hp===false?' on yes-good':'')+'" onclick="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('handlesPromotions') + ',false)">No</button>'+
+      '<button class="q-btn'+(hp===true?' on risk':'')+'" data-vendor="'+safeName+'" data-field="handlesPromotions" data-value="true" onclick="handleQBtn(this)">Yes</button>'+
+      '<button class="q-btn'+(hp===false?' on yes-good':'')+'" data-vendor="'+safeName+'" data-field="handlesPromotions" data-value="false" onclick="handleQBtn(this)">No</button>'+
       '</div></div>';
   }
 
@@ -771,7 +773,7 @@ function renderVendorEntry(v,ctx,answered){
   var volHtml='';
   if(ctx.useCase){
     volHtml='<div class="q-section"><div class="q-row"><div class="q-group"><span class="q-label">Approx. contacts (optional)</span>'+
-      '<input class="vol-input" type="number" placeholder="e.g. 25000" value="'+escH(String(ctx.contactVolume||''))+'" oninput="setCtx('+JSON.stringify(v.name)+',' + JSON.stringify('contactVolume') + ',this.value)"/></div></div></div>';
+      '<input class="vol-input" type="number" placeholder="e.g. 25000" value="'+escH(String(ctx.contactVolume||''))+'" data-vendor="'+safeName+'" oninput="handleVolInput(this)"/></div></div></div>';
   }
 
   return'<div class="vendor-entry'+(answered?' answered':'')+'" id="ve-'+safeName+'">'+
@@ -784,6 +786,23 @@ function renderVendorEntry(v,ctx,answered){
     '</div>';
 }
 
+function handleQBtn(btn){
+  var name=decodeURIComponent(btn.dataset.vendor);
+  var field=btn.dataset.field;
+  var raw=btn.dataset.value;
+  var value=raw==='true'?true:raw==='false'?false:raw;
+  if(field==='useCase')value=decodeURIComponent(raw);
+  setCtx(name,field,value);
+}
+function handleDTBtn(btn){
+  var name=decodeURIComponent(btn.dataset.vendor);
+  var label=decodeURIComponent(btn.dataset.value);
+  toggleDT(name,label);
+}
+function handleVolInput(inp){
+  var name=decodeURIComponent(inp.dataset.vendor);
+  setCtx(name,'contactVolume',inp.value);
+}
 function setCtx(vendorName,field,value){
   if(!vendorContext[vendorName])vendorContext[vendorName]={dpaStatus:'',useCase:'',dataTypes:[],contactVolume:'',producesContent:null,handlesPromotions:null};
   vendorContext[vendorName][field]=value;
