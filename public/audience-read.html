@@ -355,6 +355,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div style="padding-top:24px;border-top:1px solid var(--b);margin-top:8px">
     <p style="font-size:13px;color:var(--mu);margin-bottom:10px">Previously uploaded data?</p>
     <button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last diagnosis &rarr;</button>
+    <div id="lastReportLink" style="display:none;margin-top:8px">
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--g);font-weight:600">
+        &#10003; Previous diagnosis available &mdash;
+        <button onclick="loadDash()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--o);cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">view it</button>
+      </span>
+    </div>
   </div>
 </div>
 
@@ -550,14 +556,18 @@ async function submitUpload(){
   }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
 }
 async function loadDash(){
+  if(window._lastDashData){
+    renderDash(window._lastDashData);showScreen('dashboard');return;
+  }
   if(!userId){showToast('No user ID \u2014 return to dashboard','er');return;}
-  showLoading('Loading your diagnosis\u2026');
+  showLoading('Loading your last diagnosis\u2026');
   try{
     var resp=await fetch(API+'?userId='+userId+'&action=load');
     var json=await resp.json();
     if(!json.success)throw new Error(json.error);
     hideLoading();
     if(!Object.keys(json.segments||{}).length){showToast('No data found \u2014 upload your first CSV to get started','');return;}
+    window._lastDashData=json;
     renderDash(json);showScreen('dashboard');
   }catch(err){hideLoading();showToast('Could not load \u2014 please try again','er');}
 }
@@ -865,14 +875,17 @@ if(!userId){
   document.getElementById('upload-screen').style.display='none';
 }else{
   document.getElementById('upload-screen').style.display='block';
-  showLoading('Checking for existing data\u2026');
+  // Check quietly if previous data exists — show link, don't redirect
   fetch(API+'?userId='+userId+'&action=load')
     .then(function(r){return r.json();})
     .then(function(json){
-      hideLoading();
-      if(json.success&&Object.keys(json.segments||{}).length>0){renderDash(json);showScreen('dashboard');}
+      if(json.success&&Object.keys(json.segments||{}).length>0){
+        var link=document.getElementById('lastReportLink');
+        if(link)link.style.display='block';
+        window._lastDashData=json;
+      }
     })
-    .catch(function(){hideLoading();});
+    .catch(function(){});
 }
 </script>
 </body>
