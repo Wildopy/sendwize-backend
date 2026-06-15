@@ -859,7 +859,7 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
     }
 
     const message = await anthropic.messages.create({
-      model:      'model: 'claude-sonnet-4-20250514',
+      model:      'claude-sonnet-4-20250514',
       max_tokens: 5000,
       system:     SYSTEM_PROMPT,
       messages:   [{ role: 'user', content: messageContent }]
