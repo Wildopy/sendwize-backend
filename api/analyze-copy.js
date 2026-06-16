@@ -858,7 +858,13 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
       }
     }
     
-    const message = { content: [{ text: '{"score":75,"verdict":"Minor issues to address","violations":[],"fixedVersion":"","summary":"Test mode"}' }] };
+    const modelId = 'claude-sonnet-4-20250514';
+    const message = await anthropic.messages.create({
+      model:      modelId,
+      max_tokens: 5000,
+      system:     SYSTEM_PROMPT,
+      messages:   [{ role: 'user', content: messageContent }]
+    });
 
     let aiAnalysis = null;
     try {
