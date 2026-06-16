@@ -678,8 +678,9 @@ export default async function handler(req, res) {
 
     let aiAnalysis = null;
     try {
-      const jsonMatch = message.content[0].text.match(/\{[\s\S]*\}/);
-      aiAnalysis = JSON.parse(jsonMatch ? jsonMatch[0] : message.content[0].text);
+      const stripped = message.content[0].text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+      aiAnalysis = JSON.parse(jsonMatch ? jsonMatch[0] : stripped);
     } catch {
       console.error('JSON parse failed. Full text:', message.content[0]?.text?.slice(0, 1000));
       aiAnalysis = { score: 50, verdict: 'Analysis Error', violations: [], summary: message.content[0]?.text || 'Error' };
