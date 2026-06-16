@@ -1,4 +1,4 @@
-// api/analyze-copy.js  v5.2.1
+// api/analyze-copy.js  v5.2
 // AI Copy Scanner — five content types, image analysis, text-only input.
 //
 // POST { contentType, userId, content, subject?, autoFix?, sendingContext?, images? }
@@ -857,10 +857,9 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
         messageContent.push({ type: 'text', text: `\nNote: ${imageBlocks.length} image(s) provided above. Analyse them for compliance issues alongside the copy — check for misleading visuals, fake urgency in graphics, undisclosed ads, health claims in imagery, or any visual element that contradicts or adds to the compliance picture.` });
       }
     }
-    
-    const modelId = 'model: 'claude-opus-4-5',';
+
     const message = await anthropic.messages.create({
-      model:      modelId,
+      model:      'claude-sonnet-4-20250514',
       max_tokens: 5000,
       system:     SYSTEM_PROMPT,
       messages:   [{ role: 'user', content: messageContent }]
