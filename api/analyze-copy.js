@@ -3,40 +3,12 @@
 //
 // POST { contentType, userId, content, subject?, autoFix?, sendingContext?, images? }
 //
-// images (optional): [{ data: base64string, mediaType: 'image/jpeg'|'image/png'|'image/gif'|'image/webp' }]
-// Max 3 images, max 5MB each. Analysed alongside copy for all content types.
-//
-// v5.2 changes:
-//   - SYSTEM_PROMPT updated to v2.1 from finalish prompt framework doc
-//   - max_tokens increased from 2000 to 5000
-//   - Example 7 fixed: CAP Code 10.1 -> CAP Code 12.1 (Section 10 = data use, Section 12 = health claims)
-//   - Section 6 updated: CPRs heading -> DMCCA 2024 (in force April 2025)
-//   - Section 6A: CAP Code Section 11 environmental claims rules added (11.1, 11.3, 11.4, 11.7)
-//   - New ASA rulings added: Novomins (2024), BetterVits (2025), Vytaliving (2024), Secret Escapes (2025)
-//   - New ICO cases added: Allay Claims (2026), ZMLUK (2025) expanded
-//   - CAP rules table updated with 3.44-3.47 split, 3.26 free trial rule, 3.52 trust marks
-//   - DUAA 2025 cookie update added to Section 3
-//   - Placeholder comments left in prompt where content must come from user research or live sessions
-//
-// v5.1 changes:
-//   - All content types now use plain text 'content' field. HTML mode removed.
-//   - Image upload support -- base64 images passed as multipart content to Claude.
-//   - 'Compliant' / 'safe to send' language removed from all outputs.
-//   - Deterministic HTML email scanner removed.
-//
-// sendingContext (optional):
-//   { senderRelationship, listSource, consentSpecificity, fromNameMatch }
-//   Prepended as [SENDING CONTEXT] block -- unlocks consent chain violation detection.
-//
-// contentType (required): 'email' | 'sms' | 'push' | 'social' | 'directmail'
+// v5.2: Updated SYSTEM_PROMPT only. All other code identical to v5.1.
 
-import crypto from 'crypto';
+import Anthropic from '@anthropic-ai/sdk';
+import crypto    from 'crypto';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
-
-// -----------------------------------------------------------------------------
-// SYSTEM PROMPT v2.1 -- full Sendwize compliance framework
-// -----------------------------------------------------------------------------
 
 const SYSTEM_PROMPT = `
 SECTION 1 -- IDENTITY & ROLE
@@ -522,10 +494,6 @@ Respond ONLY in this exact JSON format. No preamble. No markdown fences. No comm
 }
 `;
 
-// -----------------------------------------------------------------------------
-// CHANNEL CONTEXT -- injected per request
-// -----------------------------------------------------------------------------
-
 const CHANNEL_RULES = {
   email: `CHANNEL: EMAIL
 Apply: PECR Reg 22 (consent / soft opt-in), Reg 23 (sender identity), UK GDPR, ASA CAP Code, CMA/DMCCA rules.
@@ -555,167 +523,66 @@ DO NOT apply PECR Reg 22 -- PECR applies to electronic communications only.
 Check: LI basis validity, misleading claims, reference pricing, urgency/scarcity, opt-out mechanism (MPS reference is best practice), sender identification.`
 };
 
-// -----------------------------------------------------------------------------
-// SENDING CONTEXT BUILDER
-// -----------------------------------------------------------------------------
-
 function buildSendingContextBlock(ctx) {
   if (!ctx) return '';
-
   const lines = ['[SENDING CONTEXT]'];
-
-  const senderMap = {
-    direct:     'We are sending directly',
-    thirdParty: 'A third-party agency or platform is sending on our behalf',
-  };
-  const listMap = {
-    direct:    'We collected it directly from our own customers',
-    purchased: 'Purchased or rented from a third party',
-    partner:   'Provided by a partner or affiliate',
-    mixed:     'Mixed sources',
-  };
-  const consentMap = {
-    specific:    'Recipients specifically consented to our organisation by name',
-    thirdParty:  'They consented to a third party or "our partners" -- not this organisation by name',
-    softOptIn:   'Soft opt-in -- existing customers, similar products',
-    notSure:     'Not sure',
-  };
-  const fromMap = {
-    yes:     'Yes -- From name matches the organisation that collected consent',
-    no:      'No -- different sender',
-    notSure: 'Not sure',
-  };
-
+  const senderMap = { direct: 'We are sending directly', thirdParty: 'A third-party agency or platform is sending on our behalf' };
+  const listMap = { direct: 'We collected it directly from our own customers', purchased: 'Purchased or rented from a third party', partner: 'Provided by a partner or affiliate', mixed: 'Mixed sources' };
+  const consentMap = { specific: 'Recipients specifically consented to our organisation by name', thirdParty: 'They consented to a third party or "our partners" -- not this organisation by name', softOptIn: 'Soft opt-in -- existing customers, similar products', notSure: 'Not sure' };
+  const fromMap = { yes: 'Yes -- From name matches the organisation that collected consent', no: 'No -- different sender', notSure: 'Not sure' };
   if (ctx.senderRelationship) lines.push(`Sender: ${senderMap[ctx.senderRelationship] || ctx.senderRelationship}`);
   if (ctx.listSource)         lines.push(`List source: ${listMap[ctx.listSource] || ctx.listSource}`);
   if (ctx.consentSpecificity) lines.push(`Consent: ${consentMap[ctx.consentSpecificity] || ctx.consentSpecificity}`);
   if (ctx.fromNameMatch)      lines.push(`From name match: ${fromMap[ctx.fromNameMatch] || ctx.fromNameMatch}`);
-
   lines.push('[END CONTEXT]');
   return lines.join('\n');
 }
 
-// -----------------------------------------------------------------------------
-// CONTEXT FIX GENERATOR
-// Generates Tier 1 fix records directly from Sending Context answers.
-// Deterministic -- not AI-dependent. Runs before the AI call.
-// -----------------------------------------------------------------------------
-
 function getContextViolations(ctx) {
   if (!ctx) return [];
   const violations = [];
-
   if (ctx.listSource === 'purchased') {
-    violations.push({
-      regulation: 'PECR Reg 22',
-      severity:   'critical',
-      issue:      'List purchased or rented from a third party. Recipients must have specifically consented to receive marketing from your organisation by name -- not just a generic third-party consent or a list of unnamed "partners".',
-      location:   'Sending context -- list source',
-      recommendation: 'Do not send to this list until you can verify that every recipient specifically and knowingly consented to hear from your organisation. Obtain consent directly.',
-      enforcement_note: 'ZMLUK (GBP105,000, December 2025) sent 67.8 million emails using purchased data. The ICO found that generic consent covering hundreds of unnamed companies is not valid consent under PECR.',
-      _fixType: 'third_party_list',
-      _fromContext: true,
-    });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List purchased or rented from a third party. Recipients must have specifically consented to receive marketing from your organisation by name.', location: 'Sending context -- list source', recommendation: 'Do not send to this list until you can verify valid consent.', enforcement_note: 'ZMLUK (GBP105,000, December 2025) sent 67.8 million emails using purchased data.', _fixType: 'third_party_list', _fromContext: true });
   }
-
   if (ctx.listSource === 'partner') {
-    violations.push({
-      regulation: 'PECR Reg 22',
-      severity:   'critical',
-      issue:      'List provided by a partner or affiliate -- indirect consent. The ICO\'s direct marketing guidance states that indirect consent is insufficient for email or SMS marketing.',
-      location:   'Sending context -- list source',
-      recommendation: 'Each organisation sending marketing must have consent obtained specifically for their own communications. Relying on a partner\'s collected consent is not valid.',
-      enforcement_note: 'Saga Services & Saga Personal Finance (GBP225,000 combined, 2021) were fined for relying on indirect consent collected by affiliates sending emails on their behalf.',
-      _fixType: 'invalid_consent_mechanism',
-      _fromContext: true,
-    });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List provided by a partner or affiliate -- indirect consent is insufficient for email or SMS marketing.', location: 'Sending context -- list source', recommendation: 'Each organisation sending marketing must have consent obtained specifically for their own communications.', enforcement_note: 'Saga Services (GBP225,000 combined, 2021) were fined for relying on indirect consent.', _fixType: 'invalid_consent_mechanism', _fromContext: true });
   }
-
   if (ctx.consentSpecificity === 'thirdParty') {
-    violations.push({
-      regulation: 'PECR Reg 22 / UK GDPR Article 7',
-      severity:   'critical',
-      issue:      'Recipients consented to a third party or "our partners" -- not to your organisation by name. Third-party consent must specifically identify the organisation sending the marketing.',
-      location:   'Sending context -- consent specificity',
-      recommendation: 'Stop sending to this list. Consent must specifically name your organisation. "Our partners" covering multiple companies is not valid consent for any individual company in that list.',
-      enforcement_note: 'ZMLUK (GBP105,000, 2025): consent collected on a site showing users a list of 361 partner companies was invalid. Join the Triboo (GBP130,000, 2023): consent to JTT did not cover unnamed third-party brands they sent marketing for.',
-      _fixType: 'invalid_consent_mechanism',
-      _fromContext: true,
-    });
+    violations.push({ regulation: 'PECR Reg 22 / UK GDPR Article 7', severity: 'critical', issue: 'Recipients consented to a third party or "our partners" -- not to your organisation by name.', location: 'Sending context -- consent specificity', recommendation: 'Stop sending to this list. Consent must specifically name your organisation.', enforcement_note: 'ZMLUK (GBP105,000, 2025): consent covering 361 unnamed companies was invalid.', _fixType: 'invalid_consent_mechanism', _fromContext: true });
   }
-
   if (ctx.consentSpecificity === 'notSure') {
-    violations.push({
-      regulation: 'PECR Reg 22',
-      severity:   'high',
-      issue:      'Consent basis is unclear. You should not send marketing unless you can confirm recipients specifically consented to your organisation. If you are unsure, assume consent is not valid.',
-      location:   'Sending context -- consent specificity',
-      recommendation: 'Verify your consent records before sending. If you cannot confirm valid consent, do not send.',
-      _fixType: 'invalid_consent_mechanism',
-      _fromContext: true,
-    });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'high', issue: 'Consent basis is unclear. Do not send unless you can confirm valid consent.', location: 'Sending context -- consent specificity', recommendation: 'Verify your consent records before sending.', _fixType: 'invalid_consent_mechanism', _fromContext: true });
   }
-
   if (ctx.senderRelationship === 'thirdParty' && ctx.fromNameMatch === 'no') {
-    violations.push({
-      regulation: 'PECR Reg 23',
-      severity:   'critical',
-      issue:      'A third-party agency is sending on your behalf and the From name does not match the organisation that collected consent. The sender\'s identity is effectively concealed from recipients.',
-      location:   'Sending context -- sender relationship and From name mismatch',
-      recommendation: 'The From name must clearly identify the brand that collected consent -- not the sending agency. Ensure your brand name is the primary identifier in the From field.',
-      enforcement_note: 'Join the Triboo (GBP130,000, 2023) sent emails appearing to come from third-party brands with only a small JTT disclaimer. The ICO requires the identity of the actual sending organisation to be clear.',
-      _fixType: 'concealed_sender',
-      _fromContext: true,
-    });
+    violations.push({ regulation: 'PECR Reg 23', severity: 'critical', issue: 'A third-party agency is sending on your behalf and the From name does not match the organisation that collected consent.', location: 'Sending context -- sender relationship and From name mismatch', recommendation: 'The From name must clearly identify the brand that collected consent.', enforcement_note: 'Join the Triboo (GBP130,000, 2023) sent emails appearing to come from third-party brands.', _fixType: 'concealed_sender', _fromContext: true });
   }
-
   if (ctx.fromNameMatch === 'no' && ctx.senderRelationship !== 'thirdParty') {
-    violations.push({
-      regulation: 'PECR Reg 23',
-      severity:   'high',
-      issue:      'The From name does not match the organisation that collected consent. Recipients may not recognise who is contacting them.',
-      location:   'Sending context -- From name mismatch',
-      recommendation: 'Ensure the From name clearly identifies the organisation that collected the recipient\'s consent.',
-      _fixType: 'concealed_sender',
-      _fromContext: true,
-    });
+    violations.push({ regulation: 'PECR Reg 23', severity: 'high', issue: 'The From name does not match the organisation that collected consent.', location: 'Sending context -- From name mismatch', recommendation: 'Ensure the From name clearly identifies the organisation that collected consent.', _fixType: 'concealed_sender', _fromContext: true });
   }
-
   return violations;
 }
 
-// -----------------------------------------------------------------------------
-// FIX TYPE MAP
-// -----------------------------------------------------------------------------
-
 function mapViolationToFixType(violation) {
   if (violation._fixType) return violation._fixType;
-
-  const issue    = (violation.issue          || '').toLowerCase();
-  const reg      = (violation.regulation     || '').toLowerCase();
-  const rec      = (violation.recommendation || '').toLowerCase();
-  const combined = `${issue} ${reg} ${rec}`;
-
-  if (combined.match(/unsubscribe|opt.out|opt out/))                               return 'missing_unsubscribe';
+  const combined = `${violation.issue || ''} ${violation.regulation || ''} ${violation.recommendation || ''}`.toLowerCase();
+  if (combined.match(/unsubscribe|opt.out/))                                        return 'missing_unsubscribe';
   if (combined.match(/no consent|without consent|unsolicited|pecr.*consent|reg 22/)) return 'no_consent';
-  if (combined.match(/pre.tick|pre tick|assumed consent|bundled consent/))          return 'invalid_consent_mechanism';
-  if (combined.match(/soft opt.in|soft optin/))                                     return 'no_soft_optin';
-  if (combined.match(/sender.*conceal|disguised.*sender|sender.*identity|reg 23/))  return 'concealed_sender';
-  if (combined.match(/fake urgency|false urgency|countdown.*reset|ends soon|ends tonight|today only|flash sale/)) return 'fake_urgency';
-  if (combined.match(/fake scarcity|false scarcity|only \d+ left|stock.*fabricat/)) return 'fake_scarcity';
-  if (combined.match(/reference pric|was.*now|fabricated.*price|inflated.*price/))  return 'misleading_reference_price';
-  if (combined.match(/free.*condition|free.*hidden|free.*subscription|cap.*3\.9/))  return 'misleading_free_claim';
-  if (combined.match(/health claim|medical claim|cure|treats.*condition|mhra/))     return 'unauthorised_health_claim';
-  if (combined.match(/testimonial|review.*fabricat|fake review|incentivi.*review|duplicate.*review/)) return 'misleading_testimonial';
-  if (combined.match(/influencer|#ad|advertorial|paid.*partner|sponsored.*not.*label/)) return 'undisclosed_ad';
-  if (combined.match(/comparative.*claim|cheaper than|vs.*competitor|bpr/))         return 'unsubstantiated_comparative_claim';
-  if (combined.match(/drip pric|hidden fee|mandatory.*charge.*not.*shown/))         return 'drip_pricing';
-  if (combined.match(/greenwash|sustainable|eco.friendly|carbon neutral|net zero/)) return 'misleading_claim';
-  if (combined.match(/privacy policy|data protection link/))                        return 'no_privacy_policy';
-  if (combined.match(/postal address|company address|registered address/))          return 'missing_address';
-  if (combined.match(/third.party.*list|bought.*list|purchased.*data/))             return 'third_party_list';
-  if (combined.match(/indirect consent|partner.*consent/))                          return 'invalid_consent_mechanism';
-
+  if (combined.match(/pre.tick|bundled consent/))                                   return 'invalid_consent_mechanism';
+  if (combined.match(/soft opt.in/))                                                return 'no_soft_optin';
+  if (combined.match(/sender.*conceal|sender.*identity|reg 23/))                   return 'concealed_sender';
+  if (combined.match(/fake urgency|false urgency|ends soon|ends tonight|flash sale/)) return 'fake_urgency';
+  if (combined.match(/fake scarcity|only \d+ left/))                              return 'fake_scarcity';
+  if (combined.match(/reference pric|was.*now|fabricated.*price/))                 return 'misleading_reference_price';
+  if (combined.match(/free.*condition|free.*hidden|cap.*3\.9/))                   return 'misleading_free_claim';
+  if (combined.match(/health claim|medical claim|cure|mhra/))                      return 'unauthorised_health_claim';
+  if (combined.match(/testimonial|fake review|incentivi.*review/))                 return 'misleading_testimonial';
+  if (combined.match(/influencer|#ad/))                                             return 'undisclosed_ad';
+  if (combined.match(/comparative.*claim|bpr/))                                    return 'unsubstantiated_comparative_claim';
+  if (combined.match(/drip pric|hidden fee/))                                       return 'drip_pricing';
+  if (combined.match(/greenwash|sustainable|carbon neutral/))                       return 'misleading_claim';
+  if (combined.match(/privacy policy/))                                             return 'no_privacy_policy';
+  if (combined.match(/postal address|registered address/))                         return 'missing_address';
+  if (combined.match(/third.party.*list|purchased.*data/))                         return 'third_party_list';
   return 'misleading_claim';
 }
 
@@ -727,64 +594,29 @@ function mapViolationToSeverity(v) {
   return 'low';
 }
 
-// -----------------------------------------------------------------------------
-// CONTENT HASH -- for deduplication
-// -----------------------------------------------------------------------------
-
 function contentHash(userId, contentType, content) {
-  return crypto
-    .createHash('sha256')
-    .update(`${userId}|${contentType}|${content}`)
-    .digest('hex')
-    .slice(0, 16);
+  return crypto.createHash('sha256').update(`${userId}|${contentType}|${content}`).digest('hex').slice(0, 16);
 }
-
-// -----------------------------------------------------------------------------
-// GENERATE FIXES -- writes to Compliance_Fixes via generate-fix.js
-// -----------------------------------------------------------------------------
 
 async function generateFixes(userId, allViolations, emailChecks, sourceRecordId) {
   const seenTypes = new Set();
   const fixJobs   = [];
-
   for (const v of (allViolations || [])) {
     const fixType = mapViolationToFixType(v);
     if (seenTypes.has(fixType)) continue;
     seenTypes.add(fixType);
     const source = v._fromContext ? 'Sending Context' : 'AI Checker';
-    fixJobs.push({
-      fixType,
-      description: `${source}: ${v.issue || 'Compliance issue'} (${v.location || 'content'}) -- ${v.recommendation || 'Review required'}`,
-      severity: mapViolationToSeverity(v)
-    });
+    fixJobs.push({ fixType, description: `${source}: ${v.issue || 'Compliance issue'} (${v.location || 'content'}) -- ${v.recommendation || 'Review required'}`, severity: mapViolationToSeverity(v) });
   }
-
   for (const c of (emailChecks || [])) {
     if (!c.fixType || c.status === 'pass') continue;
     if (seenTypes.has(c.fixType)) continue;
     seenTypes.add(c.fixType);
-    fixJobs.push({
-      fixType:     c.fixType,
-      description: `Email Scanner: ${c.title} -- ${c.description}`,
-      severity:    c.status === 'fail' ? 'high' : 'medium'
-    });
+    fixJobs.push({ fixType: c.fixType, description: `Email Scanner: ${c.title} -- ${c.description}`, severity: c.status === 'fail' ? 'high' : 'medium' });
   }
-
   for (const job of fixJobs) {
     try {
-      const r = await fetch(`${APP_URL}/api/generate-fix`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          fixType:        job.fixType,
-          description:    job.description,
-          tool:           'AI Checker',
-          severity:       job.severity,
-          volume:         null,
-          sourceRecordId
-        })
-      });
+      const r = await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, fixType: job.fixType, description: job.description, tool: 'AI Checker', severity: job.severity, volume: null, sourceRecordId }) });
       const d = await r.json();
       if (d.skipped) console.log(`generate-fix duplicate skipped: ${job.fixType}`);
     } catch (err) {
@@ -793,83 +625,43 @@ async function generateFixes(userId, allViolations, emailChecks, sourceRecordId)
   }
 }
 
-// -----------------------------------------------------------------------------
-// MAIN HANDLER
-// -----------------------------------------------------------------------------
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { contentType, content, subject, userId, autoFix, sendingContext, images } = req.body ?? {};
-
-    // -- Validation ----------------------------------------------------
     if (!userId)      return res.status(400).json({ error: 'Missing userId' });
     if (!contentType) return res.status(400).json({ error: 'Missing contentType' });
-    if (!['email','sms','push','social','directmail'].includes(contentType))
-      return res.status(400).json({ error: 'contentType must be email | sms | push | social | directmail' });
-    if (!content) return res.status(400).json({ error: 'Missing content' });
+    if (!['email','sms','push','social','directmail'].includes(contentType)) return res.status(400).json({ error: 'Invalid contentType' });
+    if (!content)     return res.status(400).json({ error: 'Missing content' });
 
-    // -- 1. Content deduplication hash ---------------------------------
-    const checkHash = contentHash(userId, contentType, content);
-
-    // -- 2. Deterministic context violations ---------------------------
+    const checkHash         = contentHash(userId, contentType, content);
     const contextViolations = getContextViolations(sendingContext);
+    const copyText          = contentType === 'email' && subject ? `Subject: ${subject}\n\nEmail body:\n${content}` : content;
+    const contextBlock      = buildSendingContextBlock(sendingContext);
+    const analysisContent   = contextBlock ? `${contextBlock}\n\n[COPY TO ANALYSE]\n${copyText}` : copyText;
 
-    // -- 3. Build analysis content for Claude --------------------------
-    const copyText = contentType === 'email' && subject
-      ? `Subject: ${subject}\n\nEmail body:\n${content}`
-      : content;
+    const anthropic   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const userMessage = `${CHANNEL_RULES[contentType]}\n\nCONTENT TO ANALYSE:\n${analysisContent}${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten compliant version.' : ''}`;
 
-    const contextBlock = buildSendingContextBlock(sendingContext);
-    const analysisContent = contextBlock
-      ? `${contextBlock}\n\n[COPY TO ANALYSE]\n${copyText}`
-      : copyText;
-
-    // -- 4. Claude AI analysis (direct fetch -- bypasses SDK version issues) --
-    const userMessage = `${CHANNEL_RULES[contentType]}
-
-CONTENT TO ANALYSE:
-${analysisContent}
-${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten compliant version.' : ''}`;
-
-    // Build content array -- text first, then images if provided
     const messageContent = [{ type: 'text', text: userMessage }];
     const validMediaTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (Array.isArray(images) && images.length > 0) {
-      const imageBlocks = images
-        .slice(0, 3)
-        .filter(img => img?.data && validMediaTypes.includes(img?.mediaType))
-        .map(img => ({
-          type: 'image',
-          source: { type: 'base64', media_type: img.mediaType, data: img.data }
-        }));
+      const imageBlocks = images.slice(0, 3).filter(img => img?.data && validMediaTypes.includes(img?.mediaType)).map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } }));
       messageContent.push(...imageBlocks);
-      if (imageBlocks.length > 0) {
-        messageContent.push({ type: 'text', text: `\nNote: ${imageBlocks.length} image(s) provided above. Analyse them for compliance issues alongside the copy -- check for misleading visuals, fake urgency in graphics, undisclosed ads, health claims in imagery, or any visual element that contradicts or adds to the compliance picture.` });
-      }
+      if (imageBlocks.length > 0) messageContent.push({ type: 'text', text: `\nNote: ${imageBlocks.length} image(s) provided. Analyse for compliance issues alongside the copy.` });
     }
 
-    const claudeHttpRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key':         process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'Content-Type':      'application/json',
-      },
-      body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        system:     SYSTEM_PROMPT,
-        messages:   [{ role: 'user', content: messageContent }]
-      })
+    const message = await anthropic.messages.create({
+      model:      'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system:     SYSTEM_PROMPT,
+      messages:   [{ role: 'user', content: messageContent }]
     });
-    const message = await claudeHttpRes.json();
 
     let aiAnalysis = null;
     try {
@@ -879,104 +671,49 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
       aiAnalysis = { score: 50, verdict: 'Analysis Error', violations: [], summary: message.content[0].text };
     }
 
-    // -- 5. Merge context violations with AI violations -----------------
     const contextFixTypes = new Set(contextViolations.map(v => v._fixType));
-    const aiViolations    = (aiAnalysis?.violations || []).filter(v => {
-      const ft = mapViolationToFixType(v);
-      return !contextFixTypes.has(ft);
-    });
-    const allViolations = [...contextViolations, ...aiViolations];
+    const aiViolations    = (aiAnalysis?.violations || []).filter(v => !contextFixTypes.has(mapViolationToFixType(v)));
+    const allViolations   = [...contextViolations, ...aiViolations];
 
-    // Recalculate score if context added violations
     let finalScore = aiAnalysis?.score ?? 50;
     for (const v of contextViolations) {
-      const sev = v.severity;
-      if (sev === 'critical') finalScore -= 30;
-      else if (sev === 'high') finalScore -= 15;
-      else if (sev === 'medium') finalScore -= 7;
+      if (v.severity === 'critical')    finalScore -= 30;
+      else if (v.severity === 'high')   finalScore -= 15;
+      else if (v.severity === 'medium') finalScore -= 7;
     }
     finalScore = Math.max(0, finalScore);
 
-    // Recalculate verdict if score changed
     let finalVerdict = aiAnalysis?.verdict;
     if (contextViolations.length > 0) {
       const hasCritical = allViolations.some(v => v.severity === 'critical');
-      if (hasCritical || finalScore <= 49)       finalVerdict = 'Do not send -- address critical issues first';
-      else if (finalScore <= 74)                 finalVerdict = 'Review required before sending';
-      else if (finalScore <= 89)                 finalVerdict = 'Minor issues to address';
-      else                                       finalVerdict = 'No issues found';
+      if (hasCritical || finalScore <= 49)     finalVerdict = 'Do not send -- address critical issues first';
+      else if (finalScore <= 74)               finalVerdict = 'Review required before sending';
+      else if (finalScore <= 89)               finalVerdict = 'Minor issues to address';
+      else                                     finalVerdict = 'No issues found';
     }
 
-    // -- 6. Save to AI_Compliance_Checks -------------------------------
     let savedRecordId = null;
     try {
       const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
       const BASE_ID        = process.env.BASE_ID;
       const criticalCount  = allViolations.filter(v => v.severity === 'critical').length;
       const warningCount   = allViolations.filter(v => v.severity === 'high' || v.severity === 'medium').length;
-
-      const saveRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/AI_Compliance_Checks`, {
-        method:  'POST',
-        headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          records: [{
-            fields: {
-              UserID:         userId,
-              CheckDate:      new Date().toISOString().split('T')[0],
-              ContentType:    contentType,
-              ContentHash:    checkHash,
-              RiskScore:      finalScore,
-              Verdict:        finalVerdict ?? '',
-              CriticalIssues: criticalCount,
-              Warnings:       warningCount,
-              MarketingCopy:  content?.slice(0, 10000) ?? '',
-              FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
-              Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '' }),
-              FixedVersion:   aiAnalysis?.fixedVersion ?? '',
-              RelatedCases:   '',
-              SendingContext: contextBlock || '',
-            }
-          }]
-        })
-      });
-
-      if (saveRes.ok) {
-        const saved = await saveRes.json();
-        savedRecordId = saved.records?.[0]?.id ?? null;
-      } else {
-        console.error('AI_Compliance_Checks save failed:', saveRes.status);
-      }
+      const saveRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/AI_Compliance_Checks`, { method: 'POST', headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ records: [{ fields: { UserID: userId, CheckDate: new Date().toISOString().split('T')[0], ContentType: contentType, ContentHash: checkHash, RiskScore: finalScore, Verdict: finalVerdict ?? '', CriticalIssues: criticalCount, Warnings: warningCount, MarketingCopy: content?.slice(0, 10000) ?? '', FileName: contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`, Analysis: JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '' }), FixedVersion: aiAnalysis?.fixedVersion ?? '', RelatedCases: '', SendingContext: contextBlock || '' } }] }) });
+      if (saveRes.ok) savedRecordId = (await saveRes.json()).records?.[0]?.id ?? null;
+      else console.error('AI_Compliance_Checks save failed:', saveRes.status);
     } catch (err) {
       console.error('AI_Compliance_Checks save error:', err);
     }
 
-    // -- 7. Generate Compliance_Fixes -- must complete BEFORE response --
     if (allViolations.length > 0) {
-      try {
-        await generateFixes(userId, allViolations, [], savedRecordId);
-      } catch (e) {
-        console.error('generateFixes error:', e);
-      }
+      try { await generateFixes(userId, allViolations, [], savedRecordId); }
+      catch (e) { console.error('generateFixes error:', e); }
     }
 
-    // -- 8. Update compliance streak (fire and forget) -----------------
-    fetch(`${APP_URL}/api/profile?action=streak`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ userId })
-    }).catch(e => console.error('Streak update failed:', e));
+    fetch(`${APP_URL}/api/profile?action=streak`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) }).catch(e => console.error('Streak update failed:', e));
 
-    // -- 9. Return unified response -------------------------------------
     const cleanViolations = allViolations.map(({ _fromContext, _fixType, ...rest }) => rest);
-
-    return res.status(200).json({
-      ...aiAnalysis,
-      score:      finalScore,
-      verdict:    finalVerdict,
-      violations: cleanViolations,
-      contentType,
-      checkHash,
-    });
+    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, contentType, checkHash });
 
   } catch (error) {
     console.error('analyze-copy error:', error);
