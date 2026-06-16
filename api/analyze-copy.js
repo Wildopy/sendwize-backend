@@ -672,6 +672,10 @@ export default async function handler(req, res) {
     console.log('Claude response:', JSON.stringify(message).slice(0, 200));
 
     let aiAnalysis = null;
+    if (!message.content || !message.content[0]) {
+      console.error('Claude API error response:', JSON.stringify(message));
+      return res.status(500).json({ error: 'Claude API error: ' + (message.error?.message || JSON.stringify(message)) });
+    }
     try {
       const jsonMatch = message.content[0].text.match(/\{[\s\S]*\}/);
       aiAnalysis = JSON.parse(jsonMatch ? jsonMatch[0] : message.content[0].text);
