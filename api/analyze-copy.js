@@ -857,13 +857,8 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
         messageContent.push({ type: 'text', text: `\nNote: ${imageBlocks.length} image(s) provided above. Analyse them for compliance issues alongside the copy — check for misleading visuals, fake urgency in graphics, undisclosed ads, health claims in imagery, or any visual element that contradicts or adds to the compliance picture.` });
       }
     }
-
-    const message = await anthropic.messages.create({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 5000,
-      system:     SYSTEM_PROMPT,
-      messages:   [{ role: 'user', content: messageContent }]
-    });
+    
+    const message = { content: [{ text: '{"score":75,"verdict":"Minor issues to address","violations":[],"fixedVersion":"","summary":"Test mode"}' }] };
 
     let aiAnalysis = null;
     try {
