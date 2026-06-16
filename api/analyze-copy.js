@@ -663,12 +663,14 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 5000,                                         // FIX: was 2000
+        max_tokens: 5000,
         system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: messageContent }]    // FIX: was userMessage
+        messages: [{ role: 'user', content: messageContent }]
       })
     });
+    console.log('Claude status:', claudeHttpRes.status);
     const message = await claudeHttpRes.json();
+    console.log('Claude raw response:', JSON.stringify(message).slice(0, 500));
     if (!claudeHttpRes.ok) {
       console.error('Claude API error:', claudeHttpRes.status, JSON.stringify(message));
       return res.status(500).json({ error: 'Claude API error', details: message });
@@ -679,6 +681,7 @@ export default async function handler(req, res) {
       const jsonMatch = message.content[0].text.match(/\{[\s\S]*\}/);
       aiAnalysis = JSON.parse(jsonMatch ? jsonMatch[0] : message.content[0].text);
     } catch {
+      console.error('JSON parse failed. Full text:', message.content[0]?.text?.slice(0, 1000));
       aiAnalysis = { score: 50, verdict: 'Analysis Error', violations: [], summary: message.content[0]?.text || 'Error' };
     }
 
