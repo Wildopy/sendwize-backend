@@ -1,4 +1,4 @@
-// api/analyze-copy.js  v5.2
+// api/analyze-copy.js  v5.2.1
 // AI Copy Scanner — five content types, image analysis, text-only input.
 //
 // POST { contentType, userId, content, subject?, autoFix?, sendingContext?, images? }
