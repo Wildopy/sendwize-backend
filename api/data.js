@@ -592,7 +592,7 @@ async function handleBriefing(req, res) {
       'Content-Type':      'application/json',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
+      model:      'claude-sonnet-4-5-20250514',
       max_tokens: 400,
       system: `You are a compliance advisor for UK email marketers. Write a concise, practical weekly briefing of around 150–200 words. Tone: professional but plain-English, never alarmist. Never say "compliant" or "in breach" — use hedged language. Never give legal advice. If fixes have been actioned, acknowledge the progress made. End with one specific suggested action for this week.`,
       messages: [{
@@ -888,7 +888,7 @@ Respond ONLY with this exact JSON (no preamble, no markdown fences):
   const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
     method:  'POST',
     headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 2000, messages: [{ role: 'user', content: claudePrompt }] }),
+    body: JSON.stringify({ model: 'claude-sonnet-4-5-20250514', max_tokens: 2000, messages: [{ role: 'user', content: claudePrompt }] }),
   });
 
   if (!claudeRes.ok) {
