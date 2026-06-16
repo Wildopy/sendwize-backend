@@ -30,8 +30,7 @@
 //
 // contentType (required): 'email' | 'sms' | 'push' | 'social' | 'directmail'
 
-import Anthropic from '@anthropic-ai/sdk';
-import crypto    from 'crypto';
+import crypto from 'crypto';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -832,9 +831,7 @@ export default async function handler(req, res) {
       ? `${contextBlock}\n\n[COPY TO ANALYSE]\n${copyText}`
       : copyText;
 
-    // -- 4. Claude AI analysis -----------------------------------------
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
+    // -- 4. Claude AI analysis (direct fetch -- bypasses SDK version issues) --
     const userMessage = `${CHANNEL_RULES[contentType]}
 
 CONTENT TO ANALYSE:
@@ -858,12 +855,21 @@ ${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten 
       }
     }
 
-    const message = await anthropic.messages.create({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      system:     SYSTEM_PROMPT,
-      messages:   [{ role: 'user', content: messageContent }]
+    const claudeHttpRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type':      'application/json',
+      },
+      body: JSON.stringify({
+        model:      'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        system:     SYSTEM_PROMPT,
+        messages:   [{ role: 'user', content: messageContent }]
+      })
     });
+    const message = await claudeHttpRes.json();
 
     let aiAnalysis = null;
     try {
