@@ -669,6 +669,7 @@ export default async function handler(req, res) {
       })
     });
     const message = await claudeRes.json();
+    console.log('Claude response:', JSON.stringify(message).slice(0, 200));
 
     let aiAnalysis = null;
     try {
