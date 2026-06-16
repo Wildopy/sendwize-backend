@@ -5,8 +5,7 @@
 //
 // v5.2: Updated SYSTEM_PROMPT only. All other code identical to v5.1.
 
-import Anthropic from '@anthropic-ai/sdk';
-import crypto    from 'crypto';
+import crypto from 'crypto';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -645,7 +644,6 @@ export default async function handler(req, res) {
     const contextBlock      = buildSendingContextBlock(sendingContext);
     const analysisContent   = contextBlock ? `${contextBlock}\n\n[COPY TO ANALYSE]\n${copyText}` : copyText;
 
-    const anthropic   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const userMessage = `${CHANNEL_RULES[contentType]}\n\nCONTENT TO ANALYSE:\n${analysisContent}${autoFix ? '\nGenerate a fixedVersion field in the JSON with a fully rewritten compliant version.' : ''}`;
 
     const messageContent = [{ type: 'text', text: userMessage }];
@@ -656,12 +654,21 @@ export default async function handler(req, res) {
       if (imageBlocks.length > 0) messageContent.push({ type: 'text', text: `\nNote: ${imageBlocks.length} image(s) provided. Analyse for compliance issues alongside the copy.` });
     }
 
-    const message = await anthropic.messages.create({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      system:     SYSTEM_PROMPT,
-      messages:   [{ role: 'user', content: messageContent }]
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type':      'application/json',
+      },
+      body: JSON.stringify({
+        model:      'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        system:     SYSTEM_PROMPT,
+        messages:   [{ role: 'user', content: messageContent }]
+      })
     });
+    const message = await claudeRes.json();
 
     let aiAnalysis = null;
     try {
