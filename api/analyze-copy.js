@@ -662,7 +662,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 5000,                                         // FIX: was 2000
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: messageContent }]    // FIX: was userMessage
