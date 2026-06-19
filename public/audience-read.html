@@ -971,7 +971,7 @@ function buildDemoSegmentData(campaigns) {
     var cat = impactScore>0.8?'Built trust':impactScore>0.2?'Built trust':impactScore>-0.3?'Neutral':impactScore>-1.0?'Caused fatigue':'Damaged';
     var plain = cat==='Built trust'?'Below UK benchmark \u2014 your audience responded well.':
                 cat==='Caused fatigue'?'Above UK benchmark ('+(bench.unsubNormal*100).toFixed(2)+'%) \u2014 audience showing fatigue.':
-                cat==='Damaged'?'Significantly above UK benchmark'+(excess>0?' \u2014 '+excess+' more unsubscribes than expected.'):'.':
+                cat==='Damaged'?('Significantly above UK benchmark'+(excess>0?(' \u2014 '+excess+' more unsubscribes than expected.'):'.')):
                 'Normal unsubscribe rate \u2014 within UK benchmark range.';
     return { category:cat, plainVerdict:plain, unsubRate:Math.round(rate*10000)/10000, benchmarkRate:bench.unsubNormal, excessUnsubs:excess, campaign_name:c.campaign_name, date:c.date };
   });
