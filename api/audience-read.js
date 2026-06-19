@@ -1,1215 +1,1060 @@
-// api/audience-read.js — Sendwize Audience Read v7.0
-// Seven deterministic algorithms. Zero AI. Zero external data.
-// v7.0: UK benchmark-anchored sentiment. Absolute thresholds.
-//       Subscriber loss + £ cost calculation. Fixed column detection.
-//       Sector-aware benchmarks. Plain-English output overhauled.
-
-const BASE_ID = process.env.BASE_ID;
-const AT_TOKEN = process.env.AIRTABLE_TOKEN;
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`;
-const APP_URL = 'https://sendwize-backend.vercel.app';
-
-const AT_HEADERS = () => ({
-  Authorization: `Bearer ${AT_TOKEN}`,
-  'Content-Type': 'application/json',
-});
-
-// ─────────────────────────────────────────────
-// UK EMAIL BENCHMARKS
-// Sources: GDMA International Email Benchmark 2024, MailerLite 2025,
-//          DMA UK Email Benchmarking Report 2025, Klaviyo ecommerce data
-// ─────────────────────────────────────────────
-
-const BENCHMARKS = {
-  ecommerce: {
-    label: 'Ecommerce / Retail',
-    unsubGood:      0.001,   // <0.1%
-    unsubNormal:    0.003,   // 0.1–0.3% (Klaviyo: 0.20–0.30% median)
-    unsubConcern:   0.005,   // 0.3–0.5%
-    unsubDamaged:   0.010,   // >1%
-    openGood:       0.35,
-    openNormal:     0.25,
-    openPoor:       0.15,
-    clickGood:      0.025,
-    clickNormal:    0.015,
-    clickPoor:      0.005,
-    source: 'Klaviyo 400k campaign analysis + GDMA 2024',
-  },
-  b2b: {
-    label: 'B2B / Professional Services',
-    unsubGood:      0.0005,  // <0.05%
-    unsubNormal:    0.0015,  // 0.05–0.15% (GDMA: global avg 0.14%)
-    unsubConcern:   0.003,
-    unsubDamaged:   0.008,
-    openGood:       0.30,
-    openNormal:     0.20,
-    openPoor:       0.12,
-    clickGood:      0.030,
-    clickNormal:    0.020,
-    clickPoor:      0.008,
-    source: 'DMA UK 2025 + GDMA International Benchmark 2024',
-  },
-  saas: {
-    label: 'SaaS / Technology',
-    unsubGood:      0.0008,
-    unsubNormal:    0.002,
-    unsubConcern:   0.004,
-    unsubDamaged:   0.008,
-    openGood:       0.28,
-    openNormal:     0.20,
-    openPoor:       0.12,
-    clickGood:      0.028,
-    clickNormal:    0.018,
-    clickPoor:      0.006,
-    source: 'MailerLite 2025 industry breakdown',
-  },
-  media: {
-    label: 'Media / Publishing / Newsletter',
-    unsubGood:      0.001,
-    unsubNormal:    0.0022,  // MailerLite 2025 overall median 0.22%
-    unsubConcern:   0.005,
-    unsubDamaged:   0.010,
-    openGood:       0.40,
-    openNormal:     0.28,
-    openPoor:       0.18,
-    clickGood:      0.035,
-    clickNormal:    0.020,
-    clickPoor:      0.008,
-    source: 'MailerLite 2025 + DMA UK 2025',
-  },
-  charity: {
-    label: 'Charity / Non-profit',
-    unsubGood:      0.0008,
-    unsubNormal:    0.002,
-    unsubConcern:   0.004,
-    unsubDamaged:   0.008,
-    openGood:       0.35,
-    openNormal:     0.25,
-    openPoor:       0.15,
-    clickGood:      0.025,
-    clickNormal:    0.015,
-    clickPoor:      0.005,
-    source: 'DMA UK 2025',
-  },
-  general: {
-    label: 'General / Mixed',
-    unsubGood:      0.001,
-    unsubNormal:    0.0022, // MailerLite 2025 all-industry median 0.22%
-    unsubConcern:   0.005,
-    unsubDamaged:   0.010,
-    openGood:       0.35,
-    openNormal:     0.25,
-    openPoor:       0.15,
-    clickGood:      0.025,
-    clickNormal:    0.015,
-    clickPoor:      0.005,
-    source: 'MailerLite 2025 + GDMA 2024 + DMA UK 2025',
-  },
-};
-
-// ─────────────────────────────────────────────
-// AIRTABLE HELPERS
-// ─────────────────────────────────────────────
-
-async function atGet(table, formula, sort = '', max = 100) {
-  let url = `${AT_BASE}/${encodeURIComponent(table)}?maxRecords=${max}`;
-  if (formula) url += `&filterByFormula=${encodeURIComponent(formula)}`;
-  if (sort) url += `&${sort}`;
-  const r = await fetch(url, { headers: AT_HEADERS() });
-  if (!r.ok) throw new Error(`Airtable GET ${table} failed: ${r.status}`);
-  return (await r.json()).records || [];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audience Read — Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
+  --bg:#F4F3F0;--w:#fff;--b:#e8e5de;--bm:#d8d4cb;
+  --t:#0c0c0a;--tm:#4a4740;--mu:#9a9590;
+  --r:#dc2626;--rb:#fef2f2;--rc:#fecaca;
+  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
+  --y:#ca8a04;--yb:#fefce8;--yc:#fef08a;
+  --pur:#7e22ce;--purl:#fdf4ff;--purc:#e9d5ff;
+  --rad:10px;--rad-lg:14px;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --sh-lg:0 8px 32px rgba(0,0,0,.10);
 }
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+.nav{background:var(--w);border-bottom:1px solid var(--b);height:56px;display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:100;justify-content:space-between}
+.nav-logo{font-size:17px;font-weight:700;color:var(--o);letter-spacing:-.4px;text-decoration:none}
+.nav-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
+.nav-back:hover{color:var(--o);background:var(--ol)}
+.page{max-width:900px;margin:0 auto;padding:40px 20px 80px}
 
-async function atCreate(table, fields) {
-  const clean = Object.fromEntries(
-    Object.entries(fields).filter(([, v]) => v !== null && v !== undefined)
-  );
-  const r = await fetch(`${AT_BASE}/${encodeURIComponent(table)}`, {
-    method: 'POST',
-    headers: AT_HEADERS(),
-    body: JSON.stringify({ records: [{ fields: clean }] }),
+/* GATE */
+.gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
+.gate-screen.show{display:flex}
+.gate-card{background:var(--w);border:1px solid var(--b);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:var(--sh-lg)}
+.gate-logo{font-size:22px;font-weight:700;color:var(--o);margin-bottom:24px}
+.gate-icon{font-size:40px;margin-bottom:16px}
+.gate-title{font-size:20px;font-weight:700;margin-bottom:8px}
+.gate-sub{font-size:14px;color:var(--mu);line-height:1.6;margin-bottom:28px}
+.gate-btn{display:flex;align-items:center;justify-content:center;width:100%;padding:13px 20px;background:var(--o);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}
+.gate-btn:hover{background:var(--od)}
+.gate-demo-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--w);color:var(--mu);border:1px solid var(--bm);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.gate-demo-btn:hover{border-color:var(--o);color:var(--t)}
+
+/* UPLOAD */
+.intro{margin-bottom:28px}
+.tool-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);background:var(--bg);border:1px solid var(--b);padding:4px 12px;border-radius:20px;margin-bottom:14px}
+.intro h1{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.2;margin-bottom:8px}
+.intro-sub{font-size:14px;color:var(--tm);line-height:1.7;max-width:560px;margin-bottom:18px}
+.distinction{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:14px 18px;display:flex;gap:20px;margin-bottom:24px}
+.dist-col{flex:1}
+.dist-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin-bottom:4px}
+.dist-desc{font-size:12px;color:var(--tm);line-height:1.5}
+.dist-this{border-left:3px solid var(--o);padding-left:14px}
+.dist-divider{width:1px;background:var(--b);flex-shrink:0}
+
+/* SECTOR SELECTOR */
+.sector-row{display:flex;gap:10px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap}
+.sector-grp{flex:1;min-width:200px}
+.sector-grp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}
+.sector-grp select{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1px solid var(--b);border-radius:8px;background:var(--w);color:var(--t)}
+.cpl-grp{flex:1;min-width:160px}
+.cpl-grp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}
+.cpl-wrap{position:relative}
+.cpl-wrap input{width:100%;font-family:'DM Mono',monospace;font-size:13px;padding:10px 12px 10px 26px;border:1px solid var(--b);border-radius:8px;background:var(--w);color:var(--t)}
+.cpl-pound{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--mu);font-family:'DM Mono',monospace;pointer-events:none}
+.cpl-note{font-size:10px;color:var(--mu);margin-top:4px}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--b);border-radius:var(--rad-lg);padding:44px 32px;cursor:pointer;transition:all .18s;background:var(--w);position:relative;text-align:center;margin-bottom:16px}
+.upload-zone:hover,.upload-zone.hover{border-color:var(--o);background:var(--ol)}
+.upload-zone.loaded{border-color:var(--g);border-style:solid;background:var(--gb)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz-icon{font-size:32px;margin-bottom:12px}
+.uz-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.uz-sub{font-size:13px;color:var(--mu);line-height:1.6;max-width:480px;margin:0 auto}
+.uz-fname{font-size:11px;color:var(--g);font-family:'DM Mono',monospace;margin-top:10px;display:none}
+.upload-zone.loaded .uz-fname{display:block}
+
+/* BTNS */
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:11px 22px;border-radius:var(--rad);border:none;cursor:pointer;transition:all .18s}
+.btn-primary{background:var(--o);color:#fff}
+.btn-primary:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,115,23,.3)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:transparent;color:var(--t);border:1.5px solid var(--b)}
+.btn-ghost:hover{border-color:var(--t);background:var(--bg)}
+.btn-sm{padding:7px 14px;font-size:12px}
+
+/* MAPPING */
+.map-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:22px;margin-bottom:14px;box-shadow:var(--sh)}
+.map-card h3{font-size:14px;font-weight:700;margin-bottom:3px}
+.map-meta{font-size:12px;color:var(--mu);margin-bottom:14px}
+.map-table{width:100%;border-collapse:collapse}
+.map-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);padding:7px 10px;text-align:left;border-bottom:1px solid var(--b)}
+.map-table td{padding:9px 10px;border-bottom:1px solid var(--b);font-size:13px}
+.map-table tr:last-child td{border-bottom:none}
+.map-table select{font-family:'DM Sans',sans-serif;font-size:12px;padding:4px 8px;border:1px solid var(--b);border-radius:6px;background:var(--bg);color:var(--t)}
+.samp-pill{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu);background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--b)}
+
+/* DEMO BANNER */
+.demo-banner{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.demo-banner-txt{font-size:13px;color:#92400e;font-weight:500}
+.demo-dismiss{background:var(--o);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+
+/* DASHBOARD HEADER */
+.dash-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.dash-title{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.dash-meta{font-size:13px;color:var(--mu);margin-top:3px}
+.dash-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* SEND SUMMARY TILES */
+.send-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}
+@media(max-width:560px){.send-summary{grid-template-columns:repeat(2,1fr)}}
+.ss-tile{border-radius:var(--rad);padding:14px 16px;text-align:center;border:1px solid var(--b);background:var(--w)}
+.ss-tile.damaged{background:var(--rb);border-color:var(--rc)}
+.ss-tile.fatigue{background:var(--yb);border-color:var(--yc)}
+.ss-tile.built{background:var(--gb);border-color:var(--gc)}
+.ss-tile.neutral{background:var(--bg)}
+.ss-num{font-size:26px;font-weight:800;font-family:'DM Mono',monospace;line-height:1;margin-bottom:2px}
+.ss-tile.damaged .ss-num{color:var(--r)}
+.ss-tile.fatigue .ss-num{color:var(--y)}
+.ss-tile.built .ss-num{color:var(--g)}
+.ss-tile.neutral .ss-num{color:var(--mu)}
+.ss-lbl{font-size:11px;font-weight:600;line-height:1.3}
+.ss-tile.damaged .ss-lbl{color:#991b1b}
+.ss-tile.fatigue .ss-lbl{color:#78350f}
+.ss-tile.built .ss-lbl{color:#166534}
+.ss-tile.neutral .ss-lbl{color:var(--mu)}
+
+/* SEND HISTORY ROWS */
+.seg-sends{margin-bottom:20px}
+.seg-sends-hdr{font-size:12px;font-weight:700;color:var(--tm);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:6px}
+.seg-sends-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.send-row{display:flex;align-items:stretch;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:5px;overflow:hidden;transition:box-shadow .15s}
+.send-row:hover{box-shadow:var(--sh)}
+.send-row-bar{width:4px;flex-shrink:0}
+.srb-built{background:var(--g)}.srb-fatigue{background:var(--y)}.srb-damaged{background:var(--r)}.srb-neutral{background:var(--b)}
+.send-row-body{flex:1;padding:11px 14px;min-width:0}
+.send-row-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.send-row-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.send-verdict-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap;flex-shrink:0}
+.svp-built{background:var(--gb);color:var(--g)}.svp-fatigue{background:var(--yb);color:var(--y)}.svp-damaged{background:var(--rb);color:var(--r)}.svp-neutral{background:var(--bg);color:var(--mu);border:1px solid var(--b)}
+.send-row-plain{font-size:12px;color:var(--tm);line-height:1.5;margin-bottom:4px}
+.send-row-stats{display:flex;gap:12px;flex-wrap:wrap}
+.send-stat{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}
+.send-stat strong{color:var(--t);font-weight:600}
+.send-stat.bad strong{color:var(--r)}
+.send-stat.warn strong{color:var(--y)}
+.send-stat.good strong{color:var(--g)}
+.send-row-meta{font-size:11px;color:var(--mu);margin-top:3px}
+
+/* EXCESS BADGE */
+.excess-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--rb);color:var(--r);margin-left:6px}
+
+/* SEGMENT DIAGNOSIS CARD */
+.diag-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);overflow:hidden;margin-bottom:16px;box-shadow:var(--sh);animation:fadeUp .35s ease}
+.diag-card.state-good .diag-accent{background:linear-gradient(135deg,var(--gb),#dcfce7)}
+.diag-card.state-warn .diag-accent{background:linear-gradient(135deg,var(--yb),#fef9c3)}
+.diag-card.state-bad .diag-accent{background:linear-gradient(135deg,var(--rb),#fee2e2)}
+.diag-card.state-neu .diag-accent{background:linear-gradient(135deg,var(--bg),#ece9e3)}
+.diag-accent{padding:20px 22px;border-bottom:1px solid rgba(0,0,0,.06)}
+.diag-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.diag-seg-name{font-size:13px;font-weight:600;color:var(--t);opacity:.75}
+.diag-state{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:3px 10px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.state-good .diag-state{background:var(--gb);color:var(--g)}
+.state-warn .diag-state{background:var(--yb);color:var(--y)}
+.state-bad .diag-state{background:var(--rb);color:var(--r)}
+.state-neu .diag-state{background:rgba(0,0,0,.06);color:var(--tm)}
+.diag-verdict{font-size:20px;font-weight:700;letter-spacing:-.3px;line-height:1.25;color:var(--t);margin-bottom:10px}
+.diag-benchmark-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:0}
+.bench-stat{display:flex;flex-direction:column;gap:1px}
+.bench-stat-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu)}
+.bench-stat-val{font-size:15px;font-weight:700;font-family:'DM Mono',monospace}
+.bench-stat-val.good{color:var(--g)}
+.bench-stat-val.warn{color:var(--y)}
+.bench-stat-val.bad{color:var(--r)}
+.bench-stat-val.neu{color:var(--tm)}
+.bench-vs{font-size:11px;color:var(--mu);margin-top:1px}
+.bench-vs.above{color:var(--r)}
+.bench-vs.below{color:var(--g)}
+.diag-body{padding:18px 22px}
+.diag-stmt{font-size:13px;color:var(--tm);line-height:1.65;margin-bottom:14px}
+
+/* ACTION BOX */
+.diag-action{background:var(--o);border-radius:var(--rad);padding:14px 16px;margin-bottom:14px}
+.diag-action-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.7);margin-bottom:5px}
+.diag-action-txt{font-size:14px;color:#fff;font-weight:600;line-height:1.5}
+
+/* SUBSCRIBER LOSS */
+.loss-box{background:var(--rb);border:1px solid var(--rc);border-radius:var(--rad);padding:13px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.loss-icon{font-size:20px;flex-shrink:0}
+.loss-num{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;color:var(--r);line-height:1}
+.loss-label{font-size:11px;color:#991b1b;margin-top:1px}
+.loss-cost{font-size:13px;font-weight:700;color:var(--r);margin-top:2px}
+.loss-ctx{font-size:11px;color:#991b1b;line-height:1.4;flex:1}
+
+/* SEND WINDOW */
+.diag-send-window{display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+.dsw-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tm)}
+.dsw-icon{font-size:13px}
+
+/* EXPANDABLE */
+.diag-expand-btn{width:100%;background:none;border:1px solid var(--b);border-radius:8px;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:600;color:var(--mu);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .15s;margin-bottom:8px}
+.diag-expand-btn:hover{border-color:var(--o);color:var(--o)}
+.diag-chev{font-size:10px;transition:transform .2s}
+.diag-expand-btn.open .diag-chev{transform:rotate(180deg)}
+.diag-expand-body{display:none;flex-direction:column;gap:8px;margin-bottom:10px}
+.diag-why-item{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.55;padding:10px 13px;border-radius:8px}
+.dwi-commercial{background:var(--gb);border:1px solid var(--gc);color:#166534}
+.dwi-regulatory{background:var(--purl);border:1px solid var(--purc);color:#581c87}
+.dwi-regnote{background:#fff7ed;border:1px solid #fed7aa;color:#92400e}
+.diag-why-icon{flex-shrink:0;font-size:13px}
+
+/* CAPITAL BAR */
+.cap-section{padding-top:12px;border-top:1px solid var(--b)}
+.cap-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mu);margin-bottom:5px}
+.cap-score{font-size:13px;font-weight:700}
+.cap-score.pos{color:var(--g)}.cap-score.neg{color:var(--r)}.cap-score.neu{color:var(--mu)}
+.cap-bar{height:5px;background:var(--b);border-radius:3px;overflow:hidden;position:relative}
+.cap-bar-neg{position:absolute;right:50%;top:0;height:100%;border-radius:3px 0 0 3px;background:var(--r)}
+.cap-bar-pos{position:absolute;left:50%;top:0;height:100%;border-radius:0 3px 3px 0;background:var(--g)}
+.cap-ctx{font-size:11px;color:var(--mu);margin-top:4px;font-style:italic}
+.bench-source{font-size:10px;color:var(--mu);margin-top:6px;padding-top:6px;border-top:1px solid var(--b)}
+.conf-note{font-size:10px;color:var(--mu);margin-top:6px}
+
+/* NUDGES */
+.nudge-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.nudge{display:flex;gap:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--rad);padding:12px 16px}
+.nudge-txt{font-size:12px;color:#1e3a8a;line-height:1.5}
+.nudge-txt strong{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1d4ed8;margin-bottom:3px}
+
+/* SECTION HEADER */
+.sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--b)}
+
+/* RECOMMENDATIONS */
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:24px}
+.rec-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:18px;box-shadow:var(--sh);animation:fadeUp .4s ease}
+.rec-priority{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--o);margin-bottom:7px}
+.rec-seg{font-size:14px;font-weight:700;margin-bottom:4px}
+.rec-verdict{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--t)}
+.rec-action{font-size:12px;color:var(--tm);line-height:1.55}
+.rec-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;background:var(--bg);color:var(--mu);border:1px solid var(--b)}
+.chip.red{background:var(--rb);color:var(--r);border-color:var(--rc)}
+.chip.green{background:var(--gb);color:var(--g);border-color:var(--gc)}
+.chip.amber{background:var(--yb);color:var(--y);border-color:var(--yc)}
+
+/* PRE-SEND */
+.presend-box{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;box-shadow:var(--sh)}
+.presend-box h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.presend-box>p{font-size:13px;color:var(--mu);margin-bottom:18px;line-height:1.5}
+.ps-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}
+@media(max-width:640px){.ps-form{grid-template-columns:1fr}}
+.fgrp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:5px}
+.fgrp select,.fgrp input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)}
+.ps-result{margin-top:18px;border-radius:var(--rad);padding:20px;display:none;animation:fadeUp .3s ease}
+.ps-result.green{background:var(--gb);border:1px solid var(--gc)}
+.ps-result.amber{background:var(--yb);border:1px solid var(--yc)}
+.ps-result.red{background:var(--rb);border:1px solid var(--rc)}
+.ps-verdict{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:5px;font-family:'DM Mono',monospace}
+.ps-verdict.green{color:var(--g)}.ps-verdict.amber{color:var(--y)}.ps-verdict.red{color:var(--r)}
+.ps-reason{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:8px}
+.ps-range{font-size:11px;font-family:'DM Mono',monospace;color:var(--mu);margin-bottom:10px}
+.alt-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:6px}
+.alt-item{padding:7px 0;border-top:1px solid rgba(0,0,0,.07)}
+.alt-item strong{display:block;font-size:13px;color:var(--t);margin-bottom:2px}
+.alt-item span{font-size:12px;color:var(--mu)}
+
+/* LOG MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(12,12,10,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--w);border-radius:var(--rad-lg);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-lg);animation:fadeUp .25s ease}
+.modal h2{font-size:20px;font-weight:700;margin-bottom:18px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+@media(max-width:480px){.modal-grid{grid-template-columns:1fr}}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end}
+.seg-toggle{display:flex;gap:6px;margin-bottom:8px}
+.seg-tab{font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;border:1px solid var(--b);background:transparent;color:var(--mu);cursor:pointer;font-family:inherit;transition:all .15s}
+.seg-tab.on{background:var(--t);color:#fff;border-color:var(--t)}
+
+/* LOADING */
+.loading-bg{position:fixed;inset:0;background:rgba(244,243,240,.88);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(2px)}
+.loading-bg.open{display:flex}
+.spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}
+.loading-msg{font-size:13px;color:var(--mu);font-family:'DM Mono',monospace;letter-spacing:.04em}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
+.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+.disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.6;padding:0 20px}
+#upload-screen{display:block}
+#mapping-screen,#dashboard-screen{display:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.intro h1{font-size:22px}.distinction{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="https://www.sendwize.co.uk/dashboard">sendwize</a>
+  <a class="nav-back" href="https://www.sendwize.co.uk/dashboard">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+    Dashboard
+  </a>
+</nav>
+
+<div class="loading-bg" id="loadingBg"><div class="spin"></div><div class="loading-msg" id="loadingMsg">Running algorithms&hellip;</div></div>
+
+<div class="modal-bg" id="logModal">
+  <div class="modal">
+    <h2>Log Campaign Result</h2>
+    <div class="fgrp" style="margin-bottom:12px">
+      <label>Segment</label>
+      <div class="seg-toggle">
+        <button class="seg-tab on" id="segTabExist" onclick="switchSegTab('exist')">Existing</button>
+        <button class="seg-tab" id="segTabNew" onclick="switchSegTab('new')">+ New segment</button>
+      </div>
+      <select id="logSeg" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)"></select>
+      <input type="text" id="logSegNew" placeholder="Enter new segment name&hellip;" style="display:none;width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t);margin-top:6px">
+    </div>
+    <div class="modal-grid">
+      <div class="fgrp"><label>Campaign Name</label><input type="text" id="logName" placeholder="e.g. June Newsletter"></div>
+      <div class="fgrp"><label>Type</label><select id="logType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div>
+      <div class="fgrp"><label>Send Date</label><input type="date" id="logDate"></div>
+      <div class="fgrp"><label>Volume Sent</label><input type="number" id="logVol" placeholder="e.g. 5000"></div>
+      <div class="fgrp"><label>Unsubscribes</label><input type="number" id="logUnsub" placeholder="e.g. 23"></div>
+      <div class="fgrp"><label>Open Rate (optional)</label><input type="number" id="logOpen" placeholder="e.g. 0.24" step="0.01"></div>
+      <div class="fgrp"><label>Click Rate (optional)</label><input type="number" id="logClick" placeholder="e.g. 0.05" step="0.01"></div>
+      <div class="fgrp"><label>Complaints (optional)</label><input type="number" id="logComplaints" placeholder="e.g. 2"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitLog()">Log &amp; update &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<!-- GATE -->
+<div class="gate-screen" id="gateScreen" style="max-width:900px;margin:0 auto;padding:0 20px">
+  <div class="gate-card">
+    <div class="gate-logo">sendwize</div>
+    <div class="gate-icon">&#128202;</div>
+    <div class="gate-title">Audience Read</div>
+    <div class="gate-sub">Find out if your email segments are healthy, fatigued, or heading toward ICO risk — compared to UK industry benchmarks.</div>
+    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
+    <button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> See an example diagnosis</button>
+  </div>
+</div>
+
+<!-- UPLOAD SCREEN -->
+<div class="page" id="upload-screen" style="display:none">
+  <div class="intro">
+    <div class="tool-tag">Audience Read &mdash; Segment Diagnosis</div>
+    <h1>Is it safe to send?</h1>
+    <p class="intro-sub">Upload your campaign export. Seven algorithms compare each segment against UK email benchmarks and tell you exactly what state it&rsquo;s in, what it&rsquo;s costing you, and what to do next.</p>
+    <div class="distinction">
+      <div class="dist-col dist-this">
+        <div class="dist-label">This tool &mdash; Audience Read</div>
+        <div class="dist-desc">Diagnoses how your <strong>segments are responding</strong> to your sends. Use when reviewing performance, planning your next send, or investigating unsubscribe spikes.</div>
+      </div>
+      <div class="dist-divider"></div>
+      <div class="dist-col" style="padding-left:14px">
+        <div class="dist-label">Different tool &mdash; List Intelligence</div>
+        <div class="dist-desc">Valuates your <strong>contact list as a data asset</strong>. Use when assessing a new list, checking consent health, or understanding ICO risk before a big send.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sector-row">
+    <div class="sector-grp">
+      <label>Your sector <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mu)">&mdash; sets the UK benchmark we compare against</span></label>
+      <select id="sectorSelect">
+        <option value="general">General / Mixed</option>
+        <option value="ecommerce">Ecommerce / Retail</option>
+        <option value="b2b">B2B / Professional Services</option>
+        <option value="saas">SaaS / Technology</option>
+        <option value="media">Media / Publishing / Newsletter</option>
+        <option value="charity">Charity / Non-profit</option>
+      </select>
+    </div>
+    <div class="cpl-grp">
+      <label>Cost per subscriber <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mu)">&mdash; unlocks £ loss calc</span></label>
+      <div class="cpl-wrap">
+        <span class="cpl-pound">&pound;</span>
+        <input type="number" id="cplInput" placeholder="e.g. 2.50" step="0.01" min="0">
+      </div>
+      <div class="cpl-note">Leave blank to show subscriber counts only</div>
+    </div>
+  </div>
+
+  <div class="upload-zone" id="zone-main" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'main')">
+    <input type="file" accept=".csv" id="file-main" onchange="fileChg(this,'main')">
+    <div class="uz-icon">&#128202;</div>
+    <div class="uz-title">Drop your campaign export CSV here</div>
+    <div class="uz-sub">Works with any export from Klaviyo, Mailchimp, Dotdigital or any platform.<br>You need: <strong>date, list/segment name, unsubscribes.</strong> Volume and open rate unlock more insight.</div>
+    <div class="uz-fname" id="fname-main"></div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px">
+    <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Diagnose my audience &rarr;</button>
+    <button class="btn btn-ghost" onclick="loadDemo()">See an example &rarr;</button>
+  </div>
+
+  <div style="padding-top:20px;border-top:1px solid var(--b)">
+    <p style="font-size:13px;color:var(--mu);margin-bottom:10px">Previously uploaded data?</p>
+    <button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last diagnosis &rarr;</button>
+    <div id="lastReportLink" style="display:none;margin-top:8px">
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--g);font-weight:600">
+        &#10003; Previous diagnosis available &mdash;
+        <button onclick="loadDash()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--o);cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">view it</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- MAPPING SCREEN -->
+<div class="page" id="mapping-screen">
+  <div class="intro" style="margin-bottom:24px">
+    <div class="tool-tag">Step 2 of 2 &mdash; Confirm mapping</div>
+    <h1>Check your columns</h1>
+    <p style="font-size:14px;color:var(--tm)">We&rsquo;ve auto-detected your columns. Correct anything that looks wrong before running the diagnosis.</p>
+  </div>
+  <div id="mappingTables"></div>
+  <div style="display:flex;gap:10px;margin-top:8px">
+    <button class="btn btn-primary" onclick="submitUpload()">Run diagnosis &rarr;</button>
+    <button class="btn btn-ghost" onclick="showScreen('upload')">&#8592; Back</button>
+  </div>
+</div>
+
+<!-- DASHBOARD SCREEN -->
+<div class="page" id="dashboard-screen">
+  <div id="demoBanner" class="demo-banner" style="display:none">
+    <div class="demo-banner-txt">&#128202; Example diagnosis using demo data. Upload your own CSV to see your real segments.</div>
+    <button class="demo-dismiss" onclick="showScreen('upload')">Upload your data &rarr;</button>
+  </div>
+
+  <div class="dash-hdr">
+    <div>
+      <div class="dash-title">Segment Diagnosis</div>
+      <div class="dash-meta" id="dashMeta"></div>
+    </div>
+    <div class="dash-actions">
+      <button class="btn btn-ghost btn-sm" onclick="showScreen('upload')">+ New data</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">Log campaign result</button>
+    </div>
+  </div>
+
+  <div style="margin-bottom:32px">
+    <div class="sec-hdr">What your recent sends did</div>
+    <div id="campaignList"></div>
+  </div>
+
+  <div style="margin-bottom:32px">
+    <div class="sec-hdr">Segment health vs UK benchmarks</div>
+    <div id="segGrid"></div>
+    <div class="nudge-list" id="nudgeList"></div>
+  </div>
+
+  <div style="margin-bottom:32px">
+    <div class="sec-hdr">Priority actions</div>
+    <div class="rec-grid" id="recGrid"></div>
+    <div class="presend-box">
+      <h3>Pre-Send Check</h3>
+      <p>Planning a send? Run 1,000 Monte Carlo scenarios against your segment&rsquo;s history and get a Green, Amber or Red verdict with a full explanation.</p>
+      <div class="ps-form">
+        <div class="fgrp"><label>Segment</label><select id="psSeg"></select></div>
+        <div class="fgrp"><label>Campaign Type</label><select id="psType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div>
+        <div class="fgrp"><label>Send Date</label><input type="date" id="psDate"></div>
+        <button class="btn btn-primary" onclick="runPreSend()">Check &rarr;</button>
+      </div>
+      <div class="ps-result" id="psResult"></div>
+    </div>
+  </div>
+
+  <p class="disc">Benchmarks: MailerLite 2025, GDMA International Email Benchmark 2024, DMA UK 2025, Klaviyo ecommerce data. Algorithms are deterministic &mdash; no AI, no external data.<br>Regulatory notes are illustrative consequences of observed patterns, not legal advice.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var API = 'https://sendwize-backend.vercel.app/api/audience-read';
+var userId = new URLSearchParams(window.location.search).get('userId') || '';
+var uploadedFiles = {}, detectedMaps = {}, dashData = {}, segNames = [];
+var segTabMode = 'exist';
+var currentSector = 'general';
+var currentCpl = null;
+
+function getSector() { return document.getElementById('sectorSelect')?.value || 'general'; }
+function getCpl() { var v = parseFloat(document.getElementById('cplInput')?.value); return isNaN(v) ? null : v; }
+
+function hideGateAndDemo() {
+  document.getElementById('gateScreen').classList.remove('show');
+  document.getElementById('upload-screen').style.display = 'block';
+  loadDemo();
+}
+function showScreen(s) {
+  ['upload','mapping','dashboard'].forEach(function(n) {
+    document.getElementById(n+'-screen').style.display = n === s ? 'block' : 'none';
   });
-  if (!r.ok) {
-    const body = await r.text();
-    throw new Error(`Airtable POST ${table} failed: ${r.status} — ${body}`);
-  }
-  return (await r.json()).records?.[0];
+  if (s === 'upload') window.scrollTo(0, 0);
 }
-
-async function atPatch(table, recordId, fields) {
-  const clean = Object.fromEntries(
-    Object.entries(fields).filter(([, v]) => v !== null && v !== undefined)
-  );
-  const r = await fetch(`${AT_BASE}/${encodeURIComponent(table)}/${recordId}`, {
-    method: 'PATCH',
-    headers: AT_HEADERS(),
-    body: JSON.stringify({ fields: clean }),
+function toggleExpand(uid) {
+  var body = document.getElementById(uid+'-expand');
+  var btn = document.querySelector('#'+uid+' .diag-expand-btn');
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'flex';
+  body.style.flexDirection = 'column';
+  if (btn) btn.classList.toggle('open', !open);
+}
+function switchSegTab(mode) {
+  segTabMode = mode;
+  document.getElementById('segTabExist').className = 'seg-tab'+(mode==='exist'?' on':'');
+  document.getElementById('segTabNew').className = 'seg-tab'+(mode==='new'?' on':'');
+  document.getElementById('logSeg').style.display = mode === 'exist' ? '' : 'none';
+  document.getElementById('logSegNew').style.display = mode === 'new' ? '' : 'none';
+}
+function drgOver(e, el) { e.preventDefault(); el.classList.add('hover'); }
+function drgLeave(e, el) { el.classList.remove('hover'); }
+function drgDrop(e, el, key) { e.preventDefault(); el.classList.remove('hover'); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0], key); }
+function fileChg(inp, key) { if (inp.files[0]) readFile(inp.files[0], key); }
+function readFile(file, key) {
+  var r = new FileReader();
+  r.onload = function(e) {
+    var p = parseCSV(e.target.result);
+    if (!p.rows.length) { showToast('Could not parse CSV — check it has a header row','er'); return; }
+    uploadedFiles[key] = p;
+    document.getElementById('zone-'+key).classList.add('loaded');
+    document.getElementById('fname-'+key).textContent = file.name;
+    document.getElementById('btnContinue').disabled = !uploadedFiles['main'];
+  };
+  r.readAsText(file);
+}
+function parseCSV(text) {
+  var lines = text.trim().split('\n').filter(function(l) { return l.trim(); });
+  if (lines.length < 2) return { headers:[], rows:[] };
+  var headers = parseLine(lines[0]);
+  var rows = lines.slice(1).map(function(l) {
+    var vals = parseLine(l), obj = {};
+    headers.forEach(function(h, i) { obj[h] = (vals[i] || '').trim(); });
+    return obj;
   });
-  if (!r.ok) throw new Error(`Airtable PATCH ${table} failed: ${r.status}`);
-  return await r.json();
+  return { headers:headers, rows:rows };
 }
-
-// ─────────────────────────────────────────────
-// FIELD MAPPING AUTO-DETECTION (v7.0 — improved)
-// ─────────────────────────────────────────────
-
-function detectColumnType(header, values) {
-  const lc = header.toLowerCase().trim();
-  const sample = values.filter(v => v !== null && v !== undefined && v !== '');
-  if (!sample.length) return 'unknown';
-
-  // DATE — check header name first, then values
-  if (lc.includes('date') || lc.includes('sent on') || lc.includes('send date')) return 'date';
-  const dateRe = /^\d{4}-\d{2}-\d{2}$|^\d{2}\/\d{2}\/\d{4}$|^\d{1,2}\/\d{1,2}\/\d{2,4}$/;
-  if (sample.filter(v => dateRe.test(String(v).trim())).length / sample.length > 0.7) return 'date';
-
-  // SEGMENT — common platform names
-  const segWords = ['segment', 'list', 'audience', 'group', 'tag', 'list name', 'list / segment', 'audience name'];
-  if (segWords.some(w => lc.includes(w))) return 'segment';
-
-  // CAMPAIGN NAME
-  const campWords = ['campaign name', 'campaign', 'subject', 'email name', 'name'];
-  if (campWords.some(w => lc === w || lc.includes('campaign name'))) return 'campaign_name';
-
-  // CAMPAIGN TYPE
-  if (lc.includes('type') || lc.includes('kind') || lc.includes('category')) return 'campaign_type';
-
-  // Numeric detection
-  const nums = sample.map(v => parseFloat(String(v).replace('%', ''))).filter(n => !isNaN(n));
-  const pctSample = sample.filter(v => String(v).includes('%'));
-  const isPct = pctSample.length / sample.length > 0.5;
-
-  if (nums.length / sample.length > 0.8) {
-    // Check if values look like percentages (either with % sign or 0-100 range)
-    const isRateStyle = isPct || (nums.every(n => n >= 0 && n <= 1));
-    const isPctStyle = isPct || (nums.some(n => n > 1) && nums.every(n => n <= 100));
-
-    if (lc.includes('unsub') || lc.includes('opt out') || lc.includes('opt-out')) return 'unsubscribe_rate_or_count';
-    if (lc.includes('open')) return 'open_rate';
-    if (lc.includes('click') && !lc.includes('unique')) return 'click_rate';
-    if (lc.includes('complaint') || lc.includes('spam') || lc.includes('abuse')) return 'complaint_count';
-    if (lc.includes('sent') || lc.includes('volume') || lc.includes('delivered') || lc.includes('recipients')) return 'volume_sent';
-    if (lc.includes('bounce')) return 'ignore';
-    if (lc.includes('revenue') || lc.includes('£') || lc.includes('$')) return 'ignore';
-
-    if (isRateStyle || isPct) return 'rate_unknown';
-    return 'count_unknown';
+function parseLine(line) {
+  var res=[], cur='', inQ=false;
+  for (var i=0; i<line.length; i++) {
+    var c=line[i];
+    if (c==='"') { inQ=!inQ; } else if (c===',' && !inQ) { res.push(cur); cur=''; } else { cur+=c; }
   }
-
-  return 'text';
+  res.push(cur); return res;
 }
 
-function autoMapColumns(headers, rows) {
-  const mapping = {};
-  const sampleSize = Math.min(rows.length, 20);
-  const used = new Set();
+var TF = [
+  {v:'',l:'— ignore —'},{v:'date',l:'Date'},{v:'segment',l:'Segment / List name'},
+  {v:'unsubscribe_count',l:'Unsubscribe count'},{v:'unsubscribe_rate',l:'Unsubscribe rate (%)'},
+  {v:'volume_sent',l:'Volume sent'},{v:'open_rate',l:'Open rate'},
+  {v:'click_rate',l:'Click rate'},{v:'complaint_count',l:'Complaint / spam count'},
+  {v:'campaign_name',l:'Campaign name'},{v:'campaign_type',l:'Campaign type'},
+];
 
-  for (const h of headers) {
-    const values = rows.slice(0, sampleSize).map(r => r[h]);
-    const type = detectColumnType(h, values);
-    const lc = h.toLowerCase().trim();
-
-    if (type === 'date' && !used.has('date')) {
-      mapping[h] = 'date'; used.add('date');
-    } else if (type === 'segment' && !used.has('segment')) {
-      mapping[h] = 'segment'; used.add('segment');
-    } else if (type === 'campaign_name' && !used.has('campaign_name')) {
-      mapping[h] = 'campaign_name'; used.add('campaign_name');
-    } else if (type === 'campaign_type' && !used.has('campaign_type')) {
-      mapping[h] = 'campaign_type'; used.add('campaign_type');
-    } else if (type === 'open_rate' && !used.has('open_rate')) {
-      mapping[h] = 'open_rate'; used.add('open_rate');
-    } else if (type === 'click_rate' && !used.has('click_rate')) {
-      mapping[h] = 'click_rate'; used.add('click_rate');
-    } else if (type === 'complaint_count' && !used.has('complaint_count')) {
-      mapping[h] = 'complaint_count'; used.add('complaint_count');
-    } else if (type === 'volume_sent' && !used.has('volume_sent')) {
-      mapping[h] = 'volume_sent'; used.add('volume_sent');
-    } else if (type === 'unsubscribe_rate_or_count' && !used.has('unsubscribe_count')) {
-      // Figure out if it's a rate or a count from the values
-      const nums = rows.slice(0, sampleSize).map(r => parseFloat(String(r[h] || '').replace('%', ''))).filter(n => !isNaN(n));
-      const hasPct = rows.slice(0, sampleSize).some(r => String(r[h] || '').includes('%'));
-      const isRate = hasPct || (nums.length > 0 && nums.every(n => n <= 1));
-      mapping[h] = isRate ? 'unsubscribe_rate' : 'unsubscribe_count';
-      used.add('unsubscribe_count');
-    } else if (type === 'ignore') {
-      mapping[h] = '';
+async function goMapping() {
+  showLoading('Detecting columns\u2026');
+  try {
+    var container = document.getElementById('mappingTables'); container.innerHTML = '';
+    for (var key in uploadedFiles) {
+      var fd = uploadedFiles[key];
+      var resp = await fetch(API+'?userId='+userId+'&action=detect', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({headers:fd.headers, rows:fd.rows.slice(0,20)}) });
+      var json = await resp.json();
+      detectedMaps[key] = json.mapping || {};
+      container.appendChild(buildMapCard(key, fd.headers, fd.rows, json.mapping || {}));
     }
-  }
-  return mapping;
+    hideLoading(); showScreen('mapping');
+  } catch(err) { hideLoading(); showToast('Error detecting columns: '+err.message,'er'); }
 }
 
-function normaliseDate(raw) {
-  if (!raw) return null;
-  const s = String(raw).trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  const uk = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (uk) return `${uk[3]}-${uk[2]}-${uk[1]}`;
-  const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (us) {
-    const yr = us[3].length === 2 ? '20' + us[3] : us[3];
-    return `${yr}-${String(us[1]).padStart(2, '0')}-${String(us[2]).padStart(2, '0')}`;
-  }
-  // Try parsing natural dates like "17 Jun 2025"
-  const d = new Date(s);
-  if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-  return null;
+function buildMapCard(key, headers, rows, detected) {
+  var samp = rows[0] || {};
+  var card = document.createElement('div'); card.className = 'map-card';
+  card.innerHTML = '<h3>'+escH(key === 'main' ? 'Campaign export' : key)+'</h3><p class="map-meta">'+headers.length+' columns &middot; '+rows.length.toLocaleString()+' rows</p>'+
+    '<table class="map-table"><thead><tr><th>Your column</th><th>Sample value</th><th>Maps to</th></tr></thead><tbody>'+
+    headers.map(function(h) {
+      var sId = 'map-'+key+'-'+sid(h);
+      return '<tr><td><strong>'+escH(h)+'</strong></td><td><span class="samp-pill">'+escH(String(samp[h]||'').slice(0,26))+'</span></td><td><select id="'+sId+'">'+
+        TF.map(function(f) { return '<option value="'+f.v+'"'+((detected[h]||'')=== f.v?' selected':'')+'>'+f.l+'</option>'; }).join('')+'</select></td></tr>';
+    }).join('')+'</tbody></table>';
+  return card;
 }
 
-function normaliseRate(v) {
-  if (v === null || v === undefined || v === '') return null;
-  const s = String(v).replace('%', '').trim();
-  const n = parseFloat(s);
-  if (isNaN(n)) return null;
-  return n > 1 ? n / 100 : n;
-}
-
-// ─────────────────────────────────────────────
-// BENCHMARK COMPARISON HELPERS
-// ─────────────────────────────────────────────
-
-function getBenchmark(sector) {
-  return BENCHMARKS[sector] || BENCHMARKS.general;
-}
-
-function benchmarkVerdict(unsubRate, bench) {
-  if (unsubRate <= bench.unsubGood) return { label: 'Excellent', tier: 'good', pctVsBenchmark: null };
-  if (unsubRate <= bench.unsubNormal) return { label: 'Normal', tier: 'normal', pctVsBenchmark: null };
-  const pct = Math.round(((unsubRate - bench.unsubNormal) / bench.unsubNormal) * 100);
-  if (unsubRate <= bench.unsubConcern) return { label: 'Above average', tier: 'concern', pctVsBenchmark: pct };
-  if (unsubRate <= bench.unsubDamaged) return { label: 'High', tier: 'high', pctVsBenchmark: pct };
-  return { label: 'Very high', tier: 'damaged', pctVsBenchmark: pct };
-}
-
-// Calculate unnecessary unsubscribes above benchmark
-function calcSubscriberLoss(campaigns, bench) {
-  let totalLost = 0;
-  let totalDamagingCampaigns = 0;
-  const breakdown = [];
-
-  for (const c of campaigns) {
-    if (!c.volume_sent) continue;
-    const rate = c.unsubscribe_count / c.volume_sent;
-    const benchRate = bench.unsubNormal;
-    if (rate > benchRate) {
-      const expectedUnsubs = Math.round(c.volume_sent * benchRate);
-      const actualUnsubs = c.unsubscribe_count;
-      const excess = actualUnsubs - expectedUnsubs;
-      if (excess > 0) {
-        totalLost += excess;
-        totalDamagingCampaigns++;
-        breakdown.push({
-          campaign: c.campaign_name || 'Campaign',
-          date: c.date,
-          excess,
-          rate: r4(rate),
-          benchRate,
-        });
-      }
+async function submitUpload() {
+  showLoading('Running seven algorithms\u2026');
+  try {
+    var allRows = [], combinedMap = {};
+    for (var key in uploadedFiles) {
+      var fd = uploadedFiles[key], mapping = {};
+      fd.headers.forEach(function(h) { var sel = document.getElementById('map-'+key+'-'+sid(h)); if (sel && sel.value) mapping[h] = sel.value; });
+      Object.assign(combinedMap, mapping);
+      fd.rows.forEach(function(row) { allRows.push(row); });
     }
-  }
-
-  return {
-    totalExcessUnsubs: totalLost,
-    damagingCampaigns: totalDamagingCampaigns,
-    breakdown: breakdown.slice(-5),
-  };
+    var sector = getSector();
+    var resp = await fetch(API+'?userId='+userId+'&action=upload&sector='+sector, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({rows:allRows, fieldMapping:combinedMap}) });
+    var json = await resp.json();
+    if (!json.success) throw new Error(json.error || 'Upload failed');
+    currentSector = sector;
+    currentCpl = getCpl();
+    hideLoading(); renderDash(json); showScreen('dashboard');
+    showToast(json.campaignsSaved+' campaign records processed','ok');
+  } catch(err) { hideLoading(); showToast('Error: '+err.message,'er'); }
 }
 
-// ─────────────────────────────────────────────
-// ALGORITHM 1 — SEGMENT BEHAVIOURAL FINGERPRINT
-// v7.0: Uses absolute benchmark thresholds, not just self-comparison
-// ─────────────────────────────────────────────
+async function loadDash() {
+  if (window._lastDashData) { renderDash(window._lastDashData); showScreen('dashboard'); return; }
+  if (!userId) { showToast('No user ID — return to dashboard','er'); return; }
+  showLoading('Loading your last diagnosis\u2026');
+  try {
+    var sector = getSector();
+    var resp = await fetch(API+'?userId='+userId+'&action=load&sector='+sector);
+    var json = await resp.json();
+    if (!json.success) throw new Error(json.error);
+    hideLoading();
+    if (!Object.keys(json.segments||{}).length) { showToast('No data found — upload a CSV to get started',''); return; }
+    window._lastDashData = json;
+    currentSector = sector;
+    currentCpl = getCpl();
+    renderDash(json); showScreen('dashboard');
+  } catch(err) { hideLoading(); showToast('Could not load — please try again','er'); }
+}
 
-function algorithm1_fingerprint(campaigns, bench) {
-  const n = campaigns.length;
-  if (!n) return null;
+function renderDash(data) {
+  dashData = data; segNames = Object.keys(data.segments || {});
+  document.getElementById('dashMeta').textContent = segNames.length+' segment'+(segNames.length!==1?'s':'')+' \u00b7 Updated '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  renderCampaignHistory(data);
+  renderSegmentDiagnoses(data);
+  renderRecommendations(data);
+  var ps = document.getElementById('psSeg');
+  ps.innerHTML = segNames.map(function(s) { return '<option value="'+escH(s)+'">'+escH(s)+'</option>'; }).join('');
+  var ls = document.getElementById('logSeg');
+  ls.innerHTML = segNames.map(function(s) { return '<option value="'+escH(s)+'">'+escH(s)+'</option>'; }).join('');
+  document.getElementById('psDate').value = new Date().toISOString().slice(0,10);
+}
 
-  const unsubRates = campaigns.map(c =>
-    c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1)
-  );
+function renderCampaignHistory(data) {
+  var allImpacts = [];
+  segNames.forEach(function(seg) {
+    (data.segments[seg].impacts || []).forEach(function(imp) { allImpacts.push(Object.assign({},imp,{_seg:seg})); });
+  });
+  allImpacts.sort(function(a,b) { return new Date(b.date) - new Date(a.date); });
 
-  // Self-baseline (trimmed mean of own history)
-  const sorted = [...unsubRates].sort((a, b) => a - b);
-  const lo = Math.floor(n * 0.2), hi = Math.ceil(n * 0.8);
-  const trimmed = sorted.slice(lo, hi);
-  const selfBaseline = trimmed.length ? mean_arr(trimmed) : bench.unsubNormal;
+  var cl = document.getElementById('campaignList');
+  if (!allImpacts.length) { cl.innerHTML = '<div style="font-size:13px;color:var(--mu);padding:16px 0">No campaign history yet. Log your first result above.</div>'; return; }
 
-  // Use the HIGHER of self-baseline and benchmark normal as the comparison point
-  // This prevents segments that are consistently bad from looking "normal"
-  const effectiveBaseline = Math.max(selfBaseline, bench.unsubGood);
+  var nDamaged = allImpacts.filter(function(i) { return i.category==='Damaged'; }).length;
+  var nFatigue = allImpacts.filter(function(i) { return i.category==='Caused fatigue'; }).length;
+  var nBuilt = allImpacts.filter(function(i) { return i.category==='Built trust'; }).length;
+  var nNeutral = allImpacts.filter(function(i) { return i.category==='Neutral'; }).length;
 
-  const openRates = campaigns.map(c => c.open_rate).filter(r => r !== null);
-  const clickRates = campaigns.map(c => c.click_rate).filter(r => r !== null);
-  const baselineOpen = openRates.length ? mean_arr(openRates) : null;
-  const baselineClick = clickRates.length ? mean_arr(clickRates) : null;
+  function vCls(cat) { if(cat==='Damaged')return'damaged';if(cat==='Caused fatigue')return'fatigue';if(cat==='Built trust')return'built';return'neutral'; }
+  function vLabel(cat) { if(cat==='Damaged')return'Cost you subscribers';if(cat==='Caused fatigue')return'Frequency warning';if(cat==='Built trust')return'Built trust';return'Normal'; }
 
-  const mean_u = mean_arr(unsubRates);
-  const variance = unsubRates.reduce((s, v) => s + Math.pow(v - mean_u, 2), 0) / n;
-  const stddev = Math.sqrt(variance);
+  var bySeg = {};
+  allImpacts.forEach(function(imp) { if(!bySeg[imp._seg])bySeg[imp._seg]=[]; bySeg[imp._seg].push(imp); });
 
-  // Trend: compare last 3 to first 3
-  const recentRates = unsubRates.slice(-3);
-  const olderRates = unsubRates.slice(0, Math.max(3, Math.floor(n / 3)));
-  const trendDelta = mean_arr(recentRates) - mean_arr(olderRates);
+  var summaryHtml = '<div class="send-summary">' +
+    (nDamaged ? '<div class="ss-tile damaged"><div class="ss-num">'+nDamaged+'</div><div class="ss-lbl">Sends that cost you subscribers</div></div>' : '') +
+    (nFatigue ? '<div class="ss-tile fatigue"><div class="ss-num">'+nFatigue+'</div><div class="ss-lbl">Sends that felt like too much</div></div>' : '') +
+    (nBuilt ? '<div class="ss-tile built"><div class="ss-num">'+nBuilt+'</div><div class="ss-lbl">Sends that built trust</div></div>' : '') +
+    (nNeutral ? '<div class="ss-tile neutral"><div class="ss-num">'+nNeutral+'</div><div class="ss-lbl">Normal sends</div></div>' : '') +
+    '</div>';
 
-  let frequencyThreshold = 4;
-  if (n >= 5) {
-    const dates = campaigns.map(c => new Date(c.date));
-    let bestFreq = 4;
-    for (let i = 0; i < n; i++) {
-      const windowEnd = dates[i];
-      const windowStart = new Date(+windowEnd - 30 * 86400000);
-      const inWindow = campaigns.filter(c => {
-        const d = new Date(c.date);
-        return d >= windowStart && d <= windowEnd;
-      });
-      if (inWindow.length >= 3) {
-        const avgUnsub = mean_arr(inWindow.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1)));
-        if (avgUnsub < effectiveBaseline * 1.2) bestFreq = inWindow.length;
-      }
+  var segHtml = Object.keys(bySeg).map(function(seg) {
+    var segImps = bySeg[seg].slice(0,8);
+    var hasBad = segImps.some(function(i) { return i.category==='Damaged'||i.category==='Caused fatigue'; });
+    var dotCol = hasBad ? 'var(--r)' : 'var(--g)';
+    var rowsHtml = segImps.map(function(imp) {
+      var cls = vCls(imp.category);
+      var label = vLabel(imp.category);
+      var plain = imp.plainVerdict || '';
+      var name = imp.campaign_name ? escH(imp.campaign_name) : 'Campaign';
+      var excess = imp.excessUnsubs > 0 ? '<span class="excess-badge">+'+imp.excessUnsubs+' above benchmark</span>' : '';
+      var ratePct = imp.unsubRate ? (imp.unsubRate*100).toFixed(2)+'%' : null;
+      var benchPct = imp.benchmarkRate ? (imp.benchmarkRate*100).toFixed(2)+'%' : null;
+      var rateCls = imp.category==='Damaged'?'bad':imp.category==='Caused fatigue'?'warn':imp.category==='Built trust'?'good':'';
+      var statsHtml = (ratePct||benchPct) ? '<div class="send-row-stats">'+
+        (ratePct ? '<span class="send-stat '+rateCls+'"><strong>'+ratePct+'</strong> unsub rate</span>' : '')+
+        (benchPct ? '<span class="send-stat">benchmark <strong>'+benchPct+'</strong></span>' : '')+
+        '</div>' : '';
+      return '<div class="send-row"><div class="send-row-bar srb-'+cls+'"></div><div class="send-row-body">'+
+        '<div class="send-row-top"><div class="send-row-name">'+name+excess+'</div><span class="send-verdict-pill svp-'+cls+'">'+label+'</span></div>'+
+        '<div class="send-row-plain">'+plain+'</div>'+statsHtml+
+        '<div class="send-row-meta">'+fmtDate(imp.date)+'</div>'+
+        '</div></div>';
+    }).join('');
+    return '<div class="seg-sends"><div class="seg-sends-hdr"><div class="seg-sends-dot" style="background:'+dotCol+'"></div>'+escH(seg)+'</div>'+rowsHtml+'</div>';
+  }).join('');
+
+  cl.innerHTML = summaryHtml + segHtml;
+}
+
+function renderSegmentDiagnoses(data) {
+  var sg = document.getElementById('segGrid');
+  if (!segNames.length) { sg.innerHTML = '<div style="font-size:13px;color:var(--mu);padding:16px 0">No segments detected.</div>'; return; }
+  var cpl = getCpl() || currentCpl;
+
+  sg.innerHTML = segNames.map(function(seg, segIdx) {
+    var d = data.segments[seg];
+    var s = d.sentiment || {};
+    var cap = d.capital || 0;
+    var fp = d.fingerprint || {};
+    var ft = d.freqTolerance || {};
+    var loss = d.subscriberLoss || {};
+    var bench = d.bench || {};
+    var state = s.state || 'Neutral';
+
+    var goodStates = ['Peak receptiveness','Highly receptive post-gap','Healthy'];
+    var warnStates = ['Cooling','Fatigue building','Recovering'];
+    var badStates = ['Damaged','Complaint risk'];
+    var cardCls = badStates.indexOf(state)>-1?'state-bad':warnStates.indexOf(state)>-1?'state-warn':goodStates.indexOf(state)>-1?'state-good':'state-neu';
+
+    var emoji = badStates.indexOf(state)>-1?'\uD83D\uDD34':warnStates.indexOf(state)>-1?'\uD83D\uDFE1':goodStates.indexOf(state)>-1?'\uD83D\uDFE2':'\u26AA';
+
+    // Benchmark stats
+    var avgRate = fp.selfBaseline;
+    var benchRate = bench.unsubNormal || fp.benchmarkNormal;
+    var avgPct = avgRate ? (avgRate*100).toFixed(2)+'%' : null;
+    var benchPct = benchRate ? (benchRate*100).toFixed(2)+'%' : null;
+    var vsBench = fp.vsBenchmark || {};
+    var rateCls = vsBench.tier==='good'?'good':vsBench.tier==='normal'?'neu':vsBench.tier==='concern'||vsBench.tier==='high'?'warn':vsBench.tier==='damaged'?'bad':'neu';
+    var benchVsText = vsBench.pctVsBenchmark ? vsBench.pctVsBenchmark+'% above UK '+escH(bench.label||'') : avgRate && benchRate && avgRate <= benchRate ? 'Below UK '+escH(bench.label||'')+' benchmark' : null;
+
+    var benchHtml = (avgPct || benchPct) ? '<div class="diag-benchmark-row">'+
+      (avgPct ? '<div class="bench-stat"><div class="bench-stat-label">Your avg unsub rate</div><div class="bench-stat-val '+rateCls+'">'+avgPct+'</div>'+(benchVsText?'<div class="bench-vs '+(rateCls==='bad'||rateCls==='warn'?'above':'below')+'">'+benchVsText+'</div>':'')+'</div>' : '')+
+      (benchPct ? '<div class="bench-stat"><div class="bench-stat-label">UK '+escH(bench.label||'')+' benchmark</div><div class="bench-stat-val neu">'+benchPct+'</div><div class="bench-vs" style="color:var(--mu)">'+escH(bench.source||'')+'</div></div>' : '')+
+      '</div>' : '';
+
+    // Subscriber loss
+    var lossHtml = '';
+    if (loss.totalExcessUnsubs > 0) {
+      var costStr = cpl ? ' &mdash; est. &pound;'+Math.round(loss.totalExcessUnsubs*cpl).toLocaleString()+' in acquisition cost' : '';
+      lossHtml = '<div class="loss-box"><div class="loss-icon">&#128197;</div><div><div class="loss-num">'+loss.totalExcessUnsubs.toLocaleString()+'</div><div class="loss-label">excess unsubscribes above UK benchmark'+costStr+'</div><div class="loss-ctx">Across '+loss.damagingCampaigns+' campaign'+(loss.damagingCampaigns!==1?'s':'')+' where you sent above benchmark rate</div></div></div>';
     }
-    frequencyThreshold = bestFreq;
-  }
 
-  const typeGroups = {};
-  for (const c of campaigns) {
-    const type = c.campaign_type || 'Unknown';
-    if (!typeGroups[type]) typeGroups[type] = [];
-    typeGroups[type].push(c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1));
-  }
-  const typeSensitivity = {};
-  for (const [type, rates] of Object.entries(typeGroups)) {
-    typeSensitivity[type] = r4(mean_arr(rates));
-  }
+    var conf = Math.round((s.confidence||0)*100);
+    var n = fp.campaignCount || 0;
+    var nextSend = ft.optimalNextSend ? 'Earliest send: '+fmtDate(ft.optimalNextSend) : null;
+    var sendCap = ft.toleranceRemaining !== undefined ? ft.toleranceRemaining+' send'+(ft.toleranceRemaining!==1?'s':'')+' of frequency tolerance left this month' : null;
 
-  const recoveryHalfLife = 3;
+    var capScoreCls = cap>10?'pos':cap<-10?'neg':'neu';
+    var capPct = Math.min(50, Math.abs(cap)/2);
+    var capLabel = cap>=40?'Strong goodwill — audience is well-disposed':cap>=10?'Positive — broadly receptive':cap>=-10?'Neutral — no strong goodwill either way':cap>=-30?'Under strain — recent sends have caused damage':'Low — significant damage accumulated';
 
-  return {
-    selfBaseline: r4(selfBaseline),
-    effectiveBaseline: r4(effectiveBaseline),
-    benchmarkNormal: bench.unsubNormal,
-    baselineOpenRate: baselineOpen !== null ? r4(baselineOpen) : null,
-    baselineClickRate: baselineClick !== null ? r4(baselineClick) : null,
-    unsubscribeStdDev: r4(stddev),
-    trendDelta: r4(trendDelta),
-    frequencyToleranceThreshold: Math.round(frequencyThreshold),
-    campaignTypeSensitivity: typeSensitivity,
-    recoveryHalfLife,
-    campaignCount: n,
-    dataCompleteness: dataCompletenessScore(campaigns),
-    // Benchmark context for display
-    vsBenchmark: benchmarkVerdict(mean_u, bench),
-  };
+    var uid = 'seg-'+segIdx;
+    var hasWhy = s.statementCommercial || s.statementRegulatory || s.regulatoryNote;
+
+    return '<div class="diag-card '+cardCls+'" id="'+uid+'">'+
+      '<div class="diag-accent">'+
+      '<div class="diag-top"><div class="diag-seg-name">'+emoji+' '+escH(seg)+'</div><span class="diag-state">'+escH(state)+'</span></div>'+
+      '<div class="diag-verdict">'+escH(s.verdict||state)+'</div>'+
+      benchHtml+
+      '</div>'+
+      '<div class="diag-body">'+
+      '<div class="diag-stmt">'+escH(s.statement||'')+'</div>'+
+      lossHtml+
+      (s.action ? '<div class="diag-action"><div class="diag-action-lbl">&#x1F449; Do this next</div><div class="diag-action-txt">'+escH(s.action)+'</div></div>' : '')+
+      ((nextSend||sendCap) ? '<div class="diag-send-window">'+
+        (sendCap ? '<div class="dsw-item"><span class="dsw-icon">&#x1F4C5;</span>'+escH(sendCap)+'</div>' : '')+
+        (nextSend ? '<div class="dsw-item"><span class="dsw-icon">&#x23F1;</span>'+escH(nextSend)+'</div>' : '')+
+        '</div>' : '')+
+      (hasWhy ?
+        '<button class="diag-expand-btn" onclick="toggleExpand(\''+uid+'\')"><span>Why this matters commercially &amp; for compliance</span><span class="diag-chev">&#x25BE;</span></button>'+
+        '<div class="diag-expand-body" id="'+uid+'-expand" style="display:none">'+
+        (s.statementCommercial ? '<div class="diag-why-item dwi-commercial"><span class="diag-why-icon">&#x1F4B0;</span><div>'+escH(s.statementCommercial)+'</div></div>' : '')+
+        (s.statementRegulatory ? '<div class="diag-why-item dwi-regulatory"><span class="diag-why-icon">&#x2696;&#xFE0F;</span><div>'+escH(s.statementRegulatory)+'</div></div>' : '')+
+        (s.regulatoryNote ? '<div class="diag-why-item dwi-regnote"><span class="diag-why-icon">&#x26A0;&#xFE0F;</span><div>'+escH(s.regulatoryNote)+'</div></div>' : '')+
+        '</div>' : '')+
+      '<div class="cap-section">'+
+      '<div class="cap-row"><span>Relationship capital</span><span class="cap-score '+capScoreCls+'">'+(cap>0?'+':'')+cap.toFixed(0)+'/100</span></div>'+
+      '<div class="cap-bar">'+
+      (cap<0 ? '<div class="cap-bar-neg" style="width:'+capPct+'%"></div>' : '')+
+      (cap>0 ? '<div class="cap-bar-pos" style="width:'+capPct+'%"></div>' : '')+
+      '</div><div class="cap-ctx">'+escH(capLabel)+'</div>'+
+      '</div>'+
+      '<div class="conf-note">'+Math.round(conf)+'% confidence &middot; '+n+' campaign'+(n!==1?'s':'')+' analysed</div>'+
+      '</div></div>';
+  }).join('');
+
+  var nl = document.getElementById('nudgeList');
+  var seenFields = {}, allNudges = [];
+  segNames.forEach(function(seg) {
+    (data.segments[seg].missingData || []).forEach(function(m) { if (!seenFields[m.field]) { seenFields[m.field]=true; allNudges.push(m); } });
+  });
+  nl.innerHTML = allNudges.map(function(m) {
+    return '<div class="nudge"><div style="font-size:14px;flex-shrink:0">&#x1F4A1;</div><div class="nudge-txt"><strong>Unlock: '+escH(m.field)+'</strong>'+escH(m.message)+'</div></div>';
+  }).join('');
 }
 
-// ─────────────────────────────────────────────
-// ALGORITHM 2 — TRUST VELOCITY ENGINE
-// ─────────────────────────────────────────────
+function renderRecommendations(data) {
+  var recs = data.recommendations || [];
+  var rg = document.getElementById('recGrid');
+  var rankLabels = ['Priority action','Next action','Also consider'];
+  var cpl = getCpl() || currentCpl;
 
-function algorithm2_trustVelocity(campaigns, fingerprint) {
-  const n = campaigns.length;
-  if (n < 2) return { velocity: 0, direction: 'Stable', magnitude: 0 };
+  rg.innerHTML = recs.map(function(rec, i) {
+    var goodStates = ['Peak receptiveness','Highly receptive post-gap','Healthy'];
+    var warnStates = ['Cooling','Fatigue building','Recovering'];
+    var badStates = ['Damaged','Complaint risk'];
+    var chipCls = badStates.indexOf(rec.state)>-1?'red':warnStates.indexOf(rec.state)>-1?'amber':goodStates.indexOf(rec.state)>-1?'green':'';
 
-  const baseline = fingerprint?.effectiveBaseline || 0.002;
-  const unsubRates = campaigns.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1));
+    var excessStr = rec.excessUnsubs > 0
+      ? (cpl ? '&pound;'+Math.round(rec.excessUnsubs*cpl).toLocaleString()+' in excess subscriber loss' : rec.excessUnsubs.toLocaleString()+' excess unsubscribes')
+      : null;
 
-  const stream1 = secondDerivative(unsubRates);
-
-  const openRates = campaigns.map(c => c.open_rate).filter(r => r !== null);
-  let stream2 = 0;
-  if (openRates.length >= 3) {
-    const deltas = openRates.slice(1).map((r, i) => r - openRates[i]);
-    stream2 = mean_arr(deltas);
-  }
-
-  const complaintTotal = campaigns.reduce((s, c) => s + (c.complaint_count || 0), 0);
-  const unsubTotal = campaigns.reduce((s, c) => s + (c.unsubscribe_count || 0), 0);
-  const stream4 = complaintTotal > 0 ? -(complaintTotal * 50) / Math.max(unsubTotal, 1) : 0;
-
-  const w1 = 0.45, w2 = 0.30, w4 = 0.25;
-  const velocity = (stream1 * w1 + stream2 * w2 + stream4 * w4);
-
-  let direction;
-  if (velocity > 0.5) direction = 'Rapid decline';
-  else if (velocity > 0.1) direction = 'Declining';
-  else if (velocity < -0.1) direction = 'Improving';
-  else direction = 'Stable';
-
-  return { velocity: r4(velocity), direction, magnitude: r4(Math.abs(velocity)) };
+    return '<div class="rec-card">'+
+      '<div class="rec-priority">'+(rankLabels[i]||'Recommendation')+'</div>'+
+      '<div class="rec-seg">'+escH(rec.segment)+'</div>'+
+      (rec.state ? '<div class="rec-verdict">'+escH(rec.verdict||rec.state)+'</div>' : '')+
+      (excessStr ? '<div style="font-size:11px;color:var(--r);font-weight:600;margin-bottom:6px">'+excessStr+'</div>' : '')+
+      '<div class="rec-action">'+escH(rec.action||'')+'</div>'+
+      '<div class="rec-meta">'+
+      (rec.state ? '<span class="chip '+chipCls+'">'+escH(rec.state)+'</span>' : '')+
+      (rec.date ? '<span class="chip">From '+fmtDate(rec.date)+'</span>' : '')+
+      '</div></div>';
+  }).join('');
 }
 
-// ─────────────────────────────────────────────
-// ALGORITHM 3 — CAMPAIGN IMPACT SCORER (v7.0 benchmark-anchored)
-// ─────────────────────────────────────────────
+async function runPreSend() {
+  var seg = document.getElementById('psSeg').value;
+  var type = document.getElementById('psType').value;
+  var date = document.getElementById('psDate').value;
+  if (!seg) { showToast('Select a segment','er'); return; }
+  showLoading('Running 1,000 scenarios\u2026');
+  try {
+    var sector = getSector() || currentSector || 'general';
+    var resp = await fetch(API+'?userId='+userId+'&action=presend&sector='+sector, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({segment:seg,campaignType:type,sendDate:date}) });
+    var json = await resp.json(); hideLoading();
+    if (!json.success) throw new Error(json.error);
+    var pred = json.prediction; var v = pred.verdict.toLowerCase();
+    var el = document.getElementById('psResult');
+    el.className = 'ps-result '+v; el.style.display = 'block';
+    el.innerHTML = '<div class="ps-verdict '+v+'">'+escH(pred.verdict)+'</div>'+
+      '<div class="ps-reason">'+escH(pred.reason)+'</div>'+
+      (pred.predictedUnsubRange ? '<div class="ps-range">Predicted: '+(pred.predictedUnsubRange.low*100).toFixed(2)+'%&ndash;'+(pred.predictedUnsubRange.high*100).toFixed(2)+'% &middot; '+Math.round((pred.spikeProb||0)*100)+'% spike probability &middot; UK benchmark: '+(pred.benchmarkRate*100).toFixed(2)+'%</div>' : '')+
+      (pred.alternatives&&pred.alternatives.length ? '<div class="alt-title">Alternatives</div>'+pred.alternatives.map(function(a){return'<div class="alt-item"><strong>'+escH(a.change)+'</strong><span>'+escH(a.reason)+'</span></div>';}).join('') : '');
+    el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  } catch(err) { hideLoading(); showToast('Pre-send check failed: '+err.message,'er'); }
+}
 
-function algorithm3_campaignImpact(campaign, allCampaigns, fingerprint, bench) {
-  if (!fingerprint) return null;
+function openModal() { document.getElementById('logDate').value=new Date().toISOString().slice(0,10); switchSegTab('exist'); document.getElementById('logModal').classList.add('open'); }
+function closeModal() { document.getElementById('logModal').classList.remove('open'); }
+async function submitLog() {
+  var seg;
+  if (segTabMode==='new') { seg=(document.getElementById('logSegNew').value||'').trim(); if(!seg){showToast('Enter a segment name','er');return;} }
+  else { seg=document.getElementById('logSeg').value; if(!seg){showToast('Select a segment','er');return;} }
+  var campaign = { segment:seg, campaign_name:document.getElementById('logName').value||'Untitled', campaign_type:document.getElementById('logType').value, date:document.getElementById('logDate').value, volume_sent:parseInt(document.getElementById('logVol').value)||null, unsubscribe_count:parseInt(document.getElementById('logUnsub').value)||0, open_rate:parseFloat(document.getElementById('logOpen').value)||null, click_rate:parseFloat(document.getElementById('logClick').value)||null, complaint_count:parseInt(document.getElementById('logComplaints').value)||null };
+  if (!campaign.date) { showToast('Send date required','er'); return; }
+  closeModal(); showLoading('Logging and updating diagnosis\u2026');
+  try {
+    var sector = getSector() || currentSector || 'general';
+    var resp = await fetch(API+'?userId='+userId+'&action=log&sector='+sector, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({campaign:campaign}) });
+    var json = await resp.json();
+    if (!json.success) throw new Error(json.error);
+    hideLoading(); await loadDash(); showToast('Campaign logged and diagnosis updated','ok');
+  } catch(err) { hideLoading(); showToast('Error: '+err.message,'er'); }
+}
 
-  const volumeSent = campaign.volume_sent || 1000;
-  const unsubRate = campaign.unsubscribe_count / volumeSent;
-  const benchNormal = bench.unsubNormal;
-  const selfBaseline = fingerprint.selfBaseline;
+function showLoading(msg) { document.getElementById('loadingMsg').textContent=msg||'Working\u2026'; document.getElementById('loadingBg').classList.add('open'); }
+function hideLoading() { document.getElementById('loadingBg').classList.remove('open'); }
+function showToast(msg,type) { var t=document.getElementById('toast'); t.textContent=msg; t.className='toast on'+(type?' '+type:''); setTimeout(function(){t.className='toast';},3500); }
+function fmtDate(s) { if(!s)return''; return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function sid(s) { return s.replace(/[^a-zA-Z0-9_]/g,'_'); }
+function escH(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-  // Score against BOTH benchmark and self-baseline
-  const zBench = (unsubRate - benchNormal) / (bench.unsubNormal * 0.5 + 0.0001);
-  const zSelf = fingerprint.unsubscribeStdDev > 0
-    ? (unsubRate - selfBaseline) / (fingerprint.unsubscribeStdDev + 0.0001)
-    : 0;
+// ── DEMO ─────────────────────────────────────────────────────
+// Five segments designed to produce genuinely different states
+// using absolute benchmark comparisons (general sector, 0.22% benchmark)
+var DEMO_CSV = 'Campaign Name,List / Segment,Sent,Open Rate,Unsubscribe Rate,Send Date\n'+
+'June Newsletter,All Subscribers,6234,21.3%,0.8%,2025-06-02\n'+
+'Black Friday Teaser,VIP Customers,4187,41.2%,0.2%,2025-11-18\n'+
+'Re-engagement Wave 1,Lapsed 90 Days,1823,8.7%,1.3%,2025-05-14\n'+
+'Welcome Series - Day 1,New Subscribers,412,58.1%,0.1%,2025-03-05\n'+
+'May Promotional,All Subscribers,6089,15.4%,1.2%,2025-05-02\n'+
+'Black Friday Main,VIP Customers,4162,43.8%,0.2%,2025-11-29\n'+
+'Re-engagement Wave 2,Lapsed 90 Days,1754,6.2%,1.9%,2025-05-28\n'+
+'Welcome Series - Day 1,New Subscribers,587,55.3%,0.2%,2025-03-12\n'+
+'April Newsletter,All Subscribers,6311,26.1%,0.4%,2025-04-04\n'+
+'Cyber Monday,VIP Customers,4149,38.5%,0.3%,2025-12-02\n'+
+'Re-engagement Wave 3,Lapsed 90 Days,1712,5.1%,2.3%,2025-06-11\n'+
+'Welcome Series - Day 1,New Subscribers,744,54.7%,0.2%,2025-03-19\n'+
+'March Newsletter,All Subscribers,6198,19.4%,0.7%,2025-03-21\n'+
+'Spring VIP Preview,VIP Customers,4198,44.1%,0.1%,2025-03-18\n'+
+'Re-engagement Wave 4,Lapsed 90 Days,1688,4.8%,2.7%,2025-06-25\n'+
+'Welcome Series - Day 1,New Subscribers,891,53.9%,0.3%,2025-03-26\n'+
+'Summer Sale Launch,All Subscribers,6143,22.4%,0.6%,2025-05-16\n'+
+'Summer VIP Early Access,VIP Customers,4131,40.2%,0.4%,2025-05-06\n'+
+'Welcome Series - Day 1,New Subscribers,1034,52.1%,0.3%,2025-04-02\n'+
+'July Newsletter,All Subscribers,5988,12.3%,1.5%,2025-06-13\n'+
+'July VIP,VIP Customers,4118,31.4%,0.7%,2025-05-13\n'+
+'Welcome Series - Day 1,New Subscribers,1156,51.8%,0.2%,2025-04-09\n'+
+'Flash Sale,All Subscribers,6021,14.1%,1.3%,2025-05-30\n'+
+'August VIP,VIP Customers,4095,29.8%,0.8%,2025-06-10\n'+
+'Welcome Series - Day 1,New Subscribers,1287,52.4%,0.2%,2025-04-16\n'+
+'Product Launch,All Subscribers,6180,23.6%,0.5%,2025-04-18\n'+
+'Autumn VIP Preview,VIP Customers,4080,37.1%,0.5%,2025-09-22\n'+
+'Welcome Series - Day 1,New Subscribers,1398,53.1%,0.2%,2025-04-23';
 
-  // Weight benchmark more heavily (60%) than self-comparison (40%)
-  const zScore = zBench * 0.6 + zSelf * 0.4;
-  const impactScore = -zScore;
+// Benchmark values hardcoded for demo (general sector)
+var DEMO_BENCH = { unsubNormal:0.0022, unsubGood:0.001, unsubConcern:0.005, unsubDamaged:0.010, label:'General / Mixed', source:'MailerLite 2025 + GDMA 2024' };
 
-  // Excess unsubs above benchmark
-  const expectedVsBench = Math.round(volumeSent * benchNormal);
-  const excessUnsubs = Math.max(0, campaign.unsubscribe_count - expectedVsBench);
+function loadDemo() {
+  var p = parseCSV(DEMO_CSV);
+  if (!p.rows.length) { showToast('Demo data failed','er'); return; }
 
-  let category, plainVerdict;
-  if (impactScore > 0.8) {
-    category = 'Built trust';
-    plainVerdict = `Below UK benchmark — your audience responded well to this.`;
-  } else if (impactScore > 0.2) {
-    category = 'Built trust';
-    plainVerdict = `Slightly below benchmark — mild positive signal.`;
-  } else if (impactScore > -0.3) {
-    category = 'Neutral';
-    plainVerdict = `Normal unsubscribe rate — within UK benchmark range (${(benchNormal * 100).toFixed(2)}%).`;
-  } else if (impactScore > -1.0) {
-    category = 'Caused fatigue';
-    plainVerdict = `Above UK benchmark${excessUnsubs > 0 ? ` — about ${excessUnsubs} more unsubscribes than expected` : ''}. Audience is signalling too much email.`;
+  // Parse rows
+  var campaigns = p.rows.map(function(row) {
+    var unsubRaw = row['Unsubscribe Rate'] || '';
+    var unsubRate = parseFloat(unsubRaw.replace('%','')) / 100;
+    var sent = parseInt((row['Sent']||'').replace(/,/g,'')) || 1000;
+    return {
+      segment: row['List / Segment'],
+      campaign_name: row['Campaign Name'],
+      date: row['Send Date'],
+      volume_sent: sent,
+      unsubscribe_count: Math.round(unsubRate * sent),
+      open_rate: row['Open Rate'] ? parseFloat(row['Open Rate'].replace('%',''))/100 : null,
+      click_rate: null,
+      complaint_count: null,
+    };
+  }).filter(function(c) { return c.date && c.segment; });
+
+  // Group by segment
+  var bySegment = {};
+  campaigns.forEach(function(c) { if(!bySegment[c.segment])bySegment[c.segment]=[]; bySegment[c.segment].push(c); });
+  Object.keys(bySegment).forEach(function(s) { bySegment[s].sort(function(a,b){return new Date(a.date)-new Date(b.date);}); });
+
+  // Run client-side algorithms for demo
+  var segments = {};
+  Object.keys(bySegment).forEach(function(seg) {
+    segments[seg] = buildDemoSegmentData(bySegment[seg]);
+  });
+
+  // Build recommendations sorted by urgency
+  var urgency = {'Complaint risk':5,'Damaged':4,'Fatigue building':3,'Cooling':2,'Recovering':1};
+  var recs = Object.keys(segments).map(function(seg) {
+    var d = segments[seg];
+    return { segment:seg, verdict:d.sentiment.verdict, action:d.sentiment.action, state:d.sentiment.state, capital:d.capital, unsubRate:d.fingerprint?.selfBaseline, benchRate:DEMO_BENCH.unsubNormal, excessUnsubs:d.subscriberLoss?.totalExcessUnsubs||0, date:d.freqTolerance?.optimalNextSend };
+  }).sort(function(a,b){return(urgency[b.state]||0)-(urgency[a.state]||0);}).slice(0,3);
+
+  renderDash({ segments:segments, recommendations:recs });
+  showScreen('dashboard');
+  document.getElementById('demoBanner').style.display = 'flex';
+}
+
+function buildDemoSegmentData(campaigns) {
+  var n = campaigns.length;
+  var bench = DEMO_BENCH;
+  var unsubRates = campaigns.map(function(c) { return c.unsubscribe_count / Math.max(c.volume_sent||1000,1); });
+  var sorted = unsubRates.slice().sort(function(a,b){return a-b;});
+  var selfBaseline = sorted[Math.floor(sorted.length/2)] || bench.unsubNormal;
+  var effectiveBaseline = Math.max(selfBaseline, bench.unsubGood);
+  var mean = function(arr) { return arr.length?arr.reduce(function(a,b){return a+b;},0)/arr.length:0; };
+  var avgRate = mean(unsubRates);
+  var recent = unsubRates.slice(-3), older = unsubRates.slice(0,3);
+  var trendDelta = mean(recent) - mean(older);
+  var direction = trendDelta > 0.001?'Declining':trendDelta < -0.001?'Improving':'Stable';
+  var recentCamps = campaigns.filter(function(c){return(new Date()-new Date(c.date))<30*86400000;}).length;
+  var toleranceRemaining = Math.max(0,4-recentCamps);
+  var lastDate = new Date(campaigns[campaigns.length-1].date);
+  var nextDate = new Date(+lastDate+7*86400000).toISOString().slice(0,10);
+
+  // Impact per campaign
+  var impacts = campaigns.map(function(c) {
+    var rate = c.unsubscribe_count/Math.max(c.volume_sent||1000,1);
+    var excess = Math.max(0,c.unsubscribe_count-Math.round((c.volume_sent||1000)*bench.unsubNormal));
+    var zBench = (rate - bench.unsubNormal) / (bench.unsubNormal*0.5+0.0001);
+    var impactScore = -zBench;
+    var cat = impactScore>0.8?'Built trust':impactScore>0.2?'Built trust':impactScore>-0.3?'Neutral':impactScore>-1.0?'Caused fatigue':'Damaged';
+    var plain = cat==='Built trust'?'Below UK benchmark \u2014 your audience responded well.':
+                cat==='Caused fatigue'?'Above UK benchmark ('+(bench.unsubNormal*100).toFixed(2)+'%) \u2014 audience showing fatigue.':
+                cat==='Damaged'?'Significantly above UK benchmark'+(excess>0?' \u2014 '+excess+' more unsubscribes than expected.'):'.':
+                'Normal unsubscribe rate \u2014 within UK benchmark range.';
+    return { category:cat, plainVerdict:plain, unsubRate:Math.round(rate*10000)/10000, benchmarkRate:bench.unsubNormal, excessUnsubs:excess, campaign_name:c.campaign_name, date:c.date };
+  });
+
+  var recentDamage = impacts.slice(-3).filter(function(i){return i.category==='Damaged'||i.category==='Caused fatigue';}).length;
+  var recentBuilt = impacts.slice(-3).filter(function(i){return i.category==='Built trust';}).length;
+
+  // Capital
+  var now = new Date();
+  var capital = 0;
+  campaigns.forEach(function(c) {
+    var daysAgo = (+now - new Date(c.date))/86400000;
+    var decay = Math.pow(0.5,daysAgo/60);
+    var rate = c.unsubscribe_count/Math.max(c.volume_sent||1000,1);
+    var imp = (bench.unsubNormal-rate)/(bench.unsubNormal+0.001)*20;
+    capital += imp*decay;
+    capital = Math.max(-100,Math.min(100,capital));
+  });
+  capital = Math.round(capital*100)/100;
+
+  // Subscriber loss
+  var totalExcess = impacts.reduce(function(s,i){return s+(i.excessUnsubs||0);},0);
+  var damagingCamps = impacts.filter(function(i){return i.excessUnsubs>0;}).length;
+
+  // Benchmark verdict
+  var vsBenchTier = avgRate<=bench.unsubGood?'good':avgRate<=bench.unsubNormal?'normal':avgRate<=bench.unsubConcern?'concern':avgRate<=bench.unsubDamaged?'high':'damaged';
+  var pctAbove = avgRate > bench.unsubNormal ? Math.round(((avgRate-bench.unsubNormal)/bench.unsubNormal)*100) : null;
+
+  var fingerprint = { selfBaseline:Math.round(selfBaseline*10000)/10000, effectiveBaseline:Math.round(effectiveBaseline*10000)/10000, benchmarkNormal:bench.unsubNormal, campaignCount:n, unsubscribeStdDev:0.002, trendDelta:Math.round(trendDelta*10000)/10000, frequencyToleranceThreshold:4, vsBenchmark:{tier:vsBenchTier,pctVsBenchmark:pctAbove} };
+
+  // Sentiment
+  var avgPct = (avgRate*100).toFixed(2)+'%';
+  var benchPct = (bench.unsubNormal*100).toFixed(2)+'%';
+  var sentiment;
+  if (avgRate > bench.unsubDamaged) {
+    sentiment = { state:'Damaged', verdict:'This segment needs a break from you', statement:'Average unsubscribe rate '+avgPct+' — significantly above the UK '+bench.label+' benchmark of '+benchPct+'.', action:'Pause all promotional sends for at least 21 days. One low-key newsletter only.', statementCommercial:'You have approximately 3 weeks before this segment becomes unreachable for promotional sends.', statementRegulatory:null, regulatoryNote:null, confidence:0.88 };
+  } else if (avgRate > bench.unsubConcern && toleranceRemaining<=1 && direction!=='Improving') {
+    sentiment = { state:'Fatigue building', verdict:"You're sending too much to this segment", statement:'Average unsubscribe rate '+avgPct+' — above UK '+bench.label+' benchmark of '+benchPct+'. You\'ve sent '+recentCamps+' campaigns in the last 30 days and tolerance is almost gone.', action:'No promotional sends this month. One newsletter maximum.', statementCommercial:'Fatigued audiences stop opening before they unsubscribe — open rates will keep dropping even if you reduce frequency.', statementRegulatory:'High frequency combined with above-benchmark unsubscribes is the pattern the ICO uses to challenge legitimate interest bases.', regulatoryNote:null, confidence:0.85 };
+  } else if (avgRate > bench.unsubNormal && direction==='Declining') {
+    sentiment = { state:'Cooling', verdict:'This segment is losing interest', statement:'Unsubscribes trending upward. Average '+avgPct+' vs UK '+bench.label+' benchmark of '+benchPct+'.', action:'Try a preference-update email before your next send. Ask them what they want to hear about.', statementCommercial:'Cooling audiences convert at a fraction of their peak rate. The opportunity is to reverse it now while they\'re still reachable.', statementRegulatory:null, regulatoryNote:null, confidence:0.78 };
+  } else if (avgRate <= bench.unsubGood && direction==='Improving' && toleranceRemaining>=3 && recentBuilt>=2) {
+    sentiment = { state:'Peak receptiveness', verdict:'Best window to send — act this week', statement:'Average unsubscribe rate '+avgPct+' — well below the UK '+bench.label+' benchmark of '+benchPct+'. '+recentBuilt+' recent sends built trust. You have '+toleranceRemaining+' sends of tolerance.', action:'Send your highest-value promotional campaign now. This window typically lasts 2–3 weeks.', statementCommercial:'Peak-receptiveness windows produce measurably higher conversion. The same campaign sent in 2 weeks will underperform.', statementRegulatory:null, regulatoryNote:null, confidence:0.88 };
+  } else if ((direction==='Improving'||direction==='Stable') && recentDamage>=1 && recentBuilt>=1) {
+    var capStr = capital>=40?'strong':capital>=10?'moderate':'thin';
+    sentiment = { state:'Recovering', verdict:capital>=40?'Recovering well — one more careful send':'Recovering — handle with care', statement:'Early signs of recovery. Average '+avgPct+' vs benchmark '+benchPct+'. Relationship capital: '+(capital>0?'+':'')+capital.toFixed(0)+'/100.', action:capital>=40?'Send one value-first newsletter. If unsubscribes stay below '+benchPct+', resume normal sending in 2 weeks.':'High-value sends only for the next 3 weeks. No promotional campaigns.', statementCommercial:capStr==='strong'?'High capital means this audience is more forgiving — a well-timed value send could accelerate recovery.':'One badly timed promotional send now could push this segment back into damaged territory.', statementRegulatory:null, regulatoryNote:null, confidence:0.78 };
+  } else if (avgRate <= bench.unsubNormal) {
+    sentiment = { state:'Healthy', verdict:'Looking good — proceed as planned', statement:'Average unsubscribe rate '+avgPct+' is at or below the UK '+bench.label+' benchmark of '+benchPct+'. No concerning trends.', action:'Proceed with your planned campaign. Monitor unsubscribes on the next send.', statementCommercial:'A healthy segment converts at predictable rates. Maintain current frequency and content quality.', statementRegulatory:null, regulatoryNote:null, confidence:0.80 };
   } else {
-    category = 'Damaged';
-    plainVerdict = `Significantly above UK benchmark${excessUnsubs > 0 ? ` — ${excessUnsubs} more unsubscribes than expected` : ''}. This send hurt the relationship.`;
+    sentiment = { state:'Neutral', verdict:'No strong signals — proceed normally', statement:'Average '+avgPct+' vs UK benchmark '+benchPct+'. No strong trend in either direction.', action:'Proceed with your planned campaign. Monitor unsubscribes on the next send.', statementCommercial:'Neutral state means sends will perform at your historical average rates.', statementRegulatory:null, regulatoryNote:null, confidence:0.65 };
   }
-
-  return {
-    impactScore: r4(impactScore),
-    zScore: r4(zScore),
-    category,
-    plainVerdict,
-    unsubRate: r4(unsubRate),
-    benchmarkRate: benchNormal,
-    excessUnsubs,
-    campaign_name: campaign.campaign_name,
-    date: campaign.date,
-  };
-}
-
-// ─────────────────────────────────────────────
-// ALGORITHM 4 — FREQUENCY TOLERANCE MODEL
-// ─────────────────────────────────────────────
-
-function algorithm4_frequencyTolerance(campaigns, fingerprint) {
-  if (!fingerprint) return { toleranceRemaining: 3, optimalNextSend: null, recommendedType: 'Newsletter' };
-
-  const now = new Date();
-  const thirtyDaysAgo = new Date(+now - 30 * 86400000);
-  const recentCampaigns = campaigns.filter(c => new Date(c.date) >= thirtyDaysAgo);
-  const threshold = fingerprint.frequencyToleranceThreshold || 4;
-
-  const typeWeights = { 'Promotional': 1.5, 'Newsletter': 0.8, 'Re-engagement': 1.2, 'Transactional': 0.3 };
-  const effectiveSends = recentCampaigns.reduce((s, c) => s + (typeWeights[c.campaign_type] || 1.0), 0);
-  const toleranceRemaining = Math.max(0, Math.round(threshold - effectiveSends));
-
-  const lastSend = campaigns.length ? new Date(campaigns[campaigns.length - 1].date) : now;
-  const minGap = toleranceRemaining > 2 ? 3 : 10;
-  const optDate = new Date(+lastSend + minGap * 86400000);
-  const optimalNextSend = optDate.toISOString().slice(0, 10);
-
-  let recommendedType = 'Newsletter';
-  if (toleranceRemaining <= 1) recommendedType = 'Transactional';
-  else if (toleranceRemaining <= 2) recommendedType = 'Newsletter';
-  else recommendedType = 'Promotional';
-
-  return {
-    toleranceRemaining,
-    optimalNextSend,
-    recommendedType,
-    recentSendCount: recentCampaigns.length,
-    adjustedThreshold: threshold,
-  };
-}
-
-// ─────────────────────────────────────────────
-// ALGORITHM 5 — AUDIENCE SENTIMENT (v7.0 benchmark-anchored)
-// Now uses absolute benchmark thresholds as primary signal.
-// Self-comparison used as secondary signal only.
-// ─────────────────────────────────────────────
-
-function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, recentImpacts, capital, bench, sector) {
-  const cap = capital || 0;
-  const benchSrc = bench.source;
-
-  if (!fingerprint) {
-    return {
-      state: 'Neutral',
-      verdict: 'Upload your send history to get a diagnosis',
-      statement: 'We need at least 3 campaigns to generate a meaningful diagnosis for this segment.',
-      action: 'Upload a CSV with date, segment name, and unsubscribe count to get started.',
-      statementCommercial: null,
-      statementRegulatory: null,
-      regulatoryNote: null,
-      confidence: 0.3,
-    };
-  }
-
-  const n = fingerprint.campaignCount;
-  const direction = trustVelocity.direction;
-  const tolerance = freqTolerance.toleranceRemaining;
-  const recentDamage = recentImpacts.filter(i => i.category === 'Damaged' || i.category === 'Caused fatigue').length;
-  const recentBuilt = recentImpacts.filter(i => i.category === 'Built trust').length;
-  const baseConf = Math.min(0.5 + n * 0.04, 0.95);
-
-  // Get the average unsub rate for this segment
-  const avgUnsubRate = fingerprint.selfBaseline;
-  const benchNormal = bench.unsubNormal;
-  const benchGood = bench.unsubGood;
-  const benchConcern = bench.unsubConcern;
-  const benchDamaged = bench.unsubDamaged;
-
-  const avgPct = (avgUnsubRate * 100).toFixed(2) + '%';
-  const benchPct = (benchNormal * 100).toFixed(2) + '%';
-  const benchGoodPct = (benchGood * 100).toFixed(2) + '%';
-  const vsBench = fingerprint.vsBenchmark;
-  const aboveBenchBy = vsBench.pctVsBenchmark ? `${vsBench.pctVsBenchmark}% above the UK ${bench.label} benchmark` : null;
-
-  const recoveryDays = Math.round((fingerprint.recoveryHalfLife || 3) * 7);
-  const trendDelta = fingerprint.trendDelta || 0;
-
-  // ── COMPLAINT RISK ──────────────────────────────────────────
-  const hasComplaints = recentImpacts.some(i => i._hasComplaints);
-  if (hasComplaints && avgUnsubRate > benchConcern) {
-    return {
-      state: 'Complaint risk',
-      verdict: 'Stop sending to this segment now',
-      statement: `This segment is generating complaint signals with an average unsubscribe rate of ${avgPct} — well above the UK ${bench.label} benchmark of ${benchPct}. The ICO monitors exactly this pattern.`,
-      action: 'Stop all promotional sends immediately. Run a re-permission campaign — anyone who does not re-consent should be suppressed.',
-      statementCommercial: 'Audiences in complaint territory stop converting before they formally complain. Revenue from this segment will be near zero until trust is rebuilt.',
-      statementRegulatory: 'Complaint signals combined with above-benchmark unsubscribe rates is the pattern the ICO identifies before opening PECR Regulation 22 enforcement investigations.',
-      regulatoryNote: 'This pattern is statistically associated with formal ICO complaints. The window to act without enforcement consequences is typically 30–60 days.',
-      confidence: r2(Math.min(baseConf, 0.92)),
-    };
-  }
-
-  // ── DAMAGED — significantly above benchmark ─────────────────
-  if (avgUnsubRate > benchDamaged || (avgUnsubRate > benchConcern && direction === 'Rapid decline' && recentDamage >= 2)) {
-    const capNote = cap < 0
-      ? 'The negative relationship capital means this segment has little goodwill left to absorb further sends.'
-      : 'Some positive relationship capital remains — recovery is possible if you act now.';
-    return {
-      state: 'Damaged',
-      verdict: 'This segment needs a break from you',
-      statement: `Average unsubscribe rate ${avgPct} — ${aboveBenchBy || `above the UK ${bench.label} benchmark of ${benchPct}`}. Recent sends are causing above-average audience exit.`,
-      action: `Pause all promotional sends for at least ${recoveryDays} days. One low-key value newsletter only. Return to promotional sends only after unsubscribes drop back below ${benchPct}.`,
-      statementCommercial: `You have approximately ${recoveryDays} days before this segment becomes effectively unreachable for promotional sends. ${capNote}`,
-      statementRegulatory: null,
-      regulatoryNote: null,
-      confidence: r2(Math.min(baseConf, 0.88)),
-    };
-  }
-
-  // ── FATIGUE BUILDING — above concern threshold + frequency exhausted ─
-  if (avgUnsubRate > benchNormal && tolerance <= 1 && direction !== 'Improving') {
-    return {
-      state: 'Fatigue building',
-      verdict: "You're sending too much to this segment",
-      statement: `Average unsubscribe rate ${avgPct} vs UK ${bench.label} benchmark of ${benchPct}. You've sent ${freqTolerance.recentSendCount} campaigns in the last 30 days and frequency tolerance is almost gone. The next promotional send is likely to push this above ${(benchConcern * 100).toFixed(2)}%.`,
-      action: `No promotional sends this month. Maximum one newsletter. Give this segment a ${recoveryDays}-day gap before any commercial content.`,
-      statementCommercial: 'Fatigued audiences stop opening before they unsubscribe. Open rates will continue dropping even if you reduce frequency — the damage takes 3–4 weeks to reverse.',
-      statementRegulatory: 'High frequency combined with above-benchmark unsubscribes is the pattern the ICO uses to challenge legitimate interest bases under PECR. Your audience is signalling the contact is no longer welcome.',
-      regulatoryNote: cap < -20 ? 'With negative relationship capital and rising unsubscribes, your send history would struggle to pass an ICO legitimate interest balance test if reviewed.' : null,
-      confidence: r2(Math.min(baseConf, 0.85)),
-    };
-  }
-
-  // ── COOLING — above benchmark + declining ───────────────────
-  if (avgUnsubRate > benchNormal && direction === 'Declining') {
-    return {
-      state: 'Cooling',
-      verdict: 'This segment is losing interest',
-      statement: `Unsubscribes trending up across your last ${Math.min(n, 6)} campaigns. Average ${avgPct} — ${aboveBenchBy || `above UK ${bench.label} benchmark of ${benchPct}`}. You still have ${tolerance} send${tolerance !== 1 ? 's' : ''} of tolerance, but the trend is against you.`,
-      action: 'Try a preference-update email — ask them what they want to hear about. One re-engagement send before resuming your normal schedule.',
-      statementCommercial: 'Cooling audiences convert at a fraction of their peak rate. Sending more will accelerate the decline — the opportunity is to reverse it now while they're still reachable.',
-      statementRegulatory: null,
-      regulatoryNote: null,
-      confidence: r2(Math.min(baseConf, 0.78)),
-    };
-  }
-
-  // ── PEAK RECEPTIVENESS — below good threshold + improving ───
-  if (avgUnsubRate <= benchGood && direction === 'Improving' && tolerance >= 3 && recentBuilt >= 2) {
-    return {
-      state: 'Peak receptiveness',
-      verdict: 'Best window to send — act this week',
-      statement: `Average unsubscribe rate ${avgPct} — well below the UK ${bench.label} benchmark of ${benchPct}. ${recentBuilt} recent sends built trust. You have ${tolerance} sends of remaining tolerance. This is your best window.`,
-      action: 'Send your highest-value promotional or product announcement now. This window typically lasts 2–3 weeks before tolerance starts narrowing.',
-      statementCommercial: 'Peak-receptiveness audiences convert at measurably higher rates than normal. A promotional campaign sent now will outperform the same campaign sent in 2 weeks.',
-      statementRegulatory: null,
-      regulatoryNote: null,
-      confidence: r2(Math.min(baseConf, 0.88)),
-    };
-  }
-
-  // ── RECOVERING — mixed signals ──────────────────────────────
-  if ((direction === 'Improving' || direction === 'Stable') && recentDamage >= 1 && recentBuilt >= 1) {
-    const conf = r2(Math.min(baseConf, 0.78));
-    if (cap >= 40) {
-      return {
-        state: 'Recovering',
-        verdict: 'Recovering well — one more careful send',
-        statement: `Recent damage is reversing. Average unsub rate ${avgPct} vs benchmark ${benchPct}. Strong relationship capital (+${cap.toFixed(0)}/100) is cushioning the recovery.`,
-        action: `Send one value-first newsletter — no promotional content. If unsubscribes stay below ${benchPct}, resume normal sending in ${Math.round(recoveryDays * 0.6)} days.`,
-        statementCommercial: 'High capital means this audience is more forgiving than their recent numbers suggest. A well-timed value send could accelerate recovery.',
-        statementRegulatory: null,
-        regulatoryNote: null,
-        confidence: conf,
-      };
-    } else if (cap >= 10) {
-      return {
-        state: 'Recovering',
-        verdict: 'Recovering — handle with care',
-        statement: `Early signs of recovery after recent damage. Average unsub rate ${avgPct} vs benchmark ${benchPct}. Relationship capital (+${cap.toFixed(0)}/100) is moderate — another poor send would reverse progress.`,
-        action: `High-value sends only for the next ${recoveryDays} days. No promotional campaigns. Monitor every send — if unsubscribes exceed ${(benchConcern * 100).toFixed(2)}% stop immediately.`,
-        statementCommercial: 'Revenue will return, but slowly. One badly timed promotional send now could push this segment back into damaged territory.',
-        statementRegulatory: null,
-        regulatoryNote: null,
-        confidence: conf,
-      };
-    } else {
-      return {
-        state: 'Recovering',
-        verdict: 'Fragile recovery — do not send yet',
-        statement: `Mathematical recovery signs present but relationship capital (${cap.toFixed(0)}/100) is too low to risk a send. Average unsub rate ${avgPct} vs benchmark ${benchPct}.`,
-        action: `Do not send anything for at least ${recoveryDays} days. Rebuild capital with 3–4 positive sends before attempting any promotional campaign.`,
-        statementCommercial: 'Low-capital recoveries are fragile. This segment needs more positive campaign history before it will convert at normal rates.',
-        statementRegulatory: cap < 0 ? 'Negative relationship capital combined with recent damage is a pattern the ICO and ASA would note as evidence of repeated audience harm if reviewing your send history.' : null,
-        regulatoryNote: null,
-        confidence: r2(conf * 0.9),
-      };
-    }
-  }
-
-  // ── HEALTHY — at or below benchmark ────────────────────────
-  if (avgUnsubRate <= benchNormal && direction !== 'Declining') {
-    const capCtx = cap >= 30
-      ? `Strong relationship capital (+${cap.toFixed(0)}/100).`
-      : cap >= 10
-      ? `Positive relationship capital (+${cap.toFixed(0)}/100).`
-      : 'Relationship capital is neutral.';
-    return {
-      state: 'Healthy',
-      verdict: 'Looking good — proceed as planned',
-      statement: `Average unsubscribe rate ${avgPct} is at or below the UK ${bench.label} benchmark of ${benchPct}. ${capCtx} No concerning trends detected.`,
-      action: 'Proceed with your planned campaign. Monitor unsubscribes on the next send — flag if they exceed the benchmark.',
-      statementCommercial: 'A healthy segment converts at predictable rates. Maintain current frequency and content quality.',
-      statementRegulatory: null,
-      regulatoryNote: null,
-      confidence: r2(Math.min(baseConf, 0.80)),
-    };
-  }
-
-  // ── NEUTRAL DEFAULT ─────────────────────────────────────────
-  const capNote = cap > 20
-    ? `Relationship capital is positive (+${cap.toFixed(0)}/100).`
-    : cap < -10
-    ? `Relationship capital is negative (${cap.toFixed(0)}/100) — worth reviewing recent performance before sending.`
-    : 'Relationship capital is neutral.';
-
-  return {
-    state: 'Neutral',
-    verdict: 'No strong signals — proceed normally',
-    statement: `Average unsubscribe rate ${avgPct} vs UK ${bench.label} benchmark of ${benchPct}. ${capNote} No strong trend in either direction after ${n} campaign${n !== 1 ? 's' : ''}.`,
-    action: 'Proceed with your planned campaign. Monitor unsubscribes on the next send.',
-    statementCommercial: 'Neutral state means sends will perform at your historical average rates.',
-    statementRegulatory: null,
-    regulatoryNote: null,
-    confidence: r2(Math.min(baseConf, 0.65)),
-  };
-}
-
-// ─────────────────────────────────────────────
-// ALGORITHM 6 — PREDICTIVE SEND MODELLER
-// ─────────────────────────────────────────────
-
-function algorithm6_predictiveSend(segment, campaignType, sendDate, fingerprint, trustVelocity, freqTolerance, bench) {
-  if (!fingerprint) return {
-    verdict: 'Amber',
-    confidence: 0.5,
-    reason: 'Not enough historical data to predict impact. Proceed cautiously.',
-    alternatives: [],
-    predictedUnsubRange: null,
-  };
-
-  const baseline = fingerprint.effectiveBaseline;
-  const stddev = fingerprint.unsubscribeStdDev || baseline * 0.3;
-  const typeWeights = { 'Promotional': 1.5, 'Newsletter': 0.8, 'Re-engagement': 1.3, 'Transactional': 0.3 };
-  const typeMultiplier = typeWeights[campaignType] || 1.0;
-  const velAdjust = 1 + trustVelocity.velocity * 0.3;
-  const expectedRate = baseline * typeMultiplier * Math.max(0.5, velAdjust);
-
-  const results = [];
-  for (let i = 0; i < 1000; i++) results.push(Math.max(0, expectedRate + gaussianRandom(0, stddev)));
-  results.sort((a, b) => a - b);
-
-  const p10 = results[100], p50 = results[500], p90 = results[900];
-  const spikeProb = results.filter(r => r > bench.unsubConcern).length / 1000;
-  const benchNormal = bench.unsubNormal;
-
-  let verdict, reason, confidence;
-  if (spikeProb < 0.15 && freqTolerance.toleranceRemaining > 1 && p50 <= benchNormal) {
-    verdict = 'Green';
-    reason = `Low risk. Predicted unsubscribe rate ${(p50 * 100).toFixed(2)}%–${(p90 * 100).toFixed(2)}% — within UK ${bench.label} benchmark range (${(benchNormal * 100).toFixed(2)}%).`;
-    confidence = r2(0.85 - spikeProb);
-  } else if (spikeProb < 0.4 || freqTolerance.toleranceRemaining === 1) {
-    verdict = 'Amber';
-    reason = `Moderate risk. ${Math.round(spikeProb * 100)}% chance of exceeding UK benchmark. Predicted rate ${(p50 * 100).toFixed(2)}% vs benchmark ${(benchNormal * 100).toFixed(2)}%.`;
-    confidence = r2(0.7 - spikeProb * 0.3);
-  } else {
-    verdict = 'Red';
-    reason = `High risk. ${Math.round(spikeProb * 100)}% chance of exceeding UK concern threshold. Current segment state is not ready for a ${campaignType} send.`;
-    confidence = r2(0.9 - spikeProb * 0.2);
-  }
-
-  const alternatives = [];
-  if (verdict !== 'Green') {
-    const safestType = freqTolerance.recommendedType;
-    if (safestType !== campaignType) alternatives.push({ change: `Switch to ${safestType}`, reason: `${safestType} sends have lower unsubscribe impact for this segment right now.` });
-    alternatives.push({ change: `Send on ${freqTolerance.optimalNextSend} instead`, reason: 'Waiting for the tolerance window to recover would reduce spike probability.' });
-    alternatives.push({ change: 'Test with 30% of the segment first', reason: 'A smaller test send lets you measure response before committing the full list.' });
-  }
-
-  return { verdict, confidence, reason, predictedUnsubRange: { low: r4(p10), mid: r4(p50), high: r4(p90) }, spikeProb: r2(spikeProb), benchmarkRate: benchNormal, alternatives };
-}
-
-// ─────────────────────────────────────────────
-// ALGORITHM 7 — RELATIONSHIP CAPITAL ACCUMULATOR
-// ─────────────────────────────────────────────
-
-function algorithm7_relationshipCapital(campaigns, fingerprint, bench) {
-  if (!fingerprint || !campaigns.length) return 0;
-  const decayHalfLife = 60;
-  const now = new Date();
-  const benchNormal = bench.unsubNormal;
-  let capital = 0;
-
-  for (const c of campaigns) {
-    const daysAgo = (+now - new Date(c.date)) / 86400000;
-    const decayFactor = Math.pow(0.5, daysAgo / decayHalfLife);
-    const rate = c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1);
-    // Impact relative to benchmark (not just self)
-    const impactRaw = (benchNormal - rate) / (benchNormal + 0.001) * 20;
-    const recoveryBonus = capital < -20 && impactRaw > 0 ? impactRaw * 0.5 : 0;
-    capital += (impactRaw + recoveryBonus) * decayFactor;
-    capital = sigmoidBound(capital, 100);
-  }
-
-  return r2(Math.max(-100, Math.min(100, capital)));
-}
-
-// ─────────────────────────────────────────────
-// RUN ALL ALGORITHMS FOR ONE SEGMENT
-// ─────────────────────────────────────────────
-
-function runAlgorithms(campaigns, sector = 'general') {
-  const bench = getBenchmark(sector);
-  const fingerprint = algorithm1_fingerprint(campaigns, bench);
-  const trustVelocity = algorithm2_trustVelocity(campaigns, fingerprint);
-  const freqTolerance = algorithm4_frequencyTolerance(campaigns, fingerprint);
-
-  const impacts = campaigns.map(c => {
-    const imp = algorithm3_campaignImpact(c, campaigns, fingerprint, bench);
-    return imp || null;
-  }).filter(Boolean);
-
-  const capital = algorithm7_relationshipCapital(campaigns, fingerprint, bench);
-  const sentiment = algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, impacts, capital, bench, sector);
-  const subscriberLoss = calcSubscriberLoss(campaigns, bench);
-
-  const hasOpenRates = campaigns.some(c => c.open_rate !== null);
-  const hasClickRates = campaigns.some(c => c.click_rate !== null);
-  const hasComplaints = campaigns.some(c => c.complaint_count !== null && c.complaint_count > 0);
-  const hasSendHistory = campaigns.some(c => c.volume_sent !== null);
-
-  let dataQuality = 'Minimal';
-  if (hasSendHistory && hasOpenRates) dataQuality = 'Partial';
-  if (hasSendHistory && hasOpenRates && hasClickRates && hasComplaints) dataQuality = 'Full';
-
-  const missingData = [];
-  if (!hasSendHistory) missingData.push({ field: 'Volume sent', message: 'Add volume sent per campaign and we can calculate exactly how many subscribers you\'re losing above the UK benchmark.' });
-  if (!hasOpenRates) missingData.push({ field: 'Open rates', message: 'Add open rates to build a full engagement decay curve and compare against UK sector benchmarks.' });
-  if (!hasComplaints) missingData.push({ field: 'Spam complaints', message: 'Complaints carry 50× the weight of an unsubscribe. Adding them makes the Trust Velocity score significantly more accurate.' });
 
   return {
     fingerprint,
-    trustVelocity,
-    freqTolerance,
-    sentiment,
-    capital,
-    impacts: impacts.slice(-10),
-    dataQuality,
-    missingData,
-    subscriberLoss,
-    bench: { label: bench.label, unsubNormal: bench.unsubNormal, source: bench.source },
-    sector,
+    trustVelocity: { velocity:0, direction:direction, magnitude:0 },
+    freqTolerance: { toleranceRemaining, optimalNextSend:nextDate, recommendedType:toleranceRemaining<=1?'Newsletter':'Promotional', recentSendCount:recentCamps },
+    sentiment, capital,
+    impacts: impacts.slice(-8),
+    dataQuality: 'Partial',
+    missingData: [{ field:'Spam complaints', message:'Complaints carry 50\u00d7 the weight of an unsubscribe. Adding them makes the Trust Velocity score significantly more accurate.' }],
+    subscriberLoss: { totalExcessUnsubs:totalExcess, damagingCampaigns:damagingCamps },
+    bench: { label:bench.label, unsubNormal:bench.unsubNormal, source:bench.source },
+    sector: 'general',
   };
 }
 
-// ─────────────────────────────────────────────
-// DATA HELPERS
-// ─────────────────────────────────────────────
+document.getElementById('psDate').value = new Date().toISOString().slice(0,10);
 
-function buildSegmentData(campaigns) {
-  const bySegment = {};
-  for (const c of campaigns) {
-    const seg = c.segment || 'Default';
-    if (!bySegment[seg]) bySegment[seg] = [];
-    bySegment[seg].push(c);
-  }
-  for (const seg of Object.keys(bySegment)) {
-    bySegment[seg].sort((a, b) => new Date(a.date) - new Date(b.date));
-  }
-  return bySegment;
-}
-
-function missingDataMessages(hasOpenRates, hasClickRates, hasComplaints, hasSendHistory) {
-  const messages = [];
-  if (!hasSendHistory) messages.push({ field: 'Volume sent', message: 'Add the number of emails sent per campaign — this unlocks subscriber loss calculations and frequency tolerance modelling.', algorithmsUnlocked: [1, 3, 4] });
-  if (!hasOpenRates) messages.push({ field: 'Open rates', message: 'Add open rates to build an engagement decay curve showing whether your audience\'s interest is growing or shrinking.', algorithmsUnlocked: [1] });
-  if (!hasComplaints) messages.push({ field: 'Spam complaints', message: 'Complaints carry 50× the weight of an unsubscribe in the Trust Velocity model. Adding them significantly improves accuracy.', algorithmsUnlocked: [2] });
-  return messages;
-}
-
-// ─────────────────────────────────────────────
-// FIX RECORD GENERATION
-// ─────────────────────────────────────────────
-
-async function generateFixes(userId, segmentName, sentiment, sourceRecordId) {
-  const fixes = [];
-  const { state, confidence, regulatoryNote } = sentiment;
-
-  if (state === 'Complaint risk' && confidence >= 0.7) {
-    fixes.push({ fixType: 'consent_missing', description: `Audience Read — ${segmentName}: Complaint risk detected. ${sentiment.statement}`.trim(), severity: 'critical' });
-  }
-  if (state === 'Fatigue building' && confidence >= 0.7) {
-    fixes.push({ fixType: 'legitimate_interest_abuse', description: `Audience Read — ${segmentName}: Send frequency above UK benchmark is building fatigue. ${regulatoryNote || ''}`.trim(), severity: 'high' });
-  }
-  if (state === 'Damaged' && confidence >= 0.7) {
-    fixes.push({ fixType: 'data_quality', description: `Audience Read — ${segmentName}: Campaign damage detected. Unsubscribe rate significantly above UK benchmark.`.trim(), severity: 'medium' });
-  }
-
-  for (const fix of fixes) {
-    try {
-      await fetch(`${APP_URL}/api/generate-fix`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, fixType: fix.fixType, description: fix.description, tool: 'Audience Read', severity: fix.severity, sourceRecordId: sourceRecordId || null }),
-      });
-    } catch (err) {
-      console.error(`generate-fix failed for ${fix.fixType} (${segmentName}):`, err);
-    }
-  }
-}
-
-async function maybeFireAudienceAlert(userId, segmentName, sentiment) {
-  if (!['Complaint risk', 'Damaged'].includes(sentiment.state)) return;
-  try {
-    await fetch(`${APP_URL}/api/data?action=send-alert`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, alertType: 'audience_damaged', segmentName, sentimentState: sentiment.state, regulatoryNote: sentiment.regulatoryNote || null }),
-    });
-  } catch (err) {
-    console.error('audience_damaged alert failed (non-fatal):', err);
-  }
-}
-
-// ─────────────────────────────────────────────
-// AIRTABLE SEGMENT / CAMPAIGN OPS
-// ─────────────────────────────────────────────
-
-async function upsertSegment(userId, segmentName, data) {
-  const records = await atGet('Audience_Read_Segments', `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`, '', 1);
-  const fields = {
-    UserID: userId,
-    SegmentName: segmentName,
-    FingerprintJSON: JSON.stringify(data.fingerprint),
-    TrustVelocity: data.trustVelocity.velocity,
-    TrustVelocityDirection: data.trustVelocity.direction,
-    RelationshipCapital: data.relationshipCapital,
-    FrequencyTolerance: data.freqTolerance.toleranceRemaining,
-    OptimalNextSendDate: data.freqTolerance.optimalNextSend,
-    SentimentState: data.sentiment.state,
-    SentimentConfidence: data.sentiment.confidence,
-    LastUpdated: new Date().toISOString().slice(0, 10),
-    CampaignCount: data.fingerprint?.campaignCount || 0,
-    DataQuality: data.dataQuality,
-    Sector: data.sector || 'general',
-  };
-  if (records.length) await atPatch('Audience_Read_Segments', records[0].id, fields);
-  else await atCreate('Audience_Read_Segments', fields);
-}
-
-async function saveCampaign(userId, segmentName, campaign, impact) {
-  await atCreate('Audience_Read_Campaigns', {
-    UserID: userId,
-    SegmentName: segmentName,
-    CampaignName: campaign.campaign_name || 'Campaign',
-    CampaignType: campaign.campaign_type || null,
-    SendDate: campaign.date,
-    VolumeSent: campaign.volume_sent || null,
-    UnsubscribeCount: campaign.unsubscribe_count || 0,
-    OpenRate: campaign.open_rate || null,
-    ClickRate: campaign.click_rate || null,
-    ComplaintCount: campaign.complaint_count || null,
-    ImpactScore: impact?.impactScore || null,
-    ImpactCategory: impact?.category || null,
-    ImpactReason: impact?.plainVerdict || null,
-    RecoveryDaysEstimated: null,
-    UnsubRate: impact?.unsubRate || null,
-    ExcessUnsubs: impact?.excessUnsubs || null,
-  });
-}
-
-async function loadCampaigns(userId) {
-  const records = await atGet('Audience_Read_Campaigns', `{UserID}="${userId}"`, 'sort[0][field]=SendDate&sort[0][direction]=asc', 500);
-  return records.map(r => ({
-    segment: r.fields.SegmentName,
-    campaign_name: r.fields.CampaignName,
-    campaign_type: r.fields.CampaignType,
-    date: r.fields.SendDate,
-    volume_sent: r.fields.VolumeSent || null,
-    unsubscribe_count: r.fields.UnsubscribeCount || 0,
-    open_rate: r.fields.OpenRate || null,
-    click_rate: r.fields.ClickRate || null,
-    complaint_count: r.fields.ComplaintCount || null,
-  }));
-}
-
-// ─────────────────────────────────────────────
-// MAIN HANDLER
-// ─────────────────────────────────────────────
-
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-
-  const userId = req.query.userId || req.body?.userId;
-  if (!userId) return res.status(400).json({ error: 'userId required' });
-
-  const action = req.query.action || req.body?.action || 'load';
-  const sector = req.query.sector || req.body?.sector || 'general';
-
-  try {
-
-    // ── detect ──────────────────────────────────────────────
-    if (action === 'detect') {
-      const { headers, rows } = req.body;
-      if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
-      return res.status(200).json({ success: true, mapping: autoMapColumns(headers, rows) });
-    }
-
-    // ── load ────────────────────────────────────────────────
-    if (action === 'load') {
-      const allCampaigns = await loadCampaigns(userId);
-      const segmentData = buildSegmentData(allCampaigns);
-      const results = {};
-      for (const [seg, campaigns] of Object.entries(segmentData)) {
-        results[seg] = runAlgorithms(campaigns, sector);
+if (!userId) {
+  document.getElementById('gateScreen').classList.add('show');
+  document.getElementById('upload-screen').style.display = 'none';
+} else {
+  document.getElementById('upload-screen').style.display = 'block';
+  fetch(API+'?userId='+userId+'&action=load')
+    .then(function(r){return r.json();})
+    .then(function(json){
+      if (json.success && Object.keys(json.segments||{}).length>0) {
+        var link = document.getElementById('lastReportLink');
+        if (link) link.style.display = 'block';
+        window._lastDashData = json;
       }
-      const recommendations = Object.entries(results)
-        .sort((a, b) => {
-          const p = { 'Complaint risk': 5, 'Damaged': 4, 'Fatigue building': 3, 'Cooling': 2, 'Recovering': 1 };
-          return (p[b[1].sentiment.state] || 0) - (p[a[1].sentiment.state] || 0);
-        })
-        .slice(0, 3)
-        .map(([seg, data]) => ({
-          segment: seg,
-          verdict: data.sentiment.verdict,
-          action: data.sentiment.action,
-          type: data.freqTolerance.recommendedType,
-          date: data.freqTolerance.optimalNextSend,
-          state: data.sentiment.state,
-          capital: data.capital,
-          unsubRate: data.fingerprint?.selfBaseline,
-          benchRate: data.bench?.unsubNormal,
-          excessUnsubs: data.subscriberLoss?.totalExcessUnsubs,
-        }));
-      return res.status(200).json({ success: true, segments: results, recommendations, sector });
-    }
-
-    // ── upload ──────────────────────────────────────────────
-    if (action === 'upload') {
-      const { rows, fieldMapping } = req.body;
-      if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
-
-      const rawRows = rows.map(row => {
-        const c = {
-          segment: null, date: null, unsubscribe_count: null,
-          volume_sent: null, open_rate: null, click_rate: null,
-          complaint_count: null, campaign_name: null, campaign_type: null,
-        };
-        for (const [header, targetField] of Object.entries(fieldMapping || {})) {
-          const val = row[header];
-          if (targetField === 'date') c.date = normaliseDate(val);
-          else if (targetField === 'segment') c.segment = String(val || '').trim() || null;
-          else if (targetField === 'unsubscribe_count') c.unsubscribe_count = val !== '' && val != null ? (parseInt(val) || 0) : null;
-          else if (targetField === 'unsubscribe_rate') {
-            // Convert rate to count if we have volume, otherwise store as rate for later
-            c._unsubRate = normaliseRate(val);
-          }
-          else if (targetField === 'volume_sent') c.volume_sent = val !== '' && val != null ? (parseInt(String(val).replace(/,/g, '')) || null) : null;
-          else if (targetField === 'open_rate') c.open_rate = normaliseRate(val);
-          else if (targetField === 'click_rate') c.click_rate = normaliseRate(val);
-          else if (targetField === 'complaint_count') c.complaint_count = val !== '' && val != null ? (parseInt(val) || null) : null;
-          else if (targetField === 'campaign_name') c.campaign_name = String(val || '').trim() || null;
-          else if (targetField === 'campaign_type') c.campaign_type = String(val || '').trim() || null;
-        }
-        // If we got a rate but no count, derive count from volume
-        if (c._unsubRate !== undefined && c.unsubscribe_count === null && c.volume_sent) {
-          c.unsubscribe_count = Math.round(c._unsubRate * c.volume_sent);
-        } else if (c._unsubRate !== undefined && c.unsubscribe_count === null) {
-          // Store as a proxy — assume 1000 volume for rate-only data
-          c.unsubscribe_count = Math.round(c._unsubRate * 1000);
-          c.volume_sent = 1000;
-        }
-        delete c._unsubRate;
-        return c;
-      }).filter(c => c.date);
-
-      // Merge rows by date + segment
-      const mergeMap = {};
-      for (const row of rawRows) {
-        const key = (row.date || '') + '|' + (row.segment || 'Default');
-        if (!mergeMap[key]) {
-          mergeMap[key] = { segment: row.segment || 'Default', date: row.date, unsubscribe_count: 0, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null };
-        }
-        const m = mergeMap[key];
-        if (row.segment) m.segment = row.segment;
-        if (row.unsubscribe_count !== null) m.unsubscribe_count = row.unsubscribe_count;
-        if (row.volume_sent !== null) m.volume_sent = row.volume_sent;
-        if (row.open_rate !== null) m.open_rate = row.open_rate;
-        if (row.click_rate !== null) m.click_rate = row.click_rate;
-        if (row.complaint_count !== null) m.complaint_count = row.complaint_count;
-        if (row.campaign_name) m.campaign_name = row.campaign_name;
-        if (row.campaign_type) m.campaign_type = row.campaign_type;
-      }
-
-      const campaigns = Object.values(mergeMap);
-      if (!campaigns.length) return res.status(400).json({ error: 'No valid rows found. Check that a date column is present and correctly mapped.' });
-
-      const segmentGroups = buildSegmentData(campaigns);
-      const savedSegments = {};
-
-      for (const [segmentName, segCampaigns] of Object.entries(segmentGroups)) {
-        const data = runAlgorithms(segCampaigns, sector);
-
-        for (const c of segCampaigns) {
-          const impact = algorithm3_campaignImpact(c, segCampaigns, data.fingerprint, getBenchmark(sector));
-          await saveCampaign(userId, segmentName, c, impact);
-        }
-
-        await upsertSegment(userId, segmentName, {
-          fingerprint: data.fingerprint,
-          trustVelocity: data.trustVelocity,
-          freqTolerance: data.freqTolerance,
-          sentiment: data.sentiment,
-          relationshipCapital: data.capital,
-          dataQuality: data.dataQuality,
-          sector,
-        });
-
-        const segRecord = await atGet('Audience_Read_Segments', `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`, '', 1);
-        const segRecordId = segRecord[0]?.id || null;
-        await generateFixes(userId, segmentName, data.sentiment, segRecordId);
-        await maybeFireAudienceAlert(userId, segmentName, data.sentiment);
-
-        savedSegments[segmentName] = { ...data, impacts: data.impacts.slice(-5) };
-      }
-
-      return res.status(200).json({ success: true, segments: savedSegments, campaignsSaved: campaigns.length, sector });
-    }
-
-    // ── log ─────────────────────────────────────────────────
-    if (action === 'log') {
-      const { campaign } = req.body;
-      if (!campaign?.date || !campaign?.segment) return res.status(400).json({ error: 'campaign with date and segment required' });
-
-      const allCampaigns = await loadCampaigns(userId);
-      const segCampaigns = [...allCampaigns.filter(c => c.segment === campaign.segment), campaign]
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      const data = runAlgorithms(segCampaigns, sector);
-      const bench = getBenchmark(sector);
-      const impact = algorithm3_campaignImpact(campaign, segCampaigns, data.fingerprint, bench);
-
-      await saveCampaign(userId, campaign.segment, campaign, impact);
-      await upsertSegment(userId, campaign.segment, {
-        fingerprint: data.fingerprint,
-        trustVelocity: data.trustVelocity,
-        freqTolerance: data.freqTolerance,
-        sentiment: data.sentiment,
-        relationshipCapital: data.capital,
-        dataQuality: data.dataQuality,
-        sector,
-      });
-
-      await generateFixes(userId, campaign.segment, data.sentiment, null);
-      await maybeFireAudienceAlert(userId, campaign.segment, data.sentiment);
-
-      return res.status(200).json({ success: true, impact, sentiment: data.sentiment, trustVelocity: data.trustVelocity, capital: data.capital, freqTolerance: data.freqTolerance });
-    }
-
-    // ── presend ─────────────────────────────────────────────
-    if (action === 'presend') {
-      const { segment, campaignType, sendDate } = req.body;
-      if (!segment || !campaignType) return res.status(400).json({ error: 'segment and campaignType required' });
-
-      const allCampaigns = await loadCampaigns(userId);
-      const segCampaigns = allCampaigns.filter(c => c.segment === segment);
-      const bench = getBenchmark(sector);
-      const fingerprint = algorithm1_fingerprint(segCampaigns, bench);
-      const trustVelocity = algorithm2_trustVelocity(segCampaigns, fingerprint);
-      const freqTolerance = algorithm4_frequencyTolerance(segCampaigns, fingerprint);
-      const prediction = algorithm6_predictiveSend(segment, campaignType, sendDate, fingerprint, trustVelocity, freqTolerance, bench);
-
-      return res.status(200).json({ success: true, prediction });
-    }
-
-    return res.status(400).json({ error: `Unknown action: ${action}` });
-
-  } catch (err) {
-    console.error('audience-read error:', err);
-    return res.status(500).json({ error: err.message });
-  }
+    })
+    .catch(function(){});
 }
-
-// ─────────────────────────────────────────────
-// MATH UTILITIES
-// ─────────────────────────────────────────────
-
-function r2(n) { return Math.round(n * 100) / 100; }
-function r4(n) { return Math.round(n * 10000) / 10000; }
-function mean_arr(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
-function secondDerivative(arr) {
-  if (arr.length < 3) return 0;
-  const d1 = arr.slice(1).map((v, i) => v - arr[i]);
-  const d2 = d1.slice(1).map((v, i) => v - d1[i]);
-  return mean_arr(d2);
-}
-function gaussianRandom(mean, std) {
-  const u1 = Math.random(), u2 = Math.random();
-  return mean + std * Math.sqrt(-2 * Math.log(u1 + 1e-10)) * Math.cos(2 * Math.PI * u2);
-}
-function sigmoidBound(x, cap) { return cap * (2 / (1 + Math.exp(-x / (cap * 0.3))) - 1); }
-function dataCompletenessScore(campaigns) {
-  const hasOpen = campaigns.some(c => c.open_rate !== null);
-  const hasClick = campaigns.some(c => c.click_rate !== null);
-  const hasCom = campaigns.some(c => c.complaint_count !== null);
-  const hasVol = campaigns.some(c => c.volume_sent !== null);
-  if (hasVol && hasOpen && hasClick && hasCom) return 'Full';
-  if (hasVol && hasOpen) return 'Partial';
-  return 'Minimal';
-}
+</script>
+</body>
+</html>
