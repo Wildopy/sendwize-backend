@@ -113,6 +113,36 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .val-stat-num{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:#fff;margin-bottom:2px}
 .val-stat-lbl{font-size:10px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
 
+/* ── WHAT CHANGED + CONSENT COUNTDOWN (v1.1 stickiness) ── */
+.li-change{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:16px;box-shadow:var(--sh);animation:fadeUp .35s ease}
+.li-change-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.li-change-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.li-change-since{font-size:12px;color:var(--mu)}
+.li-delta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:560px){.li-delta-grid{grid-template-columns:1fr}}
+.li-delta{border:1px solid var(--b);border-radius:var(--rad);padding:12px 14px;background:var(--bg)}
+.li-delta-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:5px}
+.li-delta-val{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:6px}
+.li-delta-val.up{color:var(--g)}.li-delta-val.down{color:var(--r)}.li-delta-val.flat{color:var(--mu)}
+.li-delta-arrow{font-size:13px}
+.li-change-stale{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.li-change-stale-txt{font-size:13px;color:#92400e;font-weight:500;flex:1;line-height:1.5}
+
+.li-countdown{border:1.5px solid var(--rc);background:var(--rb);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:16px;box-shadow:var(--sh)}
+.li-countdown.soft{border-color:var(--yc);background:var(--yb)}
+.li-countdown-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.li-countdown-icon{font-size:22px;flex-shrink:0}
+.li-countdown-title{font-size:15px;font-weight:700;color:#7f1d1d}
+.li-countdown.soft .li-countdown-title{color:#713f12}
+.li-countdown-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+@media(max-width:560px){.li-countdown-grid{grid-template-columns:1fr}}
+.li-cd-tile{background:rgba(255,255,255,.7);border-radius:var(--rad);padding:12px 14px;text-align:center}
+.li-cd-num{font-size:24px;font-weight:800;font-family:'DM Mono',monospace;color:var(--r);line-height:1}
+.li-countdown.soft .li-cd-num{color:var(--y)}
+.li-cd-win{font-size:11px;font-weight:600;color:var(--tm);margin-top:4px}
+.li-cd-foot{font-size:12px;color:var(--tm);line-height:1.5}
+.li-cd-foot strong{color:var(--t)}
+
 /* ── COMPLIANCE STATUS BANNER ── */
 .compliance-banner{border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:20px;display:flex;align-items:flex-start;gap:16px}
 .compliance-banner.good{background:var(--gb);border:1.5px solid var(--gc)}
@@ -319,6 +349,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <div style="margin-bottom:28px">
     <div id="valHero"></div>
+    <div id="changeCountdownSection"></div>
     <div id="complianceBanner"></div>
   </div>
 
@@ -487,6 +518,9 @@ function renderResults(d){
     '<div class="val-stat"><div class="val-stat-num" style="color:'+(liabCount>0?'#ef4444':'#86efac')+'">'+fmt(liabCount)+'</div><div class="val-stat-lbl">ICO risk zone</div></div>'+
     '</div></div>';
 
+  // What changed + consent countdown (v1.1 stickiness)
+  renderChangeAndCountdown(d);
+
   // Compliance banner
   var icoStatus=d.icoStatus||'Good standing';
   var liabPct=pct(liabCount);
@@ -569,6 +603,78 @@ function renderResults(d){
     }).join('');
 }
 
+// ── WHAT CHANGED + CONSENT COUNTDOWN (v1.1 stickiness) ─────────
+// Reads d.changes and d.consentExpiring from the backend. Both are
+// optional — the block hides gracefully when absent (e.g. demo, or
+// first-ever upload with no prior snapshot).
+function renderChangeAndCountdown(d){
+  var host=el('changeCountdownSection');
+  if(!host){return;}
+  var html='';
+  var ch=d.changes||null;
+  var ce=d.consentExpiring||null;
+
+  // Stale nudge — if it has been a while since the last upload.
+  if(ch&&ch.daysSincePrevious!=null&&ch.daysSincePrevious>=14){
+    html+='<div class="li-change-stale">'+
+      '<div style="font-size:18px;flex-shrink:0">&#x23F3;</div>'+
+      '<div class="li-change-stale-txt">It has been '+ch.daysSincePrevious+' days since your last upload. Consent and deliverability decay over time \u2014 upload your latest list to confirm the current picture.</div>'+
+      '<button class="btn btn-primary btn-sm" onclick="showScreen(\'upload\')">Upload latest &rarr;</button>'+
+      '</div>';
+  }
+
+  // Consent-expiry countdown — only if there is anything expiring.
+  if(ce&&((ce.in30||0)+(ce.in60||0)+(ce.in90||0))>0){
+    var urgent=(ce.in30||0)>0;
+    var valTxt='';
+    if(ce.valueAtRisk){valTxt='<div class="li-cd-foot"><strong>'+fmtGBP(ce.valueAtRisk)+'</strong> of estimated list value sits with contacts expiring inside 90 days. A re-consent campaign now protects it.</div>';}
+    else{valTxt='<div class="li-cd-foot">These contacts are still legally usable today, but will cross the consent threshold within the windows shown unless they re-engage or re-consent.</div>';}
+    html+='<div class="li-countdown'+(urgent?'':' soft')+'">'+
+      '<div class="li-countdown-hdr">'+
+      '<div class="li-countdown-icon">'+(urgent?'\u23F0':'\uD83D\uDCC5')+'</div>'+
+      '<div class="li-countdown-title">Consent expiry countdown</div>'+
+      '</div>'+
+      '<div class="li-countdown-grid">'+
+      '<div class="li-cd-tile"><div class="li-cd-num">'+fmt(ce.in30||0)+'</div><div class="li-cd-win">within 30 days</div></div>'+
+      '<div class="li-cd-tile"><div class="li-cd-num">'+fmt(ce.in60||0)+'</div><div class="li-cd-win">31\u201360 days</div></div>'+
+      '<div class="li-cd-tile"><div class="li-cd-num">'+fmt(ce.in90||0)+'</div><div class="li-cd-win">61\u201390 days</div></div>'+
+      '</div>'+valTxt+
+      '</div>';
+  }
+
+  // What changed since last upload.
+  if(ch){
+    var days=ch.daysSincePrevious;
+    var sinceTxt=days==null?'since your last upload':days===0?'since earlier today':days===1?'since yesterday':'since your last upload '+days+' days ago';
+
+    function deltaTile(label,val,isGoodWhenUp,isMoney){
+      if(val==null||val===0){
+        return '<div class="li-delta"><div class="li-delta-lbl">'+escH(label)+'</div><div class="li-delta-val flat"><span class="li-delta-arrow">\u2014</span>no change</div></div>';
+      }
+      var up=val>0;
+      var good=isGoodWhenUp?up:!up;
+      var cls=good?'up':'down';
+      var arrow=up?'\u25B2':'\u25BC';
+      var shown=isMoney?fmtGBP(Math.abs(val)):fmt(Math.abs(val));
+      return '<div class="li-delta"><div class="li-delta-lbl">'+escH(label)+'</div><div class="li-delta-val '+cls+'"><span class="li-delta-arrow">'+arrow+'</span>'+(up?'+':'\u2212')+shown+'</div></div>';
+    }
+
+    html+='<div class="li-change">'+
+      '<div class="li-change-hdr">'+
+      '<div class="li-change-title">What changed</div>'+
+      '<div class="li-change-since">'+escH(sinceTxt)+'</div>'+
+      '</div>'+
+      '<div class="li-delta-grid">'+
+      deltaTile('List value',ch.valueDelta,true,true)+
+      deltaTile('Liability contacts',ch.liabilityDelta,false,false)+
+      deltaTile('Active contacts',ch.activeDelta,true,false)+
+      '</div>'+
+      '</div>';
+  }
+
+  host.innerHTML=html;
+}
+
 function generateFixRecord(){
   if(!userId||!lastResults){showToast('Sign in to create fix records on your dashboard','er');return;}
   var liabCount=lastResults.liabilityCount||0;
@@ -625,6 +731,9 @@ function loadListDemo(){
         {type:'Deliverability clean',description:'4 contacts have poor deliverability signals \u2014 role-based addresses, typo domains, and a disposable email. Sending to these addresses risks triggering spam filters that affect the deliverability of your entire list.',currentValue:0,estimatedValue:0,decayRate:0,recommendedAction:'Remove or quarantine these 4 addresses before your next send. Each one that bounces or marks as spam harms your sender reputation.'},
       ],
       sector:'ecommerce',aov:65,checkDate:new Date().toISOString().split('T')[0],
+      // Demo includes example change + countdown so the stickiness UI is visible.
+      changes:{direction:'improved',daysSincePrevious:9,valueDelta:312.00,liabilityDelta:-2,activeDelta:3,totalDelta:0,expiring30Delta:1,previous:{assetValue:2535.50,liabilityCount:6,activeCount:6,totalContacts:24,expiring30:2,date:''}},
+      consentExpiring:{in30:3,in60:4,in90:7,valueAtRisk:1240.00},
     };
     hideLoading();lastResults=demoResults;renderResults(demoResults);showScreen('results');
     var blob=new Blob([LIST_DEMO_CSV],{type:'text/csv'});
