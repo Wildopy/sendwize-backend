@@ -1,10 +1,16 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v4.28
+// SENDWIZE — submit-check.js v4.29
+// v4.29: Dossier re-verification (stickiness).
+//        - dossier-submit now stamps LastVerified (Date).
+//        - dossier-list returns daysSinceVerified + needsReview
+//          (Submitted dossiers older than 90 days flag for review),
+//          so the dashboard and the dossier list can prompt a re-check.
 // v4.28: Remove UpdatedAt from dossier-create (Date field rejects
 //        ISO timestamp). Add UpdatedAt back to dossier-save.
 // ─────────────────────────────────────────────────────────────
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
+const REVERIFY_DAYS = 90; // submitted dossiers older than this flag for review
 
 const DOSSIER_MODULES = [
   'ListProvenance', 'ConsentMechanism', 'ContentCheck', 'Suppression', 'SenderIdentity',
@@ -199,8 +205,6 @@ async function handleDossierCreate(req, res) {
   const today          = new Date().toISOString().split('T')[0];
 
   // ── FIX v4.28: UpdatedAt removed from create payload ──────────
-  // UpdatedAt is a Date field in Airtable — it rejects ISO timestamps.
-  // It gets written correctly on first module save instead.
   const fields = {
     UserID:        userId,
     CampaignTitle: campaignTitle,
@@ -264,6 +268,20 @@ async function handleDossierList(req, res) {
     const f      = record.fields;
     const filled = DOSSIER_MODULES.filter(m => f[m]?.trim()).length;
     const pct    = Math.round((filled / DOSSIER_MODULES.length) * 100);
+
+    // ── v4.29: re-verification staleness ──────────────────────
+    // Submitted dossiers go stale: if the last verification was more
+    // than REVERIFY_DAYS ago, flag for review so the user re-certifies.
+    const verifiedRaw = f.LastVerified || f.SubmittedAt || '';
+    let daysSinceVerified = null, needsReview = false;
+    if (f.Status === 'Submitted' && verifiedRaw) {
+      const vd = new Date(verifiedRaw);
+      if (!isNaN(vd)) {
+        daysSinceVerified = Math.floor((Date.now() - vd.getTime()) / 86400000);
+        needsReview = daysSinceVerified > REVERIFY_DAYS;
+      }
+    }
+
     return {
       dossierId:        record.id,
       campaignTitle:    f.CampaignTitle    || 'Untitled Campaign',
@@ -277,6 +295,9 @@ async function handleDossierList(req, res) {
       createdDate:      f.CreatedDate      || '',
       updatedAt:        f.UpdatedAt        || '',
       submittedAt:      f.SubmittedAt      || '',
+      lastVerified:     f.LastVerified     || '',
+      daysSinceVerified,
+      needsReview,
     };
   });
 
@@ -333,8 +354,6 @@ async function handleDossierSave(req, res) {
   }
 
   // ── FIX v4.28: UpdatedAt restored to save payload ─────────────
-  // Removed from create (Date field rejects ISO string) but correct
-  // here since UpdatedAt is a text/datetime field used for sorting.
   const updateFields = {
     [module]:  moduleText,
     UpdatedAt: new Date().toISOString(),
@@ -437,6 +456,7 @@ async function handleDossierGet(req, res) {
     CreatedDate:      f.CreatedDate      || '',
     UpdatedAt:        f.UpdatedAt        || '',
     SubmittedAt:      f.SubmittedAt      || '',
+    LastVerified:     f.LastVerified     || '',
     moduleFields,
   });
 }
@@ -530,6 +550,7 @@ async function handleDossierSubmit(req, res) {
         Status:           'Submitted',
         IssuesFound:      issueList.length,
         SubmittedAt:      now,
+        LastVerified:     now.split('T')[0],   // v4.29 — stamps re-verification date (Date field)
         VersionHistory:   JSON.stringify(history),
         EvidenceStrength: evidenceStrength,
         HealthScore:      healthScore,
