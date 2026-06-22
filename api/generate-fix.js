@@ -1,20 +1,26 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — generate-fix.js v6.1
-// Called by all tools when a violation is found.
+// SENDWIZE — generate-fix.js v6.2
+// Called by all tools when a violation OR commercial loss is found.
 // Creates a Compliance_Fixes record in Airtable.
 //
-// v6.1 changes from v6.0:
-//   - Accepts processingContext in request body (optional).
-//     Stored as JSON in ProcessingContext field on fix record.
-//     Used by fixes.js v6.2 to derive contextual factors for
-//     the exposure display. Backwards compatible — null if absent.
-//   - processingContext shape:
-//     { dataTypes, contactVolume, vendorBreachHistory,
-//       dpaStatus, hasDocumentedAssessment, vendorName }
-//   - All other logic unchanged from v6.0.
+// v6.2 changes from v6.1:
+//   - NEW 'Commercial' exposure category (commercial_loss / commercial_risk).
+//     Unlike ICO/ASA/CMA, the £ figure is NOT a comparable-case band —
+//     it is computed by the calling tool from the USER'S OWN data
+//     (e.g. Audience Read: cost-per-subscriber × excess unsubscribes;
+//      List Intelligence: at-risk list value). The tool passes the
+//      figure in via exposureLow / exposureHigh in the request body.
+//     Stored with ExposureBasis: 'commercial'. NEVER summed with
+//     regulatory (ICO/ASA/CMA) exposure anywhere downstream.
+//   - buildExposureFields() now accepts explicit { exposureLow, exposureHigh }
+//     used only for the Commercial category.
+//   - COMMERCIAL_DISCLAIMER is distinct: an estimated business cost,
+//     explicitly NOT a regulatory fine and NOT legal advice.
+//
+// v6.1 (unchanged):
+//   - Accepts processingContext (optional). Stored as JSON.
 //   - LEGACY_TYPE_MAP unchanged.
-//   - ExposureLow/High still written as flat band constants for
-//     audit trail — fixes.js derives live exposure at read time.
+//   - ExposureLow/High written as flat band constants for audit trail.
 // ─────────────────────────────────────────────────────────────
 
 const LEGACY_TYPE_MAP = {
@@ -43,6 +49,8 @@ const LEGACY_TYPE_MAP = {
   unlawful_incentive:                 'data_quality',
   missing_terms:                      'data_quality',
   reconsent_sent:                     null,
+  // Commercial aliases
+  commercial_risk:                    'commercial_loss',
 };
 
 const EXPOSURE_CONSTANTS = {
@@ -58,11 +66,14 @@ const EXPOSURE_CONSTANTS = {
   undisclosed_ad:            { category: 'ASA' },
   drip_pricing:              { category: 'CMA' },
   fake_reviews:              { category: 'CMA' },
+  // Commercial — £ figure supplied by the calling tool, not a band.
+  commercial_loss:           { category: 'Commercial' },
 };
 
 const ICO_LEGAL_MAX    = '\u00a317.5M or 4% of global annual turnover \u2014 whichever is higher (DUAA 2025)';
 const CMA_LEGAL_MAX    = 'Higher of \u00a3300,000 or 10% of global annual turnover (DMCCA 2024)';
 const NOT_LEGAL_ADVICE = 'Illustrative ranges based on published enforcement data. Not a prediction. Not legal advice.';
+const COMMERCIAL_DISCLAIMER = 'Estimated business cost based on your own inputs \u2014 not a regulatory fine, and not legal advice.';
 
 function resolveFixType(rawType) {
   const type = (rawType || '').toLowerCase().trim();
@@ -78,10 +89,19 @@ function resolveFixType(rawType) {
   return { canonical: type, original: type, def };
 }
 
-function buildExposureFields(def) {
+// opts.exposureLow / opts.exposureHigh are used ONLY for the Commercial
+// category, where the £ figure is computed by the calling tool.
+function buildExposureFields(def, opts) {
+  opts = opts || {};
   if (def.category === 'ICO') return { ExposureLow: def.realisticLow, ExposureHigh: def.realisticHigh, ExposureBasis: 'regulatory', ExposureCategory: 'ICO', LegalMax: ICO_LEGAL_MAX };
   if (def.category === 'ASA') return { ExposureLow: 0, ExposureHigh: 0, ExposureBasis: 'reputational', ExposureCategory: 'ASA', LegalMax: null };
   if (def.category === 'CMA') return { ExposureLow: 0, ExposureHigh: 0, ExposureBasis: 'regulatory', ExposureCategory: 'CMA', LegalMax: CMA_LEGAL_MAX };
+  if (def.category === 'Commercial') {
+    const low  = Number.isFinite(opts.exposureLow)  ? Math.max(0, Math.round(opts.exposureLow))  : 0;
+    const highRaw = Number.isFinite(opts.exposureHigh) ? Math.max(0, Math.round(opts.exposureHigh)) : low;
+    const high = Math.max(low, highRaw);
+    return { ExposureLow: low, ExposureHigh: high, ExposureBasis: 'commercial', ExposureCategory: 'Commercial', LegalMax: null };
+  }
   return { ExposureLow: 0, ExposureHigh: 0, ExposureBasis: 'reputational', ExposureCategory: 'unknown', LegalMax: null };
 }
 
@@ -96,7 +116,8 @@ export default async function handler(req, res) {
     const {
       userId, fixType, description, tool, severity,
       volume, contactVolume, sourceRecordId,
-      processingContext,  // v6.1 — optional, object
+      processingContext,           // v6.1 — optional, object
+      exposureLow, exposureHigh,   // v6.2 — Commercial only, numbers
     } = req.body ?? {};
 
     if (!userId)   return res.status(400).json({ error: 'Missing userId' });
@@ -110,6 +131,7 @@ export default async function handler(req, res) {
 
     const { canonical, original, def } = resolved;
     const wasRemapped = canonical !== original;
+    const isCommercial = def.category === 'Commercial';
 
     const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
     const BASE_ID        = process.env.BASE_ID;
@@ -135,9 +157,10 @@ export default async function handler(req, res) {
       } catch(e) { console.error('Dupe check failed, continuing:', e); }
     }
 
-    const exposureFields = buildExposureFields(def);
+    const exposureFields = buildExposureFields(def, { exposureLow, exposureHigh });
     const cvRaw = contactVolume ?? volume ?? null;
     const cv = cvRaw !== null ? parseInt(cvRaw, 10) || null : null;
+    const disclaimer = isCommercial ? COMMERCIAL_DISCLAIMER : NOT_LEGAL_ADVICE;
 
     // Validate and serialise processingContext
     let processingContextStr = null;
@@ -158,7 +181,7 @@ export default async function handler(req, res) {
       CreatedDate:       new Date().toISOString().split('T')[0],
       RevenueBand:       revenueBand,
       ProcessingContext: processingContextStr,
-      Disclaimer:        NOT_LEGAL_ADVICE,
+      Disclaimer:        disclaimer,
       ...exposureFields,
     }).filter(([, v]) => v !== null && v !== undefined));
 
@@ -182,8 +205,9 @@ export default async function handler(req, res) {
       wasRemapped, category: def.category,
       exposureLow: exposureFields.ExposureLow,
       exposureHigh: exposureFields.ExposureHigh,
+      exposureBasis: exposureFields.ExposureBasis,
       legalMax: exposureFields.LegalMax,
-      disclaimer: NOT_LEGAL_ADVICE,
+      disclaimer,
     });
 
   } catch (error) {
