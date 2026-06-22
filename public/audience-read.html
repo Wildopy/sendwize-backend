@@ -105,6 +105,32 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .dash-meta{font-size:13px;color:var(--mu);margin-top:3px}
 .dash-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
+/* WHAT CHANGED BLOCK */
+.change-block{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:24px;box-shadow:var(--sh);animation:fadeUp .35s ease}
+.change-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.change-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.change-since{font-size:12px;color:var(--mu)}
+.change-tally{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tally-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:20px;border:1px solid var(--b)}
+.tally-pill.up{background:var(--gb);color:var(--g);border-color:var(--gc)}
+.tally-pill.down{background:var(--rb);color:var(--r);border-color:var(--rc)}
+.tally-pill.flat{background:var(--bg);color:var(--mu)}
+.tally-pill.new{background:var(--ol);color:var(--o);border-color:#fed7aa}
+.change-rows{display:flex;flex-direction:column;gap:7px}
+.change-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--b)}
+.change-row:first-child{border-top:none}
+.change-arrow{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.change-arrow.up{color:var(--g)}.change-arrow.down{color:var(--r)}.change-arrow.flat{color:var(--mu)}.change-arrow.new{color:var(--o)}
+.change-seg{font-size:13px;font-weight:600;flex-shrink:0;min-width:120px}
+.change-desc{font-size:12px;color:var(--tm);flex:1;line-height:1.4}
+.change-desc .from{color:var(--mu)}
+.change-desc .to{font-weight:600;color:var(--t)}
+.change-cap{font-size:11px;font-family:'DM Mono',monospace;flex-shrink:0;font-weight:600}
+.change-cap.up{color:var(--g)}.change-cap.down{color:var(--r)}.change-cap.flat{color:var(--mu)}
+.change-empty{font-size:13px;color:var(--mu);line-height:1.6}
+.stale-banner{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.stale-banner-txt{font-size:13px;color:#92400e;font-weight:500;flex:1;line-height:1.5}
+
 /* SEND SUMMARY TILES */
 .send-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}
 @media(max-width:560px){.send-summary{grid-template-columns:repeat(2,1fr)}}
@@ -441,6 +467,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
+  <div id="changeBlock"></div>
+
   <div style="margin-bottom:32px">
     <div class="sec-hdr">What your recent sends did</div>
     <div id="campaignList"></div>
@@ -594,7 +622,8 @@ async function submitUpload() {
       fd.rows.forEach(function(row) { allRows.push(row); });
     }
     var sector = getSector();
-    var resp = await fetch(API+'?userId='+userId+'&action=upload&sector='+sector, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({rows:allRows, fieldMapping:combinedMap}) });
+    var cplVal = getCpl();
+    var resp = await fetch(API+'?userId='+userId+'&action=upload&sector='+sector, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({rows:allRows, fieldMapping:combinedMap, cpl:cplVal}) });
     var json = await resp.json();
     if (!json.success) throw new Error(json.error || 'Upload failed');
     currentSector = sector;
@@ -625,6 +654,7 @@ async function loadDash() {
 function renderDash(data) {
   dashData = data; segNames = Object.keys(data.segments || {});
   document.getElementById('dashMeta').textContent = segNames.length+' segment'+(segNames.length!==1?'s':'')+' \u00b7 Updated '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  renderChangeBlock(data.changes);
   renderCampaignHistory(data);
   renderSegmentDiagnoses(data);
   renderRecommendations(data);
@@ -633,6 +663,76 @@ function renderDash(data) {
   var ls = document.getElementById('logSeg');
   ls.innerHTML = segNames.map(function(s) { return '<option value="'+escH(s)+'">'+escH(s)+'</option>'; }).join('');
   document.getElementById('psDate').value = new Date().toISOString().slice(0,10);
+}
+
+function renderChangeBlock(changes) {
+  var cb = document.getElementById('changeBlock');
+  if (!cb) return;
+  // No comparison data (first ever upload, or no prior snapshot) — hide.
+  if (!changes || !changes.segments || !changes.segments.length) { cb.innerHTML = ''; return; }
+
+  var sum = changes.summary || {};
+  // If literally every segment is brand new, there's nothing to compare — hide.
+  if (sum.brandNew === sum.total && sum.improved === 0 && sum.worsened === 0) { cb.innerHTML = ''; return; }
+
+  var days = sum.daysSinceLast;
+  var sinceTxt = days == null ? 'since your last check'
+    : days === 0 ? 'since earlier today'
+    : days === 1 ? 'since yesterday'
+    : 'since your last check ' + days + ' days ago';
+
+  // Stale nudge — if it's been a while, prompt a fresh upload.
+  var staleHtml = '';
+  if (days != null && days >= 14) {
+    staleHtml = '<div class="stale-banner"><div style="font-size:18px;flex-shrink:0">&#x23F3;</div>'+
+      '<div class="stale-banner-txt">It has been '+days+' days since your last upload. Email engagement decays over time &mdash; upload your latest export to keep this diagnosis accurate.</div>'+
+      '<button class="btn btn-primary btn-sm" onclick="showScreen(\'upload\')">Upload latest &rarr;</button></div>';
+  }
+
+  // Tally pills
+  var pills = '';
+  if (sum.worsened > 0) pills += '<span class="tally-pill down">&#x25BC; '+sum.worsened+' worsened</span>';
+  if (sum.improved > 0) pills += '<span class="tally-pill up">&#x25B2; '+sum.improved+' improved</span>';
+  if (sum.unchanged > 0) pills += '<span class="tally-pill flat">&#x2014; '+sum.unchanged+' unchanged</span>';
+  if (sum.brandNew > 0) pills += '<span class="tally-pill new">+ '+sum.brandNew+' new</span>';
+
+  // Rows — skip pure "new" and "same" with no capital movement to keep it focused;
+  // show worsened and improved first (already sorted by backend).
+  var rows = changes.segments.filter(function(s) {
+    return s.direction === 'worsened' || s.direction === 'improved' || s.isNew;
+  }).slice(0, 6).map(function(s) {
+    var arrowCls = s.direction === 'improved' ? 'up' : s.direction === 'worsened' ? 'down' : s.isNew ? 'new' : 'flat';
+    var arrow = s.direction === 'improved' ? '&#x25B2;' : s.direction === 'worsened' ? '&#x25BC;' : s.isNew ? '+' : '&#x2014;';
+    var desc;
+    if (s.isNew) {
+      desc = '<span class="to">'+escH(s.currentState)+'</span> <span class="from">&middot; new segment</span>';
+    } else if (s.stateChanged) {
+      desc = '<span class="from">'+escH(s.previousState)+'</span> &rarr; <span class="to">'+escH(s.currentState)+'</span>';
+    } else {
+      desc = '<span class="to">'+escH(s.currentState)+'</span> <span class="from">&middot; capital '+(s.capitalDelta>0?'rising':'falling')+'</span>';
+    }
+    var capStr = '';
+    if (s.capitalDelta != null && Math.abs(s.capitalDelta) >= 1) {
+      var capCls = s.capitalDelta > 0 ? 'up' : s.capitalDelta < 0 ? 'down' : 'flat';
+      capStr = '<span class="change-cap '+capCls+'">'+(s.capitalDelta>0?'+':'')+s.capitalDelta.toFixed(0)+' capital</span>';
+    }
+    return '<div class="change-row"><div class="change-arrow '+arrowCls+'">'+arrow+'</div>'+
+      '<div class="change-seg">'+escH(s.segment)+'</div>'+
+      '<div class="change-desc">'+desc+'</div>'+capStr+'</div>';
+  }).join('');
+
+  var headline = sum.worsened > 0
+    ? sum.worsened + ' segment' + (sum.worsened !== 1 ? 's' : '') + ' need' + (sum.worsened === 1 ? 's' : '') + ' attention'
+    : sum.improved > 0
+    ? 'Good news — ' + sum.improved + ' segment' + (sum.improved !== 1 ? 's' : '') + ' improved'
+    : 'What changed';
+
+  cb.innerHTML = staleHtml +
+    '<div class="change-block">'+
+    '<div class="change-hdr"><div class="change-title">'+escH(headline)+'</div><div class="change-since">'+escH(sinceTxt)+'</div></div>'+
+    '<div class="change-tally">'+pills+'</div>'+
+    (rows ? '<div class="change-rows">'+rows+'</div>' : '<div class="change-empty">No state changes since your last check.</div>')+
+    '</div>';
 }
 
 function renderCampaignHistory(data) {
