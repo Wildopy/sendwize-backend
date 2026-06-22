@@ -745,9 +745,9 @@ function renderDossierList(dossiers) {
       <div class="dc-meta">
         <span class="dc-modules">${d.modulesComplete}/5 modules</span>
         ${strengthLabel?`<span class="dc-strength ${strengthClass}">${strengthLabel}</span>`:''}
-        <span class="dc-status">${d.status==='Submitted'?'✓ Submitted':'Draft'}</span>
+        <span class="dc-status" style="${d.needsReview?'color:var(--y)':''}">${d.needsReview?'⚠ Needs review':d.status==='Submitted'?'✓ Submitted':'Draft'}</span>
       </div>
-      ${dateLabel?`<div class="dc-date">${d.status==='Submitted'?'Submitted':'Updated'} ${dateLabel}</div>`:''}
+      ${dateLabel?`<div class="dc-date">${d.needsReview?'Verified':d.status==='Submitted'?'Submitted':'Updated'} ${dateLabel}</div>`:''}
     </div>`;
   }).join('');
   el('dossierListContent').innerHTML=`<div class="dossier-grid">${cards}</div>`;
