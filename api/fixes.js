@@ -1,46 +1,33 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — fixes.js v6.2
+// SENDWIZE — fixes.js v6.3
 // GET  /api/fixes?action=get&userId=x      → list + score + exposure
 // POST /api/fixes?action=complete          → mark fix done
 // POST /api/fixes?action=dismiss           → exclude from score
 //
-// v6.2 changes from v6.1:
-//   - Exposure model rebuilt around three honest layers:
+// v6.3 changes from v6.2:
+//   - NEW 'Commercial' exposure category. Commercial fixes carry a £
+//     figure computed by the calling tool from the user's OWN data
+//     (Audience Read cost-per-subscriber loss; List Intelligence
+//     at-risk list value). The figure is STORED on the fix record
+//     (ExposureLow/ExposureHigh) by generate-fix.js — it is NOT a
+//     comparable-case band and is NOT recomputed here.
+//   - handleGet() now returns a SEPARATE `commercial` block (totalLow,
+//     totalHigh, count). This is NEVER added to actioned.total or any
+//     regulatory figure. The dashboard renders it as its own card with
+//     the commercial disclaimer.
+//   - categoryCounts now include a `commercial` count.
+//   - buildExposureForFix() handles the Commercial category, reading the
+//     stored figure passed in by formatFix().
+//   - getRealisticMidpoint() still returns 0 for non-ICO, so commercial
+//     fixes contribute 0 to the actioned (regulatory) total by design.
 //
-//     LAYER 1 — Revenue-banded comparable case range
-//     Unchanged from v6.1. Anchored on published pre-DUAA ICO
-//     enforcement decisions. Labelled explicitly as historical.
-//
-//     LAYER 2 — Contextual factors
-//     Two lists: what pushes a case toward the LOW end of the range,
-//     what pushes it toward the HIGH end. Derived from the user's
-//     specific processing context (data types, volume, breach history,
-//     DPA status, documented assessment). Shown alongside the range
-//     so users can self-assess where they sit. Not a prediction.
-//
-//     LAYER 3 — DUAA warning (unmissable)
-//     The comparable case ranges are pre-DUAA. DUAA 2025 raised the
-//     ICO maximum to £17.5M or 4% global turnover. No post-DUAA PECR
-//     decisions published yet — when they are, ranges will be updated.
-//     This warning is a first-class field on every ICO exposure object,
-//     not a footnote. It renders prominently in dashboard and fix cards.
-//
-//   - buildExposureForFix() now accepts processingContext (optional).
-//     If provided, derives contextual factors specific to that
-//     processing relationship. If absent, returns generic factors
-//     from lowDriver/highDriver — backwards compatible.
-//
-//   - ASA referral risk model unchanged from v6.1.
-//   - CMA legal max only unchanged.
-//   - getRealisticMidpoint() unchanged — still band-based for
-//     actioned risk sum. No processing context applied to midpoint
-//     to avoid liability from over-precise completed fix values.
+// v6.2 (unchanged): three-layer ICO exposure model, contextual factors,
+//   DUAA warning, ASA referral risk, CMA legal max.
 //
 // LEGAL POSITION:
-//   Ranges = comparable published cases, not a prediction.
-//   Contextual factors = educational framing, not a personalised
-//   fine estimate. DUAA caveat is unmissable on every ICO display.
-//   Nothing in this file constitutes legal advice.
+//   Regulatory ranges = comparable published cases, not a prediction.
+//   Commercial figures = estimated business cost from the user's own
+//   inputs, explicitly not a regulatory fine. Nothing here is legal advice.
 // ─────────────────────────────────────────────────────────────
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
@@ -63,6 +50,7 @@ function normaliseBand(raw) {
 const ICO_LEGAL_MAX    = '\u00a317.5M or 4% of global annual turnover \u2014 whichever is higher (DUAA 2025)';
 const CMA_LEGAL_MAX    = 'Higher of \u00a3300,000 or 10% of global annual turnover (DMCCA 2024)';
 const NOT_LEGAL_ADVICE = 'Illustrative ranges based on published enforcement data. Not a prediction. Not legal advice.';
+const COMMERCIAL_DISCLAIMER = 'Estimated business cost based on your own inputs \u2014 not a regulatory fine, and not legal advice.';
 
 const DUAA_WARNING = [
   'These ranges are based on ICO enforcement decisions issued before the Data Use and Access Act 2025.',
@@ -72,21 +60,6 @@ const DUAA_WARNING = [
 ].join(' ');
 
 // ── EXPOSURE CONSTANTS ────────────────────────────────────────
-// Revenue-banded ranges anchored on published pre-DUAA ICO decisions.
-// lowDriver / highDriver = generic contextual factors used when no
-// processingContext is provided. buildExposureForFix() derives
-// specific factors when processingContext is available.
-//
-// Band rationale:
-//   under_1m  — ICO has never fined a <£1M business above ~£40k for
-//               a first PECR offence in published pre-DUAA decisions.
-//   1m_10m    — Mid-market. Most published £20k–£80k decisions here.
-//   10m_50m   — Upper mid-market. Decisions trend £40k–£120k.
-//   over_50m  — Largest published PECR fines approach legal max.
-//
-// Review quarterly: ico.org.uk/action-weve-taken/enforcement
-// First post-DUAA PECR decision = update ALL ranges upward.
-
 const EXPOSURE_CONSTANTS = {
 
   consent_missing: {
@@ -181,6 +154,11 @@ const EXPOSURE_CONSTANTS = {
   // ── CMA — legal max only ─────────────────────────────────────
   drip_pricing: { category: 'CMA' },
   fake_reviews:  { category: 'CMA' },
+
+  // ── Commercial — £ figure stored on the fix record, not banded ──
+  // Computed by the calling tool from the user's own data. fixes.js
+  // reads the stored ExposureLow/High; it does not recompute.
+  commercial_loss: { category: 'Commercial' },
 };
 
 // ── EXPOSURE HELPERS ──────────────────────────────────────────
@@ -201,20 +179,6 @@ function getRealisticMidpoint(fixType, revenueBand) {
 }
 
 // ── CONTEXTUAL FACTORS ────────────────────────────────────────
-// Derives specific low/high drivers from processing context.
-// Returns { lowFactors: string[], highFactors: string[] }
-// Used to show users what puts their case toward low vs high end.
-// This is educational framing — NOT a personalised fine estimate.
-//
-// processingContext shape (all optional):
-// {
-//   dataTypes:               string[]  — e.g. ['Email addresses','Purchase history']
-//   contactVolume:           number    — contacts affected
-//   vendorBreachHistory:     string    — breach text or 'None identified'
-//   dpaStatus:               string    — 'Confirmed','On Request','Refused','Unknown'
-//   hasDocumentedAssessment: boolean
-//   vendorName:              string
-// }
 function deriveContextualFactors(fixType, def, ctx) {
   if (!ctx) {
     return {
@@ -237,7 +201,6 @@ function deriveContextualFactors(fixType, def, ctx) {
   const hasBehavioural = dataTypes.some(d => /behavioural|behaviour|purchase|financial/i.test(d));
   const emailOnly      = dataTypes.length > 0 && dataTypes.every(d => /email/i.test(d));
 
-  // Data type factors
   if (emailOnly) {
     lowFactors.push('Email addresses only — lower sensitivity data type in published ICO decisions');
   } else if (hasSensitive) {
@@ -246,7 +209,6 @@ function deriveContextualFactors(fixType, def, ctx) {
     highFactors.push('Behavioural or purchase data included — higher value personal data increases severity');
   }
 
-  // Volume factors
   if (volume !== null) {
     if (volume < 10000) {
       lowFactors.push(`Small contact volume (${volume.toLocaleString()} contacts) — published decisions show volume is a significant mitigating factor`);
@@ -255,14 +217,12 @@ function deriveContextualFactors(fixType, def, ctx) {
     }
   }
 
-  // Breach history
   if (breachKnown) {
     highFactors.push('Confirmed breach or enforcement history at this vendor — using a processor with known enforcement history is an aggravating factor if ICO investigates');
   } else {
     lowFactors.push('No confirmed breach history at this vendor — clean enforcement record is a mitigating factor');
   }
 
-  // DPA status
   if (dpaStatus === 'confirmed') {
     lowFactors.push('DPA in place — Article 28 compliance confirmed, significantly reduces exposure for this specific breach type');
   } else if (dpaStatus === 'refused') {
@@ -271,14 +231,12 @@ function deriveContextualFactors(fixType, def, ctx) {
     lowFactors.push('DPA in progress — actively seeking a DPA demonstrates good faith, mitigates somewhat');
   }
 
-  // Documented assessment
   if (hasDoc) {
     lowFactors.push('Documented assessment on file — demonstrable due diligence is consistently cited as a mitigating factor by the ICO');
   } else {
     highFactors.push('No documented assessment — absence of due diligence records removes a key mitigating argument');
   }
 
-  // Fall back to generic drivers if nothing derived
   if (!lowFactors.length)  lowFactors.push(def.lowDriver);
   if (!highFactors.length) highFactors.push(def.highDriver);
 
@@ -286,14 +244,10 @@ function deriveContextualFactors(fixType, def, ctx) {
 }
 
 // ── BUILD EXPOSURE FOR FIX ────────────────────────────────────
-// Main function used by formatFix() and dashboard rendering.
-// processingContext is optional — backwards compatible with v6.1.
-//
-// Returns full exposure object with three layers:
-//   1. Revenue-banded range (historical comparable cases)
-//   2. Contextual factors (low/high drivers)
-//   3. DUAA warning (unmissable for all ICO items)
-function buildExposureForFix(fixType, revenueBand, processingContext) {
+// storedExposure (v6.3) = { low, high } read from the fix record.
+// Used ONLY for the Commercial category, where the figure was computed
+// by the calling tool and persisted by generate-fix.js.
+function buildExposureForFix(fixType, revenueBand, processingContext, storedExposure) {
   const def = getExposureConstants(fixType);
 
   if (!def) {
@@ -317,17 +271,12 @@ function buildExposureForFix(fixType, revenueBand, processingContext) {
       realisticHigh: range.high,
       midpoint:      Math.round((range.low + range.high) / 2),
       revenueBand:   normaliseBand(revenueBand || 'under_1m'),
-
-      // Layer 2 — contextual factors
       lowFactors:    factors.lowFactors,
       highFactors:   factors.highFactors,
       hasContext:    !!ctx,
-
-      // Layer 3 — DUAA warning (unmissable)
       duaaWarning:   DUAA_WARNING,
       legalMax:      ICO_LEGAL_MAX,
       legalMaxLabel: 'ICO statutory maximum (DUAA 2025)',
-
       disclaimer:    NOT_LEGAL_ADVICE,
       rangeLabel:    'Comparable published cases (pre-DUAA) \u00b7 not a prediction \u00b7 not legal advice',
     };
@@ -361,6 +310,22 @@ function buildExposureForFix(fixType, revenueBand, processingContext) {
     };
   }
 
+  if (def.category === 'Commercial') {
+    const low  = storedExposure && Number.isFinite(storedExposure.low)  ? storedExposure.low  : 0;
+    const high = storedExposure && Number.isFinite(storedExposure.high) ? storedExposure.high : low;
+    return {
+      category:       'Commercial',
+      hasRange:       high > low,
+      isCommercial:   true,
+      realisticLow:   low,
+      realisticHigh:  high,
+      midpoint:       Math.round((low + high) / 2),
+      legalMax:       null,
+      rangeLabel:     'Estimated business cost \u00b7 from your own inputs \u00b7 not a regulatory fine',
+      disclaimer:     COMMERCIAL_DISCLAIMER,
+    };
+  }
+
   return { category: def.category, hasRange: false, disclaimer: NOT_LEGAL_ADVICE };
 }
 
@@ -381,7 +346,12 @@ function formatFix(r, revenueBand) {
     try { return r.fields.ProcessingContext ? JSON.parse(r.fields.ProcessingContext) : null; }
     catch(e) { return null; }
   })();
-  const exposure = buildExposureForFix(fixType, revenueBand, processingContext);
+  // v6.3 — stored £ figure for Commercial fixes (written by generate-fix.js)
+  const storedExposure = {
+    low:  r.fields.ExposureLow  != null ? Number(r.fields.ExposureLow)  : null,
+    high: r.fields.ExposureHigh != null ? Number(r.fields.ExposureHigh) : null,
+  };
+  const exposure = buildExposureForFix(fixType, revenueBand, processingContext, storedExposure);
 
   return {
     id:               r.id,
@@ -408,7 +378,6 @@ async function handleGet(req, res) {
   const BASE_ID        = process.env.BASE_ID;
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
 
-  // Fetch User_Profile and Compliance_Fixes in parallel
   const [profileRes, fixesRes] = await Promise.all([
     fetch(`${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
       { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }),
@@ -433,14 +402,24 @@ async function handleGet(req, res) {
   const pending   = all.filter(x => x.fields.Status === 'pending');
   const completed = all.filter(x => x.fields.Status === 'completed');
   const dismissed = all.filter(x => x.fields.Status === 'dismissed');
-  const active    = pending.length + completed.length;
-  const score     = active > 0 ? Math.round((completed.length / active) * 100) : 0;
-  const band      = getScoreBand(score);
+
+  // Score is built from REGULATORY fixes only — commercial items are
+  // business-cost estimates, not compliance tasks, so they must not
+  // move the compliance score. We exclude them from the score maths.
+  const isCommercial = r => (r.fields.ExposureCategory === 'Commercial') || ((r.fields.FixType || '').toLowerCase() === 'commercial_loss');
+  const pendingReg   = pending.filter(r => !isCommercial(r));
+  const completedReg = completed.filter(r => !isCommercial(r));
+  const activeReg    = pendingReg.length + completedReg.length;
+  const score        = activeReg > 0 ? Math.round((completedReg.length / activeReg) * 100) : 0;
+  const band         = getScoreBand(score);
 
   const pendingFormatted   = pending.map(r => formatFix(r, revenueBand));
   const completedFormatted = completed.map(r => formatFix(r, revenueBand));
   const dismissedFormatted = dismissed.map(r => formatFix(r, revenueBand));
 
+  // Regulatory actioned total (ICO midpoints only) — UNCHANGED.
+  // getRealisticMidpoint returns 0 for non-ICO, so commercial fixes
+  // never contribute here.
   const actionedTotal = completedFormatted.reduce((sum, f) => {
     return sum + getRealisticMidpoint(f.fixType, revenueBand);
   }, 0);
@@ -448,6 +427,14 @@ async function handleGet(req, res) {
   const icoP = pendingFormatted.filter(f => f.exposure?.category === 'ICO').length;
   const asaP = pendingFormatted.filter(f => f.exposure?.category === 'ASA').length;
   const cmaP = pendingFormatted.filter(f => f.exposure?.category === 'CMA').length;
+  const comP = pendingFormatted.filter(f => f.exposure?.category === 'Commercial').length;
+
+  // ── COMMERCIAL EXPOSURE (v6.3) ────────────────────────────────
+  // Separate, never summed with regulatory. Sums the stored £ figures
+  // across pending commercial fixes.
+  const pendingCommercial = pendingFormatted.filter(f => f.exposure?.category === 'Commercial');
+  const commercialLow  = pendingCommercial.reduce((s, f) => s + (f.exposure?.realisticLow  || 0), 0);
+  const commercialHigh = pendingCommercial.reduce((s, f) => s + (f.exposure?.realisticHigh || 0), 0);
 
   const now           = new Date();
   const assessedMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -462,23 +449,33 @@ async function handleGet(req, res) {
       pending:   pending.length,
       completed: completed.length,
       dismissed: dismissed.length,
-      active,
+      active:    activeReg,
     },
     actioned: {
       total:         actionedTotal,
-      count:         completedFormatted.length,
+      count:         completedReg.length,
       assessedMonth,
       disclaimer:    NOT_LEGAL_ADVICE,
       legalMax:      ICO_LEGAL_MAX,
       legalMaxLabel: 'ICO statutory maximum (DUAA 2025)',
       duaaWarning:   DUAA_WARNING,
     },
+    // Separate commercial block — render as its own card, never added
+    // to the regulatory "risk addressed" figure.
+    commercial: {
+      totalLow:    Math.round(commercialLow),
+      totalHigh:   Math.round(commercialHigh),
+      count:       pendingCommercial.length,
+      basis:       'commercial',
+      disclaimer:  COMMERCIAL_DISCLAIMER,
+    },
     categoryCounts: {
-      pending:   { ico: icoP, asa: asaP, cma: cmaP },
+      pending:   { ico: icoP, asa: asaP, cma: cmaP, commercial: comP },
       completed: {
         ico: completedFormatted.filter(f => f.exposure?.category === 'ICO').length,
         asa: completedFormatted.filter(f => f.exposure?.category === 'ASA').length,
         cma: completedFormatted.filter(f => f.exposure?.category === 'CMA').length,
+        commercial: completedFormatted.filter(f => f.exposure?.category === 'Commercial').length,
       },
     },
     fixes: {
@@ -512,7 +509,6 @@ async function handleComplete(req, res) {
   });
   if (!ur.ok) return res.status(ur.status).json({ error: 'Failed to complete fix' });
 
-  // Fetch revenue band for accurate midpoint
   let revenueBand = 'under_1m';
   try {
     const pr = await fetch(`${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
