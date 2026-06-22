@@ -630,7 +630,7 @@ function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance
       verdict: 'This segment is losing interest',
       statement: `Unsubscribes trending up across your last ${Math.min(n, 6)} campaigns. Average ${avgPct} — ${aboveBenchBy || `above UK ${bench.label} benchmark of ${benchPct}`}. You still have ${tolerance} send${tolerance !== 1 ? 's' : ''} of tolerance, but the trend is against you.`,
       action: 'Try a preference-update email — ask them what they want to hear about. One re-engagement send before resuming your normal schedule.',
-      statementCommercial: 'Cooling audiences convert at a fraction of their peak rate. Sending more will accelerate the decline — the opportunity is to reverse it now while they're still reachable.',
+      statementCommercial: 'Cooling audiences convert at a fraction of their peak rate. Sending more will accelerate the decline — the opportunity is to reverse it now while they are still reachable.',
       statementRegulatory: null,
       regulatoryNote: null,
       confidence: r2(Math.min(baseConf, 0.78)),
@@ -987,6 +987,166 @@ async function loadCampaigns(userId) {
 }
 
 // ─────────────────────────────────────────────
+// SNAPSHOT STORAGE (v7.1 — stickiness foundation)
+// Every upload/log writes an immutable dated snapshot to
+// Audience_Read_Snapshots. The live Audience_Read_Segments record
+// stays current via atPatch; snapshots are append-only history.
+// Comparing the newest snapshot to the prior one powers the
+// "what changed since last upload" headline on the dashboard.
+// ─────────────────────────────────────────────
+
+// Health ranking — higher number = healthier state.
+// Used to decide whether a state change is an improvement or a decline.
+const STATE_RANK = {
+  'Complaint risk': 0,
+  'Damaged': 1,
+  'Fatigue building': 2,
+  'Cooling': 3,
+  'Recovering': 4,
+  'Neutral': 5,
+  'Healthy': 6,
+  'Highly receptive post-gap': 7,
+  'Peak receptiveness': 8,
+};
+
+async function snapshotSegment(userId, segmentName, data) {
+  // Immutable — always create, never patch.
+  await atCreate('Audience_Read_Snapshots', {
+    UserID: userId,
+    SegmentName: segmentName,
+    SnapshotDate: new Date().toISOString().slice(0, 10),
+    SnapshotTimestamp: new Date().toISOString(),
+    State: data.sentiment?.state || 'Neutral',
+    Capital: data.capital != null ? data.capital : (data.relationshipCapital || 0),
+    AvgUnsubRate: data.fingerprint?.selfBaseline || null,
+    ExcessUnsubs: data.subscriberLoss?.totalExcessUnsubs || 0,
+    CampaignCount: data.fingerprint?.campaignCount || 0,
+    Sector: data.sector || 'general',
+  });
+}
+
+// Returns all snapshots for a user grouped by segment, each list
+// sorted newest-first. Capped to keep the request light.
+async function getSnapshotsBySegment(userId) {
+  const records = await atGet(
+    'Audience_Read_Snapshots',
+    `{UserID}="${userId}"`,
+    'sort[0][field]=SnapshotTimestamp&sort[0][direction]=desc',
+    200
+  );
+  const bySeg = {};
+  for (const r of records) {
+    const seg = r.fields.SegmentName;
+    if (!seg) continue;
+    if (!bySeg[seg]) bySeg[seg] = [];
+    bySeg[seg].push({
+      date: r.fields.SnapshotDate,
+      timestamp: r.fields.SnapshotTimestamp || r.fields.SnapshotDate,
+      state: r.fields.State || 'Neutral',
+      capital: r.fields.Capital != null ? r.fields.Capital : 0,
+      avgUnsubRate: r.fields.AvgUnsubRate != null ? r.fields.AvgUnsubRate : null,
+      excessUnsubs: r.fields.ExcessUnsubs != null ? r.fields.ExcessUnsubs : 0,
+      campaignCount: r.fields.CampaignCount || 0,
+    });
+  }
+  return bySeg;
+}
+
+function daysBetween(aIso, bIso) {
+  if (!aIso || !bIso) return null;
+  const a = new Date(aIso), b = new Date(bIso);
+  if (isNaN(a) || isNaN(b)) return null;
+  return Math.abs(Math.round((a - b) / 86400000));
+}
+
+// Build the per-segment "what changed" comparison.
+// `currentMap`  : { segment: { state, capital, avgUnsubRate, excessUnsubs } }  — the freshly computed current state
+// `priorMap`    : { segment: priorSnapshot }  — the most recent snapshot taken BEFORE this run
+// Returns { summary, segments } where summary tallies improved/worsened/unchanged/new.
+function buildChangeComparison(currentMap, priorMap) {
+  const segments = [];
+  let improved = 0, worsened = 0, unchanged = 0, brandNew = 0;
+
+  for (const seg of Object.keys(currentMap)) {
+    const cur = currentMap[seg];
+    const prev = priorMap[seg] || null;
+
+    if (!prev) {
+      brandNew++;
+      segments.push({
+        segment: seg,
+        isNew: true,
+        currentState: cur.state,
+        previousState: null,
+        stateChanged: false,
+        direction: 'new',
+        capitalDelta: null,
+        avgUnsubRateDelta: null,
+        excessUnsubsDelta: null,
+        daysSincePrevious: null,
+      });
+      continue;
+    }
+
+    const curRank = STATE_RANK[cur.state] != null ? STATE_RANK[cur.state] : 5;
+    const prevRank = STATE_RANK[prev.state] != null ? STATE_RANK[prev.state] : 5;
+    const stateChanged = cur.state !== prev.state;
+    let direction = 'same';
+    if (stateChanged) direction = curRank > prevRank ? 'improved' : 'worsened';
+
+    // Capital delta (positive = goodwill rising)
+    const capitalDelta = (cur.capital != null && prev.capital != null)
+      ? r2(cur.capital - prev.capital) : null;
+    // Unsub rate delta (negative = improving — fewer unsubs)
+    const avgUnsubRateDelta = (cur.avgUnsubRate != null && prev.avgUnsubRate != null)
+      ? r4(cur.avgUnsubRate - prev.avgUnsubRate) : null;
+    const excessUnsubsDelta = (cur.excessUnsubs != null && prev.excessUnsubs != null)
+      ? (cur.excessUnsubs - prev.excessUnsubs) : null;
+
+    // Count toward tallies: state change wins; otherwise use capital drift.
+    if (stateChanged) {
+      if (direction === 'improved') improved++; else worsened++;
+    } else if (capitalDelta != null && capitalDelta >= 5) {
+      improved++; direction = 'improved';
+    } else if (capitalDelta != null && capitalDelta <= -5) {
+      worsened++; direction = 'worsened';
+    } else {
+      unchanged++;
+    }
+
+    segments.push({
+      segment: seg,
+      isNew: false,
+      currentState: cur.state,
+      previousState: prev.state,
+      stateChanged,
+      direction,
+      capitalDelta,
+      avgUnsubRateDelta,
+      excessUnsubsDelta,
+      daysSincePrevious: daysBetween(new Date().toISOString(), prev.timestamp),
+    });
+  }
+
+  // Order: worsened first (most urgent), then improved, then new, then unchanged
+  const order = { worsened: 0, improved: 1, new: 2, same: 3 };
+  segments.sort((a, b) => (order[a.direction] ?? 9) - (order[b.direction] ?? 9));
+
+  // Days since last data overall (smallest gap across segments that have one)
+  let daysSinceLast = null;
+  for (const s of segments) {
+    if (s.daysSincePrevious != null) {
+      daysSinceLast = daysSinceLast == null ? s.daysSincePrevious : Math.min(daysSinceLast, s.daysSincePrevious);
+    }
+  }
+
+  return {
+    summary: { improved, worsened, unchanged, brandNew, daysSinceLast, total: segments.length },
+    segments,
+  };
+}
+
+// ─────────────────────────────────────────────
 // MAIN HANDLER
 // ─────────────────────────────────────────────
 
@@ -1037,13 +1197,26 @@ export default async function handler(req, res) {
           benchRate: data.bench?.unsubNormal,
           excessUnsubs: data.subscriberLoss?.totalExcessUnsubs,
         }));
-      return res.status(200).json({ success: true, segments: results, recommendations, sector });
+
+      // Change comparison: most recent snapshot vs the one before it.
+      // (On load we don't write a new snapshot — we just surface history.)
+      const snapsBySeg = await getSnapshotsBySegment(userId);
+      const curMap = {}, prevMap = {};
+      for (const seg of Object.keys(snapsBySeg)) {
+        const list = snapsBySeg[seg];
+        if (list[0]) curMap[seg] = { state: list[0].state, capital: list[0].capital, avgUnsubRate: list[0].avgUnsubRate, excessUnsubs: list[0].excessUnsubs };
+        if (list[1]) prevMap[seg] = list[1];
+      }
+      const changes = Object.keys(curMap).length ? buildChangeComparison(curMap, prevMap) : null;
+
+      return res.status(200).json({ success: true, segments: results, recommendations, sector, changes });
     }
 
     // ── upload ──────────────────────────────────────────────
     if (action === 'upload') {
-      const { rows, fieldMapping } = req.body;
+      const { rows, fieldMapping, cpl } = req.body;
       if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
+      const cplVal = (cpl != null && Number.isFinite(Number(cpl)) && Number(cpl) > 0) ? Number(cpl) : null;
 
       const rawRows = rows.map(row => {
         const c = {
@@ -1100,8 +1273,17 @@ export default async function handler(req, res) {
       const campaigns = Object.values(mergeMap);
       if (!campaigns.length) return res.status(400).json({ error: 'No valid rows found. Check that a date column is present and correctly mapped.' });
 
+      // Fetch prior snapshots BEFORE writing new ones, so the comparison
+      // reflects the state as it was on the user's previous visit.
+      const priorSnapsBySeg = await getSnapshotsBySegment(userId);
+      const priorMap = {};
+      for (const seg of Object.keys(priorSnapsBySeg)) {
+        priorMap[seg] = priorSnapsBySeg[seg][0]; // most recent existing snapshot
+      }
+
       const segmentGroups = buildSegmentData(campaigns);
       const savedSegments = {};
+      const currentMap = {};
 
       for (const [segmentName, segCampaigns] of Object.entries(segmentGroups)) {
         const data = runAlgorithms(segCampaigns, sector);
@@ -1121,6 +1303,17 @@ export default async function handler(req, res) {
           sector,
         });
 
+        // Append an immutable snapshot of the new state.
+        await snapshotSegment(userId, segmentName, { ...data, sector });
+
+        // Collect current state for the change comparison.
+        currentMap[segmentName] = {
+          state: data.sentiment.state,
+          capital: data.capital,
+          avgUnsubRate: data.fingerprint?.selfBaseline || null,
+          excessUnsubs: data.subscriberLoss?.totalExcessUnsubs || 0,
+        };
+
         const segRecord = await atGet('Audience_Read_Segments', `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`, '', 1);
         const segRecordId = segRecord[0]?.id || null;
         await generateFixes(userId, segmentName, data.sentiment, segRecordId);
@@ -1129,7 +1322,43 @@ export default async function handler(req, res) {
         savedSegments[segmentName] = { ...data, impacts: data.impacts.slice(-5) };
       }
 
-      return res.status(200).json({ success: true, segments: savedSegments, campaignsSaved: campaigns.length, sector });
+      // ── COMMERCIAL EXPOSURE (v7.1) ────────────────────────────
+      // Only when the user supplied a cost-per-subscriber. £ = total
+      // excess unsubscribes (above UK benchmark) × their own CPL. Never
+      // invented — if no CPL, no commercial figure is produced. Stable
+      // sourceRecordId so re-uploads dedupe against any pending item.
+      if (cplVal) {
+        let totalExcess = 0;
+        for (const seg of Object.keys(currentMap)) {
+          totalExcess += currentMap[seg].excessUnsubs || 0;
+        }
+        if (totalExcess > 0) {
+          const lossValue = Math.round(totalExcess * cplVal);
+          if (lossValue >= 50) {
+            try {
+              await fetch(`${APP_URL}/api/generate-fix`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({
+                  userId,
+                  fixType:        'commercial_loss',
+                  description:    `Audience Read: ${totalExcess.toLocaleString()} unsubscribes above the UK benchmark across your segments. At your stated \u00a3${cplVal.toFixed(2)} cost-per-subscriber, that is approximately \u00a3${lossValue.toLocaleString('en-GB')} in acquisition cost lost to avoidable fatigue. Estimated business cost \u2014 not a regulatory fine.`,
+                  tool:           'Audience Read',
+                  severity:       'medium',
+                  contactVolume:  totalExcess,
+                  sourceRecordId: 'ar-commercial',
+                  exposureLow:    lossValue,
+                  exposureHigh:   lossValue,
+                }),
+              });
+            } catch(e) { console.error('Commercial fix non-fatal:', e); }
+          }
+        }
+      }
+
+      const changes = buildChangeComparison(currentMap, priorMap);
+
+      return res.status(200).json({ success: true, segments: savedSegments, campaignsSaved: campaigns.length, sector, changes });
     }
 
     // ── log ─────────────────────────────────────────────────
@@ -1155,6 +1384,9 @@ export default async function handler(req, res) {
         dataQuality: data.dataQuality,
         sector,
       });
+
+      // Append an immutable snapshot so logged sends build history too.
+      await snapshotSegment(userId, campaign.segment, { ...data, sector });
 
       await generateFixes(userId, campaign.segment, data.sentiment, null);
       await maybeFireAudienceAlert(userId, campaign.segment, data.sentiment);
