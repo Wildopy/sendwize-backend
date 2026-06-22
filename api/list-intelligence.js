@@ -1,8 +1,13 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-intelligence.js v1.0
+// SENDWIZE — list-intelligence.js v1.1
 // POST /api/list-intelligence?action=upload  — CSV analysis
 // GET  /api/list-intelligence?action=load    — load last results
 // POST /api/list-intelligence?action=certificate — generate pre-send cert
+//
+// v1.1 (stickiness):
+//   - Immutable snapshots to List_Intelligence_Snapshots on every upload
+//   - "What changed since last upload" comparison on load + upload
+//   - Consent-expiry countdown (contacts crossing threshold in 30/60/90 days)
 //
 // Four-dimensional contact trajectory model:
 //   Dimension 1 — Consent Trajectory (exponential decay per contact)
@@ -175,7 +180,6 @@ const TYPO_DOMAINS = {
 
 // ─────────────────────────────────────────────────────────────
 // SECTOR BENCHMARKS
-// Commercial trajectory uses these as conversion rate baselines.
 // ─────────────────────────────────────────────────────────────
 
 const SECTOR_BENCHMARKS = {
@@ -188,23 +192,18 @@ const SECTOR_BENCHMARKS = {
 
 // ─────────────────────────────────────────────────────────────
 // DIMENSION 1 — CONSENT TRAJECTORY
-// Exponential decay per contact.
-// ConsentStrength 0–100. Baseline decay from days since joining.
-// Engagement resets: purchase = significant, click = more, open = partial.
 // ─────────────────────────────────────────────────────────────
 
-const CONSENT_DECAY_HALF_LIFE_DAYS = 365; // strength halves every 12 months with no engagement
-const CONSENT_THRESHOLD = 20;             // ICO concern threshold
+const CONSENT_DECAY_HALF_LIFE_DAYS = 365;
+const CONSENT_THRESHOLD = 20;
 
 function dimension1_consent(contact) {
   const now       = new Date();
   const added     = contact.dateAdded ? new Date(contact.dateAdded) : now;
   const daysOld   = Math.max(0, (now - added) / 86400000);
 
-  // Baseline decay from signup date
   const baseDecay = Math.pow(0.5, daysOld / CONSENT_DECAY_HALF_LIFE_DAYS);
 
-  // Engagement reset factor
   let engagementReset = 0;
   if (contact.lastEngagement) {
     const lastEng     = new Date(contact.lastEngagement);
@@ -212,41 +211,36 @@ function dimension1_consent(contact) {
     const engType      = (contact.engagementType || '').toLowerCase();
     let resetStrength  = 0;
     if (engType.includes('purchas') || engType.includes('order') || engType.includes('buy')) {
-      resetStrength = 0.6; // significant reset
+      resetStrength = 0.6;
     } else if (engType.includes('click')) {
-      resetStrength = 0.4; // moderate reset
+      resetStrength = 0.4;
     } else if (engType.includes('open')) {
-      resetStrength = 0.2; // partial reset
+      resetStrength = 0.2;
     } else {
-      resetStrength = 0.15; // any engagement counts a little
+      resetStrength = 0.15;
     }
-    // Reset also decays over time
     engagementReset = resetStrength * Math.pow(0.5, daysSinceEng / CONSENT_DECAY_HALF_LIFE_DAYS);
   }
 
-  // Disengagement acceleration: if no engagement for >180 days, decay faster
   let disengagementPenalty = 0;
   if (contact.lastEngagement) {
     const daysSinceEng = (now - new Date(contact.lastEngagement)) / 86400000;
     if (daysSinceEng > 180) disengagementPenalty = 0.15;
     if (daysSinceEng > 365) disengagementPenalty = 0.30;
   } else if (daysOld > 180) {
-    disengagementPenalty = 0.20; // never engaged
+    disengagementPenalty = 0.20;
   }
 
   const rawStrength    = Math.min(1, baseDecay + engagementReset - disengagementPenalty);
   const consentStrength = Math.round(Math.max(0, rawStrength) * 100);
 
-  // Decay rate per month (for display)
   const decayPerMonth  = (1 - Math.pow(0.5, 30 / CONSENT_DECAY_HALF_LIFE_DAYS)) * 100;
   const consentDecayRate = parseFloat(decayPerMonth.toFixed(2));
 
-  // Days until threshold crossing
   const currentFraction = rawStrength;
   const thresholdFraction = CONSENT_THRESHOLD / 100;
   let daysToThreshold = null;
   if (currentFraction > thresholdFraction) {
-    // t = half_life * log(current/threshold) / log(2)
     daysToThreshold = Math.round(
       CONSENT_DECAY_HALF_LIFE_DAYS * Math.log(currentFraction / thresholdFraction) / Math.log(2)
     );
@@ -257,10 +251,6 @@ function dimension1_consent(contact) {
 
 // ─────────────────────────────────────────────────────────────
 // DIMENSION 2 — DELIVERABILITY TRAJECTORY
-// Weighted composite from email address signals only.
-// Weights: domain reputation 25%, address pattern 20%,
-//          engagement-to-age ratio 25%, domain concentration 15%,
-//          typo risk 10%, bounce prediction 5%.
 // ─────────────────────────────────────────────────────────────
 
 function dimension2_deliverability(contact, domainCounts, totalContacts) {
@@ -273,46 +263,31 @@ function dimension2_deliverability(contact, domainCounts, totalContacts) {
   let score    = 100;
   let primaryRisk = null;
 
-  // Invalid format (0 score immediately)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     return { deliverabilityScore: 0, primaryRisk: 'invalid_format' };
   }
-
-  // Disposable domain (-60)
   if (DISPOSABLE_DOMAINS.has(domain)) {
     return { deliverabilityScore: 10, primaryRisk: 'disposable_domain' };
   }
-
-  // Spam trap indicators (-50)
   if (SPAM_TRAP_INDICATORS.some(t => local.includes(t))) {
     score -= 50; primaryRisk = primaryRisk || 'spam_trap_indicator';
   }
-
-  // Typo domain (-40)
   if (TYPO_DOMAINS[domain]) {
     score -= 40; primaryRisk = primaryRisk || 'typo_domain';
   }
-
-  // Role-based address (-25)
   const localPrefix = local.split('+')[0].split('.')[0];
   if (ROLE_PREFIXES.has(localPrefix)) {
     score -= 25; primaryRisk = primaryRisk || 'role_based';
   }
-
-  // Sequential pattern (-15): e.g. test1@, test2@, test3@
   if (/\d{1,4}$/.test(local) && parseInt(local.match(/\d+$/)[0]) < 100) {
     score -= 10; primaryRisk = primaryRisk || 'sequential_pattern';
   }
-
-  // Domain concentration (-20 if domain > 40% of list)
   const domainPct = (domainCounts[domain] || 0) / Math.max(totalContacts, 1);
   if (domainPct > 0.4) {
     score -= 20; primaryRisk = primaryRisk || 'domain_concentration';
   } else if (domainPct > 0.25) {
     score -= 10;
   }
-
-  // Engagement signal boost/penalty
   if (contact.lastEngagement) {
     const daysOld = (new Date() - new Date(contact.dateAdded || new Date())) / 86400000;
     const daysSinceEng = (new Date() - new Date(contact.lastEngagement)) / 86400000;
@@ -320,10 +295,8 @@ function dimension2_deliverability(contact, domainCounts, totalContacts) {
     if (engRatio > 0.7)       score += 10;
     else if (engRatio < 0.2)  score -= 15;
   } else {
-    score -= 10; // no engagement data = slight penalty
+    score -= 10;
   }
-
-  // Duplicate detection handled at list level, not per-contact
 
   const deliverabilityScore = Math.max(0, Math.min(100, Math.round(score)));
   return { deliverabilityScore, primaryRisk: primaryRisk || 'none' };
@@ -331,15 +304,13 @@ function dimension2_deliverability(contact, domainCounts, totalContacts) {
 
 // ─────────────────────────────────────────────────────────────
 // DIMENSION 3 — COMMERCIAL TRAJECTORY
-// sector benchmark conversion rate × user AOV × engagement multiplier
 // ─────────────────────────────────────────────────────────────
 
 function dimension3_commercial(contact, sector, aov) {
   const benchmark = SECTOR_BENCHMARKS[sector] || SECTOR_BENCHMARKS.other;
   const baseValue = benchmark.conversionRate * (aov || 50) * benchmark.avgOrderMultiplier;
 
-  // Engagement multiplier
-  let engMultiplier = 0.5; // base: no engagement data
+  let engMultiplier = 0.5;
   if (contact.lastEngagement) {
     const daysSinceEng = (new Date() - new Date(contact.lastEngagement)) / 86400000;
     const engType      = (contact.engagementType || '').toLowerCase();
@@ -355,12 +326,8 @@ function dimension3_commercial(contact, sector, aov) {
   }
 
   const commercialValue    = parseFloat((baseValue * engMultiplier).toFixed(2));
-
-  // Intervention value: what acting now vs 30 days saves
-  const decayedMultiplier  = engMultiplier * 0.85; // ~15% decay per month without action
+  const decayedMultiplier  = engMultiplier * 0.85;
   const interventionValue  = parseFloat((baseValue * (engMultiplier - decayedMultiplier)).toFixed(2));
-
-  // Direction
   const direction = engMultiplier > 1.0 ? 'growing' : engMultiplier > 0.7 ? 'stable' : 'declining';
 
   return { commercialValue, interventionValue, direction };
@@ -368,22 +335,17 @@ function dimension3_commercial(contact, sector, aov) {
 
 // ─────────────────────────────────────────────────────────────
 // DIMENSION 4 — RISK TRAJECTORY
-// Rate of change of consent decay. Acceleration detection.
 // ─────────────────────────────────────────────────────────────
 
 function dimension4_risk(consentResult) {
   const { consentStrength, consentDecayRate, daysToThreshold } = consentResult;
-
-  // Acceleration: contacts near threshold decay faster (steeper curve)
   const thresholdProximity = Math.max(0, 1 - (consentStrength - CONSENT_THRESHOLD) / 80);
   const riskAcceleration   = parseFloat((consentDecayRate * (1 + thresholdProximity)).toFixed(3));
-
   return { riskAcceleration, daysToThreshold };
 }
 
 // ─────────────────────────────────────────────────────────────
-// PRIORITISATION — four-dimensional score
-// Weights: consent 35%, commercial 30%, risk 25%, deliverability 10%
+// PRIORITISATION
 // ─────────────────────────────────────────────────────────────
 
 function prioritisationScore(consent, commercial, risk, deliverability, maxCommercial) {
@@ -403,7 +365,6 @@ function analyseList(contacts, sector, aov) {
   const emails       = new Set();
   let   duplicates   = 0;
 
-  // Count domains and detect duplicates
   for (const c of contacts) {
     const email = (c.email || '').toLowerCase().trim();
     if (emails.has(email)) { duplicates++; continue; }
@@ -416,7 +377,6 @@ function analyseList(contacts, sector, aov) {
     arr.findIndex(x => (x.email||'').toLowerCase().trim() === (c.email||'').toLowerCase().trim()) === i
   );
 
-  // Run four dimensions per contact
   const analysed = unique.map(c => {
     const d1 = dimension1_consent(c);
     const d2 = dimension2_deliverability(c, domainCounts, unique.length);
@@ -425,10 +385,8 @@ function analyseList(contacts, sector, aov) {
     return { ...c, ...d1, ...d2, ...d3, ...d4 };
   });
 
-  // Max commercial value for normalisation
   const maxCommercial = Math.max(...analysed.map(c => c.commercialValue), 1);
 
-  // Add prioritisation score
   const scored = analysed.map(c => ({
     ...c,
     priorityScore: prioritisationScore(
@@ -440,24 +398,32 @@ function analyseList(contacts, sector, aov) {
     ),
   }));
 
-  // Segment into tiers
   const active      = scored.filter(c => c.consentStrength >= 60 && c.deliverabilityScore >= 60);
   const recoverable = scored.filter(c => c.consentStrength >= CONSENT_THRESHOLD && c.consentStrength < 60 && c.deliverabilityScore >= 40);
   const atRisk      = scored.filter(c => c.consentStrength >= CONSENT_THRESHOLD && c.deliverabilityScore < 40);
   const liability   = scored.filter(c => c.consentStrength < CONSENT_THRESHOLD);
 
-  // Asset value = sum of commercial values for active + recoverable
   const assetValue = parseFloat(
     [...active, ...recoverable].reduce((s, c) => s + c.commercialValue, 0).toFixed(2)
   );
 
-  // ICO status
+  // ── CONSENT-EXPIRY COUNTDOWN ──────────────────────────────
+  // Count contacts (still above threshold) projected to cross it within N days.
+  const aboveThreshold = scored.filter(c => c.daysToThreshold !== null);
+  const expiring30 = aboveThreshold.filter(c => c.daysToThreshold <= 30).length;
+  const expiring60 = aboveThreshold.filter(c => c.daysToThreshold > 30 && c.daysToThreshold <= 60).length;
+  const expiring90 = aboveThreshold.filter(c => c.daysToThreshold > 60 && c.daysToThreshold <= 90).length;
+
+  // Value at risk within 90 days (commercial value of contacts expiring soon)
+  const valueExpiring90 = parseFloat(
+    aboveThreshold.filter(c => c.daysToThreshold <= 90).reduce((s, c) => s + c.commercialValue, 0).toFixed(2)
+  );
+
   const liabilityPct = unique.length > 0 ? liability.length / unique.length : 0;
   let icoStatus = 'Good standing';
   if (liabilityPct > 0.3)      icoStatus = 'High risk — significant portion below consent threshold';
   else if (liabilityPct > 0.1) icoStatus = 'Review recommended — contacts approaching threshold';
 
-  // Data quality flags
   const invalidFormat  = scored.filter(c => c.primaryRisk === 'invalid_format').length;
   const disposable     = scored.filter(c => c.primaryRisk === 'disposable_domain').length;
   const roleBased      = scored.filter(c => c.primaryRisk === 'role_based').length;
@@ -481,9 +447,14 @@ function analyseList(contacts, sector, aov) {
     recoverableCount: recoverable.length,
     atRiskCount:      atRisk.length,
     liabilityCount:   liability.length,
+    liabilityPct:     parseFloat(liabilityPct.toFixed(4)),
     assetValue,
     icoStatus,
     dataQualityFlags,
+    expiring30,
+    expiring60,
+    expiring90,
+    valueExpiring90,
     scored,
     active,
     recoverable,
@@ -500,7 +471,6 @@ function generateOpportunities(analysis, sector, aov) {
   const opps = [];
   const { recoverable, atRisk, active, scored } = analysis;
 
-  // Opportunity 1: Re-engage recoverable contacts
   if (recoverable.length > 0) {
     const totalValue = recoverable.reduce((s, c) => s + c.interventionValue, 0);
     opps.push({
@@ -508,17 +478,16 @@ function generateOpportunities(analysis, sector, aov) {
       description:       `${recoverable.length.toLocaleString()} contacts have declining consent but are still above the ICO threshold. A targeted re-engagement campaign now could recover this segment before consent expires.`,
       estimatedValue:    parseFloat(totalValue.toFixed(2)),
       currentValue:      parseFloat(totalValue.toFixed(2)),
-      decayRate:         2.5, // % per month
+      decayRate:         2.5,
       recommendedAction: 'Send a preference-update or re-consent email to this segment within the next 30 days.',
       templateAvailable: false,
     });
   }
 
-  // Opportunity 2: Clean and suppress liability contacts
   if (analysis.liabilityCount > 0) {
     opps.push({
       type:              'Suppression — liability contacts',
-      description:       `${analysis.liabilityCount.toLocaleString()} contacts are below the consent strength threshold and represent ICO enforcement risk. Suppressing them removes liability while preserving the rest of your list's deliverability.`,
+      description:       `${analysis.liabilityCount.toLocaleString()} contacts are below the consent strength threshold and represent ICO enforcement risk. Suppressing them removes liability while preserving the rest of your list deliverability.`,
       estimatedValue:    0,
       currentValue:      0,
       decayRate:         0,
@@ -527,7 +496,6 @@ function generateOpportunities(analysis, sector, aov) {
     });
   }
 
-  // Opportunity 3: High-value active contacts approaching risk
   const approachingRisk = active.filter(c => c.daysToThreshold !== null && c.daysToThreshold < 90);
   if (approachingRisk.length > 0) {
     const totalValue = approachingRisk.reduce((s, c) => s + c.commercialValue, 0);
@@ -542,7 +510,6 @@ function generateOpportunities(analysis, sector, aov) {
     });
   }
 
-  // Opportunity 4: Deliverability clean
   const poorDeliverability = scored.filter(c => c.deliverabilityScore < 40 && c.consentStrength >= CONSENT_THRESHOLD);
   if (poorDeliverability.length > 10) {
     opps.push({
@@ -557,6 +524,95 @@ function generateOpportunities(analysis, sector, aov) {
   }
 
   return opps;
+}
+
+// ─────────────────────────────────────────────────────────────
+// SNAPSHOT STORAGE (v1.1 — stickiness foundation)
+// Immutable list-level snapshot written on every upload.
+// Comparing the newest to the prior one powers "what changed".
+// ─────────────────────────────────────────────────────────────
+
+async function snapshotList(userId, analysis, assetValue) {
+  await atCreate('List_Intelligence_Snapshots', {
+    UserID:            userId,
+    SnapshotDate:      new Date().toISOString().slice(0, 10),
+    SnapshotTimestamp: new Date().toISOString(),
+    TotalContacts:     analysis.totalContacts,
+    ActiveCount:       analysis.activeCount,
+    RecoverableCount:  analysis.recoverableCount,
+    AtRiskCount:       analysis.atRiskCount,
+    LiabilityCount:    analysis.liabilityCount,
+    LiabilityPct:      analysis.liabilityPct,
+    AssetValue:        assetValue,
+    Expiring30:        analysis.expiring30,
+    Expiring60:        analysis.expiring60,
+    Expiring90:        analysis.expiring90,
+  });
+}
+
+async function getListSnapshots(userId, max = 12) {
+  const records = await atGet(
+    'List_Intelligence_Snapshots',
+    `{UserID}='${userId}'`,
+    'sort[0][field]=SnapshotTimestamp&sort[0][direction]=desc',
+    max
+  );
+  return records.map(r => ({
+    date:             r.fields.SnapshotDate,
+    timestamp:        r.fields.SnapshotTimestamp || r.fields.SnapshotDate,
+    totalContacts:    r.fields.TotalContacts || 0,
+    activeCount:      r.fields.ActiveCount || 0,
+    recoverableCount: r.fields.RecoverableCount || 0,
+    atRiskCount:      r.fields.AtRiskCount || 0,
+    liabilityCount:   r.fields.LiabilityCount || 0,
+    liabilityPct:     r.fields.LiabilityPct != null ? r.fields.LiabilityPct : 0,
+    assetValue:       r.fields.AssetValue != null ? r.fields.AssetValue : 0,
+    expiring30:       r.fields.Expiring30 || 0,
+    expiring60:       r.fields.Expiring60 || 0,
+    expiring90:       r.fields.Expiring90 || 0,
+  }));
+}
+
+function daysBetween(aIso, bIso) {
+  if (!aIso || !bIso) return null;
+  const a = new Date(aIso), b = new Date(bIso);
+  if (isNaN(a) || isNaN(b)) return null;
+  return Math.abs(Math.round((a - b) / 86400000));
+}
+
+// Compare current list state to a prior snapshot. Positive deltas
+// described in plain commercial terms (value up, liability down = good).
+function buildListComparison(cur, prev) {
+  if (!prev) return null;
+  const valueDelta      = parseFloat((cur.assetValue - prev.assetValue).toFixed(2));
+  const liabilityDelta  = cur.liabilityCount - prev.liabilityCount;   // negative = good
+  const activeDelta     = cur.activeCount - prev.activeCount;          // positive = good
+  const totalDelta      = cur.totalContacts - prev.totalContacts;
+  const expiring30Delta = cur.expiring30 - prev.expiring30;
+
+  // Headline direction: value up OR liability down counts as improvement.
+  let direction = 'same';
+  if (valueDelta > 0 || liabilityDelta < 0 || activeDelta > 0) direction = 'improved';
+  if (liabilityDelta > 0 || valueDelta < 0) direction = liabilityDelta > Math.abs(activeDelta) ? 'worsened' : direction;
+  if (valueDelta < 0 && liabilityDelta > 0) direction = 'worsened';
+
+  return {
+    direction,
+    daysSincePrevious: daysBetween(new Date().toISOString(), prev.timestamp),
+    valueDelta,
+    liabilityDelta,
+    activeDelta,
+    totalDelta,
+    expiring30Delta,
+    previous: {
+      assetValue: prev.assetValue,
+      liabilityCount: prev.liabilityCount,
+      activeCount: prev.activeCount,
+      totalContacts: prev.totalContacts,
+      expiring30: prev.expiring30,
+      date: prev.date,
+    },
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -596,7 +652,6 @@ export default async function handler(req, res) {
 
       const latest = checks[0].fields;
 
-      // Apply time decay to CurrentValue for each opportunity
       const now = new Date();
       const decayedOpps = opps.map(o => {
         const created    = o.fields.CreatedDate ? new Date(o.fields.CreatedDate) : now;
@@ -617,6 +672,10 @@ export default async function handler(req, res) {
 
       const unrealisedTotal = decayedOpps.reduce((s, o) => s + o.currentValue, 0);
 
+      // Change comparison: two most recent snapshots.
+      const snaps = await getListSnapshots(userId, 12);
+      const changes = snaps.length >= 2 ? buildListComparison(snaps[0], snaps[1]) : null;
+
       return res.status(200).json({
         success:        true,
         hasData:        true,
@@ -634,6 +693,9 @@ export default async function handler(req, res) {
         opportunities:  decayedOpps,
         unrealisedTotal: parseFloat(unrealisedTotal.toFixed(2)),
         uploadVersion:  latest.UploadVersion,
+        consentExpiring: snaps[0] ? { in30: snaps[0].expiring30, in60: snaps[0].expiring60, in90: snaps[0].expiring90 } : null,
+        changes,
+        history: snaps.slice(0, 8).reverse().map(s => ({ date: s.date, assetValue: s.assetValue, liabilityCount: s.liabilityCount, activeCount: s.activeCount })),
       });
     }
 
@@ -648,7 +710,6 @@ export default async function handler(req, res) {
       const aovVal    = parseFloat(aov) || 50;
       const version   = uploadVersion || 1;
 
-      // Parse rows using field mapping
       const contacts = rows.map(row => {
         const c = {
           email: null, dateAdded: null, lastEngagement: null,
@@ -668,7 +729,6 @@ export default async function handler(req, res) {
           else if (target === 'order_value')      c.orderValue     = parseFloat(val) || null;
           else if (target === 'engagement_count') c.engagementCount = parseInt(val) || null;
         }
-        // Use last purchase date as last engagement if not set
         if (!c.lastEngagement && c.lastPurchase) {
           c.lastEngagement = c.lastPurchase;
           if (!c.engagementType) c.engagementType = 'purchase';
@@ -678,12 +738,14 @@ export default async function handler(req, res) {
 
       if (!contacts.length) return res.status(400).json({ error: 'No valid email addresses found. Ensure an email column is present and mapped.' });
 
-      // Run analysis
+      // Fetch prior snapshot BEFORE writing the new one.
+      const priorSnaps = await getListSnapshots(userId, 1);
+      const priorSnap = priorSnaps[0] || null;
+
       const analysis = analyseList(contacts, sectorVal, aovVal);
       const opportunities = generateOpportunities(analysis, sectorVal, aovVal);
       const today = new Date().toISOString().split('T')[0];
 
-      // Save profile AOV + sector if not already set
       try {
         const profileRecs = await atGet('User_Profile', `{UserID}='${userId}'`, '', 1);
         if (profileRecs.length) {
@@ -697,7 +759,6 @@ export default async function handler(req, res) {
         }
       } catch(e) { console.error('Profile update non-fatal:', e); }
 
-      // Write List_Intelligence_Checks
       await atCreate('List_Intelligence_Checks', {
         UserID:           userId,
         CheckDate:        today,
@@ -715,7 +776,9 @@ export default async function handler(req, res) {
         UploadVersion:    version,
       });
 
-      // Write List_Opportunities
+      // Immutable snapshot for stickiness history.
+      await snapshotList(userId, analysis, analysis.assetValue);
+
       for (const opp of opportunities) {
         await atCreate('List_Opportunities', {
           UserID:            userId,
@@ -732,8 +795,6 @@ export default async function handler(req, res) {
         });
       }
 
-      // Write List_Contacts (hashed only — no plaintext email stored)
-      // Write top 500 priority contacts to avoid timeout
       const topContacts = [...analysis.scored]
         .sort((a, b) => b.priorityScore - a.priorityScore)
         .slice(0, 500);
@@ -755,7 +816,6 @@ export default async function handler(req, res) {
         });
       }
 
-      // Write ICO fix records for liability contacts
       if (analysis.liabilityCount > 0) {
         try {
           await fetch(`${APP_URL}/api/generate-fix`, {
@@ -773,7 +833,32 @@ export default async function handler(req, res) {
         } catch(e) { console.error('Fix record non-fatal:', e); }
       }
 
-      // Write suppression entries for liability contacts (hash only)
+      // ── COMMERCIAL EXPOSURE (v1.1) ────────────────────────────
+      // At-risk list value within 90 days. Defensible: computed from the
+      // user's own AOV input via the commercial trajectory model — not an
+      // invented "database worth £X". Stable sourceRecordId so re-uploads
+      // dedupe against any still-pending commercial item rather than piling up.
+      if (analysis.valueExpiring90 && analysis.valueExpiring90 >= 100) {
+        const expiringContacts = (analysis.expiring30 || 0) + (analysis.expiring60 || 0) + (analysis.expiring90 || 0);
+        try {
+          await fetch(`${APP_URL}/api/generate-fix`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+              userId,
+              fixType:        'commercial_loss',
+              description:    `List Intelligence: approximately \u00a3${Math.round(analysis.valueExpiring90).toLocaleString('en-GB')} of estimated list value sits with ${expiringContacts.toLocaleString()} contacts whose consent is projected to expire within 90 days. A re-consent campaign now protects this value. Estimated business cost \u2014 not a regulatory fine.`,
+              tool:           'List Intelligence',
+              severity:       'medium',
+              contactVolume:  expiringContacts,
+              sourceRecordId: 'li-commercial',
+              exposureLow:    Math.round(analysis.valueExpiring90 * 0.5),
+              exposureHigh:   Math.round(analysis.valueExpiring90),
+            }),
+          });
+        } catch(e) { console.error('Commercial fix non-fatal:', e); }
+      }
+
       for (const c of analysis.liability.slice(0, 200)) {
         try {
           await atCreate('Suppression_Registry', {
@@ -788,6 +873,10 @@ export default async function handler(req, res) {
       }
 
       const unrealisedTotal = opportunities.reduce((s, o) => s + o.currentValue, 0);
+      const changes = buildListComparison(
+        { assetValue: analysis.assetValue, liabilityCount: analysis.liabilityCount, activeCount: analysis.activeCount, totalContacts: analysis.totalContacts, expiring30: analysis.expiring30 },
+        priorSnap
+      );
 
       return res.status(200).json({
         success:          true,
@@ -804,6 +893,8 @@ export default async function handler(req, res) {
         unrealisedTotal:  parseFloat(unrealisedTotal.toFixed(2)),
         sector:           sectorVal,
         aov:              aovVal,
+        consentExpiring:  { in30: analysis.expiring30, in60: analysis.expiring60, in90: analysis.expiring90, valueAtRisk: analysis.valueExpiring90 },
+        changes,
       });
     }
 
@@ -821,7 +912,6 @@ export default async function handler(req, res) {
       const latest = checks[0].fields;
       const today  = new Date().toISOString().split('T')[0];
 
-      // Determine pass/fail
       const liabilityPct = latest.TotalContacts > 0
         ? latest.LiabilityCount / latest.TotalContacts : 0;
       const result = liabilityPct < 0.05 && latest.ICOStatus === 'Good standing' ? 'Pass' : liabilityPct < 0.15 ? 'Review' : 'Fail';
