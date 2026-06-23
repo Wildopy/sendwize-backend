@@ -1,10 +1,21 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v6.0
+// SENDWIZE — data.js v6.1
 // Router: ?action=report | vendors | violations | load | history
 //         | register | summary | score-history | send-alert
 //         | briefing | consent-expiry-check | simulation-run
 //
-// v6.0 changes:
+// v6.1 changes:
+//   - All direct Airtable calls now go through atFetch() (see
+//     _airtable.js) instead of raw fetch(). atFetch retries 429
+//     and transient 5xx responses with exponential backoff before
+//     giving up. Previously every Airtable 429 here was passed
+//     straight through to the browser as a 429 with zero retry —
+//     this was a direct cause of the 429s observed on score-history,
+//     consent-expiry-check, and briefing during concurrent dashboard
+//     loads. Calls to APP_URL (our own endpoints), api.anthropic.com,
+//     and api.resend.com are unchanged — atFetch only wraps Airtable.
+//
+// v6.0 changes (carried forward):
 //   - handleVendors: field names corrected to match Marketing_Vendors
 //     Airtable table exactly. Previous names were returning empty strings
 //     for every vendor field except VendorName and VendorType.
@@ -14,6 +25,8 @@
 //   - handleSimulationRun: Claude prompt updated. DUAA 2025 correct max.
 //   - Score_History writes: ExposureLow/ExposureHigh written as 0.
 // ─────────────────────────────────────────────────────────────
+
+import { atFetch } from './_airtable.js';
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
 const RESEND_FROM = 'alerts@sendwize.co.uk';
@@ -40,13 +53,13 @@ async function handleReport(req, res) {
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
 
-  const response = await fetch(
+  const response = await atFetch(
     `https://api.airtable.com/v0/${BASE_ID}/${tableName}/${recordId}`,
     { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
   );
 
   if (!response.ok) {
-    console.error('Airtable report fetch failed:', response.status);
+    console.error('Airtable report fetch failed after retries:', response.status);
     return res.status(response.status).json({ error: 'Failed to fetch report' });
   }
 
@@ -60,13 +73,13 @@ async function handleVendors(req, res) {
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
 
-  const response = await fetch(
+  const response = await atFetch(
     `https://api.airtable.com/v0/${BASE_ID}/Marketing_Vendors?sort[0][field]=VendorName&sort[0][direction]=asc`,
     { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
   );
 
   if (!response.ok) {
-    console.error('Marketing_Vendors fetch failed:', response.status);
+    console.error('Marketing_Vendors fetch failed after retries:', response.status);
     return res.json({ vendors: [] });
   }
 
@@ -107,8 +120,11 @@ async function handleViolations(req, res) {
     (formula ? `?filterByFormula=${encodeURIComponent(formula)}&` : '?') +
     `sort[0][field]=DateOfAction&sort[0][direction]=desc&maxRecords=20`;
 
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
-  if (!response.ok) return res.status(response.status).json({ error: 'Failed to fetch violations' });
+  const response = await atFetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+  if (!response.ok) {
+    console.error('Violation_Database fetch failed after retries:', response.status);
+    return res.status(response.status).json({ error: 'Failed to fetch violations' });
+  }
 
   const data       = await response.json();
   const violations = data.records || [];
@@ -125,6 +141,7 @@ async function handleViolations(req, res) {
 }
 
 // ── LOAD handler ──────────────────────────────────────────────
+// Not Airtable directly — proxies to our own /api/fixes endpoint.
 async function handleLoad(req, res) {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -165,9 +182,9 @@ async function handleHistory(req, res) {
     `&sort[0][field]=${sort}&sort[0][direction]=desc` +
     `&maxRecords=20`;
 
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+  const response = await atFetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
   if (!response.ok) {
-    console.error(`Airtable history (${type}) fetch failed:`, response.status);
+    console.error(`Airtable history (${type}) fetch failed after retries:`, response.status);
     return res.status(response.status).json({ error: `Failed to fetch ${type} history` });
   }
 
@@ -185,11 +202,11 @@ async function handleRegister(req, res) {
     const { recordId } = req.query;
     if (!recordId) return res.status(400).json({ error: 'recordId required' });
 
-    const response = await fetch(`${airtableBase}/Vendor_Register/${recordId}`, {
+    const response = await atFetch(`${airtableBase}/Vendor_Register/${recordId}`, {
       method: 'DELETE', headers: authHeader,
     });
     if (!response.ok) {
-      console.error('Vendor_Register delete failed:', response.status);
+      console.error('Vendor_Register delete failed after retries:', response.status);
       return res.status(response.status).json({ error: 'Failed to delete vendor' });
     }
     return res.json({ deleted: true });
@@ -212,25 +229,25 @@ async function handleRegister(req, res) {
     Object.keys(fields).forEach(k => { if (!fields[k]) delete fields[k]; });
 
     if (recordId) {
-      const response = await fetch(`${airtableBase}/Vendor_Register/${recordId}`, {
+      const response = await atFetch(`${airtableBase}/Vendor_Register/${recordId}`, {
         method: 'PATCH',
         headers: { ...authHeader, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields }),
       });
       if (!response.ok) {
-        console.error('Vendor_Register patch failed:', response.status);
+        console.error('Vendor_Register patch failed after retries:', response.status);
         return res.status(response.status).json({ error: 'Failed to update vendor' });
       }
       return res.json({ record: await response.json() });
     } else {
       fields.LastChecked = new Date().toISOString().split('T')[0];
-      const response = await fetch(`${airtableBase}/Vendor_Register`, {
+      const response = await atFetch(`${airtableBase}/Vendor_Register`, {
         method: 'POST',
         headers: { ...authHeader, 'Content-Type': 'application/json' },
         body: JSON.stringify({ records: [{ fields }] }),
       });
       if (!response.ok) {
-        console.error('Vendor_Register post failed:', response.status);
+        console.error('Vendor_Register post failed after retries:', response.status);
         return res.status(response.status).json({ error: 'Failed to save vendor' });
       }
       const data = await response.json();
@@ -242,6 +259,7 @@ async function handleRegister(req, res) {
 }
 
 // ── SUMMARY handler v6.0 ──────────────────────────────────────
+// Not Airtable directly — proxies to our own /api/fixes and /api/profile.
 async function handleSummary(req, res) {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -285,13 +303,13 @@ async function handleScoreHistory(req, res) {
     if (!userId) return res.status(400).json({ error: 'userId required' });
 
     const maxRecords = Math.min(parseInt(limit, 10) || 30, 90);
-    const response   = await fetch(
+    const response   = await atFetch(
       `${airtableBase}/Score_History?filterByFormula={UserID}='${userId}'&sort[0][field]=Date&sort[0][direction]=desc&maxRecords=${maxRecords}`,
       { headers }
     );
 
     if (!response.ok) {
-      console.error('Score_History fetch failed:', response.status);
+      console.error('Score_History fetch failed after retries:', response.status);
       return res.status(response.status).json({ error: 'Failed to fetch score history' });
     }
 
@@ -322,7 +340,7 @@ async function handleScoreHistory(req, res) {
     if (!userId)             return res.status(400).json({ error: 'userId required' });
     if (score === undefined) return res.status(400).json({ error: 'score required' });
 
-    const prevRes   = await fetch(
+    const prevRes   = await atFetch(
       `${airtableBase}/Score_History?filterByFormula={UserID}='${userId}'&sort[0][field]=Date&sort[0][direction]=desc&maxRecords=1`,
       { headers }
     );
@@ -345,14 +363,14 @@ async function handleScoreHistory(req, res) {
       AlertSent:    false,
     }).filter(([, v]) => v !== null && v !== undefined));
 
-    const createRes = await fetch(`${airtableBase}/Score_History`, {
+    const createRes = await atFetch(`${airtableBase}/Score_History`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ records: [{ fields }] }),
     });
 
     if (!createRes.ok) {
-      console.error('Score_History create failed:', createRes.status);
+      console.error('Score_History create failed after retries:', createRes.status);
       return res.status(createRes.status).json({ error: 'Failed to save snapshot' });
     }
 
@@ -360,7 +378,7 @@ async function handleScoreHistory(req, res) {
     let alertFired   = false;
 
     if (scoreChange <= -10) {
-      const profileRes  = await fetch(
+      const profileRes  = await atFetch(
         `${airtableBase}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
         { headers }
       );
@@ -379,13 +397,13 @@ async function handleScoreHistory(req, res) {
             alertFired = true;
             const patches = [];
             if (snapshotId) {
-              patches.push(fetch(`${airtableBase}/Score_History/${snapshotId}`, {
+              patches.push(atFetch(`${airtableBase}/Score_History/${snapshotId}`, {
                 method: 'PATCH', headers,
                 body: JSON.stringify({ fields: { AlertSent: true } }),
               }));
             }
             if (profile?.id) {
-              patches.push(fetch(`${airtableBase}/User_Profile/${profile.id}`, {
+              patches.push(atFetch(`${airtableBase}/User_Profile/${profile.id}`, {
                 method: 'PATCH', headers,
                 body: JSON.stringify({ fields: { LastAlertSent: today } }),
               }));
@@ -422,7 +440,7 @@ async function handleSendAlert(req, res) {
   }
 
   const airtableBase = `https://api.airtable.com/v0/${BASE_ID}`;
-  const profileRes   = await fetch(
+  const profileRes   = await atFetch(
     `${airtableBase}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
     { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
   );
@@ -548,7 +566,7 @@ async function handleBriefing(req, res) {
   const airtableHeaders = { Authorization: `Bearer ${AIRTABLE_TOKEN}` };
   const today           = new Date().toISOString().split('T')[0];
 
-  const profileRes  = await fetch(
+  const profileRes  = await atFetch(
     `${airtableBase}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
     { headers: airtableHeaders }
   );
@@ -610,7 +628,7 @@ async function handleBriefing(req, res) {
   const briefing = (await claudeRes.json()).content?.[0]?.text || '';
 
   if (profile?.id) {
-    await fetch(`${airtableBase}/User_Profile/${profile.id}`, {
+    await atFetch(`${airtableBase}/User_Profile/${profile.id}`, {
       method:  'PATCH',
       headers: { ...airtableHeaders, 'Content-Type': 'application/json' },
       body:    JSON.stringify({ fields: { LastBriefingSent: today, LastBriefingText: briefing } }),
@@ -634,7 +652,7 @@ async function handleConsentExpiryCheck(req, res) {
   const airtableHeaders = { Authorization: `Bearer ${AIRTABLE_TOKEN}` };
   const today           = new Date().toISOString().split('T')[0];
 
-  const auditRes  = await fetch(
+  const auditRes  = await atFetch(
     `${airtableBase}/Database_Audits?filterByFormula={UserID}='${userId}'&sort[0][field]=AuditDate&sort[0][direction]=desc&maxRecords=1`,
     { headers: airtableHeaders }
   );
@@ -676,7 +694,7 @@ async function handleConsentExpiryCheck(req, res) {
     return res.json({ checked: true, alertFired: false, expiringIn30, expiringIn60, expiringIn90 });
   }
 
-  const profileRes  = await fetch(
+  const profileRes  = await atFetch(
     `${airtableBase}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
     { headers: airtableHeaders }
   );
@@ -701,7 +719,7 @@ async function handleConsentExpiryCheck(req, res) {
     });
 
     if (profile?.id) {
-      await fetch(`${airtableBase}/User_Profile/${profile.id}`, {
+      await atFetch(`${airtableBase}/User_Profile/${profile.id}`, {
         method:  'PATCH',
         headers: { ...airtableHeaders, 'Content-Type': 'application/json' },
         body:    JSON.stringify({ fields: { LastAlertSent: today } }),
@@ -919,7 +937,7 @@ Respond ONLY with this exact JSON (no preamble, no markdown fences):
       SimulationJson:       JSON.stringify(claudeOutput),
     }).filter(([, v]) => v !== null && v !== undefined));
 
-    const reportRes = await fetch(`${airtableBase}/Simulation_Reports`, {
+    const reportRes = await atFetch(`${airtableBase}/Simulation_Reports`, {
       method: 'POST', headers: airtableHeaders,
       body:   JSON.stringify({ records: [{ fields }] }),
     });
