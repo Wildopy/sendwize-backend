@@ -1,10 +1,24 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — profile.js v6.0
+// SENDWIZE — profile.js v6.1
 // GET  /api/profile?action=get&userId=x
 // POST /api/profile?action=save
 // POST /api/profile?action=streak
 //
-// v6.0 changes:
+// v6.1 changes:
+//   - All Airtable calls now go through atFetch() (see _airtable.js)
+//     which retries 429/5xx with backoff. Previously a single
+//     Airtable 429 on the "create default profile" path in
+//     handleGet (or on handleSave's PATCH/POST) surfaced as an
+//     immediate 500 to the browser with no retry — this was the
+//     direct cause of "Could not load compliance data" / 500s on
+//     /api/profile seen during concurrent dashboard loads.
+//   - fetchProfile's existing null-on-failure behaviour is kept
+//     (still correct — a transient lookup failure should fall
+//     through to "create default profile", not error out), but
+//     the underlying fetch now retries first via atFetch so a
+//     real 429 is far less likely to ever reach that fallback.
+//
+// v6.0 changes (carried forward):
 //   - RevenueBand added throughout: fmt(), handleGet(), handleSave().
 //   - handleSave: accepts revenueBand param. Validated against four
 //     options matching Airtable single select exactly.
@@ -15,13 +29,13 @@
 //   - sector / businessSize / emailVolume retained — legacy fields,
 //     still used by older tool calls. Remove in Phase 3 cleanup.
 // ─────────────────────────────────────────────────────────────
+import { atFetch } from './_airtable.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   const { action } = req.query;
   if (req.method === 'GET'  && action === 'get')    return handleGet(req, res);
   if (req.method === 'POST' && action === 'save')   return handleSave(req, res);
@@ -33,14 +47,18 @@ function hdrs(token) {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
-// Returns record or null — never throws.
+// Returns record or null — never throws. atFetch already retries 429/5xx
+// internally, so a null here means either "no profile exists yet" (genuine
+// 404-equivalent — Airtable returned ok with zero records) or Airtable
+// remained unavailable even after retries. Both cases correctly fall
+// through to "create default profile" in handleGet.
 async function fetchProfile(userId, token, baseId) {
   try {
-    const r = await fetch(
+    const r = await atFetch(
       `https://api.airtable.com/v0/${baseId}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    if (!r.ok) { console.error('User_Profile fetch failed:', r.status); return null; }
+    if (!r.ok) { console.error('User_Profile fetch failed after retries:', r.status); return null; }
     const d = await r.json();
     return d.records?.length > 0 ? d.records[0] : null;
   } catch (e) { console.error('fetchProfile error:', e); return null; }
@@ -87,15 +105,37 @@ async function handleGet(req, res) {
     EmailVolume:  'medium_send',
   }).filter(([, v]) => v !== null && v !== undefined));
 
-  const createRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile`, {
+  const createRes = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile`, {
     method:  'POST',
     headers: hdrs(AIRTABLE_TOKEN),
     body:    JSON.stringify({ records: [{ fields: defaultFields }] }),
   });
 
   if (!createRes.ok) {
-    console.error('User_Profile create failed:', createRes.status);
-    return res.status(500).json({ error: 'Failed to create profile' });
+    console.error('User_Profile create failed after retries:', createRes.status);
+    // Airtable genuinely unavailable even after backoff — return a
+    // usable fallback profile instead of a hard 500. The dashboard
+    // already handles revenueBand:null by showing the onboarding modal,
+    // so this degrades gracefully rather than blocking the whole load.
+    return res.status(200).json({
+      success:      false,
+      isDefault:    true,
+      degraded:     true,
+      reason:       `Airtable temporarily unavailable (status ${createRes.status})`,
+      profileId:    null,
+      userId,
+      revenueBand:      null,
+      sector:           'ecommerce',
+      businessSize:     'smb',
+      emailVolume:      'medium_send',
+      email:            null,
+      currentStreak:    0,
+      longestStreak:    0,
+      lastCheckDate:    null,
+      lastAlertSent:    null,
+      lastBriefingSent: null,
+      onboardingComplete: false,
+    });
   }
 
   const created = await createRes.json();
@@ -118,7 +158,6 @@ async function handleSave(req, res) {
   const validSectors      = ['ecommerce', 'agency', 'finance', 'healthcare', 'other'];
   const validSizes        = ['micro', 'smb', 'midmarket'];
   const validVolumes      = ['micro_send', 'small_send', 'medium_send', 'large_send', 'enterprise_send'];
-
   if (revenueBand  && !validRevenueBands.includes(revenueBand))  return res.status(400).json({ error: `Invalid revenueBand. Must be one of: ${validRevenueBands.join(', ')}` });
   if (sector       && !validSectors.includes(sector))            return res.status(400).json({ error: `Invalid sector. Must be one of: ${validSectors.join(', ')}` });
   if (businessSize && !validSizes.includes(businessSize))        return res.status(400).json({ error: `Invalid businessSize. Must be one of: ${validSizes.join(', ')}` });
@@ -126,7 +165,6 @@ async function handleSave(req, res) {
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
-
   const existing = await fetchProfile(userId, AIRTABLE_TOKEN, BASE_ID);
 
   // Build fields — null strip so we never overwrite existing values with null.
@@ -140,21 +178,20 @@ async function handleSave(req, res) {
     // OnboardingComplete is a checkbox — only set if explicitly passed
     ...(typeof onboardingComplete === 'boolean' ? { OnboardingComplete: onboardingComplete } : {}),
   };
-
   const fields = Object.fromEntries(
     Object.entries(rawFields).filter(([, v]) => v !== null && v !== undefined)
   );
 
   let record;
   if (existing) {
-    const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile/${existing.id}`, {
+    const r = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile/${existing.id}`, {
       method:  'PATCH',
       headers: hdrs(AIRTABLE_TOKEN),
       body:    JSON.stringify({ fields }),
     });
     if (!r.ok) {
-      console.error('User_Profile patch failed:', r.status);
-      return res.status(r.status).json({ error: 'Failed to save profile' });
+      console.error('User_Profile patch failed after retries:', r.status);
+      return res.status(r.status).json({ error: 'Failed to save profile — please try again' });
     }
     record = await r.json();
   } else {
@@ -165,15 +202,14 @@ async function handleSave(req, res) {
       EmailVolume:  'medium_send',
       ...fields,   // passed values override defaults
     }).filter(([, v]) => v !== null && v !== undefined));
-
-    const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile`, {
+    const r = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile`, {
       method:  'POST',
       headers: hdrs(AIRTABLE_TOKEN),
       body:    JSON.stringify({ records: [{ fields: createFields }] }),
     });
     if (!r.ok) {
-      console.error('User_Profile create failed:', r.status);
-      return res.status(r.status).json({ error: 'Failed to save profile' });
+      console.error('User_Profile create failed after retries:', r.status);
+      return res.status(r.status).json({ error: 'Failed to save profile — please try again' });
     }
     record = (await r.json()).records[0];
   }
@@ -188,7 +224,6 @@ async function handleStreak(req, res) {
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
-
   const existing = await fetchProfile(userId, AIRTABLE_TOKEN, BASE_ID);
   if (!existing) return res.status(404).json({ error: 'Profile not found. Call ?action=get first.' });
 
@@ -206,7 +241,6 @@ async function handleStreak(req, res) {
     yesterday.setDate(yesterday.getDate() - 1);
     const lastStr      = last.toISOString().split('T')[0];
     const yesterdayStr = yesterday.toISOString().split('T')[0];
-
     if (lastStr === todayStr) {
       return res.json({
         success:      true,
@@ -221,21 +255,19 @@ async function handleStreak(req, res) {
   }
 
   const newLongest = Math.max(newStreak, longestStreak);
-
   const fields = Object.fromEntries(Object.entries({
     CurrentStreak: newStreak,
     LongestStreak: newLongest,
     LastCheckDate: todayStr,
   }).filter(([, v]) => v !== null && v !== undefined));
 
-  const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile/${existing.id}`, {
+  const r = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile/${existing.id}`, {
     method:  'PATCH',
     headers: hdrs(AIRTABLE_TOKEN),
     body:    JSON.stringify({ fields }),
   });
-
   if (!r.ok) {
-    console.error('Streak update failed:', r.status);
+    console.error('Streak update failed after retries:', r.status);
     return res.status(r.status).json({ error: 'Failed to update streak' });
   }
 
