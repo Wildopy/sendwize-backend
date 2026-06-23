@@ -47,21 +47,39 @@ function hdrs(token) {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
-// Returns record or null — never throws. atFetch already retries 429/5xx
-// internally, so a null here means either "no profile exists yet" (genuine
-// 404-equivalent — Airtable returned ok with zero records) or Airtable
-// remained unavailable even after retries. Both cases correctly fall
-// through to "create default profile" in handleGet.
+// Returns { record, lookupFailed }. Never throws.
+//   - record: the existing User_Profile record, or null if none exists
+//   - lookupFailed: true only if the Airtable lookup itself failed (after
+//     atFetch's internal retries) — NOT true when the lookup succeeded and
+//     simply found zero records for this userId.
+//
+// This distinction matters: callers (handleGet in particular) must not
+// treat "Airtable was temporarily unavailable" the same as "this is a new
+// user." Previously both cases returned plain `null`, so a single transient
+// lookup failure caused handleGet to create a brand-new default profile —
+// silently duplicating the user's real profile row in Airtable and wiping
+// out onboardingComplete, revenueBand, streaks, etc. on whichever read hit
+// the duplicate next. That was the cause of the onboarding tour re-looping
+// on every load: an intermittent lookup failure → a fresh profile row with
+// OnboardingComplete unset → tour modal shown again, even though the user's
+// original profile (with OnboardingComplete: true) still existed untouched.
 async function fetchProfile(userId, token, baseId) {
   try {
     const r = await atFetch(
       `https://api.airtable.com/v0/${baseId}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    if (!r.ok) { console.error('User_Profile fetch failed after retries:', r.status); return null; }
+    if (!r.ok) {
+      console.error('User_Profile fetch failed after retries:', r.status);
+      return { record: null, lookupFailed: true };
+    }
     const d = await r.json();
-    return d.records?.length > 0 ? d.records[0] : null;
-  } catch (e) { console.error('fetchProfile error:', e); return null; }
+    const record = d.records?.length > 0 ? d.records[0] : null;
+    return { record, lookupFailed: false };
+  } catch (e) {
+    console.error('fetchProfile error:', e);
+    return { record: null, lookupFailed: true };
+  }
 }
 
 // v6.0: revenueBand added. Null = not yet collected = show onboarding modal.
@@ -92,9 +110,42 @@ async function handleGet(req, res) {
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
 
-  const existing = await fetchProfile(userId, AIRTABLE_TOKEN, BASE_ID);
+  const { record: existing, lookupFailed } = await fetchProfile(userId, AIRTABLE_TOKEN, BASE_ID);
   if (existing) return res.json({ success: true, isDefault: false, ...fmt(existing, userId) });
 
+  if (lookupFailed) {
+    // Airtable lookup itself failed even after retries — we genuinely do
+    // not know whether a profile already exists. Creating a new one here
+    // would risk duplicating a real profile (and silently resetting
+    // onboardingComplete, revenueBand, streaks, etc. on whichever record
+    // gets read next). Degrade honestly instead: tell the dashboard we
+    // couldn't confirm profile state, without writing anything.
+    return res.status(200).json({
+      success:      false,
+      isDefault:    false,
+      degraded:     true,
+      reason:       'Could not confirm profile state — Airtable lookup failed',
+      profileId:    null,
+      userId,
+      revenueBand:      null,
+      sector:           'ecommerce',
+      businessSize:     'smb',
+      emailVolume:      'medium_send',
+      email:            null,
+      currentStreak:    0,
+      longestStreak:    0,
+      lastCheckDate:    null,
+      lastAlertSent:    null,
+      lastBriefingSent: null,
+      // Deliberately NOT false here — false would re-trigger the onboarding
+      // tour for a returning user just because of a transient read failure.
+      // null signals "unknown" so the dashboard can choose to skip showing
+      // the tour rather than assume the user is new.
+      onboardingComplete: null,
+    });
+  }
+
+  // Lookup succeeded and genuinely found no record — this really is a new user.
   // First login — create default profile.
   // RevenueBand deliberately omitted — null signals modal not yet shown.
   // Dashboard checks revenueBand === null on load and shows onboarding modal.
@@ -165,7 +216,7 @@ async function handleSave(req, res) {
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
-  const existing = await fetchProfile(userId, AIRTABLE_TOKEN, BASE_ID);
+  const { record: existing } = await fetchProfile(userId, AIRTABLE_TOKEN, BASE_ID);
 
   // Build fields — null strip so we never overwrite existing values with null.
   const rawFields = {
@@ -224,7 +275,7 @@ async function handleStreak(req, res) {
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
-  const existing = await fetchProfile(userId, AIRTABLE_TOKEN, BASE_ID);
+  const { record: existing } = await fetchProfile(userId, AIRTABLE_TOKEN, BASE_ID);
   if (!existing) return res.status(404).json({ error: 'Profile not found. Call ?action=get first.' });
 
   const f             = existing.fields;
