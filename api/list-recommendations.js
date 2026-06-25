@@ -106,27 +106,19 @@ export default async function handler(req, res) {
     }
 
     const now = new Date();
-    const decayed = [];
 
-    for (const o of opps) {
-      const f             = o.fields;
-      const created       = f.CreatedDate ? new Date(f.CreatedDate) : now;
-      const monthsOld     = (now - created) / (30 * 86400000);
-      const decayRate     = f.DecayRate || 2.5; // % per month
-      const estimated     = f.EstimatedValue || 0;
-      const currentValue  = parseFloat(
+    // Compute decay for every opportunity first (synchronous, instant) so the
+    // response is never gated on Airtable round-trips.
+    const decayed = opps.map(o => {
+      const f            = o.fields;
+      const created      = f.CreatedDate ? new Date(f.CreatedDate) : now;
+      const monthsOld    = (now - created) / (30 * 86400000);
+      const decayRate    = f.DecayRate || 2.5; // % per month
+      const estimated    = f.EstimatedValue || 0;
+      const currentValue = parseFloat(
         Math.max(0, estimated * Math.pow(1 - decayRate / 100, monthsOld)).toFixed(2)
       );
-
-      // Patch Airtable with decayed value — so dashboard always reads fresh.
-      // Non-fatal: if this fails (even after retries), we still return the
-      // computed value to the caller this time around.
-      const patchResult = await atPatch('List_Opportunities', o.id, { CurrentValue: currentValue });
-      if (!patchResult.ok) {
-        console.error(`CurrentValue patch failed for ${o.id} (non-fatal): status ${patchResult.status}`);
-      }
-
-      decayed.push({
+      return {
         id:                o.id,
         type:              f.OpportunityType  || '',
         description:       f.Description      || '',
@@ -137,8 +129,34 @@ export default async function handler(req, res) {
         status:            f.Status           || 'Open',
         createdDate:       f.CreatedDate      || null,
         monthsOld:         parseFloat(monthsOld.toFixed(1)),
-      });
-    }
+      };
+    });
+
+    // Persist the decayed CurrentValue back to Airtable — fired concurrently
+    // via Promise.all, not sequentially in a for-loop. This is the actual
+    // bug fix: previously each atPatch was awaited one at a time, and under
+    // Airtable rate-limiting each call can take up to ~4s (full retry/backoff
+    // budget) — so as few as 3 open opportunities could push total sequential
+    // latency past Vercel Hobby's 10s function timeout, killing the function
+    // mid-request with no clean error response (the "issue after issue" in
+    // the browser network tab).
+    //
+    // Running them concurrently means N patches take ~1x the worst-case
+    // latency instead of Nx. We still await the batch before responding,
+    // per this file's own rule (all async work awaited before res.json() —
+    // Vercel may freeze/tear down the function the instant a response is
+    // sent, so an un-awaited write can silently never complete). Individual
+    // patch failures remain non-fatal — only logged, never block the response.
+    await Promise.all(
+      decayed.map(d =>
+        atPatch('List_Opportunities', d.id, { CurrentValue: d.currentValue })
+          .then(patchResult => {
+            if (!patchResult.ok) {
+              console.error(`CurrentValue patch failed for ${d.id} (non-fatal): status ${patchResult.status}`);
+            }
+          })
+      )
+    ).catch(e => console.error('Unexpected error in decay patch batch (non-fatal):', e));
 
     const unrealisedTotal = parseFloat(
       decayed.reduce((s, o) => s + o.currentValue, 0).toFixed(2)
