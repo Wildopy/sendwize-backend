@@ -1,10 +1,29 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — fixes.js v6.3
-// GET  /api/fixes?action=get&userId=x      → list + score + exposure
+// SENDWIZE — fixes.js v6.4
+// GET  /api/fixes?action=get&userId=x[&revenueBand=...]
 // POST /api/fixes?action=complete          → mark fix done
 // POST /api/fixes?action=dismiss           → exclude from score
 //
-// v6.3 changes from v6.2:
+// v6.4 changes:
+//   - All direct Airtable calls now go through atFetch() (see
+//     _airtable.js) for 429/5xx retry with backoff — this file
+//     previously had zero retry logic, unlike data.js/profile.js/
+//     list-recommendations.js, and was one of the two endpoints
+//     still 429ing after those three were fixed.
+//   - handleGet now accepts an OPTIONAL ?revenueBand= query param.
+//     When present, it skips the User_Profile lookup entirely.
+//     Why: on every dashboard load, loadProfile() already calls
+//     /api/profile?action=get, which already fetches User_Profile
+//     to read RevenueBand — and handleGet here was independently
+//     fetching the SAME table for the SAME field on the SAME load.
+//     On Airtable's Free-plan 5 req/sec-per-base ceiling, that
+//     redundant call is pure waste that makes rate-limiting worse.
+//     The dashboard should pass the revenueBand it already has from
+//     its profile call; this endpoint only falls back to its own
+//     Airtable lookup if the param is absent (so older frontend
+//     callers that don't pass it yet still work correctly).
+//
+// v6.3 changes (carried forward):
 //   - NEW 'Commercial' exposure category. Commercial fixes carry a £
 //     figure computed by the calling tool from the user's OWN data
 //     (Audience Read cost-per-subscriber loss; List Intelligence
@@ -29,6 +48,8 @@
 //   Commercial figures = estimated business cost from the user's own
 //   inputs, explicitly not a regulatory fine. Nothing here is legal advice.
 // ─────────────────────────────────────────────────────────────
+
+import { atFetch } from './_airtable.js';
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
 const REVENUE_BAND_MAP = {
@@ -371,32 +392,50 @@ function formatFix(r, revenueBand) {
 
 // ── GET ───────────────────────────────────────────────────────
 async function handleGet(req, res) {
-  const { userId } = req.query;
+  const { userId, revenueBand: revenueBandParam } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId is required' });
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
 
-  const [profileRes, fixesRes] = await Promise.all([
-    fetch(`${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }),
-    fetch(`${base}/Compliance_Fixes?filterByFormula={UserID}='${userId}'&sort[0][field]=CreatedDate&sort[0][direction]=desc`,
-      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }),
-  ]);
+  // v6.4 — if the caller already knows the revenueBand (the dashboard's
+  // own loadProfile() call always fetches it from /api/profile first),
+  // skip the redundant User_Profile lookup entirely. This is a genuine
+  // Airtable call saved on every single dashboard load, which matters
+  // on Airtable's Free-plan 5 req/sec-per-base ceiling.
+  let revenueBand = revenueBandParam ? normaliseBand(revenueBandParam) : null;
+
+  const fixesPromise = atFetch(
+    `${base}/Compliance_Fixes?filterByFormula={UserID}='${userId}'&sort[0][field]=CreatedDate&sort[0][direction]=desc`,
+    { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+  );
+
+  // Only hit User_Profile ourselves if the caller didn't already tell us
+  // the revenueBand. Run it concurrently with the fixes fetch when needed.
+  const profilePromise = revenueBand
+    ? Promise.resolve(null)
+    : atFetch(
+        `${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
+        { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+      );
+
+  const [fixesRes, profileRes] = await Promise.all([fixesPromise, profilePromise]);
 
   if (!fixesRes.ok) {
-    console.error('Compliance_Fixes fetch failed:', fixesRes.status);
+    console.error('Compliance_Fixes fetch failed after retries:', fixesRes.status);
     return res.status(fixesRes.status).json({ error: 'Failed to retrieve fixes' });
   }
 
-  let revenueBand = 'under_1m';
-  try {
-    if (profileRes.ok) {
-      const pd = await profileRes.json();
-      revenueBand = pd.records?.[0]?.fields?.RevenueBand || 'under_1m';
-    }
-  } catch(e) { console.error('Profile parse failed (non-fatal):', e); }
+  if (!revenueBand) {
+    revenueBand = 'under_1m';
+    try {
+      if (profileRes && profileRes.ok) {
+        const pd = await profileRes.json();
+        revenueBand = pd.records?.[0]?.fields?.RevenueBand || 'under_1m';
+      }
+    } catch(e) { console.error('Profile parse failed (non-fatal):', e); }
+  }
 
   const all       = (await fixesRes.json()).records || [];
   const pending   = all.filter(x => x.fields.Status === 'pending');
@@ -496,14 +535,14 @@ async function handleComplete(req, res) {
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
   const authH          = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
 
-  const gr = await fetch(`${base}/Compliance_Fixes/${fixId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+  const gr = await atFetch(`${base}/Compliance_Fixes/${fixId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
   if (!gr.ok) return res.status(404).json({ error: 'Fix not found' });
 
   const fix = await gr.json();
   if (fix.fields.UserID  !== userId)      return res.status(403).json({ error: 'Fix does not belong to this user' });
   if (fix.fields.Status  === 'completed') return res.json({ success: true, message: 'Fix already marked complete' });
 
-  const ur = await fetch(`${base}/Compliance_Fixes/${fixId}`, {
+  const ur = await atFetch(`${base}/Compliance_Fixes/${fixId}`, {
     method: 'PATCH', headers: authH,
     body: JSON.stringify({ fields: { Status: 'completed', CompletedDate: new Date().toISOString().split('T')[0] } }),
   });
@@ -511,7 +550,7 @@ async function handleComplete(req, res) {
 
   let revenueBand = 'under_1m';
   try {
-    const pr = await fetch(`${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    const pr = await atFetch(`${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
     if (pr.ok) { const pd = await pr.json(); revenueBand = pd.records?.[0]?.fields?.RevenueBand || 'under_1m'; }
   } catch(e) {}
 
@@ -531,14 +570,14 @@ async function handleDismiss(req, res) {
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
   const authH          = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
 
-  const gr = await fetch(`${base}/Compliance_Fixes/${fixId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+  const gr = await atFetch(`${base}/Compliance_Fixes/${fixId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
   if (!gr.ok) return res.status(404).json({ error: 'Fix not found' });
 
   const fix = await gr.json();
   if (fix.fields.UserID  !== userId)      return res.status(403).json({ error: 'Fix does not belong to this user' });
   if (fix.fields.Status  === 'dismissed') return res.json({ success: true, message: 'Fix already dismissed' });
 
-  const ur = await fetch(`${base}/Compliance_Fixes/${fixId}`, {
+  const ur = await atFetch(`${base}/Compliance_Fixes/${fixId}`, {
     method: 'PATCH', headers: authH,
     body: JSON.stringify({ fields: { Status: 'dismissed' } }),
   });
