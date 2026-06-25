@@ -1,5 +1,16 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v4.29
+// SENDWIZE — submit-check.js v4.30
+// v4.30: All direct Airtable calls now go through atFetch() (see
+//        _airtable.js) for 429/5xx retry with backoff. This file
+//        previously had zero retry logic — every Campaign_Dossiers,
+//        User_Profile, and Brief_Checks call was a raw fetch() with
+//        no resilience to Airtable's rate limiting. It was one of
+//        the two endpoints still 429ing after data.js/profile.js/
+//        list-recommendations.js were fixed (the other being
+//        fixes.js, fixed alongside this in the same pass). Calls to
+//        APP_URL (our own /api/generate-fix, /api/profile?action=streak)
+//        are unchanged — atFetch only wraps Airtable.
+//
 // v4.29: Dossier re-verification (stickiness).
 //        - dossier-submit now stamps LastVerified (Date).
 //        - dossier-list returns daysSinceVerified + needsReview
@@ -8,6 +19,8 @@
 // v4.28: Remove UpdatedAt from dossier-create (Date field rejects
 //        ISO timestamp). Add UpdatedAt back to dossier-save.
 // ─────────────────────────────────────────────────────────────
+
+import { atFetch } from './_airtable.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const REVERIFY_DAYS = 90; // submitted dossiers older than this flag for review
@@ -227,7 +240,7 @@ async function handleDossierCreate(req, res) {
     }
   }
 
-  const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers`, {
+  const r = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers`, {
     method:  'POST',
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
     body:    JSON.stringify({ records: [{ fields }] }),
@@ -235,7 +248,7 @@ async function handleDossierCreate(req, res) {
 
   if (!r.ok) {
     const errBody = await r.text();
-    console.error('Airtable create failed:', r.status, errBody);
+    console.error('Airtable create failed after retries:', r.status, errBody);
     return res.status(r.status).json({ error: 'Failed to create dossier', detail: errBody });
   }
 
@@ -257,11 +270,14 @@ async function handleDossierList(req, res) {
   const BASE_ID        = process.env.BASE_ID;
   const maxRecords     = Math.min(parseInt(limit, 10) || 20, 100);
 
-  const r = await fetch(
+  const r = await atFetch(
     `https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers?filterByFormula={UserID}='${userId}'&sort[0][field]=UpdatedAt&sort[0][direction]=desc&maxRecords=${maxRecords}`,
     { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
   );
-  if (!r.ok) return res.status(r.status).json({ error: 'Failed to fetch dossiers' });
+  if (!r.ok) {
+    console.error('Campaign_Dossiers list fetch failed after retries:', r.status);
+    return res.status(r.status).json({ error: 'Failed to fetch dossiers' });
+  }
 
   const data = await r.json();
   const dossiers = (data.records || []).map(record => {
@@ -335,7 +351,7 @@ async function handleDossierSave(req, res) {
 
   let existing = null;
   try {
-    const dr = await fetch(`${base}/Campaign_Dossiers/${dossierId}`, {
+    const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, {
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
     });
     if (dr.ok) {
@@ -345,7 +361,7 @@ async function handleDossierSave(req, res) {
   } catch {}
 
   if (!existing) {
-    const lr = await fetch(
+    const lr = await atFetch(
       `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
       { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
     );
@@ -372,10 +388,13 @@ async function handleDossierSave(req, res) {
   const recordId = existing?.id || dossierId;
 
   if (existing) {
-    const r = await fetch(`${base}/Campaign_Dossiers/${recordId}`, {
+    const r = await atFetch(`${base}/Campaign_Dossiers/${recordId}`, {
       method: 'PATCH', headers: authH, body: JSON.stringify({ fields: updateFields }),
     });
-    if (!r.ok) return res.status(r.status).json({ error: 'Failed to save module' });
+    if (!r.ok) {
+      console.error('Campaign_Dossiers patch failed after retries:', r.status);
+      return res.status(r.status).json({ error: 'Failed to save module' });
+    }
     result = await r.json();
   } else {
     const createFields = {
@@ -385,10 +404,13 @@ async function handleDossierSave(req, res) {
     };
     if (campaignTitle) createFields.CampaignTitle = campaignTitle;
     if (ownerName)     createFields.OwnerName     = ownerName;
-    const r = await fetch(`${base}/Campaign_Dossiers`, {
+    const r = await atFetch(`${base}/Campaign_Dossiers`, {
       method: 'POST', headers: authH, body: JSON.stringify({ records: [{ fields: createFields }] }),
     });
-    if (!r.ok) return res.status(r.status).json({ error: 'Failed to save module' });
+    if (!r.ok) {
+      console.error('Campaign_Dossiers create failed after retries:', r.status);
+      return res.status(r.status).json({ error: 'Failed to save module' });
+    }
     result = (await r.json()).records?.[0];
   }
 
@@ -406,7 +428,7 @@ async function handleDossierGet(req, res) {
 
   let record = null;
   try {
-    const dr = await fetch(`${base}/Campaign_Dossiers/${dossierId}`, {
+    const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, {
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
     });
     if (dr.ok) {
@@ -416,11 +438,14 @@ async function handleDossierGet(req, res) {
   } catch {}
 
   if (!record) {
-    const r = await fetch(
+    const r = await atFetch(
       `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
       { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
     );
-    if (!r.ok) return res.status(r.status).json({ error: 'Failed to fetch dossier' });
+    if (!r.ok) {
+      console.error('Campaign_Dossiers get fetch failed after retries:', r.status);
+      return res.status(r.status).json({ error: 'Failed to fetch dossier' });
+    }
     record = (await r.json()).records?.[0] || null;
   }
 
@@ -473,7 +498,7 @@ async function handleDossierSubmit(req, res) {
 
   let emailVolume = 'medium_send';
   try {
-    const pr = await fetch(
+    const pr = await atFetch(
       `https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
       { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
     );
@@ -482,7 +507,7 @@ async function handleDossierSubmit(req, res) {
 
   let currentRecord = null;
   try {
-    const dr = await fetch(`${base}/Campaign_Dossiers/${dossierId}`, {
+    const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, {
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
     });
     if (dr.ok) {
@@ -492,7 +517,7 @@ async function handleDossierSubmit(req, res) {
   } catch {}
 
   if (!currentRecord) {
-    const lr = await fetch(
+    const lr = await atFetch(
       `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
       { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
     );
@@ -543,7 +568,7 @@ async function handleDossierSubmit(req, res) {
   }
 
   try {
-    await fetch(`${base}/Campaign_Dossiers/${actualRecordId}`, {
+    await atFetch(`${base}/Campaign_Dossiers/${actualRecordId}`, {
       method:  'PATCH',
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
       body:    JSON.stringify({ fields: {
@@ -594,7 +619,7 @@ async function handleBriefCheck(req, res) {
 
   let briefCheckId = null, totalExposureEstimate = 0;
   try {
-    const briefRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks`, {
+    const briefRes = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ records: [{ fields: {
@@ -607,12 +632,12 @@ async function handleBriefCheck(req, res) {
       }}]}),
     });
     if (briefRes.ok) briefCheckId = (await briefRes.json()).records?.[0]?.id ?? null;
-    else console.error('Brief_Checks save failed:', await briefRes.text());
+    else console.error('Brief_Checks save failed after retries:', await briefRes.text());
   } catch(e) { console.error('Brief_Checks save error (non-fatal):', e); }
 
   let emailVolume = 'medium_send';
   try {
-    const pr = await fetch(
+    const pr = await atFetch(
       `https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
       { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
     );
@@ -637,7 +662,7 @@ async function handleBriefCheck(req, res) {
   }
 
   if (briefCheckId && totalExposureEstimate > 0) {
-    fetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks/${briefCheckId}`, {
+    atFetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks/${briefCheckId}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: { TotalExposureEstimate: totalExposureEstimate } }),
