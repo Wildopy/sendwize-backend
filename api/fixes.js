@@ -405,6 +405,7 @@ async function handleGet(req, res) {
   // Airtable call saved on every single dashboard load, which matters
   // on Airtable's Free-plan 5 req/sec-per-base ceiling.
   let revenueBand = revenueBandParam ? normaliseBand(revenueBandParam) : null;
+  let profileFields = null; // v6.5 — captured so handleGet can return full profile data in one round-trip
 
   const fixesPromise = atFetch(
     `${base}/Compliance_Fixes?filterByFormula={UserID}='${userId}'&sort[0][field]=CreatedDate&sort[0][direction]=desc`,
@@ -432,7 +433,13 @@ async function handleGet(req, res) {
     try {
       if (profileRes && profileRes.ok) {
         const pd = await profileRes.json();
-        revenueBand = pd.records?.[0]?.fields?.RevenueBand || 'under_1m';
+        const rec = pd.records?.[0] || null;
+        if (rec) {
+          profileFields = rec.fields;
+          revenueBand = rec.fields?.RevenueBand || 'under_1m';
+        }
+      } else if (profileRes && !profileRes.ok) {
+        console.error('User_Profile fetch failed after retries (non-fatal — fixes data still returned):', profileRes.status);
       }
     } catch(e) { console.error('Profile parse failed (non-fatal):', e); }
   }
@@ -478,12 +485,31 @@ async function handleGet(req, res) {
   const now           = new Date();
   const assessedMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
+  // v6.5 — carry profile fields in this same response. The dashboard's
+  // loadProfile() previously made its OWN separate call to /api/profile,
+  // which independently re-fetched the SAME User_Profile row this endpoint
+  // already fetches. On every dashboard load that meant two Airtable calls
+  // to the same table for the same user — on Airtable's Free-plan 5 req/sec
+  // ceiling, that redundant call was a direct contributor to 429s. The
+  // frontend can now read onboardingComplete/revenueBand/currentStreak from
+  // THIS response and skip /api/profile?action=get on the hot path. If the
+  // profile lookup failed (profileFields stays null), profileUnavailable is
+  // true so the frontend knows not to trust onboardingComplete:false here —
+  // it should treat it as unknown, same as profile.js's own degraded path.
+  const profile = {
+    onboardingComplete: profileFields ? (profileFields.OnboardingComplete || false) : null,
+    revenueBandRaw:      profileFields ? (profileFields.RevenueBand || null) : null,
+    currentStreak:       profileFields ? (profileFields.CurrentStreak || 0) : 0,
+    profileUnavailable:  profileFields === null,
+  };
+
   return res.json({
     success:      true,
     score,
     scoreBand:    band.label,
     scoreColour:  band.colour,
     revenueBand:  normaliseBand(revenueBand),
+    profile,
     counts: {
       pending:   pending.length,
       completed: completed.length,
