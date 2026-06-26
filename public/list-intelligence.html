@@ -22,11 +22,37 @@
 }
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-.nav{background:var(--w);border-bottom:1px solid var(--b);height:56px;display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:100;justify-content:space-between}
-.nav-logo{font-size:17px;font-weight:700;color:var(--o);letter-spacing:-.4px;text-decoration:none}
-.nav-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
-.nav-back:hover{color:var(--o);background:var(--ol)}
 .page{max-width:820px;margin:0 auto;padding:40px 20px 80px}
+
+.sw-ph-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;
+  background:var(--w);
+  border-bottom:1px solid var(--b);
+  position:sticky;top:0;z-index:100;
+}
+.sw-ph-header a{text-decoration:none}
+.sw-ph-logo{height:28px;display:block}
+.sw-ph-nav{display:flex;align-items:center;gap:22px}
+.sw-ph-nav a{color:var(--tm);font-size:14px;font-weight:500;transition:color .15s}
+.sw-ph-nav a:hover{color:var(--t)}
+
+.sw-ph-footer{
+  border-top:1px solid var(--b);
+  padding:20px 24px;
+  margin-top:40px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.sw-ph-footer-logo{height:20px;display:block;opacity:.7}
+.sw-ph-footer-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}
+.sw-ph-footer-links a{color:var(--mu);text-decoration:none}
+.sw-ph-footer-links a:hover{color:var(--tm)}
+
+@media(max-width:640px){
+  .sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}
+  .sw-ph-footer{flex-direction:column;align-items:flex-start}
+}
 
 /* ── GATE ── */
 .gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
@@ -241,13 +267,15 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </head>
 <body>
 
-<nav class="nav">
-  <a class="nav-logo" href="https://www.sendwize.co.uk/dashboard">sendwize</a>
-  <a class="nav-back" href="https://www.sendwize.co.uk/dashboard">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
-    Dashboard
+<header class="sw-ph-header">
+  <a href="https://new-mvp-v2.webflow.io/">
+    <img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
   </a>
-</nav>
+  <nav class="sw-ph-nav">
+    <a href="https://new-mvp-v2.webflow.io/">Home</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
+  </nav>
+</header>
 
 <div class="loading-bg" id="loadingBg"><div class="spin"></div><div class="loading-msg" id="loadingMsg">Analysing your list&hellip;</div></div>
 
@@ -258,7 +286,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="gate-icon">&#128203;</div>
     <div class="gate-title">List Intelligence</div>
     <div class="gate-sub">Upload your contact list. We calculate its commercial value, map your ICO compliance exposure, and tell you exactly what needs fixing before your next send.</div>
-    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a>
     <button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> See an example valuation</button>
   </div>
 </div>
@@ -758,5 +786,14 @@ else{
     .catch(function(){});
 }
 </script>
+<footer class="sw-ph-footer">
+  <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
+  <div class="sw-ph-footer-links">
+    <a href="#">About Us</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/cookie-policy">Cookie Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a>
+  </div>
+</footer>
 </body>
 </html>
