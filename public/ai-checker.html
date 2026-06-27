@@ -11,11 +11,23 @@
       --border: #f0f0f0; --border-mid: #e5e5e5; --text: #1a1a1a; --muted: #6b7280;
       --red: #ef4444; --yellow: #f59e0b; --green: #16a34a; --teal: #0d9488; --radius: 8px;
     }
-    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 32px 20px 60px; }
-    .container { max-width: 900px; margin: 0 auto; }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 0 0 60px; }
+
+    .sw-ph-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+    .sw-ph-header a{text-decoration:none}
+    .sw-ph-logo{height:28px;display:block}
+    .sw-ph-nav{display:flex;align-items:center;gap:22px}
+    .sw-ph-nav a{color:var(--muted);font-size:14px;font-weight:500;transition:color .15s}
+    .sw-ph-nav a:hover{color:var(--text)}
+    .sw-ph-footer{border-top:1px solid var(--border);padding:20px 24px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .sw-ph-footer-logo{height:20px;display:block;opacity:.7}
+    .sw-ph-footer-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}
+    .sw-ph-footer-links a{color:var(--muted);text-decoration:none}
+    .sw-ph-footer-links a:hover{color:var(--text)}
+    @media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.sw-ph-footer{flex-direction:column;align-items:flex-start}}
+
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 20px 0; }
     .page-header { margin-bottom: 32px; }
-    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color .15s; }
-    .back-link:hover { color: var(--orange); }
     .page-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
     .page-subtitle { font-size: 14px; color: var(--muted); line-height: 1.5; }
     .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; }
@@ -36,14 +48,12 @@
     .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
     .btn-secondary { padding: 8px 16px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-weight: 500; background: var(--white); color: var(--text); cursor: pointer; font-family: inherit; transition: border-color .15s; }
     .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
-    /* Demo button */
     .btn-demo { width: 100%; padding: 12px 20px; background: var(--white); color: var(--muted); border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; transition: all .15s; font-family: inherit; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-demo:hover { border-color: var(--orange); color: var(--text); }
     .demo-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #FFF4EA; color: var(--orange); letter-spacing: .04em; }
     .demo-notice { display: flex; align-items: flex-start; gap: 10px; background: #FFF4EA; border: 1px solid #fed7aa; border-radius: var(--radius); padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #92400e; }
     .demo-notice strong { font-weight: 700; }
 
-    /* ── SENDING CONTEXT PANEL ───────────────────────────────────────── */
     .context-panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; overflow: hidden; }
     .context-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; cursor: pointer; user-select: none; transition: background .15s; }
     .context-header:hover { background: #fafafa; }
@@ -164,6 +174,15 @@
   </style>
 </head>
 <body>
+
+<header class="sw-ph-header">
+  <a href="https://new-mvp-v2.webflow.io/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <nav class="sw-ph-nav">
+    <a href="https://new-mvp-v2.webflow.io/">Home</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
+  </nav>
+</header>
+
 <div class="container">
 
 
@@ -173,16 +192,12 @@
       <div class="gate-icon">&#128274;</div>
       <div class="gate-title">AI Copy Checker</div>
       <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
-      <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
+      <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a>
       <button class="gate-demo-btn" onclick="runDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--orange)">DEMO</span> Try with example data</button>
     </div>
   </div>
 
   <div class="page-header">
-    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="back-link">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
-      Dashboard
-    </a>
     <h1 class="page-title">AI Copy Checker</h1>
     <p class="page-subtitle">Analyse marketing copy and creative assets for PECR, UK GDPR, ASA CAP Code, and CMA/DMCCA issues. Not legal advice.</p>
   </div>
@@ -349,6 +364,17 @@
   </div>
 
 </div>
+
+<footer class="sw-ph-footer">
+  <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
+  <div class="sw-ph-footer-links">
+    <a href="#">About Us</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/cookie-policy">Cookie Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a>
+  </div>
+</footer>
+
 <script>
   const APP_URL = 'https://sendwize-backend.vercel.app';
   let currentContentType = 'email';
@@ -356,7 +382,6 @@
   let lastCopy = '';
   let contextSkipped = false;
 
-  // ── AUTH ──────────────────────────────────────────────────────────────
   function init() {
     userId = new URLSearchParams(window.location.search).get('userId');
     if (!userId) {
@@ -369,7 +394,6 @@
     ? document.addEventListener('DOMContentLoaded', init)
     : init();
 
-  // ── DEMO MODE ─────────────────────────────────────────────────────────
   var DEMO_COPY = 'Subject: Last chance \u2014 offer ends TONIGHT\n\nHi there,\n\nUK\u2019s best-value service is here. Our exclusive summer deal was \u00a3149, now just \u00a379 \u2014 but only until midnight tonight.\n\nDon\u2019t miss out!\n\nDeals Team';
 
   var DEMO_RESULT = {
@@ -423,11 +447,9 @@
   };
 
   function runDemo() {
-    // Pre-fill copy field so the original box has something to show
     document.getElementById('copyText').value = DEMO_COPY;
     lastCopy = DEMO_COPY;
 
-    // Show demo notice in results
     const notice = document.createElement('div');
     notice.className = 'demo-notice';
     notice.innerHTML = '<span style="font-size:16px">\uD83D\uDC41\uFE0F</span><span><strong>Demo mode</strong> \u2014 example copy with common UK compliance issues. <a href="?" style="color:var(--orange);font-weight:600">Sign in</a> to check your own copy against your live compliance data.</span>';
@@ -435,11 +457,9 @@
     document.getElementById('formSection').style.display = 'none';
     renderResults(DEMO_RESULT);
 
-    // Insert notice before results
     document.getElementById('resultsSection').prepend(notice);
   }
 
-  // ── SENDING CONTEXT PANEL ─────────────────────────────────────────────
   let contextOpen = true;
 
   function toggleContext() {
@@ -646,7 +666,6 @@
     document.getElementById('rewritePanel').classList.remove('show');
     document.getElementById('emailScoreBar').classList.remove('show');
     document.getElementById('checksSection').classList.remove('show');
-    // Remove any demo notice
     document.querySelectorAll('.demo-notice').forEach(n => n.remove());
     ['copyText','campaignName'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     uploadedImages = []; renderImagePreviews();
