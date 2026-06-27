@@ -20,10 +20,20 @@
   --sh-lg:0 8px 32px rgba(0,0,0,.10);
 }
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
-.nav{background:var(--w);border-bottom:1px solid var(--b);height:56px;display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:100;justify-content:space-between}
-.nav-logo{font-size:17px;font-weight:700;color:var(--o);letter-spacing:-.4px;text-decoration:none}
-.nav-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
-.nav-back:hover{color:var(--o);background:var(--ol)}
+
+.sw-ph-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.sw-ph-header a{text-decoration:none}
+.sw-ph-logo{height:28px;display:block}
+.sw-ph-nav{display:flex;align-items:center;gap:22px}
+.sw-ph-nav a{color:var(--tm);font-size:14px;font-weight:500;transition:color .15s}
+.sw-ph-nav a:hover{color:var(--t)}
+.sw-ph-footer{border-top:1px solid var(--b);padding:20px 24px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.sw-ph-footer-logo{height:20px;display:block;opacity:.7}
+.sw-ph-footer-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}
+.sw-ph-footer-links a{color:var(--mu);text-decoration:none}
+.sw-ph-footer-links a:hover{color:var(--tm)}
+@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.sw-ph-footer{flex-direction:column;align-items:flex-start}}
+
 .page{max-width:900px;margin:0 auto;padding:40px 20px 80px}
 
 /* GATE */
@@ -318,13 +328,13 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </head>
 <body>
 
-<nav class="nav">
-  <a class="nav-logo" href="https://www.sendwize.co.uk/dashboard">sendwize</a>
-  <a class="nav-back" href="https://www.sendwize.co.uk/dashboard">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
-    Dashboard
-  </a>
-</nav>
+<header class="sw-ph-header">
+  <a href="https://new-mvp-v2.webflow.io/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <nav class="sw-ph-nav">
+    <a href="https://new-mvp-v2.webflow.io/">Home</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
+  </nav>
+</header>
 
 <div class="loading-bg" id="loadingBg"><div class="spin"></div><div class="loading-msg" id="loadingMsg">Running algorithms&hellip;</div></div>
 
@@ -364,7 +374,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="gate-icon">&#128202;</div>
     <div class="gate-title">Audience Read</div>
     <div class="gate-sub">Find out if your email segments are healthy, fatigued, or heading toward ICO risk — compared to UK industry benchmarks.</div>
-    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a>
     <button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> See an example diagnosis</button>
   </div>
 </div>
@@ -498,6 +508,16 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <p class="disc">Benchmarks: MailerLite 2025, GDMA International Email Benchmark 2024, DMA UK 2025, Klaviyo ecommerce data. Algorithms are deterministic &mdash; no AI, no external data.<br>Regulatory notes are illustrative consequences of observed patterns, not legal advice.</p>
 </div>
+
+<footer class="sw-ph-footer">
+  <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
+  <div class="sw-ph-footer-links">
+    <a href="#">About Us</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/cookie-policy">Cookie Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a>
+  </div>
+</footer>
 
 <div class="toast" id="toast"></div>
 
@@ -668,11 +688,9 @@ function renderDash(data) {
 function renderChangeBlock(changes) {
   var cb = document.getElementById('changeBlock');
   if (!cb) return;
-  // No comparison data (first ever upload, or no prior snapshot) — hide.
   if (!changes || !changes.segments || !changes.segments.length) { cb.innerHTML = ''; return; }
 
   var sum = changes.summary || {};
-  // If literally every segment is brand new, there's nothing to compare — hide.
   if (sum.brandNew === sum.total && sum.improved === 0 && sum.worsened === 0) { cb.innerHTML = ''; return; }
 
   var days = sum.daysSinceLast;
@@ -681,7 +699,6 @@ function renderChangeBlock(changes) {
     : days === 1 ? 'since yesterday'
     : 'since your last check ' + days + ' days ago';
 
-  // Stale nudge — if it's been a while, prompt a fresh upload.
   var staleHtml = '';
   if (days != null && days >= 14) {
     staleHtml = '<div class="stale-banner"><div style="font-size:18px;flex-shrink:0">&#x23F3;</div>'+
@@ -689,15 +706,12 @@ function renderChangeBlock(changes) {
       '<button class="btn btn-primary btn-sm" onclick="showScreen(\'upload\')">Upload latest &rarr;</button></div>';
   }
 
-  // Tally pills
   var pills = '';
   if (sum.worsened > 0) pills += '<span class="tally-pill down">&#x25BC; '+sum.worsened+' worsened</span>';
   if (sum.improved > 0) pills += '<span class="tally-pill up">&#x25B2; '+sum.improved+' improved</span>';
   if (sum.unchanged > 0) pills += '<span class="tally-pill flat">&#x2014; '+sum.unchanged+' unchanged</span>';
   if (sum.brandNew > 0) pills += '<span class="tally-pill new">+ '+sum.brandNew+' new</span>';
 
-  // Rows — skip pure "new" and "same" with no capital movement to keep it focused;
-  // show worsened and improved first (already sorted by backend).
   var rows = changes.segments.filter(function(s) {
     return s.direction === 'worsened' || s.direction === 'improved' || s.isNew;
   }).slice(0, 6).map(function(s) {
@@ -814,7 +828,6 @@ function renderSegmentDiagnoses(data) {
 
     var emoji = badStates.indexOf(state)>-1?'\uD83D\uDD34':warnStates.indexOf(state)>-1?'\uD83D\uDFE1':goodStates.indexOf(state)>-1?'\uD83D\uDFE2':'\u26AA';
 
-    // Benchmark stats
     var avgRate = fp.selfBaseline;
     var benchRate = bench.unsubNormal || fp.benchmarkNormal;
     var avgPct = avgRate ? (avgRate*100).toFixed(2)+'%' : null;
@@ -828,7 +841,6 @@ function renderSegmentDiagnoses(data) {
       (benchPct ? '<div class="bench-stat"><div class="bench-stat-label">UK '+escH(bench.label||'')+' benchmark</div><div class="bench-stat-val neu">'+benchPct+'</div><div class="bench-vs" style="color:var(--mu)">'+escH(bench.source||'')+'</div></div>' : '')+
       '</div>' : '';
 
-    // Subscriber loss
     var lossHtml = '';
     if (loss.totalExcessUnsubs > 0) {
       var costStr = cpl ? ' &mdash; est. &pound;'+Math.round(loss.totalExcessUnsubs*cpl).toLocaleString()+' in acquisition cost' : '';
@@ -966,8 +978,6 @@ function sid(s) { return s.replace(/[^a-zA-Z0-9_]/g,'_'); }
 function escH(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ── DEMO ─────────────────────────────────────────────────────
-// Five segments designed to produce genuinely different states
-// using absolute benchmark comparisons (general sector, 0.22% benchmark)
 var DEMO_CSV = 'Campaign Name,List / Segment,Sent,Open Rate,Unsubscribe Rate,Send Date\n'+
 'June Newsletter,All Subscribers,6234,21.3%,0.8%,2025-06-02\n'+
 'Black Friday Teaser,VIP Customers,4187,41.2%,0.2%,2025-11-18\n'+
@@ -998,14 +1008,12 @@ var DEMO_CSV = 'Campaign Name,List / Segment,Sent,Open Rate,Unsubscribe Rate,Sen
 'Autumn VIP Preview,VIP Customers,4080,37.1%,0.5%,2025-09-22\n'+
 'Welcome Series - Day 1,New Subscribers,1398,53.1%,0.2%,2025-04-23';
 
-// Benchmark values hardcoded for demo (general sector)
 var DEMO_BENCH = { unsubNormal:0.0022, unsubGood:0.001, unsubConcern:0.005, unsubDamaged:0.010, label:'General / Mixed', source:'MailerLite 2025 + GDMA 2024' };
 
 function loadDemo() {
   var p = parseCSV(DEMO_CSV);
   if (!p.rows.length) { showToast('Demo data failed','er'); return; }
 
-  // Parse rows
   var campaigns = p.rows.map(function(row) {
     var unsubRaw = row['Unsubscribe Rate'] || '';
     var unsubRate = parseFloat(unsubRaw.replace('%','')) / 100;
@@ -1022,18 +1030,15 @@ function loadDemo() {
     };
   }).filter(function(c) { return c.date && c.segment; });
 
-  // Group by segment
   var bySegment = {};
   campaigns.forEach(function(c) { if(!bySegment[c.segment])bySegment[c.segment]=[]; bySegment[c.segment].push(c); });
   Object.keys(bySegment).forEach(function(s) { bySegment[s].sort(function(a,b){return new Date(a.date)-new Date(b.date);}); });
 
-  // Run client-side algorithms for demo
   var segments = {};
   Object.keys(bySegment).forEach(function(seg) {
     segments[seg] = buildDemoSegmentData(bySegment[seg]);
   });
 
-  // Build recommendations sorted by urgency
   var urgency = {'Complaint risk':5,'Damaged':4,'Fatigue building':3,'Cooling':2,'Recovering':1};
   var recs = Object.keys(segments).map(function(seg) {
     var d = segments[seg];
@@ -1062,7 +1067,6 @@ function buildDemoSegmentData(campaigns) {
   var lastDate = new Date(campaigns[campaigns.length-1].date);
   var nextDate = new Date(+lastDate+7*86400000).toISOString().slice(0,10);
 
-  // Impact per campaign
   var impacts = campaigns.map(function(c) {
     var rate = c.unsubscribe_count/Math.max(c.volume_sent||1000,1);
     var excess = Math.max(0,c.unsubscribe_count-Math.round((c.volume_sent||1000)*bench.unsubNormal));
@@ -1079,7 +1083,6 @@ function buildDemoSegmentData(campaigns) {
   var recentDamage = impacts.slice(-3).filter(function(i){return i.category==='Damaged'||i.category==='Caused fatigue';}).length;
   var recentBuilt = impacts.slice(-3).filter(function(i){return i.category==='Built trust';}).length;
 
-  // Capital
   var now = new Date();
   var capital = 0;
   campaigns.forEach(function(c) {
@@ -1092,17 +1095,14 @@ function buildDemoSegmentData(campaigns) {
   });
   capital = Math.round(capital*100)/100;
 
-  // Subscriber loss
   var totalExcess = impacts.reduce(function(s,i){return s+(i.excessUnsubs||0);},0);
   var damagingCamps = impacts.filter(function(i){return i.excessUnsubs>0;}).length;
 
-  // Benchmark verdict
   var vsBenchTier = avgRate<=bench.unsubGood?'good':avgRate<=bench.unsubNormal?'normal':avgRate<=bench.unsubConcern?'concern':avgRate<=bench.unsubDamaged?'high':'damaged';
   var pctAbove = avgRate > bench.unsubNormal ? Math.round(((avgRate-bench.unsubNormal)/bench.unsubNormal)*100) : null;
 
   var fingerprint = { selfBaseline:Math.round(selfBaseline*10000)/10000, effectiveBaseline:Math.round(effectiveBaseline*10000)/10000, benchmarkNormal:bench.unsubNormal, campaignCount:n, unsubscribeStdDev:0.002, trendDelta:Math.round(trendDelta*10000)/10000, frequencyToleranceThreshold:4, vsBenchmark:{tier:vsBenchTier,pctVsBenchmark:pctAbove} };
 
-  // Sentiment
   var avgPct = (avgRate*100).toFixed(2)+'%';
   var benchPct = (bench.unsubNormal*100).toFixed(2)+'%';
   var sentiment;
