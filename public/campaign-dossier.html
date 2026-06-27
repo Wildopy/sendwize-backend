@@ -21,11 +21,18 @@
 }
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6}
 
-.nav{background:var(--w);border-bottom:1px solid var(--b);height:56px;display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:100;justify-content:space-between;gap:12px;box-shadow:0 1px 0 var(--b)}
-.nav-logo{font-size:18px;font-weight:700;color:var(--o);letter-spacing:-.5px;text-decoration:none}
-.nav-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
-.nav-back:hover{color:var(--o);background:var(--ol)}
-.nav-back svg{width:14px;height:14px}
+.sw-ph-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.sw-ph-header a{text-decoration:none}
+.sw-ph-logo{height:28px;display:block}
+.sw-ph-nav{display:flex;align-items:center;gap:22px}
+.sw-ph-nav a{color:var(--tm);font-size:14px;font-weight:500;transition:color .15s}
+.sw-ph-nav a:hover{color:var(--t)}
+.sw-ph-footer{border-top:1px solid var(--b);padding:20px 24px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.sw-ph-footer-logo{height:20px;display:block;opacity:.7}
+.sw-ph-footer-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}
+.sw-ph-footer-links a{color:var(--mu);text-decoration:none}
+.sw-ph-footer-links a:hover{color:var(--tm)}
+@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.sw-ph-footer{flex-direction:column;align-items:flex-start}}
 
 .page{max-width:820px;margin:0 auto;padding:40px 20px 80px}
 
@@ -264,7 +271,6 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 .btn-back-dash:hover{border-color:var(--o);color:var(--o)}
 .btn-new-dossier-cert{background:var(--ol);color:var(--o);border:1px solid var(--om);padding:11px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 
-
     .gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
     .gate-screen.show{display:flex}
     .gate-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.07)}
@@ -277,19 +283,19 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
     .gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--white);color:var(--muted);border:1px solid var(--border-mid);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
     .gate-demo-btn:hover{border-color:var(--orange);color:var(--text)}
     .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px}
-@media print{.nav,.stepper,.progress-row,.module-card,.submit-card,.cert-actions,.disc,.toast,.health-bar-wrap,.reg-lens,.incomplete-banner{display:none!important}.cert-section{display:block!important}.cert-card{border:none;box-shadow:none;padding:20px}body{background:#fff}}
+@media print{.sw-ph-header,.sw-ph-footer,.stepper,.progress-row,.module-card,.submit-card,.cert-actions,.disc,.toast,.health-bar-wrap,.reg-lens,.incomplete-banner{display:none!important}.cert-section{display:block!important}.cert-card{border:none;box-shadow:none;padding:20px}body{background:#fff}}
 @media(max-width:600px){.tf-row,.fields-grid.two-col,.cert-footer,.reg-spotlight-grid{grid-template-columns:1fr}.stepper::before{display:none}.step-label{display:none}.cert-header{flex-direction:column}}
 </style>
 </head>
 <body>
 
-<nav class="nav">
-  <a class="nav-logo" href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">sendwize</a>
-  <a class="nav-back" href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
-    Dashboard
-  </a>
-</nav>
+<header class="sw-ph-header">
+  <a href="https://new-mvp-v2.webflow.io/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <nav class="sw-ph-nav">
+    <a href="https://new-mvp-v2.webflow.io/">Home</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
+  </nav>
+</header>
 
 <div class="page">
 
@@ -300,7 +306,7 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
       <div class="gate-icon">&#128274;</div>
       <div class="gate-title">Campaign Dossier</div>
       <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
-      <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
+      <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a>
       <button class="gate-demo-btn" onclick="runDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--orange)">DEMO</span> Try with example data</button>
     </div>
   </div>
@@ -457,6 +463,16 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
   </div>
 </div>
 
+<footer class="sw-ph-footer">
+  <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
+  <div class="sw-ph-footer-links">
+    <a href="#">About Us</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/cookie-policy">Cookie Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a>
+  </div>
+</footer>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -604,7 +620,6 @@ let campaignTitle='', ownerName='', currentStep=0, currentLens='all', isSaving=f
 let healthScore=0, submitSnapshotVersion=1;
 let _demoMode = false;
 
-// ── DEMO MODE ─────────────────────────────────────────────────
 const DEMO_MODULE_DATA = {
   ListProvenance: {
     listSource: 'Own sign-up form',
@@ -685,14 +700,12 @@ function runDemo() {
 
   updateHealthBar(); renderStepper(); renderModule(currentStep); updateProgress();
 
-  // Demo notice at top of editor
   const notice = document.createElement('div');
   notice.className = 'demo-notice';
   notice.innerHTML = '<span style="font-size:16px">👁️</span><span><strong>Demo mode</strong> — a fully-completed dossier for a fictional UK ecommerce brand. Browse all 5 modules to see how strong evidence looks. <a href="campaign-dossier.html" style="color:var(--o);font-weight:600">Sign in</a> to create your own.</span>';
   el('editorView').prepend(notice);
 }
 
-// ── AUTH ──────────────────────────────────────────────────────
 function init() {
   const params = new URLSearchParams(window.location.search);
   userId    = params.get('userId');
@@ -1025,7 +1038,6 @@ function onCheckChange(moduleKey, fieldKey, checked) {
 }
 
 async function saveModule() {
-  // Demo mode — no Airtable writes
   if (_demoMode) { toast('Demo mode — saves are disabled','warn'); return; }
 
   if (isSaving) return;
