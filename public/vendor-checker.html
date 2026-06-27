@@ -24,16 +24,22 @@
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;padding:0 0 80px;-webkit-font-smoothing:antialiased}
 .page-wrap{max-width:860px;margin:0 auto;padding:32px 20px 0}
 
-/* ── BACK ── */
-.back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--mu);text-decoration:none;margin-bottom:20px;font-weight:500;transition:color .15s}
-.back-link:hover{color:var(--o)}
+.sw-ph-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.sw-ph-header a{text-decoration:none}
+.sw-ph-logo{height:28px;display:block}
+.sw-ph-nav{display:flex;align-items:center;gap:22px}
+.sw-ph-nav a{color:var(--tm);font-size:14px;font-weight:500;transition:color .15s}
+.sw-ph-nav a:hover{color:var(--t)}
+.sw-ph-footer{border-top:1px solid var(--b);padding:20px 24px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.sw-ph-footer-logo{height:20px;display:block;opacity:.7}
+.sw-ph-footer-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}
+.sw-ph-footer-links a{color:var(--mu);text-decoration:none}
+.sw-ph-footer-links a:hover{color:var(--tm)}
+@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.sw-ph-footer{flex-direction:column;align-items:flex-start}}
 
-/* ── PAGE HEADER ── */
 .page-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--o);margin-bottom:6px}
 .page-title{font-size:28px;font-weight:700;letter-spacing:-.4px;margin-bottom:6px;line-height:1.2}
 .page-sub{font-size:13px;color:var(--tm);line-height:1.65;max-width:580px;margin-bottom:24px}
-
-/* ── GATE ── */
 .gate-screen{display:none;min-height:75vh;align-items:center;justify-content:center;padding:40px 20px}
 .gate-screen.show{display:flex}
 .gate-card{background:var(--w);border:1px solid var(--b);border-radius:16px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:var(--shl)}
@@ -45,18 +51,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .gate-btn:hover{background:var(--od)}
 .gate-demo-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:12px 20px;background:var(--bg);color:var(--tm);border:1px solid var(--b);border-radius:var(--rad);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
 .gate-demo-btn:hover{border-color:var(--o);color:var(--t)}
-
-/* ── TABS ── */
 .tabs{display:flex;border-bottom:2px solid var(--b);margin-bottom:28px}
 .tab-btn{padding:10px 18px;font-size:13px;font-weight:600;font-family:inherit;background:none;border:none;cursor:pointer;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
 .tab-btn.active{color:var(--o);border-bottom-color:var(--o)}
 .tab-btn:hover:not(.active){color:var(--t)}
 .tab-panel{display:none}.tab-panel.active{display:block}
-
-/* ── STEPS ── */
 .step{display:none}.step.active{display:block}
-
-/* ── SEARCH CARD ── */
 .search-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:28px;margin-bottom:16px;box-shadow:var(--sh)}
 .search-card-title{font-size:17px;font-weight:700;letter-spacing:-.3px;margin-bottom:5px}
 .search-card-sub{font-size:13px;color:var(--tm);margin-bottom:20px;line-height:1.6}
@@ -75,8 +75,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .dropdown-name{font-size:13px;font-weight:600;color:var(--t)}
 .dropdown-cat{font-size:11px;color:var(--mu);margin-top:1px}
 .dropdown-custom{color:var(--o)}
-
-/* ── VENDOR ENTRY ROW ── */
 .vendor-entry{background:var(--bg);border:1.5px solid var(--b);border-radius:var(--rad-sm);margin-bottom:8px;overflow:hidden;transition:border-color .2s}
 .vendor-entry.answered{border-color:var(--gc)}
 .vendor-entry.has-risk{border-color:var(--yc)}
@@ -87,8 +85,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ve-remove:hover{color:var(--r)}
 .ai-tag{font-size:9px;font-weight:700;padding:2px 5px;background:var(--blueb);color:var(--blue);border-radius:3px}
 .ve-questions{padding:0 16px 14px;border-top:1px solid var(--b)}
-
-/* ── INLINE QUESTIONS ── */
 .q-section{margin-top:12px}
 .q-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:7px;display:block}
 .q-toggle{display:flex;flex-wrap:wrap;gap:5px}
@@ -106,8 +102,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .vol-input:focus{border-color:var(--o)}
 .q-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
 .q-group{flex:1;min-width:160px}
-
-/* ── SCAN BUTTON ── */
 .scan-btn{width:100%;padding:15px 24px;background:var(--o);color:#fff;border:none;border-radius:var(--rad);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;position:relative}
 .scan-btn:hover:not(:disabled){background:var(--od);transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,115,23,.3)}
 .scan-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
@@ -115,8 +109,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .demo-link{text-align:center;margin-top:10px}
 .demo-link button{background:none;border:none;font-size:12px;color:var(--mu);cursor:pointer;font-family:inherit;text-decoration:underline}
 .demo-link button:hover{color:var(--t)}
-
-/* ── LOADING ── */
 .loading-wrap{text-align:center;padding:60px 20px}
 .scan-ring{width:48px;height:48px;border:3px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 20px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -127,8 +119,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ls.active{opacity:1;color:var(--t)}.ls.done{opacity:.6;color:var(--g)}
 .ls-dot{width:5px;height:5px;border-radius:50%;background:var(--b);flex-shrink:0}
 .ls.active .ls-dot{background:var(--o)}.ls.done .ls-dot{background:var(--g)}
-
-/* ── VERDICT ── */
 .verdict-header{border-radius:var(--rad);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden}
 .verdict-header.green{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid var(--gc)}
 .verdict-header.amber{background:linear-gradient(135deg,#fefce8,#fef9c3);border:1.5px solid var(--yc)}
@@ -145,8 +135,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ve-note{font-size:9px;opacity:.6;margin-top:1px}
 .verdict-deco{position:absolute;right:-20px;top:-20px;width:110px;height:110px;border-radius:50%;opacity:.07}
 .verdict-header.green .verdict-deco{background:var(--g)}.verdict-header.amber .verdict-deco{background:var(--y)}.verdict-header.red .verdict-deco{background:var(--r)}
-
-/* ── RISK ITEMS ── */
 .risk-section{margin-bottom:18px}
 .risk-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:10px}
 .risk-item{background:var(--w);border:1.5px solid var(--b);border-radius:var(--rad);margin-bottom:8px;overflow:hidden;cursor:pointer;transition:all .2s}
@@ -181,33 +169,21 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ri-impact-text{font-size:12px;color:#166534;flex:1;line-height:1.4}
 .ri-impact-num{font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--g);white-space:nowrap}
 .ri-ctx{font-size:10px;color:var(--mu);margin-top:10px;padding-top:8px;border-top:1px solid var(--b);line-height:1.5}
-
-/* ── REGULATOR BADGE ── */
 .reg-badge{display:inline-flex;align-items:center;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.05em}
 .reg-ico{background:#eff6ff;color:#1d4ed8}.reg-asa{background:var(--purb);color:var(--pur)}.reg-cma{background:var(--rb);color:var(--r)}.reg-com{background:var(--gb);color:var(--g)}
-
-/* ── ALL CLEAR ── */
 .all-clear{text-align:center;padding:44px 24px;background:var(--w);border:1.5px solid var(--gc);border-radius:var(--rad);box-shadow:var(--sh)}
 .ac-icon{font-size:38px;margin-bottom:12px}
 .ac-title{font-size:19px;font-weight:700;letter-spacing:-.3px;margin-bottom:5px;color:#14532d}
 .ac-sub{font-size:13px;color:#166534;line-height:1.6;max-width:400px;margin:0 auto}
-
-/* ── NEW SCAN BTN ── */
 .new-scan-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border:1.5px solid var(--b);border-radius:var(--rad-sm);font-size:12px;font-weight:600;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s;margin-bottom:18px}
 .new-scan-btn:hover{border-color:var(--o);color:var(--o)}
-
-/* ── DEMO NOTICE ── */
 .demo-notice{display:flex;align-items:flex-start;gap:9px;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad-sm);padding:11px 14px;margin-bottom:18px;font-size:12px;color:#92400e;line-height:1.55}
-
-/* ── THREE REGULATOR SUMMARY ── */
 .reg-summary{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:20px}
 @media(max-width:540px){.reg-summary{grid-template-columns:1fr 1fr}}
 .reg-tile{background:var(--w);border:1.5px solid var(--b);border-radius:var(--rad-sm);padding:12px 14px;text-align:center;box-shadow:var(--sh)}
 .reg-tile-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px}
 .reg-tile-val{font-size:14px;font-weight:700}
 .reg-tile-val.green{color:var(--g)}.reg-tile-val.amber{color:var(--y)}.reg-tile-val.red{color:var(--r)}.reg-tile-val.na{color:var(--mu)}
-
-/* ── CONTRACT CHECKLIST ── */
 .contract-section{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
 .contract-title{font-size:14px;font-weight:700;margin-bottom:4px;letter-spacing:-.2px}
 .contract-sub{font-size:12px;color:var(--tm);margin-bottom:16px;line-height:1.5}
@@ -223,8 +199,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ct-btn{padding:3px 9px;border:1.5px solid var(--b);border-radius:4px;font-size:10px;font-weight:600;background:var(--w);cursor:pointer;font-family:inherit;transition:all .15s;color:var(--mu)}
 .ct-btn.yes{border-color:var(--g);background:var(--gb);color:var(--g)}
 .ct-btn.no{border-color:var(--r);background:var(--rb);color:var(--r)}
-
-/* ── REGISTER (unchanged) ── */
 .card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:22px;margin-bottom:16px;box-shadow:var(--sh)}
 .card-label{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--mu);margin-bottom:14px}
 .disclaimer-info{font-size:11px;color:var(--mu);background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:10px 13px;margin-bottom:18px;line-height:1.55}
@@ -293,8 +267,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .error-box{display:none;background:var(--rb);border:1px solid var(--rc);border-radius:var(--rad-sm);padding:12px 15px;margin-bottom:16px;font-size:13px;color:var(--r)}
 .error-box.show{display:block}
 .disc{font-size:10px;color:var(--mu);font-style:italic;text-align:center;margin-top:20px;line-height:1.6;padding:0 20px}
-
-/* ── CAMPAIGN TAB ── */
 .campaign-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
 .campaign-new-btn{padding:9px 16px;background:var(--o);color:#fff;border:none;border-radius:var(--rad-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
 .campaign-new-btn:hover{background:var(--od)}
@@ -315,8 +287,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .vp-btn:hover{border-color:var(--o);color:var(--o)}
 .vp-btn.on{border-color:var(--o);background:var(--ol);color:var(--o);font-weight:700}
 .campaign-verdict-wrap{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
-
-/* ── RSS FINDINGS ── */
 .rss-findings{background:var(--blueb);border:1px solid var(--bluebd);border-radius:var(--rad-sm);padding:12px 14px;margin-top:12px}
 .rss-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:8px}
 .rss-item{font-size:11px;color:var(--t);margin-bottom:5px;line-height:1.5}
@@ -326,14 +296,21 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </head>
 <body>
 
-<!-- GATE -->
+<header class="sw-ph-header">
+  <a href="https://new-mvp-v2.webflow.io/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <nav class="sw-ph-nav">
+    <a href="https://new-mvp-v2.webflow.io/">Home</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
+  </nav>
+</header>
+
 <div class="gate-screen" id="gateScreen">
   <div class="gate-card">
     <div class="gate-logo">sendwize</div>
     <div class="gate-icon">&#128274;</div>
     <div class="gate-title">Processor Risk Scanner</div>
     <div class="gate-sub">Find out if your marketing tools and agencies are putting you at risk across ICO, ASA and CMA — based on your specific situation.</div>
-    <a href="https://www.sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &#8594;</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &#8594;</a>
     <button class="gate-demo-btn" onclick="runDemo()">
       <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--ol);color:var(--o)">DEMO</span>
       See an example scan
@@ -342,10 +319,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </div>
 
 <div class="page-wrap" id="mainWrap">
-  <a href="https://www.sendwize.co.uk/dashboard" class="back-link">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
-    Dashboard
-  </a>
 
   <div class="page-eyebrow">Processor Risk Scanner</div>
   <h1 class="page-title">Are your marketing vendors safe to use?</h1>
@@ -357,7 +330,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <button class="tab-btn" id="tab-campaigns" onclick="switchTab('campaigns')">Campaigns</button>
   </div>
 
-  <!-- SCANNER TAB -->
   <div class="tab-panel" id="panel-scanner">
     <div class="error-box" id="errorBox"></div>
 
@@ -401,7 +373,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <p class="disc">Information only &#8212; not legal advice. Data sourced from publicly available pages. Sendwize has not reviewed vendor DPAs or contracts. Always verify directly with each vendor and seek independent legal advice.</p>
   </div>
 
-  <!-- REGISTER TAB -->
   <div class="tab-panel" id="panel-register">
     <div class="disclaimer-info">Information only &#8212; not legal advice. Sendwize has not reviewed vendor DPAs or contracts and cannot confirm the compliance of any specific processing relationship. Always verify directly and seek independent legal advice.</div>
     <div id="reg-loading" style="text-align:center;padding:44px 20px"><div class="spinner"></div><div class="loading-text">Loading register&#8230;</div></div>
@@ -480,7 +451,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
-  <!-- CAMPAIGNS TAB -->
   <div class="tab-panel" id="panel-campaigns">
     <div class="campaign-header">
       <div>
@@ -509,7 +479,17 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div id="campaign-verdict-wrap"></div>
   </div>
 
-</div><!-- /page-wrap -->
+</div>
+
+<footer class="sw-ph-footer">
+  <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
+  <div class="sw-ph-footer-links">
+    <a href="#">About Us</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/cookie-policy">Cookie Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a>
+  </div>
+</footer>
 
 <script>
 var APP_URL='https://sendwize-backend.vercel.app';
@@ -517,51 +497,12 @@ var userId=null,allVendors=[],selectedVendors=[],registerLoaded=false,registerRe
 var highlightedIndex=-1,currentDropdownItems=[],vendorContext={};
 var HAS_REGISTER_KEY='sw_has_register';
 var loadingTimer=null;
-
-// ── USE CASES ────────────────────────────────────────────────
 var USE_CASES=['Email deployment','Paid media','Creative & content','Analytics','Reviews & UGC','Pricing & promotions','Data enrichment','Other'];
 var DATA_TYPES=[
-  {label:'Email addresses',sensitive:false},
-  {label:'Contact details',sensitive:false},
-  {label:'Behavioural data',sensitive:true},
-  {label:'Purchase history',sensitive:true},
+  {label:'Email addresses',sensitive:false},{label:'Contact details',sensitive:false},
+  {label:'Behavioural data',sensitive:true},{label:'Purchase history',sensitive:true},
   {label:'Special category data',sensitive:true},
 ];
-
-// ── CONTRACT CLAUSES (mirrors backend) ───────────────────────
-var CLAUSES_DATA_PROCESSOR=[
-  {id:'dp1',label:'Subject matter, duration and nature of processing defined',severity:'high'},
-  {id:'dp2',label:'Sub-processor notification requirement included',severity:'high'},
-  {id:'dp3',label:'Data return or deletion on termination clause included',severity:'high'},
-  {id:'dp4',label:'Audit rights included',severity:'medium'},
-  {id:'dp5',label:'Security measures specification included',severity:'high'},
-  {id:'dp6',label:'Controller instructions must be followed clause included',severity:'medium'},
-  {id:'dp7',label:'Breach notification timeframe specified (72 hours)',severity:'high'},
-  {id:'dp8',label:'Data subject rights assistance obligation included',severity:'medium'},
-];
-var CLAUSES_AGENCY=[
-  {id:'ag1',label:'IP ownership of all creative assets assigned to you',severity:'high'},
-  {id:'ag2',label:'Data return on termination clause included',severity:'high'},
-  {id:'ag3',label:'ASA compliance obligation placed on agency',severity:'high'},
-  {id:'ag4',label:'Written approval process for all marketing claims defined',severity:'high'},
-  {id:'ag5',label:'Sub-contractor disclosure obligation included',severity:'medium'},
-  {id:'ag6',label:'Confidentiality covering customer data included',severity:'high'},
-  {id:'ag7',label:'GDPR processor obligations if agency accesses customer data',severity:'high'},
-];
-var CLAUSES_REVIEWS=[
-  {id:'rv1',label:'CMA consumer reviews compliance confirmation included',severity:'critical'},
-  {id:'rv2',label:'No incentivised reviews without clear disclosure',severity:'critical'},
-  {id:'rv3',label:'Fake review removal process defined',severity:'high'},
-  {id:'rv4',label:'Data processing terms for reviewer personal data included',severity:'high'},
-];
-var CLAUSES_PRICING=[
-  {id:'pp1',label:'Reference pricing methodology compliant with DMCCA 2024',severity:'critical'},
-  {id:'pp2',label:'Countdown timer accuracy and genuine scarcity requirement',severity:'high'},
-  {id:'pp3',label:'Promotional terms and conditions accessible to consumers',severity:'high'},
-  {id:'pp4',label:'Drip pricing prohibition — full price shown upfront',severity:'critical'},
-];
-
-// ── DEMO DATA ─────────────────────────────────────────────────
 var DEMO_RESULTS=[
   {name:'Mailchimp',vendorType:'Self-Serve ESP',score:85,riskRating:'Low',isAI:false,dpaConfirmed:false,
     userInput:{dpaStatus:'no',useCase:'Email deployment',dataTypes:['Email addresses'],contactVolume:22000,producesContent:false,handlesPromotions:false},
@@ -582,7 +523,6 @@ var DEMO_RESULTS=[
       fixSteps:[{text:'Add a clause to your agency agreement requiring written sign-off on all marketing claims before publication.'},{text:'Document your internal approval process — the ASA looks for evidence that a proper review happened.'}]}},
 ];
 
-// ── INIT ──────────────────────────────────────────────────────
 function init(){
   userId=new URLSearchParams(window.location.search).get('userId');
   if(!userId){
@@ -596,7 +536,6 @@ function init(){
   if(hasReg){switchTab('register');}else{switchTab('scanner');}
   showStep('step-add');
 }
-
 function switchTab(tab){
   ['scanner','register','campaigns'].forEach(function(t){
     var tb=document.getElementById('tab-'+t);
@@ -608,15 +547,12 @@ function switchTab(tab){
   if(tab==='register'&&!registerLoaded){registerLoaded=true;loadRegister();}
   if(tab==='campaigns')loadCampaigns();
 }
-
 function showStep(id){
   ['step-add','step-loading','step-verdict'].forEach(function(s){
     var el=document.getElementById(s);
     if(el)el.classList.toggle('active',s===id);
   });
 }
-
-// ── VENDOR LIBRARY ────────────────────────────────────────────
 function loadVendors(){
   fetch(APP_URL+'/api/data?action=vendors')
     .then(function(r){if(!r.ok)throw r;return r.json();})
@@ -646,8 +582,6 @@ function loadVendors(){
       ];
     });
 }
-
-// ── SEARCH ────────────────────────────────────────────────────
 function onSearch(val){
   var q=val.trim().toLowerCase(),dd=document.getElementById('dropdown');
   highlightedIndex=-1;
@@ -701,32 +635,23 @@ function removeVendor(name){
   delete vendorContext[name];
   renderVendorList();
 }
-
-// ── VENDOR LIST WITH INLINE QUESTIONS ────────────────────────
 function renderVendorList(){
   var list=document.getElementById('selectedList');
   var btn=document.getElementById('scanBtn');
   if(!selectedVendors.length){list.innerHTML='';btn.disabled=true;return;}
-
   list.innerHTML=selectedVendors.map(function(v){
     var ctx=vendorContext[v.name]||{};
     var answered=ctx.dpaStatus&&ctx.useCase;
     return renderVendorEntry(v,ctx,answered);
   }).join('');
-
   var allAnswered=selectedVendors.every(function(v){
     var ctx=vendorContext[v.name]||{};
     return ctx.dpaStatus&&ctx.useCase;
   });
   btn.disabled=!allAnswered;
 }
-
 function renderVendorEntry(v,ctx,answered){
-  var safeName=v.name.replace(/[^a-zA-Z0-9]/g,'-');
-
   var safeName=encodeURIComponent(v.name);
-
-  // DPA buttons
   var dpaHtml='<div class="q-section"><span class="q-label">Have you signed a DPA with them?</span><div class="q-toggle">'+
     ['yes','no','unsure'].map(function(s){
       var lbl=s==='yes'?'Yes, signed':s==='no'?'No, not signed':'Not sure';
@@ -734,15 +659,11 @@ function renderVendorEntry(v,ctx,answered){
       var cls=on?(s==='yes'?'on yes-good':s==='no'?'on risk':'on'):'';
       return'<button class="q-btn '+cls+'" data-vendor="'+safeName+'" data-field="dpaStatus" data-value="'+s+'" onclick="handleQBtn(this)">'+lbl+'</button>';
     }).join('')+'</div></div>';
-
-  // Use case buttons
   var ucHtml='<div class="q-section"><span class="q-label">What do you use them for?</span><div class="q-toggle">'+
     USE_CASES.map(function(uc){
       var on=ctx.useCase===uc;
       return'<button class="q-btn'+(on?' on':'')+'" data-vendor="'+safeName+'" data-field="useCase" data-value="'+encodeURIComponent(uc)+'" onclick="handleQBtn(this)">'+escH(uc)+'</button>';
     }).join('')+'</div></div>';
-
-  // Data types (shown after use case selected)
   var dtHtml='';
   if(ctx.useCase){
     dtHtml='<div class="q-section"><span class="q-label">What data do you share with them?</span><div class="dt-grid">'+
@@ -751,8 +672,6 @@ function renderVendorEntry(v,ctx,answered){
         return'<button class="dt-btn'+(on?' on'+(dt.sensitive?' sensitive':''):'')+'" data-vendor="'+safeName+'" data-field="dataType" data-value="'+encodeURIComponent(dt.label)+'" onclick="handleDTBtn(this)">'+escH(dt.label)+'</button>';
       }).join('')+'</div></div>';
   }
-
-  // Extra questions based on use case
   var extraHtml='';
   if(ctx.useCase==='Creative & content'||ctx.useCase==='Paid media'){
     var pc=ctx.producesContent;
@@ -768,14 +687,11 @@ function renderVendorEntry(v,ctx,answered){
       '<button class="q-btn'+(hp===false?' on yes-good':'')+'" data-vendor="'+safeName+'" data-field="handlesPromotions" data-value="false" onclick="handleQBtn(this)">No</button>'+
       '</div></div>';
   }
-
-  // Volume
   var volHtml='';
   if(ctx.useCase){
     volHtml='<div class="q-section"><div class="q-row"><div class="q-group"><span class="q-label">Approx. contacts (optional)</span>'+
       '<input class="vol-input" type="number" placeholder="e.g. 25000" value="'+escH(String(ctx.contactVolume||''))+'" data-vendor="'+safeName+'" oninput="handleVolInput(this)"/></div></div></div>';
   }
-
   return'<div class="vendor-entry'+(answered?' answered':'')+'" id="ve-'+safeName+'">'+
     '<div class="ve-header">'+
     '<div><div class="ve-name">'+escH(v.name)+(v.isCustom?'<span class="ai-tag" style="margin-left:5px">AI</span>':'')+'</div>'+
@@ -785,7 +701,6 @@ function renderVendorEntry(v,ctx,answered){
     '<div class="ve-questions">'+dpaHtml+ucHtml+dtHtml+extraHtml+volHtml+'</div>'+
     '</div>';
 }
-
 function handleQBtn(btn){
   var name=decodeURIComponent(btn.dataset.vendor);
   var field=btn.dataset.field;
@@ -816,15 +731,11 @@ function toggleDT(vendorName,label){
   vendorContext[vendorName].dataTypes=types;
   renderVendorList();
 }
-
 document.addEventListener('click',function(e){
   if(!e.target.closest('#searchWrap'))document.getElementById('dropdown').classList.remove('show');
   if(!e.target.closest('.reg-search-wrap')){var rd=document.getElementById('reg-dropdown');if(rd)rd.classList.remove('show');}
 });
-
-// ── LOADING ANIMATION ─────────────────────────────────────────
 var LOADING_STEPS=['Checking ICO registration and DPA status','Assessing ASA liability based on use case','Checking CMA exposure for promotions and reviews','Scanning ICO and ASA public enforcement feeds','Building your three-regulator verdict'];
-
 function startLoading(){
   var el=document.getElementById('loadingSteps');
   el.innerHTML=LOADING_STEPS.map(function(s,i){return'<div class="ls" id="ls-'+i+'"><span class="ls-dot"></span>'+escH(s)+'</div>';}).join('');
@@ -842,14 +753,11 @@ function stopLoading(){
   if(loadingTimer)clearTimeout(loadingTimer);
   LOADING_STEPS.forEach(function(_,i){var el=document.getElementById('ls-'+i);if(el){el.classList.remove('active');el.classList.add('done');}});
 }
-
-// ── RUN SCAN ──────────────────────────────────────────────────
 function runScan(){
   clearError();
   if(!userId){showError('Please sign in via the dashboard.');return;}
   showStep('step-loading');
   startLoading();
-
   var vendors=selectedVendors.map(function(v){
     var ctx=vendorContext[v.name]||{};
     return{
@@ -862,7 +770,6 @@ function runScan(){
       handlesPromotions:ctx.handlesPromotions===true,
     };
   });
-
   fetch(APP_URL+'/api/check-vendors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vendors:vendors,userId:userId})})
     .then(function(r){if(!r.ok)return r.json().then(function(e){throw new Error(e.error||'Server error '+r.status);});return r.json();})
     .then(function(data){
@@ -879,8 +786,6 @@ function runScan(){
       showStep('step-add');
     });
 }
-
-// ── DEMO ──────────────────────────────────────────────────────
 function runDemo(){
   document.getElementById('gateScreen').classList.remove('show');
   document.getElementById('mainWrap').style.display='';
@@ -895,12 +800,9 @@ function runDemo(){
     },400);
   },5500);
 }
-
-// ── RENDER VERDICT ────────────────────────────────────────────
 function renderVerdict(results,inputs,isDemo){
   var allIssues=[];
   var cleared=0;
-
   results.forEach(function(result,idx){
     var ui=inputs[idx]||result.userInput||{};
     var userDPA=ui.dpaStatus||'unsure';
@@ -910,21 +812,15 @@ function renderVerdict(results,inputs,isDemo){
     var producesContent=ui.producesContent===true;
     var handlesPromotions=ui.handlesPromotions===true;
     var d=result.dimensions||{};
-
-    // Use pre-built demo issue if present
     if(result.issue){
       allIssues.push({result:result,issue:result.issue,dataTypes:dataTypes,volume:volume,regulator:'ICO'});
       if(result.asaIssue)allIssues.push({result:result,issue:result.asaIssue,dataTypes:dataTypes,volume:volume,regulator:'ASA'});
       return;
     }
-
     var hasSensitive=dataTypes.some(function(t){return/special|behavioural|purchase/i.test(t);});
     var breachKnown=d.breachHistory&&!['none identified','none','no','unknown',''].includes((d.breachHistory||'').toLowerCase());
     var transferBad=d.intlTransferOccurs==='Yes'&&['None','Unknown'].includes(d.internationalTransfer||'');
-
     var hasIssue=false;
-
-    // ICO — DPA check
     if(userDPA!=='yes'){
       var sev=(hasSensitive||(volume&&volume>50000))?'critical':'high';
       var expLow=hasSensitive&&volume>50000?100000:hasSensitive||volume>50000?50000:20000;
@@ -939,8 +835,6 @@ function renderVerdict(results,inputs,isDemo){
       }});
       hasIssue=true;
     }
-
-    // ASA — content producers
     if(producesContent&&(useCase==='Creative & content'||useCase==='Paid media')){
       allIssues.push({result:result,dataTypes:dataTypes,volume:volume,regulator:'ASA',issue:{
         severity:'high',regulator:'ASA',
@@ -951,8 +845,6 @@ function renderVerdict(results,inputs,isDemo){
       }});
       hasIssue=true;
     }
-
-    // CMA — promotions/reviews
     if(handlesPromotions&&(useCase==='Reviews & UGC'||useCase==='Pricing & promotions')){
       allIssues.push({result:result,dataTypes:dataTypes,volume:volume,regulator:'CMA',issue:{
         severity:'high',regulator:'CMA',
@@ -963,8 +855,6 @@ function renderVerdict(results,inputs,isDemo){
       }});
       hasIssue=true;
     }
-
-    // Breach history
     if(breachKnown&&userDPA==='yes'){
       allIssues.push({result:result,dataTypes:dataTypes,volume:volume,regulator:'ICO',issue:{
         severity:'medium',regulator:'ICO',
@@ -975,35 +865,23 @@ function renderVerdict(results,inputs,isDemo){
       }});
       hasIssue=true;
     }
-
     if(!hasIssue)cleared++;
   });
-
-  // Sort by severity
   var sevOrd={critical:0,high:1,medium:2,low:3};
   allIssues.sort(function(a,b){return(sevOrd[a.issue.severity]||4)-(sevOrd[b.issue.severity]||4);});
-
-  // Calculate exposure
   var totalLow=allIssues.reduce(function(s,i){return s+(i.issue.exposureLow||0);},0);
   var totalHigh=allIssues.reduce(function(s,i){return s+(i.issue.exposureHigh||0);},0);
-
-  // Regulator summary
   var icoIssues=allIssues.filter(function(i){return i.issue.regulator==='ICO';}).length;
   var asaIssues=allIssues.filter(function(i){return i.issue.regulator==='ASA';}).length;
   var cmaIssues=allIssues.filter(function(i){return i.issue.regulator==='CMA';}).length;
-
   var html='';
   if(isDemo)html+='<div class="demo-notice"><span style="font-size:14px">&#128065;&#65039;</span><span><strong>Demo scan</strong> &#8212; 2 example vendors. <a href="?" style="color:var(--o);font-weight:600">Sign in</a> to scan your own.</span></div>';
-
-  // Regulator summary tiles
   html+='<div class="reg-summary">'+
     '<div class="reg-tile"><div class="reg-tile-label">ICO</div><div class="reg-tile-val '+(icoIssues?'red':'green')+'">'+(icoIssues?icoIssues+' issue'+(icoIssues!==1?'s':''):'Clear')+'</div></div>'+
     '<div class="reg-tile"><div class="reg-tile-label">ASA</div><div class="reg-tile-val '+(asaIssues?'amber':'green')+'">'+(asaIssues?asaIssues+' issue'+(asaIssues!==1?'s':''):'Clear')+'</div></div>'+
     '<div class="reg-tile"><div class="reg-tile-label">CMA</div><div class="reg-tile-val '+(cmaIssues?'amber':'green')+'">'+(cmaIssues?cmaIssues+' issue'+(cmaIssues!==1?'s':''):'Clear')+'</div></div>'+
     '<div class="reg-tile"><div class="reg-tile-label">Vendors cleared</div><div class="reg-tile-val '+(cleared>0?'green':'na')+'">'+cleared+' of '+results.length+'</div></div>'+
     '</div>';
-
-  // Verdict header
   if(!allIssues.length){
     html+='<div class="all-clear"><div class="ac-icon">&#10003;</div><div class="ac-title">No compliance issues found</div><div class="ac-sub">All '+results.length+' vendor'+( results.length!==1?'s':'')+' you\'ve added look fine based on what you\'ve told us. Keep your register up to date as you add new tools.</div></div>';
   }else{
@@ -1019,15 +897,11 @@ function renderVerdict(results,inputs,isDemo){
       (totalLow>0?'<div class="verdict-exp"><div><div class="ve-lbl">Unaddressed ICO exposure</div><div class="ve-range">&#163;'+fmtN(totalLow)+'&#8211;&#163;'+fmtN(totalHigh)+'</div><div class="ve-note">Comparable pre-DUAA cases &#183; not a prediction &#183; DUAA max now &#163;17.5M</div></div></div>':'')
       +'</div>';
   }
-
-  // Risk items
   if(allIssues.length){
     html+='<div class="risk-section"><div class="risk-section-title">What to fix</div>';
     allIssues.forEach(function(item,i){html+=renderRiskItem(item,i);});
     html+='</div>';
   }
-
-  // Contract checklist prompt
   if(allIssues.length){
     html+='<div style="background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:16px 20px;margin-top:16px;box-shadow:var(--sh)">'+
       '<div style="font-size:13px;font-weight:700;margin-bottom:4px;letter-spacing:-.2px">Check your contract clauses</div>'+
@@ -1035,27 +909,22 @@ function renderVerdict(results,inputs,isDemo){
       '<button onclick="switchTab(\'register\')" style="padding:8px 16px;background:var(--o);color:#fff;border:none;border-radius:var(--rad-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Open register</button>'+
       '</div>';
   }
-
   document.getElementById('verdictContent').innerHTML=html;
 }
-
 function renderRiskItem(item,i){
   var issue=item.issue;
   var sev=issue.severity||'medium';
   var icon=sev==='critical'?'&#10005;':sev==='high'?'!':'~';
   var regCls={'ICO':'reg-ico','ASA':'reg-asa','CMA':'reg-cma','Commercial':'reg-com'}[issue.regulator]||'reg-ico';
   var expText=issue.exposureLow?'&#163;'+fmtN(issue.exposureLow)+'&#8211;&#163;'+fmtN(issue.exposureHigh):'';
-
   var stepsHtml=(issue.fixSteps||[]).map(function(step,si){
     return'<div class="fix-step"><div class="fix-num">'+(si+1)+'</div>'+
       '<div class="fix-text">'+escH(step.text)+(step.link?'<br><a class="fix-link" href="'+escH(step.link)+'" target="_blank" rel="noopener">'+escH(step.linkLabel||step.link)+' &#8594;</a>':'')+'</div></div>';
   }).join('');
-
   var ctx=[];
   if(item.dataTypes&&item.dataTypes.length)ctx.push('Data: '+item.dataTypes.join(', '));
   if(item.volume)ctx.push('~'+fmtN(item.volume)+' contacts');
   var ctxHtml=ctx.length?'<div class="ri-ctx">Your context: '+escH(ctx.join(' &#183; '))+' &#183; Sourced from publicly available pages &#183; not legal advice</div>':'';
-
   return'<div class="risk-item sev-'+sev+'" id="ri-'+i+'">'+
     '<div class="ri-head" onclick="toggleRI('+i+')">'+
     '<div class="ri-icon '+sev+'">'+icon+'</div>'+
@@ -1074,10 +943,8 @@ function renderRiskItem(item,i){
     ctxHtml+
     '</div></div></div>';
 }
-
 function toggleRI(i){var el=document.getElementById('ri-'+i);if(el)el.classList.toggle('open');}
 function fmtN(n){if(!n)return'0';if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';if(n>=1000)return(n/1000).toFixed(0)+'k';return String(n);}
-
 function resetScanner(){
   selectedVendors=[];vendorContext={};
   showStep('step-add');
@@ -1087,8 +954,6 @@ function resetScanner(){
   clearError();
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
-// ── REGISTER ──────────────────────────────────────────────────
 function loadRegister(){
   if(!userId){document.getElementById('reg-loading').style.display='none';showRegOnboarding();return;}
   fetch(APP_URL+'/api/data?action=history&type=vendor&userId='+encodeURIComponent(userId))
@@ -1101,7 +966,6 @@ function loadRegister(){
     })
     .catch(function(){document.getElementById('reg-loading').style.display='none';showRegOnboarding();});
 }
-
 var OB_CATS=[
   {label:'Email marketing',vendors:['Mailchimp','Klaviyo','Brevo','HubSpot','ActiveCampaign','SendGrid (Twilio)','Dotdigital','Omnisend','Campaign Monitor']},
   {label:'CRM',vendors:['HubSpot','Salesforce CRM','Pipedrive','Zoho CRM']},
@@ -1132,7 +996,6 @@ function obAdd(name,category,btn){
 }
 function skipOnboarding(){document.getElementById('reg-onboarding').style.display='none';registerLoaded=true;registerRecords=[];renderRegisterMain();}
 function renderRegisterMain(){document.getElementById('reg-main').style.display='block';renderHealthSummary();renderStaleAlert();renderRegisterTable();}
-
 function renderHealthSummary(){
   var tot=registerRecords.length;
   var noAg=registerRecords.filter(function(r){var s=r.fields.AgreementStatus||'';return s==='Not yet'||s==='None in place'||s==='';}).length;
@@ -1146,14 +1009,12 @@ function renderHealthSummary(){
     '<div class="health-tile"><div class="health-num'+(noAg>0?' bad':'')+'">'+noAg+'</div><div class="health-lbl">No agreement</div></div>'+
     '<div class="health-tile"><div class="health-num'+(typeof avg==='number'?(avg>=80?' good':avg>=60?' ':' bad'):'')+'">'+avg+(typeof avg==='number'?'/100':'')+'</div><div class="health-lbl">Avg score</div></div>';
 }
-
 function renderStaleAlert(){
   var staleRecs=registerRecords.filter(function(r){return isStale(r.fields.LastChecked)&&r.fields.VendorName;});
   var wrap=document.getElementById('stale-alert-wrap');
   if(!staleRecs.length){wrap.innerHTML='';return;}
   wrap.innerHTML='<div class="stale-alert"><div><strong>'+staleRecs.length+' vendor'+(staleRecs.length!==1?'s':'')+' due for re-scan</strong><div class="stale-vendors">'+staleRecs.map(function(r){return'<span class="stale-tag">'+escH(r.fields.VendorName)+'</span>';}).join('')+'</div></div><button class="recheck-all-btn" onclick="recheckAll()">Re-scan all</button></div>';
 }
-
 function recheckAll(){
   var staleRecs=registerRecords.filter(function(r){return isStale(r.fields.LastChecked)&&r.fields.VendorName;});
   if(!staleRecs.length||!confirm('Re-scan '+staleRecs.length+' vendors?'))return;
@@ -1170,16 +1031,13 @@ function recheckAll(){
     .then(function(){registerLoaded=false;loadRegister();})
     .catch(function(){alert('Re-scan failed.');});
 }
-
 function isStale(d){if(!d)return false;return(Date.now()-new Date(d).getTime())>90*24*60*60*1000;}
-
 function riskPill(level){
   if(!level||level==='N/A')return'<span class="risk-pill rp-na">N/A</span>';
   if(level==='Low')return'<span class="risk-pill rp-low">Low</span>';
   if(level==='Medium')return'<span class="risk-pill rp-medium">Medium</span>';
   return'<span class="risk-pill rp-high">High</span>';
 }
-
 function renderRegisterTable(){
   var tbody=document.getElementById('reg-tbody');
   if(!registerRecords.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--mu);padding:28px;font-size:13px">No vendors yet. Click "+ Add vendor" to get started.</td></tr>';return;}
@@ -1203,7 +1061,6 @@ function renderRegisterTable(){
       '</div></td></tr>';
   }).join('');
 }
-
 function agmtPill(s){
   if(!s)return'<span class="risk-pill rp-na">Unknown</span>';
   if(s==='In place')return'<span class="risk-pill rp-low">In place</span>';
@@ -1211,7 +1068,6 @@ function agmtPill(s){
   if(s==='N/A')return'<span class="risk-pill rp-na">N/A</span>';
   return'<span class="risk-pill rp-high">Not in place</span>';
 }
-
 function showAddForm(defaults,scrollTo){
   editingRecordId=null;clearRegForm();
   document.getElementById('reg-form-title').textContent='Add Vendor';
@@ -1268,7 +1124,6 @@ function saveVendor(){
   saveVendorDirect(vendor,editingRecordId).then(function(){
     hideAddForm();registerLoaded=false;loadRegister();
     localStorage.setItem(HAS_REGISTER_KEY+':'+userId,'1');
-    // Trigger profile generation
     if(userId)fetch(APP_URL+'/api/vendor-profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:userId,vendorName:name})}).catch(function(){});
   });
   if(['Requested','Not yet','None in place'].includes(status)&&userId){
@@ -1321,15 +1176,12 @@ function exportCSV(){
   a.download='processor-register-'+new Date().toISOString().split('T')[0]+'.csv';
   a.click();
 }
-
-// ── CAMPAIGNS ─────────────────────────────────────────────────
 var campaigns=[];
 var DEMO_CAMPAIGNS=[
   {id:'demo1',fields:{CampaignName:'Summer Sale Email',CampaignType:'Email',SendDate:'2026-07-01',Status:'Planned',VendorsInvolved:JSON.stringify(['Mailchimp','Merkle UK']),VendorCheckDone:true,VendorCheckDate:'2026-06-10',ComplianceVerdict:'Critical issues',ComplianceNotes:'[ICO] Merkle UK: No signed DPA in place\n[ASA] Merkle UK: No written sign-off process for content they produce on your behalf'}},
   {id:'demo2',fields:{CampaignName:'Re-engagement Campaign',CampaignType:'Email',SendDate:'2026-06-20',Status:'Checks Complete',VendorsInvolved:JSON.stringify(['Klaviyo','Google Analytics']),VendorCheckDone:true,VendorCheckDate:'2026-06-09',ComplianceVerdict:'Cleared',ComplianceNotes:'All vendors cleared.'}},
   {id:'demo3',fields:{CampaignName:'Paid Social \u2014 Q3 Brand',CampaignType:'Social',SendDate:'2026-07-15',Status:'Planned',VendorsInvolved:JSON.stringify(['Meta Ads Manager','AKQA UK']),VendorCheckDone:false,VendorCheckDate:null,ComplianceVerdict:'Not Checked',ComplianceNotes:''}},
 ];
-
 function loadCampaigns(){
   if(!userId){
     campaigns=DEMO_CAMPAIGNS;
@@ -1443,7 +1295,6 @@ function renderCampaignVerdict(result){
     '<div class="verdict-head">'+escH(result.verdict)+'</div>'+
     '<div class="verdict-sub">'+escH(result.summary)+'</div>'+
     '</div>';
-
   if(result.issues&&result.issues.length){
     html+='<div style="margin-bottom:14px">';
     result.issues.forEach(function(issue){
@@ -1458,7 +1309,6 @@ function renderCampaignVerdict(result){
     });
     html+='</div>';
   }
-
   if(result.cleared&&result.cleared.length){
     html+='<div style="font-size:11px;color:var(--g);padding:8px 12px;background:var(--gb);border-radius:var(--rad-sm);border:1px solid var(--gc)">'+
       '&#10003; Cleared: '+result.cleared.map(function(c){return escH(c.vendor);}).join(', ')+'</div>';
@@ -1467,12 +1317,9 @@ function renderCampaignVerdict(result){
   wrap.innerHTML=html;
   wrap.scrollIntoView({behavior:'smooth',block:'start'});
 }
-
-// ── UTILS ─────────────────────────────────────────────────────
 function showError(msg){var e=document.getElementById('errorBox');if(e){e.textContent=msg;e.classList.add('show');}}
 function clearError(){var e=document.getElementById('errorBox');if(e)e.classList.remove('show');}
 function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 </script>
 </body>
