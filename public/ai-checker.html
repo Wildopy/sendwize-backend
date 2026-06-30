@@ -185,7 +185,6 @@
 
 <div class="container">
 
-
   <div class="gate-screen" id="gateScreen">
     <div class="gate-card">
       <div class="gate-logo">sendwize</div>
@@ -214,7 +213,7 @@
               <span class="context-title">Sending Context</span>
               <span class="context-badge">Recommended</span>
             </div>
-            <div class="context-subtitle" id="contextSubtitle">4 quick questions &mdash; catches consent chain violations invisible in copy</div>
+            <div class="context-subtitle" id="contextSubtitle">4 questions &mdash; catches consent chain issues that content analysis misses</div>
           </div>
         </div>
         <svg class="context-chevron open" id="contextChevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
@@ -222,7 +221,7 @@
 
       <div class="context-body" id="contextBody">
         <p class="context-intro">
-          The most expensive PECR violations are <strong>not visible in the email copy</strong>. ZMLUK was fined &pound;105,000 &mdash; the copy was fine, the consent chain was broken. Saga was fined &pound;225,000 &mdash; the emails looked fine, the list source was wrong. Answer these 4 questions so the AI can check what content analysis alone cannot see.
+          Copy analysis catches what&rsquo;s <strong>in</strong> the email. These four questions catch what <strong>isn&rsquo;t</strong> &mdash; the list source, the consent basis, the sender identity, and the From-name match. They take 30 seconds and let the scanner flag risks that have historically cost UK businesses six-figure fines.
           <br><br>
           <button class="context-skip" onclick="skipContext(event)">Skip &mdash; analyse copy only</button>
         </p>
@@ -239,8 +238,8 @@
           <div class="context-q-label"><span class="context-q-num">2</span>Where did this contact list come from?</div>
           <div class="radio-group">
             <label class="radio-option"><input type="radio" name="listSource" value="direct" onchange="onContextChange()"><div class="radio-option-text">We collected it directly from our own customers or website sign-ups</div></label>
-            <label class="radio-option"><input type="radio" name="listSource" value="purchased" onchange="onContextChange()"><div class="radio-option-text">Purchased or rented from a third party<div class="radio-option-risk">&#9888; High risk &mdash; ZMLUK fined &pound;105,000 for this in 2025</div></div></label>
-            <label class="radio-option"><input type="radio" name="listSource" value="partner" onchange="onContextChange()"><div class="radio-option-text">Provided by a partner or affiliate<div class="radio-option-risk">&#9888; Indirect consent is not valid for email/SMS (Saga, &pound;225,000, 2021)</div></div></label>
+            <label class="radio-option"><input type="radio" name="listSource" value="purchased" onchange="onContextChange()"><div class="radio-option-text">Purchased or rented from a third party<div class="radio-option-risk">&#9888; High risk &mdash; ZMLUK fined &pound;105,000 for this in 2025</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">You bought or rented this list from a data broker or list vendor. The consent was collected by someone with no direct relationship to your brand.</div></div></label>
+            <label class="radio-option"><input type="radio" name="listSource" value="partner" onchange="onContextChange()"><div class="radio-option-text">Provided by a partner or affiliate<div class="radio-option-risk">&#9888; Verify the consent trail &mdash; Saga fined &pound;225,000 for indirect consent (2021)</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Contacts came via a co-marketing arrangement, joint venture, or affiliate. May be defensible if the partner&rsquo;s privacy notice specifically named your organisation.</div></div></label>
             <label class="radio-option"><input type="radio" name="listSource" value="mixed" onchange="onContextChange()"><div class="radio-option-text">Mixed sources</div></label>
           </div>
         </div>
@@ -292,6 +291,7 @@
       <div class="form-group" id="copyGroup">
         <label for="copyText" id="copyLabel">Marketing copy</label>
         <textarea id="copyText" placeholder="Paste your copy here&hellip;"></textarea>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">Your copy is sent to our AI for analysis and is not stored after the scan completes. See our <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy" style="color:var(--orange);text-decoration:underline;">Privacy Policy</a> for details.</div>
       </div>
 
       <div class="form-group" id="imageGroup">
@@ -400,46 +400,11 @@
     score: 44,
     verdict: 'High Risk \u2014 do not send without changes',
     violations: [
-      {
-        severity: 'critical',
-        regulation: 'PECR Reg 22',
-        issue: 'This email relies on a purchased list from a data broker. Purchased lists do not constitute valid consent under PECR \u2014 recipients have not consented to receive marketing from your organisation by name.',
-        location: 'Sending Context \u2014 List Source',
-        recommendation: 'Do not send to this list. Obtain direct, specific consent from each recipient before sending any marketing email.',
-        enforcement_note: 'ZMLUK Ltd fined \u00a3105,000 (2025) for sending marketing emails to a purchased list. The ICO does not accept \u201clegitimate interest\u201d as a basis for cold email marketing.'
-      },
-      {
-        severity: 'high',
-        regulation: 'ASA CAP 8.17',
-        issue: 'Subject line reads \u201cLast chance \u2014 offer ends TONIGHT\u201d but no evidence this offer genuinely ends tonight. Artificial urgency is a misleading claim.',
-        location: 'Subject line',
-        recommendation: 'Either remove the time-limit claim or ensure the offer genuinely closes tonight with technical controls preventing access after that time.',
-        enforcement_note: 'The ASA has upheld multiple complaints about countdown timers and \u201ctonight only\u201d offers that were not genuine (Fashion retailer ruling, March 2024).'
-      },
-      {
-        severity: 'high',
-        regulation: 'DMCCA 2024 / CMA',
-        issue: 'Headline reads \u201cWas \u00a3149, now \u00a379\u201d but no evidence the \u00a3149 price was genuine for the required 28-day period. Reference pricing requires a genuine previous price.',
-        location: 'Email body \u2014 hero section',
-        recommendation: 'Provide evidence the \u00a3149 price was active for at least 28 consecutive days at meaningful sales volume, or remove the reference price claim.',
-        enforcement_note: 'The CMA has named reference pricing as a priority enforcement area. Under DMCCA 2024 the statutory maximum is \u00a3300,000 or 10% of global turnover.'
-      },
-      {
-        severity: 'medium',
-        regulation: 'PECR Reg 23',
-        issue: 'The \u201cFrom\u201d name in the email header is \u201cDeals Team\u201d \u2014 this does not clearly identify your organisation. The recipient cannot tell who is sending this.',
-        location: 'Email sender name',
-        recommendation: 'Change the From name to your registered trading name or a clearly identifiable variant of it.',
-        enforcement_note: 'Concealed sender identity is an automatic PECR Reg 23 breach. The ICO includes this in penalty calculations.'
-      },
-      {
-        severity: 'medium',
-        regulation: 'ASA CAP 3.1',
-        issue: 'The claim \u201cUK\u2019s best-value service\u201d is a superlative claim. You must hold documentary evidence proving this before sending \u2014 e.g. a price comparison from a recognised source.',
-        location: 'Email body \u2014 paragraph 2',
-        recommendation: 'Remove the superlative or hold a price-comparison study as evidence. The ASA requires this evidence to exist before the ad runs, not gathered afterwards.',
-        enforcement_note: ''
-      },
+      { severity: 'critical', regulation: 'PECR Reg 22', issue: 'This email relies on a purchased list from a data broker. Purchased lists do not constitute valid consent under PECR \u2014 recipients have not consented to receive marketing from your organisation by name.', location: 'Sending Context \u2014 List Source', recommendation: 'Do not send to this list. Obtain direct, specific consent from each recipient before sending any marketing email.', enforcement_note: 'ZMLUK Ltd fined \u00a3105,000 (2025) for sending marketing emails to a purchased list. The ICO does not accept \u201clegitimate interest\u201d as a basis for cold email marketing.' },
+      { severity: 'high', regulation: 'ASA CAP 8.17', issue: 'Subject line reads \u201cLast chance \u2014 offer ends TONIGHT\u201d but no evidence this offer genuinely ends tonight. Artificial urgency is a misleading claim.', location: 'Subject line', recommendation: 'Either remove the time-limit claim or ensure the offer genuinely closes tonight with technical controls preventing access after that time.', enforcement_note: 'The ASA has upheld multiple complaints about countdown timers and \u201ctonight only\u201d offers that were not genuine (Fashion retailer ruling, March 2024).' },
+      { severity: 'high', regulation: 'DMCCA 2024 / CMA', issue: 'Headline reads \u201cWas \u00a3149, now \u00a379\u201d but no evidence the \u00a3149 price was genuine for the required 28-day period. Reference pricing requires a genuine previous price.', location: 'Email body \u2014 hero section', recommendation: 'Provide evidence the \u00a3149 price was active for at least 28 consecutive days at meaningful sales volume, or remove the reference price claim.', enforcement_note: 'The CMA has named reference pricing as a priority enforcement area. Under DMCCA 2024 the statutory maximum is \u00a3300,000 or 10% of global turnover.' },
+      { severity: 'medium', regulation: 'PECR Reg 23', issue: 'The \u201cFrom\u201d name in the email header is \u201cDeals Team\u201d \u2014 this does not clearly identify your organisation. The recipient cannot tell who is sending this.', location: 'Email sender name', recommendation: 'Change the From name to your registered trading name or a clearly identifiable variant of it.', enforcement_note: 'Concealed sender identity is an automatic PECR Reg 23 breach. The ICO includes this in penalty calculations.' },
+      { severity: 'medium', regulation: 'ASA CAP 3.1', issue: 'The claim \u201cUK\u2019s best-value service\u201d is a superlative claim. You must hold documentary evidence proving this before sending \u2014 e.g. a price comparison from a recognised source.', location: 'Email body \u2014 paragraph 2', recommendation: 'Remove the superlative or hold a price-comparison study as evidence. The ASA requires this evidence to exist before the ad runs, not gathered afterwards.', enforcement_note: '' },
     ],
     fixedVersion: 'Subject: Your exclusive summer offer \u2014 save 47% this week\n\nHi [First Name],\n\nWe\u2019re pleased to offer you a saving on [Product Name] this week. This offer is available until [genuine end date].\n\nCurrently \u00a379 (regular price \u00a3149, held from [date] to [date])\n\nShop now \u00bb\n\n[Company Name] | [Address]\nUnsubscribe | Privacy Policy',
     checks: [],
@@ -449,14 +414,11 @@
   function runDemo() {
     document.getElementById('copyText').value = DEMO_COPY;
     lastCopy = DEMO_COPY;
-
-    const notice = document.createElement('div');
+    var notice = document.createElement('div');
     notice.className = 'demo-notice';
     notice.innerHTML = '<span style="font-size:16px">\uD83D\uDC41\uFE0F</span><span><strong>Demo mode</strong> \u2014 example copy with common UK compliance issues. <a href="?" style="color:var(--orange);font-weight:600">Sign in</a> to check your own copy against your live compliance data.</span>';
-
     document.getElementById('formSection').style.display = 'none';
     renderResults(DEMO_RESULT);
-
     document.getElementById('resultsSection').prepend(notice);
   }
 
@@ -478,17 +440,17 @@
   }
 
   function onContextChange() {
-    const q1 = document.querySelector('input[name="senderRelationship"]:checked')?.value;
-    const q2 = document.querySelector('input[name="listSource"]:checked')?.value;
-    const q3 = document.querySelector('input[name="consentSpecificity"]:checked')?.value;
-    const q4 = document.querySelector('input[name="fromNameMatch"]:checked')?.value;
-    const answered = [q1, q2, q3, q4].filter(Boolean).length;
+    var q1 = document.querySelector('input[name="senderRelationship"]:checked')?.value;
+    var q2 = document.querySelector('input[name="listSource"]:checked')?.value;
+    var q3 = document.querySelector('input[name="consentSpecificity"]:checked')?.value;
+    var q4 = document.querySelector('input[name="fromNameMatch"]:checked')?.value;
+    var answered = [q1, q2, q3, q4].filter(Boolean).length;
     document.querySelectorAll('.radio-option').forEach(el => {
       el.classList.toggle('selected', el.querySelector('input[type="radio"]')?.checked || false);
     });
-    const isHighRisk = q2 === 'purchased' || q2 === 'partner' || q3 === 'thirdParty' || q3 === 'notSure' || q4 === 'no';
-    const dot  = document.getElementById('contextDot');
-    const text = document.getElementById('contextStatusText');
+    var isHighRisk = q2 === 'purchased' || q2 === 'partner' || q3 === 'thirdParty' || q3 === 'notSure' || q4 === 'no';
+    var dot  = document.getElementById('contextDot');
+    var text = document.getElementById('contextStatusText');
     dot.className = 'context-status-dot ' + (answered === 0 ? '' : isHighRisk ? 'risk' : 'answered');
     text.textContent = answered === 4
       ? (isHighRisk ? '\u26a0 Potential consent chain issues detected \u2014 AI will flag these' : '\u2713 All answered \u2014 no context issues detected')
@@ -502,15 +464,15 @@
 
   function getSendingContext() {
     if (contextSkipped) return null;
-    const q1 = document.querySelector('input[name="senderRelationship"]:checked')?.value;
-    const q2 = document.querySelector('input[name="listSource"]:checked')?.value;
-    const q3 = document.querySelector('input[name="consentSpecificity"]:checked')?.value;
-    const q4 = document.querySelector('input[name="fromNameMatch"]:checked')?.value;
+    var q1 = document.querySelector('input[name="senderRelationship"]:checked')?.value;
+    var q2 = document.querySelector('input[name="listSource"]:checked')?.value;
+    var q3 = document.querySelector('input[name="consentSpecificity"]:checked')?.value;
+    var q4 = document.querySelector('input[name="fromNameMatch"]:checked')?.value;
     if (!q1 && !q2 && !q3 && !q4) return null;
     return { senderRelationship: q1||null, listSource: q2||null, consentSpecificity: q3||null, fromNameMatch: q4||null };
   }
 
-  const typePlaceholders = {
+  var typePlaceholders = {
     email: 'Paste your email subject line and body copy here\u2026',
     sms: 'Paste your SMS message text here\u2026',
     push: 'Paste your push notification title and body here\u2026',
@@ -520,12 +482,12 @@
 
   function onContentTypeChange() {
     currentContentType = document.getElementById('contentType').value;
-    const isEmail = currentContentType === 'email';
+    var isEmail = currentContentType === 'email';
     document.getElementById('copyText').placeholder = typePlaceholders[currentContentType] || typePlaceholders.email;
     document.getElementById('copyLabel').textContent = isEmail ? 'Email copy (subject + body text)' : 'Marketing copy';
   }
 
-  const loadingSteps = [
+  var loadingSteps = [
     'Checking sending context for consent chain issues',
     'Scanning for PECR violations',
     'Reviewing ASA CAP Code requirements',
@@ -534,24 +496,24 @@
     'Analysing any uploaded images',
     'Searching enforcement database',
   ];
-  let loadingInterval;
+  var loadingInterval;
   function startLoading() {
-    let i = 0;
-    const el = document.getElementById('loadingSteps');
-    loadingInterval = setInterval(() => { el.textContent = loadingSteps[i = (i + 1) % loadingSteps.length]; }, 1800);
+    var i = 0;
+    var el = document.getElementById('loadingSteps');
+    loadingInterval = setInterval(function() { el.textContent = loadingSteps[i = (i + 1) % loadingSteps.length]; }, 1800);
   }
   function stopLoading() { clearInterval(loadingInterval); }
 
-  let uploadedImages = [];
+  var uploadedImages = [];
 
   function onImagesSelected(event) {
-    const files = Array.from(event.target.files || []);
-    const remaining = 3 - uploadedImages.length;
-    files.slice(0, remaining).forEach(file => {
+    var files = Array.from(event.target.files || []);
+    var remaining = 3 - uploadedImages.length;
+    files.slice(0, remaining).forEach(function(file) {
       if (!['image/jpeg','image/png','image/gif','image/webp'].includes(file.type)) return;
       if (file.size > 5 * 1024 * 1024) return;
-      const reader = new FileReader();
-      reader.onload = e => {
+      var reader = new FileReader();
+      reader.onload = function(e) {
         uploadedImages.push({ data: e.target.result.split(',')[1], mediaType: file.type, name: file.name });
         renderImagePreviews();
       };
@@ -563,33 +525,32 @@
   function removeImage(index) { uploadedImages.splice(index, 1); renderImagePreviews(); }
 
   function renderImagePreviews() {
-    const area = document.getElementById('imageUploadArea');
-    const prompt = document.getElementById('imageUploadPrompt');
-    const prev = document.getElementById('imagePreviews');
+    var prompt = document.getElementById('imageUploadPrompt');
+    var prev = document.getElementById('imagePreviews');
     if (!uploadedImages.length) { prompt.style.display = 'flex'; prev.style.display = 'none'; return; }
     prompt.style.display = 'none'; prev.style.display = 'flex';
-    prev.innerHTML = uploadedImages.map((img, i) =>
-      `<div class="image-preview-item"><img src="data:${img.mediaType};base64,${img.data}" alt="${escH(img.name)}"><button class="image-preview-remove" onclick="removeImage(${i});event.stopPropagation();">&times;</button></div>`
-    ).join('') + (uploadedImages.length < 3
-      ? `<div class="image-preview-item" style="border:1.5px dashed var(--border-mid);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="document.getElementById('imageFileInput').click();event.stopPropagation();"><span style="font-size:20px;color:var(--muted);">+</span></div>`
+    prev.innerHTML = uploadedImages.map(function(img, i) {
+      return '<div class="image-preview-item"><img src="data:' + img.mediaType + ';base64,' + img.data + '" alt="' + escH(img.name) + '"><button class="image-preview-remove" onclick="removeImage(' + i + ');event.stopPropagation();">&times;</button></div>';
+    }).join('') + (uploadedImages.length < 3
+      ? '<div class="image-preview-item" style="border:1.5px dashed var(--border-mid);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="document.getElementById(\'imageFileInput\').click();event.stopPropagation();"><span style="font-size:20px;color:var(--muted);">+</span></div>'
       : '');
   }
 
   async function runCheck() {
     if (!userId) { showError('Please return to the dashboard and open this tool from there.'); return; }
     clearError();
-    const copy = document.getElementById('copyText').value.trim();
+    var copy = document.getElementById('copyText').value.trim();
     if (!copy) { showError('Please paste your marketing copy before running a check.'); return; }
     lastCopy = copy;
     setLoadingState(true);
     try {
-      const sendingContext = getSendingContext();
-      const payload = { userId, contentType: currentContentType, content: copy, autoFix: true };
+      var sendingContext = getSendingContext();
+      var payload = { userId: userId, contentType: currentContentType, content: copy, autoFix: true };
       if (sendingContext) payload.sendingContext = sendingContext;
-      if (uploadedImages.length > 0) payload.images = uploadedImages.map(i => ({ data: i.data, mediaType: i.mediaType }));
-      const res = await fetch(`${APP_URL}/api/analyze-copy`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || `Server error ${res.status}`); }
-      const data = await res.json();
+      if (uploadedImages.length > 0) payload.images = uploadedImages.map(function(i) { return { data: i.data, mediaType: i.mediaType }; });
+      var res = await fetch(APP_URL + '/api/analyze-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!res.ok) { var err = await res.json().catch(function() { return {}; }); throw new Error(err.error || 'Server error ' + res.status); }
+      var data = await res.json();
       renderResults(data);
     } catch (err) {
       showError('Something went wrong: ' + err.message);
@@ -599,50 +560,50 @@
 
   function renderResults(data) {
     stopLoading();
-    const score = data.score ?? 0, verdict = data.verdict ?? '', violations = data.violations ?? [];
-    const fixed = data.fixedVersion ?? '';
-    const riskScore = 100 - score;
-    let level = riskScore >= 75 ? 'critical' : riskScore >= 50 ? 'high' : riskScore >= 25 ? 'medium' : 'low';
-    document.getElementById('riskBanner').className = `risk-banner ${level}`;
+    var score = data.score ?? 0, verdict = data.verdict ?? '', violations = data.violations ?? [];
+    var fixed = data.fixedVersion ?? '';
+    var riskScore = 100 - score;
+    var level = riskScore >= 75 ? 'critical' : riskScore >= 50 ? 'high' : riskScore >= 25 ? 'medium' : 'low';
+    document.getElementById('riskBanner').className = 'risk-banner ' + level;
     document.getElementById('riskNum').textContent = score;
     document.getElementById('verdictText').textContent = verdict || riskLabel(level);
     document.getElementById('verdictSub').textContent  = riskSub(level, violations.length);
     document.getElementById('emailScoreBar').classList.remove('show');
 
-    const panel = document.getElementById('rewritePanel');
+    var panel = document.getElementById('rewritePanel');
     if (fixed) {
       document.getElementById('originalBox').textContent = lastCopy;
       document.getElementById('fixedBox').textContent = fixed;
       panel.classList.add('show');
     } else { panel.classList.remove('show'); }
 
-    const vEl = document.getElementById('violationsList');
+    var vEl = document.getElementById('violationsList');
     document.getElementById('violationsTitle').textContent = 'AI Compliance Issues';
 
     if (!violations.length) {
-      vEl.innerHTML = `<div class="no-violations"><div class="no-violations-icon">&#x2705;</div><div>No compliance issues detected.</div></div>`;
+      vEl.innerHTML = '<div class="no-violations"><div class="no-violations-icon">&#x2705;</div><div>No compliance issues detected.</div></div>';
     } else {
-      const sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-      const sorted = [...violations].sort((a, b) => {
-        const aCtx = a.location?.toLowerCase().includes('context') ? 0 : 1;
-        const bCtx = b.location?.toLowerCase().includes('context') ? 0 : 1;
+      var sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+      var sorted = violations.slice().sort(function(a, b) {
+        var aCtx = a.location?.toLowerCase().includes('context') ? 0 : 1;
+        var bCtx = b.location?.toLowerCase().includes('context') ? 0 : 1;
         if (aCtx !== bCtx) return aCtx - bCtx;
         return (sevOrder[a.severity] ?? 4) - (sevOrder[b.severity] ?? 4);
       });
-      vEl.innerHTML = sorted.map(v => {
-        const sev = (v.severity || 'medium').toLowerCase();
-        const isFromCtx = v.location?.toLowerCase().includes('context');
-        return `<div class="violation-item ${sev}${isFromCtx ? ' from-context' : ''}">
-          <div class="violation-header">
-            <span class="violation-type">${escH(sev)}</span>
-            ${isFromCtx ? '<span class="violation-source-tag">Sending Context</span>' : ''}
-            <span class="violation-reg">${escH(v.regulation || '')}</span>
-          </div>
-          <div class="violation-text">${escH(v.issue || '')}</div>
-          ${v.location ? `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">&#x1F4CD; ${escH(v.location)}</div>` : ''}
-          ${v.recommendation ? `<div class="violation-quote">Fix: ${escH(v.recommendation)}</div>` : ''}
-          ${v.enforcement_note ? `<div class="violation-enforcement">&#x1F4CB; ${escH(v.enforcement_note)}</div>` : ''}
-        </div>`;
+      vEl.innerHTML = sorted.map(function(v) {
+        var sev = (v.severity || 'medium').toLowerCase();
+        var isFromCtx = v.location?.toLowerCase().includes('context');
+        return '<div class="violation-item ' + sev + (isFromCtx ? ' from-context' : '') + '">' +
+          '<div class="violation-header">' +
+          '<span class="violation-type">' + escH(sev) + '</span>' +
+          (isFromCtx ? '<span class="violation-source-tag">Sending Context</span>' : '') +
+          '<span class="violation-reg">' + escH(v.regulation || '') + '</span>' +
+          '</div>' +
+          '<div class="violation-text">' + escH(v.issue || '') + '</div>' +
+          (v.location ? '<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">&#x1F4CD; ' + escH(v.location) + '</div>' : '') +
+          (v.recommendation ? '<div class="violation-quote">Fix: ' + escH(v.recommendation) + '</div>' : '') +
+          (v.enforcement_note ? '<div class="violation-enforcement">&#x1F4CB; ' + escH(v.enforcement_note) + '</div>' : '') +
+          '</div>';
       }).join('');
     }
 
@@ -655,9 +616,9 @@
   async function copyCopy() {
     try {
       await navigator.clipboard.writeText(document.getElementById('fixedBox').textContent);
-      const el = document.getElementById('copySuccess');
-      el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2200);
-    } catch {}
+      var el = document.getElementById('copySuccess');
+      el.classList.add('show'); setTimeout(function() { el.classList.remove('show'); }, 2200);
+    } catch(e) {}
   }
 
   function resetForm() {
@@ -666,15 +627,15 @@
     document.getElementById('rewritePanel').classList.remove('show');
     document.getElementById('emailScoreBar').classList.remove('show');
     document.getElementById('checksSection').classList.remove('show');
-    document.querySelectorAll('.demo-notice').forEach(n => n.remove());
-    ['copyText','campaignName'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.querySelectorAll('.demo-notice').forEach(function(n) { n.remove(); });
+    ['copyText','campaignName'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
     uploadedImages = []; renderImagePreviews();
-    document.querySelectorAll('.radio-option input[type="radio"]').forEach(r => r.checked = false);
-    document.querySelectorAll('.radio-option').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.radio-option input[type="radio"]').forEach(function(r) { r.checked = false; });
+    document.querySelectorAll('.radio-option').forEach(function(el) { el.classList.remove('selected'); });
     contextSkipped = false; contextOpen = true;
     document.getElementById('contextBody').style.display = '';
     document.getElementById('contextChevron').classList.add('open');
-    document.getElementById('contextSubtitle').textContent = '4 quick questions \u2014 catches consent chain violations invisible in copy';
+    document.getElementById('contextSubtitle').textContent = '4 questions \u2014 catches consent chain issues that content analysis misses';
     document.getElementById('contextDot').className = 'context-status-dot';
     document.getElementById('contextStatusText').textContent = '0 of 4 questions answered';
     clearError(); lastCopy = '';
@@ -686,15 +647,15 @@
     document.getElementById('submitBtn').disabled = on;
     if (on) { document.getElementById('formSection').style.display = 'none'; startLoading(); }
   }
-  function showError(msg) { const el = document.getElementById('errorBox'); el.textContent = msg; el.classList.add('show'); document.getElementById('formSection').style.display = 'block'; document.getElementById('loadingSection').classList.remove('show'); stopLoading(); }
+  function showError(msg) { var el = document.getElementById('errorBox'); el.textContent = msg; el.classList.add('show'); document.getElementById('formSection').style.display = 'block'; document.getElementById('loadingSection').classList.remove('show'); stopLoading(); }
   function clearError() { document.getElementById('errorBox').classList.remove('show'); }
   function escH(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function riskLabel(l) { return { low:'Low Risk', medium:'Medium Risk', high:'High Risk', critical:'Critical Risk' }[l] || l; }
   function riskSub(l, n) {
-    if (l === 'low')      return n === 0 ? 'No issues detected \u2014 no obvious concerns identified. This is not a guarantee of compliance.' : `${n} minor issue${n!==1?'s':''} to review.`;
-    if (l === 'medium')   return `${n} issue${n!==1?'s':''} detected. Review before sending.`;
-    if (l === 'high')     return `${n} serious issue${n!==1?'s':''} found. Fix before sending.`;
-    if (l === 'critical') return `${n} critical issue${n!==1?'s':''} found. Do not send this copy.`;
+    if (l === 'low')      return n === 0 ? 'No issues detected \u2014 no obvious concerns identified. This is not a guarantee of compliance.' : n + ' minor issue' + (n!==1?'s':'') + ' to review.';
+    if (l === 'medium')   return n + ' issue' + (n!==1?'s':'') + ' detected. Review before sending.';
+    if (l === 'high')     return n + ' serious issue' + (n!==1?'s':'') + ' found. Fix before sending.';
+    if (l === 'critical') return n + ' critical issue' + (n!==1?'s':'') + ' found. Do not send this copy.';
     return '';
   }
 </script>
