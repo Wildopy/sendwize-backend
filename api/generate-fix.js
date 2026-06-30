@@ -1,27 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — generate-fix.js v6.2
-// Called by all tools when a violation OR commercial loss is found.
-// Creates a Compliance_Fixes record in Airtable.
-//
-// v6.2 changes from v6.1:
-//   - NEW 'Commercial' exposure category (commercial_loss / commercial_risk).
-//     Unlike ICO/ASA/CMA, the £ figure is NOT a comparable-case band —
-//     it is computed by the calling tool from the USER'S OWN data
-//     (e.g. Audience Read: cost-per-subscriber × excess unsubscribes;
-//      List Intelligence: at-risk list value). The tool passes the
-//      figure in via exposureLow / exposureHigh in the request body.
-//     Stored with ExposureBasis: 'commercial'. NEVER summed with
-//     regulatory (ICO/ASA/CMA) exposure anywhere downstream.
-//   - buildExposureFields() now accepts explicit { exposureLow, exposureHigh }
-//     used only for the Commercial category.
-//   - COMMERCIAL_DISCLAIMER is distinct: an estimated business cost,
-//     explicitly NOT a regulatory fine and NOT legal advice.
-//
-// v6.1 (unchanged):
-//   - Accepts processingContext (optional). Stored as JSON.
-//   - LEGACY_TYPE_MAP unchanged.
-//   - ExposureLow/High written as flat band constants for audit trail.
-// ─────────────────────────────────────────────────────────────
+// SENDWIZE — generate-fix.js v6.3 (beta)
+// v6.3: Added asa_liability to EXPOSURE_CONSTANTS + LEGACY_TYPE_MAP
+// All other code identical to v6.2.
 
 const LEGACY_TYPE_MAP = {
   expired_consent:                    'consent_expired',
@@ -49,6 +29,8 @@ const LEGACY_TYPE_MAP = {
   unlawful_incentive:                 'data_quality',
   missing_terms:                      'data_quality',
   reconsent_sent:                     null,
+  // ASA aliases
+  asa_liability:                      'asa_liability',
   // Commercial aliases
   commercial_risk:                    'commercial_loss',
 };
@@ -64,6 +46,8 @@ const EXPOSURE_CONSTANTS = {
   misleading_claim:          { category: 'ASA' },
   misleading_reference_price:{ category: 'ASA' },
   undisclosed_ad:            { category: 'ASA' },
+  // ASA liability — from vendor profile checks
+  asa_liability:             { category: 'ASA' },
   drip_pricing:              { category: 'CMA' },
   fake_reviews:              { category: 'CMA' },
   // Commercial — £ figure supplied by the calling tool, not a band.
@@ -89,8 +73,6 @@ function resolveFixType(rawType) {
   return { canonical: type, original: type, def };
 }
 
-// opts.exposureLow / opts.exposureHigh are used ONLY for the Commercial
-// category, where the £ figure is computed by the calling tool.
 function buildExposureFields(def, opts) {
   opts = opts || {};
   if (def.category === 'ICO') return { ExposureLow: def.realisticLow, ExposureHigh: def.realisticHigh, ExposureBasis: 'regulatory', ExposureCategory: 'ICO', LegalMax: ICO_LEGAL_MAX };
@@ -116,8 +98,8 @@ export default async function handler(req, res) {
     const {
       userId, fixType, description, tool, severity,
       volume, contactVolume, sourceRecordId,
-      processingContext,           // v6.1 — optional, object
-      exposureLow, exposureHigh,   // v6.2 — Commercial only, numbers
+      processingContext,
+      exposureLow, exposureHigh,
     } = req.body ?? {};
 
     if (!userId)   return res.status(400).json({ error: 'Missing userId' });
@@ -138,14 +120,12 @@ export default async function handler(req, res) {
     const base           = `https://api.airtable.com/v0/${BASE_ID}`;
     const authH          = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
 
-    // Revenue band for audit trail
     let revenueBand = null;
     try {
       const pr = await fetch(`${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
       if (pr.ok) { const pd = await pr.json(); revenueBand = pd.records?.[0]?.fields?.RevenueBand || null; }
     } catch(e) { console.error('Profile load failed (non-fatal):', e); }
 
-    // Deduplicate
     if (sourceRecordId) {
       try {
         const typesToCheck = wasRemapped ? [canonical, original] : [canonical];
@@ -162,7 +142,6 @@ export default async function handler(req, res) {
     const cv = cvRaw !== null ? parseInt(cvRaw, 10) || null : null;
     const disclaimer = isCommercial ? COMMERCIAL_DISCLAIMER : NOT_LEGAL_ADVICE;
 
-    // Validate and serialise processingContext
     let processingContextStr = null;
     if (processingContext && typeof processingContext === 'object') {
       try { processingContextStr = JSON.stringify(processingContext); } catch(e) {}
