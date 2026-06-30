@@ -1,29 +1,19 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-intelligence.js v1.1
+// SENDWIZE — list-intelligence.js v1.2 (beta)
 // POST /api/list-intelligence?action=upload  — CSV analysis
 // GET  /api/list-intelligence?action=load    — load last results
 // POST /api/list-intelligence?action=certificate — generate pre-send cert
 //
-// v1.1 (stickiness):
-//   - Immutable snapshots to List_Intelligence_Snapshots on every upload
-//   - "What changed since last upload" comparison on load + upload
-//   - Consent-expiry countdown (contacts crossing threshold in 30/60/90 days)
-//
-// Four-dimensional contact trajectory model:
-//   Dimension 1 — Consent Trajectory (exponential decay per contact)
-//   Dimension 2 — Deliverability Trajectory (composite from email alone)
-//   Dimension 3 — Commercial Trajectory (sector benchmark × AOV × engagement)
-//   Dimension 4 — Risk Trajectory (rate of change of consent decay)
-//
-// Architecture rules:
-//   - All async work AWAITED before res.json() — Vercel Hobby safe
-//   - No npm airtable package — fetch to REST API only
-//   - Contact data stored as SHA-256 hash only — never plaintext email
-//   - Null stripping on all Airtable writes
-//   - export default async function handler
+// v1.2 (beta):
+//   - All Airtable helpers (atGet, atCreate, atPatch) now use atFetch
+//     from _airtable.js for retry/backoff consistency
+//   - ASA + CMA compliance notes added to analyseList() output
+//     when liabilityPct exceeds thresholds
+//   - All other code identical to v1.1
 // ─────────────────────────────────────────────────────────────
 
 import crypto from 'crypto';
+import { atFetch } from './_airtable.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const BASE_ID = process.env.BASE_ID;
@@ -35,12 +25,12 @@ const atH = () => ({
   'Content-Type': 'application/json',
 });
 
-// ── Airtable helpers ──────────────────────────────────────────
+// ── Airtable helpers (now using atFetch for retry) ────────────
 async function atGet(table, formula, sort = '', max = 100) {
   let url = `${AT_BASE}/${encodeURIComponent(table)}?maxRecords=${max}`;
   if (formula) url += `&filterByFormula=${encodeURIComponent(formula)}`;
   if (sort)    url += `&${sort}`;
-  const r = await fetch(url, { headers: atH() });
+  const r = await atFetch(url, { headers: atH() });
   if (!r.ok) throw new Error(`AT GET ${table}: ${r.status}`);
   return (await r.json()).records || [];
 }
@@ -49,7 +39,7 @@ async function atCreate(table, fields) {
   const clean = Object.fromEntries(
     Object.entries(fields).filter(([, v]) => v !== null && v !== undefined)
   );
-  const r = await fetch(`${AT_BASE}/${encodeURIComponent(table)}`, {
+  const r = await atFetch(`${AT_BASE}/${encodeURIComponent(table)}`, {
     method:  'POST',
     headers: atH(),
     body:    JSON.stringify({ records: [{ fields: clean }] }),
@@ -62,7 +52,7 @@ async function atPatch(table, id, fields) {
   const clean = Object.fromEntries(
     Object.entries(fields).filter(([, v]) => v !== null && v !== undefined)
   );
-  const r = await fetch(`${AT_BASE}/${encodeURIComponent(table)}/${id}`, {
+  const r = await atFetch(`${AT_BASE}/${encodeURIComponent(table)}/${id}`, {
     method:  'PATCH',
     headers: atH(),
     body:    JSON.stringify({ fields: clean }),
@@ -92,11 +82,9 @@ function detectListColumns(headers, rows) {
     const vals = sample.map(r => String(r[h] || '').trim()).filter(Boolean);
     const lc   = h.toLowerCase();
 
-    // Email
     if (vals.filter(v => emailRe.test(v)).length / Math.max(vals.length, 1) > 0.7) {
       mapping[h] = 'email'; continue;
     }
-    // Dates
     if (vals.filter(v => dateRe.test(v)).length / Math.max(vals.length, 1) > 0.7) {
       if (lc.includes('join') || lc.includes('sign') || lc.includes('add') || lc.includes('creat') || lc.includes('subscri')) {
         mapping[h] = 'date_added';
@@ -105,11 +93,10 @@ function detectListColumns(headers, rows) {
       } else if (lc.includes('purchas') || lc.includes('order') || lc.includes('buy')) {
         mapping[h] = 'last_purchase';
       } else {
-        mapping[h] = 'date_added'; // sensible default
+        mapping[h] = 'date_added';
       }
       continue;
     }
-    // Text / categorical
     if (lc.includes('engag') || lc.includes('type') || lc.includes('action') || lc.includes('event')) {
       mapping[h] = 'engagement_type'; continue;
     }
@@ -122,7 +109,6 @@ function detectListColumns(headers, rows) {
     if (lc.includes('name') || lc.includes('first') || lc.includes('last')) {
       mapping[h] = 'ignore'; continue;
     }
-    // Numeric
     const nums = vals.map(v => parseFloat(v)).filter(n => !isNaN(n));
     if (nums.length / Math.max(vals.length, 1) > 0.8) {
       if (lc.includes('order') || lc.includes('purchas') || lc.includes('value') || lc.includes('spend') || lc.includes('ltv')) {
@@ -407,22 +393,29 @@ function analyseList(contacts, sector, aov) {
     [...active, ...recoverable].reduce((s, c) => s + c.commercialValue, 0).toFixed(2)
   );
 
-  // ── CONSENT-EXPIRY COUNTDOWN ──────────────────────────────
-  // Count contacts (still above threshold) projected to cross it within N days.
   const aboveThreshold = scored.filter(c => c.daysToThreshold !== null);
   const expiring30 = aboveThreshold.filter(c => c.daysToThreshold <= 30).length;
   const expiring60 = aboveThreshold.filter(c => c.daysToThreshold > 30 && c.daysToThreshold <= 60).length;
   const expiring90 = aboveThreshold.filter(c => c.daysToThreshold > 60 && c.daysToThreshold <= 90).length;
 
-  // Value at risk within 90 days (commercial value of contacts expiring soon)
   const valueExpiring90 = parseFloat(
     aboveThreshold.filter(c => c.daysToThreshold <= 90).reduce((s, c) => s + c.commercialValue, 0).toFixed(2)
   );
 
   const liabilityPct = unique.length > 0 ? liability.length / unique.length : 0;
   let icoStatus = 'Good standing';
-  if (liabilityPct > 0.3)      icoStatus = 'High risk — significant portion below consent threshold';
-  else if (liabilityPct > 0.1) icoStatus = 'Review recommended — contacts approaching threshold';
+  if (liabilityPct > 0.3)      icoStatus = 'High risk \u2014 significant portion below consent threshold';
+  else if (liabilityPct > 0.1) icoStatus = 'Review recommended \u2014 contacts approaching threshold';
+
+  // v1.2 — ASA + CMA compliance notes
+  let asaNote = null;
+  if (liabilityPct > 0.1) {
+    asaNote = 'ASA position: promotional emails sent to contacts with ambiguous consent may also breach CAP Code Section 2, which requires marketing to be obviously identifiable and sent with the recipient\u2019s agreement.';
+  }
+  let cmaNote = null;
+  if (liabilityPct > 0.15) {
+    cmaNote = 'CMA position: under DMCCA 2024, sending promotional content to contacts who have not clearly consented could constitute an aggressive or misleading commercial practice.';
+  }
 
   const invalidFormat  = scored.filter(c => c.primaryRisk === 'invalid_format').length;
   const disposable     = scored.filter(c => c.primaryRisk === 'disposable_domain').length;
@@ -438,10 +431,12 @@ function analyseList(contacts, sector, aov) {
   if (typos > 0)         dataQualityFlags.push(`${typos} likely typo domain${typos!==1?'s':''}`);
   if (spamTraps > 0)     dataQualityFlags.push(`${spamTraps} spam trap indicator${spamTraps!==1?'s':''}`);
   if (duplicates > 0)    dataQualityFlags.push(`${duplicates} duplicate${duplicates!==1?'s':''} removed`);
-  if (concentrated)      dataQualityFlags.push('Domain concentration risk — over 40% from one domain');
+  if (concentrated)      dataQualityFlags.push('Domain concentration risk \u2014 over 40% from one domain');
 
   return {
     totalContacts:    unique.length,
+    asaNote,
+    cmaNote,
     duplicatesRemoved: duplicates,
     activeCount:      active.length,
     recoverableCount: recoverable.length,
@@ -486,7 +481,7 @@ function generateOpportunities(analysis, sector, aov) {
 
   if (analysis.liabilityCount > 0) {
     opps.push({
-      type:              'Suppression — liability contacts',
+      type:              'Suppression \u2014 liability contacts',
       description:       `${analysis.liabilityCount.toLocaleString()} contacts are below the consent strength threshold and represent ICO enforcement risk. Suppressing them removes liability while preserving the rest of your list deliverability.`,
       estimatedValue:    0,
       currentValue:      0,
@@ -514,7 +509,7 @@ function generateOpportunities(analysis, sector, aov) {
   if (poorDeliverability.length > 10) {
     opps.push({
       type:              'Deliverability clean',
-      description:       `${poorDeliverability.length.toLocaleString()} contacts have poor deliverability signals — role-based addresses, typo domains, or sequential patterns. Removing them will improve inbox placement for the rest of your list.`,
+      description:       `${poorDeliverability.length.toLocaleString()} contacts have poor deliverability signals \u2014 role-based addresses, typo domains, or sequential patterns. Removing them will improve inbox placement for the rest of your list.`,
       estimatedValue:    0,
       currentValue:      0,
       decayRate:         0,
@@ -527,9 +522,7 @@ function generateOpportunities(analysis, sector, aov) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SNAPSHOT STORAGE (v1.1 — stickiness foundation)
-// Immutable list-level snapshot written on every upload.
-// Comparing the newest to the prior one powers "what changed".
+// SNAPSHOT STORAGE
 // ─────────────────────────────────────────────────────────────
 
 async function snapshotList(userId, analysis, assetValue) {
@@ -580,17 +573,14 @@ function daysBetween(aIso, bIso) {
   return Math.abs(Math.round((a - b) / 86400000));
 }
 
-// Compare current list state to a prior snapshot. Positive deltas
-// described in plain commercial terms (value up, liability down = good).
 function buildListComparison(cur, prev) {
   if (!prev) return null;
   const valueDelta      = parseFloat((cur.assetValue - prev.assetValue).toFixed(2));
-  const liabilityDelta  = cur.liabilityCount - prev.liabilityCount;   // negative = good
-  const activeDelta     = cur.activeCount - prev.activeCount;          // positive = good
+  const liabilityDelta  = cur.liabilityCount - prev.liabilityCount;
+  const activeDelta     = cur.activeCount - prev.activeCount;
   const totalDelta      = cur.totalContacts - prev.totalContacts;
   const expiring30Delta = cur.expiring30 - prev.expiring30;
 
-  // Headline direction: value up OR liability down counts as improvement.
   let direction = 'same';
   if (valueDelta > 0 || liabilityDelta < 0 || activeDelta > 0) direction = 'improved';
   if (liabilityDelta > 0 || valueDelta < 0) direction = liabilityDelta > Math.abs(activeDelta) ? 'worsened' : direction;
@@ -672,7 +662,6 @@ export default async function handler(req, res) {
 
       const unrealisedTotal = decayedOpps.reduce((s, o) => s + o.currentValue, 0);
 
-      // Change comparison: two most recent snapshots.
       const snaps = await getListSnapshots(userId, 12);
       const changes = snaps.length >= 2 ? buildListComparison(snaps[0], snaps[1]) : null;
 
@@ -693,6 +682,8 @@ export default async function handler(req, res) {
         opportunities:  decayedOpps,
         unrealisedTotal: parseFloat(unrealisedTotal.toFixed(2)),
         uploadVersion:  latest.UploadVersion,
+        asaNote:        latest.ASANote || null,
+        cmaNote:        latest.CMANote || null,
         consentExpiring: snaps[0] ? { in30: snaps[0].expiring30, in60: snaps[0].expiring60, in90: snaps[0].expiring90 } : null,
         changes,
         history: snaps.slice(0, 8).reverse().map(s => ({ date: s.date, assetValue: s.assetValue, liabilityCount: s.liabilityCount, activeCount: s.activeCount })),
@@ -738,7 +729,6 @@ export default async function handler(req, res) {
 
       if (!contacts.length) return res.status(400).json({ error: 'No valid email addresses found. Ensure an email column is present and mapped.' });
 
-      // Fetch prior snapshot BEFORE writing the new one.
       const priorSnaps = await getListSnapshots(userId, 1);
       const priorSnap = priorSnaps[0] || null;
 
@@ -776,7 +766,6 @@ export default async function handler(req, res) {
         UploadVersion:    version,
       });
 
-      // Immutable snapshot for stickiness history.
       await snapshotList(userId, analysis, analysis.assetValue);
 
       for (const opp of opportunities) {
@@ -833,11 +822,6 @@ export default async function handler(req, res) {
         } catch(e) { console.error('Fix record non-fatal:', e); }
       }
 
-      // ── COMMERCIAL EXPOSURE (v1.1) ────────────────────────────
-      // At-risk list value within 90 days. Defensible: computed from the
-      // user's own AOV input via the commercial trajectory model — not an
-      // invented "database worth £X". Stable sourceRecordId so re-uploads
-      // dedupe against any still-pending commercial item rather than piling up.
       if (analysis.valueExpiring90 && analysis.valueExpiring90 >= 100) {
         const expiringContacts = (analysis.expiring30 || 0) + (analysis.expiring60 || 0) + (analysis.expiring90 || 0);
         try {
@@ -866,7 +850,7 @@ export default async function handler(req, res) {
             EmailHash:       hashEmail(c.email),
             SuppressionTier: 'Soft',
             DateAdded:       today,
-            Source:          'List Intelligence — consent below threshold',
+            Source:          'List Intelligence \u2014 consent below threshold',
             Notes:           `ConsentStrength: ${c.consentStrength}. DaysToThreshold: ${c.daysToThreshold ?? 'already crossed'}.`,
           });
         } catch(e) { /* non-fatal */ }
@@ -893,6 +877,8 @@ export default async function handler(req, res) {
         unrealisedTotal:  parseFloat(unrealisedTotal.toFixed(2)),
         sector:           sectorVal,
         aov:              aovVal,
+        asaNote:          analysis.asaNote || null,
+        cmaNote:          analysis.cmaNote || null,
         consentExpiring:  { in30: analysis.expiring30, in60: analysis.expiring60, in90: analysis.expiring90, valueAtRisk: analysis.valueExpiring90 },
         changes,
       });
