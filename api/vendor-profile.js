@@ -219,10 +219,10 @@ export default async function handler(req, res) {
 
     const today = new Date().toISOString().split('T')[0];
     const updateFields = nullStrip({
-      RiskRating:       ico.risk,
+      ICORiskLevel:       ico.risk,
       ASARiskLevel:     asa.risk,
       CMARiskLevel:     cma.risk,
-      LastAutoChecked:  today,
+      LastChecked:  today,
       WebSearchFindings: rssFindings.length ? JSON.stringify(rssFindings) : null,
     });
 
