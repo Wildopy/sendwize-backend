@@ -791,7 +791,8 @@ function algorithm7_relationshipCapital(campaigns, fingerprint, bench) {
   const decayHalfLife = 60;
   const now = new Date();
   const benchNormal = bench.unsubNormal;
-  let capital = 0;
+  const isNewSegment = campaigns.length < 3;
+  let capital = isNewSegment ? 20 : 0;
 
   for (const c of campaigns) {
     const daysAgo = (+now - new Date(c.date)) / 86400000;
