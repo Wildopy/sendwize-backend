@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Regulator Simulator — Sendwize</title>
+<title>Regulator Simulator &mdash; Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -22,36 +22,18 @@
 }
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6}
 .page{max-width:740px;margin:0 auto;padding:40px 20px 80px}
-
-.sw-ph-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 24px;
-  background:var(--w);
-  border-bottom:1px solid var(--b);
-  position:sticky;top:0;z-index:100;
-}
+.sw-ph-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
 .sw-ph-header a{text-decoration:none}
 .sw-ph-logo{height:28px;display:block}
 .sw-ph-nav{display:flex;align-items:center;gap:22px}
 .sw-ph-nav a{color:var(--tm);font-size:14px;font-weight:500;transition:color .15s}
 .sw-ph-nav a:hover{color:var(--t)}
-
-.sw-ph-footer{
-  border-top:1px solid var(--b);
-  padding:20px 24px;
-  margin-top:40px;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:12px;
-}
+.sw-ph-footer{border-top:1px solid var(--b);padding:20px 24px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .sw-ph-footer-logo{height:20px;display:block;opacity:.7}
 .sw-ph-footer-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}
 .sw-ph-footer-links a{color:var(--mu);text-decoration:none}
 .sw-ph-footer-links a:hover{color:var(--tm)}
-
-@media(max-width:640px){
-  .sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}
-  .sw-ph-footer{flex-direction:column;align-items:flex-start}
-}
+@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.sw-ph-footer{flex-direction:column;align-items:flex-start}}
 .intro{margin-bottom:36px;animation:fadeUp .4s ease}
 .intro-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--reg);background:var(--regl);border:1px solid var(--regc);padding:4px 12px;border-radius:20px;margin-bottom:14px}
 .intro h1{font-size:30px;font-weight:700;letter-spacing:-.6px;line-height:1.15;margin-bottom:10px}
@@ -59,8 +41,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .intro-warning{display:flex;gap:12px;align-items:flex-start;background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:14px 18px;margin-top:18px}
 .intro-warning-icon{font-size:18px;flex-shrink:0;margin-top:1px}
 .intro-warning p{font-size:13px;color:#92400e;line-height:1.5}
-
-/* ── REGULATOR SELECTOR ─────────────────────────────────────── */
+/* Regulator selector */
 .reg-selector{margin-bottom:28px}
 .reg-selector-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:12px}
 .reg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -73,15 +54,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .reg-card-logo{font-size:22px;margin-bottom:8px}
 .reg-card-name{font-size:14px;font-weight:700;margin-bottom:3px}
 .reg-card-desc{font-size:11px;color:var(--mu);line-height:1.4}
-.reg-card-badge{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
-.reg-card.selected-ico .reg-card-badge{background:#1d4ed8;color:#fff}
-.reg-card.selected-asa .reg-card-badge{background:#991b1b;color:#fff}
-.reg-card.selected-cma .reg-card-badge{background:#065f46;color:#fff}
-.reg-card-badge{display:none}
-.reg-card.selected-ico .reg-card-badge,
-.reg-card.selected-asa .reg-card-badge,
-.reg-card.selected-cma .reg-card-badge{display:block}
-
+.reg-card-badge{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:none}
+.reg-card.selected-ico .reg-card-badge{display:block;background:#1d4ed8;color:#fff}
+.reg-card.selected-asa .reg-card-badge{display:block;background:#991b1b;color:#fff}
+.reg-card.selected-cma .reg-card-badge{display:block;background:#065f46;color:#fff}
 .start-wrap{margin-bottom:36px}
 .btn-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .btn-start{color:#fff;border:none;padding:14px 32px;border-radius:var(--rad);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;display:inline-flex;align-items:center;gap:10px;letter-spacing:-.2px}
@@ -90,11 +66,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .btn-start.ico{background:#1d4ed8}.btn-start.ico:hover{background:#1e40af;box-shadow:0 4px 16px rgba(29,78,216,.3)}
 .btn-start.asa{background:#991b1b}.btn-start.asa:hover{background:#7f1d1d;box-shadow:0 4px 16px rgba(153,27,27,.3)}
 .btn-start.cma{background:#065f46}.btn-start.cma:hover{background:#064e3b;box-shadow:0 4px 16px rgba(6,95,70,.3)}
-/* Demo button */
 .btn-demo{color:var(--tm);border:1px solid var(--b);padding:14px 22px;border-radius:var(--rad);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;display:inline-flex;align-items:center;gap:8px;background:var(--w);letter-spacing:-.1px}
 .btn-demo:hover{border-color:var(--mu);color:var(--t)}
 .demo-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o);letter-spacing:.04em}
-
+/* Spine */
 .spine{display:flex;flex-direction:column;gap:0}
 .stage{position:relative;padding-left:52px;margin-bottom:8px}
 .stage::before{content:'';position:absolute;left:19px;top:40px;bottom:-8px;width:2px;background:var(--b);z-index:0}
@@ -123,6 +98,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ind-red{background:var(--r)}.ind-amber{background:var(--y)}.ind-green{background:var(--g)}
 .check-label{font-size:13px;font-weight:600;margin-bottom:2px}
 .check-detail{font-size:12px;color:var(--mu);line-height:1.4}
+/* Probability */
 .prob-main{text-align:center;padding:20px 0 8px}
 .prob-pct{font-size:64px;font-weight:800;letter-spacing:-3px;line-height:1;font-family:'DM Mono',monospace}
 .prob-pct.low{color:var(--g)}.prob-pct.medium{color:var(--y)}.prob-pct.high{color:var(--r)}
@@ -134,12 +110,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .factor-row:last-child{border-bottom:none}
 .factor-icon{font-size:14px;flex-shrink:0;margin-top:1px}
 .factor-text{font-size:13px;color:var(--tm);line-height:1.4}
-
-/* Letter card */
+/* Letter */
 .letter-card{background:#fff;border-radius:var(--rad-lg);overflow:hidden;box-shadow:var(--sh-lg)}
-.letter-card.ico{border:1px solid #c7d2fe}
-.letter-card.asa{border:1px solid #fecaca}
-.letter-card.cma{border:1px solid #a7f3d0}
+.letter-card.ico{border:1px solid #c7d2fe}.letter-card.asa{border:1px solid #fecaca}.letter-card.cma{border:1px solid #a7f3d0}
 .letter-header{padding:24px 28px;color:#fff}
 .letter-header.ico{background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 100%)}
 .letter-header.asa{background:linear-gradient(135deg,#7f1d1d 0%,#b91c1c 100%)}
@@ -170,6 +143,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .lq-note.yes{color:var(--g)}.lq-note.no{color:var(--r)}
 .letter-sign{margin-top:20px;padding-top:16px;border-top:1px solid var(--b)}
 .letter-sign p{font-size:13px;color:var(--tm);line-height:1.6}
+/* Docs */
 .docs-list{display:flex;flex-direction:column;gap:8px}
 .doc-row{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-radius:8px;border:1px solid var(--b)}
 .doc-row.available{background:var(--gb);border-color:var(--gc)}
@@ -181,54 +155,72 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .missing   .doc-status-pill{background:#fee2e2;color:#991b1b}
 .doc-name{font-size:13px;font-weight:600;margin-bottom:2px}
 .doc-desc{font-size:12px;color:var(--mu);line-height:1.4}
-.penalty-range{text-align:center;padding:20px 0 24px}
-.penalty-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:8px}
-.penalty-amt{font-size:48px;font-weight:800;letter-spacing:-2px;line-height:1;font-family:'DM Mono',monospace;color:var(--r)}
-.penalty-to{font-size:18px;font-weight:400;color:var(--mu);margin:4px 0}
-.penalty-note{font-size:12px;color:var(--mu);font-style:italic;margin-top:8px}
-.penalty-reputational{background:#fdf4ff;border:1px solid #e9d5ff;border-radius:var(--rad);padding:20px 24px;text-align:center;margin-bottom:8px}
-.penalty-reputational-title{font-size:16px;font-weight:700;color:#7e22ce;margin-bottom:8px}
-.penalty-reputational-sanctions{display:flex;flex-direction:column;gap:8px;margin-top:12px;text-align:left}
-.sanction-item{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--tm)}
-.sanction-icon{flex-shrink:0;font-size:14px}
+/* Penalty — redesigned */
+.penalty-block{margin-bottom:24px}
+.penalty-realistic{background:var(--w);border:2px solid var(--rc);border-radius:var(--rad-lg);padding:24px 28px;margin-bottom:12px;text-align:center}
+.penalty-realistic-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--r);margin-bottom:10px}
+.penalty-range-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.penalty-amt{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1;font-family:'DM Mono',monospace;color:var(--r)}
+.penalty-to{font-size:16px;font-weight:400;color:var(--mu)}
+.penalty-basis{font-size:12px;color:var(--mu);margin-top:10px;font-style:italic;line-height:1.5}
+.penalty-ceiling{background:var(--bg);border:1px solid var(--b);border-radius:var(--rad);padding:12px 16px;display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.penalty-ceiling-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.penalty-ceiling-text{font-size:12px;color:var(--mu);line-height:1.5}
+.penalty-ceiling-text strong{color:var(--tm)}
+.penalty-reputational{background:#fdf4ff;border:1px solid #e9d5ff;border-radius:var(--rad-lg);padding:20px 24px;margin-bottom:12px}
+.penalty-reputational-title{font-size:16px;font-weight:700;color:#7e22ce;margin-bottom:6px}
+.penalty-reputational-sub{font-size:13px;color:var(--tm);line-height:1.5;margin-bottom:12px}
+.sanction-list{display:flex;flex-direction:column;gap:8px}
+.sanction-item{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--tm);line-height:1.4}
+.sanction-icon{flex-shrink:0;font-size:14px;margin-top:1px}
+/* Representations */
 .rep-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tm);margin:20px 0 10px}
 .rep-items{display:flex;flex-direction:column;gap:8px}
 .rep-item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:#f8f7f4;border-radius:8px;border:1px solid var(--b)}
 .rep-num{width:22px;height:22px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .rep-num.ico{background:#1d4ed8}.rep-num.asa{background:#991b1b}.rep-num.cma{background:#065f46}
 .rep-text{font-size:13px;color:var(--tm);line-height:1.5}
+/* Try other regulators panel — shown after demo stage 5 */
+.try-others{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px 28px;margin-top:16px;box-shadow:var(--sh)}
+.try-others-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.try-others-sub{font-size:13px;color:var(--mu);margin-bottom:16px;line-height:1.5}
+.try-others-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.try-other-btn{border:2px solid var(--b);border-radius:var(--rad);padding:12px 16px;cursor:pointer;text-align:left;background:var(--bg);font-family:inherit;transition:all .18s}
+.try-other-btn:hover{border-color:var(--mu);background:var(--w)}
+.try-other-btn.ico:hover{border-color:#1d4ed8;background:#eff6ff}
+.try-other-btn.asa:hover{border-color:#991b1b;background:#fef2f2}
+.try-other-btn.cma:hover{border-color:#065f46;background:#f0fdf4}
+.try-other-name{font-size:13px;font-weight:700}
+.try-other-name.ico{color:#1d4ed8}.try-other-name.asa{color:#991b1b}.try-other-name.cma{color:#065f46}
+.try-other-desc{font-size:11px;color:var(--mu);margin-top:2px}
+/* Demo notice */
+.demo-notice{display:flex;align-items:center;gap:10px;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad);padding:12px 16px;margin-bottom:24px;font-size:13px;color:#92400e}
+.demo-notice strong{font-weight:700}
+/* Gate */
+.gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
+.gate-screen.show{display:flex}
+.gate-card{background:var(--w);border:1px solid var(--b);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.gate-logo{font-size:22px;font-weight:700;color:var(--o);letter-spacing:-.5px;margin-bottom:24px}
+.gate-icon{font-size:40px;margin-bottom:16px}
+.gate-title{font-size:20px;font-weight:700;margin-bottom:8px}
+.gate-sub{font-size:14px;color:var(--mu);line-height:1.6;margin-bottom:28px}
+.gate-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;background:var(--o);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}
+.gate-btn:hover{background:#d4660f}
+.gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--w);color:var(--mu);border:1px solid var(--b);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.gate-demo-btn:hover{border-color:var(--o);color:var(--t)}
+/* Misc */
 .btn-next-stage{margin-top:16px;color:#fff;border:none;padding:11px 22px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
 .btn-next-stage:hover{opacity:.9}
-.btn-next-stage.ico{background:#1d4ed8}
-.btn-next-stage.asa{background:#991b1b}
-.btn-next-stage.cma{background:#065f46}
-.spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
-@keyframes spin{to{transform:rotate(360deg)}}
+.btn-next-stage.ico{background:#1d4ed8}.btn-next-stage.asa{background:#991b1b}.btn-next-stage.cma{background:#065f46}
 .err-box{background:var(--rb);border:1px solid var(--rc);border-radius:var(--rad);padding:16px 20px;font-size:13px;color:var(--r);margin-bottom:20px;display:none}
 .err-box.show{display:block}
 .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.5}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
 .toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
-
-    .gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}
-    .gate-screen.show{display:flex}
-    .gate-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.07)}
-    .gate-logo{font-size:22px;font-weight:700;color:var(--orange);letter-spacing:-.5px;margin-bottom:24px}
-    .gate-icon{font-size:40px;margin-bottom:16px}
-    .gate-title{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)}
-    .gate-sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:28px}
-    .gate-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}
-    .gate-btn:hover{background:#d4660f}
-    .gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--white);color:var(--muted);border:1px solid var(--border-mid);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
-    .gate-demo-btn:hover{border-color:var(--orange);color:var(--text)}
-    /* Demo notice banner */
-.demo-notice{display:flex;align-items:center;gap:10px;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad);padding:12px 16px;margin-bottom:24px;font-size:13px;color:#92400e}
-.demo-notice strong{font-weight:700}
-@media(max-width:600px){.penalty-amt{font-size:36px}.intro h1{font-size:24px}.reg-grid{grid-template-columns:1fr}.btn-row{flex-direction:column;align-items:flex-start}}
+@media(max-width:600px){.penalty-amt{font-size:34px}.intro h1{font-size:24px}.reg-grid{grid-template-columns:1fr}.btn-row{flex-direction:column;align-items:flex-start}.try-others-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
 <header class="sw-ph-header">
   <a href="https://new-mvp-v2.webflow.io/">
     <img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
@@ -238,10 +230,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
   </nav>
 </header>
-
 <div class="page">
-
-
   <div class="gate-screen" id="gateScreen">
     <div class="gate-card">
       <div class="gate-logo">sendwize</div>
@@ -249,12 +238,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <div class="gate-title">Regulator Simulator</div>
       <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
       <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a>
-      <button class="gate-demo-btn" onclick="startDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--orange)">DEMO</span> Try with example data</button>
+      <button class="gate-demo-btn" onclick="startDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--o)">DEMO</span> Try with example data</button>
     </div>
   </div>
-
   <div class="err-box" id="errBox"></div>
-
   <div class="intro">
     <div class="intro-tag" id="introTag">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-.25 3h1.5v5h-1.5V7z"/></svg>
@@ -267,37 +254,30 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <p>This is a simulation based on your current compliance data. It is illustrative only and does not constitute legal advice. Scenarios are based on published enforcement patterns from each regulator.</p>
     </div>
   </div>
-
   <div class="start-wrap" id="startWrap">
-
     <div class="reg-selector">
       <div class="reg-selector-label">Choose a regulator</div>
       <div class="reg-grid">
-
         <div class="reg-card selected-ico" id="regCard-ICO" onclick="selectRegulator('ICO')">
           <div class="reg-card-badge">Selected</div>
           <div class="reg-card-logo">&#127963;&#65039;</div>
           <div class="reg-card-name" style="color:#1d4ed8">ICO</div>
           <div class="reg-card-desc">Information Commissioner&apos;s Office<br>PECR &amp; UK GDPR enforcement</div>
         </div>
-
         <div class="reg-card" id="regCard-ASA" onclick="selectRegulator('ASA')">
           <div class="reg-card-badge">Selected</div>
           <div class="reg-card-logo">&#128250;</div>
           <div class="reg-card-name" style="color:#991b1b">ASA</div>
           <div class="reg-card-desc">Advertising Standards Authority<br>CAP Code &amp; misleading claims</div>
         </div>
-
         <div class="reg-card" id="regCard-CMA" onclick="selectRegulator('CMA')">
           <div class="reg-card-badge">Selected</div>
           <div class="reg-card-logo">&#9878;&#65039;</div>
           <div class="reg-card-name" style="color:#065f46">CMA</div>
           <div class="reg-card-desc">Competition &amp; Markets Authority<br>DMCCA 2024 consumer protection</div>
         </div>
-
       </div>
     </div>
-
     <div class="btn-row">
       <button class="btn-start ico" id="btnStart" onclick="startSimulation()">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>
@@ -309,9 +289,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </button>
     </div>
   </div>
-
   <div class="spine" id="spine" style="display:none">
-
     <div class="stage locked" id="stage-0">
       <div class="stage-dot">1</div>
       <div class="stage-header" onclick="toggleStage(0)">
@@ -320,13 +298,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </div>
       <div class="stage-body">
         <div class="scard">
-          <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6" id="stage1Desc">The regulator&apos;s first step is a background check &mdash; reviewing registration status, complaint history, and known compliance patterns.</div>
+          <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6" id="stage1Desc">The regulator&apos;s first step is a background check.</div>
           <div class="check-grid" id="stage1-checks"></div>
         </div>
         <button class="btn-next-stage ico" id="btnNext0" onclick="unlockStage(1)">Continue to Complaint Probability &rarr;</button>
       </div>
     </div>
-
     <div class="stage locked" id="stage-1">
       <div class="stage-dot">2</div>
       <div class="stage-header" onclick="toggleStage(1)">
@@ -346,7 +323,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <button class="btn-next-stage ico" id="btnNext1" onclick="unlockStage(2)">View First-Contact Letter &rarr;</button>
       </div>
     </div>
-
     <div class="stage locked" id="stage-2">
       <div class="stage-dot">3</div>
       <div class="stage-header" onclick="toggleStage(2)">
@@ -358,7 +334,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <button class="btn-next-stage ico" id="btnNext2" onclick="unlockStage(3)" style="margin-top:16px">Check Documentation &rarr;</button>
       </div>
     </div>
-
     <div class="stage locked" id="stage-3">
       <div class="stage-dot">4</div>
       <div class="stage-header" onclick="toggleStage(3)">
@@ -367,13 +342,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </div>
       <div class="stage-body">
         <div class="scard">
-          <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6" id="stage4Desc">The regulator will request specific documentation. Based on your current compliance posture, here is what you could produce today.</div>
+          <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6" id="stage4Desc">The regulator will request specific documentation.</div>
           <div class="docs-list" id="stage4-docs"></div>
         </div>
         <button class="btn-next-stage ico" id="btnNext3" onclick="unlockStage(4)">View Penalty Estimate &rarr;</button>
       </div>
     </div>
-
     <div class="stage locked" id="stage-4">
       <div class="stage-dot">5</div>
       <div class="stage-header" onclick="toggleStage(4)">
@@ -384,75 +358,241 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <div class="scard" id="stage5-content"></div>
       </div>
     </div>
-
   </div>
-
-  <p class="disc" id="discText">Information only &mdash; not legal advice. Illustrative scenarios based on published ICO enforcement data. This simulation does not represent actual ICO activity or determinations.</p>
+  <p class="disc" id="discText">Information only &mdash; not legal advice. Illustrative scenarios based on published ICO enforcement data.</p>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
 var APP_URL   = 'https://sendwize-backend.vercel.app';
 var DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
-var userId = null, simData = null, currentStage = -1;
+var userId = null, simData = null, currentStage = -1, isDemoMode = false;
 var selectedReg = 'ICO';
 
 var REG = {
   ICO: {
-    colour:'#1d4ed8',cls:'ico',name:'ICO',fullName:"Information Commissioner's Office",
-    dept:'Enforcement & Investigations',address:'Wycliffe House, Water Lane, Wilmslow SK9 5AF',
+    colour:'#1d4ed8', cls:'ico', name:'ICO', fullName:"Information Commissioner's Office",
+    dept:'Enforcement & Investigations', address:'Wycliffe House, Water Lane, Wilmslow SK9 5AF',
     tagText:'ICO Simulator \u2014 Sendwize',
     introTitle:'How would your business look in an ICO investigation?',
     introDesc:'This simulator runs through the five stages of a real ICO enforcement action \u2014 using your actual compliance posture from Sendwize \u2014 and shows you exactly what investigators would find.',
     startLabel:'Start ICO Simulation',
     stage1title:'ICO Background Check',
     stage1desc:"The ICO\u2019s first step is a background check against their own data \u2014 ICO registration, complaint history, and known data handling patterns.",
-    stage2title:'Complaint Probability',probLabel:'estimated complaint escalation probability',
-    stage3title:'ICO First-Contact Letter',stage4title:'Documentation Checklist',
+    stage2title:'Complaint Probability', probLabel:'estimated complaint escalation probability',
+    stage3title:'ICO First-Contact Letter', stage4title:'Documentation Checklist',
     stage4desc:'The ICO will request specific documentation. Based on your current compliance posture, here is what you could produce today.',
     stage5title:'Penalty Estimate & Strategy',
     discText:'Information only \u2014 not legal advice. Illustrative scenarios based on published ICO enforcement data. This simulation does not represent actual ICO activity or determinations.',
-    next1:'Continue to Complaint Probability \u2192',next2:'View ICO First-Contact Letter \u2192',
-    next3:'Check Documentation \u2192',next4:'View Penalty Estimate \u2192',
-    penaltyNote:'Based on published ICO enforcement decisions for comparable cases. Illustrative only.',
+    next1:'Continue to Complaint Probability \u2192', next2:'View ICO First-Contact Letter \u2192',
+    next3:'Check Documentation \u2192', next4:'View Penalty Estimate \u2192',
+    ceiling:'Statutory ceiling under DUAA 2025: \xa317.5M or 4% of global annual turnover \u2014 applies only in the most serious cases of deliberate or repeat breach.',
+    basisNote:'Realistic range based on published ICO enforcement decisions for first-time and partially-co-operative cases. Not a legal prediction.',
   },
   ASA: {
-    colour:'#991b1b',cls:'asa',name:'ASA',fullName:'Advertising Standards Authority',
-    dept:'Investigations Executive',address:'Mid City Place, 71 High Holborn, London WC1V 6QT',
+    colour:'#991b1b', cls:'asa', name:'ASA', fullName:'Advertising Standards Authority',
+    dept:'Investigations Executive', address:'Mid City Place, 71 High Holborn, London WC1V 6QT',
     tagText:'ASA Simulator \u2014 Sendwize',
     introTitle:'How would your business look in an ASA investigation?',
     introDesc:'This simulator runs through the five stages of an ASA formal complaint investigation \u2014 using your actual compliance posture from Sendwize \u2014 and shows you exactly how the ASA process would unfold.',
     startLabel:'Start ASA Simulation',
     stage1title:'ASA Advertiser Background Check',
     stage1desc:"The ASA\u2019s first step is to assess the complaint against their records \u2014 prior rulings, current monitoring activity, and whether the ad is still running.",
-    stage2title:'Investigation Probability',probLabel:'estimated formal investigation probability',
-    stage3title:'ASA Formal Investigation Notification',stage4title:'Evidence & Documentation Request',
+    stage2title:'Investigation Probability', probLabel:'estimated formal investigation probability',
+    stage3title:'ASA Formal Investigation Notification', stage4title:'Evidence & Documentation Request',
     stage4desc:'The ASA will request specific evidence and documentation. CAP Code 4.1 requires this to have existed before the campaign ran \u2014 not gathered after.',
     stage5title:'Sanctions & Representations Strategy',
     discText:'Information only \u2014 not legal advice. The ASA does not impose direct financial penalties \u2014 sanctions are reputational and operational. Referral to Trading Standards is possible for persistent non-compliance.',
-    next1:'Continue to Investigation Probability \u2192',next2:'View ASA Investigation Notification \u2192',
-    next3:'Check Evidence & Documentation \u2192',next4:'View Sanctions & Strategy \u2192',
-    penaltyNote:'The ASA does not impose direct financial fines. Sanctions are reputational and operational \u2014 see below.',
+    next1:'Continue to Investigation Probability \u2192', next2:'View ASA Investigation Notification \u2192',
+    next3:'Check Evidence & Documentation \u2192', next4:'View Sanctions & Strategy \u2192',
+    ceiling:null,
+    basisNote:null,
   },
   CMA: {
-    colour:'#065f46',cls:'cma',name:'CMA',fullName:'Competition and Markets Authority',
-    dept:'Consumer Protection Directorate',address:'The Cabot, 25 Cabot Square, London E14 4QZ',
+    colour:'#065f46', cls:'cma', name:'CMA', fullName:'Competition and Markets Authority',
+    dept:'Consumer Protection Directorate', address:'The Cabot, 25 Cabot Square, London E14 4QZ',
     tagText:'CMA Simulator \u2014 Sendwize',
     introTitle:'How would your business look in a CMA/DMCCA investigation?',
     introDesc:'This simulator runs through the five stages of a CMA enforcement investigation under DMCCA 2024 \u2014 using your actual compliance posture from Sendwize \u2014 and shows you what investigators would find.',
     startLabel:'Start CMA Simulation',
     stage1title:'CMA Compliance Sweep Assessment',
     stage1desc:'The CMA has been conducting proactive sweeps of hundreds of businesses since April 2025. This stage shows how your practices would appear in an initial CMA assessment.',
-    stage2title:'Enforcement Probability',probLabel:'estimated enforcement escalation probability',
-    stage3title:'CMA Preliminary Enquiry',stage4title:'Documentation & Evidence Request',
+    stage2title:'Enforcement Probability', probLabel:'estimated enforcement escalation probability',
+    stage3title:'CMA Preliminary Enquiry', stage4title:'Documentation & Evidence Request',
     stage4desc:'The CMA will request specific documentation to assess compliance with DMCCA 2024. Under the new powers, the CMA can act without court proceedings.',
     stage5title:'Penalty Estimate & Strategy',
-    discText:'Information only \u2014 not legal advice. Penalty estimates are based on DMCCA 2024 \u2014 the higher of \u00a3300,000 or 10% of global annual turnover. First enforcement cases were opened November 2025.',
-    next1:'Continue to Enforcement Probability \u2192',next2:'View CMA Preliminary Enquiry \u2192',
-    next3:'Check Documentation \u2192',next4:'View Penalty Estimate \u2192',
-    penaltyNote:'Based on DMCCA 2024 published guidance and first enforcement cases (November 2025). Illustrative only.',
+    discText:'Information only \u2014 not legal advice. Penalty estimates are based on DMCCA 2024 \u2014 the higher of \xa3300,000 or 10% of global annual turnover. First enforcement cases were opened November 2025.',
+    next1:'Continue to Enforcement Probability \u2192', next2:'View CMA Preliminary Enquiry \u2192',
+    next3:'Check Documentation \u2192', next4:'View Penalty Estimate \u2192',
+    ceiling:'Statutory maximum under DMCCA 2024: the higher of \xa3300,000 or 10% of global annual turnover, imposed by direct administrative decision without court proceedings.',
+    basisNote:'Realistic range based on published CMA enforcement guidance and first DMCCA cases (November 2025). Businesses that co-operate fully and remediate promptly have received undertakings rather than maximum fines. Not a legal prediction.',
   },
+};
+
+// ── DEMO SCENARIO ─────────────────────────────────────────────
+// Bramblewood Skincare: one business, one set of facts, three simultaneous regulatory exposures.
+// All three fallback objects describe the SAME company \u2014 so switching regulator in demo mode
+// reveals compounding risk rather than three unrelated scenarios.
+var DEMO_CONTEXT = 'Bramblewood Skincare, a UK e-commerce business with ~\xa31.4M annual turnover. ' +
+  'They email a list of 62,000 contacts, roughly half of whom gave consent via a 2019 checkout tick-box ' +
+  'that has since been replaced. They run a \u201cWas \xa339.99, Now \xa319.99 \u2014 48 hours only!\u201d promotion ' +
+  'with a countdown timer that resets every 48 hours. Their email creative claims ' +
+  '\u201cOver 10,000 five-star reviews\u201d but 2,400 of those are from an incentivised review programme ' +
+  'that predates their current policy. They have no DPA with their email platform provider.';
+
+var DEMO_ICO = {
+  stage1: { checks: [
+    {status:'amber', label:'ICO Registration', detail:'Bramblewood Skincare is registered with the ICO (ZB123456). However, their registration does not specifically cover email marketing as a processing activity.'},
+    {status:'red',   label:'Consent Records', detail:'Approximately 31,000 contacts (50% of the list) were collected via a 2019 tick-box consent mechanism that did not meet PECR standards. No re-consent campaign has been run.'},
+    {status:'red',   label:'Pending Compliance Fixes', detail:'3 critical issues outstanding: expired consent records, no DPA with email platform, suppression list not applied to all segments.'},
+    {status:'amber', label:'Suppression Practices', detail:'A suppression list exists but audit trail shows it was not consistently applied to the \u201cNew Arrivals\u201d segment in three of the last eight sends.'},
+    {status:'amber', label:'Sector Risk Profile', detail:'Email marketing to consumer lists is a priority enforcement area for the ICO under PECR. 62,000 contacts places Bramblewood in the medium-volume band where ICO scrutiny is active.'},
+  ]},
+  stage2: { probability: 64, factors: [
+    {icon:'\u26d4', text:'31,000 contacts with pre-PECR consent \u2014 any complaint from this segment cannot be defended without re-consent evidence.'},
+    {icon:'\u26d4', text:'No DPA with the email platform provider. Under UK GDPR Article 28, a missing processor agreement is an independent ground for enforcement action.'},
+    {icon:'\u26a0\ufe0f', text:'Suppression list not applied consistently \u2014 this directly increases the number of chargeable unsolicited messages if enforcement is taken.'},
+    {icon:'\uD83D\uDD0D', text:'The ICO cross-references complaint data with Companies House and published marketing activity. A \u201c48 hours only!\u201d evergreen promotion is the kind of pattern their proactive monitoring tools flag.'},
+    {icon:'\u2705', text:'No prior ICO action. First-time cases with prompt co-operation typically receive preliminary enquiry rather than direct penalty notice.'},
+  ]},
+  stage3: { letter: {
+    reference: 'ICO-ENF-' + (Math.floor(Math.random() * 90000) + 10000),
+    subject:   'Preliminary enquiry \u2014 direct marketing practices under PECR and UK GDPR \u2014 Bramblewood Skincare',
+    opening:   'The ICO has received information suggesting your organisation may have sent direct marketing communications to individuals without a sufficient legal basis under PECR and UK GDPR. We are writing to give you the opportunity to provide information before we consider whether to progress to a formal investigation.',
+    context:   'Our enquiries are preliminary at this stage. The quality and promptness of your response, and any evidence of remedial action taken, will be considered in any decision on further steps.',
+    closing:   'Please provide a full written response within 28 days. Failure to respond adequately may result in escalation to a formal investigation under section 115 of the Data Protection Act 2018, which carries the risk of a Penalty Notice.',
+    signatory: 'Senior Enforcement Officer, Direct Marketing Team',
+    questions: [
+      {question:'Can you provide copies of your consent records for the 62,000 contacts in your marketing database, including the exact wording shown at the point of consent collection?', yesNote:'Documented consent records are your primary defence. If wording was PECR-compliant, this significantly strengthens your position.', noNote:'Absence of consent records, or records showing non-compliant wording, is the most common basis for ICO Penalty Notices under PECR.'},
+      {question:'Did you send marketing to contacts collected via your pre-2020 checkout tick-box? If so, have you conducted a re-consent exercise for those contacts?', yesNote:'Evidence of a targeted re-consent campaign before sending demonstrates responsible data management.', noNote:'Continuing to market to contacts whose consent may not meet current PECR standards is the core of the potential breach identified.'},
+      {question:'Can you confirm that a Data Processing Agreement is in place with your email platform provider, and provide a copy?', yesNote:'A current, GDPR-compliant DPA with your processor is a legal requirement under Article 28. Having one closes this line of enquiry.', noNote:'Absence of a DPA is an independent breach of UK GDPR Article 28, regardless of the consent position. It increases the scope of any investigation.'},
+      {question:'Can you confirm that your suppression list was applied to every segment in the last 12 months, and provide evidence of the process used?', yesNote:'Consistent suppression application is a core PECR operational requirement. Documented evidence of it is a mitigating factor.', noNote:'Failure to consistently apply suppression lists means opt-out requests were not honoured \u2014 each such message is a separate potential contravention.'},
+      {question:'Does every email you send to this list contain a clear, prominent, and free mechanism to opt out of further marketing?', yesNote:'Consistent opt-out provision is required by PECR Regulation 23. Evidencing it shows basic compliance with the minimum standard.', noNote:'Any email without a clear opt-out mechanism is a contravention of PECR Regulation 23 in its own right.'},
+    ]
+  }},
+  stage4: { documents: [
+    {status:'partial',   name:'Consent Records', detail:'Records exist for contacts added post-2021. Pre-2020 contacts have a tick-box record but the wording cannot be produced and is unlikely to meet current PECR standards.'},
+    {status:'missing',   name:'Data Processing Agreement (Email Platform)', detail:'No DPA in place with the email platform provider. This is a standalone UK GDPR Article 28 breach.'},
+    {status:'available', name:'Privacy Notice', detail:'A current privacy notice covering direct marketing is published on the website.'},
+    {status:'partial',   name:'Suppression Log', detail:'Suppression lists exist. Audit trail shows inconsistent application to the \u201cNew Arrivals\u201d segment in 3 of 8 recent sends.'},
+    {status:'missing',   name:'Legitimate Interest Assessment', detail:'No LIA documented. If any processing relies on legitimate interest rather than consent, this document is legally required.'},
+    {status:'available', name:'Opt-out Mechanism Evidence', detail:'Unsubscribe links are present and functional in all emails reviewed.'},
+    {status:'missing',   name:'Data Retention Policy', detail:'No formal retention schedule specifying when marketing contacts are deleted or reviewed.'},
+  ]},
+  stage5: {
+    penalty: { low: 18000, high: 120000,
+      context: 'The ICO typically calculates PECR penalties by reference to the number of messages sent without a valid legal basis and the seriousness of the underlying breach. For Bramblewood, the realistic exposure is driven by: ~31,000 contacts with potentially invalid consent; failure to apply suppression consistently; and absence of a DPA with the email processor. In comparable first-time cases where the business co-operated promptly, remediated immediately, and had no prior action, the ICO has issued fines in the \xa315,000\u2013\xa3120,000 range. The statutory maximum under DUAA 2025 is \xa317.5M, but this applies only to the most serious deliberate or repeat breaches. Bramblewood\u2019s position is materially improved by prompt co-operation, no prior action, and immediate remediation.' },
+    representations: [
+      'Immediately pause marketing to the pre-2020 consent segment and run a re-consent campaign before resuming \u2014 this is the most important single action.',
+      'Execute a DPA with the email platform provider within 14 days and provide a copy to the ICO as part of your response \u2014 this closes one breach entirely.',
+      'Commission a full suppression audit across all sends in the past 24 months and document the findings \u2014 provide this to the ICO as evidence of active remediation.',
+      'Co-operate fully and respond promptly. The ICO\u2019s published penalty guidance explicitly gives significant credit to businesses that engage openly and remediate quickly.',
+      'Prepare a written data governance improvement plan covering consent, retention, and processor agreements \u2014 submitting this signals systemic improvement, not just reactive fire-fighting.',
+    ]
+  }
+};
+
+var DEMO_ASA = {
+  stage1: { checks: [
+    {status:'green', label:'Advertiser Record', detail:'No prior upheld ASA rulings found for Bramblewood Skincare. A clean record reduces but does not eliminate investigation risk.'},
+    {status:'red',   label:'Urgency Claim (CAP 8.17)', detail:'The \u201c48 hours only!\u201d countdown timer has been running continuously for over three months, resetting every 48 hours. This is textbook manufactured urgency under CAP 8.17.'},
+    {status:'red',   label:'Reference Price (CAP 3.17)', detail:'\u201cWas \xa339.99\u201d reference pricing is used. No evidence has been held that the product was offered at \xa339.99 for a meaningful period at sufficient volume.'},
+    {status:'amber', label:'Review Claim (CAP 3.47)', detail:'\u201cOver 10,000 five-star reviews\u201d is claimed. 2,400 of these were collected through an incentivised programme. CAP 3.47 requires reviews to reflect genuine, uninfluenced consumer experience.'},
+    {status:'amber', label:'Pre-Campaign Evidence (CAP 4.1)', detail:'No pre-campaign evidence file exists for any of the claims made. CAP 4.1 requires substantiation to be held before the campaign runs, not gathered after a complaint is received.'},
+  ]},
+  stage2: { probability: 72, factors: [
+    {icon:'\u26d4', text:'Evergreen countdown timers are one of the ASA\u2019s highest-volume enforcement areas. This exact practice \u2014 a resetting \u201c48 hours only\u201d timer \u2014 resulted in an upheld ruling against a comparable retailer in March 2025.'},
+    {icon:'\u26d4', text:'Reference price claims without documented pricing history are routinely upheld. The CAP Code requires \u201cwas\u201d prices to have been genuine and charged at sufficient volume for a meaningful period.'},
+    {icon:'\uD83D\uDCCB', text:'No pre-campaign evidence file means the investigation would almost certainly proceed to a formal ruling \u2014 the ASA cannot apply informal resolution where no substantiation exists.'},
+    {icon:'\u26a0\ufe0f', text:'The incentivised review pool is a secondary but documented concern. The ASA has specifically flagged review authenticity as a 2025 enforcement priority alongside the CMA.'},
+    {icon:'\u2705', text:'No prior upheld rulings. The ASA would approach this as a first formal case, which may allow for an informal resolution on the review claim specifically.'},
+  ]},
+  stage3: { letter: {
+    reference: 'ASA-ENQ-' + (Math.floor(Math.random() * 90000) + 10000),
+    subject:   'Formal investigation notification \u2014 potential CAP Code breaches \u2014 Bramblewood Skincare email promotions',
+    opening:   'The ASA has received complaints about your recent email marketing promotions. Having conducted a preliminary assessment, we have decided to open a formal investigation into potential breaches of the CAP Code relating to urgency claims, reference pricing, and review presentation.',
+    context:   'We prefer to resolve issues informally where possible. However, given the nature of the concerns identified \u2014 particularly the urgency claim and reference price \u2014 informal resolution is not appropriate here and we will proceed to a formal ruling.',
+    closing:   'Please provide your written response and all supporting evidence within 7 working days. If the ad is still running, we strongly recommend withdrawing or amending it before our investigation concludes \u2014 voluntary withdrawal is a significant factor in assessing proportionate sanctions.',
+    signatory: 'Investigations Executive, Advertising Standards Authority',
+    questions: [
+      {question:'What pre-campaign evidence did you hold before the email campaign launched to substantiate the \u201cWas \xa339.99\u201d reference price? (CAP 3.17)', yesNote:'Documented pricing history showing the product was sold at \xa339.99 for a meaningful period at sufficient volume is your primary defence on the reference price claim.', noNote:'Absence of pricing records will almost certainly result in an upheld ruling on the reference price element. The ASA cannot accept assurances in lieu of evidence.'},
+      {question:'How does the countdown timer in the email work technically? Does it link to an actual promotion end date, or does it reset?', yesNote:'A timer genuinely linked to a one-time promotion end date, with evidence the promotion ended as stated, is likely to be found compliant.', noNote:'A timer that resets or does not link to a genuine end date is manufactured urgency under CAP 8.17 \u2014 this would be an upheld ruling in its own right.'},
+      {question:'Of the \u201c10,000 five-star reviews\u201d cited, can you confirm how many were collected through an incentivised programme, and what disclosure was provided to customers?', yesNote:'Incentivised reviews are not automatically non-compliant if they are clearly disclosed and the experience is genuine. Documented disclosure is your defence.', noNote:'Undisclosed incentivised reviews that form a material part of an aggregate claim breach CAP 3.47. This is an active ASA enforcement priority for 2025.'},
+      {question:'Has the email creative been amended or withdrawn since you received notification of this investigation?', yesNote:'Voluntary withdrawal or amendment before the investigation concludes is one of the most effective mitigating actions available to you.', noNote:'Continuing to run an ad under active ASA investigation, particularly one with multiple potential breaches, makes it harder to argue good faith and may prompt a request to pause the campaign.'},
+      {question:'Can you provide the full creative brief and all versions of the email that ran, including any A/B variants?', yesNote:'Complete creative records allow the ASA to assess the full context of the claims and how they were presented to consumers.', noNote:'Incomplete creative records make it difficult to establish the precise claims made and may widen the scope of the investigation.'},
+    ]
+  }},
+  stage4: { documents: [
+    {status:'missing',   name:'Reference Price Evidence', detail:'No pricing history records showing the product was sold at \xa339.99 for a genuine period. This is the highest-risk gap for an upheld ruling.'},
+    {status:'missing',   name:'Countdown Timer Technical Documentation', detail:'No evidence the timer linked to a genuine promotion end date rather than resetting. Critical for the urgency claim.'},
+    {status:'partial',   name:'Review Authentication Records', detail:'Some customer review records exist but no formal documentation separating incentivised from organic reviews, or showing disclosure to consumers.'},
+    {status:'missing',   name:'Pre-Campaign Evidence File', detail:'No evidence file existed before the campaign ran. CAP 4.1 requires substantiation to pre-date the campaign \u2014 gathering it post-complaint is insufficient.'},
+    {status:'available', name:'Campaign Creative Materials', detail:'Full email creative, including all versions that ran, can be produced.'},
+    {status:'partial',   name:'Promotion End Date Records', detail:'The promotion was intended to end but the timer reset automatically. Partial records exist showing the original intent but not the actual outcome.'},
+    {status:'missing',   name:'Written Response to Complaint', detail:'No formal response to the complaints has been drafted.'},
+  ]},
+  stage5: {
+    penalty: { low: 0, high: 0,
+      context: 'The ASA does not impose financial penalties directly. The realistic sanctions in Bramblewood\u2019s case are: (1) a formal upheld ruling on the countdown timer and reference price claims, published on asa.org.uk and permanently searchable; (2) mandatory withdrawal of the ads in their current form; (3) if the review claim is also upheld, a requirement to amend or remove the \u201c10,000 five-star reviews\u201d presentation. The commercial impact of a published ASA ruling on an ecommerce brand is significant \u2014 it is frequently cited in competitor activity and consumer trust decisions. Referral to Trading Standards under DMCCA 2024 is possible if Bramblewood fails to comply with an upheld ruling \u2014 Trading Standards can impose fines up to 10% of global turnover.' },
+    representations: [
+      'Withdraw the countdown timer email immediately and replace with a genuine, time-limited promotion with a fixed end date \u2014 this is the highest-priority action.',
+      'Remove or correct the \u201cWas \xa339.99\u201d reference price unless you can document genuine pricing history. Amending this voluntarily before the ruling carries significant weight with the ASA.',
+      'Clearly disclose that some reviews were incentivised, or remove them from the aggregate count. The ASA and CMA are jointly active on this issue in 2025.',
+      'Create and maintain a pre-campaign evidence file for all future campaigns before they launch \u2014 not after complaints are received. This is the single most important systemic change.',
+      'Submit a written response to the ASA that specifically acknowledges each concern, references the CAP Code rules, and commits to the systemic changes above \u2014 this is the primary route to avoiding repeat-offender status.',
+    ]
+  }
+};
+
+var DEMO_CMA = {
+  stage1: { checks: [
+    {status:'red',   label:'Drip Pricing / Reference Pricing (DMCCA Sch.1)', detail:'The \u201cWas \xa339.99, Now \xa319.99\u201d promotion cannot be substantiated with pricing history. Under DMCCA, a false reference price is a per se unfair commercial practice.'},
+    {status:'red',   label:'Manufactured Urgency (DMCCA Sch.1)', detail:'The resetting 48-hour countdown timer creates false urgency \u2014 a Schedule 1 banned practice under DMCCA 2024. No context defence is available for Schedule 1 banned practices.'},
+    {status:'amber', label:'Fake or Misleading Reviews (DMCCA Sch.20)', detail:'2,400 of the 10,000 reviews cited were incentivised. Presenting incentivised reviews without disclosure is a Schedule 20 prohibited practice.'},
+    {status:'green', label:'Prior CMA Engagement', detail:'No prior CMA investigation, undertaking, or enforcement order on record. First-time cases that remediate promptly typically receive undertakings rather than maximum penalties.'},
+    {status:'amber', label:'DMCCA Compliance Sweep', detail:'The CMA\u2019s 2025 sweep targeted exactly this pattern: evergreen countdown timers combined with unsubstantiated reference pricing. Bramblewood\u2019s promotion matches the CMA\u2019s stated enforcement profile precisely.'},
+  ]},
+  stage2: { probability: 68, factors: [
+    {icon:'\u26d4', text:'Two Schedule 1 banned practices identified: false reference pricing and manufactured urgency. Schedule 1 practices have no proportionality defence \u2014 the CMA must act if it identifies them.'},
+    {icon:'\uD83D\uDD0D', text:'The CMA\u2019s proactive monitoring of promotional emails flagged this exact pattern \u2014 resetting countdown timers plus \u201cwas/now\u201d pricing without pricing history. Bramblewood did not need to receive a complaint to be identified.'},
+    {icon:'\u26a0\ufe0f', text:'The incentivised review issue is separately a Schedule 20 prohibited practice. Multiple simultaneous prohibited practices increase the likelihood of formal enforcement rather than informal resolution.'},
+    {icon:'\u2696\ufe0f', text:'The CMA can impose fines directly without court proceedings under DMCCA. With \xa31.4M turnover, 10% of global turnover equates to \xa3140,000. Settlement discounts are available for full and prompt co-operation.'},
+    {icon:'\u2705', text:'No prior CMA investigation reduces immediate penalty exposure. The CMA\u2019s approach to first-time cases has been to require undertakings and a compliance plan before proceeding to a financial penalty.'},
+  ]},
+  stage3: { letter: {
+    reference: 'CMA-CP-' + (Math.floor(Math.random() * 90000) + 10000),
+    subject:   'Preliminary enquiry under Digital Markets, Competition and Consumers Act 2024 \u2014 Bramblewood Skincare',
+    opening:   'The Competition and Markets Authority is conducting a review of your online and email marketing practices under the Digital Markets, Competition and Consumers Act 2024. Our monitoring has identified practices that may constitute unfair commercial practices under the Act, specifically in relation to urgency claims, reference pricing, and consumer reviews.',
+    context:   'This is a preliminary enquiry. We are providing you with the opportunity to respond before we decide whether to issue a Provisional Infringement Notice (PIN). Your co-operation and any evidence of prompt voluntary remediation will be considered in any penalty decision. The CMA can impose direct administrative fines without court proceedings.',
+    closing:   'Please respond fully within 14 days. The CMA may issue a Provisional Infringement Notice if the concerns identified are confirmed following review of your response. A PIN may be accompanied by an interim measures direction requiring you to cease the relevant practices immediately.',
+    signatory: 'Senior Director, Consumer Protection',
+    questions: [
+      {question:'For the \u201cWas \xa339.99, Now \xa319.99\u201d promotion: can you provide documented pricing records showing the product was genuinely sold at \xa339.99 for a meaningful period at sufficient sales volume, prior to this promotion?', yesNote:'Documented pricing history is your primary defence against the reference pricing concern. The CMA requires evidence the previous price was genuine \u2014 typically held for at least 28 consecutive days at meaningful volume.', noNote:'Inability to produce pricing history strongly evidences a false reference price under DMCCA. This is a Schedule 1 per se unfair commercial practice with no proportionality defence.'},
+      {question:'For the countdown timer used in the promotional email: can you provide technical evidence that the timer linked to a genuine, one-time promotion end date and did not reset after expiry?', yesNote:'Technical documentation showing the timer genuinely expired at the stated time and the offer ended confirms compliance with DMCCA\u2019s prohibition on manufactured urgency.', noNote:'A timer that resets or runs indefinitely is a Schedule 1 banned practice \u2014 manufactured urgency. There is no proportionality defence available. The CMA must act.'},
+      {question:'Of the 10,000 reviews cited in your marketing, can you confirm how many were collected through an incentivised programme, and what disclosure was provided to consumers at the point of review?', yesNote:'Incentivised reviews with clear disclosure and genuine experience may be defensible. Documented disclosure policy is your key evidence.', noNote:'Presenting incentivised reviews without clear disclosure as though they are organic is a Schedule 20 prohibited practice under DMCCA. This is an active CMA enforcement priority.'},
+      {question:'Have you voluntarily ceased the countdown timer and reference pricing promotion since receiving this enquiry?', yesNote:'Immediate voluntary cessation of the practices under enquiry is one of the most significant mitigating factors available to you in any penalty decision.', noNote:'Continuing the practices under active CMA enquiry will be treated as an aggravating factor in any penalty assessment and increases the likelihood of a PIN with interim measures.'},
+      {question:'Do you have a named compliance officer or a formal compliance framework for DMCCA and consumer protection law?', yesNote:'A named compliance officer and documented compliance framework demonstrates institutional accountability \u2014 a mitigating factor in CMA penalty decisions.', noNote:'Absence of any compliance function suggests systemic rather than isolated non-compliance, which is an aggravating factor under DMCCA penalty guidance.'},
+    ]
+  }},
+  stage4: { documents: [
+    {status:'missing',   name:'Pricing History Records', detail:'No records showing the product was sold at \xa339.99 for a genuine period prior to the promotion. This is the highest-risk documentation gap.'},
+    {status:'missing',   name:'Countdown Timer Technical Documentation', detail:'No technical evidence the timer linked to a genuine end date rather than resetting. Critical for the Schedule 1 urgency claim.'},
+    {status:'partial',   name:'Review Programme Records', detail:'Records of the incentivised review programme exist but no formal policy showing consumer disclosure at point of review.'},
+    {status:'missing',   name:'DMCCA Compliance Framework', detail:'No named compliance officer, no formal policy, no training records. Absence of any compliance infrastructure is an aggravating factor in CMA penalty decisions.'},
+    {status:'available', name:'Purchase Journey Screenshots', detail:'Screenshots of the full purchase journey showing how pricing and promotions were presented are available.'},
+    {status:'missing',   name:'Consumer Complaint Log (12 months)', detail:'No formal complaint log. The CMA typically requests this as evidence of whether the business was aware of consumer concerns.'},
+    {status:'partial',   name:'Subscription and Returns Policy', detail:'Policy exists and is published but cancellation process requires multiple steps \u2014 not been tested against DMCCA\u2019s \u201cas easy to cancel as to sign up\u201d standard.'},
+  ]},
+  stage5: {
+    penalty: { low: 25000, high: 140000,
+      context: 'The CMA\u2019s penalty calculation under DMCCA considers: seriousness of the practice, duration, harm to consumers, and whether the business co-operated and remediated. For Bramblewood, the realistic range reflects: two Schedule 1 practices (no defence available) plus a Schedule 20 issue, offset by first-time status, \xa31.4M turnover (10% = \xa3140,000 maximum), and the significant discount available for full co-operation and immediate remediation. The CMA\u2019s first DMCCA cases (November 2025) resulted in undertakings rather than maximum penalties for businesses that remediated immediately and co-operated fully. Businesses that did not co-operate received fines at or near the higher of \xa3300,000 or 10% of turnover. Settlement discounts of 20\u201340% are available for full and prompt co-operation.' },
+    representations: [
+      'Cease the countdown timer and reference pricing promotion immediately and confirm this to the CMA in writing \u2014 voluntary cessation before a PIN is issued is the single most important mitigating action available.',
+      'Commission a full pricing history audit and produce whatever records exist. Partial evidence demonstrating good faith is better than no response.',
+      'Implement a clear disclosure policy for incentivised reviews and remove or clearly label any such reviews currently shown without disclosure.',
+      'Appoint a named compliance officer and commit to a DMCCA compliance framework in your response \u2014 the CMA has specifically rewarded this in first-instance cases.',
+      'Co-operate fully and promptly. The difference between an undertaking (no fine) and a financial penalty in CMA first-instance cases is almost entirely determined by the quality and speed of co-operation.',
+    ]
+  }
 };
 
 function selectRegulator(reg) {
@@ -469,33 +609,26 @@ function selectRegulator(reg) {
 function applyRegConfig() {
   var cfg = REG[selectedReg];
   document.documentElement.style.setProperty('--reg', cfg.colour);
-  el('introTag').lastChild.textContent = ' ' + cfg.tagText;
-  el('introTitle').textContent = cfg.introTitle;
-  el('introDesc').textContent  = cfg.introDesc;
   el('stageTitle0').textContent = cfg.stage1title;
   el('stageTitle1').textContent = cfg.stage2title;
   el('stageTitle2').textContent = cfg.stage3title;
   el('stageTitle3').textContent = cfg.stage4title;
   el('stageTitle4').textContent = cfg.stage5title;
-  el('stage1Desc').textContent = cfg.stage1desc;
-  el('stage4Desc').textContent = cfg.stage4desc;
-  el('probLabel').textContent  = cfg.probLabel;
-  el('discText').textContent   = cfg.discText;
+  el('stage1Desc').textContent  = cfg.stage1desc;
+  el('stage4Desc').textContent  = cfg.stage4desc;
+  el('probLabel').textContent   = cfg.probLabel;
+  el('discText').textContent    = cfg.discText;
+  el('introTitle').textContent  = cfg.introTitle;
+  el('introDesc').textContent   = cfg.introDesc;
   ['btnNext0','btnNext1','btnNext2','btnNext3'].forEach(function(id, i) {
     var b = el(id);
-    if (b) { b.className = 'btn-next-stage ' + cfg.cls; }
+    if (!b) return;
+    b.className = 'btn-next-stage ' + cfg.cls;
   });
   if (el('btnNext0')) el('btnNext0').textContent = cfg.next1;
   if (el('btnNext1')) el('btnNext1').textContent = cfg.next2;
   if (el('btnNext2')) el('btnNext2').textContent = cfg.next3;
   if (el('btnNext3')) el('btnNext3').textContent = cfg.next4;
-  document.querySelectorAll('.badge-running').forEach(function(b) {
-    b.style.color = cfg.colour;
-    b.style.borderColor = cfg.colour;
-    b.style.background = cfg.colour + '15';
-  });
-  var lc = el('letterCard');
-  if (lc) lc.className = 'letter-card ' + cfg.cls;
 }
 
 function init() {
@@ -503,7 +636,6 @@ function init() {
   if (!userId) {
     el('gateScreen').classList.add('show');
     el('startWrap').style.display = 'none';
-    return;
   }
 }
 
@@ -512,17 +644,15 @@ function startSimulation() {
   var btn = el('btnStart');
   btn.disabled = true;
   btn.querySelector('span').textContent = 'Running simulation...';
+  isDemoMode = false;
   applyRegConfig();
   fetch(APP_URL + '/api/data?action=simulation-run', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ userId: userId, regulator: selectedReg })
   })
-  .then(function(res) {
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.json();
-  })
-  .then(function(data) { simData = data; showSpine(); })
+  .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(function(d) { simData = d; showSpine(); })
   .catch(function(e) {
     console.warn('API failed, using fallback:', e);
     simData = buildFallback(selectedReg);
@@ -530,14 +660,24 @@ function startSimulation() {
   });
 }
 
-// ── DEMO MODE ─────────────────────────────────────────────────
-function startDemo() {
+function startDemo(reg) {
+  if (reg) selectedReg = reg;
+  isDemoMode = true;
   applyRegConfig();
   simData = buildFallback(selectedReg);
-  // Inject demo notice into spine area
+  // Remove any existing demo notice first
+  var existing = document.querySelector('.demo-notice');
+  if (existing) existing.remove();
+  // Remove any existing try-others panel
+  var existingOthers = document.querySelector('.try-others');
+  if (existingOthers) existingOthers.remove();
+  // Inject demo context notice
   var notice = document.createElement('div');
   notice.className = 'demo-notice';
-  notice.innerHTML = '<span style="font-size:16px">&#x1F441;</span> <span><strong>Demo mode</strong> \u2014 example data for a typical UK ecommerce business. <a href="?" style="color:var(--o);font-weight:600;text-decoration:underline">Sign in</a> to run a live simulation against your actual compliance data.</span>';
+  notice.innerHTML = '<span style="font-size:16px">&#x1F441;</span><div><strong>Demo mode \u2014 Bramblewood Skincare</strong><br>' +
+    'A UK skincare e-commerce business with \xa31.4M turnover. Uses a resetting countdown timer, unsubstantiated \u201cwas\u201d prices, and has 31,000 contacts with pre-PECR consent. ' +
+    'Switch regulator above to see how the same facts look to the ICO, ASA, and CMA simultaneously. ' +
+    '<a href="?" style="color:var(--o);font-weight:600;text-decoration:underline">Sign in</a> to run against your real data.</div>';
   el('spine').before(notice);
   showSpine();
 }
@@ -547,6 +687,12 @@ function showSpine() {
   var spine = el('spine');
   spine.style.display = 'flex';
   spine.style.flexDirection = 'column';
+  // Reset all stages
+  for (var i = 0; i < 5; i++) {
+    el('stage-' + i).className = 'stage locked';
+    el('badge-' + i).className = 'stage-badge badge-locked';
+    el('badge-' + i).textContent = 'Locked';
+  }
   unlockStage(0);
 }
 
@@ -607,7 +753,6 @@ function renderStage2(d) {
 function renderStage3(d) {
   var cfg  = REG[selectedReg];
   var l    = (d.stage3 && d.stage3.letter) ? d.stage3.letter : {};
-  var ref  = l.reference || (selectedReg + '-' + Math.floor(Math.random() * 90000 + 10000));
   var qs   = l.questions || [];
   var today = new Date().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
   var qsHtml = qs.map(function(q, i) {
@@ -616,7 +761,7 @@ function renderStage3(d) {
         '<div class="lq-text"><strong>' + (i+1) + '.</strong> ' + escH(q.question) + '</div>' +
         '<div class="lq-toggles">' +
           '<button class="tgl" id="tgl-yes-' + i + '" onclick="answerQ(' + i + ',\'yes\')">Yes</button>' +
-          '<button class="tgl" id="tgl-no-' + i + '" onclick="answerQ(' + i + ',\'no\')">No</button>' +
+          '<button class="tgl" id="tgl-no-'  + i + '" onclick="answerQ(' + i + ',\'no\')">No</button>' +
         '</div>' +
       '</div>' +
       '<div class="lq-note yes" id="lqn-yes-' + i + '">' + escH(q.yesNote || '') + '</div>' +
@@ -634,7 +779,7 @@ function renderStage3(d) {
         '</div>' +
         '<div class="letter-ref">' +
           '<div class="letter-ref-label">Reference</div>' +
-          '<div class="letter-ref-val">' + escH(ref) + '</div>' +
+          '<div class="letter-ref-val">' + escH(l.reference || (selectedReg + '-XXXXX')) + '</div>' +
           '<div class="letter-ref-label" style="margin-top:6px">Date</div>' +
           '<div class="letter-ref-val">' + today + '</div>' +
         '</div>' +
@@ -649,9 +794,7 @@ function renderStage3(d) {
       '<div style="font-size:13px;font-weight:600;color:var(--t);margin-bottom:10px">We would be grateful if you could address the following questions:</div>' +
       '<div class="letter-questions">' + qsHtml + '</div>' +
       '<div class="letter-para">' + escH(l.closing  || '') + '</div>' +
-      '<div class="letter-sign">' +
-        '<p><strong>' + escH(l.signatory || cfg.dept) + '</strong><br>' + escH(cfg.fullName) + '<br>' + escH(cfg.address) + '</p>' +
-      '</div>' +
+      '<div class="letter-sign"><p><strong>' + escH(l.signatory || cfg.dept) + '</strong><br>' + escH(cfg.fullName) + '<br>' + escH(cfg.address) + '</p></div>' +
     '</div>';
 }
 
@@ -676,211 +819,127 @@ function renderStage5(d) {
   var cfg  = REG[selectedReg];
   var p    = (d.stage5 && d.stage5.penalty) ? d.stage5.penalty : {};
   var reps = (d.stage5 && d.stage5.representations) ? d.stage5.representations : [];
+
   var penaltyHtml;
   if (selectedReg === 'ASA') {
+    // ASA: no financial penalty — reputational sanctions only
     penaltyHtml =
-      '<div class="penalty-reputational">' +
-        '<div class="penalty-reputational-title">\uD83D\uDEAB No direct financial fine</div>' +
-        '<div style="font-size:13px;color:var(--tm);line-height:1.5">The ASA does not impose direct financial penalties. Sanctions are reputational and operational.</div>' +
-        '<div class="penalty-reputational-sanctions">' +
-          '<div class="sanction-item"><div class="sanction-icon">&#128203;</div><div>Upheld ruling published publicly on asa.org.uk every Wednesday &mdash; permanently searchable by anyone</div></div>' +
-          '<div class="sanction-item"><div class="sanction-icon">&#128683;</div><div>Ad must be withdrawn or amended immediately</div></div>' +
-          '<div class="sanction-item"><div class="sanction-icon">&#128065;&#65039;</div><div>Serious repeat offenders can be named publicly and required to have all future ads pre-vetted by the CAP Copy Advice team</div></div>' +
-          '<div class="sanction-item"><div class="sanction-icon">&#9878;&#65039;</div><div>Persistent non-compliance can result in referral to Trading Standards, who can impose fines up to 10% of global turnover under DMCCA 2024</div></div>' +
+      '<div class="penalty-block">' +
+        '<div class="penalty-reputational">' +
+          '<div class="penalty-reputational-title">&#128683; No direct financial fine</div>' +
+          '<div class="penalty-reputational-sub">The ASA does not impose financial penalties. Sanctions are reputational and operational \u2014 but commercially significant.</div>' +
+          '<div class="sanction-list">' +
+            '<div class="sanction-item"><div class="sanction-icon">&#128203;</div><div>Upheld ruling published publicly on asa.org.uk every Wednesday \u2014 permanently searchable by competitors, journalists, and consumers</div></div>' +
+            '<div class="sanction-item"><div class="sanction-icon">&#128683;</div><div>Mandatory withdrawal or amendment of the ad immediately</div></div>' +
+            '<div class="sanction-item"><div class="sanction-icon">&#128065;&#65039;</div><div>Serious repeat offenders can be named publicly and required to have all future ads pre-vetted by CAP</div></div>' +
+            '<div class="sanction-item"><div class="sanction-icon">&#9878;&#65039;</div><div>Persistent non-compliance can result in referral to Trading Standards under DMCCA 2024 \u2014 who can impose fines up to 10% of global turnover</div></div>' +
+          '</div>' +
         '</div>' +
       '</div>';
   } else {
+    // ICO and CMA: show realistic range prominently, statutory ceiling separately
+    var low  = p.low  || 0;
+    var high = p.high || 0;
     penaltyHtml =
-      '<div class="penalty-range">' +
-        '<div class="penalty-label">Estimated penalty range</div>' +
-        '<div class="penalty-amt">&pound;' + fmtK(p.low  || 0) + '</div>' +
-        '<div class="penalty-to">to</div>' +
-        '<div class="penalty-amt">&pound;' + fmtK(p.high || 0) + '</div>' +
-        '<div class="penalty-note">' + escH(cfg.penaltyNote) + '</div>' +
+      '<div class="penalty-block">' +
+        '<div class="penalty-realistic">' +
+          '<div class="penalty-realistic-label">Realistic penalty range \u2014 this scenario</div>' +
+          '<div class="penalty-range-row">' +
+            '<div class="penalty-amt">&pound;' + fmtNum(low) + '</div>' +
+            '<div class="penalty-to">to</div>' +
+            '<div class="penalty-amt">&pound;' + fmtNum(high) + '</div>' +
+          '</div>' +
+          '<div class="penalty-basis">' + escH(cfg.basisNote || '') + '</div>' +
+        '</div>' +
+        (cfg.ceiling ? '<div class="penalty-ceiling"><div class="penalty-ceiling-icon">&#8505;&#65039;</div><div class="penalty-ceiling-text"><strong>Statutory ceiling:</strong> ' + escH(cfg.ceiling) + '</div></div>' : '') +
       '</div>';
   }
+
+  var repsHtml = reps.length ?
+    '<div class="rep-title">Representations strategy \u2014 ' + reps.length + ' recommended actions</div>' +
+    '<div class="rep-items">' + reps.map(function(r, i) {
+      return '<div class="rep-item"><div class="rep-num ' + cfg.cls + '">' + (i+1) + '</div><div class="rep-text">' + escH(r) + '</div></div>';
+    }).join('') + '</div>' : '';
+
   el('stage5-content').innerHTML =
     penaltyHtml +
     '<div style="border-top:1px solid var(--b);padding-top:20px">' +
       '<div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6">' + escH(p.context || '') + '</div>' +
-      '<div class="rep-title">Representations strategy &mdash; ' + reps.length + ' recommended actions</div>' +
-      '<div class="rep-items">' + reps.map(function(r, i) {
-        return '<div class="rep-item"><div class="rep-num ' + cfg.cls + '">' + (i+1) + '</div><div class="rep-text">' + escH(r) + '</div></div>';
-      }).join('') + '</div>' +
+      repsHtml +
     '</div>' +
     '<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--b);text-align:center">' +
       '<p style="font-size:13px;color:var(--tm);margin-bottom:16px">Address your pending fixes in Sendwize to improve your compliance posture before any real investigation.</p>' +
-      '<a href="' + DASHBOARD + '" style="display:inline-flex;align-items:center;gap:8px;background:var(--o);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600">' +
-        'Back to Dashboard &mdash; Fix Issues' +
-      '</a>' +
+      '<a href="' + DASHBOARD + '" style="display:inline-flex;align-items:center;gap:8px;background:var(--o);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600">Back to Dashboard \u2014 Fix Issues</a>' +
     '</div>';
+
+  // Mark stage 5 done
   setTimeout(function() {
     el('stage-4').className = 'stage done';
     el('badge-4').className = 'stage-badge badge-done';
     el('badge-4').textContent = 'Complete';
+    // In demo mode, append the "try other regulators" panel
+    if (isDemoMode) renderTryOthers();
   }, 400);
 }
 
-// ── FALLBACK / DEMO DATA ──────────────────────────────────────
+function renderTryOthers() {
+  // Remove any existing panel
+  var existing = document.querySelector('.try-others');
+  if (existing) existing.remove();
+  var others = ['ICO','ASA','CMA'].filter(function(r) { return r !== selectedReg; });
+  var btns = others.map(function(r) {
+    var names = {ICO:'ICO \u2014 PECR & UK GDPR', ASA:'ASA \u2014 CAP Code', CMA:'CMA \u2014 DMCCA 2024'};
+    var descs = {
+      ICO:'See how the same facts look to the data protection regulator \u2014 consent records, suppression, and the missing DPA.',
+      ASA:'See how the ICO\u2019s evidence gaps translate into an ASA evidence problem under CAP 4.1.',
+      CMA:'See how the pricing and review issues look to the consumer protection regulator with direct fine powers.',
+    };
+    return '<button class="try-other-btn ' + r.toLowerCase() + '" onclick="switchDemoRegulator(\'' + r + '\')">' +
+      '<div class="try-other-name ' + r.toLowerCase() + '">' + escH(names[r]) + '</div>' +
+      '<div class="try-other-desc">' + escH(descs[r]) + '</div>' +
+    '</button>';
+  }).join('');
+  var panel = document.createElement('div');
+  panel.className = 'try-others';
+  panel.innerHTML =
+    '<div class="try-others-title">&#127919; The same business, three simultaneous investigations</div>' +
+    '<div class="try-others-sub">Bramblewood\u2019s single set of practices has triggered ICO, ASA, and CMA exposure simultaneously. See how each regulator would investigate the same facts.</div>' +
+    '<div class="try-others-grid">' + btns + '</div>';
+  el('spine').after(panel);
+}
+
+function switchDemoRegulator(reg) {
+  selectedReg = reg;
+  ['ICO','ASA','CMA'].forEach(function(r) {
+    el('regCard-' + r).className = 'reg-card' + (r === reg ? ' selected-' + r.toLowerCase() : '');
+  });
+  el('spine').style.display = 'none';
+  var existing = document.querySelector('.try-others');
+  if (existing) existing.remove();
+  var notice = document.querySelector('.demo-notice');
+  if (notice) notice.remove();
+  startDemo(reg);
+}
+
 function buildFallback(reg) {
-  if (reg === 'ASA') {
-    return {
-      stage1: { checks: [
-        {status:'green',label:'Advertiser Record',detail:'No prior upheld ASA rulings identified.'},
-        {status:'amber',label:'Content Compliance Score',detail:'Some potential CAP Code issues identified in your Sendwize data.'},
-        {status:'red',  label:'CAP Code Issues',detail:'Potential urgency, pricing or claim issues identified \u2014 these would be the focus of investigation.'},
-        {status:'amber',label:'Pre-Campaign Evidence (CAP 4.1)',detail:'Evidence must exist before the campaign runs, not gathered after. This is one of the most common reasons for upheld rulings.'},
-        {status:'amber',label:'Ad Status',detail:'If the challenged ad is still running, voluntarily withdrawing it before investigation concludes is a significant mitigating factor.'},
-      ]},
-      stage2: { probability: 38, factors: [
-        {icon:'\u26d4',text:'Potential CAP Code violations identified \u2014 these are the issues the ASA would investigate.'},
-        {icon:'\uD83D\uDCCB',text:'The ASA resolves around 80% of complaints without formal investigation \u2014 but formal investigation is more likely where evidence was not held before the campaign ran (CAP 4.1).'},
-        {icon:'\u2705',text:'No prior upheld rulings reduces likelihood of immediate formal investigation vs informal resolution.'},
-      ]},
-      stage3: { letter: {
-        reference: 'ASA-ENQ-' + Math.floor(Math.random() * 90000 + 10000),
-        subject:   'Formal investigation notification \u2014 potential CAP Code breach',
-        opening:   'The ASA has received a complaint about your advertising that raises questions about compliance with the CAP Code. We are writing to notify you that we are investigating this matter formally.',
-        context:   'We would like to give you the opportunity to respond and provide any evidence that supports the claims made in your advertising.',
-        closing:   'Please respond within 7 working days with a written response and any evidence you wish us to consider. Failure to respond may result in an automatic finding that the ad broke the Code.',
-        signatory: 'Investigations Executive, Advertising Standards Authority',
-        questions: [
-          {question:'What pre-campaign evidence did you hold before the campaign ran to substantiate the claims made? (CAP 4.1)',yesNote:'Strong position \u2014 documented pre-campaign evidence is your primary defence.',noNote:'Absence of pre-campaign evidence is the most common reason ASA rulings are upheld.'},
-          {question:'If a time-limited offer was featured, can you provide evidence that the promotion genuinely ended at the stated time?',yesNote:'Good \u2014 you can demonstrate the promotion was genuine.',noNote:'Inability to evidence a genuine end date strongly supports an upheld ruling.'},
-          {question:'If testimonials or reviews were used, can you provide the original testimonials and confirm the results shown are typical?',yesNote:'Well-documented testimonials that reflect typical results support your position.',noNote:'Undocumented or atypical testimonials are a clear breach of CAP 3.17.'},
-          {question:'Has the ad been amended or withdrawn since this complaint was received?',yesNote:'Voluntary amendment or withdrawal before investigation concludes is a significant mitigating factor.',noNote:'An ad still running while under investigation can result in a request to pause it.'},
-          {question:'Can you provide all versions of the creative that ran during the campaign, including any variants?',yesNote:'Complete creative records allow the investigation to assess the full context.',noNote:'Incomplete creative records make it difficult to establish the full picture of what consumers saw.'},
-        ]
-      }},
-      stage4: { documents: [
-        {status:'missing',  name:'Pre-Campaign Evidence File',       detail:'No evidence file on record. CAP 4.1 requires all substantiation to exist before the campaign runs.'},
-        {status:'missing',  name:'Promotional End Date Records',     detail:'No records showing the promotion genuinely ended when stated.'},
-        {status:'partial',  name:'Testimonial Evidence File',        detail:'Some customer feedback records exist but no formal documentation of testimonial authenticity or typicality.'},
-        {status:'missing',  name:'Claim Substantiation Documents',   detail:'No documented evidence held for specific claims made in the advertising.'},
-        {status:'available',name:'Campaign Creative Materials',      detail:'Campaign materials are available for review.'},
-        {status:'missing',  name:'Complaint Response',               detail:'No formal response to the complaint has been drafted.'},
-        {status:'partial',  name:'Ad Status Confirmation',           detail:'Unclear whether the ad has been amended or withdrawn following the complaint.'},
-      ]},
-      stage5: {
-        penalty: { low: 0, high: 0, context: 'The ASA does not impose direct financial penalties. An upheld ruling is published publicly on asa.org.uk and remains permanently searchable. Voluntary withdrawal of the ad before the investigation concludes is a significant mitigating factor.' },
-        representations: [
-          'Withdraw or amend the ad immediately \u2014 voluntary compliance before the investigation concludes is the single most effective mitigating action.',
-          'Compile all pre-campaign evidence that existed before the campaign ran \u2014 even if incomplete, providing what you have demonstrates good faith.',
-          'Prepare a written response that specifically addresses each concern raised, referencing CAP Code rules by number where relevant.',
-          'Commit in writing to holding pre-campaign evidence files for all future campaigns \u2014 this signals systemic improvement.',
-          'If claims were based on genuine research or customer data, provide the original data \u2014 the ASA considers substantiation quality carefully.',
-        ]
-      }
-    };
-  }
+  if (reg === 'ASA') return DEMO_ASA;
+  if (reg === 'CMA') return DEMO_CMA;
+  return DEMO_ICO;
+}
 
-  if (reg === 'CMA') {
-    return {
-      stage1: { checks: [
-        {status:'amber',label:'DMCCA Compliance Sweep',          detail:'The CMA has conducted sweeps of over 400 businesses since April 2025. Drip pricing, fake urgency, and fake reviews are current priority enforcement areas.'},
-        {status:'red',  label:'Pricing Practice Risk',           detail:'Potential pricing or urgency issues identified \u2014 these are the CMA\u2019s primary enforcement focus under DMCCA.'},
-        {status:'green',label:'Review Practices',                detail:'No review manipulation issues currently flagged.'},
-        {status:'amber',label:'Compliance Score',                detail:'Score indicates partially-addressed compliance gaps that CMA investigators would identify.'},
-        {status:'green',label:'Prior CMA Engagement',            detail:'No prior CMA investigation or undertaking identified \u2014 first-time cases with genuine co-operation attract lower penalties.'},
-      ]},
-      stage2: { probability: 45, factors: [
-        {icon:'\uD83D\uDD0D',text:'The CMA conducted proactive sweeps of over 400 businesses in 2025. Businesses do not need to receive a complaint to be investigated.'},
-        {icon:'\u26d4',text:'Pricing or urgency issues identified \u2014 these are the CMA\u2019s primary enforcement focus areas under DMCCA 2024.'},
-        {icon:'\u2696\uFE0F',text:'Under DMCCA, the CMA can fine up to 10% of global turnover without court proceedings. First-time cases with genuine co-operation attract lower penalties.'},
-        {icon:'\u2705',text:'No prior CMA investigation or undertaking reduces the likelihood of immediate maximum penalty.'},
-      ]},
-      stage3: { letter: {
-        reference: 'CMA-CP-' + Math.floor(Math.random() * 90000 + 10000),
-        subject:   'Preliminary enquiry under Digital Markets, Competition and Consumers Act 2024',
-        opening:   'The Competition and Markets Authority is conducting a review of compliance with the Digital Markets, Competition and Consumers Act 2024 (DMCCA) in your sector. We are writing because our monitoring has identified practices that may not comply with the Act\u2019s requirements on price transparency and unfair commercial practices.',
-        context:   'This is a preliminary enquiry. Your co-operation and the quality of your response will be considered in any decision about further action. The CMA can impose direct administrative fines of up to 10% of global annual turnover without court proceedings.',
-        closing:   'Please respond within 14 days. The CMA may issue a Provisional Infringement Notice (PIN) if concerns are confirmed following review of your response.',
-        signatory: 'Senior Director, Consumer Protection',
-        questions: [
-          {question:'For any reference pricing used (e.g. \u201cwas \u00a3X, now \u00a3Y\u201d), can you provide evidence that the higher price was genuine \u2014 held for at least 28 days at sufficient volume?',yesNote:'Documented pricing history is your primary defence against reference pricing concerns.',noNote:'Inability to evidence genuine previous prices is strong evidence of a misleading price indication.'},
-          {question:'For any countdown timers or time-limited offers, can you provide technical documentation showing the timer was linked to an actual price change and ended when stated?',yesNote:'Technical evidence that timers are genuine supports your position significantly.',noNote:'Countdown timers that reset or do not link to genuine price changes are a banned practice under DMCCA Schedule 1.'},
-          {question:'What processes do you have to prevent fake or misleading consumer reviews on your platform or marketing materials?',yesNote:'A documented review moderation policy demonstrates proactive compliance with DMCCA Schedule 20.',noNote:'Absence of review controls is a serious concern \u2014 fake reviews are a banned practice under DMCCA Schedule 20.'},
-          {question:'Are all mandatory charges (delivery, fees, add-ons) disclosed clearly and prominently at the earliest stage of the purchase journey?',yesNote:'Full price transparency at the outset meets DMCCA requirements on price information.',noNote:'Progressive disclosure of mandatory charges (drip pricing) is prohibited under DMCCA.'},
-          {question:'Do you have a compliance officer or compliance framework for DMCCA and consumer protection law?',yesNote:'A named compliance officer demonstrates institutional accountability and is a mitigating factor.',noNote:'Absence of any compliance function suggests systemic rather than isolated non-compliance.'},
-        ]
-      }},
-      stage4: { documents: [
-        {status:'missing',  name:'Pricing History Records',              detail:'No documented pricing history for reference price claims. The CMA requires evidence the higher price was genuine for at least 28 days.'},
-        {status:'missing',  name:'Countdown Timer Documentation',        detail:'No technical documentation showing timers link to genuine price changes and end when stated.'},
-        {status:'partial',  name:'Review Policy and Moderation Records', detail:'Some review processes exist but no formal policy documented against DMCCA Schedule 20 requirements.'},
-        {status:'available',name:'Purchase Journey Screenshots',         detail:'Able to provide screenshots of the purchase journey showing price disclosure.'},
-        {status:'missing',  name:'Consumer Complaint Log',               detail:'No formal complaint log for the past 12 months as required for co-operation with CMA enquiries.'},
-        {status:'missing',  name:'Compliance Officer Evidence',          detail:'No named compliance officer or compliance framework documented.'},
-        {status:'partial',  name:'Subscription Cancellation Evidence',   detail:'Cancellation process exists but not documented to DMCCA standard.'},
-      ]},
-      stage5: {
-        penalty: { low: 30000, high: 300000, context: 'The CMA can impose direct administrative fines without court proceedings under DMCCA 2024. Businesses that co-operate promptly, acknowledge the issue, and demonstrate genuine remediation can negotiate settlement discounts. The CMA can also order consumer redress payments to affected customers in addition to any fine.' },
-        representations: [
-          'Immediately cease any pricing or urgency practices that cannot be evidenced \u2014 do not wait for the investigation to conclude.',
-          'Commission a full pricing audit covering all reference prices used in the past 24 months \u2014 document what evidence exists for each.',
-          'Implement a formal review policy that explicitly prohibits fake or incentivised reviews and ensure it is publicly accessible.',
-          'Co-operate fully and promptly with the CMA \u2014 settlement discounts are available for genuine co-operation under DMCCA.',
-          'Appoint a named compliance officer and develop a DMCCA compliance framework \u2014 reference this in your response to demonstrate institutional accountability.',
-        ]
-      }
-    };
-  }
-
-  // ICO fallback (also used as demo)
-  return {
-    stage1: { checks: [
-      {status:'green', label:'ICO Registration',           detail:'Your organisation appears registered with the ICO for data processing activities.'},
-      {status:'amber', label:'Previous Complaint History', detail:'No upheld complaints found, but limited enforcement history means the ICO has no prior context for your practices.'},
-      {status:'amber', label:'Compliance Score',           detail:'Your current Sendwize score indicates partially-addressed compliance gaps.'},
-      {status:'red',   label:'Pending Fix Items',          detail:'Outstanding action items suggest known compliance issues that have not been resolved.'},
-      {status:'green', label:'Sector Risk Profile',        detail:'Your sector does not appear on the ICO\u2019s current high-risk watch list.'},
-    ]},
-    stage2: { probability: 52, factors: [
-      {icon:'\u26d4',text:'Unresolved compliance fixes increase likelihood that a complaint would be taken seriously by investigators.'},
-      {icon:'\uD83D\uDCCA',text:'Compliance score below 75 indicates systemic gaps rather than isolated incidents \u2014 this pattern concerns the ICO.'},
-      {icon:'\uD83D\uDD12',text:'No formal consent documentation on record means investigators could not verify lawful basis without an investigation.'},
-      {icon:'\u2705',text:'No prior ICO action reduces the probability of immediate formal enforcement vs preliminary enquiry.'},
-    ]},
-    stage3: { letter: {
-      reference: 'ICO-ENF-' + Math.floor(Math.random() * 90000 + 10000),
-      subject:   'Preliminary enquiry regarding direct marketing practices \u2014 PECR / UK GDPR',
-      opening:   'The ICO has received information that raises questions about your organisation\u2019s direct marketing practices under PECR and UK GDPR. We are writing to give you the opportunity to provide information before we consider whether to progress to a formal investigation.',
-      context:   'Our enquiries at this stage are preliminary. Your co-operation and the quality of your response will be taken into account should this matter proceed further.',
-      closing:   'Please respond within 28 days. Failure to respond adequately may result in escalation to a formal investigation under section 115 of the Data Protection Act 2018.',
-      signatory: 'Senior Enforcement Officer, Direct Marketing Team',
-      questions: [
-        {question:'Can you provide a copy of your consent records, including the consent wording shown to individuals at the time their details were collected?',yesNote:'Strong position \u2014 documented consent is your primary defence.',noNote:'Absence of consent records is the single most common basis for ICO enforcement action.'},
-        {question:'Can you confirm what suppression processes are in place to ensure individuals who have opted out are not contacted?',yesNote:'Good \u2014 documented suppression processes demonstrate active compliance management.',noNote:'Inability to evidence suppression controls is a serious concern under PECR Regulation 22.'},
-        {question:'Can you provide a copy of your data retention policy and confirm how long you retain marketing contact data?',yesNote:'A documented retention policy supports your position as a responsible controller.',noNote:'Absence of a retention policy suggests inadequate data governance overall.'},
-        {question:'Can you confirm whether the marketing messages in question contained a clear and free opt-out mechanism in every communication?',yesNote:'Consistent opt-out provision is a core PECR requirement and demonstrates compliance.',noNote:'Missing opt-out mechanisms in any message creates a clear PECR breach.'},
-        {question:'Can you confirm the legal basis under which the recipients\u2019 data was processed for direct marketing purposes?',yesNote:'A clearly documented lawful basis is essential and gives you a strong starting position.',noNote:'Unclear or absent lawful basis documentation would be central to any penalty decision.'},
-      ]
-    }},
-    stage4: { documents: [
-      {status:'partial',  name:'Consent Records',              detail:'Some contact records have consent flags, but documentation of the exact consent wording and collection mechanism is incomplete.'},
-      {status:'missing',  name:'Legitimate Interest Assessment', detail:'No LIA on record. If relying on legitimate interest for any processing, this document is essential.'},
-      {status:'available',name:'Privacy Notice',               detail:'A privacy notice is present covering marketing communications.'},
-      {status:'partial',  name:'Suppression Log',              detail:'Suppression lists exist but no formal audit trail showing when they were applied to each campaign.'},
-      {status:'missing',  name:'Data Retention Schedule',      detail:'No documented retention policy specifying how long marketing data is held and when it is deleted.'},
-      {status:'available',name:'Opt-out Mechanism Evidence',   detail:'Unsubscribe links are present in email records reviewed.'},
-      {status:'partial',  name:'Staff Training Records',       detail:'Some evidence of data protection awareness but no formal PECR-specific training records.'},
-    ]},
-    stage5: {
-      penalty: { low: 8000, high: 140000, context: 'The ICO has broad discretion in setting penalties. For first-time PECR breaches with prompt remedial action and genuine co-operation, penalties are typically at the lower end. Repeated or deliberate breaches, or failure to co-operate, can lead to maximum fines.' },
-      representations: [
-        'Immediately complete all outstanding Sendwize compliance fixes to demonstrate active remediation before any response to the ICO.',
-        'Prepare a written consent audit documenting the lawful basis for every contact segment in your database.',
-        'Draft a formal Legitimate Interest Assessment for any processing not covered by explicit consent.',
-        'Implement a documented suppression audit trail showing when suppression lists were applied to each campaign sent in the past 24 months.',
-        'Respond to the ICO promptly, fully, and co-operatively \u2014 non-co-operation can increase penalties per published ICO guidance.',
-      ]
-    }
-  };
+function fmtNum(n) {
+  if (!n) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'm';
+  if (n >= 1000)    return Math.round(n / 1000) + 'k';
+  return n.toLocaleString('en-GB');
 }
 
 function el(id)  { return document.getElementById(id); }
-function escH(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtK(n) { if (!n) return '0'; if (n >= 1000000) return (n/1000000).toFixed(1) + 'm'; if (n >= 1000) return Math.round(n/1000) + 'k'; return n.toLocaleString('en-GB'); }
+function escH(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 function showErr(msg) { var e = el('errBox'); e.textContent = msg; e.classList.add('show'); }
 
 if (document.readyState === 'loading') {
