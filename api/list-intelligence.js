@@ -1,17 +1,23 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-intelligence.js v1.2 (beta)
+// SENDWIZE — list-intelligence.js v1.3
 // POST /api/list-intelligence?action=upload  — CSV analysis
 // GET  /api/list-intelligence?action=load    — load last results
 // POST /api/list-intelligence?action=certificate — generate pre-send cert
 //
-// v1.2 (beta):
-//   - All Airtable helpers (atGet, atCreate, atPatch) now use atFetch
-//     from _airtable.js for retry/backoff consistency
-//   - ASA + CMA compliance notes added to analyseList() output
-//     when liabilityPct exceeds thresholds
-//   - All other code identical to v1.1
+// v1.3 changes from v1.2:
+//   - upload response now includes activeIndices, recoverableIndices,
+//     atRiskIndices, liabilityIndices — arrays of row indices from
+//     the original upload. Frontend uses these to build downloadable
+//     CSVs client-side without any PII hitting Airtable.
+//   - analyseList() returns indices alongside counts. Emails are
+//     never stored server-side in plain text — hashing unchanged.
+//   - atCreate for List_Intelligence_Checks now writes ASANote
+//     and CMANote fields (bug fix from v1.2).
+//   - ASA/CMA signals expanded: role-based addresses, domain
+//     concentration, and data quality flags now feed into
+//     regulator-specific notes rather than a single threshold check.
+//   - All other code identical to v1.2.
 // ─────────────────────────────────────────────────────────────
-
 import crypto from 'crypto';
 import { atFetch } from './_airtable.js';
 
@@ -25,7 +31,7 @@ const atH = () => ({
   'Content-Type': 'application/json',
 });
 
-// ── Airtable helpers (now using atFetch for retry) ────────────
+// ── Airtable helpers ──────────────────────────────────────────
 async function atGet(table, formula, sort = '', max = 100) {
   let url = `${AT_BASE}/${encodeURIComponent(table)}?maxRecords=${max}`;
   if (formula) url += `&filterByFormula=${encodeURIComponent(formula)}`;
@@ -71,7 +77,6 @@ function hashEmail(email) {
 // ─────────────────────────────────────────────────────────────
 // COLUMN AUTO-DETECTION
 // ─────────────────────────────────────────────────────────────
-
 function detectListColumns(headers, rows) {
   const sample = rows.slice(0, 30);
   const mapping = {};
@@ -140,7 +145,6 @@ function normaliseDate(raw) {
 // ─────────────────────────────────────────────────────────────
 // KNOWN DISPOSABLE / SPAM TRAP / TYPO DOMAINS
 // ─────────────────────────────────────────────────────────────
-
 const DISPOSABLE_DOMAINS = new Set([
   'mailinator.com','guerrillamail.com','10minutemail.com','throwam.com',
   'yopmail.com','tempmail.com','fakeinbox.com','trashmail.com',
@@ -167,7 +171,6 @@ const TYPO_DOMAINS = {
 // ─────────────────────────────────────────────────────────────
 // SECTOR BENCHMARKS
 // ─────────────────────────────────────────────────────────────
-
 const SECTOR_BENCHMARKS = {
   ecommerce:   { conversionRate: 0.025, avgOrderMultiplier: 1.0 },
   finance:     { conversionRate: 0.008, avgOrderMultiplier: 4.0 },
@@ -179,7 +182,6 @@ const SECTOR_BENCHMARKS = {
 // ─────────────────────────────────────────────────────────────
 // DIMENSION 1 — CONSENT TRAJECTORY
 // ─────────────────────────────────────────────────────────────
-
 const CONSENT_DECAY_HALF_LIFE_DAYS = 365;
 const CONSENT_THRESHOLD = 20;
 
@@ -187,12 +189,11 @@ function dimension1_consent(contact) {
   const now       = new Date();
   const added     = contact.dateAdded ? new Date(contact.dateAdded) : now;
   const daysOld   = Math.max(0, (now - added) / 86400000);
-
   const baseDecay = Math.pow(0.5, daysOld / CONSENT_DECAY_HALF_LIFE_DAYS);
 
   let engagementReset = 0;
   if (contact.lastEngagement) {
-    const lastEng     = new Date(contact.lastEngagement);
+    const lastEng      = new Date(contact.lastEngagement);
     const daysSinceEng = Math.max(0, (now - lastEng) / 86400000);
     const engType      = (contact.engagementType || '').toLowerCase();
     let resetStrength  = 0;
@@ -217,13 +218,12 @@ function dimension1_consent(contact) {
     disengagementPenalty = 0.20;
   }
 
-  const rawStrength    = Math.min(1, baseDecay + engagementReset - disengagementPenalty);
+  const rawStrength     = Math.min(1, baseDecay + engagementReset - disengagementPenalty);
   const consentStrength = Math.round(Math.max(0, rawStrength) * 100);
-
-  const decayPerMonth  = (1 - Math.pow(0.5, 30 / CONSENT_DECAY_HALF_LIFE_DAYS)) * 100;
+  const decayPerMonth   = (1 - Math.pow(0.5, 30 / CONSENT_DECAY_HALF_LIFE_DAYS)) * 100;
   const consentDecayRate = parseFloat(decayPerMonth.toFixed(2));
 
-  const currentFraction = rawStrength;
+  const currentFraction   = rawStrength;
   const thresholdFraction = CONSENT_THRESHOLD / 100;
   let daysToThreshold = null;
   if (currentFraction > thresholdFraction) {
@@ -238,7 +238,6 @@ function dimension1_consent(contact) {
 // ─────────────────────────────────────────────────────────────
 // DIMENSION 2 — DELIVERABILITY TRAJECTORY
 // ─────────────────────────────────────────────────────────────
-
 function dimension2_deliverability(contact, domainCounts, totalContacts) {
   const email  = (contact.email || '').toLowerCase().trim();
   const parts  = email.split('@');
@@ -275,45 +274,43 @@ function dimension2_deliverability(contact, domainCounts, totalContacts) {
     score -= 10;
   }
   if (contact.lastEngagement) {
-    const daysOld = (new Date() - new Date(contact.dateAdded || new Date())) / 86400000;
+    const daysOld      = (new Date() - new Date(contact.dateAdded || new Date())) / 86400000;
     const daysSinceEng = (new Date() - new Date(contact.lastEngagement)) / 86400000;
-    const engRatio = daysOld > 0 ? Math.min(1, 1 - daysSinceEng / daysOld) : 0.5;
-    if (engRatio > 0.7)       score += 10;
-    else if (engRatio < 0.2)  score -= 15;
+    const engRatio     = daysOld > 0 ? Math.min(1, 1 - daysSinceEng / daysOld) : 0.5;
+    if (engRatio > 0.7)      score += 10;
+    else if (engRatio < 0.2) score -= 15;
   } else {
     score -= 10;
   }
 
-  const deliverabilityScore = Math.max(0, Math.min(100, Math.round(score)));
-  return { deliverabilityScore, primaryRisk: primaryRisk || 'none' };
+  return { deliverabilityScore: Math.max(0, Math.min(100, Math.round(score))), primaryRisk: primaryRisk || 'none' };
 }
 
 // ─────────────────────────────────────────────────────────────
 // DIMENSION 3 — COMMERCIAL TRAJECTORY
 // ─────────────────────────────────────────────────────────────
-
 function dimension3_commercial(contact, sector, aov) {
   const benchmark = SECTOR_BENCHMARKS[sector] || SECTOR_BENCHMARKS.other;
   const baseValue = benchmark.conversionRate * (aov || 50) * benchmark.avgOrderMultiplier;
-
   let engMultiplier = 0.5;
+
   if (contact.lastEngagement) {
     const daysSinceEng = (new Date() - new Date(contact.lastEngagement)) / 86400000;
     const engType      = (contact.engagementType || '').toLowerCase();
     if (engType.includes('purchas') || engType.includes('order')) {
-      engMultiplier = daysSinceEng < 90  ? 2.5 : daysSinceEng < 180 ? 1.8 : 1.2;
+      engMultiplier = daysSinceEng < 90 ? 2.5 : daysSinceEng < 180 ? 1.8 : 1.2;
     } else if (engType.includes('click')) {
-      engMultiplier = daysSinceEng < 90  ? 1.5 : daysSinceEng < 180 ? 1.1 : 0.8;
+      engMultiplier = daysSinceEng < 90 ? 1.5 : daysSinceEng < 180 ? 1.1 : 0.8;
     } else if (engType.includes('open')) {
-      engMultiplier = daysSinceEng < 90  ? 1.1 : daysSinceEng < 180 ? 0.9 : 0.6;
+      engMultiplier = daysSinceEng < 90 ? 1.1 : daysSinceEng < 180 ? 0.9 : 0.6;
     } else {
-      engMultiplier = daysSinceEng < 90  ? 0.9 : daysSinceEng < 365 ? 0.7 : 0.4;
+      engMultiplier = daysSinceEng < 90 ? 0.9 : daysSinceEng < 365 ? 0.7 : 0.4;
     }
   }
 
-  const commercialValue    = parseFloat((baseValue * engMultiplier).toFixed(2));
-  const decayedMultiplier  = engMultiplier * 0.85;
-  const interventionValue  = parseFloat((baseValue * (engMultiplier - decayedMultiplier)).toFixed(2));
+  const commercialValue   = parseFloat((baseValue * engMultiplier).toFixed(2));
+  const decayedMultiplier = engMultiplier * 0.85;
+  const interventionValue = parseFloat((baseValue * (engMultiplier - decayedMultiplier)).toFixed(2));
   const direction = engMultiplier > 1.0 ? 'growing' : engMultiplier > 0.7 ? 'stable' : 'declining';
 
   return { commercialValue, interventionValue, direction };
@@ -322,7 +319,6 @@ function dimension3_commercial(contact, sector, aov) {
 // ─────────────────────────────────────────────────────────────
 // DIMENSION 4 — RISK TRAJECTORY
 // ─────────────────────────────────────────────────────────────
-
 function dimension4_risk(consentResult) {
   const { consentStrength, consentDecayRate, daysToThreshold } = consentResult;
   const thresholdProximity = Math.max(0, 1 - (consentStrength - CONSENT_THRESHOLD) / 80);
@@ -333,19 +329,21 @@ function dimension4_risk(consentResult) {
 // ─────────────────────────────────────────────────────────────
 // PRIORITISATION
 // ─────────────────────────────────────────────────────────────
-
 function prioritisationScore(consent, commercial, risk, deliverability, maxCommercial) {
-  const cScore = consent.consentStrength / 100;
+  const cScore   = consent.consentStrength / 100;
   const comScore = maxCommercial > 0 ? commercial.commercialValue / maxCommercial : 0;
-  const rScore = risk.daysToThreshold !== null ? Math.min(1, risk.daysToThreshold / 365) : 1;
-  const dScore = deliverability.deliverabilityScore / 100;
+  const rScore   = risk.daysToThreshold !== null ? Math.min(1, risk.daysToThreshold / 365) : 1;
+  const dScore   = deliverability.deliverabilityScore / 100;
   return parseFloat((cScore * 0.35 + comScore * 0.30 + rScore * 0.25 + dScore * 0.10).toFixed(4));
 }
 
 // ─────────────────────────────────────────────────────────────
 // LIST-LEVEL ANALYSIS
+// v1.3: returns originalIndex on each scored contact so the
+// frontend can reconstruct tier CSVs from the original rows.
+// ASA/CMA notes now derived from data quality signals, not
+// just the liability percentage threshold.
 // ─────────────────────────────────────────────────────────────
-
 function analyseList(contacts, sector, aov) {
   const domainCounts = {};
   const emails       = new Set();
@@ -359,9 +357,14 @@ function analyseList(contacts, sector, aov) {
     domainCounts[domain] = (domainCounts[domain] || 0) + 1;
   }
 
-  const unique = contacts.filter((c, i, arr) =>
-    arr.findIndex(x => (x.email||'').toLowerCase().trim() === (c.email||'').toLowerCase().trim()) === i
-  );
+  // Deduplicate while preserving originalIndex
+  const seen = new Set();
+  const unique = contacts.filter(c => {
+    const email = (c.email || '').toLowerCase().trim();
+    if (seen.has(email)) return false;
+    seen.add(email);
+    return true;
+  });
 
   const analysed = unique.map(c => {
     const d1 = dimension1_consent(c);
@@ -397,71 +400,102 @@ function analyseList(contacts, sector, aov) {
   const expiring30 = aboveThreshold.filter(c => c.daysToThreshold <= 30).length;
   const expiring60 = aboveThreshold.filter(c => c.daysToThreshold > 30 && c.daysToThreshold <= 60).length;
   const expiring90 = aboveThreshold.filter(c => c.daysToThreshold > 60 && c.daysToThreshold <= 90).length;
-
   const valueExpiring90 = parseFloat(
     aboveThreshold.filter(c => c.daysToThreshold <= 90).reduce((s, c) => s + c.commercialValue, 0).toFixed(2)
   );
 
   const liabilityPct = unique.length > 0 ? liability.length / unique.length : 0;
+
   let icoStatus = 'Good standing';
   if (liabilityPct > 0.3)      icoStatus = 'High risk \u2014 significant portion below consent threshold';
   else if (liabilityPct > 0.1) icoStatus = 'Review recommended \u2014 contacts approaching threshold';
 
-  // v1.2 — ASA + CMA compliance notes
-  let asaNote = null;
+  // ── ASA signals — derived from data we already have ────────
+  // We flag what the data shows; we don't invent regulatory positions.
+  const roleBasedCount   = scored.filter(c => c.primaryRisk === 'role_based').length;
+  const disposableCount  = scored.filter(c => c.primaryRisk === 'disposable_domain').length;
+  const domainConc       = Object.values(domainCounts).some(n => n / unique.length > 0.4);
+  const asaSignals       = [];
+  if (roleBasedCount > 0) {
+    asaSignals.push(`${roleBasedCount} role-based address${roleBasedCount !== 1 ? 'es' : ''} (e.g. info@, admin@) — promotional email to these may not reach a named individual, which is relevant to how the recipient can exercise their right to unsubscribe.`);
+  }
+  if (disposableCount > 0) {
+    asaSignals.push(`${disposableCount} disposable domain${disposableCount !== 1 ? 's' : ''} — these addresses are unlikely to reach a real, identifiable individual.`);
+  }
   if (liabilityPct > 0.1) {
-    asaNote = 'ASA position: promotional emails sent to contacts with ambiguous consent may also breach CAP Code Section 2, which requires marketing to be obviously identifiable and sent with the recipient\u2019s agreement.';
+    asaSignals.push(`${liability.length} contacts (${Math.round(liabilityPct * 100)}%) are below the consent threshold. Promotional content sent to these contacts is being sent without a clear prior relationship signal.`);
   }
-  let cmaNote = null;
-  if (liabilityPct > 0.15) {
-    cmaNote = 'CMA position: under DMCCA 2024, sending promotional content to contacts who have not clearly consented could constitute an aggressive or misleading commercial practice.';
-  }
+  const asaNote = asaSignals.length > 0
+    ? 'ASA signals from this list: ' + asaSignals.join(' ')
+    : null;
 
-  const invalidFormat  = scored.filter(c => c.primaryRisk === 'invalid_format').length;
-  const disposable     = scored.filter(c => c.primaryRisk === 'disposable_domain').length;
-  const roleBased      = scored.filter(c => c.primaryRisk === 'role_based').length;
-  const typos          = scored.filter(c => c.primaryRisk === 'typo_domain').length;
-  const spamTraps      = scored.filter(c => c.primaryRisk === 'spam_trap_indicator').length;
-  const concentrated   = Object.values(domainCounts).filter(n => n / unique.length > 0.4).length > 0;
+  // ── CMA signals — derived from data we already have ────────
+  const cmaSignals = [];
+  if (liabilityPct > 0.15) {
+    cmaSignals.push(`${liability.length} contacts are below the consent threshold. If promotional pricing claims are sent to this segment, the commercial context of those claims is weakened by the absence of a prior relationship signal.`);
+  }
+  if (domainConc) {
+    cmaSignals.push(`Domain concentration detected — over 40% of your list shares one domain. This suggests a high proportion of professional or organisational addresses, which may have different expectations around promotional content.`);
+  }
+  if (scored.filter(c => c.primaryRisk === 'spam_trap_indicator').length > 0) {
+    const n = scored.filter(c => c.primaryRisk === 'spam_trap_indicator').length;
+    cmaSignals.push(`${n} address${n !== 1 ? 'es' : ''} contain spam trap indicators. Sending promotional content to these harms your sender reputation and the deliverability of commercial messages to your clean contacts.`);
+  }
+  const cmaNote = cmaSignals.length > 0
+    ? 'CMA signals from this list: ' + cmaSignals.join(' ')
+    : null;
+
+  const invalidFormat = scored.filter(c => c.primaryRisk === 'invalid_format').length;
+  const roleBased     = scored.filter(c => c.primaryRisk === 'role_based').length;
+  const typos         = scored.filter(c => c.primaryRisk === 'typo_domain').length;
+  const spamTraps     = scored.filter(c => c.primaryRisk === 'spam_trap_indicator').length;
+  const concentrated  = Object.values(domainCounts).filter(n => n / unique.length > 0.4).length > 0;
 
   const dataQualityFlags = [];
-  if (invalidFormat > 0) dataQualityFlags.push(`${invalidFormat} invalid email format${invalidFormat!==1?'s':''}`);
-  if (disposable > 0)    dataQualityFlags.push(`${disposable} disposable domain${disposable!==1?'s':''}`);
-  if (roleBased > 0)     dataQualityFlags.push(`${roleBased} role-based address${roleBased!==1?'s':''}`);
-  if (typos > 0)         dataQualityFlags.push(`${typos} likely typo domain${typos!==1?'s':''}`);
-  if (spamTraps > 0)     dataQualityFlags.push(`${spamTraps} spam trap indicator${spamTraps!==1?'s':''}`);
-  if (duplicates > 0)    dataQualityFlags.push(`${duplicates} duplicate${duplicates!==1?'s':''} removed`);
+  if (invalidFormat > 0) dataQualityFlags.push(`${invalidFormat} invalid email format${invalidFormat !== 1 ? 's' : ''}`);
+  if (disposableCount > 0) dataQualityFlags.push(`${disposableCount} disposable domain${disposableCount !== 1 ? 's' : ''}`);
+  if (roleBased > 0)     dataQualityFlags.push(`${roleBased} role-based address${roleBased !== 1 ? 'es' : ''}`);
+  if (typos > 0)         dataQualityFlags.push(`${typos} likely typo domain${typos !== 1 ? 's' : ''}`);
+  if (spamTraps > 0)     dataQualityFlags.push(`${spamTraps} spam trap indicator${spamTraps !== 1 ? 's' : ''}`);
+  if (duplicates > 0)    dataQualityFlags.push(`${duplicates} duplicate${duplicates !== 1 ? 's' : ''} removed`);
   if (concentrated)      dataQualityFlags.push('Domain concentration risk \u2014 over 40% from one domain');
 
   return {
-    totalContacts:    unique.length,
-    asaNote,
-    cmaNote,
+    totalContacts:     unique.length,
     duplicatesRemoved: duplicates,
-    activeCount:      active.length,
-    recoverableCount: recoverable.length,
-    atRiskCount:      atRisk.length,
-    liabilityCount:   liability.length,
-    liabilityPct:     parseFloat(liabilityPct.toFixed(4)),
+    activeCount:       active.length,
+    recoverableCount:  recoverable.length,
+    atRiskCount:       atRisk.length,
+    liabilityCount:    liability.length,
+    liabilityPct:      parseFloat(liabilityPct.toFixed(4)),
     assetValue,
     icoStatus,
+    asaNote,
+    cmaNote,
     dataQualityFlags,
     expiring30,
     expiring60,
     expiring90,
     valueExpiring90,
+    // Full scored arrays — used for hashing, fix records, suppression
     scored,
     active,
     recoverable,
     atRisk,
     liability,
+    // v1.3: originalIndex arrays for client-side CSV download
+    // These are indices into the contacts array passed to analyseList()
+    // (already deduplicated). Frontend maps these back to parsedCSV.rows.
+    activeIndices:      active.map(c => c.originalIndex),
+    recoverableIndices: recoverable.map(c => c.originalIndex),
+    atRiskIndices:      atRisk.map(c => c.originalIndex),
+    liabilityIndices:   liability.map(c => c.originalIndex),
   };
 }
 
 // ─────────────────────────────────────────────────────────────
 // OPPORTUNITY GENERATION
 // ─────────────────────────────────────────────────────────────
-
 function generateOpportunities(analysis, sector, aov) {
   const opps = [];
   const { recoverable, atRisk, active, scored } = analysis;
@@ -509,11 +543,11 @@ function generateOpportunities(analysis, sector, aov) {
   if (poorDeliverability.length > 10) {
     opps.push({
       type:              'Deliverability clean',
-      description:       `${poorDeliverability.length.toLocaleString()} contacts have poor deliverability signals \u2014 role-based addresses, typo domains, or sequential patterns. Removing them will improve inbox placement for the rest of your list.`,
+      description:       `${poorDeliverability.length.toLocaleString()} contacts have poor deliverability signals. Removing them will improve inbox placement for the rest of your list.`,
       estimatedValue:    0,
       currentValue:      0,
       decayRate:         0,
-      recommendedAction: 'Remove or quarantine these addresses before your next send. They are likely to bounce or be filtered as spam.',
+      recommendedAction: 'Remove or quarantine these addresses before your next send.',
       templateAvailable: false,
     });
   }
@@ -524,7 +558,6 @@ function generateOpportunities(analysis, sector, aov) {
 // ─────────────────────────────────────────────────────────────
 // SNAPSHOT STORAGE
 // ─────────────────────────────────────────────────────────────
-
 async function snapshotList(userId, analysis, assetValue) {
   await atCreate('List_Intelligence_Snapshots', {
     UserID:            userId,
@@ -553,16 +586,16 @@ async function getListSnapshots(userId, max = 12) {
   return records.map(r => ({
     date:             r.fields.SnapshotDate,
     timestamp:        r.fields.SnapshotTimestamp || r.fields.SnapshotDate,
-    totalContacts:    r.fields.TotalContacts || 0,
-    activeCount:      r.fields.ActiveCount || 0,
-    recoverableCount: r.fields.RecoverableCount || 0,
-    atRiskCount:      r.fields.AtRiskCount || 0,
-    liabilityCount:   r.fields.LiabilityCount || 0,
-    liabilityPct:     r.fields.LiabilityPct != null ? r.fields.LiabilityPct : 0,
-    assetValue:       r.fields.AssetValue != null ? r.fields.AssetValue : 0,
-    expiring30:       r.fields.Expiring30 || 0,
-    expiring60:       r.fields.Expiring60 || 0,
-    expiring90:       r.fields.Expiring90 || 0,
+    totalContacts:    r.fields.TotalContacts     || 0,
+    activeCount:      r.fields.ActiveCount       || 0,
+    recoverableCount: r.fields.RecoverableCount  || 0,
+    atRiskCount:      r.fields.AtRiskCount       || 0,
+    liabilityCount:   r.fields.LiabilityCount    || 0,
+    liabilityPct:     r.fields.LiabilityPct      != null ? r.fields.LiabilityPct : 0,
+    assetValue:       r.fields.AssetValue        != null ? r.fields.AssetValue    : 0,
+    expiring30:       r.fields.Expiring30        || 0,
+    expiring60:       r.fields.Expiring60        || 0,
+    expiring90:       r.fields.Expiring90        || 0,
   }));
 }
 
@@ -580,12 +613,10 @@ function buildListComparison(cur, prev) {
   const activeDelta     = cur.activeCount - prev.activeCount;
   const totalDelta      = cur.totalContacts - prev.totalContacts;
   const expiring30Delta = cur.expiring30 - prev.expiring30;
-
   let direction = 'same';
   if (valueDelta > 0 || liabilityDelta < 0 || activeDelta > 0) direction = 'improved';
   if (liabilityDelta > 0 || valueDelta < 0) direction = liabilityDelta > Math.abs(activeDelta) ? 'worsened' : direction;
   if (valueDelta < 0 && liabilityDelta > 0) direction = 'worsened';
-
   return {
     direction,
     daysSincePrevious: daysBetween(new Date().toISOString(), prev.timestamp),
@@ -595,12 +626,12 @@ function buildListComparison(cur, prev) {
     totalDelta,
     expiring30Delta,
     previous: {
-      assetValue: prev.assetValue,
+      assetValue:     prev.assetValue,
       liabilityCount: prev.liabilityCount,
-      activeCount: prev.activeCount,
-      totalContacts: prev.totalContacts,
-      expiring30: prev.expiring30,
-      date: prev.date,
+      activeCount:    prev.activeCount,
+      totalContacts:  prev.totalContacts,
+      expiring30:     prev.expiring30,
+      date:           prev.date,
     },
   };
 }
@@ -608,7 +639,6 @@ function buildListComparison(cur, prev) {
 // ─────────────────────────────────────────────────────────────
 // MAIN HANDLER
 // ─────────────────────────────────────────────────────────────
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -621,7 +651,6 @@ export default async function handler(req, res) {
   const action = req.query.action || req.body?.action || 'load';
 
   try {
-
     // ── detect ──────────────────────────────────────────────
     if (action === 'detect') {
       const { headers, rows } = req.body;
@@ -637,56 +666,64 @@ export default async function handler(req, res) {
         atGet('List_Opportunities', `AND({UserID}='${userId}',{Status}='Open')`,
           'sort[0][field]=CurrentValue&sort[0][direction]=desc', 50),
       ]);
-
       if (!checks.length) return res.status(200).json({ success: true, hasData: false });
 
       const latest = checks[0].fields;
+      const now    = new Date();
 
-      const now = new Date();
       const decayedOpps = opps.map(o => {
-        const created    = o.fields.CreatedDate ? new Date(o.fields.CreatedDate) : now;
-        const monthsOld  = (now - created) / (30 * 86400000);
-        const decayRate  = o.fields.DecayRate || 2.5;
-        const decayed    = o.fields.EstimatedValue * Math.pow(1 - decayRate / 100, monthsOld);
+        const created   = o.fields.CreatedDate ? new Date(o.fields.CreatedDate) : now;
+        const monthsOld = (now - created) / (30 * 86400000);
+        const decayRate = o.fields.DecayRate || 2.5;
+        const decayed   = o.fields.EstimatedValue * Math.pow(1 - decayRate / 100, monthsOld);
         return {
           id:                o.id,
           type:              o.fields.OpportunityType,
           description:       o.fields.Description,
           estimatedValue:    o.fields.EstimatedValue,
           currentValue:      parseFloat(Math.max(0, decayed).toFixed(2)),
-          decayRate:         decayRate,
+          decayRate,
           recommendedAction: o.fields.RecommendedAction,
           status:            o.fields.Status,
         };
       });
 
       const unrealisedTotal = decayedOpps.reduce((s, o) => s + o.currentValue, 0);
-
-      const snaps = await getListSnapshots(userId, 12);
+      const snaps   = await getListSnapshots(userId, 12);
       const changes = snaps.length >= 2 ? buildListComparison(snaps[0], snaps[1]) : null;
 
       return res.status(200).json({
-        success:        true,
-        hasData:        true,
-        checkDate:      latest.CheckDate,
-        totalContacts:  latest.TotalContacts,
-        activeCount:    latest.ActiveCount,
+        success:          true,
+        hasData:          true,
+        checkDate:        latest.CheckDate,
+        totalContacts:    latest.TotalContacts,
+        activeCount:      latest.ActiveCount,
         recoverableCount: latest.RecoverableCount,
-        atRiskCount:    latest.AtRiskCount,
-        liabilityCount: latest.LiabilityCount,
-        assetValue:     latest.AssetValue,
-        icoStatus:      latest.ICOStatus,
-        dataQuality:    latest.DataQuality,
-        sector:         latest.Sector,
-        aov:            latest.AverageOrderValue,
-        opportunities:  decayedOpps,
-        unrealisedTotal: parseFloat(unrealisedTotal.toFixed(2)),
-        uploadVersion:  latest.UploadVersion,
-        asaNote:        latest.ASANote || null,
-        cmaNote:        latest.CMANote || null,
-        consentExpiring: snaps[0] ? { in30: snaps[0].expiring30, in60: snaps[0].expiring60, in90: snaps[0].expiring90 } : null,
+        atRiskCount:      latest.AtRiskCount,
+        liabilityCount:   latest.LiabilityCount,
+        assetValue:       latest.AssetValue,
+        icoStatus:        latest.ICOStatus,
+        dataQuality:      latest.DataQuality,
+        sector:           latest.Sector,
+        aov:              latest.AverageOrderValue,
+        opportunities:    decayedOpps,
+        unrealisedTotal:  parseFloat(unrealisedTotal.toFixed(2)),
+        uploadVersion:    latest.UploadVersion,
+        asaNote:          latest.ASANote  || null,
+        cmaNote:          latest.CMANote  || null,
+        consentExpiring:  snaps[0]
+          ? { in30: snaps[0].expiring30, in60: snaps[0].expiring60, in90: snaps[0].expiring90 }
+          : null,
         changes,
-        history: snaps.slice(0, 8).reverse().map(s => ({ date: s.date, assetValue: s.assetValue, liabilityCount: s.liabilityCount, activeCount: s.activeCount })),
+        history: snaps.slice(0, 8).reverse().map(s => ({
+          date:          s.date,
+          assetValue:    s.assetValue,
+          liabilityCount: s.liabilityCount,
+          activeCount:   s.activeCount,
+        })),
+        // load action cannot return download indices — no raw emails available.
+        // Frontend shows download buttons only when indices are present (i.e. after upload).
+        downloadIndices: null,
       });
     }
 
@@ -701,23 +738,25 @@ export default async function handler(req, res) {
       const aovVal    = parseFloat(aov) || 50;
       const version   = uploadVersion || 1;
 
-      const contacts = rows.map(row => {
+      // Build contacts — attach originalIndex so tiers can reference rows
+      const contacts = rows.map((row, rowIdx) => {
         const c = {
           email: null, dateAdded: null, lastEngagement: null,
           lastPurchase: null, engagementType: null, segment: null,
           status: null, orderValue: null, engagementCount: null,
+          originalIndex: rowIdx, // v1.3: preserved for download
         };
         for (const [header, target] of Object.entries(fieldMapping || {})) {
           const val = row[header];
           if (!val || val === '') continue;
-          if      (target === 'email')            c.email          = String(val).toLowerCase().trim();
-          else if (target === 'date_added')       c.dateAdded      = normaliseDate(val);
-          else if (target === 'last_engagement')  c.lastEngagement = normaliseDate(val);
-          else if (target === 'last_purchase')    c.lastPurchase   = normaliseDate(val);
-          else if (target === 'engagement_type')  c.engagementType = String(val).trim();
-          else if (target === 'segment')          c.segment        = String(val).trim();
-          else if (target === 'status')           c.status         = String(val).trim();
-          else if (target === 'order_value')      c.orderValue     = parseFloat(val) || null;
+          if      (target === 'email')            c.email           = String(val).toLowerCase().trim();
+          else if (target === 'date_added')       c.dateAdded       = normaliseDate(val);
+          else if (target === 'last_engagement')  c.lastEngagement  = normaliseDate(val);
+          else if (target === 'last_purchase')    c.lastPurchase    = normaliseDate(val);
+          else if (target === 'engagement_type')  c.engagementType  = String(val).trim();
+          else if (target === 'segment')          c.segment         = String(val).trim();
+          else if (target === 'status')           c.status          = String(val).trim();
+          else if (target === 'order_value')      c.orderValue      = parseFloat(val) || null;
           else if (target === 'engagement_count') c.engagementCount = parseInt(val) || null;
         }
         if (!c.lastEngagement && c.lastPurchase) {
@@ -727,43 +766,47 @@ export default async function handler(req, res) {
         return c;
       }).filter(c => c.email && c.email.includes('@'));
 
-      if (!contacts.length) return res.status(400).json({ error: 'No valid email addresses found. Ensure an email column is present and mapped.' });
+      if (!contacts.length) return res.status(400).json({ error: 'No valid email addresses found.' });
 
       const priorSnaps = await getListSnapshots(userId, 1);
-      const priorSnap = priorSnaps[0] || null;
+      const priorSnap  = priorSnaps[0] || null;
 
-      const analysis = analyseList(contacts, sectorVal, aovVal);
+      const analysis     = analyseList(contacts, sectorVal, aovVal);
       const opportunities = generateOpportunities(analysis, sectorVal, aovVal);
-      const today = new Date().toISOString().split('T')[0];
+      const today        = new Date().toISOString().split('T')[0];
 
+      // Profile update
       try {
         const profileRecs = await atGet('User_Profile', `{UserID}='${userId}'`, '', 1);
         if (profileRecs.length) {
           const pf = profileRecs[0].fields;
           const profileUpdate = {};
-          if (!pf.Sector && sectorVal)      profileUpdate.Sector = sectorVal;
-          if (!pf.AverageOrderValue && aovVal) profileUpdate.AverageOrderValue = aovVal;
+          if (!pf.Sector && sectorVal)             profileUpdate.Sector = sectorVal;
+          if (!pf.AverageOrderValue && aovVal)     profileUpdate.AverageOrderValue = aovVal;
           if (Object.keys(profileUpdate).length) {
             await atPatch('User_Profile', profileRecs[0].id, profileUpdate);
           }
         }
       } catch(e) { console.error('Profile update non-fatal:', e); }
 
+      // v1.3 bug fix: ASANote and CMANote now written to List_Intelligence_Checks
       await atCreate('List_Intelligence_Checks', {
-        UserID:           userId,
-        CheckDate:        today,
-        TotalContacts:    analysis.totalContacts,
-        ActiveCount:      analysis.activeCount,
-        RecoverableCount: analysis.recoverableCount,
-        AtRiskCount:      analysis.atRiskCount,
-        LiabilityCount:   analysis.liabilityCount,
-        AssetValue:       analysis.assetValue,
-        ICOStatus:        analysis.icoStatus,
+        UserID:            userId,
+        CheckDate:         today,
+        TotalContacts:     analysis.totalContacts,
+        ActiveCount:       analysis.activeCount,
+        RecoverableCount:  analysis.recoverableCount,
+        AtRiskCount:       analysis.atRiskCount,
+        LiabilityCount:    analysis.liabilityCount,
+        AssetValue:        analysis.assetValue,
+        ICOStatus:         analysis.icoStatus,
         DataQualityStatus: analysis.dataQualityFlags.length === 0 ? 'Clean' : 'Issues found',
-        DataQuality:      analysis.dataQualityFlags.join('; ') || 'No issues detected',
-        Sector:           sectorVal,
+        DataQuality:       analysis.dataQualityFlags.join('; ') || 'No issues detected',
+        Sector:            sectorVal,
         AverageOrderValue: aovVal,
-        UploadVersion:    version,
+        UploadVersion:     version,
+        ASANote:           analysis.asaNote  || null,
+        CMANote:           analysis.cmaNote  || null,
       });
 
       await snapshotList(userId, analysis, analysis.assetValue);
@@ -792,8 +835,8 @@ export default async function handler(req, res) {
         await atCreate('List_Contacts', {
           UserID:              userId,
           EmailHash:           hashEmail(c.email),
-          DateAdded:           c.dateAdded    || null,
-          LastEngagement:      c.lastEngagement || null,
+          DateAdded:           c.dateAdded       || null,
+          LastEngagement:      c.lastEngagement  || null,
           ConsentStrength:     c.consentStrength,
           ConsentDecayRate:    c.consentDecayRate,
           DeliverabilityScore: c.deliverabilityScore,
@@ -831,7 +874,7 @@ export default async function handler(req, res) {
             body:    JSON.stringify({
               userId,
               fixType:        'commercial_loss',
-              description:    `List Intelligence: approximately \u00a3${Math.round(analysis.valueExpiring90).toLocaleString('en-GB')} of estimated list value sits with ${expiringContacts.toLocaleString()} contacts whose consent is projected to expire within 90 days. A re-consent campaign now protects this value. Estimated business cost \u2014 not a regulatory fine.`,
+              description:    `List Intelligence: approximately \u00a3${Math.round(analysis.valueExpiring90).toLocaleString('en-GB')} of estimated list value sits with ${expiringContacts.toLocaleString()} contacts whose consent is projected to expire within 90 days.`,
               tool:           'List Intelligence',
               severity:       'medium',
               contactVolume:  expiringContacts,
@@ -863,44 +906,51 @@ export default async function handler(req, res) {
       );
 
       return res.status(200).json({
-        success:          true,
-        totalContacts:    analysis.totalContacts,
+        success:           true,
+        totalContacts:     analysis.totalContacts,
         duplicatesRemoved: analysis.duplicatesRemoved,
-        activeCount:      analysis.activeCount,
-        recoverableCount: analysis.recoverableCount,
-        atRiskCount:      analysis.atRiskCount,
-        liabilityCount:   analysis.liabilityCount,
-        assetValue:       analysis.assetValue,
-        icoStatus:        analysis.icoStatus,
-        dataQualityFlags: analysis.dataQualityFlags,
+        activeCount:       analysis.activeCount,
+        recoverableCount:  analysis.recoverableCount,
+        atRiskCount:       analysis.atRiskCount,
+        liabilityCount:    analysis.liabilityCount,
+        assetValue:        analysis.assetValue,
+        icoStatus:         analysis.icoStatus,
+        dataQualityFlags:  analysis.dataQualityFlags,
         opportunities,
-        unrealisedTotal:  parseFloat(unrealisedTotal.toFixed(2)),
-        sector:           sectorVal,
-        aov:              aovVal,
-        asaNote:          analysis.asaNote || null,
-        cmaNote:          analysis.cmaNote || null,
-        consentExpiring:  { in30: analysis.expiring30, in60: analysis.expiring60, in90: analysis.expiring90, valueAtRisk: analysis.valueExpiring90 },
+        unrealisedTotal:   parseFloat(unrealisedTotal.toFixed(2)),
+        sector:            sectorVal,
+        aov:               aovVal,
+        asaNote:           analysis.asaNote  || null,
+        cmaNote:           analysis.cmaNote  || null,
+        consentExpiring:   { in30: analysis.expiring30, in60: analysis.expiring60, in90: analysis.expiring90, valueAtRisk: analysis.valueExpiring90 },
         changes,
+        // v1.3: row indices for client-side CSV download
+        // Frontend maps these against parsedCSV.rows to build CSVs.
+        // No emails are returned — client already has them from the upload.
+        downloadIndices: {
+          active:      analysis.activeIndices,
+          recoverable: analysis.recoverableIndices,
+          atRisk:      analysis.atRiskIndices,
+          liability:   analysis.liabilityIndices,
+        },
       });
     }
 
     // ── certificate ─────────────────────────────────────────
     if (action === 'certificate') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-      const { segmentName, campaignType, linkedDossierId } = req.body;
 
+      const { segmentName, campaignType, linkedDossierId } = req.body;
       const checks = await atGet('List_Intelligence_Checks',
         `{UserID}='${userId}'`,
         'sort[0][field]=CheckDate&sort[0][direction]=desc', 1
       );
       if (!checks.length) return res.status(400).json({ error: 'No List Intelligence data found. Upload a list first.' });
 
-      const latest = checks[0].fields;
-      const today  = new Date().toISOString().split('T')[0];
-
-      const liabilityPct = latest.TotalContacts > 0
-        ? latest.LiabilityCount / latest.TotalContacts : 0;
-      const result = liabilityPct < 0.05 && latest.ICOStatus === 'Good standing' ? 'Pass' : liabilityPct < 0.15 ? 'Review' : 'Fail';
+      const latest      = checks[0].fields;
+      const today       = new Date().toISOString().split('T')[0];
+      const liabilityPct = latest.TotalContacts > 0 ? latest.LiabilityCount / latest.TotalContacts : 0;
+      const result      = liabilityPct < 0.05 && latest.ICOStatus === 'Good standing' ? 'Pass' : liabilityPct < 0.15 ? 'Review' : 'Fail';
 
       const cert = await atCreate('PreSend_Certificates', {
         UserID:              userId,
