@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — profile.js v6.2 (beta)
-// v6.2: Extended validSectors to match audience-read.js BENCHMARKS.
-//       Added AverageOrderValue to accepted fields + fmt() output.
-//       All other code identical to v6.1.
+// SENDWIZE — profile.js v6.3
+// v6.3: Added CPL (Number) field — cost per lead/subscriber.
+//       Returned in fmt(), accepted in handleSave().
+//       All other code identical to v6.2.
 // ─────────────────────────────────────────────────────────────
 import { atFetch } from './_airtable.js';
 
@@ -58,6 +58,7 @@ function fmt(record, userId) {
     lastBriefingSent:   f.LastBriefingSent || null,
     onboardingComplete: f.OnboardingComplete || false,
     averageOrderValue:  f.AverageOrderValue  || null,
+    cpl:                f.CPL                || null,   // v6.3 — cost per lead, feeds Financial Hero Block
   };
 }
 
@@ -81,6 +82,7 @@ async function handleGet(req, res) {
       currentStreak: 0, longestStreak: 0, lastCheckDate: null,
       lastAlertSent: null, lastBriefingSent: null,
       onboardingComplete: null, averageOrderValue: null,
+      cpl: null,   // v6.3
     });
   }
 
@@ -104,6 +106,7 @@ async function handleGet(req, res) {
       currentStreak: 0, longestStreak: 0, lastCheckDate: null,
       lastAlertSent: null, lastBriefingSent: null,
       onboardingComplete: false, averageOrderValue: null,
+      cpl: null,   // v6.3
     });
   }
 
@@ -115,7 +118,8 @@ async function handleGet(req, res) {
 }
 
 async function handleSave(req, res) {
-  const { userId, revenueBand, sector, businessSize, emailVolume, email, onboardingComplete, averageOrderValue } = req.body ?? {};
+  // v6.3: added cpl to destructure
+  const { userId, revenueBand, sector, businessSize, emailVolume, email, onboardingComplete, averageOrderValue, cpl } = req.body ?? {};
   if (!userId) return res.status(400).json({ error: 'userId is required' });
 
   const validRevenueBands = ['Under £1M', '£1M–£10M', '£10M–£50M', 'Over £50M'];
@@ -139,6 +143,7 @@ async function handleSave(req, res) {
     EmailVolume:        emailVolume        || null,
     Email:              email              || null,
     AverageOrderValue:  (typeof averageOrderValue === 'number' && averageOrderValue > 0) ? averageOrderValue : null,
+    CPL:                (typeof cpl === 'number' && cpl > 0) ? cpl : null,   // v6.3
     ...(typeof onboardingComplete === 'boolean' ? { OnboardingComplete: onboardingComplete } : {}),
   };
   const fields = Object.fromEntries(
