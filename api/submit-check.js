@@ -1,29 +1,22 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v4.30
-// v4.30: All direct Airtable calls now go through atFetch() (see
-//        _airtable.js) for 429/5xx retry with backoff. This file
-//        previously had zero retry logic — every Campaign_Dossiers,
-//        User_Profile, and Brief_Checks call was a raw fetch() with
-//        no resilience to Airtable's rate limiting. It was one of
-//        the two endpoints still 429ing after data.js/profile.js/
-//        list-recommendations.js were fixed (the other being
-//        fixes.js, fixed alongside this in the same pass). Calls to
-//        APP_URL (our own /api/generate-fix, /api/profile?action=streak)
-//        are unchanged — atFetch only wraps Airtable.
+// SENDWIZE — submit-check.js v4.31
+// v4.31: "The Letter" — dossier-submit now returns a letter object.
+//        Clear campaigns get a Clearance Notice (no AI call).
+//        Weak/Adequate campaigns get a Claude-drafted simulated
+//        regulator letter in the appropriate voice (ICO, ASA, CMA).
+//        Every letter is watermarked SIMULATION — NOT ACTUAL
+//        REGULATOR CORRESPONDENCE.
+//        One Claude call per submit, weakest lens first.
+//        Model: claude-sonnet-4-6, max_tokens 1000.
 //
-// v4.29: Dossier re-verification (stickiness).
-//        - dossier-submit now stamps LastVerified (Date).
-//        - dossier-list returns daysSinceVerified + needsReview
-//          (Submitted dossiers older than 90 days flag for review),
-//          so the dashboard and the dossier list can prompt a re-check.
-// v4.28: Remove UpdatedAt from dossier-create (Date field rejects
-//        ISO timestamp). Add UpdatedAt back to dossier-save.
+// v4.30: All direct Airtable calls now go through atFetch() for
+//        429/5xx retry with backoff.
+// v4.29: Dossier re-verification (stickiness). LastVerified stamp.
 // ─────────────────────────────────────────────────────────────
-
 import { atFetch } from './_airtable.js';
 
-const APP_URL = 'https://sendwize-backend.vercel.app';
-const REVERIFY_DAYS = 90; // submitted dossiers older than this flag for review
+const APP_URL      = 'https://sendwize-backend.vercel.app';
+const REVERIFY_DAYS = 90;
 
 const DOSSIER_MODULES = [
   'ListProvenance', 'ConsentMechanism', 'ContentCheck', 'Suppression', 'SenderIdentity',
@@ -52,32 +45,34 @@ function serialiseModuleFields(key, fields) {
     if (fields.notes)            lines.push(`Notes: ${fields.notes}`);
   }
   if (key === 'ContentCheck') {
-    if (fields.aiCheckerRun)     lines.push(`AI Copy Checker run: ${fields.aiCheckerRun}`);
-    if (fields.aiCheckerScore)   lines.push(`AI Copy Checker score: ${fields.aiCheckerScore}`);
-    if (fields.asaReviewed)      lines.push(`ASA CAP Code review confirmed: ${fields.asaReviewed ? 'Yes' : 'No'}`);
-    if (fields.substantiatedClaims) lines.push(`Substantiated claims: ${fields.substantiatedClaims}`);
-    if (fields.pricingCompliant) lines.push(`Pricing compliance confirmed: ${fields.pricingCompliant ? 'Yes' : 'No'}`);
-    if (fields.amendments)       lines.push(`Amendments made: ${fields.amendments}`);
-    if (fields.notes)            lines.push(`Notes: ${fields.notes}`);
+    if (fields.aiCheckerRun)         lines.push(`AI Copy Checker: ${fields.aiCheckerRun}`);
+    if (fields.aiCheckerScore)       lines.push(`AI Checker score: ${fields.aiCheckerScore}`);
+    if (fields.asaReviewed)          lines.push(`ASA CAP Code review: ${fields.asaReviewed}`);
+    if (fields.substantiatedClaims)  lines.push(`Substantiated claims: ${fields.substantiatedClaims}`);
+    if (fields.pricingCompliant)     lines.push(`Pricing compliance: ${fields.pricingCompliant}`);
+    if (fields.referencePriceEvidence) lines.push(`Reference price evidence: ${fields.referencePriceEvidence}`);
+    if (fields.urgencyGenuine)       lines.push(`Urgency genuine: ${fields.urgencyGenuine}`);
+    if (fields.amendments)           lines.push(`Amendments made: ${fields.amendments}`);
+    if (fields.notes)                lines.push(`Notes: ${fields.notes}`);
   }
   if (key === 'Suppression') {
-    if (fields.suppressionApplied) lines.push(`Suppression list applied: ${fields.suppressionApplied ? 'Yes' : 'No'}`);
-    if (fields.dateApplied)      lines.push(`Date applied: ${fields.dateApplied}`);
-    if (fields.listLastUpdated)  lines.push(`Suppression list last updated: ${fields.listLastUpdated}`);
+    if (fields.suppressionApplied)   lines.push(`Suppression applied: ${fields.suppressionApplied}`);
+    if (fields.dateApplied)          lines.push(`Date applied: ${fields.dateApplied}`);
+    if (fields.listLastUpdated)      lines.push(`List last updated: ${fields.listLastUpdated}`);
     if (fields.contactsCount !== undefined) lines.push(`Contacts suppressed: ${fields.contactsCount}`);
-    if (fields.hardBouncesExcluded) lines.push(`Hard bounces excluded: ${fields.hardBouncesExcluded ? 'Yes' : 'No'}`);
-    if (fields.sendwizeCheckScore) lines.push(`Sendwize suppression check score: ${fields.sendwizeCheckScore}/100`);
-    if (fields.notes)            lines.push(`Notes: ${fields.notes}`);
+    if (fields.hardBouncesExcluded)  lines.push(`Hard bounces excluded: ${fields.hardBouncesExcluded}`);
+    if (fields.sendwizeCheckScore)   lines.push(`Sendwize suppression check: ${fields.sendwizeCheckScore}/100`);
+    if (fields.notes)                lines.push(`Notes: ${fields.notes}`);
   }
   if (key === 'SenderIdentity') {
-    if (fields.fromName)         lines.push(`From name: ${fields.fromName}`);
-    if (fields.fromEmail)        lines.push(`From email: ${fields.fromEmail}`);
-    if (fields.matchesTradingName) lines.push(`Matches registered trading name: ${fields.matchesTradingName ? 'Yes' : 'No'}`);
-    if (fields.businessAddress)  lines.push(`Business address in footer: ${fields.businessAddress ? 'Yes' : 'No'}`);
-    if (fields.unsubscribePresent) lines.push(`Unsubscribe link present and functional: ${fields.unsubscribePresent ? 'Yes' : 'No'}`);
-    if (fields.replyToAddress)   lines.push(`Reply-to address: ${fields.replyToAddress}`);
-    if (fields.replyToMonitor)   lines.push(`Reply-to monitored by: ${fields.replyToMonitor}`);
-    if (fields.notes)            lines.push(`Notes: ${fields.notes}`);
+    if (fields.fromName)             lines.push(`From name: ${fields.fromName}`);
+    if (fields.fromEmail)            lines.push(`From email: ${fields.fromEmail}`);
+    if (fields.matchesTradingName)   lines.push(`Matches trading name: ${fields.matchesTradingName}`);
+    if (fields.businessAddress)      lines.push(`Business address in footer: ${fields.businessAddress}`);
+    if (fields.unsubscribePresent)   lines.push(`Unsubscribe present: ${fields.unsubscribePresent}`);
+    if (fields.replyToAddress)       lines.push(`Reply-to: ${fields.replyToAddress}`);
+    if (fields.replyToMonitor)       lines.push(`Reply-to monitored: ${fields.replyToMonitor}`);
+    if (fields.notes)                lines.push(`Notes: ${fields.notes}`);
   }
   return lines.join('\n');
 }
@@ -93,7 +88,7 @@ const REQUIRED_FIELDS = {
 const OPTIONAL_FIELDS = {
   ListProvenance:   ['collectionUrl', 'dateFrom', 'dateTo', 'notes'],
   ConsentMechanism: ['softOptIn1', 'softOptIn2', 'softOptIn3', 'softOptIn4', 'liaSummary', 'dateTo', 'notes'],
-  ContentCheck:     ['aiCheckerScore', 'substantiatedClaims', 'amendments', 'notes'],
+  ContentCheck:     ['aiCheckerScore', 'substantiatedClaims', 'amendments', 'referencePriceEvidence', 'urgencyGenuine', 'notes'],
   Suppression:      ['contactsCount', 'hardBouncesExcluded', 'sendwizeCheckScore', 'notes'],
   SenderIdentity:   ['businessAddress', 'replyToAddress', 'replyToMonitor', 'notes'],
 };
@@ -130,6 +125,206 @@ function calculateHealthScore(allModuleFields) {
   }
   return Math.round(total);
 }
+
+// ── THE LETTER — v4.31 ──────────────────────────────────────────────────────
+// Determine which regulatory lens has the most material weakness.
+// ICO: consent + suppression + list provenance + sender identity
+// ASA: content check (claims, subject line) + sender identity
+// CMA: content check (pricing, urgency)
+function determineWeakestLens(moduleFields) {
+  const ico = ['ListProvenance', 'ConsentMechanism', 'Suppression', 'SenderIdentity'];
+  const asa = ['ContentCheck', 'SenderIdentity'];
+  const cma = ['ContentCheck'];
+
+  const score = mods => mods.reduce((s, k) => {
+    const st = calculateModuleStrength(k, moduleFields[k] || {});
+    return s + (st === 'Weak' ? 2 : st === 'Adequate' ? 1 : 0);
+  }, 0);
+
+  const scores = { ico: score(ico), asa: score(asa), cma: score(cma) };
+
+  // Return the lens with the highest weakness score
+  return Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+}
+
+// Build a summary of gaps for the Claude prompt
+function buildGapSummary(moduleFields) {
+  const gaps = [];
+  for (const key of DOSSIER_MODULES) {
+    const fields = moduleFields[key] || {};
+    const req = REQUIRED_FIELDS[key] || [];
+    const missing = req.filter(f => {
+      const v = fields[f];
+      return v === undefined || v === null || v === '' || v === false;
+    });
+    if (missing.length > 0) {
+      gaps.push(`${key}: missing ${missing.join(', ')}`);
+    }
+    // Flag specific weak content signals
+    if (key === 'ContentCheck') {
+      if (fields.pricingCompliant && fields.pricingCompliant.toLowerCase().includes('no')) gaps.push('ContentCheck: pricing compliance not confirmed');
+      if (fields.urgencyGenuine && fields.urgencyGenuine === 'Not confirmed') gaps.push('ContentCheck: urgency/scarcity not verified');
+      if (fields.aiCheckerRun && fields.aiCheckerRun.includes('issues found')) gaps.push('ContentCheck: AI checker found unresolved issues');
+    }
+    if (key === 'Suppression') {
+      if (fields.suppressionApplied === 'No — not yet applied') gaps.push('Suppression: suppression list not applied');
+    }
+    if (key === 'ConsentMechanism') {
+      if (fields.lawfulBasis === 'Legitimate interest (UK GDPR)' && !fields.liaSummary) gaps.push('ConsentMechanism: LI basis claimed but no LIA on record');
+    }
+  }
+  return gaps.join('\n');
+}
+
+// Generate clearance notice text (no Claude call)
+function buildClearanceNotice(campaignTitle, ownerName, dossierId, healthScore) {
+  const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  return `CAMPAIGN COMPLIANCE CLEARANCE NOTICE
+─────────────────────────────────────────────
+Dossier Reference: ${dossierId ? dossierId.slice(0, 12).toUpperCase() : 'SW-DRAFT'}
+Date: ${today}
+Prepared by: Sendwize Compliance Documentation
+
+CAMPAIGN: ${campaignTitle || 'Untitled Campaign'}
+OWNER: ${ownerName || '—'}
+DOSSIER HEALTH SCORE: ${healthScore}/100
+
+This notice confirms that the above-named campaign has a completed compliance evidence file covering all five required modules: List Provenance, Consent Mechanism, Content Check, Suppression, and Sender Identity.
+
+EVIDENCE SUMMARY
+─────────────────
+All five dossier modules are complete. Required fields are populated across List Provenance, Consent Mechanism, Content Check, Suppression, and Sender Identity.
+
+The evidence on file demonstrates:
+• A documented lawful basis for sending
+• A clear record of how contact data was collected
+• Content reviewed against ICO, ASA and CMA requirements
+• Suppression lists applied before send
+• Sender clearly identified with a functional unsubscribe mechanism
+
+This dossier was prepared and submitted via Sendwize on ${today}.
+
+─────────────────────────────────────────────
+INFORMATION ONLY — NOT LEGAL ADVICE
+This certificate documents evidence provided by the campaign owner and does not constitute legal compliance assurance. Regulatory outcomes depend on circumstances at the time of any investigation.`;
+}
+
+// Build regulator letter prompt for Claude
+function buildLetterPrompt(lens, campaignTitle, ownerName, gaps) {
+  const lensConfig = {
+    ico: {
+      from: 'Information Commissioner\'s Office\nWycliffe House, Water Lane, Wilmslow, Cheshire, SK9 5AF\nhttps://ico.org.uk',
+      subject: `Information Notice — ${campaignTitle || 'Email Marketing Campaign'}`,
+      openingStyle: 'formal information notice, numbered paragraphs, ICO register. Cites specific PECR Regulation numbers (Reg 22, Reg 23) and UK GDPR articles. Requests specific documentary evidence with a response deadline. Tone: legal, precise, measured — not aggressive.',
+      evidenceRequests: 'consent records and collection mechanism documentation, suppression list records and opt-out processing logs, legitimate interest assessment if LI basis claimed, data retention policy',
+    },
+    asa: {
+      from: 'Advertising Standards Authority\nCastle House, 37–45 Paul Street, London EC2A 4LS\nhttps://www.asa.org.uk',
+      subject: `Formal Investigation Notice — ${campaignTitle || 'Email Marketing Campaign'}`,
+      openingStyle: 'ASA investigation opener. References specific CAP Code rule numbers (e.g. 3.1, 3.3, 3.7, 8.1). Identifies the specific claim or pricing issue at stake. Notes possible outcomes: ruling, withdrawal, mandatory pre-vetting. Tone: regulatory but practical, not legal.',
+      evidenceRequests: 'evidence substantiating any claims made, pricing history for any reference prices used, basis for any urgency or scarcity language, sender identity documentation',
+    },
+    cma: {
+      from: 'Competition and Markets Authority\nThe Cabot, 25 Cabot Square, London E14 4QZ\nhttps://www.gov.uk/cma',
+      subject: `CMA Formal Enquiry — ${campaignTitle || 'Email Marketing Campaign'}`,
+      openingStyle: 'CMA enquiry letter under DMCCA 2024. Frames in consumer protection terms. For first-time issues: undertakings framing, not immediate enforcement. Cites DMCCA 2024 Schedule 1 or Part 4 as relevant. Requests commercial documentation. Tone: consumer protection authority, businesslike, clear consequences stated.',
+      evidenceRequests: 'pricing history for any reference prices (minimum 28 consecutive days at advertised "was" price), evidence for any scarcity or urgency claims, review authenticity documentation if reviews referenced',
+    },
+  };
+
+  const cfg = lensConfig[lens];
+
+  return `You are drafting a realistic simulated regulatory letter for Sendwize, a UK marketing compliance SaaS. This letter will be shown to users to help them understand the regulatory consequences of the gaps in their campaign compliance dossier.
+
+IMPORTANT RULES:
+1. Begin the letter with this exact watermark line on its own: "SIMULATION — NOT ACTUAL REGULATOR CORRESPONDENCE"
+2. Then a blank line, then start the letter
+3. Write in the authentic voice and format of: ${cfg.from.split('\n')[0]}
+4. Address the letter to: ${ownerName || 'The Marketing Team'}
+5. Subject: ${cfg.subject}
+6. Style: ${cfg.openingStyle}
+7. Reference the specific gaps found in this dossier (listed below) — do not invent facts
+8. Request the following evidence: ${cfg.evidenceRequests}
+9. Keep total length to 350-450 words
+10. End with the sender's name/title and office — realistic but not a real person's name
+
+FROM:
+${cfg.from}
+
+COMPLIANCE GAPS FOUND IN THIS DOSSIER:
+${gaps || 'General compliance gaps identified across the dossier modules.'}
+
+CAMPAIGN DETAILS:
+Campaign: ${campaignTitle || 'Unnamed campaign'}
+Owner: ${ownerName || 'Not specified'}
+
+Write the letter now. Start with the watermark line, then the letter. No preamble or explanation — just the letter.`;
+}
+
+// Main letter generation function
+async function generateLetter(moduleFields, evidenceStrength, campaignTitle, ownerName, dossierId, healthScore) {
+  // Strong evidence = clearance notice, no Claude call
+  if (evidenceStrength === 'Strong') {
+    return {
+      type:    'clearance',
+      lens:    null,
+      content: buildClearanceNotice(campaignTitle, ownerName, dossierId, healthScore),
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  // Weak or Adequate: draft a regulator letter for the weakest lens
+  const lens = determineWeakestLens(moduleFields);
+  const gaps = buildGapSummary(moduleFields);
+  const prompt = buildLetterPrompt(lens, campaignTitle, ownerName, gaps);
+
+  try {
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not set');
+
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key':         anthropicKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type':      'application/json',
+      },
+      body: JSON.stringify({
+        model:      'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages:   [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!r.ok) throw new Error(`Anthropic API ${r.status}`);
+    const data = await r.json();
+    const content = data.content?.[0]?.text || '';
+
+    // Ensure watermark is present
+    const watermarked = content.startsWith('SIMULATION')
+      ? content
+      : 'SIMULATION — NOT ACTUAL REGULATOR CORRESPONDENCE\n\n' + content;
+
+    return {
+      type:        'letter',
+      lens,
+      content:     watermarked,
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (e) {
+    console.error('generateLetter Claude call failed (non-fatal):', e);
+    // Fallback: return a static placeholder letter
+    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    return {
+      type: 'letter',
+      lens,
+      content: `SIMULATION — NOT ACTUAL REGULATOR CORRESPONDENCE\n\nWe were unable to generate a personalised letter at this time. Based on the gaps identified in your dossier, the ${lens.toUpperCase()} would be likely to request evidence addressing: ${buildGapSummary(moduleFields) || 'the incomplete fields in your compliance record'}.\n\nPlease review and complete all required fields in your dossier.`,
+      generatedAt: new Date().toISOString(),
+      fallback: true,
+    };
+  }
+}
+// ── END THE LETTER ───────────────────────────────────────────────────────────
 
 function refineSeverity(fixType, emailVolume) {
   const isLarge = ['large_send', 'enterprise_send'].includes(emailVolume);
@@ -212,21 +407,13 @@ async function handleDossierCreate(req, res) {
   const { userId, campaignTitle, ownerName, dossierSource = 'Standalone', prefill } = req.body ?? {};
   if (!userId)        return res.status(400).json({ error: 'Missing userId' });
   if (!campaignTitle) return res.status(400).json({ error: 'Missing campaignTitle' });
-
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
   const today          = new Date().toISOString().split('T')[0];
-
-  // ── FIX v4.28: UpdatedAt removed from create payload ──────────
   const fields = {
-    UserID:        userId,
-    CampaignTitle: campaignTitle,
-    OwnerName:     ownerName || '',
-    Status:        'Draft',
-    DossierSource: dossierSource,
-    CreatedDate:   today,
+    UserID: userId, CampaignTitle: campaignTitle, OwnerName: ownerName || '',
+    Status: 'Draft', DossierSource: dossierSource, CreatedDate: today,
   };
-
   if (prefill && typeof prefill === 'object') {
     for (const key of DOSSIER_MODULES) {
       if (prefill[key]) {
@@ -239,55 +426,39 @@ async function handleDossierCreate(req, res) {
       fields.ModuleFieldsJson = JSON.stringify(prefill);
     }
   }
-
   const r = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers`, {
-    method:  'POST',
+    method: 'POST',
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ records: [{ fields }] }),
+    body:   JSON.stringify({ records: [{ fields }] }),
   });
-
   if (!r.ok) {
     const errBody = await r.text();
-    console.error('Airtable create failed after retries:', r.status, errBody);
     return res.status(r.status).json({ error: 'Failed to create dossier', detail: errBody });
   }
-
   const record    = (await r.json()).records?.[0];
   const dossierId = record?.id;
-
   fetch(`${APP_URL}/api/profile?action=streak`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
   }).catch(() => {});
-
   return res.json({ success: true, dossierId, campaignTitle, status: 'Draft' });
 }
 
 async function handleDossierList(req, res) {
   const { userId, limit = '20' } = req.query;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
-
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
   const maxRecords     = Math.min(parseInt(limit, 10) || 20, 100);
-
   const r = await atFetch(
     `https://api.airtable.com/v0/${BASE_ID}/Campaign_Dossiers?filterByFormula={UserID}='${userId}'&sort[0][field]=UpdatedAt&sort[0][direction]=desc&maxRecords=${maxRecords}`,
     { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
   );
-  if (!r.ok) {
-    console.error('Campaign_Dossiers list fetch failed after retries:', r.status);
-    return res.status(r.status).json({ error: 'Failed to fetch dossiers' });
-  }
-
+  if (!r.ok) return res.status(r.status).json({ error: 'Failed to fetch dossiers' });
   const data = await r.json();
   const dossiers = (data.records || []).map(record => {
-    const f      = record.fields;
+    const f     = record.fields;
     const filled = DOSSIER_MODULES.filter(m => f[m]?.trim()).length;
-    const pct    = Math.round((filled / DOSSIER_MODULES.length) * 100);
-
-    // ── v4.29: re-verification staleness ──────────────────────
-    // Submitted dossiers go stale: if the last verification was more
-    // than REVERIFY_DAYS ago, flag for review so the user re-certifies.
+    const pct   = Math.round((filled / DOSSIER_MODULES.length) * 100);
     const verifiedRaw = f.LastVerified || f.SubmittedAt || '';
     let daysSinceVerified = null, needsReview = false;
     if (f.Status === 'Submitted' && verifiedRaw) {
@@ -297,7 +468,6 @@ async function handleDossierList(req, res) {
         needsReview = daysSinceVerified > REVERIFY_DAYS;
       }
     }
-
     return {
       dossierId:        record.id,
       campaignTitle:    f.CampaignTitle    || 'Untitled Campaign',
@@ -316,7 +486,6 @@ async function handleDossierList(req, res) {
       needsReview,
     };
   });
-
   return res.json({ dossiers });
 }
 
@@ -325,18 +494,13 @@ async function handleDossierSave(req, res) {
   if (!userId)    return res.status(400).json({ error: 'Missing userId' });
   if (!dossierId) return res.status(400).json({ error: 'Missing dossierId' });
   if (!module)    return res.status(400).json({ error: 'Missing module' });
-  if (!DOSSIER_MODULES.includes(module)) {
-    return res.status(400).json({ error: `Invalid module. Must be one of: ${DOSSIER_MODULES.join(', ')}` });
-  }
-
+  if (!DOSSIER_MODULES.includes(module)) return res.status(400).json({ error: `Invalid module` });
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
   const authH          = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
-
   let moduleText = '';
   let rawFields  = moduleFields || null;
-
   if (moduleFields && typeof moduleFields === 'object') {
     moduleText = serialiseModuleFields(module, moduleFields);
   } else if (evidenceJson) {
@@ -345,143 +509,79 @@ async function handleDossierSave(req, res) {
       : (evidenceJson || {});
     moduleText = ev[module] || '';
   }
-
   const campaignTitle = moduleFields?.campaignTitle || null;
   const ownerName     = moduleFields?.ownerName     || null;
-
   let existing = null;
   try {
-    const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, {
-      headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
-    });
-    if (dr.ok) {
-      const d = await dr.json();
-      if (d.fields?.UserID === userId) existing = d;
-    }
+    const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    if (dr.ok) { const d = await dr.json(); if (d.fields?.UserID === userId) existing = d; }
   } catch {}
-
   if (!existing) {
-    const lr = await atFetch(
-      `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
-    );
+    const lr = await atFetch(`${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
     const ld = lr.ok ? await lr.json() : { records: [] };
     existing = ld.records?.[0] || null;
   }
-
-  // ── FIX v4.28: UpdatedAt restored to save payload ─────────────
-  const updateFields = {
-    [module]:  moduleText,
-    UpdatedAt: new Date().toISOString(),
-  };
+  const updateFields = { [module]: moduleText, UpdatedAt: new Date().toISOString() };
   if (campaignTitle) updateFields.CampaignTitle = campaignTitle;
   if (ownerName)     updateFields.OwnerName     = ownerName;
-
   if (rawFields) {
     let existingMFJ = {};
     try { existingMFJ = JSON.parse(existing?.fields?.ModuleFieldsJson || '{}'); } catch {}
     existingMFJ[module] = rawFields;
     updateFields.ModuleFieldsJson = JSON.stringify(existingMFJ);
   }
-
-  let result;
   const recordId = existing?.id || dossierId;
-
   if (existing) {
     const r = await atFetch(`${base}/Campaign_Dossiers/${recordId}`, {
       method: 'PATCH', headers: authH, body: JSON.stringify({ fields: updateFields }),
     });
-    if (!r.ok) {
-      console.error('Campaign_Dossiers patch failed after retries:', r.status);
-      return res.status(r.status).json({ error: 'Failed to save module' });
-    }
-    result = await r.json();
+    if (!r.ok) return res.status(r.status).json({ error: 'Failed to save module' });
   } else {
-    const createFields = {
-      UserID: userId, CampaignID: dossierId,
-      [module]: moduleText,
-      DossierSource: 'Brief Checker',
-    };
+    const createFields = { UserID: userId, CampaignID: dossierId, [module]: moduleText, DossierSource: 'Brief Checker' };
     if (campaignTitle) createFields.CampaignTitle = campaignTitle;
     if (ownerName)     createFields.OwnerName     = ownerName;
     const r = await atFetch(`${base}/Campaign_Dossiers`, {
       method: 'POST', headers: authH, body: JSON.stringify({ records: [{ fields: createFields }] }),
     });
-    if (!r.ok) {
-      console.error('Campaign_Dossiers create failed after retries:', r.status);
-      return res.status(r.status).json({ error: 'Failed to save module' });
-    }
-    result = (await r.json()).records?.[0];
+    if (!r.ok) return res.status(r.status).json({ error: 'Failed to save module' });
   }
-
-  return res.json({ success: true, recordId: result?.id || recordId, module });
+  return res.json({ success: true, recordId, module });
 }
 
 async function handleDossierGet(req, res) {
   const { userId, dossierId } = req.query;
   if (!userId)    return res.status(400).json({ error: 'Missing userId' });
   if (!dossierId) return res.status(400).json({ error: 'Missing dossierId' });
-
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
-
   let record = null;
   try {
-    const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, {
-      headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
-    });
-    if (dr.ok) {
-      const d = await dr.json();
-      if (d.fields?.UserID === userId) record = d;
-    }
+    const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    if (dr.ok) { const d = await dr.json(); if (d.fields?.UserID === userId) record = d; }
   } catch {}
-
   if (!record) {
-    const r = await atFetch(
-      `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
-    );
-    if (!r.ok) {
-      console.error('Campaign_Dossiers get fetch failed after retries:', r.status);
-      return res.status(r.status).json({ error: 'Failed to fetch dossier' });
-    }
+    const r = await atFetch(`${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    if (!r.ok) return res.status(r.status).json({ error: 'Failed to fetch dossier' });
     record = (await r.json()).records?.[0] || null;
   }
-
   if (!record) {
-    return res.json({
-      dossierId, CampaignTitle: '', OwnerName: '', Status: 'Draft',
-      DossierSource: 'Standalone', UserID: userId,
-      ListProvenance: '', ConsentMechanism: '', ContentCheck: '',
-      Suppression: '', SenderIdentity: '', moduleFields: {},
-    });
+    return res.json({ dossierId, CampaignTitle: '', OwnerName: '', Status: 'Draft', DossierSource: 'Standalone', UserID: userId, ListProvenance: '', ConsentMechanism: '', ContentCheck: '', Suppression: '', SenderIdentity: '', moduleFields: {} });
   }
-
   const f = record.fields;
   let moduleFields = {};
   try { moduleFields = JSON.parse(f.ModuleFieldsJson || '{}'); } catch {}
-
   return res.json({
-    dossierId:        record.id,
-    recordId:         record.id,
-    CampaignTitle:    f.CampaignTitle    || '',
-    OwnerName:        f.OwnerName        || '',
-    Status:           f.Status           || 'Draft',
-    DossierSource:    f.DossierSource    || 'Standalone',
-    EvidenceStrength: f.EvidenceStrength || null,
-    HealthScore:      f.HealthScore      || null,
-    UserID:           f.UserID           || userId,
-    CampaignID:       f.CampaignID       || null,
-    ListProvenance:   f.ListProvenance   || '',
-    ConsentMechanism: f.ConsentMechanism || '',
-    ContentCheck:     f.ContentCheck     || '',
-    Suppression:      f.Suppression      || '',
-    SenderIdentity:   f.SenderIdentity   || '',
-    CreatedDate:      f.CreatedDate      || '',
-    UpdatedAt:        f.UpdatedAt        || '',
-    SubmittedAt:      f.SubmittedAt      || '',
-    LastVerified:     f.LastVerified     || '',
+    dossierId: record.id, recordId: record.id,
+    CampaignTitle: f.CampaignTitle || '', OwnerName: f.OwnerName || '',
+    Status: f.Status || 'Draft', DossierSource: f.DossierSource || 'Standalone',
+    EvidenceStrength: f.EvidenceStrength || null, HealthScore: f.HealthScore || null,
+    UserID: f.UserID || userId, CampaignID: f.CampaignID || null,
+    ListProvenance: f.ListProvenance || '', ConsentMechanism: f.ConsentMechanism || '',
+    ContentCheck: f.ContentCheck || '', Suppression: f.Suppression || '',
+    SenderIdentity: f.SenderIdentity || '',
+    CreatedDate: f.CreatedDate || '', UpdatedAt: f.UpdatedAt || '',
+    SubmittedAt: f.SubmittedAt || '', LastVerified: f.LastVerified || '',
     moduleFields,
   });
 }
@@ -490,62 +590,48 @@ async function handleDossierSubmit(req, res) {
   const { userId, dossierId, issues } = req.body ?? {};
   if (!userId)    return res.status(400).json({ error: 'Missing userId' });
   if (!dossierId) return res.status(400).json({ error: 'Missing dossierId' });
-
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
   const base           = `https://api.airtable.com/v0/${BASE_ID}`;
   const now            = new Date().toISOString();
-
   let emailVolume = 'medium_send';
   try {
-    const pr = await atFetch(
-      `https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
-    );
+    const pr = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
     if (pr.ok) emailVolume = (await pr.json()).records?.[0]?.fields?.EmailVolume || 'medium_send';
   } catch(e) { console.error('Profile fetch failed (non-fatal):', e); }
-
   let currentRecord = null;
   try {
-    const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, {
-      headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` }
-    });
-    if (dr.ok) {
-      const d = await dr.json();
-      if (d.fields?.UserID === userId) currentRecord = d;
-    }
+    const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    if (dr.ok) { const d = await dr.json(); if (d.fields?.UserID === userId) currentRecord = d; }
   } catch {}
-
   if (!currentRecord) {
-    const lr = await atFetch(
-      `${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
-    );
+    const lr = await atFetch(`${base}/Campaign_Dossiers?filterByFormula=AND({UserID}='${userId}',{CampaignID}='${dossierId}')&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
     if (lr.ok) currentRecord = (await lr.json()).records?.[0] || null;
   }
-
-  const f = currentRecord?.fields || {};
+  const f            = currentRecord?.fields || {};
   const actualRecordId = currentRecord?.id || dossierId;
-
   let moduleFields = {};
   try { moduleFields = JSON.parse(f.ModuleFieldsJson || '{}'); } catch {}
-
   const snapshot = { snapshotAt: now, version: 1, modules: {} };
   for (const key of DOSSIER_MODULES) {
     snapshot.modules[key] = { text: f[key] || '', fields: moduleFields[key] || {} };
   }
-
   let history = [];
   try { history = JSON.parse(f.VersionHistory || '[]'); } catch {}
   snapshot.version = history.length + 1;
   history.push(snapshot);
-
   const evidenceStrength = calculateOverallStrength(moduleFields);
   const healthScore      = calculateHealthScore(moduleFields);
-
+  // ── Generate The Letter (v4.31) ───────────────────────────────
+  // Run in parallel with fix generation to keep response time reasonable
+  const letterPromise = generateLetter(
+    moduleFields, evidenceStrength,
+    f.CampaignTitle || '', f.OwnerName || '',
+    actualRecordId, healthScore
+  );
+  // ── Fix generation ────────────────────────────────────────────
   const issueList  = Array.isArray(issues) ? issues : [];
   const fixResults = [];
-
   for (const issue of issueList) {
     const issueKey = typeof issue === 'string' ? issue : issue?.issue || '';
     const mapping  = ISSUE_TO_FIX[issueKey];
@@ -554,10 +640,7 @@ async function handleDossierSubmit(req, res) {
     try {
       const fixRes = await fetch(`${APP_URL}/api/generate-fix`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId, fixType: mapping.fixType, description: mapping.description,
-          tool: 'Campaign Dossier', severity: finalSeverity, volume: null, sourceRecordId: actualRecordId,
-        }),
+        body: JSON.stringify({ userId, fixType: mapping.fixType, description: mapping.description, tool: 'Campaign Dossier', severity: finalSeverity, volume: null, sourceRecordId: actualRecordId }),
       });
       const fixData = await fixRes.json();
       fixResults.push({ issue: issueKey, status: fixData.skipped ? 'duplicate_skipped' : 'created', fixId: fixData.fixId });
@@ -566,33 +649,33 @@ async function handleDossierSubmit(req, res) {
       fixResults.push({ issue: issueKey, status: 'error' });
     }
   }
-
+  // ── Await letter + update Airtable ────────────────────────────
+  const letter = await letterPromise;
   try {
     await atFetch(`${base}/Campaign_Dossiers/${actualRecordId}`, {
-      method:  'PATCH',
+      method: 'PATCH',
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fields: {
+      body: JSON.stringify({ fields: {
         Status:           'Submitted',
         IssuesFound:      issueList.length,
         SubmittedAt:      now,
-        LastVerified:     now.split('T')[0],   // v4.29 — stamps re-verification date (Date field)
+        LastVerified:     now.split('T')[0],
         VersionHistory:   JSON.stringify(history),
         EvidenceStrength: evidenceStrength,
         HealthScore:      healthScore,
       }}),
     });
   } catch(e) { console.error('Dossier status update failed (non-fatal):', e); }
-
   fetch(`${APP_URL}/api/profile?action=streak`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
   }).catch(() => {});
-
   return res.json({
     success: true, dossierId: actualRecordId,
-    issuesFound:    issueList.length,
+    issuesFound: issueList.length,
     fixesGenerated: fixResults.filter(f => f.status === 'created').length,
     fixResults, evidenceStrength, healthScore,
     snapshotVersion: snapshot.version,
+    letter,  // v4.31 — { type, lens, content, generatedAt }
   });
 }
 
@@ -603,29 +686,25 @@ async function handleBriefCheck(req, res) {
     senderClear, softOptInAnswers, issues: frontendIssues,
     resultStatus: frontendStatus, dossierPrefill,
   } = req.body ?? {};
-
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
-
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
   const today          = new Date().toISOString().split('T')[0];
-
   const issues       = Array.isArray(frontendIssues) ? frontendIssues : [];
   const nonGreen     = issues.filter(i => i.severity !== 'green');
   const redCount     = issues.filter(i => i.severity === 'red').length;
   const amberCount   = issues.filter(i => i.severity === 'amber').length;
   const greenCount   = issues.filter(i => i.severity === 'green').length;
   const resultStatus = frontendStatus || (redCount > 0 ? 'Red' : amberCount > 0 ? 'Amber' : 'Green');
-
   let briefCheckId = null, totalExposureEstimate = 0;
   try {
     const briefRes = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ records: [{ fields: {
-        UserID:          userId,
-        CampaignName:    campaignName || `Brief ${new Date().toLocaleDateString('en-GB')}`,
-        CheckDate:       today,
+        UserID: userId,
+        CampaignName: campaignName || `Brief ${new Date().toLocaleDateString('en-GB')}`,
+        CheckDate: today,
         BriefFieldsJson: JSON.stringify({ channel, audience, lawfulBasis, listSource, consentDate, coreOffer, suppressionDone, hasUnsubscribe, senderClear }),
         RedCount: redCount, AmberCount: amberCount, GreenCount: greenCount,
         IssuesJson: JSON.stringify(nonGreen), ResultStatus: resultStatus,
@@ -634,33 +713,23 @@ async function handleBriefCheck(req, res) {
     if (briefRes.ok) briefCheckId = (await briefRes.json()).records?.[0]?.id ?? null;
     else console.error('Brief_Checks save failed after retries:', await briefRes.text());
   } catch(e) { console.error('Brief_Checks save error (non-fatal):', e); }
-
   let emailVolume = 'medium_send';
   try {
-    const pr = await atFetch(
-      `https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
-    );
+    const pr = await atFetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
     if (pr.ok) emailVolume = (await pr.json()).records?.[0]?.fields?.EmailVolume || 'medium_send';
   } catch {}
-
   for (const issue of nonGreen) {
     if (!issue.fixType || !BRIEF_FIX_TYPES[issue.fixType]) continue;
     const finalSeverity = refineSeverity(issue.fixType, emailVolume) || (issue.severity === 'red' ? 'high' : 'medium');
     try {
       const fr = await fetch(`${APP_URL}/api/generate-fix`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId, fixType: issue.fixType,
-          description: `Brief Checker: ${issue.issue}. ${issue.description || ''}`.trim(),
-          tool: 'Campaign Brief Checker', severity: finalSeverity, volume: null, sourceRecordId: briefCheckId,
-        }),
+        body: JSON.stringify({ userId, fixType: issue.fixType, description: `Brief Checker: ${issue.issue}. ${issue.description || ''}`.trim(), tool: 'Campaign Brief Checker', severity: finalSeverity, volume: null, sourceRecordId: briefCheckId }),
       });
       const fd = await fr.json();
       if (!fd.skipped) totalExposureEstimate += fd.exposureEstimate || 0;
     } catch(e) { console.error('generate-fix failed (non-fatal):', e); }
   }
-
   if (briefCheckId && totalExposureEstimate > 0) {
     atFetch(`https://api.airtable.com/v0/${BASE_ID}/Brief_Checks/${briefCheckId}`, {
       method: 'PATCH',
@@ -668,17 +737,8 @@ async function handleBriefCheck(req, res) {
       body: JSON.stringify({ fields: { TotalExposureEstimate: totalExposureEstimate } }),
     }).catch(() => {});
   }
-
   fetch(`${APP_URL}/api/profile?action=streak`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
   }).catch(() => {});
-
-  return res.json({
-    briefCheckId,
-    redCount, amberCount, greenCount,
-    totalExposureEstimate,
-    resultStatus,
-    dossierPrefill: dossierPrefill || null,
-    campaignName:   campaignName   || '',
-  });
+  return res.json({ briefCheckId, redCount, amberCount, greenCount, totalExposureEstimate, resultStatus, dossierPrefill: dossierPrefill || null, campaignName: campaignName || '' });
 }
