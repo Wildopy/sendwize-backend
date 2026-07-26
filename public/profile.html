@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Profile Settings — Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--bg:#F6F5F2;--w:#fff;--b:#E8E6E1;--t:#0C0B09;--tm:#5C5852;--mu:#9C9890;--g:#16a34a;--gb:#f0fdf4;--r:#dc2626;--rad:12px;--sh:0 1px 3px rgba(0,0,0,.06);--shm:0 4px 16px rgba(0,0,0,.08)}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.ph a{text-decoration:none}.ph-logo{height:28px}.ph-nav{display:flex;gap:20px;align-items:center}
+.ph-nav a{color:var(--tm);font-size:14px;font-weight:500}
+.page{max-width:560px;margin:0 auto;padding:40px 20px 80px}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--mu);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;margin-bottom:28px}
+.back:hover{color:var(--t)}
+.hdr{margin-bottom:32px}
+.hdr h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.hdr p{font-size:14px;color:var(--tm)}
+.card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:28px;box-shadow:var(--sh);margin-bottom:20px}
+.card-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:20px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:18px}
+.fg:last-child{margin-bottom:0}
+.fg label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tm)}
+.fg .hint{font-size:11px;color:var(--mu);margin-top:3px;line-height:1.5}
+.fi{font-family:inherit;font-size:14px;padding:10px 13px;border:1px solid var(--b);border-radius:8px;background:#faf9f7;color:var(--t);outline:none;transition:border-color .15s,box-shadow .15s;width:100%;appearance:none}
+.fi:focus{border-color:var(--o);box-shadow:0 0 0 3px rgba(234,115,23,.1);background:var(--w)}
+.fi-wrap{position:relative}
+.fi-wrap .fi{padding-left:26px}
+.fi-pfx{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mu);font-size:13px;pointer-events:none}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cpl-calc{background:var(--bg);border-radius:8px;padding:16px;margin-top:10px;display:none}
+.cpl-calc.show{display:block}
+.cpl-est{font-size:13px;font-weight:600;color:var(--o);margin-top:8px;min-height:20px}
+.chk-label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tm);cursor:pointer;margin-top:4px}
+.chk-label input{accent-color:var(--o);width:15px;height:15px;flex-shrink:0}
+.rb-opts{display:flex;flex-direction:column;gap:7px}
+.rb-opt{display:flex;align-items:center;gap:11px;padding:11px 14px;border:2px solid var(--b);border-radius:var(--rad);cursor:pointer;transition:all .15s;background:#faf9f7}
+.rb-opt:hover{border-color:var(--o);background:var(--ol)}
+.rb-opt.on{border-color:var(--o);background:var(--ol)}
+.rb-opt input{accent-color:var(--o);width:15px;height:15px;flex-shrink:0}
+.rb-label{font-size:13px;font-weight:500}
+.rb-sub{font-size:11px;color:var(--mu);margin-top:1px}
+.btn-save{width:100%;background:var(--o);color:#fff;border:none;padding:13px;border-radius:var(--rad);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:8px}
+.btn-save:hover{background:var(--od)}.btn-save:disabled{opacity:.4;cursor:not-allowed}
+.saved-msg{font-size:12px;color:var(--g);font-weight:600;text-align:center;margin-top:10px;min-height:18px}
+.ld{padding:60px 20px;text-align:center;color:var(--mu);font-size:13px}
+.spin{width:20px;height:20px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--t);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;transform:translateY(80px);opacity:0;transition:all .22s;max-width:280px}
+.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+@media(max-width:480px){.two-col{grid-template-columns:1fr}.ph{flex-direction:column;gap:10px;align-items:flex-start}}
+</style>
+</head>
+<body>
+<header class="ph">
+  <a href="https://new-mvp-v2.webflow.io/"><img class="ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <nav class="ph-nav"><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a></nav>
+</header>
+<div class="page">
+  <div id="loadingState"><div class="ld"><div class="spin"></div>Loading your profile&hellip;</div></div>
+  <div id="mainContent" style="display:none">
+    <button class="back" onclick="goBack()">&#x2190; Back to dashboard</button>
+    <div class="hdr">
+      <h1>Profile settings</h1>
+      <p>These figures personalise your financial exposure calculations on the dashboard.</p>
+    </div>
+
+    <!-- SECTOR + CPL -->
+    <div class="card">
+      <div class="card-title">Your business</div>
+      <div class="fg">
+        <label for="sector">Sector</label>
+        <select class="fi" id="sector">
+          <option value="ecommerce">Ecommerce / Retail</option>
+          <option value="b2b">B2B / Professional Services</option>
+          <option value="saas">SaaS / Technology</option>
+          <option value="media">Media / Publishing / Newsletter</option>
+          <option value="finance">Finance / Financial Services</option>
+          <option value="health">Health / Healthcare</option>
+          <option value="charity">Charity / Non-profit</option>
+          <option value="general">Agency or Other</option>
+        </select>
+        <span class="hint">Sets UK benchmark unsubscribe rates for Audience Read and your sector CPL default if no CPL is entered.</span>
+      </div>
+      <div class="fg">
+        <label for="cplInput">Cost per subscriber / lead (CPL)</label>
+        <div class="fi-wrap">
+          <span class="fi-pfx">&pound;</span>
+          <input type="number" class="fi" id="cplInput" min="0" step="0.01" placeholder="e.g. 3.50">
+        </div>
+        <span class="hint">The average cost to acquire one subscriber or lead across all your marketing channels — ads, content, events, email. Used to calculate the &pound; value of excess unsubscribes.</span>
+        <label class="chk-label"><input type="checkbox" id="cplUnknown" onchange="toggleCalc(this.checked)"> I don&rsquo;t know my CPL &mdash; help me estimate it</label>
+      </div>
+      <div class="cpl-calc" id="cplCalc">
+        <div style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.5">Enter your total annual marketing budget (all channels &mdash; ads, content, events, email) and your total audience or list size. We&rsquo;ll divide one by the other to estimate your CPL.</div>
+        <div class="two-col">
+          <div class="fg" style="margin-bottom:0">
+            <label>Annual marketing budget</label>
+            <div class="fi-wrap"><span class="fi-pfx">&pound;</span><input type="number" class="fi" id="budget" placeholder="e.g. 50000" oninput="estimateCpl()"></div>
+          </div>
+          <div class="fg" style="margin-bottom:0">
+            <label>Total audience / list size</label>
+            <input type="number" class="fi" id="listSz" placeholder="e.g. 20000" oninput="estimateCpl()">
+          </div>
+        </div>
+        <div class="cpl-est" id="cplEst"></div>
+      </div>
+    </div>
+
+    <!-- REVENUE BAND -->
+    <div class="card">
+      <div class="card-title">Annual revenue band</div>
+      <div class="rb-opts" id="rbOpts">
+        <label class="rb-opt" onclick="selBand(this,'Under \u00a31M')">
+          <input type="radio" name="rb" value="Under \u00a31M">
+          <div><div class="rb-label">Under &pound;1M</div><div class="rb-sub">Early stage or small business</div></div>
+        </label>
+        <label class="rb-opt" onclick="selBand(this,'\u00a31M\u2013\u00a310M')">
+          <input type="radio" name="rb" value="\u00a31M\u2013\u00a310M">
+          <div><div class="rb-label">&pound;1M &ndash; &pound;10M</div><div class="rb-sub">Growing business</div></div>
+        </label>
+        <label class="rb-opt" onclick="selBand(this,'\u00a310M\u2013\u00a350M')">
+          <input type="radio" name="rb" value="\u00a310M\u2013\u00a350M">
+          <div><div class="rb-label">&pound;10M &ndash; &pound;50M</div><div class="rb-sub">Mid-market</div></div>
+        </label>
+        <label class="rb-opt" onclick="selBand(this,'Over \u00a350M')">
+          <input type="radio" name="rb" value="Over \u00a350M">
+          <div><div class="rb-label">Over &pound;50M</div><div class="rb-sub">Large business</div></div>
+        </label>
+      </div>
+      <span class="hint" style="margin-top:10px;display:block">Used to contextualise ICO and CMA statutory maximum figures.</span>
+    </div>
+
+    <button class="btn-save" id="btnSave" onclick="saveProfile()">Save settings</button>
+    <div class="saved-msg" id="savedMsg"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+var AU='https://sendwize-backend.vercel.app';
+var userId=new URLSearchParams(window.location.search).get('userId')||'';
+var selRevBand=null;
+
+function goBack(){window.location.href=AU+'/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy'+(userId?'?userId='+userId:'');}
+
+function selBand(lbl,val){
+  document.querySelectorAll('.rb-opt').forEach(function(o){o.classList.remove('on');});
+  lbl.classList.add('on');
+  selRevBand=val;
+}
+
+function toggleCalc(on){
+  document.getElementById('cplCalc').classList.toggle('show',on);
+  if(!on){document.getElementById('cplEst').textContent='';document.getElementById('budget').value='';document.getElementById('listSz').value='';}
+}
+
+function estimateCpl(){
+  var b=parseFloat(document.getElementById('budget').value)||0;
+  var l=parseFloat(document.getElementById('listSz').value)||0;
+  var est=document.getElementById('cplEst');
+  if(b>0&&l>0){
+    var v=(b/l).toFixed(2);
+    est.textContent='Estimated CPL: \u00a3'+v+' \u00b7 this will be saved';
+    document.getElementById('cplInput').value=v;
+  } else {
+    est.textContent='';
+  }
+}
+
+async function loadProfile(){
+  if(!userId){document.getElementById('loadingState').innerHTML='<div class="ld">No user ID found. <a href="https://new-mvp-v2.webflow.io/" style="color:var(--o)">Go to dashboard</a></div>';return;}
+  try{
+    var r=await fetch(AU+'/api/profile?action=get&userId='+userId);
+    if(!r.ok)throw r;
+    var p=await r.json();
+    if(p.sector)document.getElementById('sector').value=p.sector;
+    if(p.cpl)document.getElementById('cplInput').value=p.cpl;
+    if(p.revenueBand||p.revenueBandRaw){
+      var band=p.revenueBand||p.revenueBandRaw;
+      selRevBand=band;
+      document.querySelectorAll('.rb-opt').forEach(function(opt){
+        var v=opt.querySelector('input[type=radio]')?.value;
+        if(v===band)opt.classList.add('on');
+      });
+    }
+    document.getElementById('loadingState').style.display='none';
+    document.getElementById('mainContent').style.display='block';
+  }catch(e){
+    document.getElementById('loadingState').innerHTML='<div class="ld">Could not load profile. <button onclick="loadProfile()" style="background:none;border:none;color:var(--o);font-weight:600;cursor:pointer;font-family:inherit">Retry</button></div>';
+  }
+}
+
+async function saveProfile(){
+  var btn=document.getElementById('btnSave');
+  var msg=document.getElementById('savedMsg');
+  var sector=document.getElementById('sector').value;
+  var cplVal=parseFloat(document.getElementById('cplInput').value)||null;
+  btn.disabled=true;btn.textContent='Saving\u2026';msg.textContent='';
+  try{
+    var body={userId:userId,sector:sector};
+    if(cplVal)body.cpl=cplVal;
+    if(selRevBand)body.revenueBand=selRevBand;
+    var r=await fetch(AU+'/api/profile?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok)throw r;
+    msg.textContent='\u2713 Settings saved';
+    msg.style.color='var(--g)';
+    showToast('Profile saved','ok');
+  }catch(e){
+    showToast('Could not save \u2014 please try again','er');
+  }finally{
+    btn.disabled=false;btn.textContent='Save settings';
+  }
+}
+
+function showToast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast on'+(type?' '+type:'');
+  setTimeout(function(){t.classList.remove('on');},3000);
+}
+
+loadProfile();
+</script>
+</body>
+</html>
