@@ -283,6 +283,7 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
     .gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--white);color:var(--muted);border:1px solid var(--border-mid);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
     .gate-demo-btn:hover{border-color:var(--orange);color:var(--text)}
     .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px}
+.letter-card{background:var(--w);border:2px solid var(--r);border-radius:var(--rad-lg);overflow:hidden;box-shadow:var(--sh-lg);margin-bottom:20px}.letter-watermark-banner{background:var(--r);color:#fff;text-align:center;padding:10px 20px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.letter-headed{padding:28px 36px 20px;border-bottom:1px solid var(--b)}.letter-from{font-size:12px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.7;margin-bottom:16px}.letter-from-name{font-size:13px;font-weight:700;color:var(--t);margin-bottom:3px}.letter-meta-row{display:flex;gap:28px;margin-bottom:16px;flex-wrap:wrap}.letter-meta-item{font-size:12px}.letter-meta-label{font-weight:700;color:var(--mu);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}.letter-meta-val{color:var(--t);font-family:'DM Mono',monospace}.letter-subject{font-size:14px;font-weight:700;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--b)}.letter-body{font-size:13px;line-height:1.9;color:var(--t);white-space:pre-wrap;padding:24px 36px}.letter-lens-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;margin-bottom:16px;text-transform:uppercase;letter-spacing:.06em}.letter-lens-badge.ico{background:#fef2f2;color:#991b1b}.letter-lens-badge.asa{background:#eff6ff;color:#1d4ed8}.letter-lens-badge.cma{background:#fefce8;color:#78350f}.clearance-banner{background:linear-gradient(135deg,var(--gb),#dcfce7);border:2px solid var(--g);border-radius:var(--rad);padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:14px}.clearance-icon{font-size:34px;flex-shrink:0}.clearance-title{font-size:17px;font-weight:700;color:var(--g);margin-bottom:3px}.clearance-sub{font-size:13px;color:var(--tm)}.clearance-notice-body{font-size:12px;font-family:'DM Mono',monospace;line-height:1.8;color:var(--tm);background:var(--bg);border-radius:var(--rad);padding:16px 20px;white-space:pre-wrap;margin-bottom:20px}
 @media print{.sw-ph-header,.sw-ph-footer,.stepper,.progress-row,.module-card,.submit-card,.cert-actions,.disc,.toast,.health-bar-wrap,.reg-lens,.incomplete-banner{display:none!important}.cert-section{display:block!important}.cert-card{border:none;box-shadow:none;padding:20px}body{background:#fff}}
 @media(max-width:600px){.tf-row,.fields-grid.two-col,.cert-footer,.reg-spotlight-grid{grid-template-columns:1fr}.stepper::before{display:none}.step-label{display:none}.cert-header{flex-direction:column}}
 </style>
@@ -1139,7 +1140,7 @@ async function submitDossier() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data=await res.json();
     submitSnapshotVersion=data.snapshotVersion||1;
-    renderCertificate({EvidenceStrength:data.evidenceStrength,HealthScore:data.healthScore});
+    renderCertificate(Object.assign({EvidenceStrength:data.evidenceStrength,HealthScore:data.healthScore},data));
   } catch(e) {
     console.error(e);
     toast('Submission failed — '+e.message,'er');
@@ -1174,6 +1175,40 @@ function renderCertificate(serverData={}) {
     const moduleFiles=uploadedFiles[m.key]||[];
     return `<div class="cert-module"><div class="cert-module-header"><span class="cert-module-icon">${m.icon}</span><span class="cert-module-name">${m.name}</span><span class="cert-module-strength ${strength}">${strength.charAt(0).toUpperCase()+strength.slice(1)}</span></div><div class="cert-module-evidence">${hasTxt?escH(text):'<span style="color:var(--mu);font-style:italic">No evidence provided.</span>'}</div>${moduleFiles.length?`<div style="font-size:11px;color:var(--mu);margin-top:6px">📎 ${moduleFiles.length} supporting file${moduleFiles.length!==1?'s':''} attached</div>`:''}<div class="cert-snapshot-note">Snapshot v${submitSnapshotVersion} · ${dateStr}</div></div>`;
   }).join('');
+  // v4.31 - The Letter
+  var letter=serverData.letter||null;
+  var letterHtml='';
+  if(letter&&letter.type==='letter'){
+    var lensLabel={ico:'ICO \u2014 Information Notice',asa:'ASA \u2014 Investigation Notice',cma:'CMA \u2014 Formal Enquiry'}[letter.lens]||letter.lens.toUpperCase();
+    var letterLines=letter.content.split('\n');
+    var watermarkLine=letterLines[0]||'SIMULATION \u2014 NOT ACTUAL REGULATOR CORRESPONDENCE';
+    var bodyText=letterLines.slice(2).join('\n');
+    letterHtml='<div class="letter-card">'
+      +'<div class="letter-watermark-banner">'+escH(watermarkLine)+'</div>'
+      +'<div class="letter-headed">'
+      +'<span class="letter-lens-badge '+letter.lens+'">'+escH(lensLabel)+'</span>'
+      +'<div class="letter-from"><div class="letter-from-name">Simulated Regulatory Correspondence</div>This letter represents what a real '+(letter.lens.toUpperCase())+' notice might look like given the gaps in your compliance dossier. It is not a real letter.</div>'
+      +'<div class="letter-meta-row">'
+      +'<div class="letter-meta-item"><div class="letter-meta-label">Campaign</div><div class="letter-meta-val">'+escH(campaignTitle||'Untitled')+'</div></div>'
+      +'<div class="letter-meta-item"><div class="letter-meta-label">Generated</div><div class="letter-meta-val">'+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+'</div></div>'
+      +'<div class="letter-meta-item"><div class="letter-meta-label">Dossier health</div><div class="letter-meta-val">'+(serverData.healthScore||healthScore)+'/100</div></div>'
+      +'</div>'
+      +'<div class="letter-subject">'+escH(lensLabel)+' \u2014 '+escH(campaignTitle||'Unnamed Campaign')+'</div>'
+      +'</div>'
+      +'<div class="letter-body">'+escH(bodyText)+'</div>'
+      +'</div>';
+  } else if(letter&&letter.type==='clearance'){
+    letterHtml='<div class="clearance-banner"><div class="clearance-icon">\u2705</div><div><div class="clearance-title">Campaign Cleared</div><div class="clearance-sub">All five compliance modules complete. Strong evidence across ICO, ASA and CMA.</div></div></div>'
+      +'<div class="clearance-notice-body">'+escH(letter.content)+'</div>';
+  }
+  if(letterHtml){
+    var existingLetter=document.getElementById('sw-letter-output');
+    if(existingLetter)existingLetter.remove();
+    var letterDiv=document.createElement('div');
+    letterDiv.id='sw-letter-output';
+    letterDiv.innerHTML=letterHtml;
+    el('certSection').prepend(letterDiv);
+  }
   el('certSection').classList.add('show');
   window.scrollTo({top:0,behavior:'smooth'});
 }
