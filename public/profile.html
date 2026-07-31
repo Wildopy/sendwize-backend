@@ -180,10 +180,14 @@ async function loadProfile(){
     if(p.revenueBand||p.revenueBandRaw){
       var band=p.revenueBand||p.revenueBandRaw;
       selRevBand=band;
-      document.querySelectorAll('.rb-opt').forEach(function(opt){
-        var v=opt.querySelector('input[type=radio]')?.value;
-        if(v===band)opt.classList.add('on');
-      });
+      var bandMap={'Under \u00a31M':0,'\u00a31M\u2013\u00a310M':1,'\u00a310M\u2013\u00a350M':2,'Over \u00a350M':3};
+      var idx=bandMap[band];
+      if(idx!==undefined){
+        var opts=document.querySelectorAll('.rb-opt');
+        var radios=document.querySelectorAll('input[name=rb]');
+        if(opts[idx])opts[idx].classList.add('on');
+        if(radios[idx])radios[idx].checked=true;
+      }
     }
     document.getElementById('loadingState').style.display='none';
     document.getElementById('mainContent').style.display='block';
