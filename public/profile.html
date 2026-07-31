@@ -11,7 +11,7 @@
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
 .ph{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
 .ph a{text-decoration:none}.ph-logo{height:28px}.ph-nav{display:flex;gap:20px;align-items:center}
-.ph-nav a{color:var(--tm);font-size:14px;font-weight:500}
+.ph-nav a{color:var(--tm);font-size:14px;font-weight:500;cursor:pointer}
 .page{max-width:560px;margin:0 auto;padding:40px 20px 80px}
 .back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--mu);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;margin-bottom:28px}
 .back:hover{color:var(--t)}
@@ -56,7 +56,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <body>
 <header class="ph">
   <a href="https://new-mvp-v2.webflow.io/"><img class="ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
-  <nav class="ph-nav"><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a></nav>
+  <nav class="ph-nav"><a href="javascript:goBack()">Dashboard</a></nav>
 </header>
 <div class="page">
   <div id="loadingState"><div class="ld"><div class="spin"></div>Loading your profile&hellip;</div></div>
@@ -140,10 +140,11 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="toast" id="toast"></div>
 <script>
 var AU='https://sendwize-backend.vercel.app';
+var DASH='https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 var userId=new URLSearchParams(window.location.search).get('userId')||'';
 var selRevBand=null;
 
-function goBack(){window.location.href=AU+'/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy'+(userId?'?userId='+userId:'');}
+function goBack(){window.location.href=DASH+(userId?'?userId='+userId:'');}
 
 function selBand(lbl,val){
   document.querySelectorAll('.rb-opt').forEach(function(o){o.classList.remove('on');});
