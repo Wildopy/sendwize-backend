@@ -253,8 +253,52 @@ else if(avgRate<=bench.unsubGood&&direction==='Improving'&&toleranceRemaining>=3
 else if((direction==='Improving'||direction==='Stable')&&recentDamage>=1&&recentBuilt>=1){sentiment={state:'Recovering',verdict:capital>=40?'Recovering well \u2014 one more careful send':'Recovering \u2014 handle with care',statement:'Early signs of recovery. Your rate is '+(avgRate<=bench.unsubNormal?'back in line with':'still above')+' the UK '+bench.label+' average. Relationship capital: '+(capital>0?'+':'')+capital.toFixed(0)+'/100.',action:capital>=40?'Send one value-first newsletter. If unsubscribes stay below average, resume normal sending in 2 weeks.':'High-value sends only for the next 3 weeks. No promotional campaigns.',statementCommercial:capital>=40?'High capital means this audience is more forgiving.':'One badly timed promotional send now could push this segment back into damaged territory.',statementRegulatory:null,regulatoryNote:null,confidence:0.78};}
 else if(avgRate<=bench.unsubNormal){sentiment={state:'Healthy',verdict:'Looking good \u2014 proceed as planned',statement:'Your unsubscribe rate is at or below the UK '+bench.label+' average. No concerning trends.',action:'Proceed with your planned campaign.',statementCommercial:'A healthy segment converts at predictable rates.',statementRegulatory:null,regulatoryNote:null,confidence:0.80};}
 else{sentiment={state:'Neutral',verdict:'No strong signals \u2014 proceed normally',statement:'Your unsubscribe rate is close to the UK '+bench.label+' average. No strong trend in either direction.',action:'Proceed with your planned campaign. Monitor on the next send.',statementCommercial:'Neutral state means sends will perform at your historical average.',statementRegulatory:null,regulatoryNote:null,confidence:0.65};}
-return{fingerprint:fingerprint,trustVelocity:{velocity:0,direction:direction,magnitude:0},freqTolerance:{toleranceRemaining:toleranceRemaining,optimalNextSend:nextDate,recommendedType:toleranceRemaining<=1?'Newsletter':'Promotional',recentSendCount:recentCamps},sentiment:sentiment,capital:capital,impacts:impacts.slice(-8),dataQuality:'Partial',missingData:[{field:'Spam complaints',message:'Complaints carry 50\u00d7 the weight of an unsubscribe. Adding them makes Trust Velocity significantly more accurate.'}],subscriberLoss:{totalExcessUnsubs:totalExcess,damagingCampaigns:damagingCamps},bench:{label:bench.label,unsubNormal:bench.unsubNormal,source:bench.source},sector:'general'};}
+var sendWindow=computeDemoSendWindow(campaigns,sentiment.state,capital,toleranceRemaining);
+return{fingerprint:fingerprint,trustVelocity:{velocity:0,direction:direction,magnitude:0},freqTolerance:{toleranceRemaining:toleranceRemaining,optimalNextSend:nextDate,recommendedType:toleranceRemaining<=1?'Newsletter':'Promotional',recentSendCount:recentCamps},sentiment:sentiment,capital:capital,sendWindow:sendWindow,impacts:impacts.slice(-8),dataQuality:'Partial',missingData:[{field:'Spam complaints',message:'Complaints carry 50\u00d7 the weight of an unsubscribe. Adding them makes Trust Velocity significantly more accurate.'}],subscriberLoss:{totalExcessUnsubs:totalExcess,damagingCampaigns:damagingCamps},bench:{label:bench.label,unsubNormal:bench.unsubNormal,source:bench.source},sector:'general'};}
 
+function computeDemoSendWindow(campaigns,state,capital,toleranceRemaining){
+  var today=new Date();today.setHours(0,0,0,0);var days=30;var threshold=4;var cap=capital||0;
+  var typeW={'Promotional':1.5,'Newsletter':0.8,'Re-engagement':1.2,'Transactional':0.3,'Unknown':1.0};
+  var floor;
+  if(state==='Complaint risk')floor=30;else if(state==='Damaged')floor=21;else if(state==='Fatigue building')floor=14;
+  else if(state==='Recovering')floor=cap>=40?3:cap>=10?7:14;else if(state==='Cooling')floor=3;else floor=0;
+  var scores=[];
+  for(var d=0;d<days;d++){
+    var day=new Date(+today+d*86400000);var iso=day.toISOString().slice(0,10);
+    var wStart=new Date(+day-30*86400000);
+    var effective=campaigns.filter(function(c){var cd=new Date(c.date);return cd>=wStart&&cd<=day;}).reduce(function(s,c){return s+(typeW[c.campaign_type]||1.0);},0);
+    var tol=Math.max(0,threshold-effective);
+    var score;
+    if(d<floor)score=0;
+    else if(tol<1)score=0;
+    else if((state==='Peak receptiveness'||state==='Healthy')&&tol>=3)score=3;
+    else if(tol>=2)score=2;
+    else score=1;
+    scores.push({date:iso,score:score,tolerance:tol});
+  }
+  var earliest=scores.find(function(s){return s.score>=2;});
+  var earliestDate=earliest?earliest.date:null;
+  var avoidUntil=scores[0].score===0&&earliestDate?earliestDate:null;
+  var bestStart=null,bestEnd=null,bestLen=0,bestPeak=false;
+  var curStart=null,curLen=0,curPeak=false;
+  for(var i=0;i<scores.length;i++){
+    if(scores[i].score>=2){
+      if(curStart===null){curStart=i;curLen=0;curPeak=false;}
+      curLen++;if(scores[i].score>=3)curPeak=true;
+      var better=(curPeak&&!bestPeak)||(curPeak===bestPeak&&curLen>bestLen);
+      if(better){bestStart=curStart;bestEnd=i;bestLen=curLen;bestPeak=curPeak;}
+    }else{curStart=null;curLen=0;curPeak=false;}
+  }
+  var opt=bestStart!==null?{start:scores[bestStart].date,end:scores[bestEnd].date,days:bestLen,hasPeak:bestPeak}:null;
+  var type;if(!earliestDate)type='avoid';else if(opt&&opt.hasPeak)type='peak';else if(opt&&opt.days>=5)type='good';else if(earliestDate)type='cautious';else type='avoid';
+  var recType=toleranceRemaining<=1?'Newsletter':'Promotional';
+  var reason;
+  if(type==='peak')reason=opt.days+'-day optimal window \u2014 segment is receptive and tolerance is well-recovered. '+recType+' sends can go now.';
+  else if(type==='good')reason='Safe '+opt.days+'-day send window \u2014 no active damage signals and tolerance is intact.';
+  else if(type==='cautious')reason='Earliest safe send is '+earliestDate+'. Segment tolerance is tight \u2014 send one '+recType.toLowerCase()+' and monitor unsub rate.';
+  else reason='No safe send window in the next '+days+' days. Segment needs longer recovery.';
+  return{earliestSafeDate:earliestDate,avoidUntil:avoidUntil,optimalWindow:opt,windowType:type,recommendedType:recType,reasoning:reason,dayScores:scores.map(function(s){return{date:s.date,score:s.score};})};
+}
 // ── PROFILE-DRIVEN INIT (v7.3, A1) ──────────────────────────
 // Sector and CPL live only in the user's profile. This page fetches them,
 // shows a status card, and blocks the Diagnose button if sector is missing.
