@@ -188,7 +188,8 @@ function renderSegmentDiagnoses(data){
     var benchHtml=avgRate!=null?'<div class="diag-benchmark-row"><div class="bench-stat"><div class="bench-stat-label">Your unsub rate vs UK '+escH(bench.label||'')+'</div><div class="bench-stat-val '+bandCls+'">'+bandLabel+'</div>'+(vsBench.pctVsBenchmark?'<div class="bench-vs above">'+vsBench.pctVsBenchmark+'% above benchmark</div>':avgRate<=benchRate?'<div class="bench-vs below">Below benchmark \u2014 good</div>':'')+'</div></div>':'';
     var lossHtml='';if(loss.totalExcessUnsubs>0){var costStr=cpl?' At your cost per subscriber, that\u2019s roughly \u00a3'+Math.round(loss.totalExcessUnsubs*cpl).toLocaleString()+' in wasted acquisition spend.':'';lossHtml='<div class="loss-box"><div class="loss-icon">&#128197;</div><div><div class="loss-num">'+loss.totalExcessUnsubs.toLocaleString()+'</div><div class="loss-label">more unsubscribes than expected across '+loss.damagingCampaigns+' send'+(loss.damagingCampaigns!==1?'s':'')+'.'+costStr+'</div></div></div>';}
     var conf=Math.round((s.confidence||0)*100);var n=fp.campaignCount||0;
-    var nextSend=ft.optimalNextSend?'Earliest send: '+fmtDate(ft.optimalNextSend):null;var sendCap=ft.toleranceRemaining!==undefined?ft.toleranceRemaining+' send'+(ft.toleranceRemaining!==1?'s':'')+' of tolerance left this month':null;
+    var sw=d.sendWindow||null;
+    var sendCap=ft.toleranceRemaining!==undefined?ft.toleranceRemaining+' send'+(ft.toleranceRemaining!==1?'s':'')+' of tolerance left this month':null;
     var capScoreCls=cap>10?'pos':cap<-10?'neg':'neu';var capPct=Math.min(50,Math.abs(cap)/2);
     var capLabel=cap>=40?'Strong goodwill':cap>=10?'Positive':cap>=-10?'Neutral':cap>=-30?'Under strain':'Low \u2014 significant damage';
     var uid='seg-'+segIdx;var hasWhy=s.statementCommercial||s.statementRegulatory||s.regulatoryNote;
