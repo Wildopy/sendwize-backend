@@ -1,29 +1,32 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — check-vendors.js v4.28
+// SENDWIZE — check-vendors.js v4.29
 // POST { vendors: [{ name, isCustom, dpaStatus, dataTypes, contactVolume }], userId }
 //
-// v4.28 changes from v4.27:
-//   - Frontend now sends dpaStatus (yes/no/unsure), dataTypes[],
-//     contactVolume per vendor directly in request body.
-//   - buildProcessingContext() now reads from incoming vendor
-//     object first — no longer depends on Vendor_Register read
-//     for these fields. Falls back to register if not provided.
-//   - buildFixesForResult() now driven by user-provided dpaStatus:
-//       'no'    → dpa_breach fix (user confirmed no DPA)
-//       'unsure'→ dpa_breach fix (unconfirmed = not confirmed)
-//       'yes'   → no DPA fix; check breach history + transfer only
-//     This is more accurate and defensible than library-derived
-//     dpaConfirmed flag which reflected vendor's published position
-//     not the user's actual signed agreement status.
-//   - Fix severity now considers user's data types and volume:
-//       sensitive data (behavioural/purchase/special) + no DPA = critical
-//       high volume (>50k) + no DPA = critical
-//       otherwise = high
-//   - processingContext built from request body, not register read.
-//     Vendor_Register upsert still happens for score/history.
-//   - Tool label: "Processor Risk Scanner — {VendorName}"
+// v4.29 changes from v4.28:
+//   - B1: Privacy policy scraping for every vendor.
+//     Known vendors: scrape their PrivacyPolicyUrl from Airtable.
+//     Unknown vendors: Claude guesses the URL, we scrape it.
+//     Scraped excerpt attached to result.scrapedPolicy (source,
+//     url, excerpt, scrapedAt). Scrape failures are non-fatal —
+//     result.scrapedPolicy is null and analysis proceeds without.
+//   - B2: AI now returns a `gaps` array for unknown vendors —
+//     specific things missing from the scraped policy that should
+//     be there for UK GDPR / marketing use (SCCs mention, DPO,
+//     retention policy, security cert, sub-processor list, etc).
+//     Each gap emits its own fix via generate-fix.js. Gaps carry
+//     severity (high|medium|low) and one-line description.
+//   - AI prompt now uses scraped policy text when available.
+//     Falls back to Claude's general knowledge if scrape failed.
+//   - Result shape adds: scrapedPolicy, gaps (unknown only).
+//   - buildFixesForResult now emits gap fixes with sourceRecordId
+//     scoped per-gap: `vendor-{name-slug}-gap-{gap-slug}` for dedupe.
+//   - Fix descriptions include "based on public privacy policy at
+//     {url}, last scraped {date}" for traceability (D2 principle).
 // ─────────────────────────────────────────────────────────────
 const APP_URL = 'https://sendwize-backend.vercel.app';
+const SCRAPE_TIMEOUT_MS = 8000;
+const SCRAPE_MAX_CHARS  = 12000;
+const SCRAPE_UA = 'Mozilla/5.0 (compatible; SendwizeComplianceBot/1.0; +https://sendwize.com/bot)';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -64,10 +67,20 @@ export default async function handler(req, res) {
     // ── 2. Analyse each vendor ────────────────────────────────
     const results = [];
     for (const vendor of vendors) {
-      const result = vendor.isCustom
-        ? await analyzeVendorWithAI(vendor.name)
-        : handleKnownVendor(vendor.name, vendorLibrary[vendor.name.toLowerCase()] || null);
-      // Attach user-provided context to result for fix generation
+      let result;
+      if (vendor.isCustom) {
+        // Unknown vendor: guess URL → scrape → AI analyze with scraped text
+        const guessedUrl   = await guessPrivacyPolicyUrl(vendor.name);
+        const scrapedPolicy = guessedUrl ? await scrapePrivacyPolicy(guessedUrl) : null;
+        result = await analyzeVendorWithAI(vendor.name, scrapedPolicy);
+        result.scrapedPolicy = scrapedPolicy;
+      } else {
+        // Known vendor: read library, scrape their published policy URL
+        const libFields  = vendorLibrary[vendor.name.toLowerCase()] || null;
+        result = handleKnownVendor(vendor.name, libFields);
+        const policyUrl  = libFields?.PrivacyPolicyUrl || null;
+        result.scrapedPolicy = policyUrl ? await scrapePrivacyPolicy(policyUrl) : null;
+      }
       result.userInput = {
         dpaStatus:     vendor.dpaStatus     || 'unsure',
         dataTypes:     vendor.dataTypes     || [],
@@ -108,7 +121,6 @@ export default async function handler(req, res) {
         );
         const existing = (existingRes.ok ? await existingRes.json() : { records: [] }).records?.[0];
 
-        // Map user dpaStatus to register AgreementStatus
         const agreementStatusMap = { yes: 'In place', no: 'Not yet', unsure: 'Unknown' };
         const dataProcessed = ui.dataTypes?.length
           ? JSON.stringify(ui.dataTypes)
@@ -170,10 +182,99 @@ export default async function handler(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// buildProcessingContext
-// v4.28: reads from result.userInput first (sent by frontend).
-// Falls back to empty arrays — no longer reads Vendor_Register.
-// The frontend now owns this data; register is updated from it.
+// scrapePrivacyPolicy (B1)
+// Fetches a public privacy policy page, strips HTML, returns
+// { url, excerpt, scrapedAt } or null on failure.
+// Non-fatal: any failure returns null. Timeout at SCRAPE_TIMEOUT_MS.
+// Legal-OK: only fetches publicly served pages, sends identifying
+// User-Agent, respects HTTP status codes (no bypass attempts).
+// ─────────────────────────────────────────────────────────────
+async function scrapePrivacyPolicy(url) {
+  if (!url || typeof url !== 'string') return null;
+  if (!/^https?:\/\//i.test(url))       return null;
+
+  const controller = new AbortController();
+  const timer      = setTimeout(() => controller.abort(), SCRAPE_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': SCRAPE_UA, 'Accept': 'text/html,application/xhtml+xml' },
+      signal:  controller.signal,
+      redirect: 'follow',
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const ct = res.headers.get('content-type') || '';
+    if (!/text\/html|xhtml/i.test(ct)) return null;
+
+    const html = await res.text();
+    // Strip scripts, styles, comments, tags → collapse whitespace
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (text.length < 200) return null;
+
+    return {
+      url,
+      excerpt:   text.slice(0, SCRAPE_MAX_CHARS),
+      scrapedAt: new Date().toISOString(),
+    };
+  } catch (e) {
+    clearTimeout(timer);
+    console.error(`scrapePrivacyPolicy failed for ${url}:`, e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// guessPrivacyPolicyUrl (B1)
+// Small Claude call to guess an unknown vendor's privacy policy
+// URL. Returns a URL string or null.
+// ─────────────────────────────────────────────────────────────
+async function guessPrivacyPolicyUrl(vendorName) {
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method:  'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model:      'claude-sonnet-4-20250514',
+        max_tokens: 150,
+        messages: [{
+          role: 'user',
+          content: `The UK company or marketing vendor "${vendorName}" — what is the most likely URL of their published privacy policy or data processing addendum? Respond ONLY with the URL as plain text, or exactly "unknown" if you cannot make a confident guess. No preamble, no explanation, no markdown.`
+        }]
+      })
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const raw  = (data.content?.[0]?.text || '').trim();
+    if (!raw || /^unknown$/i.test(raw)) return null;
+    // Extract first URL
+    const m = raw.match(/https?:\/\/[^\s"'<>]+/);
+    return m ? m[0] : null;
+  } catch (e) {
+    console.error(`guessPrivacyPolicyUrl failed for ${vendorName}:`, e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// buildProcessingContext (unchanged from v4.28)
 // ─────────────────────────────────────────────────────────────
 function buildProcessingContext(result) {
   const ui      = result.userInput || {};
@@ -186,7 +287,7 @@ function buildProcessingContext(result) {
                      : 'Unknown';
   const breach       = d.breachHistory || '';
   const breachKnown  = breach && !['none identified','none','no','unknown',''].includes(breach.toLowerCase());
-  const hasDoc       = false; // user hasn't documented yet — defaults false on new scan
+  const hasDoc       = false;
 
   return {
     vendorName:              result.name,
@@ -199,10 +300,16 @@ function buildProcessingContext(result) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// slugify — for stable sourceRecordId per gap
+// ─────────────────────────────────────────────────────────────
+function slugify(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+}
+
+// ─────────────────────────────────────────────────────────────
 // buildFixesForResult
-// v4.28: fix generation now driven by user-provided dpaStatus.
-// 'yes' → no DPA fix; check breach + transfer only.
-// 'no'/'unsure' → dpa_breach fix with severity based on data.
+// v4.29: now also emits one fix per AI-identified `gap` from the
+// scraped policy analysis (unknown vendors only).
 // ─────────────────────────────────────────────────────────────
 function buildFixesForResult(result, userId, sourceRecordId) {
   const fixes = [];
@@ -210,7 +317,7 @@ function buildFixesForResult(result, userId, sourceRecordId) {
   const d     = result.dimensions || {};
   const ui    = result.userInput || {};
 
-  const userDPA        = ui.dpaStatus || 'unsure'; // yes / no / unsure
+  const userDPA        = ui.dpaStatus || 'unsure';
   const dataTypes      = Array.isArray(ui.dataTypes) ? ui.dataTypes : [];
   const volume         = ui.contactVolume || null;
   const transferOccurs = (d.intlTransferOccurs    || '').toLowerCase();
@@ -221,11 +328,12 @@ function buildFixesForResult(result, userId, sourceRecordId) {
   const breachIsKnown = breach &&
     !['none identified','none','no','unknown',''].includes(breach.toLowerCase());
 
-  const hasSensitive = dataTypes.some(d =>
-    /special category|behavioural|behaviour|purchase|financial/i.test(d));
+  const hasSensitive = dataTypes.some(dt =>
+    /special category|behavioural|behaviour|purchase|financial/i.test(dt));
   const highVolume   = volume && volume > 50000;
 
   const processingContext = buildProcessingContext(result);
+  const nameSlug          = slugify(name);
 
   // ── DPA fix — driven by user's answer ─────────────────────
   if (userDPA === 'no' || userDPA === 'unsure') {
@@ -260,7 +368,7 @@ function buildFixesForResult(result, userId, sourceRecordId) {
     });
   }
 
-  // ── ICO not registered — always flag regardless of DPA status
+  // ── ICO not registered ────────────────────────────────────
   if (icoStatus === 'no') {
     fixes.push({
       userId, sourceRecordId, processingContext,
@@ -272,7 +380,7 @@ function buildFixesForResult(result, userId, sourceRecordId) {
     });
   }
 
-  // ── Breach history — flag if user has DPA but vendor has breach
+  // ── Breach history ────────────────────────────────────────
   if (breachIsKnown) {
     fixes.push({
       userId, sourceRecordId, processingContext,
@@ -284,7 +392,7 @@ function buildFixesForResult(result, userId, sourceRecordId) {
     });
   }
 
-  // ── International transfer with no mechanism
+  // ── International transfer with no mechanism ──────────────
   if (transferOccurs === 'yes' &&
       (transferMech === 'none' || transferMech === 'unknown' || transferMech === '')) {
     fixes.push({
@@ -297,11 +405,37 @@ function buildFixesForResult(result, userId, sourceRecordId) {
     });
   }
 
+  // ── B2: AI-identified gaps from scraped policy ────────────
+  // Unknown vendors only. Each gap emits its own fix so it can be
+  // resolved (or improved-on-rerun) independently.
+  const gaps = Array.isArray(result.gaps) ? result.gaps : [];
+  const scrapeUrl  = result.scrapedPolicy?.url  || null;
+  const scrapeDate = result.scrapedPolicy?.scrapedAt?.split('T')[0] || null;
+  for (const gap of gaps) {
+    if (!gap || !gap.title) continue;
+    const gapSlug = slugify(gap.title);
+    const gapSev  = ['high','medium','low'].includes(gap.severity) ? gap.severity : 'medium';
+    const trace   = scrapeUrl
+      ? ` Based on public privacy policy at ${scrapeUrl} (scraped ${scrapeDate}).`
+      : ` Based on Sendwize\u2019s AI review of ${name} \u2014 no public policy was located, so this gap could not be verified against source material. Confirm directly with ${name}.`;
+    fixes.push({
+      // Per-gap sourceRecordId so each gap dedupes independently on rerun.
+      userId,
+      sourceRecordId: `vendor-${nameSlug}-gap-${gapSlug}`,
+      processingContext,
+      fixType:  'dpa_breach',
+      description: `Processor Risk Scanner: ${name} \u2014 ${gap.title}. ${gap.detail || ''}${trace}`,
+      tool:     `Processor Risk Scanner \u2014 ${name}`,
+      severity: gapSev,
+      contactVolume: volume,
+    });
+  }
+
   return fixes;
 }
 
 // ─────────────────────────────────────────────────────────────
-// calculateRiskRating
+// calculateRiskRating (unchanged)
 // ─────────────────────────────────────────────────────────────
 function calculateRiskRating(d) {
   const ico    = (d.icoRegistered                  || '').toLowerCase();
@@ -327,7 +461,8 @@ function calculateRiskRating(d) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// handleKnownVendor
+// handleKnownVendor (unchanged from v4.28 — returns dimensions
+// from Airtable library, no AI call)
 // ─────────────────────────────────────────────────────────────
 function handleKnownVendor(name, fields) {
   if (!fields) {
@@ -346,14 +481,12 @@ function handleKnownVendor(name, fields) {
   const details = [];
   let   score   = 100;
 
-  // ICO Registration
   const icoStatus = fields.ICORegistered || 'Unknown';
   if      (icoStatus === 'Yes')    { details.push({ status: 'pass', label: 'ICO Registration', description: `Registered with ICO${fields.ICORegNumber ? ` (${fields.ICORegNumber})` : ''}.` }); }
   else if (icoStatus === 'Exempt') { details.push({ status: 'info', label: 'ICO Registration', description: 'Exempt from ICO registration — verify exemption applies.' }); }
   else if (icoStatus === 'No')     { details.push({ status: 'fail', label: 'ICO Registration', description: 'Not found on ICO register. UK processors must register.' }); score -= 20; }
   else                             { details.push({ status: 'info', label: 'ICO Registration', description: 'ICO registration not confirmed — verify at ico.org.uk/ESDWebPages/Search.' }); score -= 5; }
 
-  // DPA (library position — not user's signed status)
   const dpaStatus    = fields.DPAStatus || 'Unknown';
   const dpaConfirmed = dpaStatus === 'Confirmed';
   const privacyUrl   = fields.PrivacyPolicyUrl || null;
@@ -362,7 +495,6 @@ function handleKnownVendor(name, fields) {
   else if (dpaStatus === 'Refused')    { details.push({ status: 'fail',    label: 'DPA Available', description: 'Vendor has declined to sign a DPA.' }); score -= 35; }
   else                                 { details.push({ status: 'warning', label: 'DPA Available', description: 'DPA status not confirmed from public pages.' }); score -= 15; }
 
-  // International Transfers
   const transferOccurs = fields.IntlTransferOccurs         || 'Unknown';
   const transferDest   = fields.TransferDestination        || '';
   const transferMech   = fields.TransferMechanismConfirmed || 'Unknown';
@@ -371,18 +503,15 @@ function handleKnownVendor(name, fields) {
   else if (transferOccurs === 'Yes' && (transferMech === 'None' || transferMech === 'Unknown')) { details.push({ status: 'fail', label: 'International Transfers', description: `International transfer to ${transferDest || 'unknown destination'} — mechanism not confirmed from public pages.` }); score -= 20; }
   else { details.push({ status: 'info', label: 'International Transfers', description: 'Transfer status not confirmed from public pages.' }); score -= 5; }
 
-  // Breach History
   const breachHistory = fields.BreachHistory || '';
   const breachIsKnown = breachHistory && !['none identified','none','no','unknown',''].includes(breachHistory.toLowerCase());
   if (!breachIsKnown) { details.push({ status: 'pass',    label: 'Breach History', description: 'No publicly known breaches or enforcement actions identified.' }); }
   else                { details.push({ status: 'warning', label: 'Breach History', description: breachHistory }); score -= 15; }
 
-  // DPO
   const dpoStatus = fields.DPOConfirmed || 'Unknown';
   if (dpoStatus === 'Yes') details.push({ status: 'pass', label: 'DPO', description: 'Named DPO confirmed.' });
   else details.push({ status: 'info', label: 'DPO', description: 'DPO status not confirmed.' });
 
-  // Security Cert
   const certStatus = fields.RelevantSecurityCertification || 'Unknown';
   if      (certStatus === 'Yes') { details.push({ status: 'pass', label: 'Security Certification', description: 'ISO 27001, SOC 2 or equivalent confirmed.' }); }
   else if (certStatus === 'No')  { details.push({ status: 'info', label: 'Security Certification', description: 'No certification identified — advisory only.' }); score -= 5; }
@@ -431,9 +560,22 @@ function handleKnownVendor(name, fields) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// analyzeVendorWithAI
+// analyzeVendorWithAI (B2)
+// v4.29: accepts scrapedPolicy. If provided, prompt anchors the
+// analysis to the scraped text and asks for a `gaps` array. If
+// not provided, falls back to general-knowledge analysis (still
+// returns gaps but flagged as unverified).
 // ─────────────────────────────────────────────────────────────
-async function analyzeVendorWithAI(vendorName) {
+async function analyzeVendorWithAI(vendorName, scrapedPolicy) {
+  const scrapeBlock = scrapedPolicy?.excerpt
+    ? `SCRAPED PRIVACY POLICY (from ${scrapedPolicy.url}, ${scrapedPolicy.scrapedAt}):
+"""
+${scrapedPolicy.excerpt}
+"""
+
+Use ONLY the scraped text above as evidence for dimensions and gaps. If a dimension is not addressed in the text, mark it Unknown. Do not invent facts.`
+    : `NO PRIVACY POLICY SCRAPED. Use general knowledge only. Mark dimensions Unknown where you can\u2019t verify. Any gaps you list must be flagged as unverified in the detail.`;
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method:  'POST',
@@ -444,12 +586,16 @@ async function analyzeVendorWithAI(vendorName) {
       },
       body: JSON.stringify({
         model:      'claude-sonnet-4-20250514',
-        max_tokens: 1200,
+        max_tokens: 2000,
         messages: [{
           role: 'user',
           content: `You are a UK GDPR compliance researcher. A UK marketing team uses "${vendorName}" as a data processor.
-Assess this vendor across seven compliance dimensions using only publicly verifiable information. If you cannot verify a dimension, use Unknown — never guess.
-Respond ONLY with this exact JSON — no markdown, no preamble:
+
+${scrapeBlock}
+
+Assess this vendor across seven compliance dimensions AND identify specific gaps in the privacy policy that a UK marketing team should be concerned about.
+
+Respond ONLY with this exact JSON \u2014 no markdown, no preamble:
 {
   "score": <integer 0-100>,
   "riskRating": "<Low|Medium|High>",
@@ -467,10 +613,26 @@ Respond ONLY with this exact JSON — no markdown, no preamble:
     "dpoConfirmed": "<Yes|No|Unknown>",
     "relevantSecurityCertification": "<Yes|No|Unknown>"
   },
+  "gaps": [
+    {"title":"<short gap title, e.g. 'No sub-processor list published'>","detail":"<one sentence explaining what's missing and why it matters for UK GDPR>","severity":"<high|medium|low>"}
+  ],
   "details": [{"status":"<pass|warning|info|fail>","label":"<dimension>","description":"<one sentence>"}],
   "actionItems": ["<specific action>"],
   "confidenceCaveat": "This assessment is based on publicly available information only. Verify directly with the vendor before transferring customer data."
 }
+
+Gap examples to look for (only include if actually missing from the policy):
+- No sub-processor list published
+- International transfer mechanism not stated (SCCs / Adequacy / UK-US Bridge)
+- No data retention period specified
+- No named DPO or contact for data protection queries
+- No security certification mentioned (ISO 27001, SOC 2)
+- No breach notification commitment or timeframe
+- No data subject rights process described
+- No lawful basis stated for the processing they perform
+
+Only list gaps genuinely absent from the scraped policy. Do NOT list a gap as present just because it\u2019s common practice. Empty array is a valid answer.
+
 Risk: High if ICO not registered OR known breach OR intl transfer no mechanism to non-adequate country OR DPA refused. Medium if DPA On Request/Unknown OR transfer unconfirmed OR no cert OR no DPO. Low otherwise.`
         }]
       })
@@ -491,6 +653,7 @@ Risk: High if ICO not registered OR known breach OR intl transfer no mechanism t
       dpaConfirmed:     analysis.dpaConfirmed || false,
       details:          analysis.details      || [],
       actionItems:      analysis.actionItems  || [],
+      gaps:             Array.isArray(analysis.gaps) ? analysis.gaps : [],
       confidenceCaveat: analysis.confidenceCaveat || 'Assessment based on publicly available information. Verify directly with the vendor.',
       dimensions: {
         icoRegistered:                 d.icoRegistered                 || 'Unknown',
@@ -512,6 +675,7 @@ Risk: High if ICO not registered OR known breach OR intl transfer no mechanism t
     return {
       name: vendorName, vendorType: 'Other', score: 50, riskRating: 'Medium',
       isAI: true, dpaConfirmed: false,
+      gaps: [],
       confidenceCaveat: 'Automated analysis failed. Please verify this vendor manually.',
       details: [{ status: 'warning', label: 'Analysis incomplete',
         description: 'Unable to automatically assess this vendor. Please verify compliance manually.' }],
