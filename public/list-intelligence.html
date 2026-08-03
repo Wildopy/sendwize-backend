@@ -103,7 +103,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .cert-verdict{font-size:24px;font-weight:800;font-family:'DM Mono',monospace;margin-bottom:4px}.cert-result.pass .cert-verdict{color:var(--g)}.cert-result.review .cert-verdict{color:var(--y)}.cert-result.fail .cert-verdict{color:var(--r)}
 .cert-detail{font-size:13px;color:var(--tm);line-height:1.5}
 .cert-id{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:8px}
-/* ── REGULATOR TABS ── */
 .reg-tabs{display:flex;gap:0;border-bottom:2px solid var(--b);margin-bottom:16px}
 .reg-tab{padding:8px 16px;font-size:12px;font-weight:700;font-family:inherit;background:none;border:none;cursor:pointer;color:var(--mu);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
 .reg-tab.active-ico{color:var(--blue);border-bottom-color:var(--blue)}
@@ -113,7 +112,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .reg-panel{display:none}.reg-panel.active{display:block}
 .asa-note{background:var(--purl);border:1px solid var(--purc);border-radius:var(--rad);padding:12px 16px;font-size:12px;color:#6b21a8;line-height:1.6;margin-bottom:12px}
 .cma-note{background:var(--gb);border:1px solid var(--gc);border-radius:var(--rad);padding:12px 16px;font-size:12px;color:#14532d;line-height:1.6;margin-bottom:12px}
-/* ── DOWNLOAD SECTION ── */
 .dl-section{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
 .dl-section-title{font-size:14px;font-weight:700;margin-bottom:4px}.dl-section-sub{font-size:12px;color:var(--mu);margin-bottom:14px;line-height:1.5}
 .dl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}@media(max-width:560px){.dl-grid{grid-template-columns:1fr}}
@@ -125,6 +123,18 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .dl-btn-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu)}
 .dl-btn.dl-active .dl-btn-label{color:var(--g)}.dl-btn.dl-recoverable .dl-btn-label{color:var(--o)}.dl-btn.dl-liability .dl-btn-label{color:var(--r)}
 .dl-btn-title{font-size:12px;font-weight:700;color:var(--t)}.dl-btn-count{font-size:11px;color:var(--mu)}
+.col-unlock{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:16px;box-shadow:var(--sh)}
+.col-unlock-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.col-unlock-title::before{content:'\24D8';font-size:14px;color:var(--o)}
+.col-unlock-grid{display:flex;flex-direction:column;gap:12px}
+.col-unlock-row{display:flex;gap:14px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--b)}
+.col-unlock-row:last-child{border-bottom:none;padding-bottom:0}
+.col-unlock-req{font-size:12px;font-weight:700;color:var(--o);min-width:200px;flex-shrink:0}
+.col-unlock-desc{font-size:12px;color:var(--tm);line-height:1.55}
+.col-unlock-desc strong{color:var(--t)}
+@media(max-width:560px){.col-unlock-row{flex-direction:column;gap:4px}.col-unlock-req{min-width:auto}}
+.mapping-warn{background:var(--yb);border:1px solid var(--yc);border-left:4px solid var(--y);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;font-size:13px;color:#713f12;line-height:1.55}
+.mapping-warn strong{color:#713f12}
 .loading-bg{position:fixed;inset:0;background:rgba(244,243,240,.9);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(2px)}.loading-bg.open{display:flex}
 .spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}.loading-msg{font-size:13px;color:var(--mu);font-family:'DM Mono',monospace}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -171,8 +181,29 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <input type="file" accept=".csv" id="fileInput" onchange="fileChg(this)">
     <div class="uz-icon">&#128203;</div>
     <div class="uz-title">Drop your contact list CSV here, or click to upload</div>
-    <div class="uz-sub">Auto-detects email, date added, last engagement, and more.<br>Minimum: email addresses only.</div>
+    <div class="uz-sub">For a full valuation, include <strong>email + date added + last engagement</strong>.<br>Email-only will process, but produces a limited result &mdash; see what each column unlocks below.</div>
     <div class="uz-fname" id="uzFname"></div>
+  </div>
+  <div class="col-unlock">
+    <div class="col-unlock-title">What each column unlocks</div>
+    <div class="col-unlock-grid">
+      <div class="col-unlock-row">
+        <div class="col-unlock-req">Email only</div>
+        <div class="col-unlock-desc">Contact count and address-quality checks (role addresses, disposables, typos). <strong>No valuation, no tier breakdown, no ICO consent-decay analysis.</strong></div>
+      </div>
+      <div class="col-unlock-row">
+        <div class="col-unlock-req">+ Date added</div>
+        <div class="col-unlock-desc">Consent-decay modelling and ICO risk breakdown by tier. <strong>Single most valuable column to include</strong> &mdash; without it, we can&apos;t model consent strength.</div>
+      </div>
+      <div class="col-unlock-row">
+        <div class="col-unlock-req">+ Last engagement date</div>
+        <div class="col-unlock-desc">Recoverable-tier detection and 30/60/90-day value-at-risk projection. Distinguishes engaged contacts from decaying ones.</div>
+      </div>
+      <div class="col-unlock-row">
+        <div class="col-unlock-req">+ Engagement type / order value</div>
+        <div class="col-unlock-desc">Commercial valuation refined against your sector&apos;s conversion benchmarks. Purchases weight higher than opens.</div>
+      </div>
+    </div>
   </div>
   <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:32px">
     <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Continue &rarr;</button>
@@ -193,6 +224,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <p style="font-size:14px;color:var(--tm)">We&apos;ve detected column types automatically. Correct anything that looks wrong.</p>
   </div>
   <div id="mappingTable"></div>
+  <div id="mappingLimitWarn"></div>
   <div class="context-card" id="contextCard">
     <h2>Two quick questions</h2>
     <p>We need these to calculate the commercial value of your list accurately.</p>
@@ -286,7 +318,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 var API    = 'https://sendwize-backend.vercel.app/api/list-intelligence';
 var userId = new URLSearchParams(window.location.search).get('userId') || '';
 var parsedCSV=null, detectedMapping={}, lastResults=null;
-var downloadIndices=null; // v1.3: set after upload for CSV download
+var downloadIndices=null;
 var TF=[
   {v:'ignore',l:'\u2014 ignore \u2014'},{v:'email',l:'Email address'},
   {v:'date_added',l:'Date added / joined'},{v:'last_engagement',l:'Last engagement date'},
@@ -383,6 +415,38 @@ function buildMappingTable(){
     }).join('')+
     '</tbody></table>';
   el('mappingTable').innerHTML='';el('mappingTable').appendChild(card);
+  parsedCSV.headers.forEach(function(h){
+    var s=el('map-'+sid(h));
+    if(s)s.addEventListener('change',checkMappingCoverage);
+  });
+  checkMappingCoverage();
+}
+function checkMappingCoverage(){
+  var host=el('mappingLimitWarn');
+  if(!host||!parsedCSV)return;
+  var mapping={};
+  parsedCSV.headers.forEach(function(h){
+    var s=el('map-'+sid(h));
+    if(s&&s.value&&s.value!=='ignore')mapping[h]=s.value;
+  });
+  var vals=Object.values(mapping);
+  var hasEmail=vals.indexOf('email')>=0;
+  var hasDate=vals.indexOf('date_added')>=0;
+  var hasEngagement=vals.indexOf('last_engagement')>=0||vals.indexOf('last_purchase')>=0;
+  if(!hasEmail){
+    host.innerHTML='<div class="mapping-warn"><div style="font-size:18px;flex-shrink:0">\u26D4</div><div><strong>No email column mapped.</strong> Map at least one column to Email address to run analysis.</div></div>';
+    return;
+  }
+  var missing=[];
+  if(!hasDate)missing.push('date added');
+  if(!hasEngagement)missing.push('last engagement');
+  if(missing.length===0){host.innerHTML='';return;}
+  var msg='<div class="mapping-warn"><div style="font-size:18px;flex-shrink:0">\u26A0\uFE0F</div><div><strong>Your result will be limited.</strong> Without '+missing.join(' and ')+', we can only give you contact count and address-quality checks \u2014 no valuation, no tier breakdown, no ICO consent-decay analysis. If your CSV has ';
+  msg+=(missing.length===1?'this column':'these columns');
+  msg+=' and we\u2019ve mislabelled ';
+  msg+=(missing.length===1?'it':'them');
+  msg+=', correct the mapping above.</div></div>';
+  host.innerHTML=msg;
 }
 async function submitUpload(){
   var mapping={};
@@ -409,7 +473,6 @@ async function loadResults(){
     var json=await resp.json();hideLoading();
     if(!json.hasData){showToast('No previous analysis found \u2014 upload a list to get started','');return;}
     lastResults=json;
-    // load action does not return downloadIndices (no raw emails available)
     downloadIndices=null;
     renderResults(json);showScreen('results');
   }catch(err){hideLoading();showToast('Could not load \u2014 please try again','er');}
@@ -471,7 +534,6 @@ function renderResults(d){
         '<div class="tier-desc">'+t.desc+'</div>'+
         '</div>';
     }).join('');
-  // ICO/PECR tab
   var pecrRows=[
     {icon:'\uD83D\uDD52',label:'Consent threshold contacts',detail:liabCount>0?fmt(liabCount)+' contacts ('+liabPct+'%) are below the consent strength threshold. You cannot lawfully send marketing to these contacts without re-consent.':'All contacts are above the consent threshold. Continue monitoring.', isRisk:liabCount>0, fixLabel:liabCount>0?'Create consent_expired fix record':''},
     {icon:'\uD83D\uDCC5',label:'Contacts expiring in next 90 days',detail:fmt(d.recoverableCount||0)+' contacts are in the recoverable tier and will cross the consent threshold within 90 days without engagement. Run a re-consent campaign now.', isRisk:(d.recoverableCount||0)>0, fixLabel:''},
@@ -494,7 +556,6 @@ function renderResults(d){
   el('dqCard').innerHTML='<div class="dq-title">Data quality</div>'+
     (flags.length===0?'<div class="dq-clean">\u2713 No data quality issues detected</div>':
     flags.map(function(f){return'<div class="dq-flag">'+escH(f)+'</div>';}).join(''));
-  // ASA tab
   var asaEl=el('asaSection');
   if(asaEl){
     var asaHtml='';
@@ -517,7 +578,6 @@ function renderResults(d){
       '</div>';
     asaEl.innerHTML=asaHtml;
   }
-  // CMA tab
   var cmaEl=el('cmaSection');
   if(cmaEl){
     var cmaHtml='';
@@ -540,7 +600,6 @@ function renderResults(d){
       '</div>';
     cmaEl.innerHTML=cmaHtml;
   }
-  // Opportunities
   var opps=d.opportunities||[];
   el('oppsSection').innerHTML=!opps.length
     ?'<div style="font-size:13px;color:var(--mu);padding:16px 0">No specific actions identified for this list.</div>'
@@ -555,7 +614,6 @@ function renderResults(d){
         (hasValue&&o.decayRate?'<div class="opp-decay">Value decays at ~'+o.decayRate+'% per month without action.</div>':'')+
         '</div>';
     }).join('');
-  // Download grid — only shown when downloadIndices are available (after upload)
   var dlGrid=el('dlGrid');
   var dlSection=el('downloadSection');
   if(dlGrid&&downloadIndices){
@@ -630,7 +688,7 @@ function generateFixRecord(){
   if(!liabCount){showToast('No liability contacts \u2014 no fix record needed','ok');return;}
   fetch('https://sendwize-backend.vercel.app/api/generate-fix',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({userId:userId,fixType:'consent_expired',description:'List Intelligence: '+fmt(liabCount)+' contacts are below the consent strength threshold and represent ICO enforcement risk under PECR Regulation 22. Suppress or re-consent before any marketing send.',tool:'List Intelligence',severity:liabCount>(lastResults.totalContacts||0)*0.2?'critical':'high',contactVolume:liabCount})
+    body:JSON.stringify({userId:userId,fixType:'consent_expired',description:'List Intelligence: '+fmt(liabCount)+' contacts are below the consent strength threshold and represent ICO enforcement risk under PECR Regulation 22. Suppress or re-consent before any marketing send.',tool:'List Intelligence',severity:liabCount>(lastResults.totalContacts||0)*0.2?'critical':'high',contactVolume:liabCount,sourceRecordId:'li-liability'})
   }).then(function(){showToast('Fix record created on your dashboard','ok');}).catch(function(){showToast('Could not create fix record \u2014 try again','er');});
 }
 async function generateCert(){
@@ -681,7 +739,7 @@ function loadListDemo(){
       consentExpiring:{in30:3,in60:4,in90:7,valueAtRisk:1240.00},
     };
     hideLoading();lastResults=demoResults;
-    downloadIndices=null; // demo has no raw rows so downloads unavailable
+    downloadIndices=null;
     renderResults(demoResults);showScreen('results');
     var blob=new Blob([LIST_DEMO_CSV],{type:'text/csv'});
     el('listDemoDlLink').href=URL.createObjectURL(blob);
