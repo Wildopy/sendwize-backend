@@ -16,6 +16,26 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .gate-screen{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}.gate-screen.show{display:flex}.gate-card{background:var(--w);border:1px solid var(--b);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:var(--sh-lg)}.gate-logo{font-size:22px;font-weight:700;color:var(--o);margin-bottom:24px}.gate-icon{font-size:40px;margin-bottom:16px}.gate-title{font-size:20px;font-weight:700;margin-bottom:8px}.gate-sub{font-size:14px;color:var(--mu);line-height:1.6;margin-bottom:28px}.gate-btn{display:flex;align-items:center;justify-content:center;width:100%;padding:13px 20px;background:var(--o);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}.gate-btn:hover{background:var(--od)}.gate-demo-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--w);color:var(--mu);border:1px solid var(--bm);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}.gate-demo-btn:hover{border-color:var(--o);color:var(--t)}
 .intro{margin-bottom:28px}.tool-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);background:var(--bg);border:1px solid var(--b);padding:4px 12px;border-radius:20px;margin-bottom:14px}.intro h1{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.2;margin-bottom:8px}.intro-sub{font-size:14px;color:var(--tm);line-height:1.7;max-width:560px;margin-bottom:18px}
 .distinction{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:14px 18px;display:flex;gap:20px;margin-bottom:24px}.dist-col{flex:1}.dist-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin-bottom:4px}.dist-desc{font-size:12px;color:var(--tm);line-height:1.5}.dist-this{border-left:3px solid var(--o);padding-left:14px}.dist-divider{width:1px;background:var(--b);flex-shrink:0}
+.profile-status{margin-bottom:20px;animation:fadeUp .35s ease}
+.ps-ok{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:14px 18px;box-shadow:var(--sh)}
+.ps-ok .ps-row{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.ps-item{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ps-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu)}
+.ps-value{font-size:14px;font-weight:600;color:var(--t)}
+.ps-value-warn{font-size:13px;font-weight:500;color:var(--y);font-style:italic}
+.ps-link{margin-left:auto;font-size:12px;font-weight:600;color:var(--o);text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.ps-link:hover{text-decoration:underline}
+.ps-warn-note{font-size:12px;color:var(--y);margin-top:10px;padding-top:10px;border-top:1px solid var(--b);line-height:1.5}
+.ps-block{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad-lg);padding:20px 22px;display:flex;gap:16px;align-items:flex-start}
+.ps-block-icon{font-size:22px;flex-shrink:0;line-height:1}
+.ps-block-body{flex:1;min-width:0}
+.ps-block-title{font-size:15px;font-weight:700;color:#92400e;margin-bottom:4px;line-height:1.3}
+.ps-block-desc{font-size:13px;color:#78350f;line-height:1.6;margin-bottom:14px}
+.ps-block-btn{display:inline-flex;align-items:center;gap:6px;background:var(--o);color:#fff;text-decoration:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;transition:background .15s}
+.ps-block-btn:hover{background:var(--od)}
+.ps-loading{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:14px 18px;color:var(--mu);font-size:13px;text-align:center}
+.upload-disabled{opacity:.4;pointer-events:none}
+@media(max-width:560px){.ps-ok .ps-row{flex-direction:column;align-items:flex-start;gap:12px}.ps-link{margin-left:0}}
 .sector-row{display:flex;gap:10px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap}.sector-grp{flex:1;min-width:200px}.sector-grp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}.sector-grp select{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1px solid var(--b);border-radius:8px;background:var(--w);color:var(--t)}.cpl-grp{flex:1;min-width:160px}.cpl-grp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}.cpl-wrap{position:relative}.cpl-wrap input{width:100%;font-family:'DM Mono',monospace;font-size:13px;padding:10px 12px 10px 26px;border:1px solid var(--b);border-radius:8px;background:var(--w);color:var(--t)}.cpl-pound{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--mu);font-family:'DM Mono',monospace;pointer-events:none}.cpl-note{font-size:10px;color:var(--mu);margin-top:4px}
 .upload-zone{border:2px dashed var(--b);border-radius:var(--rad-lg);padding:44px 32px;cursor:pointer;transition:all .18s;background:var(--w);position:relative;text-align:center;margin-bottom:16px}.upload-zone:hover,.upload-zone.hover{border-color:var(--o);background:var(--ol)}.upload-zone.loaded{border-color:var(--g);border-style:solid;background:var(--gb)}.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}.uz-icon{font-size:32px;margin-bottom:12px}.uz-title{font-size:17px;font-weight:700;margin-bottom:6px}.uz-sub{font-size:13px;color:var(--mu);line-height:1.6;max-width:480px;margin:0 auto}.uz-fname{font-size:11px;color:var(--g);font-family:'DM Mono',monospace;margin-top:10px;display:none}.upload-zone.loaded .uz-fname{display:block}
 .btn{display:inline-flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:11px 22px;border-radius:var(--rad);border:none;cursor:pointer;transition:all .18s}.btn-primary{background:var(--o);color:#fff}.btn-primary:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,115,23,.3)}.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}.btn-ghost{background:transparent;color:var(--t);border:1.5px solid var(--b)}.btn-ghost:hover{border-color:var(--t);background:var(--bg)}.btn-sm{padding:7px 14px;font-size:12px}
@@ -51,13 +71,14 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="loading-bg" id="loadingBg"><div class="spin"></div><div class="loading-msg" id="loadingMsg">Running algorithms&hellip;</div></div>
 <div class="modal-bg" id="logModal"><div class="modal"><h2>Log Campaign Result</h2><div class="fgrp" style="margin-bottom:12px"><label>Segment</label><div class="seg-toggle"><button class="seg-tab on" id="segTabExist" onclick="switchSegTab('exist')">Existing</button><button class="seg-tab" id="segTabNew" onclick="switchSegTab('new')">+ New segment</button></div><select id="logSeg" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)"></select><input type="text" id="logSegNew" placeholder="Enter new segment name&hellip;" style="display:none;width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t);margin-top:6px"></div><div class="modal-grid"><div class="fgrp"><label>Campaign Name</label><input type="text" id="logName" placeholder="e.g. June Newsletter"></div><div class="fgrp"><label>Type</label><select id="logType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div><div class="fgrp"><label>Send Date</label><input type="date" id="logDate"></div><div class="fgrp"><label>Volume Sent</label><input type="number" id="logVol" placeholder="e.g. 5000"></div><div class="fgrp"><label>Unsubscribes</label><input type="number" id="logUnsub" placeholder="e.g. 23"></div><div class="fgrp"><label>Open Rate (optional)</label><input type="number" id="logOpen" placeholder="e.g. 0.24" step="0.01"></div><div class="fgrp"><label>Click Rate (optional)</label><input type="number" id="logClick" placeholder="e.g. 0.05" step="0.01"></div><div class="fgrp"><label>Complaints (optional)</label><input type="number" id="logComplaints" placeholder="e.g. 2"></div></div><div class="modal-foot"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="submitLog()">Log &amp; update &rarr;</button></div></div></div>
 <div class="gate-screen" id="gateScreen" style="max-width:900px;margin:0 auto;padding:0 20px"><div class="gate-card"><div class="gate-logo">sendwize</div><div class="gate-icon">&#128202;</div><div class="gate-title">Audience Read</div><div class="gate-sub">Find out if your email segments are healthy, fatigued, or heading toward ICO risk &mdash; compared to UK industry benchmarks.</div><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a><button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> See an example diagnosis</button></div></div>
-<div class="page" id="upload-screen" style="display:none"><div class="intro"><div class="tool-tag">Audience Read &mdash; Segment Diagnosis</div><h1>Is it safe to send?</h1><p class="intro-sub">Upload your campaign export. Seven algorithms compare each segment against UK email benchmarks and tell you exactly what state it&rsquo;s in, what it&rsquo;s costing you, and what to do next.</p><div class="distinction"><div class="dist-col dist-this"><div class="dist-label">This tool &mdash; Audience Read</div><div class="dist-desc">Diagnoses how your <strong>segments are responding</strong> to your sends.</div></div><div class="dist-divider"></div><div class="dist-col" style="padding-left:14px"><div class="dist-label">Different tool &mdash; List Intelligence</div><div class="dist-desc">Valuates your <strong>contact list as a data asset</strong>.</div></div></div></div><div class="sector-row"><div class="sector-grp"><label>Your sector <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mu)">&mdash; sets the UK benchmark</span></label><select id="sectorSelect"><option value="general">General / Mixed</option><option value="ecommerce">Ecommerce / Retail</option><option value="b2b">B2B / Professional Services</option><option value="saas">SaaS / Technology</option><option value="media">Media / Publishing / Newsletter</option><option value="charity">Charity / Non-profit</option></select></div><div class="cpl-grp"><label>Cost per subscriber <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mu)">&mdash; unlocks &pound; loss calc</span></label><div class="cpl-wrap"><span class="cpl-pound">&pound;</span><input type="number" id="cplInput" placeholder="e.g. 2.50" step="0.01" min="0"></div><div class="cpl-note">Leave blank to show subscriber counts only</div></div></div><div class="upload-zone" id="zone-main" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'main')"><input type="file" accept=".csv" id="file-main" onchange="fileChg(this,'main')"><div class="uz-icon">&#128202;</div><div class="uz-title">Drop your campaign export CSV here</div><div class="uz-sub">Works with any export from Klaviyo, Mailchimp, Dotdigital or any platform.<br>You need: <strong>date, list/segment name, unsubscribes.</strong></div><div class="uz-fname" id="fname-main"></div></div><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px"><button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Diagnose my audience &rarr;</button><button class="btn btn-ghost" onclick="loadDemo()">See an example &rarr;</button></div><div style="padding-top:20px;border-top:1px solid var(--b)"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">Previously uploaded data?</p><button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last diagnosis &rarr;</button><div id="lastReportLink" style="display:none;margin-top:8px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--g);font-weight:600">&#10003; Previous diagnosis available &mdash; <button onclick="loadDash()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--o);cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">view it</button></span></div></div></div>
+<div class="page" id="upload-screen" style="display:none"><div class="intro"><div class="tool-tag">Audience Read &mdash; Segment Diagnosis</div><h1>Is it safe to send?</h1><p class="intro-sub">Upload your campaign export. Seven algorithms compare each segment against UK email benchmarks and tell you exactly what state it&rsquo;s in, what it&rsquo;s costing you, and what to do next.</p><div class="distinction"><div class="dist-col dist-this"><div class="dist-label">This tool &mdash; Audience Read</div><div class="dist-desc">Diagnoses how your <strong>segments are responding</strong> to your sends.</div></div><div class="dist-divider"></div><div class="dist-col" style="padding-left:14px"><div class="dist-label">Different tool &mdash; List Intelligence</div><div class="dist-desc">Valuates your <strong>contact list as a data asset</strong>.</div></div></div></div><div id="profileStatus" class="profile-status"><div class="ps-loading">Loading your profile&hellip;</div></div><div class="upload-zone" id="zone-main" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'main')"><input type="file" accept=".csv" id="file-main" onchange="fileChg(this,'main')"><div class="uz-icon">&#128202;</div><div class="uz-title">Drop your campaign export CSV here</div><div class="uz-sub">Works with any export from Klaviyo, Mailchimp, Dotdigital or any platform.<br>You need: <strong>date, list/segment name, unsubscribes.</strong></div><div class="uz-fname" id="fname-main"></div></div><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px"><button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Diagnose my audience &rarr;</button><button class="btn btn-ghost" onclick="loadDemo()">See an example &rarr;</button></div><div style="padding-top:20px;border-top:1px solid var(--b)"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">Previously uploaded data?</p><button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last diagnosis &rarr;</button><div id="lastReportLink" style="display:none;margin-top:8px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--g);font-weight:600">&#10003; Previous diagnosis available &mdash; <button onclick="loadDash()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--o);cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">view it</button></span></div></div></div>
 <div class="page" id="mapping-screen"><div class="intro" style="margin-bottom:24px"><div class="tool-tag">Step 2 of 2 &mdash; Confirm mapping</div><h1>Check your columns</h1><p style="font-size:14px;color:var(--tm)">We&rsquo;ve auto-detected your columns. Correct anything that looks wrong before running the diagnosis.</p></div><div id="mappingTables"></div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn btn-primary" onclick="submitUpload()">Run diagnosis &rarr;</button><button class="btn btn-ghost" onclick="showScreen('upload')">&#8592; Back</button></div></div>
 <div class="page" id="dashboard-screen"><div id="demoBanner" class="demo-banner" style="display:none"><div class="demo-banner-txt">&#128202; Example diagnosis using demo data.</div><button class="demo-dismiss" onclick="showScreen('upload')">Upload your data &rarr;</button></div><div class="dash-hdr"><div><div class="dash-title">Segment Diagnosis</div><div class="dash-meta" id="dashMeta"></div></div><div class="dash-actions"><button class="btn btn-ghost btn-sm" onclick="showScreen('upload')">+ New data</button><button class="btn btn-primary btn-sm" onclick="openModal()">Log campaign result</button></div></div><div id="nextSendBlock"></div><div id="changeBlock"></div><div style="margin-bottom:32px"><div class="sec-hdr">What your recent sends did</div><div id="campaignList"></div></div><div style="margin-bottom:32px"><div class="sec-hdr">Segment health vs UK benchmarks</div><div id="segGrid"></div><div class="nudge-list" id="nudgeList"></div></div><div style="margin-bottom:32px"><div class="sec-hdr">Priority actions</div><div class="rec-grid" id="recGrid"></div><div class="presend-box"><h3>Pre-Send Check</h3><p>Planning a send? Run 1,000 Monte Carlo scenarios against your segment&rsquo;s history.</p><div class="ps-form"><div class="fgrp"><label>Segment</label><select id="psSeg"></select></div><div class="fgrp"><label>Campaign Type</label><select id="psType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div><div class="fgrp"><label>Send Date</label><input type="date" id="psDate"></div><button class="btn btn-primary" onclick="runPreSend()">Check &rarr;</button></div><div class="ps-result" id="psResult"></div></div></div><p class="disc">Benchmarks: MailerLite 2025, GDMA 2024, DMA UK 2025, Klaviyo. Algorithms are deterministic &mdash; no AI, no external data. Not legal advice.</p></div>
 <footer class="sw-ph-footer"><img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"><div class="sw-ph-footer-links"><a href="#">About Us</a><a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a><a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/cookie-policy">Cookie Policy</a><a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a></div></footer>
 <div class="toast" id="toast"></div>
 <script>
 var API='https://sendwize-backend.vercel.app/api/audience-read';
+var PROFILE_URL='https://sendwize-backend.vercel.app/profile.html';
 var userId=new URLSearchParams(window.location.search).get('userId')||'';
 var uploadedFiles={},detectedMaps={},dashData={},segNames=[];
 var segTabMode='exist',currentSector='general',currentCpl=null;
@@ -65,8 +86,25 @@ var goodStates=['Peak receptiveness','Highly receptive post-gap','Healthy'];
 var warnStates=['Cooling','Fatigue building','Recovering'];
 var badStates=['Damaged','Complaint risk'];
 
-function getSector(){return document.getElementById('sectorSelect')?.value||'general';}
-function getCpl(){var v=parseFloat(document.getElementById('cplInput')?.value);return isNaN(v)?null:v;}
+// v7.3 (A1): sector and CPL now read exclusively from the user's profile.
+// No editable inputs on this page — user changes them in /profile.html.
+var profileSector=null;   // sector key (e.g. 'ecommerce'), or null if not set
+var profileCpl=null;      // CPL number, or null if not set
+var profileLoaded=false;  // true once /api/profile has responded
+
+var SECTOR_LABELS={
+  ecommerce:'Ecommerce / Retail',
+  b2b:'B2B / Professional Services',
+  saas:'SaaS / Technology',
+  media:'Media / Publishing / Newsletter',
+  finance:'Finance / Financial Services',
+  health:'Health / Healthcare',
+  charity:'Charity / Non-profit',
+  general:'Agency or Other'
+};
+
+function getSector(){return profileSector||'general';}
+function getCpl(){return profileCpl;}
 function hideGateAndDemo(){document.getElementById('gateScreen').classList.remove('show');document.getElementById('upload-screen').style.display='block';loadDemo();}
 function showScreen(s){['upload','mapping','dashboard'].forEach(function(n){document.getElementById(n+'-screen').style.display=n===s?'block':'none';});if(s==='upload')window.scrollTo(0,0);}
 function toggleExpand(uid){var body=document.getElementById(uid+'-expand');var btn=document.querySelector('#'+uid+' .diag-expand-btn');if(!body)return;var open=body.style.display!=='none';body.style.display=open?'none':'flex';body.style.flexDirection='column';if(btn)btn.classList.toggle('open',!open);}
@@ -75,7 +113,14 @@ function drgOver(e,el){e.preventDefault();el.classList.add('hover');}
 function drgLeave(e,el){el.classList.remove('hover');}
 function drgDrop(e,el,key){e.preventDefault();el.classList.remove('hover');if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0],key);}
 function fileChg(inp,key){if(inp.files[0])readFile(inp.files[0],key);}
-function readFile(file,key){var r=new FileReader();r.onload=function(e){var p=parseCSV(e.target.result);if(!p.rows.length){showToast('Could not parse CSV','er');return;}uploadedFiles[key]=p;document.getElementById('zone-'+key).classList.add('loaded');document.getElementById('fname-'+key).textContent=file.name;document.getElementById('btnContinue').disabled=!uploadedFiles['main'];};r.readAsText(file);}
+function readFile(file,key){var r=new FileReader();r.onload=function(e){var p=parseCSV(e.target.result);if(!p.rows.length){showToast('Could not parse CSV','er');return;}uploadedFiles[key]=p;document.getElementById('zone-'+key).classList.add('loaded');document.getElementById('fname-'+key).textContent=file.name;refreshContinueBtn();};r.readAsText(file);}
+
+// v7.3 (A1): Diagnose button requires both an uploaded CSV AND a sector set in profile.
+function refreshContinueBtn(){
+  var btn=document.getElementById('btnContinue');
+  if(!btn)return;
+  btn.disabled=!uploadedFiles['main']||!profileSector;
+}
 function parseCSV(text){var lines=text.trim().split('\n').filter(function(l){return l.trim();});if(lines.length<2)return{headers:[],rows:[]};var headers=parseLine(lines[0]);var rows=lines.slice(1).map(function(l){var vals=parseLine(l),obj={};headers.forEach(function(h,i){obj[h]=(vals[i]||'').trim();});return obj;});return{headers:headers,rows:rows};}
 function parseLine(line){var res=[],cur='',inQ=false;for(var i=0;i<line.length;i++){var c=line[i];if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){res.push(cur);cur='';}else{cur+=c;}}res.push(cur);return res;}
 
@@ -191,12 +236,56 @@ else if(avgRate<=bench.unsubNormal){sentiment={state:'Healthy',verdict:'Looking 
 else{sentiment={state:'Neutral',verdict:'No strong signals \u2014 proceed normally',statement:'Your unsubscribe rate is close to the UK '+bench.label+' average. No strong trend in either direction.',action:'Proceed with your planned campaign. Monitor on the next send.',statementCommercial:'Neutral state means sends will perform at your historical average.',statementRegulatory:null,regulatoryNote:null,confidence:0.65};}
 return{fingerprint:fingerprint,trustVelocity:{velocity:0,direction:direction,magnitude:0},freqTolerance:{toleranceRemaining:toleranceRemaining,optimalNextSend:nextDate,recommendedType:toleranceRemaining<=1?'Newsletter':'Promotional',recentSendCount:recentCamps},sentiment:sentiment,capital:capital,impacts:impacts.slice(-8),dataQuality:'Partial',missingData:[{field:'Spam complaints',message:'Complaints carry 50\u00d7 the weight of an unsubscribe. Adding them makes Trust Velocity significantly more accurate.'}],subscriberLoss:{totalExcessUnsubs:totalExcess,damagingCampaigns:damagingCamps},bench:{label:bench.label,unsubNormal:bench.unsubNormal,source:bench.source},sector:'general'};}
 
+// ── PROFILE-DRIVEN INIT (v7.3, A1) ──────────────────────────
+// Sector and CPL live only in the user's profile. This page fetches them,
+// shows a status card, and blocks the Diagnose button if sector is missing.
+async function loadProfileAndInit(){
+  var ps=document.getElementById('profileStatus');
+  if(ps)ps.innerHTML='<div class="ps-loading">Loading your profile\u2026</div>';
+  try{
+    var r=await fetch(API.replace('/audience-read','/profile')+'?action=get&userId='+encodeURIComponent(userId));
+    var p=await r.json();
+    profileSector=p.sector||null;
+    var cplRaw=p.cpl;
+    profileCpl=(cplRaw!=null&&!isNaN(parseFloat(cplRaw))&&parseFloat(cplRaw)>0)?parseFloat(cplRaw):null;
+    profileLoaded=true;
+    renderProfileStatus();
+    refreshContinueBtn();
+  }catch(e){
+    if(ps)ps.innerHTML='<div class="ps-block"><div class="ps-block-icon">\u26A0\uFE0F</div><div class="ps-block-body"><div class="ps-block-title">Could not load your profile</div><div class="ps-block-desc">We need your sector and CPL from profile settings to run Audience Read.</div><button class="ps-block-btn" onclick="loadProfileAndInit()">Try again</button></div></div>';
+  }
+}
+
+function renderProfileStatus(){
+  var ps=document.getElementById('profileStatus');
+  var zone=document.getElementById('zone-main');
+  if(!ps)return;
+  var profileLink=PROFILE_URL+(userId?'?userId='+encodeURIComponent(userId):'');
+  // Blocked: no sector set
+  if(!profileSector){
+    ps.innerHTML='<div class="ps-block"><div class="ps-block-icon">\u2699\uFE0F</div><div class="ps-block-body"><div class="ps-block-title">Set your sector before running Audience Read</div><div class="ps-block-desc">Your sector sets the UK benchmark unsubscribe rates we compare your segments against. Takes 30 seconds in profile settings.</div><a class="ps-block-btn" href="'+profileLink+'">Go to profile settings &rarr;</a></div></div>';
+    if(zone)zone.classList.add('upload-disabled');
+    return;
+  }
+  // Allowed
+  if(zone)zone.classList.remove('upload-disabled');
+  var sectorLabel=SECTOR_LABELS[profileSector]||profileSector;
+  var cplHtml=profileCpl?'<div class="ps-value">\u00a3'+profileCpl.toFixed(2).replace(/\.00$/,'')+'</div>':'<div class="ps-value-warn">not set</div>';
+  var warnHtml=!profileCpl?'<div class="ps-warn-note">Set your CPL in profile to see the \u00a3 value of excess unsubscribes on your dashboard \u2014 otherwise a sector default is used.</div>':'';
+  ps.innerHTML='<div class="ps-ok"><div class="ps-row"><div class="ps-item"><div class="ps-label">Sector</div><div class="ps-value">'+escH(sectorLabel)+'</div></div><div class="ps-item"><div class="ps-label">Cost per subscriber</div>'+cplHtml+'</div><a class="ps-link" href="'+profileLink+'">Change in profile &rarr;</a></div>'+warnHtml+'</div>';
+}
+
 document.getElementById('psDate').value=new Date().toISOString().slice(0,10);
-if(!userId){document.getElementById('gateScreen').classList.add('show');document.getElementById('upload-screen').style.display='none';}
-else{document.getElementById('upload-screen').style.display='block';
-// Pre-fill sector and CPL from profile
-fetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId='+userId).then(function(r){return r.json();}).then(function(p){if(p.sector&&document.getElementById('sectorSelect'))document.getElementById('sectorSelect').value=p.sector;if(p.averageOrderValue&&document.getElementById('cplInput'))document.getElementById('cplInput').value=p.averageOrderValue;}).catch(function(){});
-fetch(API+'?userId='+userId+'&action=load').then(function(r){return r.json();}).then(function(json){if(json.success&&Object.keys(json.segments||{}).length>0){var link=document.getElementById('lastReportLink');if(link)link.style.display='block';window._lastDashData=json;}}).catch(function(){});}
+if(!userId){
+  document.getElementById('gateScreen').classList.add('show');
+  document.getElementById('upload-screen').style.display='none';
+  // Demo path: no profile to load — hide the status card if they backtrack to upload
+  var _ps=document.getElementById('profileStatus');if(_ps)_ps.style.display='none';
+}else{
+  document.getElementById('upload-screen').style.display='block';
+  loadProfileAndInit();
+  fetch(API+'?userId='+userId+'&action=load').then(function(r){return r.json();}).then(function(json){if(json.success&&Object.keys(json.segments||{}).length>0){var link=document.getElementById('lastReportLink');if(link)link.style.display='block';window._lastDashData=json;}}).catch(function(){});
+}
 </script>
 </body>
 </html>
