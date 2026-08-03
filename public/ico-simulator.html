@@ -155,7 +155,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .missing   .doc-status-pill{background:#fee2e2;color:#991b1b}
 .doc-name{font-size:13px;font-weight:600;margin-bottom:2px}
 .doc-desc{font-size:12px;color:var(--mu);line-height:1.4}
-/* Penalty — redesigned */
+/* Penalty */
 .penalty-block{margin-bottom:24px}
 .penalty-realistic{background:var(--w);border:2px solid var(--rc);border-radius:var(--rad-lg);padding:24px 28px;margin-bottom:12px;text-align:center}
 .penalty-realistic-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--r);margin-bottom:10px}
@@ -180,7 +180,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .rep-num{width:22px;height:22px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .rep-num.ico{background:#1d4ed8}.rep-num.asa{background:#991b1b}.rep-num.cma{background:#065f46}
 .rep-text{font-size:13px;color:var(--tm);line-height:1.5}
-/* Try other regulators panel — shown after demo stage 5 */
+/* Try other regulators panel */
 .try-others{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px 28px;margin-top:16px;box-shadow:var(--sh)}
 .try-others-title{font-size:14px;font-weight:700;margin-bottom:4px}
 .try-others-sub{font-size:13px;color:var(--mu);margin-bottom:16px;line-height:1.5}
@@ -206,7 +206,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .gate-sub{font-size:14px;color:var(--mu);line-height:1.6;margin-bottom:28px}
 .gate-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;background:var(--o);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s;margin-bottom:10px}
 .gate-btn:hover{background:#d4660f}
-.gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--w);color:var(--mu);border:1px solid var(--b);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.gate-demo-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;background:var(--w);color:var(--mu);border:1px solid var(--b);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;text-decoration:none}
 .gate-demo-btn:hover{border-color:var(--o);color:var(--t)}
 /* Misc */
 .btn-next-stage{margin-top:16px;color:#fff;border:none;padding:11px 22px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
@@ -238,7 +238,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <div class="gate-title">Regulator Simulator</div>
       <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
       <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a>
-      <button class="gate-demo-btn" onclick="startDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--o)">DEMO</span> Try with example data</button>
+      <a href="?demo=1" class="gate-demo-btn"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--o)">DEMO</span> Try with example data</a>
     </div>
   </div>
   <div class="err-box" id="errBox"></div>
@@ -256,7 +256,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
   <div class="start-wrap" id="startWrap">
     <div class="reg-selector">
-      <div class="reg-selector-label">Choose a regulator</div>
+      <div class="reg-selector-label" id="regSelectorLabel">Choose a regulator</div>
       <div class="reg-grid">
         <div class="reg-card selected-ico" id="regCard-ICO" onclick="selectRegulator('ICO')">
           <div class="reg-card-badge">Selected</div>
@@ -283,7 +283,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>
         <span id="btnStartLabel">Start ICO Simulation</span>
       </button>
-      <button class="btn-demo" id="btnDemo" onclick="startDemo()">
+      <button class="btn-demo" id="btnDemo" onclick="startDemo(selectedReg)">
         <span class="demo-pill">DEMO</span>
         Try with example data
       </button>
@@ -363,10 +363,15 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </div>
 <div class="toast" id="toast"></div>
 <script>
+// v6.2 (A4): ?demo=1 shows regulator selector in demo mode. ?demo=1&reg=ICO|ASA|CMA deep-links.
+// Gate demo button now routes through ?demo=1 so the user picks a regulator instead of being forced to ICO.
+// btnDemo in startWrap now respects the currently-selected regulator card.
+
 var APP_URL   = 'https://sendwize-backend.vercel.app';
 var DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 var userId = null, simData = null, currentStage = -1, isDemoMode = false;
 var selectedReg = 'ICO';
+var isDemoStart = false;  // v6.2 (A4): true when user landed via ?demo=1 and is choosing a demo regulator
 
 var REG = {
   ICO: {
@@ -429,9 +434,6 @@ var REG = {
 };
 
 // ── DEMO SCENARIO ─────────────────────────────────────────────
-// Bramblewood Skincare: one business, one set of facts, three simultaneous regulatory exposures.
-// All three fallback objects describe the SAME company \u2014 so switching regulator in demo mode
-// reveals compounding risk rather than three unrelated scenarios.
 var DEMO_CONTEXT = 'Bramblewood Skincare, a UK e-commerce business with ~\xa31.4M annual turnover. ' +
   'They email a list of 62,000 contacts, roughly half of whom gave consent via a 2019 checkout tick-box ' +
   'that has since been replaced. They run a \u201cWas \xa339.99, Now \xa319.99 \u2014 48 hours only!\u201d promotion ' +
@@ -603,7 +605,12 @@ function selectRegulator(reg) {
   var cfg = REG[reg];
   var btn = el('btnStart');
   btn.className = 'btn-start ' + cfg.cls;
-  el('btnStartLabel').textContent = cfg.startLabel;
+  // v6.2 (A4): label reflects mode (real vs demo)
+  if (isDemoStart) {
+    el('btnStartLabel').textContent = 'Start ' + reg + ' demo';
+  } else {
+    el('btnStartLabel').textContent = cfg.startLabel;
+  }
 }
 
 function applyRegConfig() {
@@ -631,12 +638,54 @@ function applyRegConfig() {
   if (el('btnNext3')) el('btnNext3').textContent = cfg.next4;
 }
 
+// v6.2 (A4): rewrite of init() to handle ?demo=1 and ?demo=1&reg=X
 function init() {
-  userId = new URLSearchParams(window.location.search).get('userId');
+  var params = new URLSearchParams(window.location.search);
+  userId = params.get('userId');
+  var demoParam = params.get('demo');
+  var regParam  = (params.get('reg') || '').toUpperCase();
+  var demoOn    = (demoParam === '1' || demoParam === 'true');
+
+  // ?demo=1 → skip auth, show selector in demo mode (pre-select reg if provided)
+  if (demoOn) {
+    isDemoStart = true;
+    if (['ICO','ASA','CMA'].indexOf(regParam) >= 0) {
+      selectRegulator(regParam);
+    } else {
+      // Re-run selector to apply demo label on default ICO
+      selectRegulator(selectedReg);
+    }
+    setDemoStartUI();
+    return;
+  }
+
+  // Real user flow (userId required)
   if (!userId) {
     el('gateScreen').classList.add('show');
     el('startWrap').style.display = 'none';
   }
+}
+
+// v6.2 (A4): switch the start screen into demo mode
+function setDemoStartUI() {
+  // Hide the "Try with example data" button since user is already in demo
+  var demoBtn = el('btnDemo');
+  if (demoBtn) demoBtn.style.display = 'none';
+
+  // Route the primary CTA to demo, not the API
+  var btn = el('btnStart');
+  btn.onclick = function() { startDemo(selectedReg); };
+
+  // Selector label makes it explicit
+  el('regSelectorLabel').textContent = 'Choose a regulator to demo';
+
+  // Intro copy for demo mode
+  el('introTitle').textContent = 'See what an ICO, ASA or CMA investigation would look like';
+  el('introDesc').textContent  = 'Choose a regulator below and run a full five-stage simulation against a realistic UK ecommerce scenario. You can switch between regulators at any point.';
+
+  // Intro tag
+  var tag = el('introTag');
+  if (tag) tag.innerHTML = tag.innerHTML.replace('Regulator Simulator', 'Regulator Simulator \u2014 Demo');
 }
 
 function startSimulation() {
@@ -677,7 +726,7 @@ function startDemo(reg) {
   notice.innerHTML = '<span style="font-size:16px">&#x1F441;</span><div><strong>Demo mode \u2014 Bramblewood Skincare</strong><br>' +
     'A UK skincare e-commerce business with \xa31.4M turnover. Uses a resetting countdown timer, unsubstantiated \u201cwas\u201d prices, and has 31,000 contacts with pre-PECR consent. ' +
     'Switch regulator above to see how the same facts look to the ICO, ASA, and CMA simultaneously. ' +
-    '<a href="?" style="color:var(--o);font-weight:600;text-decoration:underline">Sign in</a> to run against your real data.</div>';
+    '<a href="' + DASHBOARD + '" style="color:var(--o);font-weight:600;text-decoration:underline">Sign in</a> to run against your real data.</div>';
   el('spine').before(notice);
   showSpine();
 }
@@ -822,7 +871,6 @@ function renderStage5(d) {
 
   var penaltyHtml;
   if (selectedReg === 'ASA') {
-    // ASA: no financial penalty — reputational sanctions only
     penaltyHtml =
       '<div class="penalty-block">' +
         '<div class="penalty-reputational">' +
@@ -837,7 +885,6 @@ function renderStage5(d) {
         '</div>' +
       '</div>';
   } else {
-    // ICO and CMA: show realistic range prominently, statutory ceiling separately
     var low  = p.low  || 0;
     var high = p.high || 0;
     penaltyHtml =
@@ -872,18 +919,15 @@ function renderStage5(d) {
       '<a href="' + DASHBOARD + '" style="display:inline-flex;align-items:center;gap:8px;background:var(--o);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600">Back to Dashboard \u2014 Fix Issues</a>' +
     '</div>';
 
-  // Mark stage 5 done
   setTimeout(function() {
     el('stage-4').className = 'stage done';
     el('badge-4').className = 'stage-badge badge-done';
     el('badge-4').textContent = 'Complete';
-    // In demo mode, append the "try other regulators" panel
     if (isDemoMode) renderTryOthers();
   }, 400);
 }
 
 function renderTryOthers() {
-  // Remove any existing panel
   var existing = document.querySelector('.try-others');
   if (existing) existing.remove();
   var others = ['ICO','ASA','CMA'].filter(function(r) { return r !== selectedReg; });
