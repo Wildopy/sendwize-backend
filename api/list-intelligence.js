@@ -339,10 +339,6 @@ function prioritisationScore(consent, commercial, risk, deliverability, maxComme
 
 // ─────────────────────────────────────────────────────────────
 // LIST-LEVEL ANALYSIS
-// v1.3: returns originalIndex on each scored contact so the
-// frontend can reconstruct tier CSVs from the original rows.
-// ASA/CMA notes now derived from data quality signals, not
-// just the liability percentage threshold.
 // ─────────────────────────────────────────────────────────────
 function analyseList(contacts, sector, aov) {
   const domainCounts = {};
@@ -357,7 +353,6 @@ function analyseList(contacts, sector, aov) {
     domainCounts[domain] = (domainCounts[domain] || 0) + 1;
   }
 
-  // Deduplicate while preserving originalIndex
   const seen = new Set();
   const unique = contacts.filter(c => {
     const email = (c.email || '').toLowerCase().trim();
@@ -410,8 +405,6 @@ function analyseList(contacts, sector, aov) {
   if (liabilityPct > 0.3)      icoStatus = 'High risk \u2014 significant portion below consent threshold';
   else if (liabilityPct > 0.1) icoStatus = 'Review recommended \u2014 contacts approaching threshold';
 
-  // ── ASA signals — derived from data we already have ────────
-  // We flag what the data shows; we don't invent regulatory positions.
   const roleBasedCount   = scored.filter(c => c.primaryRisk === 'role_based').length;
   const disposableCount  = scored.filter(c => c.primaryRisk === 'disposable_domain').length;
   const domainConc       = Object.values(domainCounts).some(n => n / unique.length > 0.4);
@@ -429,7 +422,6 @@ function analyseList(contacts, sector, aov) {
     ? 'ASA signals from this list: ' + asaSignals.join(' ')
     : null;
 
-  // ── CMA signals — derived from data we already have ────────
   const cmaSignals = [];
   if (liabilityPct > 0.15) {
     cmaSignals.push(`${liability.length} contacts are below the consent threshold. If promotional pricing claims are sent to this segment, the commercial context of those claims is weakened by the absence of a prior relationship signal.`);
@@ -477,20 +469,150 @@ function analyseList(contacts, sector, aov) {
     expiring60,
     expiring90,
     valueExpiring90,
-    // Full scored arrays — used for hashing, fix records, suppression
     scored,
     active,
     recoverable,
     atRisk,
     liability,
-    // v1.3: originalIndex arrays for client-side CSV download
-    // These are indices into the contacts array passed to analyseList()
-    // (already deduplicated). Frontend maps these back to parsedCSV.rows.
     activeIndices:      active.map(c => c.originalIndex),
     recoverableIndices: recoverable.map(c => c.originalIndex),
     atRiskIndices:      atRisk.map(c => c.originalIndex),
     liabilityIndices:   liability.map(c => c.originalIndex),
   };
+}
+
+// ─────────────────────────────────────────────────────────────
+// FIX EMISSION — v1.4 (C1.3)
+// One fix per finding. On rerun, look up existing pending fix for
+// this userId+fixType+sourceRecordId+Tool="List Intelligence". Then:
+//   - Finding present + no existing fix → create via generate-fix (Case E)
+//   - Finding present + existing pending → refresh Description/Exposure,
+//     clear any stale ImprovedOnRerun hint (Case C)
+//   - Finding resolved + existing pending → patch with ImprovedOnRerun
+//     JSON so the dashboard can render "improved on rerun" without
+//     auto-closing the fix (Case A) — user still confirms manually
+//   - Finding absent + no existing fix → nothing to do (Case B)
+// Mirrors the audience-read.js v7.3 pattern from session 5.
+// ─────────────────────────────────────────────────────────────
+
+// SourceRecordID constants — stable so lookup keys don't drift.
+// 'li-commercial' is kept as-is for backward-compatibility with any
+// pending fixes already created by v1.3 in production.
+const LI_SRC_LIABILITY       = 'li-liability';
+const LI_SRC_COMMERCIAL_LOSS = 'li-commercial';
+
+async function findPendingLIFix(userId, fixType, sourceRecordId) {
+  const formula = `AND({UserID}="${userId}",{FixType}="${fixType}",{Tool}="List Intelligence",{SourceRecordID}="${sourceRecordId}",{Status}="Pending")`;
+  try {
+    const records = await atGet('Compliance_Fixes', formula, '', 1);
+    return records[0] || null;
+  } catch (e) {
+    console.error('findPendingLIFix error (non-fatal):', e);
+    return null;
+  }
+}
+
+async function markLIFixImproved(fixId, previousDescription, newStateSummary) {
+  try {
+    const hint = {
+      previousState: previousDescription || '',
+      newState:      newStateSummary,
+      detectedAt:    new Date().toISOString(),
+      source:        'list-intelligence',
+    };
+    await atPatch('Compliance_Fixes', fixId, {
+      ImprovedOnRerun: JSON.stringify(hint),
+    });
+  } catch (e) {
+    console.error('markLIFixImproved error (non-fatal):', e);
+  }
+}
+
+async function refreshLIFix(fixId, description, exposureLow, exposureHigh) {
+  try {
+    const fields = { Description: description, ImprovedOnRerun: '' };
+    if (exposureLow  != null) fields.ExposureLow  = exposureLow;
+    if (exposureHigh != null) fields.ExposureHigh = exposureHigh;
+    await atPatch('Compliance_Fixes', fixId, fields);
+  } catch (e) {
+    console.error('refreshLIFix error (non-fatal):', e);
+  }
+}
+
+async function emitLIFix(userId, spec) {
+  // spec: { fixType, sourceRecordId, presentNow, description, severity, contactVolume, exposureLow, exposureHigh, resolvedSummary }
+  const existing = await findPendingLIFix(userId, spec.fixType, spec.sourceRecordId);
+
+  if (!spec.presentNow) {
+    // Case A: previously flagged, now resolved
+    if (existing) {
+      await markLIFixImproved(
+        existing.id,
+        existing.fields?.Description || '',
+        spec.resolvedSummary || `Finding resolved on rerun (${new Date().toISOString().split('T')[0]}).`
+      );
+    }
+    // Case B: nothing to do
+    return;
+  }
+
+  if (existing) {
+    // Case C: refresh existing pending fix in place
+    await refreshLIFix(
+      existing.id,
+      spec.description,
+      spec.exposureLow  ?? null,
+      spec.exposureHigh ?? null
+    );
+    return;
+  }
+
+  // Case E: no existing fix — create via generate-fix.
+  // Defensive check first: our findPendingLIFix lookup filters by SourceRecordID.
+  // If the Airtable field is missing/misnamed, or generate-fix.js isn't writing
+  // sourceRecordId into it, the lookup will always return null and we'll create
+  // a fresh fix on every upload — silent duplication.
+  // Cross-check: query pending fixes of this fixType+Tool without the
+  // SourceRecordID filter. If any come back, we're about to duplicate.
+  try {
+    const broadFormula = `AND({UserID}="${userId}",{FixType}="${spec.fixType}",{Tool}="List Intelligence",{Status}="Pending")`;
+    const others = await atGet('Compliance_Fixes', broadFormula, '', 3);
+    if (others.length > 0) {
+      const existingIds = others.map(r => r.id).join(', ');
+      console.warn(
+        `[list-intelligence] SUSPECTED DEDUPE MISS: about to create ${spec.fixType} ` +
+        `(sourceRecordId=${spec.sourceRecordId}) but ${others.length} pending fix(es) ` +
+        `of this type already exist for userId=${userId}. Most likely cause: ` +
+        `Compliance_Fixes.SourceRecordID field missing, misnamed, or not being written ` +
+        `by generate-fix.js. Existing record IDs: ${existingIds}. ` +
+        `Fix the schema/writer before this scales.`
+      );
+    }
+  } catch (e) {
+    // Diagnostic only — swallow so it never blocks the real create.
+    console.error('emitLIFix dedupe-miss check failed (non-fatal):', e);
+  }
+
+  try {
+    const body = {
+      userId,
+      fixType:        spec.fixType,
+      description:    spec.description,
+      tool:           'List Intelligence',
+      severity:       spec.severity,
+      sourceRecordId: spec.sourceRecordId,
+    };
+    if (spec.contactVolume != null) body.contactVolume = spec.contactVolume;
+    if (spec.exposureLow   != null) body.exposureLow   = spec.exposureLow;
+    if (spec.exposureHigh  != null) body.exposureHigh  = spec.exposureHigh;
+    await fetch(`${APP_URL}/api/generate-fix`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+  } catch (e) {
+    console.error(`emitLIFix create ${spec.fixType} non-fatal:`, e);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -651,14 +773,12 @@ export default async function handler(req, res) {
   const action = req.query.action || req.body?.action || 'load';
 
   try {
-    // ── detect ──────────────────────────────────────────────
     if (action === 'detect') {
       const { headers, rows } = req.body;
       if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
       return res.status(200).json({ success: true, mapping: detectListColumns(headers, rows) });
     }
 
-    // ── load ────────────────────────────────────────────────
     if (action === 'load') {
       const [checks, opps] = await Promise.all([
         atGet('List_Intelligence_Checks', `{UserID}='${userId}'`,
@@ -721,13 +841,10 @@ export default async function handler(req, res) {
           liabilityCount: s.liabilityCount,
           activeCount:   s.activeCount,
         })),
-        // load action cannot return download indices — no raw emails available.
-        // Frontend shows download buttons only when indices are present (i.e. after upload).
         downloadIndices: null,
       });
     }
 
-    // ── upload ──────────────────────────────────────────────
     if (action === 'upload') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -738,13 +855,12 @@ export default async function handler(req, res) {
       const aovVal    = parseFloat(aov) || 50;
       const version   = uploadVersion || 1;
 
-      // Build contacts — attach originalIndex so tiers can reference rows
       const contacts = rows.map((row, rowIdx) => {
         const c = {
           email: null, dateAdded: null, lastEngagement: null,
           lastPurchase: null, engagementType: null, segment: null,
           status: null, orderValue: null, engagementCount: null,
-          originalIndex: rowIdx, // v1.3: preserved for download
+          originalIndex: rowIdx,
         };
         for (const [header, target] of Object.entries(fieldMapping || {})) {
           const val = row[header];
@@ -775,7 +891,6 @@ export default async function handler(req, res) {
       const opportunities = generateOpportunities(analysis, sectorVal, aovVal);
       const today        = new Date().toISOString().split('T')[0];
 
-      // Profile update
       try {
         const profileRecs = await atGet('User_Profile', `{UserID}='${userId}'`, '', 1);
         if (profileRecs.length) {
@@ -789,7 +904,6 @@ export default async function handler(req, res) {
         }
       } catch(e) { console.error('Profile update non-fatal:', e); }
 
-      // v1.3 bug fix: ASANote and CMANote now written to List_Intelligence_Checks
       await atCreate('List_Intelligence_Checks', {
         UserID:            userId,
         CheckDate:         today,
@@ -848,43 +962,38 @@ export default async function handler(req, res) {
         });
       }
 
-      if (analysis.liabilityCount > 0) {
-        try {
-          await fetch(`${APP_URL}/api/generate-fix`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({
-              userId,
-              fixType:       'consent_expired',
-              description:   `List Intelligence: ${analysis.liabilityCount.toLocaleString()} contacts are below the consent strength threshold and represent ICO enforcement risk. Suppress or re-consent before sending.`,
-              tool:          'List Intelligence',
-              severity:      analysis.liabilityCount > analysis.totalContacts * 0.2 ? 'critical' : 'high',
-              contactVolume: analysis.liabilityCount,
-            }),
-          });
-        } catch(e) { console.error('Fix record non-fatal:', e); }
-      }
+      // ── FIX EMISSION — v1.4 (C1.3) ─────────────────────────
+      // Two finds, two fixes, each with stable sourceRecordId so
+      // rerun behaviour is: refresh in place, mark improved when
+      // resolved, or create fresh — never blindly duplicate.
 
-      if (analysis.valueExpiring90 && analysis.valueExpiring90 >= 100) {
-        const expiringContacts = (analysis.expiring30 || 0) + (analysis.expiring60 || 0) + (analysis.expiring90 || 0);
-        try {
-          await fetch(`${APP_URL}/api/generate-fix`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({
-              userId,
-              fixType:        'commercial_loss',
-              description:    `List Intelligence: approximately \u00a3${Math.round(analysis.valueExpiring90).toLocaleString('en-GB')} of estimated list value sits with ${expiringContacts.toLocaleString()} contacts whose consent is projected to expire within 90 days.`,
-              tool:           'List Intelligence',
-              severity:       'medium',
-              contactVolume:  expiringContacts,
-              sourceRecordId: 'li-commercial',
-              exposureLow:    Math.round(analysis.valueExpiring90 * 0.5),
-              exposureHigh:   Math.round(analysis.valueExpiring90),
-            }),
-          });
-        } catch(e) { console.error('Commercial fix non-fatal:', e); }
-      }
+      // Finding 1: consent-threshold liability (ICO)
+      await emitLIFix(userId, {
+        fixType:         'consent_expired',
+        sourceRecordId:  LI_SRC_LIABILITY,
+        presentNow:      analysis.liabilityCount > 0,
+        description:     `List Intelligence: ${analysis.liabilityCount.toLocaleString('en-GB')} contact${analysis.liabilityCount !== 1 ? 's are' : ' is'} below the consent strength threshold and represent${analysis.liabilityCount !== 1 ? '' : 's'} ICO enforcement risk under PECR Regulation 22. Suppress or re-consent before any marketing send.`,
+        severity:        analysis.liabilityCount > analysis.totalContacts * 0.2 ? 'critical' : 'high',
+        contactVolume:   analysis.liabilityCount,
+        resolvedSummary: `List Intelligence rerun on ${today}: 0 contacts below the consent strength threshold. Prior liability appears resolved — confirm and close on your dashboard.`,
+      });
+
+      // Finding 2: commercial value expiring inside 90 days
+      const expiringContacts = (analysis.expiring30 || 0) + (analysis.expiring60 || 0) + (analysis.expiring90 || 0);
+      const commercialPresent = analysis.valueExpiring90 >= 100;
+      await emitLIFix(userId, {
+        fixType:         'commercial_loss',
+        sourceRecordId:  LI_SRC_COMMERCIAL_LOSS,
+        presentNow:      commercialPresent,
+        description:     commercialPresent
+          ? `List Intelligence: approximately \u00a3${Math.round(analysis.valueExpiring90).toLocaleString('en-GB')} of estimated list value sits with ${expiringContacts.toLocaleString('en-GB')} contact${expiringContacts !== 1 ? 's' : ''} whose consent is projected to expire within 90 days.`
+          : `List Intelligence: commercial value at risk within 90 days below the alert threshold.`,
+        severity:        'medium',
+        contactVolume:   expiringContacts,
+        exposureLow:     commercialPresent ? Math.round(analysis.valueExpiring90 * 0.5) : null,
+        exposureHigh:    commercialPresent ? Math.round(analysis.valueExpiring90)       : null,
+        resolvedSummary: `List Intelligence rerun on ${today}: commercial value at risk within 90 days has fallen below the alert threshold. Prior concern appears resolved — confirm and close on your dashboard.`,
+      });
 
       for (const c of analysis.liability.slice(0, 200)) {
         try {
@@ -924,9 +1033,6 @@ export default async function handler(req, res) {
         cmaNote:           analysis.cmaNote  || null,
         consentExpiring:   { in30: analysis.expiring30, in60: analysis.expiring60, in90: analysis.expiring90, valueAtRisk: analysis.valueExpiring90 },
         changes,
-        // v1.3: row indices for client-side CSV download
-        // Frontend maps these against parsedCSV.rows to build CSVs.
-        // No emails are returned — client already has them from the upload.
         downloadIndices: {
           active:      analysis.activeIndices,
           recoverable: analysis.recoverableIndices,
@@ -936,7 +1042,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // ── certificate ─────────────────────────────────────────
     if (action === 'certificate') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
