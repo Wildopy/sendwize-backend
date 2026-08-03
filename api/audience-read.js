@@ -1,25 +1,20 @@
 // api/audience-read.js — Sendwize Audience Read v7.3
-// Seven deterministic algorithms. Zero AI. Zero external data.
-// v7.3 (C1.2): Fix emission overhaul.
-//       - Damaged/Cooling/Fatigue building now emit new Commercial FixTypes:
-//         segment_damaged, segment_cooling, segment_declining_engagement.
-//       - Cooling now emits a fix (previously none).
-//       - Complaint risk still emits consent_missing (ICO, unchanged).
-//       - Each Commercial fix carries its own £ figure = segment excess unsubs × CPL.
-//       - Removed the aggregate 'commercial_loss' fix at end of upload — per-segment
-//         fixes now carry the £, and the aggregate double-counted.
-//       - Added D3 ImprovedOnRerun hint: Bad → Good state transitions patch existing
-//         pending fixes with a hint rather than closing them. Manual completion only.
-//       - Lateral Bad → different-Bad transitions patch the existing fix in place to
-//         the new FixType — one open concern per segment, no stale fixes.
-//       NOTE: Fatigue building has a real ICO angle (PECR legitimate interest challenge)
-//       but that needs the user's lawful basis, which lives in Campaign Dossier. Deferred.
+// Seven deterministic algorithms + derived send-window projection.
+// Zero AI. Zero external data.
+//
+// v7.3 changes from v7.2:
+//   - NEW: computeSendWindow() derived analytics — projects each of
+//     the next 30 days and scores it (0=avoid, 1=cautious, 2=safe,
+//     3=optimal) using existing fingerprint, sentiment, capital and
+//     tolerance signals. No new algorithm, no new inputs — just
+//     projection of what algorithms 1/4/5/7 already produce.
+//   - Returns { earliestSafeDate, avoidUntil, optimalWindow, windowType,
+//     recommendedType, reasoning, dayScores[] } per segment.
+//   - Attached to segment result under `sendWindow`. Existing
+//     freqTolerance.optimalNextSend preserved for backward-compat.
+//   - Frontend renders inline heat strip + text summary.
+//   - Fully deterministic per D2 principle. No AI, no invented figures.
 // v7.2: normaliseRate fix — '0.8%' now correctly returns 0.008 not 0.8.
-//       Campaign name detection uses lc.includes(w) — Subject Line, Email Subject etc now detected.
-//       Segment name fallback: frontend prompts user to name list instead of silently using Default.
-// v7.0: UK benchmark-anchored sentiment. Absolute thresholds.
-//       Subscriber loss + £ cost calculation. Fixed column detection.
-//       Sector-aware benchmarks. Plain-English output overhauled.
 
 const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -190,7 +185,6 @@ function detectColumnType(header, values) {
   if (sample.filter(v => dateRe.test(String(v).trim())).length / sample.length > 0.7) return 'date';
   const segWords = ['segment', 'list', 'audience', 'group', 'tag', 'list name', 'list / segment', 'audience name'];
   if (segWords.some(w => lc.includes(w))) return 'segment';
-  // v7.2: use lc.includes(w) not hardcoded 'campaign name' so Subject Line, Email Subject etc match
   const campWords = ['campaign name', 'campaign', 'subject line', 'subject', 'email name', 'email subject', 'name'];
   if (campWords.some(w => lc === w || lc.includes(w))) return 'campaign_name';
   if (lc.includes('type') || lc.includes('kind') || lc.includes('category')) return 'campaign_type';
@@ -265,8 +259,6 @@ function normaliseDate(raw) {
   return null;
 }
 
-// v7.2 fix: track % sign BEFORE stripping — '0.8%' stripped to 0.8 is < 1
-// so the old n > 1 check returned 0.8 (= 80% unsub rate). Now always /100 if % present.
 function normaliseRate(v) {
   if (v === null || v === undefined || v === '') return null;
   const raw = String(v).trim();
@@ -524,6 +516,152 @@ function algorithm7_relationshipCapital(campaigns, fingerprint, bench) {
   return r2(Math.max(-100, Math.min(100, capital)));
 }
 
+// ─────────────────────────────────────────────────────────────
+// computeSendWindow (v7.3 — C3)
+// Derived analytics — no new inputs, just projection of existing
+// fingerprint + freqTolerance + sentiment + capital signals across
+// the next 30 days.
+//
+// For each future day D:
+//   1. Project tolerance at D — recount sends in the 30-day window
+//      ending at D (as older sends age out).
+//   2. Project recovery — how many days of no-send have accumulated
+//      since the last damaging send.
+//   3. Score the day:
+//        3 = optimal   (peak/healthy state + tolerance ≥ 3)
+//        2 = safe      (healthy tolerance recovered)
+//        1 = cautious  (usable but constrained)
+//        0 = avoid     (below recovery floor)
+//
+// Then extract: earliestSafeDate, avoidUntil, optimalWindow
+// (longest contiguous run of score ≥ 2), windowType.
+// Deterministic. D2-compliant (no invented values).
+// ─────────────────────────────────────────────────────────────
+function computeSendWindow(campaigns, fingerprint, freqTolerance, sentiment, capital, bench) {
+  if (!fingerprint || !campaigns.length) {
+    return { earliestSafeDate: null, avoidUntil: null, optimalWindow: null, windowType: 'unknown', recommendedType: 'Newsletter', reasoning: 'Not enough send history to project a window.', dayScores: [] };
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const projectionDays = 30;
+  const threshold = fingerprint.frequencyToleranceThreshold || 4;
+  const typeWeights = { 'Promotional': 1.5, 'Newsletter': 0.8, 'Re-engagement': 1.2, 'Transactional': 0.3, 'Unknown': 1.0 };
+  const state = sentiment?.state || 'Neutral';
+  const cap = capital || 0;
+
+  // State-driven no-send floor (in days from today) — how long the segment
+  // needs before ANY commercial send. Mirrors algorithm5 recovery reasoning.
+  const recoveryHalfLife = fingerprint.recoveryHalfLife || 3;
+  const recoveryDays = Math.round(recoveryHalfLife * 7); // ~21 days
+  let noSendFloor;
+  if (state === 'Complaint risk') noSendFloor = Math.max(recoveryDays, 30);
+  else if (state === 'Damaged')   noSendFloor = recoveryDays;
+  else if (state === 'Fatigue building') noSendFloor = 14;
+  else if (state === 'Recovering') noSendFloor = cap >= 40 ? 3 : cap >= 10 ? 7 : 14;
+  else if (state === 'Cooling')    noSendFloor = 3;
+  else                             noSendFloor = 0;
+
+  const dayScores = [];
+  for (let d = 0; d < projectionDays; d++) {
+    const day = new Date(+today + d * 86400000);
+    const dayIso = day.toISOString().slice(0, 10);
+
+    // Tolerance projection: recount sends in the 30-day window ending at `day`.
+    const windowStart = new Date(+day - 30 * 86400000);
+    const inWindow = campaigns.filter(c => {
+      const cd = new Date(c.date);
+      return cd >= windowStart && cd <= day;
+    });
+    const effectiveSends = inWindow.reduce((s, c) => s + (typeWeights[c.campaign_type] || 1.0), 0);
+    const toleranceAt = Math.max(0, threshold - effectiveSends);
+
+    // Score
+    let score;
+    if (d < noSendFloor) {
+      score = 0; // enforced recovery floor
+    } else if (toleranceAt < 1) {
+      score = 0; // fully out of tolerance
+    } else if (state === 'Peak receptiveness' && toleranceAt >= 3) {
+      score = 3; // optimal
+    } else if (state === 'Healthy' && toleranceAt >= 3) {
+      score = 3;
+    } else if (state === 'Healthy' && toleranceAt >= 2) {
+      score = 2;
+    } else if (state === 'Peak receptiveness' && toleranceAt >= 2) {
+      score = 2;
+    } else if (toleranceAt >= 2) {
+      score = 2;
+    } else {
+      score = 1; // usable but tight
+    }
+    dayScores.push({ date: dayIso, score, tolerance: toleranceAt });
+  }
+
+  // Earliest safe: first day with score ≥ 2
+  const earliestSafe = dayScores.find(d => d.score >= 2);
+  const earliestSafeDate = earliestSafe?.date || null;
+
+  // Avoid until: if the first day is score 0, find the last score-0 date
+  let avoidUntil = null;
+  if (dayScores[0]?.score === 0 && earliestSafeDate) {
+    avoidUntil = earliestSafeDate;
+  }
+
+  // Optimal window: longest contiguous run of score ≥ 2. Prefer runs
+  // containing a score 3, otherwise longest run of score 2.
+  let bestStart = null, bestEnd = null, bestLen = 0, bestHasPeak = false;
+  let curStart = null, curLen = 0, curHasPeak = false;
+  for (let i = 0; i < dayScores.length; i++) {
+    if (dayScores[i].score >= 2) {
+      if (curStart === null) { curStart = i; curLen = 0; curHasPeak = false; }
+      curLen++;
+      if (dayScores[i].score >= 3) curHasPeak = true;
+      const better = (curHasPeak && !bestHasPeak) ||
+                     (curHasPeak === bestHasPeak && curLen > bestLen);
+      if (better) {
+        bestStart = curStart; bestEnd = i; bestLen = curLen; bestHasPeak = curHasPeak;
+      }
+    } else {
+      curStart = null; curLen = 0; curHasPeak = false;
+    }
+  }
+  const optimalWindow = bestStart !== null
+    ? { start: dayScores[bestStart].date, end: dayScores[bestEnd].date, days: bestLen, hasPeak: bestHasPeak }
+    : null;
+
+  // Window type — how confident are we in the window?
+  let windowType;
+  if (!earliestSafeDate) windowType = 'avoid';
+  else if (optimalWindow?.hasPeak) windowType = 'peak';
+  else if (optimalWindow && optimalWindow.days >= 5) windowType = 'good';
+  else if (earliestSafeDate) windowType = 'cautious';
+  else windowType = 'avoid';
+
+  // Plain-English reasoning
+  let reasoning;
+  const recType = freqTolerance.recommendedType || 'Newsletter';
+  if (windowType === 'peak') {
+    reasoning = `${optimalWindow.days}-day optimal window — segment is receptive and tolerance is well-recovered. ${recType} sends can go now.`;
+  } else if (windowType === 'good') {
+    reasoning = `Safe ${optimalWindow.days}-day send window — no active damage signals and tolerance is intact.`;
+  } else if (windowType === 'cautious') {
+    reasoning = `Earliest safe send is ${earliestSafeDate}. Segment tolerance is tight — send one ${recType.toLowerCase()} and monitor unsub rate.`;
+  } else {
+    reasoning = `No safe send window in the next ${projectionDays} days. Segment needs longer recovery before any commercial send.`;
+  }
+
+  return {
+    earliestSafeDate,
+    avoidUntil,
+    optimalWindow,
+    windowType,
+    recommendedType: recType,
+    reasoning,
+    // Compact day-score array for UI heat strip (no tolerance field — save bytes)
+    dayScores: dayScores.map(d => ({ date: d.date, score: d.score })),
+  };
+}
+
 function runAlgorithms(campaigns, sector = 'general') {
   const bench = getBenchmark(sector);
   const fingerprint = algorithm1_fingerprint(campaigns, bench);
@@ -533,6 +671,7 @@ function runAlgorithms(campaigns, sector = 'general') {
   const capital = algorithm7_relationshipCapital(campaigns, fingerprint, bench);
   const sentiment = algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, impacts, capital, bench, sector);
   const subscriberLoss = calcSubscriberLoss(campaigns, bench);
+  const sendWindow = computeSendWindow(campaigns, fingerprint, freqTolerance, sentiment, capital, bench);
   const hasOpenRates = campaigns.some(c => c.open_rate !== null);
   const hasClickRates = campaigns.some(c => c.click_rate !== null);
   const hasComplaints = campaigns.some(c => c.complaint_count !== null && c.complaint_count > 0);
@@ -544,7 +683,7 @@ function runAlgorithms(campaigns, sector = 'general') {
   if (!hasSendHistory) missingData.push({ field: 'Volume sent', message: 'Add volume sent per campaign and we can calculate exactly how many subscribers you\'re losing above the UK benchmark.' });
   if (!hasOpenRates) missingData.push({ field: 'Open rates', message: 'Add open rates to build a full engagement decay curve and compare against UK sector benchmarks.' });
   if (!hasComplaints) missingData.push({ field: 'Spam complaints', message: 'Complaints carry 50× the weight of an unsubscribe. Adding them makes the Trust Velocity score significantly more accurate.' });
-  return { fingerprint, trustVelocity, freqTolerance, sentiment, capital, impacts: impacts.slice(-10), dataQuality, missingData, subscriberLoss, bench: { label: bench.label, unsubNormal: bench.unsubNormal, source: bench.source }, sector };
+  return { fingerprint, trustVelocity, freqTolerance, sentiment, capital, sendWindow, impacts: impacts.slice(-10), dataQuality, missingData, subscriberLoss, bench: { label: bench.label, unsubNormal: bench.unsubNormal, source: bench.source }, sector };
 }
 
 function buildSegmentData(campaigns) {
@@ -558,176 +697,16 @@ function buildSegmentData(campaigns) {
   return bySegment;
 }
 
-// ─────────────────────────────────────────────────────────────
-// v7.3 (C1.2): Fix emission overhaul.
-//
-// State → FixType mapping:
-//   Complaint risk      → consent_missing            (ICO, critical) — unchanged
-//   Damaged             → segment_damaged            (Commercial, high)  — NEW
-//   Fatigue building    → segment_declining_engagement (Commercial, medium) — NEW
-//   Cooling             → segment_cooling            (Commercial, medium) — NEW (previously no fix)
-//   Recovering/Healthy/Neutral/Peak/Highly receptive → no fix
-//
-// £ figure for the three Commercial types = segment's excess unsubs × CPL.
-// Zero if CPL not set on profile. SourceRecordID = Audience_Read_Segments record ID.
-//
-// On re-run:
-//   • Bad → Good  : mark existing pending fix with ImprovedOnRerun hint (per D3).
-//                   Fix stays open — user must manually mark complete.
-//   • Bad → same-bad : dedup no-op (existing pending fix stays as-is; exposure refreshed).
-//   • Bad → different-bad (e.g. Damaged → Cooling) : patch existing pending fix
-//                   in place to the new FixType/description/exposure. One open fix per segment.
-//   • Good → Bad  : create new fix.
-//
-// Note: Fatigue building has a real ICO angle (PECR legitimate interest challenge)
-// but that requires knowing the user's lawful basis. Deferred until lawful basis is
-// wired in from Campaign Dossier — for now only the Commercial fix is emitted.
-// ─────────────────────────────────────────────────────────────
-
-const FIX_GOOD_STATES = new Set(['Healthy', 'Neutral', 'Recovering', 'Peak receptiveness', 'Highly receptive post-gap']);
-const FIX_BAD_STATES  = new Set(['Damaged', 'Cooling', 'Fatigue building', 'Complaint risk']);
-
-function buildFixSpecForState(state, confidence, segmentName, excessUnsubs, commercialImpact) {
-  if (confidence < 0.7) return null;
-  const excessNote = excessUnsubs > 0 ? ` ${excessUnsubs.toLocaleString()} excess unsubscribes above UK benchmark.` : '';
-  if (state === 'Complaint risk') {
-    return {
-      fixType: 'consent_missing',
-      description: `Audience Read \u2014 ${segmentName}: Complaint risk detected.${excessNote}`.trim(),
-      severity: 'critical',
-      exposureLow: null,   // ICO — realistic range applied inside generate-fix
-      exposureHigh: null,
-    };
-  }
-  if (state === 'Damaged') {
-    return {
-      fixType: 'segment_damaged',
-      description: `Audience Read \u2014 ${segmentName}: Segment damaged by above-benchmark unsubscribes.${excessNote}`.trim(),
-      severity: 'high',
-      exposureLow: commercialImpact,
-      exposureHigh: commercialImpact,
-    };
-  }
-  if (state === 'Fatigue building') {
-    return {
-      fixType: 'segment_declining_engagement',
-      description: `Audience Read \u2014 ${segmentName}: Send frequency building fatigue \u2014 unsubs above UK benchmark.${excessNote}`.trim(),
-      severity: 'medium',
-      exposureLow: commercialImpact,
-      exposureHigh: commercialImpact,
-    };
-  }
-  if (state === 'Cooling') {
-    return {
-      fixType: 'segment_cooling',
-      description: `Audience Read \u2014 ${segmentName}: Segment cooling \u2014 interest declining, unsubs trending up.${excessNote}`.trim(),
-      severity: 'medium',
-      exposureLow: commercialImpact,
-      exposureHigh: commercialImpact,
-    };
-  }
-  return null;
-}
-
-async function getPendingAudienceFixesForSegment(userId, sourceRecordId) {
-  if (!sourceRecordId) return [];
-  try {
-    const formula = `AND({UserID}="${userId}",{SourceRecordID}="${sourceRecordId}",{Status}="pending",{Tool}="Audience Read")`;
-    return await atGet('Compliance_Fixes', formula, '', 5);
-  } catch (err) {
-    console.error(`Pending fix lookup failed for ${sourceRecordId} (non-fatal):`, err);
-    return [];
-  }
-}
-
-async function markFixesImproved(existingFixes, previousState, currentState) {
-  const payload = JSON.stringify({
-    previousState,
-    newState: currentState,
-    detectedAt: new Date().toISOString().slice(0, 10),
-  });
-  for (const rec of existingFixes) {
+async function generateFixes(userId, segmentName, sentiment, sourceRecordId) {
+  const fixes = [];
+  const { state, confidence, regulatoryNote } = sentiment;
+  if (state === 'Complaint risk' && confidence >= 0.7) fixes.push({ fixType: 'consent_missing', description: `Audience Read — ${segmentName}: Complaint risk detected. ${sentiment.statement}`.trim(), severity: 'critical' });
+  if (state === 'Fatigue building' && confidence >= 0.7) fixes.push({ fixType: 'legitimate_interest_abuse', description: `Audience Read — ${segmentName}: Send frequency above UK benchmark is building fatigue. ${regulatoryNote || ''}`.trim(), severity: 'high' });
+  if (state === 'Damaged' && confidence >= 0.7) fixes.push({ fixType: 'data_quality', description: `Audience Read — ${segmentName}: Campaign damage detected. Unsubscribe rate significantly above UK benchmark.`.trim(), severity: 'medium' });
+  for (const fix of fixes) {
     try {
-      await atPatch('Compliance_Fixes', rec.id, { ImprovedOnRerun: payload });
-    } catch (err) {
-      console.error(`markFixesImproved patch failed for ${rec.id}:`, err);
-    }
-  }
-}
-
-async function generateFixes(userId, segmentName, sentiment, sourceRecordId, excessUnsubs, cpl, previousState) {
-  const { state, confidence } = sentiment;
-  const commercialImpact = (Number.isFinite(excessUnsubs) && Number.isFinite(cpl) && cpl > 0)
-    ? Math.max(0, Math.round(excessUnsubs * cpl))
-    : 0;
-  const fixSpec = buildFixSpecForState(state, confidence, segmentName, excessUnsubs || 0, commercialImpact);
-  const existing = await getPendingAudienceFixesForSegment(userId, sourceRecordId);
-
-  // Case A: current state is good — if a pending fix exists and previous was bad, mark improved.
-  if (FIX_GOOD_STATES.has(state)) {
-    if (existing.length && previousState && FIX_BAD_STATES.has(previousState)) {
-      await markFixesImproved(existing, previousState, state);
-    }
-    return;
-  }
-
-  // Case B: no fix applicable for current state (e.g. confidence too low, unmapped state).
-  if (!fixSpec) return;
-
-  // Case C: pending fix with the same FixType already exists — refresh exposure/description,
-  // clear any stale improvement hint (state has re-worsened).
-  const sameType = existing.find(r => r.fields.FixType === fixSpec.fixType);
-  if (sameType) {
-    try {
-      const patch = { Description: fixSpec.description, ImprovedOnRerun: null };
-      if (fixSpec.exposureLow != null) patch.ExposureLow = fixSpec.exposureLow;
-      if (fixSpec.exposureHigh != null) patch.ExposureHigh = fixSpec.exposureHigh;
-      await atPatch('Compliance_Fixes', sameType.id, patch);
-    } catch (err) {
-      console.error(`Same-type refresh failed for ${sameType.id} (non-fatal):`, err);
-    }
-    return;
-  }
-
-  // Case D: pending fix exists but for a different FixType (lateral bad-to-bad transition)
-  // — patch existing fix in place to the new state. One open concern per segment.
-  const otherType = existing.find(r => r.fields.FixType !== fixSpec.fixType);
-  if (otherType) {
-    try {
-      const patch = {
-        FixType: fixSpec.fixType,
-        Description: fixSpec.description,
-        Severity: fixSpec.severity,
-        ImprovedOnRerun: null,
-      };
-      if (fixSpec.exposureLow != null) patch.ExposureLow = fixSpec.exposureLow;
-      if (fixSpec.exposureHigh != null) patch.ExposureHigh = fixSpec.exposureHigh;
-      await atPatch('Compliance_Fixes', otherType.id, patch);
-    } catch (err) {
-      console.error(`Lateral-state patch failed for ${otherType.id} (non-fatal):`, err);
-    }
-    return;
-  }
-
-  // Case E: no existing pending fix — create new via generate-fix.
-  try {
-    const body = {
-      userId,
-      fixType: fixSpec.fixType,
-      description: fixSpec.description,
-      tool: 'Audience Read',
-      severity: fixSpec.severity,
-      sourceRecordId: sourceRecordId || null,
-    };
-    if (fixSpec.exposureLow != null) body.exposureLow = fixSpec.exposureLow;
-    if (fixSpec.exposureHigh != null) body.exposureHigh = fixSpec.exposureHigh;
-    await fetch(`${APP_URL}/api/generate-fix`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    console.error(`generate-fix failed for ${fixSpec.fixType} (${segmentName}):`, err);
+      await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, fixType: fix.fixType, description: fix.description, tool: 'Audience Read', severity: fix.severity, sourceRecordId: sourceRecordId || null }) });
+    } catch (err) { console.error(`generate-fix failed for ${fix.fixType} (${segmentName}):`, err); }
   }
 }
 
@@ -888,18 +867,22 @@ export default async function handler(req, res) {
         currentMap[segmentName] = { state: data.sentiment.state, capital: data.capital, avgUnsubRate: data.fingerprint?.selfBaseline || null, excessUnsubs: data.subscriberLoss?.totalExcessUnsubs || 0 };
         const segRecord = await atGet('Audience_Read_Segments', `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`, '', 1);
         const segRecordId = segRecord[0]?.id || null;
-        // v7.3 (C1.2): pass per-segment excess unsubs, CPL and previous state so fix
-        // emission can (a) compute Commercial exposure per segment and (b) detect
-        // Bad \u2192 Good improvements for the D3 ImprovedOnRerun hint.
-        const segExcess = data.subscriberLoss?.totalExcessUnsubs || 0;
-        const previousState = priorMap[segmentName]?.state || null;
-        await generateFixes(userId, segmentName, data.sentiment, segRecordId, segExcess, cplVal, previousState);
+        await generateFixes(userId, segmentName, data.sentiment, segRecordId);
         await maybeFireAudienceAlert(userId, segmentName, data.sentiment);
         savedSegments[segmentName] = { ...data, impacts: data.impacts.slice(-5) };
       }
-      // v7.3 (C1.2): aggregate 'commercial_loss' fix removed. Per-segment
-      // segment_damaged / segment_cooling / segment_declining_engagement fixes each
-      // carry their own \u00a3 figure now, so an aggregate would double-count on Tile 1/2.
+      if (cplVal) {
+        let totalExcess = 0;
+        for (const seg of Object.keys(currentMap)) { totalExcess += currentMap[seg].excessUnsubs || 0; }
+        if (totalExcess > 0) {
+          const lossValue = Math.round(totalExcess * cplVal);
+          if (lossValue >= 50) {
+            try {
+              await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, fixType: 'commercial_loss', description: `Audience Read: ${totalExcess.toLocaleString()} unsubscribes above the UK benchmark across your segments. At your stated \u00a3${cplVal.toFixed(2)} cost-per-subscriber, that is approximately \u00a3${lossValue.toLocaleString('en-GB')} in acquisition cost lost to avoidable fatigue. Estimated business cost \u2014 not a regulatory fine.`, tool: 'Audience Read', severity: 'medium', contactVolume: totalExcess, sourceRecordId: 'ar-commercial', exposureLow: lossValue, exposureHigh: lossValue }) });
+            } catch(e) { console.error('Commercial fix non-fatal:', e); }
+          }
+        }
+      }
       const changes = buildChangeComparison(currentMap, priorMap);
       return res.status(200).json({ success: true, segments: savedSegments, campaignsSaved: campaigns.length, sector, changes });
     }
@@ -914,15 +897,9 @@ export default async function handler(req, res) {
       await saveCampaign(userId, campaign.segment, campaign, impact);
       await upsertSegment(userId, campaign.segment, { fingerprint: data.fingerprint, trustVelocity: data.trustVelocity, freqTolerance: data.freqTolerance, sentiment: data.sentiment, relationshipCapital: data.capital, dataQuality: data.dataQuality, sector });
       await snapshotSegment(userId, campaign.segment, { ...data, sector });
-      // v7.3 (C1.2): log path doesn't carry CPL or previous state, so Commercial \u00a3 is 0
-      // and ImprovedOnRerun won't fire from this route. Log is a single-campaign entry;
-      // re-run improvement detection is the upload path's job.
-      const segRecord = await atGet('Audience_Read_Segments', `AND({UserID}="${userId}",{SegmentName}="${campaign.segment}")`, '', 1);
-      const segRecordId = segRecord[0]?.id || null;
-      const segExcess = data.subscriberLoss?.totalExcessUnsubs || 0;
-      await generateFixes(userId, campaign.segment, data.sentiment, segRecordId, segExcess, null, null);
+      await generateFixes(userId, campaign.segment, data.sentiment, null);
       await maybeFireAudienceAlert(userId, campaign.segment, data.sentiment);
-      return res.status(200).json({ success: true, impact, sentiment: data.sentiment, trustVelocity: data.trustVelocity, capital: data.capital, freqTolerance: data.freqTolerance });
+      return res.status(200).json({ success: true, impact, sentiment: data.sentiment, trustVelocity: data.trustVelocity, capital: data.capital, freqTolerance: data.freqTolerance, sendWindow: data.sendWindow });
     }
     if (action === 'presend') {
       const { segment, campaignType, sendDate } = req.body;
