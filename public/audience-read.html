@@ -36,28 +36,83 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ps-loading{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:14px 18px;color:var(--mu);font-size:13px;text-align:center}
 .upload-disabled{opacity:.4;pointer-events:none}
 @media(max-width:560px){.ps-ok .ps-row{flex-direction:column;align-items:flex-start;gap:12px}.ps-link{margin-left:0}}
-.sector-row{display:flex;gap:10px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap}.sector-grp{flex:1;min-width:200px}.sector-grp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}.sector-grp select{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1px solid var(--b);border-radius:8px;background:var(--w);color:var(--t)}.cpl-grp{flex:1;min-width:160px}.cpl-grp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}.cpl-wrap{position:relative}.cpl-wrap input{width:100%;font-family:'DM Mono',monospace;font-size:13px;padding:10px 12px 10px 26px;border:1px solid var(--b);border-radius:8px;background:var(--w);color:var(--t)}.cpl-pound{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--mu);font-family:'DM Mono',monospace;pointer-events:none}.cpl-note{font-size:10px;color:var(--mu);margin-top:4px}
 .upload-zone{border:2px dashed var(--b);border-radius:var(--rad-lg);padding:44px 32px;cursor:pointer;transition:all .18s;background:var(--w);position:relative;text-align:center;margin-bottom:16px}.upload-zone:hover,.upload-zone.hover{border-color:var(--o);background:var(--ol)}.upload-zone.loaded{border-color:var(--g);border-style:solid;background:var(--gb)}.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}.uz-icon{font-size:32px;margin-bottom:12px}.uz-title{font-size:17px;font-weight:700;margin-bottom:6px}.uz-sub{font-size:13px;color:var(--mu);line-height:1.6;max-width:480px;margin:0 auto}.uz-fname{font-size:11px;color:var(--g);font-family:'DM Mono',monospace;margin-top:10px;display:none}.upload-zone.loaded .uz-fname{display:block}
 .btn{display:inline-flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:11px 22px;border-radius:var(--rad);border:none;cursor:pointer;transition:all .18s}.btn-primary{background:var(--o);color:#fff}.btn-primary:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,115,23,.3)}.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}.btn-ghost{background:transparent;color:var(--t);border:1.5px solid var(--b)}.btn-ghost:hover{border-color:var(--t);background:var(--bg)}.btn-sm{padding:7px 14px;font-size:12px}
-.map-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:22px;margin-bottom:14px;box-shadow:var(--sh)}.map-card h3{font-size:14px;font-weight:700;margin-bottom:3px}.map-meta{font-size:12px;color:var(--mu);margin-bottom:14px}.map-table{width:100%;border-collapse:collapse}.map-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);padding:7px 10px;text-align:left;border-bottom:1px solid var(--b)}.map-table td{padding:9px 10px;border-bottom:1px solid var(--b);font-size:13px}.map-table tr:last-child td{border-bottom:none}.map-table select{font-family:'DM Sans',sans-serif;font-size:12px;padding:4px 8px;border:1px solid var(--b);border-radius:6px;background:var(--bg);color:var(--t)}.samp-pill{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu);background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--b)}
+.map-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:22px;margin-bottom:14px;box-shadow:var(--sh)}.map-card h3{font-size:14px;font-weight:700;margin-bottom:3px}.map-meta{font-size:12px;color:var(--mu);margin-bottom:14px}.map-table{width:100%;border-collapse:collapse}.map-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);padding:7px 10px;text-align:left;border-bottom:1px solid var(--b)}.map-table td{padding:9px 10px;border-bottom:1px solid var(--b);font-size:13px;vertical-align:top}.map-table tr:last-child td{border-bottom:none}.map-table select{font-family:'DM Sans',sans-serif;font-size:12px;padding:4px 8px;border:1px solid var(--b);border-radius:6px;background:var(--bg);color:var(--t);width:100%}.samp-pill{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu);background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--b)}
+.conf-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;flex-shrink:0}
+.conf-high{background:var(--g)}.conf-medium{background:var(--y)}.conf-low{background:var(--r)}.conf-none{background:var(--bm)}
+.conf-legend{display:flex;gap:14px;font-size:11px;color:var(--mu);margin-bottom:10px;flex-wrap:wrap}
+.conf-legend span{display:inline-flex;align-items:center;gap:5px}
+.rate-unit-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:11px 13px;margin-top:8px}
+.rate-unit-title{font-size:11px;font-weight:700;color:#92400e;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.rate-unit-preview{font-size:12px;color:#78350f;margin-bottom:8px;font-family:'DM Mono',monospace;background:#fff;padding:5px 8px;border-radius:4px;border:1px solid #fed7aa}
+.rate-unit-toggle{display:flex;gap:6px}
+.rate-unit-opt{flex:1;padding:7px 8px;border:1px solid #fed7aa;background:#fff;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;color:#78350f;text-align:center;font-weight:600;transition:all .12s}
+.rate-unit-opt:hover{background:#fed7aa}
+.rate-unit-opt.on{background:var(--o);color:#fff;border-color:var(--o)}
+.no-seg-block{background:var(--rb);border:1px solid var(--rc);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#7f1d1d;display:flex;gap:10px;align-items:flex-start}
+.no-seg-icon{font-size:16px;flex-shrink:0}
+.no-seg-block strong{display:block;margin-bottom:3px}
+.no-seg-fallback{margin-top:8px;font-size:12px}
+.no-seg-fallback label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.no-seg-fallback input{margin:0}
 .demo-banner{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.demo-banner-txt{font-size:13px;color:#92400e;font-weight:500}.demo-dismiss{background:var(--o);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 .dash-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}.dash-title{font-size:26px;font-weight:700;letter-spacing:-.5px}.dash-meta{font-size:13px;color:var(--mu);margin-top:3px}.dash-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .change-block{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:24px;box-shadow:var(--sh);animation:fadeUp .35s ease}.change-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}.change-title{font-size:16px;font-weight:700;letter-spacing:-.2px}.change-since{font-size:12px;color:var(--mu)}.change-tally{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.tally-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:20px;border:1px solid var(--b)}.tally-pill.up{background:var(--gb);color:var(--g);border-color:var(--gc)}.tally-pill.down{background:var(--rb);color:var(--r);border-color:var(--rc)}.tally-pill.flat{background:var(--bg);color:var(--mu)}.tally-pill.new{background:var(--ol);color:var(--o);border-color:#fed7aa}.change-rows{display:flex;flex-direction:column;gap:7px}.change-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--b)}.change-row:first-child{border-top:none}.change-arrow{font-size:14px;flex-shrink:0;width:18px;text-align:center}.change-arrow.up{color:var(--g)}.change-arrow.down{color:var(--r)}.change-arrow.flat{color:var(--mu)}.change-arrow.new{color:var(--o)}.change-seg{font-size:13px;font-weight:600;flex-shrink:0;min-width:120px}.change-desc{font-size:12px;color:var(--tm);flex:1;line-height:1.4}.change-desc .from{color:var(--mu)}.change-desc .to{font-weight:600;color:var(--t)}.change-cap{font-size:11px;font-family:'DM Mono',monospace;flex-shrink:0;font-weight:600}.change-cap.up{color:var(--g)}.change-cap.down{color:var(--r)}.change-cap.flat{color:var(--mu)}.change-empty{font-size:13px;color:var(--mu);line-height:1.6}
 .stale-banner{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px}.stale-banner-txt{font-size:13px;color:#92400e;font-weight:500;flex:1;line-height:1.5}
 .send-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}@media(max-width:560px){.send-summary{grid-template-columns:repeat(2,1fr)}}.ss-tile{border-radius:var(--rad);padding:14px 16px;text-align:center;border:1px solid var(--b);background:var(--w)}.ss-tile.damaged{background:var(--rb);border-color:var(--rc)}.ss-tile.fatigue{background:var(--yb);border-color:var(--yc)}.ss-tile.built{background:var(--gb);border-color:var(--gc)}.ss-tile.neutral{background:var(--bg)}.ss-num{font-size:26px;font-weight:800;font-family:'DM Mono',monospace;line-height:1;margin-bottom:2px}.ss-tile.damaged .ss-num{color:var(--r)}.ss-tile.fatigue .ss-num{color:var(--y)}.ss-tile.built .ss-num{color:var(--g)}.ss-tile.neutral .ss-num{color:var(--mu)}.ss-lbl{font-size:11px;font-weight:600;line-height:1.3}.ss-tile.damaged .ss-lbl{color:#991b1b}.ss-tile.fatigue .ss-lbl{color:#78350f}.ss-tile.built .ss-lbl{color:#166534}.ss-tile.neutral .ss-lbl{color:var(--mu)}
 .seg-sends{margin-bottom:20px}.seg-sends-hdr{font-size:12px;font-weight:700;color:var(--tm);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:6px}.seg-sends-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}.send-row{display:flex;align-items:stretch;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:5px;overflow:hidden;transition:box-shadow .15s}.send-row:hover{box-shadow:var(--sh)}.send-row-bar{width:4px;flex-shrink:0}.srb-built{background:var(--g)}.srb-fatigue{background:var(--y)}.srb-damaged{background:var(--r)}.srb-neutral{background:var(--b)}.send-row-body{flex:1;padding:11px 14px;min-width:0}.send-row-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}.send-row-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.send-verdict-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap;flex-shrink:0}.svp-built{background:var(--gb);color:var(--g)}.svp-fatigue{background:var(--yb);color:var(--y)}.svp-damaged{background:var(--rb);color:var(--r)}.svp-neutral{background:var(--bg);color:var(--mu);border:1px solid var(--b)}.send-row-plain{font-size:12px;color:var(--tm);line-height:1.5;margin-bottom:4px}.send-row-stats{display:flex;gap:12px;flex-wrap:wrap}.send-stat{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}.send-stat strong{color:var(--t);font-weight:600}.send-stat.bad strong{color:var(--r)}.send-stat.warn strong{color:var(--y)}.send-stat.good strong{color:var(--g)}.send-row-meta{font-size:11px;color:var(--mu);margin-top:3px}.excess-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--rb);color:var(--r);margin-left:6px}
-.diag-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);overflow:hidden;margin-bottom:16px;box-shadow:var(--sh);animation:fadeUp .35s ease}.diag-card.state-good .diag-accent{background:linear-gradient(135deg,var(--gb),#dcfce7)}.diag-card.state-warn .diag-accent{background:linear-gradient(135deg,var(--yb),#fef9c3)}.diag-card.state-bad .diag-accent{background:linear-gradient(135deg,var(--rb),#fee2e2)}.diag-card.state-neu .diag-accent{background:linear-gradient(135deg,var(--bg),#ece9e3)}.diag-accent{padding:20px 22px;border-bottom:1px solid rgba(0,0,0,.06)}.diag-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}.diag-seg-name{font-size:13px;font-weight:600;color:var(--t);opacity:.75}.diag-state{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:3px 10px;border-radius:10px;white-space:nowrap;flex-shrink:0}.state-good .diag-state{background:var(--gb);color:var(--g)}.state-warn .diag-state{background:var(--yb);color:var(--y)}.state-bad .diag-state{background:var(--rb);color:var(--r)}.state-neu .diag-state{background:rgba(0,0,0,.06);color:var(--tm)}.diag-verdict{font-size:20px;font-weight:700;letter-spacing:-.3px;line-height:1.25;color:var(--t);margin-bottom:10px}.diag-benchmark-row{display:flex;gap:16px;flex-wrap:wrap}.bench-stat{display:flex;flex-direction:column;gap:1px}.bench-stat-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu)}.bench-stat-val{font-size:15px;font-weight:700;font-family:'DM Mono',monospace}.bench-stat-val.good{color:var(--g)}.bench-stat-val.warn{color:var(--y)}.bench-stat-val.bad{color:var(--r)}.bench-stat-val.neu{color:var(--tm)}.bench-vs{font-size:11px;color:var(--mu);margin-top:1px}.bench-vs.above{color:var(--r)}.bench-vs.below{color:var(--g)}.diag-body{padding:18px 22px}.diag-stmt{font-size:13px;color:var(--tm);line-height:1.65;margin-bottom:14px}
+.diag-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);overflow:hidden;margin-bottom:16px;box-shadow:var(--sh);animation:fadeUp .35s ease}.diag-card.state-good .diag-accent{background:linear-gradient(135deg,var(--gb),#dcfce7)}.diag-card.state-warn .diag-accent{background:linear-gradient(135deg,var(--yb),#fef9c3)}.diag-card.state-bad .diag-accent{background:linear-gradient(135deg,var(--rb),#fee2e2)}.diag-card.state-neu .diag-accent{background:linear-gradient(135deg,var(--bg),#ece9e3)}.diag-accent{padding:20px 22px;border-bottom:1px solid rgba(0,0,0,.06)}.diag-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}.diag-seg-name{font-size:13px;font-weight:600;color:var(--t);opacity:.75}.diag-state{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:3px 10px;border-radius:10px;white-space:nowrap;flex-shrink:0}.state-good .diag-state{background:var(--gb);color:var(--g)}.state-warn .diag-state{background:var(--yb);color:var(--y)}.state-bad .diag-state{background:var(--rb);color:var(--r)}.state-neu .diag-state{background:rgba(0,0,0,.06);color:var(--tm)}.diag-verdict{font-size:20px;font-weight:700;letter-spacing:-.3px;line-height:1.25;color:var(--t);margin-bottom:10px}.diag-benchmark-row{display:flex;gap:16px;flex-wrap:wrap}.bench-stat{display:flex;flex-direction:column;gap:1px}.bench-stat-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu)}.bench-stat-val{font-size:15px;font-weight:700;font-family:'DM Mono',monospace}.bench-stat-val.good{color:var(--g)}.bench-stat-val.warn{color:var(--y)}.bench-stat-val.bad{color:var(--r)}.bench-stat-val.neu{color:var(--tm)}.bench-vs{font-size:11px;color:var(--mu);margin-top:1px}.bench-vs.above{color:var(--r)}.bench-vs.below{color:var(--g)}
+.bench-source-line{font-size:11px;color:var(--mu);margin-top:6px;line-height:1.5}
+.bench-source-line a{color:var(--o);text-decoration:none;font-weight:600}
+.bench-source-line a:hover{text-decoration:underline}
+.diag-body{padding:18px 22px}.diag-stmt{font-size:13px;color:var(--tm);line-height:1.65;margin-bottom:14px}
 .diag-action{background:var(--o);border-radius:var(--rad);padding:14px 16px;margin-bottom:14px}.diag-action-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.7);margin-bottom:5px}.diag-action-txt{font-size:14px;color:#fff;font-weight:600;line-height:1.5}
 .loss-box{background:var(--rb);border:1px solid var(--rc);border-radius:var(--rad);padding:13px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px}.loss-icon{font-size:20px;flex-shrink:0}.loss-num{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;color:var(--r);line-height:1}.loss-label{font-size:11px;color:#991b1b;margin-top:1px}
-.diag-send-window{margin-bottom:14px;padding:12px 14px;background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm)}.dsw-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}.dsw-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);flex:1}.dsw-type{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px}.dsw-type.peak{background:var(--gb);color:var(--g);border:1px solid var(--gc)}.dsw-type.good{background:var(--gb);color:var(--g);border:1px solid var(--gc)}.dsw-type.cautious{background:var(--yb);color:var(--y);border:1px solid var(--yc)}.dsw-type.avoid{background:var(--rb);color:var(--r);border:1px solid var(--rc)}.dsw-strip{display:flex;gap:1px;height:14px;border-radius:3px;overflow:hidden;margin-bottom:8px}.dsw-cell{flex:1;transition:opacity .15s}.dsw-cell.s0{background:var(--rc)}.dsw-cell.s1{background:var(--yc)}.dsw-cell.s2{background:var(--gc)}.dsw-cell.s3{background:var(--g)}.dsw-cell:hover{opacity:.6}.dsw-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-bottom:8px}.dsw-reason{font-size:12px;color:var(--tm);line-height:1.5}.dsw-window-line{font-size:12px;color:var(--t);font-weight:600;margin-bottom:5px}.dsw-window-line .highlight{color:var(--g)}.dsw-window-line.avoid .highlight{color:var(--r)}.dsw-window-line.cautious .highlight{color:var(--y)}
+.diag-send-window{margin-bottom:14px;padding:12px 14px;background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm)}.dsw-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}.dsw-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);flex:1;display:flex;align-items:center;gap:4px}.dsw-type{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px}.dsw-type.peak{background:var(--gb);color:var(--g);border:1px solid var(--gc)}.dsw-type.good{background:var(--gb);color:var(--g);border:1px solid var(--gc)}.dsw-type.cautious{background:var(--yb);color:var(--y);border:1px solid var(--yc)}.dsw-type.avoid{background:var(--rb);color:var(--r);border:1px solid var(--rc)}.dsw-strip{display:flex;gap:1px;height:14px;border-radius:3px;overflow:hidden;margin-bottom:8px}.dsw-cell{flex:1;transition:opacity .15s}.dsw-cell.s0{background:var(--rc)}.dsw-cell.s1{background:var(--yc)}.dsw-cell.s2{background:var(--gc)}.dsw-cell.s3{background:var(--g)}.dsw-cell:hover{opacity:.6}.dsw-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-bottom:8px}.dsw-reason{font-size:12px;color:var(--tm);line-height:1.5}.dsw-window-line{font-size:12px;color:var(--t);font-weight:600;margin-bottom:5px}.dsw-window-line .highlight{color:var(--g)}.dsw-window-line.avoid .highlight{color:var(--r)}.dsw-window-line.cautious .highlight{color:var(--y)}
 .diag-expand-btn{width:100%;background:none;border:1px solid var(--b);border-radius:8px;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:600;color:var(--mu);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .15s;margin-bottom:8px}.diag-expand-btn:hover{border-color:var(--o);color:var(--o)}.diag-chev{font-size:10px;transition:transform .2s}.diag-expand-btn.open .diag-chev{transform:rotate(180deg)}.diag-expand-body{display:none;flex-direction:column;gap:8px;margin-bottom:10px}
 .diag-why-item{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.55;padding:10px 13px;border-radius:8px}.dwi-commercial{background:var(--gb);border:1px solid var(--gc);color:#166534}.dwi-regulatory{background:var(--purl);border:1px solid var(--purc);color:#581c87}.dwi-regnote{background:#fff7ed;border:1px solid #fed7aa;color:#92400e}.diag-why-icon{flex-shrink:0;font-size:13px}
-.cap-section{padding-top:12px;border-top:1px solid var(--b)}.cap-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mu);margin-bottom:5px}.cap-score{font-size:13px;font-weight:700}.cap-score.pos{color:var(--g)}.cap-score.neg{color:var(--r)}.cap-score.neu{color:var(--mu)}.cap-bar{height:5px;background:var(--b);border-radius:3px;overflow:hidden;position:relative}.cap-bar-neg{position:absolute;right:50%;top:0;height:100%;border-radius:3px 0 0 3px;background:var(--r)}.cap-bar-pos{position:absolute;left:50%;top:0;height:100%;border-radius:0 3px 3px 0;background:var(--g)}.cap-ctx{font-size:11px;color:var(--mu);margin-top:4px;font-style:italic}.conf-note{font-size:10px;color:var(--mu);margin-top:6px}
+.gw-section{padding-top:12px;border-top:1px solid var(--b)}
+.gw-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tm);margin-bottom:6px}
+.gw-row-label{display:flex;align-items:center;gap:5px}
+.gw-score{font-size:13px;font-weight:700}.gw-score.pos{color:var(--g)}.gw-score.neg{color:var(--r)}.gw-score.neu{color:var(--mu)}
+.gw-plain{font-size:12px;color:var(--tm);line-height:1.5;margin-bottom:6px}
+.gw-detail-btn{background:none;border:none;padding:4px 0;font-size:11px;font-weight:600;color:var(--mu);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}.gw-detail-btn:hover{color:var(--o)}
+.gw-detail{display:none;padding-top:8px}
+.gw-detail.on{display:block}
+.gw-bar{height:5px;background:var(--b);border-radius:3px;overflow:hidden;position:relative;margin-bottom:6px}.gw-bar-neg{position:absolute;right:50%;top:0;height:100%;border-radius:3px 0 0 3px;background:var(--r)}.gw-bar-pos{position:absolute;left:50%;top:0;height:100%;border-radius:0 3px 3px 0;background:var(--g)}
+.gw-detail-note{font-size:11px;color:var(--mu);line-height:1.5}
+.conf-note{font-size:10px;color:var(--mu);margin-top:6px}
 .nudge-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}.nudge{display:flex;gap:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--rad);padding:12px 16px}.nudge-txt{font-size:12px;color:#1e3a8a;line-height:1.5}.nudge-txt strong{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1d4ed8;margin-bottom:3px}
-.sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--b)}
+.sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--b);display:flex;align-items:center;gap:6px}
 .rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:24px}.rec-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:18px;box-shadow:var(--sh);animation:fadeUp .4s ease}.rec-priority{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--o);margin-bottom:7px}.rec-seg{font-size:14px;font-weight:700;margin-bottom:4px}.rec-verdict{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--t)}.rec-action{font-size:12px;color:var(--tm);line-height:1.55}.rec-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;background:var(--bg);color:var(--mu);border:1px solid var(--b)}.chip.red{background:var(--rb);color:var(--r);border-color:var(--rc)}.chip.green{background:var(--gb);color:var(--g);border-color:var(--gc)}.chip.amber{background:var(--yb);color:var(--y);border-color:var(--yc)}
-.presend-box{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;box-shadow:var(--sh)}.presend-box h3{font-size:16px;font-weight:700;margin-bottom:4px}.presend-box>p{font-size:13px;color:var(--mu);margin-bottom:18px;line-height:1.5}.ps-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}@media(max-width:640px){.ps-form{grid-template-columns:1fr}}.fgrp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:5px}.fgrp select,.fgrp input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)}.ps-result{margin-top:18px;border-radius:var(--rad);padding:20px;display:none;animation:fadeUp .3s ease}.ps-result.green{background:var(--gb);border:1px solid var(--gc)}.ps-result.amber{background:var(--yb);border:1px solid var(--yc)}.ps-result.red{background:var(--rb);border:1px solid var(--rc)}.ps-verdict{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:5px;font-family:'DM Mono',monospace}.ps-verdict.green{color:var(--g)}.ps-verdict.amber{color:var(--y)}.ps-verdict.red{color:var(--r)}.ps-reason{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:8px}.ps-range{font-size:11px;font-family:'DM Mono',monospace;color:var(--mu);margin-bottom:10px}.alt-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:6px}.alt-item{padding:7px 0;border-top:1px solid rgba(0,0,0,.07)}.alt-item strong{display:block;font-size:13px;color:var(--t);margin-bottom:2px}.alt-item span{font-size:12px;color:var(--mu)}
-.modal-bg{position:fixed;inset:0;background:rgba(12,12,10,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}.modal-bg.open{display:flex}.modal{background:var(--w);border-radius:var(--rad-lg);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-lg);animation:fadeUp .25s ease}.modal h2{font-size:20px;font-weight:700;margin-bottom:18px}.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}@media(max-width:480px){.modal-grid{grid-template-columns:1fr}}.modal-foot{display:flex;gap:8px;justify-content:flex-end}.seg-toggle{display:flex;gap:6px;margin-bottom:8px}.seg-tab{font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;border:1px solid var(--b);background:transparent;color:var(--mu);cursor:pointer;font-family:inherit;transition:all .15s}.seg-tab.on{background:var(--t);color:#fff;border-color:var(--t)}
+.presend-box{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;box-shadow:var(--sh)}.presend-box h3{font-size:16px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}.presend-box>p{font-size:13px;color:var(--mu);margin-bottom:18px;line-height:1.5}.ps-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}@media(max-width:640px){.ps-form{grid-template-columns:1fr}}.fgrp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:5px}.fgrp select,.fgrp input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)}.ps-result{margin-top:18px;border-radius:var(--rad);padding:20px;display:none;animation:fadeUp .3s ease}.ps-result.green{background:var(--gb);border:1px solid var(--gc)}.ps-result.amber{background:var(--yb);border:1px solid var(--yc)}.ps-result.red{background:var(--rb);border:1px solid var(--rc)}.ps-verdict{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:5px;font-family:'DM Mono',monospace}.ps-verdict.green{color:var(--g)}.ps-verdict.amber{color:var(--y)}.ps-verdict.red{color:var(--r)}.ps-reason{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:8px}.ps-range{font-size:11px;font-family:'DM Mono',monospace;color:var(--mu);margin-bottom:10px}.alt-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:6px}.alt-item{padding:7px 0;border-top:1px solid rgba(0,0,0,.07)}.alt-item strong{display:block;font-size:13px;color:var(--t);margin-bottom:2px}.alt-item span{font-size:12px;color:var(--mu)}
+.modal-bg{position:fixed;inset:0;background:rgba(12,12,10,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}.modal-bg.open{display:flex}.modal{background:var(--w);border-radius:var(--rad-lg);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-lg);animation:fadeUp .25s ease}.modal.wide{max-width:720px}.modal h2{font-size:20px;font-weight:700;margin-bottom:6px}.modal p.modal-sub{font-size:13px;color:var(--mu);margin-bottom:18px;line-height:1.5}.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}@media(max-width:480px){.modal-grid{grid-template-columns:1fr}}.modal-foot{display:flex;gap:8px;justify-content:flex-end}.seg-toggle{display:flex;gap:6px;margin-bottom:8px}.seg-tab{font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;border:1px solid var(--b);background:transparent;color:var(--mu);cursor:pointer;font-family:inherit;transition:all .15s}.seg-tab.on{background:var(--t);color:#fff;border-color:var(--t)}
+.method-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}
+.method-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);padding:8px;text-align:left;border-bottom:2px solid var(--b)}
+.method-table td{padding:10px 8px;border-bottom:1px solid var(--b);vertical-align:top}
+.method-table .sector-name{font-weight:600;font-size:12px;color:var(--t)}
+.method-table .num{font-family:'DM Mono',monospace;font-size:11px;color:var(--tm)}
+.method-table .src-cell{font-size:11px;color:var(--mu);line-height:1.4}
+.method-intro{font-size:12px;color:var(--tm);line-height:1.6;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:12px 14px;margin-bottom:14px}
+.wt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:250;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.wt-overlay.on{display:flex}
+.wt-card{background:var(--w);border-radius:14px;padding:28px;max-width:460px;width:100%;box-shadow:var(--sh-lg);animation:fadeUp .3s ease}
+.wt-step-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);margin-bottom:8px}
+.wt-title{font-size:19px;font-weight:700;margin-bottom:10px;letter-spacing:-.3px;line-height:1.3}
+.wt-body{font-size:14px;color:var(--tm);line-height:1.65;margin-bottom:20px}
+.wt-body strong{color:var(--t)}
+.wt-dots{display:flex;gap:6px;margin-bottom:18px}
+.wt-dot{width:6px;height:6px;border-radius:50%;background:var(--bm);transition:background .2s}.wt-dot.on{background:var(--o)}
+.wt-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wt-skip{background:none;border:none;font-size:12px;color:var(--mu);cursor:pointer;font-family:inherit;text-decoration:underline}
+.wt-skip:hover{color:var(--t)}
+.tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:var(--bm);color:var(--w);font-size:9px;font-weight:700;margin-left:4px;cursor:help;vertical-align:middle;position:relative;flex-shrink:0}
+.tip:hover{background:var(--o)}
+.tip:hover .tip-body{display:block}
+.tip-body{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--t);color:#fff;font-weight:400;padding:9px 12px;border-radius:6px;font-size:11px;line-height:1.5;width:240px;text-align:left;z-index:80;text-transform:none;letter-spacing:normal;box-shadow:var(--sh-lg)}
+.tip-body::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--t)}
+.tip-body a{color:#fdba74;text-decoration:underline}
 .loading-bg{position:fixed;inset:0;background:rgba(244,243,240,.88);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(2px)}.loading-bg.open{display:flex}.spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}.loading-msg{font-size:13px;color:var(--mu);font-family:'DM Mono',monospace;letter-spacing:.04em}@keyframes spin{to{transform:rotate(360deg)}}.toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
 .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.6;padding:0 20px}
 #upload-screen{display:block}#mapping-screen,#dashboard-screen{display:none}
@@ -68,39 +123,90 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </head>
 <body>
 <header class="sw-ph-header"><a href="https://new-mvp-v2.webflow.io/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a><nav class="sw-ph-nav"><a href="https://new-mvp-v2.webflow.io/">Home</a><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a></nav></header>
+
 <div class="loading-bg" id="loadingBg"><div class="spin"></div><div class="loading-msg" id="loadingMsg">Running algorithms&hellip;</div></div>
-<div class="modal-bg" id="logModal"><div class="modal"><h2>Log Campaign Result</h2><div class="fgrp" style="margin-bottom:12px"><label>Segment</label><div class="seg-toggle"><button class="seg-tab on" id="segTabExist" onclick="switchSegTab('exist')">Existing</button><button class="seg-tab" id="segTabNew" onclick="switchSegTab('new')">+ New segment</button></div><select id="logSeg" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)"></select><input type="text" id="logSegNew" placeholder="Enter new segment name&hellip;" style="display:none;width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t);margin-top:6px"></div><div class="modal-grid"><div class="fgrp"><label>Campaign Name</label><input type="text" id="logName" placeholder="e.g. June Newsletter"></div><div class="fgrp"><label>Type</label><select id="logType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div><div class="fgrp"><label>Send Date</label><input type="date" id="logDate"></div><div class="fgrp"><label>Volume Sent</label><input type="number" id="logVol" placeholder="e.g. 5000"></div><div class="fgrp"><label>Unsubscribes</label><input type="number" id="logUnsub" placeholder="e.g. 23"></div><div class="fgrp"><label>Open Rate (optional)</label><input type="number" id="logOpen" placeholder="e.g. 0.24" step="0.01"></div><div class="fgrp"><label>Click Rate (optional)</label><input type="number" id="logClick" placeholder="e.g. 0.05" step="0.01"></div><div class="fgrp"><label>Complaints (optional)</label><input type="number" id="logComplaints" placeholder="e.g. 2"></div></div><div class="modal-foot"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="submitLog()">Log &amp; update &rarr;</button></div></div></div>
-<div class="gate-screen" id="gateScreen" style="max-width:900px;margin:0 auto;padding:0 20px"><div class="gate-card"><div class="gate-logo">sendwize</div><div class="gate-icon">&#128202;</div><div class="gate-title">Audience Read</div><div class="gate-sub">Find out if your email segments are healthy, fatigued, or heading toward ICO risk &mdash; compared to UK industry benchmarks.</div><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a><button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> See an example diagnosis</button></div></div>
-<div class="page" id="upload-screen" style="display:none"><div class="intro"><div class="tool-tag">Audience Read &mdash; Segment Diagnosis</div><h1>Is it safe to send?</h1><p class="intro-sub">Upload your campaign export. Seven algorithms compare each segment against UK email benchmarks and tell you exactly what state it&rsquo;s in, what it&rsquo;s costing you, and what to do next.</p><div class="distinction"><div class="dist-col dist-this"><div class="dist-label">This tool &mdash; Audience Read</div><div class="dist-desc">Diagnoses how your <strong>segments are responding</strong> to your sends.</div></div><div class="dist-divider"></div><div class="dist-col" style="padding-left:14px"><div class="dist-label">Different tool &mdash; List Intelligence</div><div class="dist-desc">Valuates your <strong>contact list as a data asset</strong>.</div></div></div></div><div id="profileStatus" class="profile-status"><div class="ps-loading">Loading your profile&hellip;</div></div><div class="upload-zone" id="zone-main" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'main')"><input type="file" accept=".csv" id="file-main" onchange="fileChg(this,'main')"><div class="uz-icon">&#128202;</div><div class="uz-title">Drop your campaign export CSV here</div><div class="uz-sub">Works with any export from Klaviyo, Mailchimp, Dotdigital or any platform.<br>You need: <strong>date, list/segment name, unsubscribes.</strong></div><div class="uz-fname" id="fname-main"></div></div><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px"><button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Diagnose my audience &rarr;</button><button class="btn btn-ghost" onclick="loadDemo()">See an example &rarr;</button></div><div style="padding-top:20px;border-top:1px solid var(--b)"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">Previously uploaded data?</p><button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last diagnosis &rarr;</button><div id="lastReportLink" style="display:none;margin-top:8px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--g);font-weight:600">&#10003; Previous diagnosis available &mdash; <button onclick="loadDash()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--o);cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">view it</button></span></div></div></div>
-<div class="page" id="mapping-screen"><div class="intro" style="margin-bottom:24px"><div class="tool-tag">Step 2 of 2 &mdash; Confirm mapping</div><h1>Check your columns</h1><p style="font-size:14px;color:var(--tm)">We&rsquo;ve auto-detected your columns. Correct anything that looks wrong before running the diagnosis.</p></div><div id="mappingTables"></div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn btn-primary" onclick="submitUpload()">Run diagnosis &rarr;</button><button class="btn btn-ghost" onclick="showScreen('upload')">&#8592; Back</button></div></div>
-<div class="page" id="dashboard-screen"><div id="demoBanner" class="demo-banner" style="display:none"><div class="demo-banner-txt">&#128202; Example diagnosis using demo data.</div><button class="demo-dismiss" onclick="showScreen('upload')">Upload your data &rarr;</button></div><div class="dash-hdr"><div><div class="dash-title">Segment Diagnosis</div><div class="dash-meta" id="dashMeta"></div></div><div class="dash-actions"><button class="btn btn-ghost btn-sm" onclick="showScreen('upload')">+ New data</button><button class="btn btn-primary btn-sm" onclick="openModal()">Log campaign result</button></div></div><div id="nextSendBlock"></div><div id="changeBlock"></div><div style="margin-bottom:32px"><div class="sec-hdr">What your recent sends did</div><div id="campaignList"></div></div><div style="margin-bottom:32px"><div class="sec-hdr">Segment health vs UK benchmarks</div><div id="segGrid"></div><div class="nudge-list" id="nudgeList"></div></div><div style="margin-bottom:32px"><div class="sec-hdr">Priority actions</div><div class="rec-grid" id="recGrid"></div><div class="presend-box"><h3>Pre-Send Check</h3><p>Planning a send? Run 1,000 Monte Carlo scenarios against your segment&rsquo;s history.</p><div class="ps-form"><div class="fgrp"><label>Segment</label><select id="psSeg"></select></div><div class="fgrp"><label>Campaign Type</label><select id="psType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div><div class="fgrp"><label>Send Date</label><input type="date" id="psDate"></div><button class="btn btn-primary" onclick="runPreSend()">Check &rarr;</button></div><div class="ps-result" id="psResult"></div></div></div><p class="disc">Benchmarks: MailerLite 2025, GDMA 2024, DMA UK 2025, Klaviyo. Algorithms are deterministic &mdash; no AI, no external data. Not legal advice.</p></div>
+
+<!-- Log Campaign Modal -->
+<div class="modal-bg" id="logModal"><div class="modal"><h2>Log Campaign Result</h2><div class="fgrp" style="margin-bottom:12px"><label>List</label><div class="seg-toggle"><button class="seg-tab on" id="segTabExist" onclick="switchSegTab('exist')">Existing</button><button class="seg-tab" id="segTabNew" onclick="switchSegTab('new')">+ New list</button></div><select id="logSeg" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)"></select><input type="text" id="logSegNew" placeholder="Enter new list name&hellip;" style="display:none;width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t);margin-top:6px"></div><div class="modal-grid"><div class="fgrp"><label>Campaign Name</label><input type="text" id="logName" placeholder="e.g. June Newsletter"></div><div class="fgrp"><label>Type</label><select id="logType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div><div class="fgrp"><label>Send Date</label><input type="date" id="logDate"></div><div class="fgrp"><label>Volume Sent</label><input type="number" id="logVol" placeholder="e.g. 5000"></div><div class="fgrp"><label>Unsubscribes</label><input type="number" id="logUnsub" placeholder="e.g. 23"></div><div class="fgrp"><label>Open Rate (optional)</label><input type="number" id="logOpen" placeholder="e.g. 0.24" step="0.01"></div><div class="fgrp"><label>Click Rate (optional)</label><input type="number" id="logClick" placeholder="e.g. 0.05" step="0.01"></div><div class="fgrp"><label>Complaints (optional)</label><input type="number" id="logComplaints" placeholder="e.g. 2"></div></div><div class="modal-foot"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="submitLog()">Log &amp; update &rarr;</button></div></div></div>
+
+<!-- Methodology Modal -->
+<div class="modal-bg" id="methodModal"><div class="modal wide"><h2>How we score your lists</h2><p class="modal-sub">Every diagnosis is deterministic &mdash; no AI, no invented numbers. Below are the UK sector benchmarks we compare your rates against, and the published sources they come from.</p><div class="method-intro"><strong>What we do:</strong> we compute your average unsubscribe rate per list, then compare it to your sector's UK benchmark. Above the benchmark = signal something is off. We also project the next 30 days of send tolerance based on your recent send frequency. Nothing here is a legal opinion.</div><div id="methodTable"></div><div class="modal-foot"><button class="btn btn-primary btn-sm" onclick="closeMethodModal()">Got it</button></div></div></div>
+
+<!-- Walkthrough Overlay -->
+<div class="wt-overlay" id="wtOverlay"><div class="wt-card"><div class="wt-step-label" id="wtStepLabel">Step 1 of 4</div><div class="wt-title" id="wtTitle"></div><div class="wt-body" id="wtBody"></div><div class="wt-dots" id="wtDots"></div><div class="wt-actions"><button class="wt-skip" onclick="dismissWalkthrough()">Skip &mdash; don't show again</button><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" id="wtBack" onclick="wtStep(-1)" style="display:none">&larr; Back</button><button class="btn btn-primary btn-sm" id="wtNext" onclick="wtStep(1)">Got it &rarr;</button></div></div></div></div>
+
+<div class="gate-screen" id="gateScreen" style="max-width:900px;margin:0 auto;padding:0 20px"><div class="gate-card"><div class="gate-logo">sendwize</div><div class="gate-icon">&#128202;</div><div class="gate-title">Audience Read</div><div class="gate-sub">Find out if your email lists are healthy, fatigued, or heading toward ICO risk &mdash; compared to UK industry benchmarks.</div><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a><button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> See an example diagnosis</button></div></div>
+
+<!-- UPLOAD SCREEN -->
+<div class="page" id="upload-screen" style="display:none"><div class="intro"><div class="tool-tag">Audience Read &mdash; List Diagnosis</div><h1>Is it safe to send?</h1><p class="intro-sub">Upload your campaign export. Seven algorithms compare each list against UK email benchmarks and tell you exactly what state it&rsquo;s in, what it&rsquo;s costing you, and what to do next.</p><div class="distinction"><div class="dist-col dist-this"><div class="dist-label">This tool &mdash; Audience Read</div><div class="dist-desc">Diagnoses how your <strong>lists are responding</strong> to your sends.</div></div><div class="dist-divider"></div><div class="dist-col" style="padding-left:14px"><div class="dist-label">Different tool &mdash; List Intelligence</div><div class="dist-desc">Valuates your <strong>contact list as a data asset</strong>.</div></div></div></div><div id="profileStatus" class="profile-status"><div class="ps-loading">Loading your profile&hellip;</div></div><div class="upload-zone" id="zone-main" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'main')"><input type="file" accept=".csv" id="file-main" onchange="fileChg(this,'main')"><div class="uz-icon">&#128202;</div><div class="uz-title">Drop your campaign export CSV here</div><div class="uz-sub">Works with any export from Klaviyo, Mailchimp, Dotdigital or any platform.<br>You need: <strong>date, list name, unsubscribes.</strong></div><div class="uz-fname" id="fname-main"></div></div><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px"><button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Diagnose my lists &rarr;</button><button class="btn btn-ghost" onclick="loadDemo()">See an example &rarr;</button></div><div style="padding-top:20px;border-top:1px solid var(--b)"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">Previously uploaded data?</p><button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last diagnosis &rarr;</button><div id="lastReportLink" style="display:none;margin-top:8px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--g);font-weight:600">&#10003; Previous diagnosis available &mdash; <button onclick="loadDash()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--o);cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">view it</button></span></div></div></div>
+
+<!-- MAPPING SCREEN -->
+<div class="page" id="mapping-screen">
+  <div class="intro" style="margin-bottom:24px">
+    <div class="tool-tag">Step 2 of 2 &mdash; Confirm mapping</div>
+    <h1>Check your columns</h1>
+    <p style="font-size:14px;color:var(--tm)">We&rsquo;ve auto-detected your columns. Correct anything that looks wrong before running the diagnosis.</p>
+  </div>
+  <div class="conf-legend"><span><span class="conf-dot conf-high"></span>High confidence</span><span><span class="conf-dot conf-medium"></span>Check this</span><span><span class="conf-dot conf-low"></span>Uncertain</span><span><span class="conf-dot conf-none"></span>Not mapped</span></div>
+  <div id="noSegmentBlock"></div>
+  <div id="mappingTables"></div>
+  <div style="display:flex;gap:10px;margin-top:8px">
+    <button class="btn btn-primary" id="btnRunDiagnosis" onclick="submitUpload()">Run diagnosis &rarr;</button>
+    <button class="btn btn-ghost" onclick="showScreen('upload')">&#8592; Back</button>
+  </div>
+</div>
+
+<!-- DASHBOARD SCREEN -->
+<div class="page" id="dashboard-screen">
+  <div id="demoBanner" class="demo-banner" style="display:none"><div class="demo-banner-txt">&#128202; Example diagnosis using demo data.</div><button class="demo-dismiss" onclick="showScreen('upload')">Upload your data &rarr;</button></div>
+  <div class="dash-hdr">
+    <div><div class="dash-title">List Diagnosis</div><div class="dash-meta" id="dashMeta"></div></div>
+    <div class="dash-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openMethodModal()">Methodology</button>
+      <button class="btn btn-ghost btn-sm" onclick="showScreen('upload')">+ New data</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">Log campaign result</button>
+    </div>
+  </div>
+  <div id="nextSendBlock"></div>
+  <div id="changeBlock"></div>
+  <div style="margin-bottom:32px"><div class="sec-hdr" data-wt="sends">What your recent sends did</div><div id="campaignList"></div></div>
+  <div style="margin-bottom:32px"><div class="sec-hdr" data-wt="verdict">List health vs UK benchmarks</div><div id="segGrid"></div><div class="nudge-list" id="nudgeList"></div></div>
+  <div style="margin-bottom:32px"><div class="sec-hdr" data-wt="next">Priority actions</div>
+    <div class="rec-grid" id="recGrid"></div>
+    <div class="presend-box" data-wt="presend"><h3>Pre-Send Check <span class="tip" data-tip="Runs 1,000 Monte Carlo scenarios against this list's history to estimate the risk of your next send exceeding UK benchmarks. Deterministic — no AI.">?</span></h3><p>Planning a send? Run 1,000 Monte Carlo scenarios against your list&rsquo;s history.</p><div class="ps-form"><div class="fgrp"><label>List</label><select id="psSeg"></select></div><div class="fgrp"><label>Campaign Type</label><select id="psType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div><div class="fgrp"><label>Send Date</label><input type="date" id="psDate"></div><button class="btn btn-primary" onclick="runPreSend()">Check &rarr;</button></div><div class="ps-result" id="psResult"></div></div>
+  </div>
+  <p class="disc">Benchmarks: MailerLite 2025, GDMA 2024, DMA UK 2025, Klaviyo. Algorithms are deterministic &mdash; no AI, no external data. Not legal advice. <a href="#" onclick="openMethodModal();return false;" style="color:var(--o);text-decoration:underline">Full methodology &rarr;</a></p>
+</div>
+
 <footer class="sw-ph-footer"><img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"><div class="sw-ph-footer-links"><a href="#">About Us</a><a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a><a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/cookie-policy">Cookie Policy</a><a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a></div></footer>
+
 <div class="toast" id="toast"></div>
+
 <script>
 var API='https://sendwize-backend.vercel.app/api/audience-read';
 var PROFILE_URL='https://sendwize-backend.vercel.app/profile.html';
 var userId=new URLSearchParams(window.location.search).get('userId')||'';
-var uploadedFiles={},detectedMaps={},dashData={},segNames=[];
+var uploadedFiles={},detectedMaps={},detectedConfidence={},rateColumnsData={},rateUnitChoices={},dashData={},segNames=[];
+var noSegmentDetected=false,useSingleListFallback=false,singleListName='';
 var segTabMode='exist',currentSector='general',currentCpl=null;
 var goodStates=['Peak receptiveness','Highly receptive post-gap','Healthy'];
 var warnStates=['Cooling','Fatigue building','Recovering'];
 var badStates=['Damaged','Complaint risk'];
 
-// v7.3 (A1): sector and CPL now read exclusively from the user's profile.
-// No editable inputs on this page — user changes them in /profile.html.
-var profileSector=null;   // sector key (e.g. 'ecommerce'), or null if not set
-var profileCpl=null;      // CPL number, or null if not set
-var profileLoaded=false;  // true once /api/profile has responded
+var profileSector=null,profileCpl=null,profileLoaded=false;
 
-var SECTOR_LABELS={
-  ecommerce:'Ecommerce / Retail',
-  b2b:'B2B / Professional Services',
-  saas:'SaaS / Technology',
-  media:'Media / Publishing / Newsletter',
-  finance:'Finance / Financial Services',
-  health:'Health / Healthcare',
-  charity:'Charity / Non-profit',
-  general:'Agency or Other'
+var SECTOR_LABELS={ecommerce:'Ecommerce / Retail',b2b:'B2B / Professional Services',saas:'SaaS / Technology',media:'Media / Publishing / Newsletter',finance:'Finance / Financial Services',health:'Health / Healthcare',charity:'Charity / Non-profit',general:'Agency or Other'};
+
+// Tooltip content — plain English + link to methodology modal
+var TIP_DEFS={
+  goodwill:'How much your list has forgiven you over the last 8 weeks or so. Good sends add to it, damaging sends drain it. Score is bounded -100 to +100.',
+  tolerance:'Roughly how many more sends this list can absorb in the next 30 days before unsubscribe rates spike. Based on your own send history, not a fixed rule.',
+  velocity:'Are unsubscribes rising or falling across your recent sends? "Rapid decline" is a bad sign — the list is deteriorating.',
+  fingerprint:'Your own baseline for this list — the unsubscribe rate you typically see. Anything above this is "damaging" for you, even if it looks normal for the industry.',
+  peak:'Rare state — recent sends built trust, unsubscribes are low, and there is spare tolerance in the window. Best time to send your highest-value campaign.',
+  complaint:'Spam / abuse reports weighted 50x an unsubscribe. This is what the ICO looks at when investigating PECR Regulation 22 complaints.',
+  sendwindow:'The next 30 days scored day-by-day. Green = safe to send. Amber = tight, one send only. Red = the list needs more recovery time.',
+  presend:'Runs 1,000 Monte Carlo scenarios against this list\'s history to estimate the risk of your next send exceeding UK benchmarks. Deterministic — no AI.'
 };
 
 function getSector(){return profileSector||'general';}
@@ -108,32 +214,222 @@ function getCpl(){return profileCpl;}
 function hideGateAndDemo(){document.getElementById('gateScreen').classList.remove('show');document.getElementById('upload-screen').style.display='block';loadDemo();}
 function showScreen(s){['upload','mapping','dashboard'].forEach(function(n){document.getElementById(n+'-screen').style.display=n===s?'block':'none';});if(s==='upload')window.scrollTo(0,0);}
 function toggleExpand(uid){var body=document.getElementById(uid+'-expand');var btn=document.querySelector('#'+uid+' .diag-expand-btn');if(!body)return;var open=body.style.display!=='none';body.style.display=open?'none':'flex';body.style.flexDirection='column';if(btn)btn.classList.toggle('open',!open);}
+function toggleGw(uid){var body=document.getElementById(uid+'-gw-detail');if(!body)return;body.classList.toggle('on');}
 function switchSegTab(mode){segTabMode=mode;document.getElementById('segTabExist').className='seg-tab'+(mode==='exist'?' on':'');document.getElementById('segTabNew').className='seg-tab'+(mode==='new'?' on':'');document.getElementById('logSeg').style.display=mode==='exist'?'':'none';document.getElementById('logSegNew').style.display=mode==='new'?'':'none';}
 function drgOver(e,el){e.preventDefault();el.classList.add('hover');}
 function drgLeave(e,el){el.classList.remove('hover');}
 function drgDrop(e,el,key){e.preventDefault();el.classList.remove('hover');if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0],key);}
 function fileChg(inp,key){if(inp.files[0])readFile(inp.files[0],key);}
 function readFile(file,key){var r=new FileReader();r.onload=function(e){var p=parseCSV(e.target.result);if(!p.rows.length){showToast('Could not parse CSV','er');return;}uploadedFiles[key]=p;document.getElementById('zone-'+key).classList.add('loaded');document.getElementById('fname-'+key).textContent=file.name;refreshContinueBtn();};r.readAsText(file);}
-
-// v7.3 (A1): Diagnose button requires both an uploaded CSV AND a sector set in profile.
-function refreshContinueBtn(){
-  var btn=document.getElementById('btnContinue');
-  if(!btn)return;
-  btn.disabled=!uploadedFiles['main']||!profileSector;
-}
+function refreshContinueBtn(){var btn=document.getElementById('btnContinue');if(!btn)return;btn.disabled=!uploadedFiles['main']||!profileSector;}
 function parseCSV(text){var lines=text.trim().split('\n').filter(function(l){return l.trim();});if(lines.length<2)return{headers:[],rows:[]};var headers=parseLine(lines[0]);var rows=lines.slice(1).map(function(l){var vals=parseLine(l),obj={};headers.forEach(function(h,i){obj[h]=(vals[i]||'').trim();});return obj;});return{headers:headers,rows:rows};}
 function parseLine(line){var res=[],cur='',inQ=false;for(var i=0;i<line.length;i++){var c=line[i];if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){res.push(cur);cur='';}else{cur+=c;}}res.push(cur);return res;}
 
-var TF=[{v:'',l:'\u2014 ignore \u2014'},{v:'date',l:'Date'},{v:'segment',l:'Segment / List name'},{v:'unsubscribe_count',l:'Unsubscribe count'},{v:'unsubscribe_rate',l:'Unsubscribe rate (%)'},{v:'volume_sent',l:'Volume sent'},{v:'open_rate',l:'Open rate'},{v:'click_rate',l:'Click rate'},{v:'complaint_count',l:'Complaint / spam count'},{v:'campaign_name',l:'Campaign name'},{v:'campaign_type',l:'Campaign type'}];
+var TF=[{v:'',l:'\u2014 ignore \u2014'},{v:'date',l:'Date'},{v:'segment',l:'List / audience name'},{v:'unsubscribe_count',l:'Unsubscribe count'},{v:'unsubscribe_rate',l:'Unsubscribe rate'},{v:'volume_sent',l:'Volume sent'},{v:'open_rate',l:'Open rate'},{v:'click_rate',l:'Click rate'},{v:'complaint_count',l:'Complaint / spam count'},{v:'campaign_name',l:'Campaign name'},{v:'campaign_type',l:'Campaign type'}];
 
-async function goMapping(){showLoading('Detecting columns\u2026');try{var container=document.getElementById('mappingTables');container.innerHTML='';for(var key in uploadedFiles){var fd=uploadedFiles[key];var resp=await fetch(API+'?userId='+userId+'&action=detect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({headers:fd.headers,rows:fd.rows.slice(0,20)})});var json=await resp.json();detectedMaps[key]=json.mapping||{};container.appendChild(buildMapCard(key,fd.headers,fd.rows,json.mapping||{}));}hideLoading();showScreen('mapping');}catch(err){hideLoading();showToast('Error: '+err.message,'er');}}
-function buildMapCard(key,headers,rows,detected){var samp=rows[0]||{};var card=document.createElement('div');card.className='map-card';card.innerHTML='<h3>'+escH(key==='main'?'Campaign export':key)+'</h3><p class="map-meta">'+headers.length+' columns \u00b7 '+rows.length.toLocaleString()+' rows</p><table class="map-table"><thead><tr><th>Your column</th><th>Sample value</th><th>Maps to</th></tr></thead><tbody>'+headers.map(function(h){var sId='map-'+key+'-'+sid(h);return'<tr><td><strong>'+escH(h)+'</strong></td><td><span class="samp-pill">'+escH(String(samp[h]||'').slice(0,26))+'</span></td><td><select id="'+sId+'">'+TF.map(function(f){return'<option value="'+f.v+'"'+((detected[h]||'')===f.v?' selected':'')+'>'+f.l+'</option>';}).join('')+'</select></td></tr>';}).join('')+'</tbody></table>';return card;}
-async function submitUpload(){showLoading('Running seven algorithms\u2026');try{var allRows=[],combinedMap={};for(var key in uploadedFiles){var fd=uploadedFiles[key],mapping={};fd.headers.forEach(function(h){var sel=document.getElementById('map-'+key+'-'+sid(h));if(sel&&sel.value)mapping[h]=sel.value;});Object.assign(combinedMap,mapping);fd.rows.forEach(function(row){allRows.push(row);});}var sector=getSector();var cplVal=getCpl();var resp=await fetch(API+'?userId='+userId+'&action=upload&sector='+sector,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:allRows,fieldMapping:combinedMap,cpl:cplVal})});var json=await resp.json();if(!json.success)throw new Error(json.error||'Upload failed');currentSector=sector;currentCpl=getCpl();hideLoading();renderDash(json);showScreen('dashboard');showToast(json.campaignsSaved+' campaign records processed','ok');}catch(err){hideLoading();showToast('Error: '+err.message,'er');}}
-async function loadDash(){if(window._lastDashData){renderDash(window._lastDashData);showScreen('dashboard');return;}if(!userId){showToast('No user ID','er');return;}showLoading('Loading your last diagnosis\u2026');try{var sector=getSector();var resp=await fetch(API+'?userId='+userId+'&action=load&sector='+sector);var json=await resp.json();if(!json.success)throw new Error(json.error);hideLoading();if(!Object.keys(json.segments||{}).length){showToast('No data found \u2014 upload a CSV','');return;}window._lastDashData=json;currentSector=sector;currentCpl=getCpl();renderDash(json);showScreen('dashboard');}catch(err){hideLoading();showToast('Could not load','er');}}
+// ── MAPPING SCREEN (FIX #3, #5, #8) ──────────────────────────
+async function goMapping(){
+  showLoading('Detecting columns\u2026');
+  try{
+    var container=document.getElementById('mappingTables');
+    container.innerHTML='';
+    var nsBlock=document.getElementById('noSegmentBlock');
+    nsBlock.innerHTML='';
+    noSegmentDetected=false;useSingleListFallback=false;singleListName='';
+    rateUnitChoices={};
+    for(var key in uploadedFiles){
+      var fd=uploadedFiles[key];
+      var resp=await fetch(API+'?userId='+userId+'&action=detect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({headers:fd.headers,rows:fd.rows.slice(0,20)})});
+      var json=await resp.json();
+      detectedMaps[key]=json.mapping||{};
+      detectedConfidence[key]=json.confidence||{};
+      rateColumnsData[key]=json.rateColumns||[];
+      if(json.noSegmentDetected)noSegmentDetected=true;
+      // Initialize rate unit choices based on data shape
+      (json.rateColumns||[]).forEach(function(rc){
+        var v=parseFloat(String(rc.firstValue||'').replace('%',''));
+        // Default guess: if value has % symbol, unit is 'percentage'; if <=1, it's 'decimal_fraction'; else 'percentage'
+        if(rc.hasPctSymbol)rateUnitChoices[rc.column]='percentage';
+        else if(!isNaN(v)&&v<=1)rateUnitChoices[rc.column]='decimal_fraction';
+        else rateUnitChoices[rc.column]='percentage';
+      });
+      container.appendChild(buildMapCard(key,fd.headers,fd.rows,json.mapping||{},json.confidence||{}));
+    }
+    renderNoSegmentBlock();
+    refreshRunBtn();
+    hideLoading();
+    showScreen('mapping');
+  }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
+}
+
+function buildMapCard(key,headers,rows,detected,confidence){
+  var samp=rows[0]||{};
+  var card=document.createElement('div');
+  card.className='map-card';
+  var rowsHtml=headers.map(function(h){
+    var sId='map-'+key+'-'+sid(h);
+    var conf=confidence[h]||'none';
+    var currentTarget=detected[h]||'';
+    var isRateCol=currentTarget==='unsubscribe_rate'||currentTarget==='open_rate'||currentTarget==='click_rate';
+    var rateColInfo=(rateColumnsData[key]||[]).find(function(rc){return rc.column===h;});
+    return '<tr><td><span class="conf-dot conf-'+conf+'" title="'+confLabel(conf)+' confidence"></span><strong>'+escH(h)+'</strong></td>'
+      +'<td><span class="samp-pill">'+escH(String(samp[h]||'').slice(0,26))+'</span></td>'
+      +'<td><select id="'+sId+'" data-key="'+key+'" data-header="'+escH(h)+'" onchange="onMapChange(this)">'
+      +TF.map(function(f){return'<option value="'+f.v+'"'+(currentTarget===f.v?' selected':'')+'>'+f.l+'</option>';}).join('')
+      +'</select>'
+      +(isRateCol&&rateColInfo?buildRateUnitToggle(h,rateColInfo):'')
+      +'</td></tr>';
+  }).join('');
+  card.innerHTML='<h3>'+escH(key==='main'?'Campaign export':key)+'</h3><p class="map-meta">'+headers.length+' columns \u00b7 '+rows.length.toLocaleString()+' rows</p><table class="map-table"><thead><tr><th style="min-width:200px">Your column</th><th>Sample value</th><th style="min-width:260px">Maps to</th></tr></thead><tbody>'+rowsHtml+'</tbody></table>';
+  return card;
+}
+
+function buildRateUnitToggle(col,rc){
+  var unit=rateUnitChoices[col]||'percentage';
+  var v=parseFloat(String(rc.firstValue||'').replace('%',''));
+  var previewPct=unit==='percentage'?(isNaN(v)?'?':v.toFixed(2)+'%'):(isNaN(v)?'?':(v*100).toFixed(2)+'%');
+  var previewRaw=escH(String(rc.firstValue||'').slice(0,20));
+  return '<div class="rate-unit-box" id="rateunit-'+sid(col)+'">'
+    +'<div class="rate-unit-title">\u26A0\uFE0F How should we read this rate column?</div>'
+    +'<div class="rate-unit-preview">First value: <strong>'+previewRaw+'</strong> &nbsp;\u2192&nbsp; reading as <strong>'+previewPct+'</strong></div>'
+    +'<div class="rate-unit-toggle">'
+    +'<button type="button" class="rate-unit-opt'+(unit==='percentage'?' on':'')+'" onclick="setRateUnit(\''+escJs(col)+'\',\'percentage\')">'+escH(previewRaw)+' means '+escH(previewRaw)+'%<br><small style="opacity:.7">(already a percent)</small></button>'
+    +'<button type="button" class="rate-unit-opt'+(unit==='decimal_fraction'?' on':'')+'" onclick="setRateUnit(\''+escJs(col)+'\',\'decimal_fraction\')">'+escH(previewRaw)+' means '+(isNaN(v)?'?':(v*100).toFixed(0))+'%<br><small style="opacity:.7">(decimal fraction, e.g. Klaviyo)</small></button>'
+    +'</div></div>';
+}
+
+function setRateUnit(col,unit){
+  rateUnitChoices[col]=unit;
+  // Redraw the toggle for this column
+  var container=document.getElementById('rateunit-'+sid(col));
+  if(!container)return;
+  var rc=null;
+  for(var k in rateColumnsData){var found=(rateColumnsData[k]||[]).find(function(x){return x.column===col;});if(found){rc=found;break;}}
+  if(!rc)return;
+  container.outerHTML=buildRateUnitToggle(col,rc);
+}
+
+function onMapChange(sel){
+  var key=sel.getAttribute('data-key');
+  var header=sel.getAttribute('data-header');
+  detectedMaps[key][header]=sel.value;
+  // If they picked a rate target that wasn't previously a rate col, add unit toggle
+  var isRateNow=(sel.value==='unsubscribe_rate'||sel.value==='open_rate'||sel.value==='click_rate');
+  var wasRate=(rateColumnsData[key]||[]).find(function(rc){return rc.column===header;});
+  if(isRateNow&&!wasRate){
+    // Sample the first value from the parsed CSV
+    var fd=uploadedFiles[key];
+    var firstVal=fd.rows.slice(0,20).map(function(r){return r[header];}).find(function(v){return v!==null&&v!==undefined&&v!=='';})||null;
+    var hasPct=fd.rows.slice(0,20).some(function(r){return String(r[header]||'').includes('%');});
+    var newRc={column:header,target:sel.value,firstValue:firstVal==null?null:String(firstVal),hasPctSymbol:hasPct};
+    rateColumnsData[key].push(newRc);
+    var v=parseFloat(String(firstVal||'').replace('%',''));
+    if(hasPct)rateUnitChoices[header]='percentage';
+    else if(!isNaN(v)&&v<=1)rateUnitChoices[header]='decimal_fraction';
+    else rateUnitChoices[header]='percentage';
+    // Append the toggle to the select's parent td
+    sel.insertAdjacentHTML('afterend',buildRateUnitToggle(header,newRc));
+  }else if(!isRateNow&&wasRate){
+    // Remove toggle
+    var el=document.getElementById('rateunit-'+sid(header));
+    if(el)el.remove();
+    rateColumnsData[key]=(rateColumnsData[key]||[]).filter(function(rc){return rc.column!==header;});
+    delete rateUnitChoices[header];
+  }
+  // Recompute noSegmentDetected
+  noSegmentDetected=true;
+  for(var k in detectedMaps){for(var h in detectedMaps[k]){if(detectedMaps[k][h]==='segment'){noSegmentDetected=false;break;}}}
+  renderNoSegmentBlock();
+  refreshRunBtn();
+}
+
+function renderNoSegmentBlock(){
+  var b=document.getElementById('noSegmentBlock');
+  if(!noSegmentDetected){b.innerHTML='';return;}
+  b.innerHTML='<div class="no-seg-block"><div class="no-seg-icon">\u26A0\uFE0F</div><div><strong>No list / audience column detected</strong>We need to know which list or audience each campaign was sent to. Please map one of your columns above to <em>List / audience name</em>.<div class="no-seg-fallback"><label><input type="checkbox" id="singleListChk" onchange="onSingleListChk(this)"> My export is for a single list &mdash; treat all rows as one list called: <input type="text" id="singleListName" placeholder="e.g. Main list" style="margin-left:6px;padding:3px 8px;border:1px solid var(--rc);border-radius:4px;font-family:inherit;font-size:12px" oninput="onSingleListNameChange(this)" disabled></label></div></div></div>';
+}
+
+function onSingleListChk(cb){useSingleListFallback=cb.checked;document.getElementById('singleListName').disabled=!cb.checked;refreshRunBtn();}
+function onSingleListNameChange(inp){singleListName=inp.value.trim();refreshRunBtn();}
+
+function refreshRunBtn(){
+  var btn=document.getElementById('btnRunDiagnosis');
+  if(!btn)return;
+  var ok=!noSegmentDetected||(useSingleListFallback&&singleListName.length>0);
+  btn.disabled=!ok;
+  btn.style.opacity=ok?'1':'.5';
+  btn.style.cursor=ok?'pointer':'not-allowed';
+}
+
+function confLabel(c){if(c==='high')return'High';if(c==='medium')return'Medium';if(c==='low')return'Low';return'None';}
+
+async function submitUpload(){
+  showLoading('Running seven algorithms\u2026');
+  try{
+    var allRows=[],combinedMap={};
+    for(var key in uploadedFiles){
+      var fd=uploadedFiles[key],mapping={};
+      fd.headers.forEach(function(h){var sel=document.getElementById('map-'+key+'-'+sid(h));if(sel&&sel.value)mapping[h]=sel.value;});
+      // Single-list fallback: inject a synthetic segment
+      if(noSegmentDetected&&useSingleListFallback&&singleListName){
+        fd.rows.forEach(function(row){var copy=Object.assign({},row);copy['__sw_segment__']=singleListName;allRows.push(copy);});
+        mapping['__sw_segment__']='segment';
+      }else{
+        fd.rows.forEach(function(row){allRows.push(row);});
+      }
+      Object.assign(combinedMap,mapping);
+    }
+    var sector=getSector();
+    var cplVal=getCpl();
+    var resp=await fetch(API+'?userId='+userId+'&action=upload&sector='+sector,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:allRows,fieldMapping:combinedMap,rateUnits:rateUnitChoices,cpl:cplVal})});
+    var json=await resp.json();
+    if(!json.success){
+      // FIX #3 — surface the mapping-error case specifically
+      if(json.code==='IMPLAUSIBLE_BASELINE'){
+        hideLoading();
+        showToast('Rate column mapping looks wrong \u2014 check unit toggle','er');
+        // Highlight the rate-unit boxes
+        setTimeout(function(){
+          var msg=json.message||'Your rate column was interpreted in the wrong unit. Toggle it and try again.';
+          alert(msg);
+        },100);
+        return;
+      }
+      throw new Error(json.error||'Upload failed');
+    }
+    currentSector=sector;
+    currentCpl=getCpl();
+    hideLoading();
+    renderDash(json);
+    showScreen('dashboard');
+    showToast(json.campaignsSaved+' campaign records processed','ok');
+    maybeStartWalkthrough();
+  }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
+}
+
+async function loadDash(){
+  if(window._lastDashData){renderDash(window._lastDashData);showScreen('dashboard');maybeStartWalkthrough();return;}
+  if(!userId){showToast('No user ID','er');return;}
+  showLoading('Loading your last diagnosis\u2026');
+  try{
+    var sector=getSector();
+    var resp=await fetch(API+'?userId='+userId+'&action=load&sector='+sector);
+    var json=await resp.json();
+    if(!json.success)throw new Error(json.error);
+    hideLoading();
+    if(!Object.keys(json.segments||{}).length){showToast('No data found \u2014 upload a CSV','');return;}
+    window._lastDashData=json;
+    currentSector=sector;
+    currentCpl=getCpl();
+    renderDash(json);
+    showScreen('dashboard');
+    maybeStartWalkthrough();
+  }catch(err){hideLoading();showToast('Could not load','er');}
+}
 
 function renderDash(data){
   dashData=data;segNames=Object.keys(data.segments||{});
-  document.getElementById('dashMeta').textContent=segNames.length+' segment'+(segNames.length!==1?'s':'')+' \u00b7 Updated '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('dashMeta').textContent=segNames.length+' list'+(segNames.length!==1?'s':'')+' \u00b7 Updated '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   renderNextSendSummary(data);
   renderChangeBlock(data.changes);
   renderCampaignHistory(data);
@@ -144,12 +440,11 @@ function renderDash(data){
   document.getElementById('psDate').value=new Date().toISOString().slice(0,10);
 }
 
-// ── NEXT SEND SUMMARY (v1.2 beta) ──────────────────────────
 function renderNextSendSummary(data){
   var nb=document.getElementById('nextSendBlock');if(!nb||!segNames.length){if(nb)nb.innerHTML='';return;}
   var lines=segNames.map(function(seg){
     var s=data.segments[seg].sentiment||{};var state=s.state||'Neutral';
-    if(badStates.indexOf(state)>-1)return'<strong>'+escH(seg)+'</strong>: '+(state==='Complaint risk'?'Stop sending \u2014 complaint signals detected.':'Pause promotional sends \u2014 this segment needs a break.');
+    if(badStates.indexOf(state)>-1)return'<strong>'+escH(seg)+'</strong>: '+(state==='Complaint risk'?'Stop sending \u2014 complaint signals detected.':'Pause promotional sends \u2014 this list needs a break.');
     if(warnStates.indexOf(state)>-1)return'<strong>'+escH(seg)+'</strong>: '+(state==='Fatigue building'?'Ease off \u2014 frequency is too high right now.':state==='Cooling'?'Tread carefully \u2014 interest is declining.':'Recovering \u2014 one careful send, no promotions yet.');
     if(state==='Peak receptiveness')return'<strong>'+escH(seg)+'</strong>: Best window to send \u2014 act this week.';
     return'<strong>'+escH(seg)+'</strong>: Looking good \u2014 proceed as planned.';
@@ -161,7 +456,7 @@ function renderNextSendSummary(data){
   nb.innerHTML='<div class="next-send-summary" style="background:'+bg+';border:1.5px solid '+bdr+'"><div style="font-size:15px;font-weight:700;color:'+tc+';margin-bottom:10px">'+icon+' What this means for your next send</div><div style="font-size:13px;color:var(--tm);line-height:1.8">'+lines.join('<br>')+'</div></div>';
 }
 
-function renderChangeBlock(changes){var cb=document.getElementById('changeBlock');if(!cb)return;if(!changes||!changes.segments||!changes.segments.length){cb.innerHTML='';return;}var sum=changes.summary||{};if(sum.brandNew===sum.total&&sum.improved===0&&sum.worsened===0){cb.innerHTML='';return;}var days=sum.daysSinceLast;var sinceTxt=days==null?'since your last check':days===0?'since earlier today':days===1?'since yesterday':'since your last check '+days+' days ago';var staleHtml='';if(days!=null&&days>=14){staleHtml='<div class="stale-banner"><div style="font-size:18px;flex-shrink:0">&#x23F3;</div><div class="stale-banner-txt">It has been '+days+' days since your last upload. Upload your latest export to keep this diagnosis accurate.</div><button class="btn btn-primary btn-sm" onclick="showScreen(\'upload\')">Upload latest &rarr;</button></div>';}var pills='';if(sum.worsened>0)pills+='<span class="tally-pill down">&#x25BC; '+sum.worsened+' worsened</span>';if(sum.improved>0)pills+='<span class="tally-pill up">&#x25B2; '+sum.improved+' improved</span>';if(sum.unchanged>0)pills+='<span class="tally-pill flat">&#x2014; '+sum.unchanged+' unchanged</span>';if(sum.brandNew>0)pills+='<span class="tally-pill new">+ '+sum.brandNew+' new</span>';var rows=changes.segments.filter(function(s){return s.direction==='worsened'||s.direction==='improved'||s.isNew;}).slice(0,6).map(function(s){var arrowCls=s.direction==='improved'?'up':s.direction==='worsened'?'down':s.isNew?'new':'flat';var arrow=s.direction==='improved'?'&#x25B2;':s.direction==='worsened'?'&#x25BC;':s.isNew?'+':'&#x2014;';var desc;if(s.isNew){desc='<span class="to">'+escH(s.currentState)+'</span> <span class="from">\u00b7 new segment</span>';}else if(s.stateChanged){desc='<span class="from">'+escH(s.previousState)+'</span> &rarr; <span class="to">'+escH(s.currentState)+'</span>';}else{desc='<span class="to">'+escH(s.currentState)+'</span> <span class="from">\u00b7 capital '+(s.capitalDelta>0?'rising':'falling')+'</span>';}var capStr='';if(s.capitalDelta!=null&&Math.abs(s.capitalDelta)>=1){var capCls=s.capitalDelta>0?'up':s.capitalDelta<0?'down':'flat';capStr='<span class="change-cap '+capCls+'">'+(s.capitalDelta>0?'+':'')+s.capitalDelta.toFixed(0)+' capital</span>';}return'<div class="change-row"><div class="change-arrow '+arrowCls+'">'+arrow+'</div><div class="change-seg">'+escH(s.segment)+'</div><div class="change-desc">'+desc+'</div>'+capStr+'</div>';}).join('');var headline=sum.worsened>0?sum.worsened+' segment'+(sum.worsened!==1?'s':'')+' need'+(sum.worsened===1?'s':'')+' attention':sum.improved>0?'Good news \u2014 '+sum.improved+' segment'+(sum.improved!==1?'s':'')+' improved':'What changed';cb.innerHTML=staleHtml+'<div class="change-block"><div class="change-hdr"><div class="change-title">'+escH(headline)+'</div><div class="change-since">'+escH(sinceTxt)+'</div></div><div class="change-tally">'+pills+'</div>'+(rows?'<div class="change-rows">'+rows+'</div>':'<div class="change-empty">No state changes since your last check.</div>')+'</div>';}
+function renderChangeBlock(changes){var cb=document.getElementById('changeBlock');if(!cb)return;if(!changes||!changes.segments||!changes.segments.length){cb.innerHTML='';return;}var sum=changes.summary||{};if(sum.brandNew===sum.total&&sum.improved===0&&sum.worsened===0){cb.innerHTML='';return;}var days=sum.daysSinceLast;var sinceTxt=days==null?'since your last check':days===0?'since earlier today':days===1?'since yesterday':'since your last check '+days+' days ago';var staleHtml='';if(days!=null&&days>=14){staleHtml='<div class="stale-banner"><div style="font-size:18px;flex-shrink:0">&#x23F3;</div><div class="stale-banner-txt">It has been '+days+' days since your last upload. Upload your latest export to keep this diagnosis accurate.</div><button class="btn btn-primary btn-sm" onclick="showScreen(\'upload\')">Upload latest &rarr;</button></div>';}var pills='';if(sum.worsened>0)pills+='<span class="tally-pill down">&#x25BC; '+sum.worsened+' worsened</span>';if(sum.improved>0)pills+='<span class="tally-pill up">&#x25B2; '+sum.improved+' improved</span>';if(sum.unchanged>0)pills+='<span class="tally-pill flat">&#x2014; '+sum.unchanged+' unchanged</span>';if(sum.brandNew>0)pills+='<span class="tally-pill new">+ '+sum.brandNew+' new</span>';var rows=changes.segments.filter(function(s){return s.direction==='worsened'||s.direction==='improved'||s.isNew;}).slice(0,6).map(function(s){var arrowCls=s.direction==='improved'?'up':s.direction==='worsened'?'down':s.isNew?'new':'flat';var arrow=s.direction==='improved'?'&#x25B2;':s.direction==='worsened'?'&#x25BC;':s.isNew?'+':'&#x2014;';var desc;if(s.isNew){desc='<span class="to">'+escH(s.currentState)+'</span> <span class="from">\u00b7 new list</span>';}else if(s.stateChanged){desc='<span class="from">'+escH(s.previousState)+'</span> &rarr; <span class="to">'+escH(s.currentState)+'</span>';}else{desc='<span class="to">'+escH(s.currentState)+'</span> <span class="from">\u00b7 goodwill '+(s.capitalDelta>0?'rising':'falling')+'</span>';}var capStr='';if(s.capitalDelta!=null&&Math.abs(s.capitalDelta)>=1){var capCls=s.capitalDelta>0?'up':s.capitalDelta<0?'down':'flat';capStr='<span class="change-cap '+capCls+'">'+(s.capitalDelta>0?'+':'')+s.capitalDelta.toFixed(0)+' goodwill</span>';}return'<div class="change-row"><div class="change-arrow '+arrowCls+'">'+arrow+'</div><div class="change-seg">'+escH(s.segment)+'</div><div class="change-desc">'+desc+'</div>'+capStr+'</div>';}).join('');var headline=sum.worsened>0?sum.worsened+' list'+(sum.worsened!==1?'s':'')+' need'+(sum.worsened===1?'s':'')+' attention':sum.improved>0?'Good news \u2014 '+sum.improved+' list'+(sum.improved!==1?'s':'')+' improved':'What changed';cb.innerHTML=staleHtml+'<div class="change-block"><div class="change-hdr"><div class="change-title">'+escH(headline)+'</div><div class="change-since">'+escH(sinceTxt)+'</div></div><div class="change-tally">'+pills+'</div>'+(rows?'<div class="change-rows">'+rows+'</div>':'<div class="change-empty">No state changes since your last check.</div>')+'</div>';}
 
 function renderCampaignHistory(data){
   var allImpacts=[];segNames.forEach(function(seg){(data.segments[seg].impacts||[]).forEach(function(imp){allImpacts.push(Object.assign({},imp,{_seg:seg}));});});allImpacts.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
@@ -175,31 +470,43 @@ function renderCampaignHistory(data){
   cl.innerHTML=summaryHtml+segHtml;
 }
 
+// ── SEGMENT DIAGNOSES (FIX #2, #4, #5) ──────────────────────
 function renderSegmentDiagnoses(data){
-  var sg=document.getElementById('segGrid');if(!segNames.length){sg.innerHTML='<div style="font-size:13px;color:var(--mu);padding:16px 0">No segments detected.</div>';return;}var cpl=getCpl()||currentCpl;
+  var sg=document.getElementById('segGrid');if(!segNames.length){sg.innerHTML='<div style="font-size:13px;color:var(--mu);padding:16px 0">No lists detected.</div>';return;}var cpl=getCpl()||currentCpl;
   sg.innerHTML=segNames.map(function(seg,segIdx){
     var d=data.segments[seg];var s=d.sentiment||{};var cap=d.capital||0;var fp=d.fingerprint||{};var ft=d.freqTolerance||{};var loss=d.subscriberLoss||{};var bench=d.bench||{};var state=s.state||'Neutral';
     var cardCls=badStates.indexOf(state)>-1?'state-bad':warnStates.indexOf(state)>-1?'state-warn':goodStates.indexOf(state)>-1?'state-good':'state-neu';
     var emoji=badStates.indexOf(state)>-1?'\uD83D\uDD34':warnStates.indexOf(state)>-1?'\uD83D\uDFE1':goodStates.indexOf(state)>-1?'\uD83D\uDFE2':'\u26AA';
     var avgRate=fp.selfBaseline;var benchRate=bench.unsubNormal||fp.benchmarkNormal;var vsBench=fp.vsBenchmark||{};
-    // Plain-English band
     var bandLabel='No data',bandCls='neu';
     if(avgRate!=null&&benchRate!=null){if(avgRate<=(bench.unsubGood||0.001)){bandLabel='Well below average';bandCls='good';}else if(avgRate<=benchRate){bandLabel='In line with average';bandCls='neu';}else if(avgRate<=(bench.unsubConcern||0.005)){bandLabel='Above average';bandCls='warn';}else{bandLabel='Significantly above average';bandCls='bad';}}
-    var benchHtml=avgRate!=null?'<div class="diag-benchmark-row"><div class="bench-stat"><div class="bench-stat-label">Your unsub rate vs UK '+escH(bench.label||'')+'</div><div class="bench-stat-val '+bandCls+'">'+bandLabel+'</div>'+(vsBench.pctVsBenchmark?'<div class="bench-vs above">'+vsBench.pctVsBenchmark+'% above benchmark</div>':avgRate<=benchRate?'<div class="bench-vs below">Below benchmark \u2014 good</div>':'')+'</div></div>':'';
+    var benchHtml=avgRate!=null?'<div class="diag-benchmark-row"><div class="bench-stat"><div class="bench-stat-label">Your unsub rate vs UK '+escH(bench.label||'')+'</div><div class="bench-stat-val '+bandCls+'">'+bandLabel+'</div>'+(vsBench.pctVsBenchmark?'<div class="bench-vs above">'+vsBench.pctVsBenchmark+'% above benchmark</div>':avgRate<=benchRate?'<div class="bench-vs below">Below benchmark \u2014 good</div>':'')+'</div></div>'+(bench.source?'<div class="bench-source-line">Benchmark: '+((bench.unsubNormal*100).toFixed(2))+'% for '+escH(bench.label||'')+'. Source: '+escH(bench.source)+'. <a href="#" onclick="openMethodModal();return false;">See methodology &rarr;</a></div>':''):'';
     var lossHtml='';if(loss.totalExcessUnsubs>0){var costStr=cpl?' At your cost per subscriber, that\u2019s roughly \u00a3'+Math.round(loss.totalExcessUnsubs*cpl).toLocaleString()+' in wasted acquisition spend.':'';lossHtml='<div class="loss-box"><div class="loss-icon">&#128197;</div><div><div class="loss-num">'+loss.totalExcessUnsubs.toLocaleString()+'</div><div class="loss-label">more unsubscribes than expected across '+loss.damagingCampaigns+' send'+(loss.damagingCampaigns!==1?'s':'')+'.'+costStr+'</div></div></div>';}
     var conf=Math.round((s.confidence||0)*100);var n=fp.campaignCount||0;
     var sw=d.sendWindow||null;
     var sendCap=ft.toleranceRemaining!==undefined?ft.toleranceRemaining+' send'+(ft.toleranceRemaining!==1?'s':'')+' of tolerance left this month':null;
-    var capScoreCls=cap>10?'pos':cap<-10?'neg':'neu';var capPct=Math.min(50,Math.abs(cap)/2);
-    var capLabel=cap>=40?'Strong goodwill':cap>=10?'Positive':cap>=-10?'Neutral':cap>=-30?'Under strain':'Low \u2014 significant damage';
+    // Goodwill relabel + behavioural translation
+    var gwScoreCls=cap>10?'pos':cap<-10?'neg':'neu';
+    var gwPct=Math.min(50,Math.abs(cap)/2);
+    var gwPlain=gwBehaviouralTranslation(cap);
     var uid='seg-'+segIdx;var hasWhy=s.statementCommercial||s.statementRegulatory||s.regulatoryNote;
-    // Expandable data section with raw numbers
     var avgPct=avgRate?(avgRate*100).toFixed(2)+'%':null;var benchPct=benchRate?(benchRate*100).toFixed(2)+'%':null;var dataUid=uid+'-data';
     var dataSection=(avgPct||benchPct||n>0)?'<button class="diag-expand-btn" onclick="toggleExpand(\''+dataUid+'\')" style="margin-top:8px"><span>View exact numbers</span><span class="diag-chev">&#x25BE;</span></button><div class="diag-expand-body" id="'+dataUid+'-expand" style="display:none"><div style="display:flex;gap:20px;flex-wrap:wrap;padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px">'+(avgPct?'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu)">Your avg unsub rate</div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:var(--'+bandCls+')">'+avgPct+'</div></div>':'')+(benchPct?'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu)">UK '+escH(bench.label||'')+' benchmark</div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:var(--mu)">'+benchPct+'</div></div>':'')+'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu)">Campaigns analysed</div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace">'+n+'</div></div></div>'+(bench.source?'<div style="font-size:10px;color:var(--mu);margin-top:6px">Source: '+escH(bench.source)+'</div>':'')+'</div>':'';
-    return'<div class="diag-card '+cardCls+'" id="'+uid+'"><div class="diag-accent"><div class="diag-top"><div class="diag-seg-name">'+emoji+' '+escH(seg)+'</div><span class="diag-state">'+escH(state)+'</span></div><div class="diag-verdict">'+escH(s.verdict||state)+'</div>'+benchHtml+'</div><div class="diag-body"><div class="diag-stmt">'+escH(s.statement||'')+'</div>'+lossHtml+(s.action?'<div class="diag-action"><div class="diag-action-lbl">&#x1F449; Do this next</div><div class="diag-action-txt">'+escH(s.action)+'</div></div>':'')+(sw?renderSendWindow(sw,sendCap):(sendCap?'<div class="diag-send-window"><div class="dsw-hdr"><div class="dsw-label">Frequency</div></div><div class="dsw-reason">'+escH(sendCap)+'</div></div>':''))+(hasWhy?'<button class="diag-expand-btn" onclick="toggleExpand(\''+uid+'\')"><span>Why this matters commercially &amp; for compliance</span><span class="diag-chev">&#x25BE;</span></button><div class="diag-expand-body" id="'+uid+'-expand" style="display:none">'+(s.statementCommercial?'<div class="diag-why-item dwi-commercial"><span class="diag-why-icon">&#x1F4B0;</span><div>'+escH(s.statementCommercial)+'</div></div>':'')+(s.statementRegulatory?'<div class="diag-why-item dwi-regulatory"><span class="diag-why-icon">&#x2696;&#xFE0F;</span><div>'+escH(s.statementRegulatory)+'</div></div>':'')+(s.regulatoryNote?'<div class="diag-why-item dwi-regnote"><span class="diag-why-icon">&#x26A0;&#xFE0F;</span><div>'+escH(s.regulatoryNote)+'</div></div>':'')+'</div>':'')+dataSection+'<div class="cap-section"><div class="cap-row"><span>Relationship capital</span><span class="cap-score '+capScoreCls+'">'+(cap>0?'+':'')+cap.toFixed(0)+'/100</span></div><div class="cap-bar">'+(cap<0?'<div class="cap-bar-neg" style="width:'+capPct+'%"></div>':'')+(cap>0?'<div class="cap-bar-pos" style="width:'+capPct+'%"></div>':'')+'</div><div class="cap-ctx">'+escH(capLabel)+'</div></div><div class="conf-note">'+conf+'% confidence \u00b7 '+n+' campaign'+(n!==1?'s':'')+' analysed</div></div></div>';
+    return'<div class="diag-card '+cardCls+'" id="'+uid+'"><div class="diag-accent"><div class="diag-top"><div class="diag-seg-name">'+emoji+' '+escH(seg)+'</div><span class="diag-state">'+escH(state)+'</span></div><div class="diag-verdict">'+escH(s.verdict||state)+'</div>'+benchHtml+'</div><div class="diag-body"><div class="diag-stmt">'+escH(s.statement||'')+'</div>'+lossHtml+(s.action?'<div class="diag-action"><div class="diag-action-lbl">&#x1F449; Do this next</div><div class="diag-action-txt">'+escH(s.action)+'</div></div>':'')+(sw?renderSendWindow(sw,sendCap):(sendCap?'<div class="diag-send-window"><div class="dsw-hdr"><div class="dsw-label">Frequency <span class="tip" data-tip="'+escH(TIP_DEFS.tolerance)+'">?</span></div></div><div class="dsw-reason">'+escH(sendCap)+'</div></div>':''))+(hasWhy?'<button class="diag-expand-btn" onclick="toggleExpand(\''+uid+'\')"><span>Why this matters commercially &amp; for compliance</span><span class="diag-chev">&#x25BE;</span></button><div class="diag-expand-body" id="'+uid+'-expand" style="display:none">'+(s.statementCommercial?'<div class="diag-why-item dwi-commercial"><span class="diag-why-icon">&#x1F4B0;</span><div>'+escH(s.statementCommercial)+'</div></div>':'')+(s.statementRegulatory?'<div class="diag-why-item dwi-regulatory"><span class="diag-why-icon">&#x2696;&#xFE0F;</span><div>'+escH(s.statementRegulatory)+'</div></div>':'')+(s.regulatoryNote?'<div class="diag-why-item dwi-regnote"><span class="diag-why-icon">&#x26A0;&#xFE0F;</span><div>'+escH(s.regulatoryNote)+'</div></div>':'')+'</div>':'')+dataSection+'<div class="gw-section"><div class="gw-row"><div class="gw-row-label">Goodwill you\'ve built with this list <span class="tip" data-tip="'+escH(TIP_DEFS.goodwill)+'">?</span></div><div class="gw-score '+gwScoreCls+'">'+(cap>0?'+':'')+cap.toFixed(0)+'/100</div></div><div class="gw-plain">'+escH(gwPlain)+'</div><button class="gw-detail-btn" onclick="toggleGw(\''+uid+'\')"><span>How we scored this</span><span class="diag-chev">&#x25BE;</span></button><div class="gw-detail" id="'+uid+'-gw-detail"><div class="gw-bar">'+(cap<0?'<div class="gw-bar-neg" style="width:'+gwPct+'%"></div>':'')+(cap>0?'<div class="gw-bar-pos" style="width:'+gwPct+'%"></div>':'')+'</div><div class="gw-detail-note">Goodwill decays over ~8 weeks. Each send adds or removes points based on whether it landed below or above the UK benchmark. Range is -100 to +100. Under -20 means the list has little patience left; over +40 means recent sends have been building trust.</div></div></div><div class="conf-note">'+conf+'% confidence \u00b7 '+n+' campaign'+(n!==1?'s':'')+' analysed</div></div></div>';
   }).join('');
   var nl=document.getElementById('nudgeList');var seenFields={},allNudges=[];segNames.forEach(function(seg){(data.segments[seg].missingData||[]).forEach(function(m){if(!seenFields[m.field]){seenFields[m.field]=true;allNudges.push(m);}});});nl.innerHTML=allNudges.map(function(m){return'<div class="nudge"><div style="font-size:14px;flex-shrink:0">&#x1F4A1;</div><div class="nudge-txt"><strong>Unlock: '+escH(m.field)+'</strong>'+escH(m.message)+'</div></div>';}).join('');
 }
+
+function gwBehaviouralTranslation(cap){
+  if(cap>=60)return'Strong goodwill \u2014 this list would forgive several bad sends in a row before it started leaving.';
+  if(cap>=30)return'Positive goodwill \u2014 recent sends have built trust. One or two mistakes wouldn\'t hurt you badly.';
+  if(cap>=10)return'Mildly positive \u2014 the list is tolerating you, but one bad send could tip it the wrong way.';
+  if(cap>=-10)return'Neutral \u2014 no strong feelings either way. Sends will land as you\'d expect.';
+  if(cap>=-30)return'Under strain \u2014 recent damage is still there. Another poor send would push this list into "damaged" territory.';
+  if(cap>=-60)return'Low \u2014 significant damage across recent sends. The list is close to being unusable for promotional content.';
+  return'Very low \u2014 this list has been damaged repeatedly. Do not send anything promotional until goodwill recovers.';
+}
+
 function renderSendWindow(sw,sendCap){
   if(!sw)return'';
   var t=sw.windowType||'cautious';
@@ -208,37 +515,106 @@ function renderSendWindow(sw,sendCap){
   var scaleFirst=sw.dayScores&&sw.dayScores[0]?fmtDate(sw.dayScores[0].date):'';
   var scaleLast=sw.dayScores&&sw.dayScores.length?fmtDate(sw.dayScores[sw.dayScores.length-1].date):'';
   var windowLine='';
-  if(sw.optimalWindow){
-    var w=sw.optimalWindow;
-    windowLine='<div class="dsw-window-line"><span class="highlight">'+fmtDate(w.start)+' \u2013 '+fmtDate(w.end)+'</span> \u00b7 '+w.days+'-day '+(w.hasPeak?'peak':'safe')+' window \u00b7 '+escH(sw.recommendedType||'Newsletter')+' OK</div>';
-  } else if(sw.avoidUntil){
-    windowLine='<div class="dsw-window-line avoid">Avoid sending until <span class="highlight">'+fmtDate(sw.avoidUntil)+'</span></div>';
-  } else if(sw.earliestSafeDate){
-    windowLine='<div class="dsw-window-line cautious">Earliest safe send: <span class="highlight">'+fmtDate(sw.earliestSafeDate)+'</span></div>';
-  }
+  if(sw.optimalWindow){var w=sw.optimalWindow;windowLine='<div class="dsw-window-line"><span class="highlight">'+fmtDate(w.start)+' \u2013 '+fmtDate(w.end)+'</span> \u00b7 '+w.days+'-day '+(w.hasPeak?'peak':'safe')+' window \u00b7 '+escH(sw.recommendedType||'Newsletter')+' OK</div>';}
+  else if(sw.avoidUntil){windowLine='<div class="dsw-window-line avoid">Avoid sending until <span class="highlight">'+fmtDate(sw.avoidUntil)+'</span></div>';}
+  else if(sw.earliestSafeDate){windowLine='<div class="dsw-window-line cautious">Earliest safe send: <span class="highlight">'+fmtDate(sw.earliestSafeDate)+'</span></div>';}
   var capLine=sendCap?'<div style="font-size:11px;color:var(--mu);margin-top:6px">\uD83D\uDCC5 '+escH(sendCap)+'</div>':'';
-  return'<div class="diag-send-window"><div class="dsw-hdr"><div class="dsw-label">Send window \u2014 next 30 days</div><span class="dsw-type '+t+'">'+typeLbl+'</span></div>'+windowLine+'<div class="dsw-strip">'+cells+'</div><div class="dsw-scale"><span>'+escH(scaleFirst)+'</span><span>'+escH(scaleLast)+'</span></div><div class="dsw-reason">'+escH(sw.reasoning||'')+'</div>'+capLine+'</div>';
+  return'<div class="diag-send-window"><div class="dsw-hdr"><div class="dsw-label">Send window \u2014 next 30 days <span class="tip" data-tip="'+escH(TIP_DEFS.sendwindow)+'">?</span></div><span class="dsw-type '+t+'">'+typeLbl+'</span></div>'+windowLine+'<div class="dsw-strip">'+cells+'</div><div class="dsw-scale"><span>'+escH(scaleFirst)+'</span><span>'+escH(scaleLast)+'</span></div><div class="dsw-reason">'+escH(sw.reasoning||'')+'</div>'+capLine+'</div>';
 }
 function renderRecommendations(data){var recs=data.recommendations||[];var rg=document.getElementById('recGrid');var rankLabels=['Priority action','Next action','Also consider'];var cpl=getCpl()||currentCpl;rg.innerHTML=recs.map(function(rec,i){var chipCls=badStates.indexOf(rec.state)>-1?'red':warnStates.indexOf(rec.state)>-1?'amber':goodStates.indexOf(rec.state)>-1?'green':'';var excessStr=rec.excessUnsubs>0?(cpl?'\u00a3'+Math.round(rec.excessUnsubs*cpl).toLocaleString()+' in excess subscriber loss':rec.excessUnsubs.toLocaleString()+' excess unsubscribes'):null;return'<div class="rec-card"><div class="rec-priority">'+(rankLabels[i]||'Recommendation')+'</div><div class="rec-seg">'+escH(rec.segment)+'</div>'+(rec.state?'<div class="rec-verdict">'+escH(rec.verdict||rec.state)+'</div>':'')+(excessStr?'<div style="font-size:11px;color:var(--r);font-weight:600;margin-bottom:6px">'+excessStr+'</div>':'')+'<div class="rec-action">'+escH(rec.action||'')+'</div><div class="rec-meta">'+(rec.state?'<span class="chip '+chipCls+'">'+escH(rec.state)+'</span>':'')+(rec.date?'<span class="chip">From '+fmtDate(rec.date)+'</span>':'')+'</div></div>';}).join('');}
 
-async function runPreSend(){var seg=document.getElementById('psSeg').value;var type=document.getElementById('psType').value;var date=document.getElementById('psDate').value;if(!seg){showToast('Select a segment','er');return;}showLoading('Running 1,000 scenarios\u2026');try{var sector=getSector()||currentSector||'general';var resp=await fetch(API+'?userId='+userId+'&action=presend&sector='+sector,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({segment:seg,campaignType:type,sendDate:date})});var json=await resp.json();hideLoading();if(!json.success)throw new Error(json.error);var pred=json.prediction;var v=pred.verdict.toLowerCase();var el=document.getElementById('psResult');el.className='ps-result '+v;el.style.display='block';el.innerHTML='<div class="ps-verdict '+v+'">'+escH(pred.verdict)+'</div><div class="ps-reason">'+escH(pred.reason)+'</div>'+(pred.predictedUnsubRange?'<div class="ps-range">Predicted: '+(pred.predictedUnsubRange.low*100).toFixed(2)+'%\u2013'+(pred.predictedUnsubRange.high*100).toFixed(2)+'% \u00b7 '+Math.round((pred.spikeProb||0)*100)+'% spike probability \u00b7 UK benchmark: '+(pred.benchmarkRate*100).toFixed(2)+'%</div>':'')+(pred.alternatives&&pred.alternatives.length?'<div class="alt-title">Alternatives</div>'+pred.alternatives.map(function(a){return'<div class="alt-item"><strong>'+escH(a.change)+'</strong><span>'+escH(a.reason)+'</span></div>';}).join(''):'');el.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(err){hideLoading();showToast('Pre-send check failed: '+err.message,'er');}}
+async function runPreSend(){var seg=document.getElementById('psSeg').value;var type=document.getElementById('psType').value;var date=document.getElementById('psDate').value;if(!seg){showToast('Select a list','er');return;}showLoading('Running 1,000 scenarios\u2026');try{var sector=getSector()||currentSector||'general';var resp=await fetch(API+'?userId='+userId+'&action=presend&sector='+sector,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({segment:seg,campaignType:type,sendDate:date})});var json=await resp.json();hideLoading();if(!json.success)throw new Error(json.error);var pred=json.prediction;var v=pred.verdict.toLowerCase();var el=document.getElementById('psResult');el.className='ps-result '+v;el.style.display='block';var mappingWarning=pred.mappingIssue?'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#92400e">\u26A0\uFE0F This list\'s baseline unsubscribe rate looks implausibly high. That almost always means the rate column was interpreted in the wrong unit at upload. Re-upload and check the unit toggle.</div>':'';el.innerHTML=mappingWarning+'<div class="ps-verdict '+v+'">'+escH(pred.verdict)+'</div><div class="ps-reason">'+escH(pred.reason)+'</div>'+(pred.predictedUnsubRange?'<div class="ps-range">Predicted: '+(pred.predictedUnsubRange.low*100).toFixed(2)+'%\u2013'+(pred.predictedUnsubRange.high*100).toFixed(2)+'% \u00b7 '+Math.round((pred.spikeProb||0)*100)+'% spike probability \u00b7 UK benchmark: '+(pred.benchmarkRate*100).toFixed(2)+'%</div>':'')+(pred.alternatives&&pred.alternatives.length?'<div class="alt-title">Alternatives</div>'+pred.alternatives.map(function(a){return'<div class="alt-item"><strong>'+escH(a.change)+'</strong><span>'+escH(a.reason)+'</span></div>';}).join(''):'');el.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(err){hideLoading();showToast('Pre-send check failed: '+err.message,'er');}}
 
 function openModal(){document.getElementById('logDate').value=new Date().toISOString().slice(0,10);switchSegTab('exist');document.getElementById('logModal').classList.add('open');}
 function closeModal(){document.getElementById('logModal').classList.remove('open');}
-async function submitLog(){var seg;if(segTabMode==='new'){seg=(document.getElementById('logSegNew').value||'').trim();if(!seg){showToast('Enter a segment name','er');return;}}else{seg=document.getElementById('logSeg').value;if(!seg){showToast('Select a segment','er');return;}}var campaign={segment:seg,campaign_name:document.getElementById('logName').value||('Send on '+document.getElementById('logDate').value),campaign_type:document.getElementById('logType').value,date:document.getElementById('logDate').value,volume_sent:parseInt(document.getElementById('logVol').value)||null,unsubscribe_count:parseInt(document.getElementById('logUnsub').value)||0,open_rate:parseFloat(document.getElementById('logOpen').value)||null,click_rate:parseFloat(document.getElementById('logClick').value)||null,complaint_count:parseInt(document.getElementById('logComplaints').value)||null};if(!campaign.date){showToast('Send date required','er');return;}closeModal();showLoading('Logging and updating\u2026');try{var sector=getSector()||currentSector||'general';var resp=await fetch(API+'?userId='+userId+'&action=log&sector='+sector,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campaign:campaign})});var json=await resp.json();if(!json.success)throw new Error(json.error);hideLoading();await loadDash();showToast('Campaign logged and diagnosis updated','ok');}catch(err){hideLoading();showToast('Error: '+err.message,'er');}}
+async function submitLog(){var seg;if(segTabMode==='new'){seg=(document.getElementById('logSegNew').value||'').trim();if(!seg){showToast('Enter a list name','er');return;}}else{seg=document.getElementById('logSeg').value;if(!seg){showToast('Select a list','er');return;}}var campaign={segment:seg,campaign_name:document.getElementById('logName').value||('Send on '+document.getElementById('logDate').value),campaign_type:document.getElementById('logType').value,date:document.getElementById('logDate').value,volume_sent:parseInt(document.getElementById('logVol').value)||null,unsubscribe_count:parseInt(document.getElementById('logUnsub').value)||0,open_rate:parseFloat(document.getElementById('logOpen').value)||null,click_rate:parseFloat(document.getElementById('logClick').value)||null,complaint_count:parseInt(document.getElementById('logComplaints').value)||null};if(!campaign.date){showToast('Send date required','er');return;}closeModal();showLoading('Logging and updating\u2026');try{var sector=getSector()||currentSector||'general';var resp=await fetch(API+'?userId='+userId+'&action=log&sector='+sector,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campaign:campaign})});var json=await resp.json();if(!json.success)throw new Error(json.error);hideLoading();window._lastDashData=null;await loadDash();showToast('Campaign logged and diagnosis updated','ok');}catch(err){hideLoading();showToast('Error: '+err.message,'er');}}
+
+// ── METHODOLOGY MODAL (FIX #4) ──────────────────────────────
+async function openMethodModal(){
+  var tableEl=document.getElementById('methodTable');
+  tableEl.innerHTML='<div style="font-size:12px;color:var(--mu);padding:20px 0;text-align:center">Loading benchmarks\u2026</div>';
+  document.getElementById('methodModal').classList.add('open');
+  try{
+    var resp=await fetch(API+'?userId='+(userId||'anon')+'&action=methodology');
+    var json=await resp.json();
+    if(!json.success||!json.benchmarks){throw new Error('Could not load');}
+    var rows=json.benchmarks.map(function(b){
+      return'<tr><td><div class="sector-name">'+escH(b.label)+'</div></td>'
+        +'<td class="num">'+(b.unsubGood*100).toFixed(2)+'%</td>'
+        +'<td class="num">'+(b.unsubNormal*100).toFixed(2)+'%</td>'
+        +'<td class="num">'+(b.unsubConcern*100).toFixed(2)+'%</td>'
+        +'<td class="num">'+(b.unsubDamaged*100).toFixed(2)+'%</td>'
+        +'<td class="src-cell">'+escH(b.source)+'</td></tr>';
+    }).join('');
+    tableEl.innerHTML='<table class="method-table"><thead><tr><th>Sector</th><th>Excellent \u2264</th><th>Normal \u2264</th><th>Concern \u2264</th><th>Damaged &gt;</th><th>Source</th></tr></thead><tbody>'+rows+'</tbody></table><div style="font-size:11px;color:var(--mu);line-height:1.6;margin-top:10px"><strong>How rates map to states:</strong> Below "Normal" \u2192 Healthy. Between Normal and Concern \u2192 Cooling / Fatigue building depending on trend and frequency. Above Concern \u2192 Damaged. Above Damaged plus complaint signals \u2192 Complaint risk. States are also modulated by your own list\'s baseline and recent send frequency.</div>';
+  }catch(err){
+    tableEl.innerHTML='<div style="font-size:12px;color:var(--r);padding:20px 0;text-align:center">Could not load benchmarks. Please close and try again.</div>';
+  }
+}
+function closeMethodModal(){document.getElementById('methodModal').classList.remove('open');}
+
+// ── WALKTHROUGH (FIX #7) ────────────────────────────────────
+var WT_STEPS=[
+  {title:'Start here \u2014 the headline verdict',body:'Each card below shows one list. The <strong>big sentence in bold</strong> at the top of the card is the verdict \u2014 that\'s what you\'re here for. Read those first. Everything else on the card is evidence for that verdict.'},
+  {title:'What your recent sends did',body:'Above the cards you\'ll see a summary of your recent sends broken down by impact \u2014 which built trust, which cost you subscribers, which pushed toward fatigue. Click any row for the plain-English explanation.'},
+  {title:'What to do next',body:'The <strong>orange action box</strong> on each card is the single most important thing to do for that list. If you only read one thing per card, read that. The 30-day send window strip shows exactly when to send \u2014 green days are safe, red means wait.'},
+  {title:'Planning a send? Use Pre-Send Check',body:'Scroll to the <strong>Pre-Send Check</strong> at the bottom. It runs 1,000 Monte Carlo scenarios against the list\'s history to tell you whether your planned send is likely to go well before you press send.'}
+];
+var wtIdx=0;
+function maybeStartWalkthrough(){
+  try{if(localStorage.getItem('sw_ar_walkthrough_seen')==='1')return;}catch(e){return;}
+  wtIdx=0;
+  document.getElementById('wtOverlay').classList.add('on');
+  renderWtStep();
+}
+function renderWtStep(){
+  var step=WT_STEPS[wtIdx];
+  document.getElementById('wtStepLabel').textContent='Step '+(wtIdx+1)+' of '+WT_STEPS.length;
+  document.getElementById('wtTitle').textContent=step.title;
+  document.getElementById('wtBody').innerHTML=step.body;
+  var dots=WT_STEPS.map(function(_,i){return'<div class="wt-dot'+(i<=wtIdx?' on':'')+'"></div>';}).join('');
+  document.getElementById('wtDots').innerHTML=dots;
+  document.getElementById('wtBack').style.display=wtIdx===0?'none':'';
+  document.getElementById('wtNext').textContent=wtIdx===WT_STEPS.length-1?'Got it \u2014 close':'Next \u2192';
+}
+function wtStep(delta){
+  wtIdx+=delta;
+  if(wtIdx>=WT_STEPS.length){dismissWalkthrough();return;}
+  if(wtIdx<0)wtIdx=0;
+  renderWtStep();
+}
+function dismissWalkthrough(){
+  try{localStorage.setItem('sw_ar_walkthrough_seen','1');}catch(e){}
+  document.getElementById('wtOverlay').classList.remove('on');
+}
 
 function showLoading(msg){document.getElementById('loadingMsg').textContent=msg||'Working\u2026';document.getElementById('loadingBg').classList.add('open');}
 function hideLoading(){document.getElementById('loadingBg').classList.remove('open');}
 function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast on'+(type?' '+type:'');setTimeout(function(){t.className='toast';},3500);}
 function fmtDate(s){if(!s)return'';return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
-function sid(s){return s.replace(/[^a-zA-Z0-9_]/g,'_');}
+function sid(s){return String(s).replace(/[^a-zA-Z0-9_]/g,'_');}
 function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escJs(s){return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+
+// Wire up tooltip content from data-tip attributes on any element with class 'tip'
+function hydrateTooltips(){
+  var tips=document.querySelectorAll('.tip[data-tip]:not([data-hydrated])');
+  tips.forEach(function(t){
+    t.setAttribute('data-hydrated','1');
+    var body=document.createElement('span');
+    body.className='tip-body';
+    body.textContent=t.getAttribute('data-tip');
+    t.appendChild(body);
+  });
+}
+var _mo=new MutationObserver(function(){hydrateTooltips();});
+_mo.observe(document.body,{childList:true,subtree:true});
 
 // ── DEMO ─────────────────────────────────────────────────────
 var DEMO_CSV='Campaign Name,List / Segment,Sent,Open Rate,Unsubscribe Rate,Send Date\nJune Newsletter,All Subscribers,6234,21.3%,0.8%,2025-06-02\nBlack Friday Teaser,VIP Customers,4187,41.2%,0.2%,2025-11-18\nRe-engagement Wave 1,Lapsed 90 Days,1823,8.7%,1.3%,2025-05-14\nWelcome Series - Day 1,New Subscribers,412,58.1%,0.1%,2025-03-05\nMay Promotional,All Subscribers,6089,15.4%,1.2%,2025-05-02\nBlack Friday Main,VIP Customers,4162,43.8%,0.2%,2025-11-29\nRe-engagement Wave 2,Lapsed 90 Days,1754,6.2%,1.9%,2025-05-28\nWelcome Series - Day 1,New Subscribers,587,55.3%,0.2%,2025-03-12\nApril Newsletter,All Subscribers,6311,26.1%,0.4%,2025-04-04\nCyber Monday,VIP Customers,4149,38.5%,0.3%,2025-12-02\nRe-engagement Wave 3,Lapsed 90 Days,1712,5.1%,2.3%,2025-06-11\nWelcome Series - Day 1,New Subscribers,744,54.7%,0.2%,2025-03-19\nMarch Newsletter,All Subscribers,6198,19.4%,0.7%,2025-03-21\nSpring VIP Preview,VIP Customers,4198,44.1%,0.1%,2025-03-18\nRe-engagement Wave 4,Lapsed 90 Days,1688,4.8%,2.7%,2025-06-25\nWelcome Series - Day 1,New Subscribers,891,53.9%,0.3%,2025-03-26\nSummer Sale Launch,All Subscribers,6143,22.4%,0.6%,2025-05-16\nSummer VIP Early Access,VIP Customers,4131,40.2%,0.4%,2025-05-06\nWelcome Series - Day 1,New Subscribers,1034,52.1%,0.3%,2025-04-02\nJuly Newsletter,All Subscribers,5988,12.3%,1.5%,2025-06-13\nJuly VIP,VIP Customers,4118,31.4%,0.7%,2025-05-13\nWelcome Series - Day 1,New Subscribers,1156,51.8%,0.2%,2025-04-09\nFlash Sale,All Subscribers,6021,14.1%,1.3%,2025-05-30\nAugust VIP,VIP Customers,4095,29.8%,0.8%,2025-06-10\nWelcome Series - Day 1,New Subscribers,1287,52.4%,0.2%,2025-04-16\nProduct Launch,All Subscribers,6180,23.6%,0.5%,2025-04-18\nAutumn VIP Preview,VIP Customers,4080,37.1%,0.5%,2025-09-22\nWelcome Series - Day 1,New Subscribers,1398,53.1%,0.2%,2025-04-23';
 var DEMO_BENCH={unsubNormal:0.0022,unsubGood:0.001,unsubConcern:0.005,unsubDamaged:0.010,label:'General / Mixed',source:'MailerLite 2025 + GDMA 2024'};
 
-function loadDemo(){var p=parseCSV(DEMO_CSV);if(!p.rows.length){showToast('Demo data failed','er');return;}var campaigns=p.rows.map(function(row){var unsubRaw=row['Unsubscribe Rate']||'';var unsubRate=parseFloat(unsubRaw.replace('%',''))/100;var sent=parseInt((row['Sent']||'').replace(/,/g,''))||1000;return{segment:row['List / Segment'],campaign_name:row['Campaign Name'],date:row['Send Date'],volume_sent:sent,unsubscribe_count:Math.round(unsubRate*sent),open_rate:row['Open Rate']?parseFloat(row['Open Rate'].replace('%',''))/100:null,click_rate:null,complaint_count:null};}).filter(function(c){return c.date&&c.segment;});var bySegment={};campaigns.forEach(function(c){if(!bySegment[c.segment])bySegment[c.segment]=[];bySegment[c.segment].push(c);});Object.keys(bySegment).forEach(function(s){bySegment[s].sort(function(a,b){return new Date(a.date)-new Date(b.date);});});var segments={};Object.keys(bySegment).forEach(function(seg){segments[seg]=buildDemoSegmentData(bySegment[seg]);});var urgency={'Complaint risk':5,'Damaged':4,'Fatigue building':3,'Cooling':2,'Recovering':1};var recs=Object.keys(segments).map(function(seg){var d=segments[seg];var fp=d.fingerprint||{};var ft=d.freqTolerance||{};var sl=d.subscriberLoss||{};return{segment:seg,verdict:d.sentiment.verdict,action:d.sentiment.action,state:d.sentiment.state,capital:d.capital,unsubRate:fp.selfBaseline,benchRate:DEMO_BENCH.unsubNormal,excessUnsubs:sl.totalExcessUnsubs||0,date:ft.optimalNextSend};}).sort(function(a,b){return(urgency[b.state]||0)-(urgency[a.state]||0);}).slice(0,3);renderDash({segments:segments,recommendations:recs});showScreen('dashboard');document.getElementById('demoBanner').style.display='flex';}
+function loadDemo(){var p=parseCSV(DEMO_CSV);if(!p.rows.length){showToast('Demo data failed','er');return;}var campaigns=p.rows.map(function(row){var unsubRaw=row['Unsubscribe Rate']||'';var unsubRate=parseFloat(unsubRaw.replace('%',''))/100;var sent=parseInt((row['Sent']||'').replace(/,/g,''))||1000;return{segment:row['List / Segment'],campaign_name:row['Campaign Name'],date:row['Send Date'],volume_sent:sent,unsubscribe_count:Math.round(unsubRate*sent),open_rate:row['Open Rate']?parseFloat(row['Open Rate'].replace('%',''))/100:null,click_rate:null,complaint_count:null};}).filter(function(c){return c.date&&c.segment;});var bySegment={};campaigns.forEach(function(c){if(!bySegment[c.segment])bySegment[c.segment]=[];bySegment[c.segment].push(c);});Object.keys(bySegment).forEach(function(s){bySegment[s].sort(function(a,b){return new Date(a.date)-new Date(b.date);});});var segments={};Object.keys(bySegment).forEach(function(seg){segments[seg]=buildDemoSegmentData(bySegment[seg]);});var urgency={'Complaint risk':5,'Damaged':4,'Fatigue building':3,'Cooling':2,'Recovering':1};var recs=Object.keys(segments).map(function(seg){var d=segments[seg];var fp=d.fingerprint||{};var ft=d.freqTolerance||{};var sl=d.subscriberLoss||{};return{segment:seg,verdict:d.sentiment.verdict,action:d.sentiment.action,state:d.sentiment.state,capital:d.capital,unsubRate:fp.selfBaseline,benchRate:DEMO_BENCH.unsubNormal,excessUnsubs:sl.totalExcessUnsubs||0,date:ft.optimalNextSend};}).sort(function(a,b){return(urgency[b.state]||0)-(urgency[a.state]||0);}).slice(0,3);renderDash({segments:segments,recommendations:recs});showScreen('dashboard');document.getElementById('demoBanner').style.display='flex';maybeStartWalkthrough();}
 
 function buildDemoSegmentData(campaigns){
   var n=campaigns.length;var bench=DEMO_BENCH;
@@ -283,22 +659,22 @@ function buildDemoSegmentData(campaigns){
   var fingerprint={selfBaseline:Math.round(selfBaseline*10000)/10000,effectiveBaseline:Math.round(effectiveBaseline*10000)/10000,benchmarkNormal:bench.unsubNormal,campaignCount:n,unsubscribeStdDev:0.002,trendDelta:Math.round(trendDelta*10000)/10000,frequencyToleranceThreshold:4,vsBenchmark:{tier:vsBenchTier,pctVsBenchmark:pctAbove}};
   var sentiment;
   if(avgRate>bench.unsubDamaged){
-    sentiment={state:'Damaged',verdict:'This segment needs a break from you',statement:'Your unsubscribe rate is significantly above the UK '+bench.label+' average. Recent sends are causing above-average audience exit.',action:'Pause all promotional sends for at least 21 days. One low-key newsletter only.',statementCommercial:'You have approximately 3 weeks before this segment becomes unreachable for promotional sends.',statementRegulatory:null,regulatoryNote:null,confidence:0.88};
+    sentiment={state:'Damaged',verdict:'This list needs a break from you',statement:'Your unsubscribe rate is significantly above the UK '+bench.label+' average. Recent sends are causing above-average audience exit.',action:'Pause all promotional sends for at least 21 days. One low-key newsletter only.',statementCommercial:'You have approximately 3 weeks before this list becomes unreachable for promotional sends.',statementRegulatory:null,regulatoryNote:null,confidence:0.88};
   } else if(avgRate>bench.unsubConcern&&toleranceRemaining<=1&&direction!=='Improving'){
-    sentiment={state:'Fatigue building',verdict:"You're sending too much to this segment",statement:'Your unsubscribe rate is above the UK '+bench.label+' average and you\'ve sent '+recentCamps+' campaigns in the last 30 days. Tolerance is almost gone.',action:'No promotional sends this month. One newsletter maximum.',statementCommercial:'Fatigued audiences stop opening before they unsubscribe \u2014 open rates will keep dropping even if you reduce frequency.',statementRegulatory:'High frequency combined with above-average unsubscribes is the pattern the ICO uses to challenge legitimate interest bases.',regulatoryNote:null,confidence:0.85};
+    sentiment={state:'Fatigue building',verdict:"You're sending too much to this list",statement:'Your unsubscribe rate is above the UK '+bench.label+' average and you\'ve sent '+recentCamps+' campaigns in the last 30 days. Tolerance is almost gone.',action:'No promotional sends this month. One newsletter maximum.',statementCommercial:'Fatigued audiences stop opening before they unsubscribe \u2014 open rates will keep dropping even if you reduce frequency.',statementRegulatory:'High frequency combined with above-average unsubscribes is the pattern the ICO uses to challenge legitimate interest bases.',regulatoryNote:null,confidence:0.85};
   } else if(avgRate>bench.unsubNormal&&direction==='Declining'){
-    sentiment={state:'Cooling',verdict:'This segment is losing interest',statement:'Unsubscribes are trending upward across your recent sends. Your rate is above the UK '+bench.label+' average.',action:'Try a preference-update email before your next send.',statementCommercial:'Cooling audiences convert at a fraction of their peak rate. The opportunity is to reverse it now.',statementRegulatory:null,regulatoryNote:null,confidence:0.78};
+    sentiment={state:'Cooling',verdict:'This list is losing interest',statement:'Unsubscribes are trending upward across your recent sends. Your rate is above the UK '+bench.label+' average.',action:'Try a preference-update email before your next send.',statementCommercial:'Cooling audiences convert at a fraction of their peak rate. The opportunity is to reverse it now.',statementRegulatory:null,regulatoryNote:null,confidence:0.78};
   } else if(avgRate<=bench.unsubGood&&direction==='Improving'&&toleranceRemaining>=3&&recentBuilt>=2){
     sentiment={state:'Peak receptiveness',verdict:'Best window to send \u2014 act this week',statement:'Your unsubscribe rate is well below the UK '+bench.label+' average. '+recentBuilt+' recent sends built trust. You have '+toleranceRemaining+' sends of tolerance.',action:'Send your highest-value promotional campaign now. This window typically lasts 2\u20133 weeks.',statementCommercial:'Peak-receptiveness windows produce measurably higher conversion.',statementRegulatory:null,regulatoryNote:null,confidence:0.88};
   } else if((direction==='Improving'||direction==='Stable')&&recentDamage>=1&&recentBuilt>=1){
-    sentiment={state:'Recovering',verdict:capital>=40?'Recovering well \u2014 one more careful send':'Recovering \u2014 handle with care',statement:'Early signs of recovery. Your rate is '+(avgRate<=bench.unsubNormal?'back in line with':'still above')+' the UK '+bench.label+' average. Relationship capital: '+(capital>0?'+':'')+capital.toFixed(0)+'/100.',action:capital>=40?'Send one value-first newsletter. If unsubscribes stay below average, resume normal sending in 2 weeks.':'High-value sends only for the next 3 weeks. No promotional campaigns.',statementCommercial:capital>=40?'High capital means this audience is more forgiving.':'One badly timed promotional send now could push this segment back into damaged territory.',statementRegulatory:null,regulatoryNote:null,confidence:0.78};
+    sentiment={state:'Recovering',verdict:capital>=40?'Recovering well \u2014 one more careful send':'Recovering \u2014 handle with care',statement:'Early signs of recovery. Your rate is '+(avgRate<=bench.unsubNormal?'back in line with':'still above')+' the UK '+bench.label+' average. Goodwill: '+(capital>0?'+':'')+capital.toFixed(0)+'/100.',action:capital>=40?'Send one value-first newsletter. If unsubscribes stay below average, resume normal sending in 2 weeks.':'High-value sends only for the next 3 weeks. No promotional campaigns.',statementCommercial:capital>=40?'High goodwill means this audience is more forgiving.':'One badly timed promotional send now could push this list back into damaged territory.',statementRegulatory:null,regulatoryNote:null,confidence:0.78};
   } else if(avgRate<=bench.unsubNormal){
-    sentiment={state:'Healthy',verdict:'Looking good \u2014 proceed as planned',statement:'Your unsubscribe rate is at or below the UK '+bench.label+' average. No concerning trends.',action:'Proceed with your planned campaign.',statementCommercial:'A healthy segment converts at predictable rates.',statementRegulatory:null,regulatoryNote:null,confidence:0.80};
+    sentiment={state:'Healthy',verdict:'Looking good \u2014 proceed as planned',statement:'Your unsubscribe rate is at or below the UK '+bench.label+' average. No concerning trends.',action:'Proceed with your planned campaign.',statementCommercial:'A healthy list converts at predictable rates.',statementRegulatory:null,regulatoryNote:null,confidence:0.80};
   } else {
     sentiment={state:'Neutral',verdict:'No strong signals \u2014 proceed normally',statement:'Your unsubscribe rate is close to the UK '+bench.label+' average. No strong trend in either direction.',action:'Proceed with your planned campaign. Monitor on the next send.',statementCommercial:'Neutral state means sends will perform at your historical average.',statementRegulatory:null,regulatoryNote:null,confidence:0.65};
   }
   var sendWindow=computeDemoSendWindow(campaigns,sentiment.state,capital,toleranceRemaining);
-  return{fingerprint:fingerprint,trustVelocity:{velocity:0,direction:direction,magnitude:0},freqTolerance:{toleranceRemaining:toleranceRemaining,optimalNextSend:nextDate,recommendedType:toleranceRemaining<=1?'Newsletter':'Promotional',recentSendCount:recentCamps},sentiment:sentiment,capital:capital,sendWindow:sendWindow,impacts:impacts.slice(-8),dataQuality:'Partial',missingData:[{field:'Spam complaints',message:'Complaints carry 50\u00d7 the weight of an unsubscribe. Adding them makes Trust Velocity significantly more accurate.'}],subscriberLoss:{totalExcessUnsubs:totalExcess,damagingCampaigns:damagingCamps},bench:{label:bench.label,unsubNormal:bench.unsubNormal,source:bench.source},sector:'general'};
+  return{fingerprint:fingerprint,trustVelocity:{velocity:0,direction:direction,magnitude:0},freqTolerance:{toleranceRemaining:toleranceRemaining,optimalNextSend:nextDate,recommendedType:toleranceRemaining<=1?'Newsletter':'Promotional',recentSendCount:recentCamps},sentiment:sentiment,capital:capital,sendWindow:sendWindow,impacts:impacts.slice(-8),dataQuality:'Partial',missingData:[{field:'Spam complaints',message:'Complaints carry 50\u00d7 the weight of an unsubscribe. Adding them makes Trust Velocity significantly more accurate.'}],subscriberLoss:{totalExcessUnsubs:totalExcess,damagingCampaigns:damagingCamps},bench:{label:bench.label,unsubNormal:bench.unsubNormal,unsubGood:bench.unsubGood,unsubConcern:bench.unsubConcern,unsubDamaged:bench.unsubDamaged,source:bench.source},sector:'general'};
 }
 
 function computeDemoSendWindow(campaigns,state,capital,toleranceRemaining){
@@ -347,16 +723,14 @@ function computeDemoSendWindow(campaigns,state,capital,toleranceRemaining){
   else type='avoid';
   var recType=toleranceRemaining<=1?'Newsletter':'Promotional';
   var reason;
-  if(type==='peak')reason=opt.days+'-day optimal window \u2014 segment is receptive and tolerance is well-recovered. '+recType+' sends can go now.';
+  if(type==='peak')reason=opt.days+'-day optimal window \u2014 list is receptive and tolerance is well-recovered. '+recType+' sends can go now.';
   else if(type==='good')reason='Safe '+opt.days+'-day send window \u2014 no active damage signals and tolerance is intact.';
-  else if(type==='cautious')reason='Earliest safe send is '+earliestDate+'. Segment tolerance is tight \u2014 send one '+recType.toLowerCase()+' and monitor unsub rate.';
-  else reason='No safe send window in the next '+days+' days. Segment needs longer recovery.';
+  else if(type==='cautious')reason='Earliest safe send is '+earliestDate+'. List tolerance is tight \u2014 send one '+recType.toLowerCase()+' and monitor unsub rate.';
+  else reason='No safe send window in the next '+days+' days. List needs longer recovery.';
   return{earliestSafeDate:earliestDate,avoidUntil:avoidUntil,optimalWindow:opt,windowType:type,recommendedType:recType,reasoning:reason,dayScores:scores.map(function(s){return{date:s.date,score:s.score};})};
 }
 
-// ── PROFILE-DRIVEN INIT (v7.3, A1) ──────────────────────────
-// Sector and CPL live only in the user's profile. This page fetches them,
-// shows a status card, and blocks the Diagnose button if sector is missing.
+// ── PROFILE INIT ─────────────────────────────────────────────
 async function loadProfileAndInit(){
   var ps=document.getElementById('profileStatus');
   if(ps)ps.innerHTML='<div class="ps-loading">Loading your profile\u2026</div>';
@@ -379,13 +753,11 @@ function renderProfileStatus(){
   var zone=document.getElementById('zone-main');
   if(!ps)return;
   var profileLink=PROFILE_URL+(userId?'?userId='+encodeURIComponent(userId):'');
-  // Blocked: no sector set
   if(!profileSector){
-    ps.innerHTML='<div class="ps-block"><div class="ps-block-icon">\u2699\uFE0F</div><div class="ps-block-body"><div class="ps-block-title">Set your sector before running Audience Read</div><div class="ps-block-desc">Your sector sets the UK benchmark unsubscribe rates we compare your segments against. Takes 30 seconds in profile settings.</div><a class="ps-block-btn" href="'+profileLink+'">Go to profile settings &rarr;</a></div></div>';
+    ps.innerHTML='<div class="ps-block"><div class="ps-block-icon">\u2699\uFE0F</div><div class="ps-block-body"><div class="ps-block-title">Set your sector before running Audience Read</div><div class="ps-block-desc">Your sector sets the UK benchmark unsubscribe rates we compare your lists against. Takes 30 seconds in profile settings.</div><a class="ps-block-btn" href="'+profileLink+'">Go to profile settings &rarr;</a></div></div>';
     if(zone)zone.classList.add('upload-disabled');
     return;
   }
-  // Allowed
   if(zone)zone.classList.remove('upload-disabled');
   var sectorLabel=SECTOR_LABELS[profileSector]||profileSector;
   var cplHtml=profileCpl?'<div class="ps-value">\u00a3'+profileCpl.toFixed(2).replace(/\.00$/,'')+'</div>':'<div class="ps-value-warn">not set</div>';
@@ -397,13 +769,13 @@ document.getElementById('psDate').value=new Date().toISOString().slice(0,10);
 if(!userId){
   document.getElementById('gateScreen').classList.add('show');
   document.getElementById('upload-screen').style.display='none';
-  // Demo path: no profile to load — hide the status card if they backtrack to upload
   var _ps=document.getElementById('profileStatus');if(_ps)_ps.style.display='none';
 }else{
   document.getElementById('upload-screen').style.display='block';
   loadProfileAndInit();
   fetch(API+'?userId='+userId+'&action=load').then(function(r){return r.json();}).then(function(json){if(json.success&&Object.keys(json.segments||{}).length>0){var link=document.getElementById('lastReportLink');if(link)link.style.display='block';window._lastDashData=json;}}).catch(function(){});
 }
+hydrateTooltips();
 </script>
 </body>
 </html>
