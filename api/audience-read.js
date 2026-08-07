@@ -1,20 +1,28 @@
-// api/audience-read.js — Sendwize Audience Read v7.3
+// api/audience-read.js — Sendwize Audience Read v7.4
 // Seven deterministic algorithms + derived send-window projection.
 // Zero AI. Zero external data.
 //
-// v7.3 changes from v7.2:
-//   - NEW: computeSendWindow() derived analytics — projects each of
-//     the next 30 days and scores it (0=avoid, 1=cautious, 2=safe,
-//     3=optimal) using existing fingerprint, sentiment, capital and
-//     tolerance signals. No new algorithm, no new inputs — just
-//     projection of what algorithms 1/4/5/7 already produce.
-//   - Returns { earliestSafeDate, avoidUntil, optimalWindow, windowType,
-//     recommendedType, reasoning, dayScores[] } per segment.
-//   - Attached to segment result under `sendWindow`. Existing
-//     freqTolerance.optimalNextSend preserved for backward-compat.
-//   - Frontend renders inline heat strip + text summary.
-//   - Fully deterministic per D2 principle. No AI, no invented figures.
-// v7.2: normaliseRate fix — '0.8%' now correctly returns 0.008 not 0.8.
+// v7.4 changes from v7.3:
+//   FIX #3: normaliseRate no longer guesses. Takes an explicit `unit` hint
+//     ('percentage' | 'decimal_fraction') per column, sent from the mapping
+//     screen. Explicit % symbol in the value still wins over the hint.
+//   FIX #6/#3 guard: any segment whose interpreted selfBaseline > 5% is
+//     rejected as implausible — indicates the user picked the wrong rate
+//     interpretation. Frontend surfaces the mapping error.
+//   FIX #6 pre-send: algorithm6_predictiveSend forces Red verdict if the
+//     fingerprint baseline is implausible. No green light on broken data.
+//   FIX #8: detectColumnType replaced with scoreColumn — a scoring model.
+//     Each column scores against each target field, highest wins, and a
+//     confidence level ('high'|'medium'|'low') is returned per mapping.
+//   FIX #5: `detect` action returns `noSegmentDetected` flag when nothing
+//     scored high enough on segment — frontend uses this to hard-block.
+//
+// API additions:
+//   - `detect` now returns { mapping, confidence, rateColumns, noSegmentDetected }.
+//   - `upload` accepts `rateUnits: { [columnName]: 'percentage'|'decimal_fraction' }`
+//     and applies them per column via normaliseRate.
+//   - `upload` returns 400 with `code: 'IMPLAUSIBLE_BASELINE'` if any segment
+//     has a baseline over 5%, so the frontend can walk the user back to mapping.
 
 const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -25,117 +33,63 @@ const AT_HEADERS = () => ({
   'Content-Type': 'application/json',
 });
 
+const IMPLAUSIBLE_BASELINE_THRESHOLD = 0.05; // >5% avg unsub = broken mapping
+
 const BENCHMARKS = {
   ecommerce: {
     label: 'Ecommerce / Retail',
-    unsubGood:      0.001,
-    unsubNormal:    0.003,
-    unsubConcern:   0.005,
-    unsubDamaged:   0.010,
-    openGood:       0.35,
-    openNormal:     0.25,
-    openPoor:       0.15,
-    clickGood:      0.025,
-    clickNormal:    0.015,
-    clickPoor:      0.005,
+    unsubGood:      0.001, unsubNormal:    0.003, unsubConcern:   0.005, unsubDamaged:   0.010,
+    openGood:       0.35,  openNormal:     0.25,  openPoor:       0.15,
+    clickGood:      0.025, clickNormal:    0.015, clickPoor:      0.005,
     source: 'Klaviyo 400k campaign analysis + GDMA 2024',
   },
   b2b: {
     label: 'B2B / Professional Services',
-    unsubGood:      0.0005,
-    unsubNormal:    0.0015,
-    unsubConcern:   0.003,
-    unsubDamaged:   0.008,
-    openGood:       0.30,
-    openNormal:     0.20,
-    openPoor:       0.12,
-    clickGood:      0.030,
-    clickNormal:    0.020,
-    clickPoor:      0.008,
+    unsubGood:      0.0005, unsubNormal:    0.0015, unsubConcern:   0.003, unsubDamaged:   0.008,
+    openGood:       0.30,   openNormal:     0.20,   openPoor:       0.12,
+    clickGood:      0.030,  clickNormal:    0.020,  clickPoor:      0.008,
     source: 'DMA UK 2025 + GDMA International Benchmark 2024',
   },
   saas: {
     label: 'SaaS / Technology',
-    unsubGood:      0.0008,
-    unsubNormal:    0.002,
-    unsubConcern:   0.004,
-    unsubDamaged:   0.008,
-    openGood:       0.28,
-    openNormal:     0.20,
-    openPoor:       0.12,
-    clickGood:      0.028,
-    clickNormal:    0.018,
-    clickPoor:      0.006,
+    unsubGood:      0.0008, unsubNormal:    0.002, unsubConcern:   0.004, unsubDamaged:   0.008,
+    openGood:       0.28,   openNormal:     0.20,  openPoor:       0.12,
+    clickGood:      0.028,  clickNormal:    0.018, clickPoor:      0.006,
     source: 'MailerLite 2025 industry breakdown',
   },
   media: {
     label: 'Media / Publishing / Newsletter',
-    unsubGood:      0.001,
-    unsubNormal:    0.0022,
-    unsubConcern:   0.005,
-    unsubDamaged:   0.010,
-    openGood:       0.40,
-    openNormal:     0.28,
-    openPoor:       0.18,
-    clickGood:      0.035,
-    clickNormal:    0.020,
-    clickPoor:      0.008,
+    unsubGood:      0.001,  unsubNormal:    0.0022, unsubConcern:   0.005, unsubDamaged:   0.010,
+    openGood:       0.40,   openNormal:     0.28,   openPoor:       0.18,
+    clickGood:      0.035,  clickNormal:    0.020,  clickPoor:      0.008,
     source: 'MailerLite 2025 + DMA UK 2025',
   },
   charity: {
     label: 'Charity / Non-profit',
-    unsubGood:      0.0008,
-    unsubNormal:    0.002,
-    unsubConcern:   0.004,
-    unsubDamaged:   0.008,
-    openGood:       0.35,
-    openNormal:     0.25,
-    openPoor:       0.15,
-    clickGood:      0.025,
-    clickNormal:    0.015,
-    clickPoor:      0.005,
+    unsubGood:      0.0008, unsubNormal:    0.002, unsubConcern:   0.004, unsubDamaged:   0.008,
+    openGood:       0.35,   openNormal:     0.25,  openPoor:       0.15,
+    clickGood:      0.025,  clickNormal:    0.015, clickPoor:      0.005,
     source: 'DMA UK 2025',
   },
   finance: {
     label: 'Finance / Financial Services',
-    unsubGood:      0.0005,
-    unsubNormal:    0.0015,
-    unsubConcern:   0.003,
-    unsubDamaged:   0.007,
-    openGood:       0.28,
-    openNormal:     0.20,
-    openPoor:       0.12,
-    clickGood:      0.025,
-    clickNormal:    0.015,
-    clickPoor:      0.005,
+    unsubGood:      0.0005, unsubNormal:    0.0015, unsubConcern:   0.003, unsubDamaged:   0.007,
+    openGood:       0.28,   openNormal:     0.20,   openPoor:       0.12,
+    clickGood:      0.025,  clickNormal:    0.015,  clickPoor:      0.005,
     source: 'DMA UK 2025 + GDMA International Benchmark 2024',
   },
   health: {
     label: 'Health / Healthcare',
-    unsubGood:      0.0006,
-    unsubNormal:    0.0018,
-    unsubConcern:   0.004,
-    unsubDamaged:   0.008,
-    openGood:       0.30,
-    openNormal:     0.22,
-    openPoor:       0.13,
-    clickGood:      0.025,
-    clickNormal:    0.015,
-    clickPoor:      0.005,
+    unsubGood:      0.0006, unsubNormal:    0.0018, unsubConcern:   0.004, unsubDamaged:   0.008,
+    openGood:       0.30,   openNormal:     0.22,   openPoor:       0.13,
+    clickGood:      0.025,  clickNormal:    0.015,  clickPoor:      0.005,
     source: 'MailerLite 2025 + DMA UK 2025',
   },
   general: {
     label: 'General / Mixed',
-    unsubGood:      0.001,
-    unsubNormal:    0.0022,
-    unsubConcern:   0.005,
-    unsubDamaged:   0.010,
-    openGood:       0.35,
-    openNormal:     0.25,
-    openPoor:       0.15,
-    clickGood:      0.025,
-    clickNormal:    0.015,
-    clickPoor:      0.005,
+    unsubGood:      0.001,  unsubNormal:    0.0022, unsubConcern:   0.005, unsubDamaged:   0.010,
+    openGood:       0.35,   openNormal:     0.25,   openPoor:       0.15,
+    clickGood:      0.025,  clickNormal:    0.015,  clickPoor:      0.005,
     source: 'MailerLite 2025 + GDMA 2024 + DMA UK 2025',
   },
 };
@@ -149,98 +103,147 @@ async function atGet(table, formula, sort = '', max = 100) {
   return (await r.json()).records || [];
 }
 async function atCreate(table, fields) {
-  const clean = Object.fromEntries(
-    Object.entries(fields).filter(([, v]) => v !== null && v !== undefined)
-  );
+  const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== null && v !== undefined));
   const r = await fetch(`${AT_BASE}/${encodeURIComponent(table)}`, {
-    method: 'POST',
-    headers: AT_HEADERS(),
+    method: 'POST', headers: AT_HEADERS(),
     body: JSON.stringify({ records: [{ fields: clean }] }),
   });
-  if (!r.ok) {
-    const body = await r.text();
-    throw new Error(`Airtable POST ${table} failed: ${r.status} — ${body}`);
-  }
+  if (!r.ok) { const body = await r.text(); throw new Error(`Airtable POST ${table} failed: ${r.status} — ${body}`); }
   return (await r.json()).records?.[0];
 }
 async function atPatch(table, recordId, fields) {
-  const clean = Object.fromEntries(
-    Object.entries(fields).filter(([, v]) => v !== null && v !== undefined)
-  );
+  const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== null && v !== undefined));
   const r = await fetch(`${AT_BASE}/${encodeURIComponent(table)}/${recordId}`, {
-    method: 'PATCH',
-    headers: AT_HEADERS(),
+    method: 'PATCH', headers: AT_HEADERS(),
     body: JSON.stringify({ fields: clean }),
   });
   if (!r.ok) throw new Error(`Airtable PATCH ${table} failed: ${r.status}`);
   return await r.json();
 }
 
-function detectColumnType(header, values) {
-  const lc = header.toLowerCase().trim();
+// ─────────────────────────────────────────────────────────────
+// FIX #8 — Column detection as a scoring model.
+// Each column scores against each candidate target. We then greedily
+// assign the highest-scoring (column, target) pairs, one column per
+// target and one target per column. Confidence is derived from the
+// winning score: high (≥70), medium (45–69), low (30–44).
+// Scores below 30 don't get mapped at all.
+// ─────────────────────────────────────────────────────────────
+function scoreColumn(header, values) {
+  const lc = String(header).toLowerCase().trim();
   const sample = values.filter(v => v !== null && v !== undefined && v !== '');
-  if (!sample.length) return 'unknown';
-  if (lc.includes('date') || lc.includes('sent on') || lc.includes('send date')) return 'date';
-  const dateRe = /^\d{4}-\d{2}-\d{2}$|^\d{2}\/\d{2}\/\d{4}$|^\d{1,2}\/\d{1,2}\/\d{2,4}$/;
-  if (sample.filter(v => dateRe.test(String(v).trim())).length / sample.length > 0.7) return 'date';
-  const segWords = ['segment', 'list', 'audience', 'group', 'tag', 'list name', 'list / segment', 'audience name'];
-  if (segWords.some(w => lc.includes(w))) return 'segment';
-  const campWords = ['campaign name', 'campaign', 'subject line', 'subject', 'email name', 'email subject', 'name'];
-  if (campWords.some(w => lc === w || lc.includes(w))) return 'campaign_name';
-  if (lc.includes('type') || lc.includes('kind') || lc.includes('category')) return 'campaign_type';
-  const nums = sample.map(v => parseFloat(String(v).replace('%', ''))).filter(n => !isNaN(n));
-  const pctSample = sample.filter(v => String(v).includes('%'));
-  const isPct = pctSample.length / sample.length > 0.5;
-  if (nums.length / sample.length > 0.8) {
-    const isRateStyle = isPct || (nums.every(n => n >= 0 && n <= 1));
-    const isPctStyle = isPct || (nums.some(n => n > 1) && nums.every(n => n <= 100));
-    if (lc.includes('unsub') || lc.includes('opt out') || lc.includes('opt-out')) return 'unsubscribe_rate_or_count';
-    if (lc.includes('open')) return 'open_rate';
-    if (lc.includes('click') && !lc.includes('unique')) return 'click_rate';
-    if (lc.includes('complaint') || lc.includes('spam') || lc.includes('abuse')) return 'complaint_count';
-    if (lc.includes('sent') || lc.includes('volume') || lc.includes('delivered') || lc.includes('recipients')) return 'volume_sent';
-    if (lc.includes('bounce')) return 'ignore';
-    if (lc.includes('revenue') || lc.includes('£') || lc.includes('$')) return 'ignore';
-    if (isRateStyle || isPct) return 'rate_unknown';
-    return 'count_unknown';
+  const scores = {
+    date: 0, segment: 0, campaign_name: 0, campaign_type: 0,
+    unsubscribe_rate: 0, unsubscribe_count: 0,
+    open_rate: 0, click_rate: 0,
+    complaint_count: 0, volume_sent: 0,
+  };
+  if (!sample.length) return scores;
+
+  // Value-shape analysis
+  const dateRe = /^\d{4}-\d{2}-\d{2}|^\d{1,2}\/\d{1,2}\/\d{2,4}/;
+  const dateHitRatio = sample.filter(v => dateRe.test(String(v).trim())).length / sample.length;
+  const nums = sample.map(v => parseFloat(String(v).replace('%', '').replace(/,/g, ''))).filter(n => !isNaN(n));
+  const numRatio = nums.length / sample.length;
+  const hasPct = sample.some(v => String(v).includes('%'));
+  const allSubOne = nums.length && nums.every(n => n >= 0 && n <= 1);
+  const allSubHundred = nums.length && nums.every(n => n >= 0 && n <= 100);
+  const bigNums = nums.length && nums.every(n => n > 10);
+
+  // Date
+  if (/\b(date|sent[_ ]?on|send[_ ]?date|delivered[_ ]?at|timestamp)\b/.test(lc)) scores.date += 50;
+  if (dateHitRatio > 0.8) scores.date += 60;
+  else if (dateHitRatio > 0.5) scores.date += 30;
+
+  // Segment / list / audience
+  if (/\b(segment|list|audience|list[_ ]?name|audience[_ ]?name)\b/.test(lc)) scores.segment += 70;
+  if (/\b(group|tag|cohort)\b/.test(lc)) scores.segment += 45;
+  if (numRatio < 0.3 && !dateHitRatio) scores.segment += 10; // text-y columns
+
+  // Campaign name
+  if (/^(campaign|email|subject)( |_)?name?$/i.test(lc)) scores.campaign_name += 75;
+  if (/\b(campaign|subject|email[_ ]?name)\b/.test(lc)) scores.campaign_name += 50;
+  if (lc === 'name') scores.campaign_name += 30;
+
+  // Campaign type
+  if (/\b(type|kind|category|template)\b/.test(lc)) scores.campaign_type += 60;
+
+  // Unsubscribe — rate vs count is data-shape-driven
+  const isUnsub = /\b(unsub|opt[-_ ]?out|opted[-_ ]?out|opt out)\b/.test(lc);
+  if (isUnsub) {
+    if (/\brate\b/.test(lc) || hasPct) {
+      scores.unsubscribe_rate += 80;
+    } else if (/\bcount\b/.test(lc) || /\bnumber\b/.test(lc) || /#/.test(lc)) {
+      scores.unsubscribe_count += 80;
+    } else {
+      // Ambiguous — data shape decides
+      if (hasPct || allSubOne) scores.unsubscribe_rate += 65;
+      else if (bigNums) scores.unsubscribe_count += 65;
+      else { scores.unsubscribe_rate += 40; scores.unsubscribe_count += 40; }
+    }
   }
-  return 'text';
+
+  // Open rate
+  if (/\bopen/.test(lc) && !/\bopened\b/.test(lc)) {
+    if (hasPct || allSubOne || allSubHundred) scores.open_rate += 75;
+    else scores.open_rate += 45;
+  }
+
+  // Click rate
+  if (/\bclick/.test(lc) && !/\bunique\b/.test(lc) && !/\bthrough\b/.test(lc)) {
+    if (hasPct || allSubOne || allSubHundred) scores.click_rate += 75;
+    else scores.click_rate += 45;
+  }
+  if (/\bctr\b|click[_ ]?rate|click[_ ]?through/.test(lc)) scores.click_rate += 20;
+
+  // Complaint / spam
+  if (/\b(complaint|spam|abuse|reported)\b/.test(lc)) scores.complaint_count += 75;
+
+  // Volume sent
+  if (/\b(sent|volume|delivered|recipients|sends|total[_ ]?sent)\b/.test(lc)) {
+    if (bigNums || numRatio > 0.8) scores.volume_sent += 70;
+    else scores.volume_sent += 35;
+  }
+
+  // Explicit negative signals — don't map revenue/bounce anywhere
+  if (/\b(bounce|revenue|£|\$|gbp|usd|sales|orders)\b/.test(lc)) {
+    // Zero everything — this column is noise for our purposes
+    for (const k of Object.keys(scores)) scores[k] = 0;
+  }
+
+  return scores;
 }
 
 function autoMapColumns(headers, rows) {
-  const mapping = {};
   const sampleSize = Math.min(rows.length, 20);
-  const used = new Set();
+  const allScores = {};
   for (const h of headers) {
-    const values = rows.slice(0, sampleSize).map(r => r[h]);
-    const type = detectColumnType(h, values);
-    if (type === 'date' && !used.has('date')) {
-      mapping[h] = 'date'; used.add('date');
-    } else if (type === 'segment' && !used.has('segment')) {
-      mapping[h] = 'segment'; used.add('segment');
-    } else if (type === 'campaign_name' && !used.has('campaign_name')) {
-      mapping[h] = 'campaign_name'; used.add('campaign_name');
-    } else if (type === 'campaign_type' && !used.has('campaign_type')) {
-      mapping[h] = 'campaign_type'; used.add('campaign_type');
-    } else if (type === 'open_rate' && !used.has('open_rate')) {
-      mapping[h] = 'open_rate'; used.add('open_rate');
-    } else if (type === 'click_rate' && !used.has('click_rate')) {
-      mapping[h] = 'click_rate'; used.add('click_rate');
-    } else if (type === 'complaint_count' && !used.has('complaint_count')) {
-      mapping[h] = 'complaint_count'; used.add('complaint_count');
-    } else if (type === 'volume_sent' && !used.has('volume_sent')) {
-      mapping[h] = 'volume_sent'; used.add('volume_sent');
-    } else if (type === 'unsubscribe_rate_or_count' && !used.has('unsubscribe_count')) {
-      const nums = rows.slice(0, sampleSize).map(r => parseFloat(String(r[h] || '').replace('%', ''))).filter(n => !isNaN(n));
-      const hasPct = rows.slice(0, sampleSize).some(r => String(r[h] || '').includes('%'));
-      const isRate = hasPct || (nums.length > 0 && nums.every(n => n <= 1));
-      mapping[h] = isRate ? 'unsubscribe_rate' : 'unsubscribe_count';
-      used.add('unsubscribe_count');
-    } else if (type === 'ignore') {
-      mapping[h] = '';
+    allScores[h] = scoreColumn(h, rows.slice(0, sampleSize).map(r => r[h]));
+  }
+  // Build all (header, target, score) claims above threshold, sort desc, greedy assign
+  const claims = [];
+  for (const h of headers) {
+    for (const [target, score] of Object.entries(allScores[h])) {
+      if (score >= 30) claims.push({ h, target, score });
     }
   }
-  return mapping;
+  claims.sort((a, b) => b.score - a.score);
+  const mapping = {};
+  const confidence = {};
+  const usedHeader = new Set();
+  const usedTarget = new Set();
+  for (const c of claims) {
+    if (usedHeader.has(c.h) || usedTarget.has(c.target)) continue;
+    mapping[c.h] = c.target;
+    confidence[c.h] = c.score >= 70 ? 'high' : c.score >= 45 ? 'medium' : 'low';
+    usedHeader.add(c.h);
+    usedTarget.add(c.target);
+  }
+  // Unmapped columns → empty target
+  for (const h of headers) {
+    if (!(h in mapping)) { mapping[h] = ''; confidence[h] = 'none'; }
+  }
+  return { mapping, confidence };
 }
 
 function normaliseDate(raw) {
@@ -259,19 +262,30 @@ function normaliseDate(raw) {
   return null;
 }
 
-function normaliseRate(v) {
+// ─────────────────────────────────────────────────────────────
+// FIX #3 — normaliseRate now takes an explicit unit hint.
+//   unit = 'percentage'      → value is a percent (22 means 22%)
+//   unit = 'decimal_fraction'→ value is already a fraction (0.22 = 22%)
+//   unit = undefined         → legacy heuristic (only for backward-compat
+//                              paths like the log/presend actions where
+//                              the user typed the number directly)
+// An explicit % symbol in the value ALWAYS wins over the hint.
+// ─────────────────────────────────────────────────────────────
+function normaliseRate(v, unit) {
   if (v === null || v === undefined || v === '') return null;
   const raw = String(v).trim();
   const hasPct = raw.includes('%');
-  const n = parseFloat(raw.replace('%', ''));
+  const n = parseFloat(raw.replace('%', '').replace(/,/g, ''));
   if (isNaN(n)) return null;
   if (hasPct) return n / 100;
+  if (unit === 'percentage') return n / 100;
+  if (unit === 'decimal_fraction') return n;
+  // Legacy fallback — the ambiguous case we're trying to eliminate
   return n > 1 ? n / 100 : n;
 }
 
-function getBenchmark(sector) {
-  return BENCHMARKS[sector] || BENCHMARKS.general;
-}
+function getBenchmark(sector) { return BENCHMARKS[sector] || BENCHMARKS.general; }
+
 function benchmarkVerdict(unsubRate, bench) {
   if (unsubRate <= bench.unsubGood) return { label: 'Excellent', tier: 'good', pctVsBenchmark: null };
   if (unsubRate <= bench.unsubNormal) return { label: 'Normal', tier: 'normal', pctVsBenchmark: null };
@@ -280,6 +294,7 @@ function benchmarkVerdict(unsubRate, bench) {
   if (unsubRate <= bench.unsubDamaged) return { label: 'High', tier: 'high', pctVsBenchmark: pct };
   return { label: 'Very high', tier: 'damaged', pctVsBenchmark: pct };
 }
+
 function calcSubscriberLoss(campaigns, bench) {
   let totalLost = 0;
   let totalDamagingCampaigns = 0;
@@ -419,7 +434,7 @@ function algorithm4_frequencyTolerance(campaigns, fingerprint) {
 function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, recentImpacts, capital, bench, sector) {
   const cap = capital || 0;
   if (!fingerprint) {
-    return { state: 'Neutral', verdict: 'Upload your send history to get a diagnosis', statement: 'We need at least 3 campaigns to generate a meaningful diagnosis for this segment.', action: 'Upload a CSV with date, segment name, and unsubscribe count to get started.', statementCommercial: null, statementRegulatory: null, regulatoryNote: null, confidence: 0.3 };
+    return { state: 'Neutral', verdict: 'Upload your send history to get a diagnosis', statement: 'We need at least 3 campaigns to generate a meaningful diagnosis for this list.', action: 'Upload a CSV with date, list name, and unsubscribe count to get started.', statementCommercial: null, statementRegulatory: null, regulatoryNote: null, confidence: 0.3 };
   }
   const n = fingerprint.campaignCount;
   const direction = trustVelocity.direction;
@@ -440,37 +455,51 @@ function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance
 
   const hasComplaints = recentImpacts.some(i => i._hasComplaints);
   if (hasComplaints && avgUnsubRate > benchConcern) {
-    return { state: 'Complaint risk', verdict: 'Stop sending to this segment now', statement: `This segment is generating complaint signals with an average unsubscribe rate of ${avgPct} — well above the UK ${bench.label} benchmark of ${benchPct}. The ICO monitors exactly this pattern.`, action: 'Stop all promotional sends immediately. Run a re-permission campaign — anyone who does not re-consent should be suppressed.', statementCommercial: 'Audiences in complaint territory stop converting before they formally complain. Revenue from this segment will be near zero until trust is rebuilt.', statementRegulatory: 'Complaint signals combined with above-benchmark unsubscribe rates is the pattern the ICO identifies before opening PECR Regulation 22 enforcement investigations.', regulatoryNote: 'This pattern is statistically associated with formal ICO complaints. The window to act without enforcement consequences is typically 30–60 days.', confidence: r2(Math.min(baseConf, 0.92)) };
+    return { state: 'Complaint risk', verdict: 'Stop sending to this list now', statement: `This list is generating complaint signals with an average unsubscribe rate of ${avgPct} — well above the UK ${bench.label} benchmark of ${benchPct}. The ICO monitors exactly this pattern.`, action: 'Stop all promotional sends immediately. Run a re-permission campaign — anyone who does not re-consent should be suppressed.', statementCommercial: 'Audiences in complaint territory stop converting before they formally complain. Revenue from this list will be near zero until trust is rebuilt.', statementRegulatory: 'Complaint signals combined with above-benchmark unsubscribe rates is the pattern the ICO identifies before opening PECR Regulation 22 enforcement investigations.', regulatoryNote: 'This pattern is statistically associated with formal ICO complaints. The window to act without enforcement consequences is typically 30–60 days.', confidence: r2(Math.min(baseConf, 0.92)) };
   }
   if (avgUnsubRate > benchDamaged || (avgUnsubRate > benchConcern && direction === 'Rapid decline' && recentDamage >= 2)) {
-    const capNote = cap < 0 ? 'The negative relationship capital means this segment has little goodwill left to absorb further sends.' : 'Some positive relationship capital remains — recovery is possible if you act now.';
-    return { state: 'Damaged', verdict: 'This segment needs a break from you', statement: `Average unsubscribe rate ${avgPct} — ${aboveBenchBy || `above the UK ${bench.label} benchmark of ${benchPct}`}. Recent sends are causing above-average audience exit.`, action: `Pause all promotional sends for at least ${recoveryDays} days. One low-key value newsletter only. Return to promotional sends only after unsubscribes drop back below ${benchPct}.`, statementCommercial: `You have approximately ${recoveryDays} days before this segment becomes effectively unreachable for promotional sends. ${capNote}`, statementRegulatory: null, regulatoryNote: null, confidence: r2(Math.min(baseConf, 0.88)) };
+    const capNote = cap < 0 ? 'The negative goodwill balance means this list has little to absorb further sends.' : 'Some positive goodwill remains — recovery is possible if you act now.';
+    return { state: 'Damaged', verdict: 'This list needs a break from you', statement: `Average unsubscribe rate ${avgPct} — ${aboveBenchBy || `above the UK ${bench.label} benchmark of ${benchPct}`}. Recent sends are causing above-average audience exit.`, action: `Pause all promotional sends for at least ${recoveryDays} days. One low-key value newsletter only. Return to promotional sends only after unsubscribes drop back below ${benchPct}.`, statementCommercial: `You have approximately ${recoveryDays} days before this list becomes effectively unreachable for promotional sends. ${capNote}`, statementRegulatory: null, regulatoryNote: null, confidence: r2(Math.min(baseConf, 0.88)) };
   }
   if (avgUnsubRate > benchNormal && tolerance <= 1 && direction !== 'Improving') {
-    return { state: 'Fatigue building', verdict: "You're sending too much to this segment", statement: `Average unsubscribe rate ${avgPct} vs UK ${bench.label} benchmark of ${benchPct}. You've sent ${freqTolerance.recentSendCount} campaigns in the last 30 days and frequency tolerance is almost gone. The next promotional send is likely to push this above ${(benchConcern * 100).toFixed(2)}%.`, action: `No promotional sends this month. Maximum one newsletter. Give this segment a ${recoveryDays}-day gap before any commercial content.`, statementCommercial: 'Fatigued audiences stop opening before they unsubscribe. Open rates will continue dropping even if you reduce frequency — the damage takes 3–4 weeks to reverse.', statementRegulatory: 'High frequency combined with above-benchmark unsubscribes is the pattern the ICO uses to challenge legitimate interest bases under PECR. Your audience is signalling the contact is no longer welcome.', regulatoryNote: cap < -20 ? 'With negative relationship capital and rising unsubscribes, your send history would struggle to pass an ICO legitimate interest balance test if reviewed.' : null, confidence: r2(Math.min(baseConf, 0.85)) };
+    return { state: 'Fatigue building', verdict: "You're sending too much to this list", statement: `Average unsubscribe rate ${avgPct} vs UK ${bench.label} benchmark of ${benchPct}. You've sent ${freqTolerance.recentSendCount} campaigns in the last 30 days and frequency tolerance is almost gone. The next promotional send is likely to push this above ${(benchConcern * 100).toFixed(2)}%.`, action: `No promotional sends this month. Maximum one newsletter. Give this list a ${recoveryDays}-day gap before any commercial content.`, statementCommercial: 'Fatigued audiences stop opening before they unsubscribe. Open rates will continue dropping even if you reduce frequency — the damage takes 3–4 weeks to reverse.', statementRegulatory: 'High frequency combined with above-benchmark unsubscribes is the pattern the ICO uses to challenge legitimate interest bases under PECR. Your audience is signalling the contact is no longer welcome.', regulatoryNote: cap < -20 ? 'With negative goodwill and rising unsubscribes, your send history would struggle to pass an ICO legitimate interest balance test if reviewed.' : null, confidence: r2(Math.min(baseConf, 0.85)) };
   }
   if (avgUnsubRate > benchNormal && direction === 'Declining') {
-    return { state: 'Cooling', verdict: 'This segment is losing interest', statement: `Unsubscribes trending up across your last ${Math.min(n, 6)} campaigns. Average ${avgPct} — ${aboveBenchBy || `above UK ${bench.label} benchmark of ${benchPct}`}. You still have ${tolerance} send${tolerance !== 1 ? 's' : ''} of tolerance, but the trend is against you.`, action: 'Try a preference-update email — ask them what they want to hear about. One re-engagement send before resuming your normal schedule.', statementCommercial: 'Cooling audiences convert at a fraction of their peak rate. Sending more will accelerate the decline — the opportunity is to reverse it now while they are still reachable.', statementRegulatory: null, regulatoryNote: null, confidence: r2(Math.min(baseConf, 0.78)) };
+    return { state: 'Cooling', verdict: 'This list is losing interest', statement: `Unsubscribes trending up across your last ${Math.min(n, 6)} campaigns. Average ${avgPct} — ${aboveBenchBy || `above UK ${bench.label} benchmark of ${benchPct}`}. You still have ${tolerance} send${tolerance !== 1 ? 's' : ''} of tolerance, but the trend is against you.`, action: 'Try a preference-update email — ask them what they want to hear about. One re-engagement send before resuming your normal schedule.', statementCommercial: 'Cooling audiences convert at a fraction of their peak rate. Sending more will accelerate the decline — the opportunity is to reverse it now while they are still reachable.', statementRegulatory: null, regulatoryNote: null, confidence: r2(Math.min(baseConf, 0.78)) };
   }
   if (avgUnsubRate <= benchGood && direction === 'Improving' && tolerance >= 3 && recentBuilt >= 2) {
     return { state: 'Peak receptiveness', verdict: 'Best window to send — act this week', statement: `Average unsubscribe rate ${avgPct} — well below the UK ${bench.label} benchmark of ${benchPct}. ${recentBuilt} recent sends built trust. You have ${tolerance} sends of remaining tolerance. This is your best window.`, action: 'Send your highest-value promotional or product announcement now. This window typically lasts 2–3 weeks before tolerance starts narrowing.', statementCommercial: 'Peak-receptiveness audiences convert at measurably higher rates than normal. A promotional campaign sent now will outperform the same campaign sent in 2 weeks.', statementRegulatory: null, regulatoryNote: null, confidence: r2(Math.min(baseConf, 0.88)) };
   }
   if ((direction === 'Improving' || direction === 'Stable') && recentDamage >= 1 && recentBuilt >= 1) {
     const conf = r2(Math.min(baseConf, 0.78));
-    if (cap >= 40) return { state: 'Recovering', verdict: 'Recovering well — one more careful send', statement: `Recent damage is reversing. Average unsub rate ${avgPct} vs benchmark ${benchPct}. Strong relationship capital (+${cap.toFixed(0)}/100) is cushioning the recovery.`, action: `Send one value-first newsletter — no promotional content. If unsubscribes stay below ${benchPct}, resume normal sending in ${Math.round(recoveryDays * 0.6)} days.`, statementCommercial: 'High capital means this audience is more forgiving than their recent numbers suggest. A well-timed value send could accelerate recovery.', statementRegulatory: null, regulatoryNote: null, confidence: conf };
-    if (cap >= 10) return { state: 'Recovering', verdict: 'Recovering — handle with care', statement: `Early signs of recovery after recent damage. Average unsub rate ${avgPct} vs benchmark ${benchPct}. Relationship capital (+${cap.toFixed(0)}/100) is moderate — another poor send would reverse progress.`, action: `High-value sends only for the next ${recoveryDays} days. No promotional campaigns. Monitor every send — if unsubscribes exceed ${(benchConcern * 100).toFixed(2)}% stop immediately.`, statementCommercial: 'Revenue will return, but slowly. One badly timed promotional send now could push this segment back into damaged territory.', statementRegulatory: null, regulatoryNote: null, confidence: conf };
-    return { state: 'Recovering', verdict: 'Fragile recovery — do not send yet', statement: `Mathematical recovery signs present but relationship capital (${cap.toFixed(0)}/100) is too low to risk a send. Average unsub rate ${avgPct} vs benchmark ${benchPct}.`, action: `Do not send anything for at least ${recoveryDays} days. Rebuild capital with 3–4 positive sends before attempting any promotional campaign.`, statementCommercial: 'Low-capital recoveries are fragile. This segment needs more positive campaign history before it will convert at normal rates.', statementRegulatory: cap < 0 ? 'Negative relationship capital combined with recent damage is a pattern the ICO and ASA would note as evidence of repeated audience harm if reviewing your send history.' : null, regulatoryNote: null, confidence: r2(conf * 0.9) };
+    if (cap >= 40) return { state: 'Recovering', verdict: 'Recovering well — one more careful send', statement: `Recent damage is reversing. Average unsub rate ${avgPct} vs benchmark ${benchPct}. Strong goodwill (+${cap.toFixed(0)}/100) is cushioning the recovery.`, action: `Send one value-first newsletter — no promotional content. If unsubscribes stay below ${benchPct}, resume normal sending in ${Math.round(recoveryDays * 0.6)} days.`, statementCommercial: 'High goodwill means this audience is more forgiving than their recent numbers suggest. A well-timed value send could accelerate recovery.', statementRegulatory: null, regulatoryNote: null, confidence: conf };
+    if (cap >= 10) return { state: 'Recovering', verdict: 'Recovering — handle with care', statement: `Early signs of recovery after recent damage. Average unsub rate ${avgPct} vs benchmark ${benchPct}. Goodwill (+${cap.toFixed(0)}/100) is moderate — another poor send would reverse progress.`, action: `High-value sends only for the next ${recoveryDays} days. No promotional campaigns. Monitor every send — if unsubscribes exceed ${(benchConcern * 100).toFixed(2)}% stop immediately.`, statementCommercial: 'Revenue will return, but slowly. One badly timed promotional send now could push this list back into damaged territory.', statementRegulatory: null, regulatoryNote: null, confidence: conf };
+    return { state: 'Recovering', verdict: 'Fragile recovery — do not send yet', statement: `Mathematical recovery signs present but goodwill (${cap.toFixed(0)}/100) is too low to risk a send. Average unsub rate ${avgPct} vs benchmark ${benchPct}.`, action: `Do not send anything for at least ${recoveryDays} days. Rebuild goodwill with 3–4 positive sends before attempting any promotional campaign.`, statementCommercial: 'Low-goodwill recoveries are fragile. This list needs more positive campaign history before it will convert at normal rates.', statementRegulatory: cap < 0 ? 'Negative goodwill combined with recent damage is a pattern the ICO and ASA would note as evidence of repeated audience harm if reviewing your send history.' : null, regulatoryNote: null, confidence: r2(conf * 0.9) };
   }
   if (avgUnsubRate <= benchNormal && direction !== 'Declining') {
-    const capCtx = cap >= 30 ? `Strong relationship capital (+${cap.toFixed(0)}/100).` : cap >= 10 ? `Positive relationship capital (+${cap.toFixed(0)}/100).` : 'Relationship capital is neutral.';
-    return { state: 'Healthy', verdict: 'Looking good — proceed as planned', statement: `Average unsubscribe rate ${avgPct} is at or below the UK ${bench.label} benchmark of ${benchPct}. ${capCtx} No concerning trends detected.`, action: 'Proceed with your planned campaign. Monitor unsubscribes on the next send — flag if they exceed the benchmark.', statementCommercial: 'A healthy segment converts at predictable rates. Maintain current frequency and content quality.', statementRegulatory: null, regulatoryNote: null, confidence: r2(Math.min(baseConf, 0.80)) };
+    const capCtx = cap >= 30 ? `Strong goodwill (+${cap.toFixed(0)}/100).` : cap >= 10 ? `Positive goodwill (+${cap.toFixed(0)}/100).` : 'Goodwill is neutral.';
+    return { state: 'Healthy', verdict: 'Looking good — proceed as planned', statement: `Average unsubscribe rate ${avgPct} is at or below the UK ${bench.label} benchmark of ${benchPct}. ${capCtx} No concerning trends detected.`, action: 'Proceed with your planned campaign. Monitor unsubscribes on the next send — flag if they exceed the benchmark.', statementCommercial: 'A healthy list converts at predictable rates. Maintain current frequency and content quality.', statementRegulatory: null, regulatoryNote: null, confidence: r2(Math.min(baseConf, 0.80)) };
   }
-  const capNote = cap > 20 ? `Relationship capital is positive (+${cap.toFixed(0)}/100).` : cap < -10 ? `Relationship capital is negative (${cap.toFixed(0)}/100) — worth reviewing recent performance before sending.` : 'Relationship capital is neutral.';
+  const capNote = cap > 20 ? `Goodwill is positive (+${cap.toFixed(0)}/100).` : cap < -10 ? `Goodwill is negative (${cap.toFixed(0)}/100) — worth reviewing recent performance before sending.` : 'Goodwill is neutral.';
   return { state: 'Neutral', verdict: 'No strong signals — proceed normally', statement: `Average unsubscribe rate ${avgPct} vs UK ${bench.label} benchmark of ${benchPct}. ${capNote} No strong trend in either direction after ${n} campaign${n !== 1 ? 's' : ''}.`, action: 'Proceed with your planned campaign. Monitor unsubscribes on the next send.', statementCommercial: 'Neutral state means sends will perform at your historical average rates.', statementRegulatory: null, regulatoryNote: null, confidence: r2(Math.min(baseConf, 0.65)) };
 }
 
+// FIX #6 — pre-send guard against implausible baselines
 function algorithm6_predictiveSend(segment, campaignType, sendDate, fingerprint, trustVelocity, freqTolerance, bench) {
   if (!fingerprint) return { verdict: 'Amber', confidence: 0.5, reason: 'Not enough historical data to predict impact. Proceed cautiously.', alternatives: [], predictedUnsubRange: null };
+
+  // Guard: implausible baseline means the CSV was mapped wrong. Never green-light.
+  if (fingerprint.selfBaseline > IMPLAUSIBLE_BASELINE_THRESHOLD) {
+    return {
+      verdict: 'Red',
+      confidence: 0.99,
+      reason: `Baseline unsubscribe rate for this list is ${(fingerprint.selfBaseline * 100).toFixed(1)}% — implausibly high. This almost always means your unsubscribe-rate column was interpreted in the wrong unit at upload. Re-check the mapping (was 0.22 meant as 22% or 0.22%?) before running a pre-send check.`,
+      alternatives: [],
+      predictedUnsubRange: null,
+      mappingIssue: true,
+    };
+  }
+
   const baseline = fingerprint.effectiveBaseline;
   const stddev = fingerprint.unsubscribeStdDev || baseline * 0.3;
   const typeWeights = { 'Promotional': 1.5, 'Newsletter': 0.8, 'Re-engagement': 1.3, 'Transactional': 0.3 };
@@ -486,13 +515,13 @@ function algorithm6_predictiveSend(segment, campaignType, sendDate, fingerprint,
   let verdict, reason, confidence;
   if (spikeProb < 0.15 && freqTolerance.toleranceRemaining > 1 && p50 <= benchNormal) { verdict = 'Green'; reason = `Low risk. Predicted unsubscribe rate ${(p50 * 100).toFixed(2)}%–${(p90 * 100).toFixed(2)}% — within UK ${bench.label} benchmark range (${(benchNormal * 100).toFixed(2)}%).`; confidence = r2(0.85 - spikeProb); }
   else if (spikeProb < 0.4 || freqTolerance.toleranceRemaining === 1) { verdict = 'Amber'; reason = `Moderate risk. ${Math.round(spikeProb * 100)}% chance of exceeding UK benchmark. Predicted rate ${(p50 * 100).toFixed(2)}% vs benchmark ${(benchNormal * 100).toFixed(2)}%.`; confidence = r2(0.7 - spikeProb * 0.3); }
-  else { verdict = 'Red'; reason = `High risk. ${Math.round(spikeProb * 100)}% chance of exceeding UK concern threshold. Current segment state is not ready for a ${campaignType} send.`; confidence = r2(0.9 - spikeProb * 0.2); }
+  else { verdict = 'Red'; reason = `High risk. ${Math.round(spikeProb * 100)}% chance of exceeding UK concern threshold. Current list state is not ready for a ${campaignType} send.`; confidence = r2(0.9 - spikeProb * 0.2); }
   const alternatives = [];
   if (verdict !== 'Green') {
     const safestType = freqTolerance.recommendedType;
-    if (safestType !== campaignType) alternatives.push({ change: `Switch to ${safestType}`, reason: `${safestType} sends have lower unsubscribe impact for this segment right now.` });
+    if (safestType !== campaignType) alternatives.push({ change: `Switch to ${safestType}`, reason: `${safestType} sends have lower unsubscribe impact for this list right now.` });
     alternatives.push({ change: `Send on ${freqTolerance.optimalNextSend} instead`, reason: 'Waiting for the tolerance window to recover would reduce spike probability.' });
-    alternatives.push({ change: 'Test with 30% of the segment first', reason: 'A smaller test send lets you measure response before committing the full list.' });
+    alternatives.push({ change: 'Test with 30% of the list first', reason: 'A smaller test send lets you measure response before committing the full list.' });
   }
   return { verdict, confidence, reason, predictedUnsubRange: { low: r4(p10), mid: r4(p50), high: r4(p90) }, spikeProb: r2(spikeProb), benchmarkRate: benchNormal, alternatives };
 }
@@ -516,43 +545,18 @@ function algorithm7_relationshipCapital(campaigns, fingerprint, bench) {
   return r2(Math.max(-100, Math.min(100, capital)));
 }
 
-// ─────────────────────────────────────────────────────────────
-// computeSendWindow (v7.3 — C3)
-// Derived analytics — no new inputs, just projection of existing
-// fingerprint + freqTolerance + sentiment + capital signals across
-// the next 30 days.
-//
-// For each future day D:
-//   1. Project tolerance at D — recount sends in the 30-day window
-//      ending at D (as older sends age out).
-//   2. Project recovery — how many days of no-send have accumulated
-//      since the last damaging send.
-//   3. Score the day:
-//        3 = optimal   (peak/healthy state + tolerance ≥ 3)
-//        2 = safe      (healthy tolerance recovered)
-//        1 = cautious  (usable but constrained)
-//        0 = avoid     (below recovery floor)
-//
-// Then extract: earliestSafeDate, avoidUntil, optimalWindow
-// (longest contiguous run of score ≥ 2), windowType.
-// Deterministic. D2-compliant (no invented values).
-// ─────────────────────────────────────────────────────────────
 function computeSendWindow(campaigns, fingerprint, freqTolerance, sentiment, capital, bench) {
   if (!fingerprint || !campaigns.length) {
     return { earliestSafeDate: null, avoidUntil: null, optimalWindow: null, windowType: 'unknown', recommendedType: 'Newsletter', reasoning: 'Not enough send history to project a window.', dayScores: [] };
   }
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const projectionDays = 30;
   const threshold = fingerprint.frequencyToleranceThreshold || 4;
   const typeWeights = { 'Promotional': 1.5, 'Newsletter': 0.8, 'Re-engagement': 1.2, 'Transactional': 0.3, 'Unknown': 1.0 };
   const state = sentiment?.state || 'Neutral';
   const cap = capital || 0;
-
-  // State-driven no-send floor (in days from today) — how long the segment
-  // needs before ANY commercial send. Mirrors algorithm5 recovery reasoning.
   const recoveryHalfLife = fingerprint.recoveryHalfLife || 3;
-  const recoveryDays = Math.round(recoveryHalfLife * 7); // ~21 days
+  const recoveryDays = Math.round(recoveryHalfLife * 7);
   let noSendFloor;
   if (state === 'Complaint risk') noSendFloor = Math.max(recoveryDays, 30);
   else if (state === 'Damaged')   noSendFloor = recoveryDays;
@@ -565,50 +569,27 @@ function computeSendWindow(campaigns, fingerprint, freqTolerance, sentiment, cap
   for (let d = 0; d < projectionDays; d++) {
     const day = new Date(+today + d * 86400000);
     const dayIso = day.toISOString().slice(0, 10);
-
-    // Tolerance projection: recount sends in the 30-day window ending at `day`.
     const windowStart = new Date(+day - 30 * 86400000);
-    const inWindow = campaigns.filter(c => {
-      const cd = new Date(c.date);
-      return cd >= windowStart && cd <= day;
-    });
+    const inWindow = campaigns.filter(c => { const cd = new Date(c.date); return cd >= windowStart && cd <= day; });
     const effectiveSends = inWindow.reduce((s, c) => s + (typeWeights[c.campaign_type] || 1.0), 0);
     const toleranceAt = Math.max(0, threshold - effectiveSends);
-
-    // Score
     let score;
-    if (d < noSendFloor) {
-      score = 0; // enforced recovery floor
-    } else if (toleranceAt < 1) {
-      score = 0; // fully out of tolerance
-    } else if (state === 'Peak receptiveness' && toleranceAt >= 3) {
-      score = 3; // optimal
-    } else if (state === 'Healthy' && toleranceAt >= 3) {
-      score = 3;
-    } else if (state === 'Healthy' && toleranceAt >= 2) {
-      score = 2;
-    } else if (state === 'Peak receptiveness' && toleranceAt >= 2) {
-      score = 2;
-    } else if (toleranceAt >= 2) {
-      score = 2;
-    } else {
-      score = 1; // usable but tight
-    }
+    if (d < noSendFloor) score = 0;
+    else if (toleranceAt < 1) score = 0;
+    else if (state === 'Peak receptiveness' && toleranceAt >= 3) score = 3;
+    else if (state === 'Healthy' && toleranceAt >= 3) score = 3;
+    else if (state === 'Healthy' && toleranceAt >= 2) score = 2;
+    else if (state === 'Peak receptiveness' && toleranceAt >= 2) score = 2;
+    else if (toleranceAt >= 2) score = 2;
+    else score = 1;
     dayScores.push({ date: dayIso, score, tolerance: toleranceAt });
   }
 
-  // Earliest safe: first day with score ≥ 2
   const earliestSafe = dayScores.find(d => d.score >= 2);
   const earliestSafeDate = earliestSafe?.date || null;
-
-  // Avoid until: if the first day is score 0, find the last score-0 date
   let avoidUntil = null;
-  if (dayScores[0]?.score === 0 && earliestSafeDate) {
-    avoidUntil = earliestSafeDate;
-  }
+  if (dayScores[0]?.score === 0 && earliestSafeDate) avoidUntil = earliestSafeDate;
 
-  // Optimal window: longest contiguous run of score ≥ 2. Prefer runs
-  // containing a score 3, otherwise longest run of score 2.
   let bestStart = null, bestEnd = null, bestLen = 0, bestHasPeak = false;
   let curStart = null, curLen = 0, curHasPeak = false;
   for (let i = 0; i < dayScores.length; i++) {
@@ -616,20 +597,12 @@ function computeSendWindow(campaigns, fingerprint, freqTolerance, sentiment, cap
       if (curStart === null) { curStart = i; curLen = 0; curHasPeak = false; }
       curLen++;
       if (dayScores[i].score >= 3) curHasPeak = true;
-      const better = (curHasPeak && !bestHasPeak) ||
-                     (curHasPeak === bestHasPeak && curLen > bestLen);
-      if (better) {
-        bestStart = curStart; bestEnd = i; bestLen = curLen; bestHasPeak = curHasPeak;
-      }
-    } else {
-      curStart = null; curLen = 0; curHasPeak = false;
-    }
+      const better = (curHasPeak && !bestHasPeak) || (curHasPeak === bestHasPeak && curLen > bestLen);
+      if (better) { bestStart = curStart; bestEnd = i; bestLen = curLen; bestHasPeak = curHasPeak; }
+    } else { curStart = null; curLen = 0; curHasPeak = false; }
   }
-  const optimalWindow = bestStart !== null
-    ? { start: dayScores[bestStart].date, end: dayScores[bestEnd].date, days: bestLen, hasPeak: bestHasPeak }
-    : null;
+  const optimalWindow = bestStart !== null ? { start: dayScores[bestStart].date, end: dayScores[bestEnd].date, days: bestLen, hasPeak: bestHasPeak } : null;
 
-  // Window type — how confident are we in the window?
   let windowType;
   if (!earliestSafeDate) windowType = 'avoid';
   else if (optimalWindow?.hasPeak) windowType = 'peak';
@@ -637,29 +610,14 @@ function computeSendWindow(campaigns, fingerprint, freqTolerance, sentiment, cap
   else if (earliestSafeDate) windowType = 'cautious';
   else windowType = 'avoid';
 
-  // Plain-English reasoning
-  let reasoning;
   const recType = freqTolerance.recommendedType || 'Newsletter';
-  if (windowType === 'peak') {
-    reasoning = `${optimalWindow.days}-day optimal window — segment is receptive and tolerance is well-recovered. ${recType} sends can go now.`;
-  } else if (windowType === 'good') {
-    reasoning = `Safe ${optimalWindow.days}-day send window — no active damage signals and tolerance is intact.`;
-  } else if (windowType === 'cautious') {
-    reasoning = `Earliest safe send is ${earliestSafeDate}. Segment tolerance is tight — send one ${recType.toLowerCase()} and monitor unsub rate.`;
-  } else {
-    reasoning = `No safe send window in the next ${projectionDays} days. Segment needs longer recovery before any commercial send.`;
-  }
+  let reasoning;
+  if (windowType === 'peak') reasoning = `${optimalWindow.days}-day optimal window — list is receptive and tolerance is well-recovered. ${recType} sends can go now.`;
+  else if (windowType === 'good') reasoning = `Safe ${optimalWindow.days}-day send window — no active damage signals and tolerance is intact.`;
+  else if (windowType === 'cautious') reasoning = `Earliest safe send is ${earliestSafeDate}. List tolerance is tight — send one ${recType.toLowerCase()} and monitor unsub rate.`;
+  else reasoning = `No safe send window in the next ${projectionDays} days. List needs longer recovery before any commercial send.`;
 
-  return {
-    earliestSafeDate,
-    avoidUntil,
-    optimalWindow,
-    windowType,
-    recommendedType: recType,
-    reasoning,
-    // Compact day-score array for UI heat strip (no tolerance field — save bytes)
-    dayScores: dayScores.map(d => ({ date: d.date, score: d.score })),
-  };
+  return { earliestSafeDate, avoidUntil, optimalWindow, windowType, recommendedType: recType, reasoning, dayScores: dayScores.map(d => ({ date: d.date, score: d.score })) };
 }
 
 function runAlgorithms(campaigns, sector = 'general') {
@@ -683,7 +641,7 @@ function runAlgorithms(campaigns, sector = 'general') {
   if (!hasSendHistory) missingData.push({ field: 'Volume sent', message: 'Add volume sent per campaign and we can calculate exactly how many subscribers you\'re losing above the UK benchmark.' });
   if (!hasOpenRates) missingData.push({ field: 'Open rates', message: 'Add open rates to build a full engagement decay curve and compare against UK sector benchmarks.' });
   if (!hasComplaints) missingData.push({ field: 'Spam complaints', message: 'Complaints carry 50× the weight of an unsubscribe. Adding them makes the Trust Velocity score significantly more accurate.' });
-  return { fingerprint, trustVelocity, freqTolerance, sentiment, capital, sendWindow, impacts: impacts.slice(-10), dataQuality, missingData, subscriberLoss, bench: { label: bench.label, unsubNormal: bench.unsubNormal, source: bench.source }, sector };
+  return { fingerprint, trustVelocity, freqTolerance, sentiment, capital, sendWindow, impacts: impacts.slice(-10), dataQuality, missingData, subscriberLoss, bench: { label: bench.label, unsubNormal: bench.unsubNormal, unsubGood: bench.unsubGood, unsubConcern: bench.unsubConcern, unsubDamaged: bench.unsubDamaged, source: bench.source }, sector };
 }
 
 function buildSegmentData(campaigns) {
@@ -799,7 +757,18 @@ export default async function handler(req, res) {
     if (action === 'detect') {
       const { headers, rows } = req.body;
       if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
-      return res.status(200).json({ success: true, mapping: autoMapColumns(headers, rows) });
+      const { mapping, confidence } = autoMapColumns(headers, rows);
+      // Identify rate columns for the frontend unit toggle
+      const rateColumns = Object.entries(mapping)
+        .filter(([, t]) => t === 'unsubscribe_rate' || t === 'open_rate' || t === 'click_rate')
+        .map(([h, t]) => {
+          const firstVal = rows.slice(0, 20).map(r => r[h]).find(v => v !== null && v !== undefined && v !== '') || null;
+          const hasPctInData = rows.slice(0, 20).some(r => String(r[h] || '').includes('%'));
+          return { column: h, target: t, firstValue: firstVal == null ? null : String(firstVal), hasPctSymbol: hasPctInData };
+        });
+      // Did segment get mapped at all?
+      const noSegmentDetected = !Object.values(mapping).includes('segment');
+      return res.status(200).json({ success: true, mapping, confidence, rateColumns, noSegmentDetected });
     }
     if (action === 'load') {
       const allCampaigns = await loadCampaigns(userId);
@@ -814,9 +783,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, segments: results, recommendations, sector, changes });
     }
     if (action === 'upload') {
-      const { rows, fieldMapping, cpl } = req.body;
+      const { rows, fieldMapping, cpl, rateUnits } = req.body;
       if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
       const cplVal = (cpl != null && Number.isFinite(Number(cpl)) && Number(cpl) > 0) ? Number(cpl) : null;
+      const units = rateUnits || {}; // { columnName: 'percentage' | 'decimal_fraction' }
       const rawRows = rows.map(row => {
         const c = { segment: null, date: null, unsubscribe_count: null, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null };
         for (const [header, targetField] of Object.entries(fieldMapping || {})) {
@@ -824,10 +794,10 @@ export default async function handler(req, res) {
           if (targetField === 'date') c.date = normaliseDate(val);
           else if (targetField === 'segment') c.segment = String(val || '').trim() || null;
           else if (targetField === 'unsubscribe_count') c.unsubscribe_count = val !== '' && val != null ? (parseInt(val) || 0) : null;
-          else if (targetField === 'unsubscribe_rate') { c._unsubRate = normaliseRate(val); }
+          else if (targetField === 'unsubscribe_rate') { c._unsubRate = normaliseRate(val, units[header]); }
           else if (targetField === 'volume_sent') c.volume_sent = val !== '' && val != null ? (parseInt(String(val).replace(/,/g, '')) || null) : null;
-          else if (targetField === 'open_rate') c.open_rate = normaliseRate(val);
-          else if (targetField === 'click_rate') c.click_rate = normaliseRate(val);
+          else if (targetField === 'open_rate') c.open_rate = normaliseRate(val, units[header]);
+          else if (targetField === 'click_rate') c.click_rate = normaliseRate(val, units[header]);
           else if (targetField === 'complaint_count') c.complaint_count = val !== '' && val != null ? (parseInt(val) || null) : null;
           else if (targetField === 'campaign_name') c.campaign_name = String(val || '').trim() || null;
           else if (targetField === 'campaign_type') c.campaign_type = String(val || '').trim() || null;
@@ -853,10 +823,29 @@ export default async function handler(req, res) {
       }
       const campaigns = Object.values(mergeMap);
       if (!campaigns.length) return res.status(400).json({ error: 'No valid rows found. Check that a date column is present and correctly mapped.' });
+
+      // FIX #3 — Plausibility guard. Compute each segment's baseline before
+      // committing anything, and refuse if any is implausibly high.
+      const segmentGroups = buildSegmentData(campaigns);
+      const implausible = [];
+      for (const [segName, segCamps] of Object.entries(segmentGroups)) {
+        if (!segCamps.length) continue;
+        const rates = segCamps.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1));
+        const avg = mean_arr(rates);
+        if (avg > IMPLAUSIBLE_BASELINE_THRESHOLD) implausible.push({ segment: segName, avgRate: r4(avg) });
+      }
+      if (implausible.length) {
+        return res.status(400).json({
+          error: 'Rate column looks wrong',
+          code: 'IMPLAUSIBLE_BASELINE',
+          message: `We interpreted the unsubscribe rate column and got an average of ${(implausible[0].avgRate * 100).toFixed(1)}% for "${implausible[0].segment}" — that's far higher than any real list. This almost always means the rate column was read in the wrong unit (e.g. we read 0.22 as 22% when it actually meant 0.22%). Go back and toggle the unit interpretation for your rate column.`,
+          implausibleSegments: implausible,
+        });
+      }
+
       const priorSnapsBySeg = await getSnapshotsBySegment(userId);
       const priorMap = {};
       for (const seg of Object.keys(priorSnapsBySeg)) { priorMap[seg] = priorSnapsBySeg[seg][0]; }
-      const segmentGroups = buildSegmentData(campaigns);
       const savedSegments = {};
       const currentMap = {};
       for (const [segmentName, segCampaigns] of Object.entries(segmentGroups)) {
@@ -878,7 +867,7 @@ export default async function handler(req, res) {
           const lossValue = Math.round(totalExcess * cplVal);
           if (lossValue >= 50) {
             try {
-              await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, fixType: 'commercial_loss', description: `Audience Read: ${totalExcess.toLocaleString()} unsubscribes above the UK benchmark across your segments. At your stated \u00a3${cplVal.toFixed(2)} cost-per-subscriber, that is approximately \u00a3${lossValue.toLocaleString('en-GB')} in acquisition cost lost to avoidable fatigue. Estimated business cost \u2014 not a regulatory fine.`, tool: 'Audience Read', severity: 'medium', contactVolume: totalExcess, sourceRecordId: 'ar-commercial', exposureLow: lossValue, exposureHigh: lossValue }) });
+              await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, fixType: 'commercial_loss', description: `Audience Read: ${totalExcess.toLocaleString()} unsubscribes above the UK benchmark across your lists. At your stated \u00a3${cplVal.toFixed(2)} cost-per-subscriber, that is approximately \u00a3${lossValue.toLocaleString('en-GB')} in acquisition cost lost to avoidable fatigue. Estimated business cost — not a regulatory fine.`, tool: 'Audience Read', severity: 'medium', contactVolume: totalExcess, sourceRecordId: 'ar-commercial', exposureLow: lossValue, exposureHigh: lossValue }) });
             } catch(e) { console.error('Commercial fix non-fatal:', e); }
           }
         }
@@ -912,6 +901,15 @@ export default async function handler(req, res) {
       const freqTolerance = algorithm4_frequencyTolerance(segCampaigns, fingerprint);
       const prediction = algorithm6_predictiveSend(segment, campaignType, sendDate, fingerprint, trustVelocity, freqTolerance, bench);
       return res.status(200).json({ success: true, prediction });
+    }
+    if (action === 'methodology') {
+      // Full benchmark table + sources, for the methodology modal
+      const table = Object.entries(BENCHMARKS).map(([key, b]) => ({
+        sector: key, label: b.label,
+        unsubGood: b.unsubGood, unsubNormal: b.unsubNormal, unsubConcern: b.unsubConcern, unsubDamaged: b.unsubDamaged,
+        source: b.source,
+      }));
+      return res.status(200).json({ success: true, benchmarks: table });
     }
     return res.status(400).json({ error: `Unknown action: ${action}` });
   } catch (err) {
