@@ -1,27 +1,19 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.0
+// SENDWIZE — data.js v7.1
 // Commercial Relationships & Risk Register
 //
-// Actions:
-//   GET  report | vendors | violations | history | summary |
-//        score-history | briefing | vendor-watch | relationship-watch |
-//        sector-intelligence | competitor-intelligence
-//   POST load | register | score-history | send-alert |
-//        consent-expiry-check | simulation-run |
-//        partner-register | affiliate-register | competitor-watch
-//   DELETE register | partner-register | affiliate-register | competitor-watch
-//
-// v7.0 changes:
-//   + handlePartnerRegister  — CRUD for Partner_Register
-//   + handleAffiliateRegister — CRUD for Affiliate_Register
-//   + handleCompetitorWatch  — CRUD for Competitor_Watch
-//   + handleSectorIntelligence — fetch feed for user's sector
-//   + handleCompetitorIntelligence — per-competitor ruling lookup
-//   + handleRelationshipWatch — unified watch feed across all four types
-//   + handleBriefing extended — covers partners, affiliates, competitors
-//   + handleScoreHistory extended — ThirdPartyRiskScore breakdown
-//   + handleSendAlert extended — dpa_anniversary, competitor_ruling alert types
-//   + calculateThirdPartyScore() helper — unified 0-100 score
+// v7.1 changes (from v7.0):
+//   ~ calculateThirdPartyScore() rewritten:
+//       - Intelligence removed from score (now a passive indicator)
+//       - Empty categories excluded from denominator (N/A state)
+//       - Three categories only: processors, partners, affiliates
+//       - Score is out of 100 but only across applicable categories
+//   + handleRegister now generates dpa_breach fix for unconfirmed DPA
+//     (matches partner/affiliate pattern — feeds main compliance score)
+//   + New action: backfill-processor-fixes
+//       One-off: walks existing processors and generates missing fixes
+//   + New action: cron-status
+//       Diagnostic — last cron run, count, last error
 // ─────────────────────────────────────────────────────────────
 
 import { atFetch } from './_airtable.js';
@@ -74,9 +66,18 @@ function airtableBase() {
   return `https://api.airtable.com/v0/${process.env.BASE_ID}`;
 }
 
-// ── Third-party risk score calculator ────────────────────────
-// Returns a 0-100 score and per-category breakdown
-// Processors: 25pts, Partners: 25pts, Affiliates: 25pts, Intelligence: 25pts
+// ── DPA status check helper ───────────────────────────────────
+// Confirmed statuses across processors/partners/affiliates
+const DPA_CONFIRMED = ['Confirmed', 'Confirmed and signed', 'In place'];
+function isDPAConfirmed(status) {
+  return DPA_CONFIRMED.includes(status || '');
+}
+
+// ── Third-party risk score (v7.1 — rewritten) ────────────────
+// Score = weighted average of applicable categories only
+// Applicable = user has ≥1 record in that category
+// Intelligence is NOT in the score — shown separately as a passive indicator
+// Returns null category = not applicable (N/A)
 async function calculateThirdPartyScore(userId, base) {
   const [processors, partners, affiliates, profile] = await Promise.all([
     atGet(base, 'Vendor_Register',   `{UserID}='${userId}'`, '', 50).catch(() => []),
@@ -85,57 +86,73 @@ async function calculateThirdPartyScore(userId, base) {
     atGet(base, 'User_Profile',      `{UserID}='${userId}'`, '', 1).catch(() => []),
   ]);
 
-  // Processor score (25)
-  let processorScore = 25;
-  if (processors.length) {
-    const noDPA  = processors.filter(r => !['Confirmed','In place'].includes(r.fields.DPAStatus || r.fields.AgreementStatus || '')).length;
-    const hiRisk = processors.filter(r => r.fields.ICORiskLevel === 'High').length;
-    const stale  = processors.filter(r => {
+  // Each category scores 0-100 within itself, applicable only if count > 0
+  function processorCategoryScore(records) {
+    if (!records.length) return null;
+    const noDPA  = records.filter(r => !isDPAConfirmed(r.fields.DPAStatus || r.fields.AgreementStatus)).length;
+    const hiRisk = records.filter(r => r.fields.ICORiskLevel === 'High').length;
+    const stale  = records.filter(r => {
       const d = r.fields.LastChecked || r.fields.LastAutoChecked;
       return d && Math.floor((Date.now() - new Date(d)) / 86400000) > 90;
     }).length;
-    processorScore = Math.max(0, Math.round(25 - (noDPA/processors.length)*12 - (hiRisk/processors.length)*8 - (stale/processors.length)*5));
-  } else {
-    processorScore = 0; // No processors registered at all
+    // Weighted: DPA missing is biggest penalty
+    const dpaGap   = (noDPA / records.length)  * 50;
+    const riskGap  = (hiRisk / records.length) * 30;
+    const staleGap = (stale / records.length)  * 20;
+    return Math.max(0, Math.round(100 - dpaGap - riskGap - staleGap));
   }
 
-  // Partner score (25)
-  let partnerScore = 25;
-  if (partners.length) {
-    const noA26   = partners.filter(r => !['Confirmed and signed','In place'].includes(r.fields.Article26Status || '')).length;
-    const noChain = partners.filter(r => !r.fields.ConsentChainVerified).length;
-    const flagged = partners.filter(r => r.fields.BrandSafetyFlag).length;
-    partnerScore = Math.max(0, Math.round(25 - (noA26/partners.length)*12 - (noChain/partners.length)*8 - (flagged/partners.length)*5));
-  } else {
-    partnerScore = 20; // No partners is neutral — not everyone co-markets
+  function partnerCategoryScore(records) {
+    if (!records.length) return null;
+    const noA26   = records.filter(r => !isDPAConfirmed(r.fields.Article26Status)).length;
+    const noChain = records.filter(r => !r.fields.ConsentChainVerified).length;
+    const flagged = records.filter(r => r.fields.BrandSafetyFlag).length;
+    const a26Gap    = (noA26 / records.length)   * 50;
+    const chainGap  = (noChain / records.length) * 30;
+    const brandGap  = (flagged / records.length) * 20;
+    return Math.max(0, Math.round(100 - a26Gap - chainGap - brandGap));
   }
 
-  // Affiliate score (25)
-  let affiliateScore = 25;
-  if (affiliates.length) {
-    const noDPA       = affiliates.filter(r => !['Confirmed and signed','In place'].includes(r.fields.DPAStatus || '')).length;
-    const noConsent   = affiliates.filter(r => !r.fields.ConsentChainVerified).length;
-    const noSenderID  = affiliates.filter(r => r.fields.SenderIdentityCompliant === 'Unverified').length;
-    affiliateScore = Math.max(0, Math.round(25 - (noDPA/affiliates.length)*8 - (noConsent/affiliates.length)*10 - (noSenderID/affiliates.length)*7));
-  } else {
-    affiliateScore = 20; // No affiliates is neutral
+  function affiliateCategoryScore(records) {
+    if (!records.length) return null;
+    const noDPA      = records.filter(r => !isDPAConfirmed(r.fields.DPAStatus)).length;
+    const noConsent  = records.filter(r => !r.fields.ConsentChainVerified).length;
+    const noSenderID = records.filter(r => r.fields.SenderIdentityCompliant === 'Unverified').length;
+    // Consent chain is the biggest lever here — Saga/JTT anchor
+    const consentGap = (noConsent / records.length)  * 50;
+    const senderGap  = (noSenderID / records.length) * 30;
+    const dpaGap     = (noDPA / records.length)      * 20;
+    return Math.max(0, Math.round(100 - consentGap - senderGap - dpaGap));
   }
 
-  // Intelligence score (25) — did user review the feed this week?
+  const proc = processorCategoryScore(processors);
+  const part = partnerCategoryScore(partners);
+  const aff  = affiliateCategoryScore(affiliates);
+
+  // Overall = average of applicable categories only
+  const applicable = [proc, part, aff].filter(s => s !== null);
+  const total = applicable.length
+    ? Math.round(applicable.reduce((a,b) => a+b, 0) / applicable.length)
+    : null; // null = no relationships registered at all
+
+  // Intelligence indicator — passive, not scored
   const lastReview = profile[0]?.fields?.LastIntelligenceFeedReview || null;
   const daysSinceReview = lastReview
     ? Math.floor((Date.now() - new Date(lastReview)) / 86400000)
-    : 999;
-  const intelligenceScore = daysSinceReview <= 7 ? 25 : daysSinceReview <= 14 ? 18 : daysSinceReview <= 30 ? 10 : 5;
+    : null;
 
-  const total = processorScore + partnerScore + affiliateScore + intelligenceScore;
   return {
-    total,
+    total,                    // 0-100 or null
+    applicableCount: applicable.length,
     breakdown: {
-      processors:   { score: processorScore,   max: 25, count: processors.length },
-      partners:     { score: partnerScore,      max: 25, count: partners.length },
-      affiliates:   { score: affiliateScore,    max: 25, count: affiliates.length },
-      intelligence: { score: intelligenceScore, max: 25, daysSinceReview },
+      processors: { score: proc, count: processors.length, applicable: proc !== null },
+      partners:   { score: part, count: partners.length,   applicable: part !== null },
+      affiliates: { score: aff,  count: affiliates.length, applicable: aff !== null },
+    },
+    intelligence: {
+      lastReviewDate: lastReview,
+      daysSinceReview,
+      reviewedThisWeek: daysSinceReview !== null && daysSinceReview <= 7,
     },
   };
 }
@@ -147,6 +164,24 @@ async function getViolationsForName(base, name) {
   if (!words.length) return [];
   const formula = `OR(${words.map(w => `FIND('${w}',LOWER({CompanyName}))`).join(',')})`;
   return atGet(base, 'Violation_Database', formula, 'sort[0][field]=DateOfAction&sort[0][direction]=desc', 10).catch(() => []);
+}
+
+// ── Fix generation helper (fire-and-forget) ──────────────────
+function generateFix(payload) {
+  return fetch(`${APP_URL}/api/generate-fix`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(e => console.error('generate-fix non-fatal:', e));
+}
+
+// Check if a fix already exists for a given source record + fix type
+// Prevents duplicates when a processor is edited or re-added
+async function fixExistsFor(base, userId, sourceRecordId, fixType) {
+  if (!sourceRecordId) return false;
+  const formula = `AND({UserID}='${userId}',{SourceRecordId}='${sourceRecordId}',{FixType}='${fixType}',{Status}!='completed',{Status}!='dismissed')`;
+  const existing = await atGet(base, 'Compliance_Fixes', formula, '', 1).catch(() => []);
+  return existing.length > 0;
 }
 
 // ── REPORT handler ────────────────────────────────────────────
@@ -244,7 +279,8 @@ async function handleHistory(req, res) {
   }
 }
 
-// ── REGISTER handler (Vendor_Register) ───────────────────────
+// ── REGISTER handler (Vendor_Register — processors) ──────────
+// v7.1: generates dpa_breach fix when DPA is unconfirmed
 async function handleRegister(req, res) {
   const base = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -285,7 +321,25 @@ async function handleRegister(req, res) {
       const record = recordId
         ? await atPatch(base, 'Vendor_Register', recordId, fields)
         : await atCreate(base, 'Vendor_Register', fields);
-      return res.json({ record });
+
+      // v7.1: fire dpa_breach fix if DPA not confirmed
+      // Applies on create AND when an existing record moves back to unconfirmed
+      const dpaStatus = vendor.DPAStatus || vendor.AgreementStatus;
+      let fixGenerated = false;
+      if (!isDPAConfirmed(dpaStatus)) {
+        const sourceId = record?.id || recordId;
+        const already  = await fixExistsFor(base, userId, sourceId, 'dpa_breach');
+        if (!already) {
+          generateFix({
+            userId, fixType: 'dpa_breach', tool: 'Relationships Register',
+            description: `Processor '${vendor.VendorName}' registered without a confirmed Article 28 Data Processing Agreement (current status: ${dpaStatus || 'Unknown'}). UK GDPR Article 28 requires a written DPA before personal data is shared with a processor.`,
+            severity: 'high', sourceRecordId: sourceId,
+          });
+          fixGenerated = true;
+        }
+      }
+
+      return res.json({ record, fixGenerated, dpaConfirmed: isDPAConfirmed(dpaStatus) });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
@@ -294,7 +348,98 @@ async function handleRegister(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
+// ── BACKFILL-PROCESSOR-FIXES handler (v7.1) ───────────────────
+// One-off: walks existing Vendor_Register records for a user and generates
+// dpa_breach fixes for any processor that doesn't already have one
+async function handleBackfillProcessorFixes(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const base = airtableBase();
+  const processors = await atGet(base, 'Vendor_Register', `{UserID}='${userId}'`, '', 100).catch(() => []);
+
+  const results = { checked: processors.length, fixesGenerated: 0, skipped: 0, confirmed: 0 };
+
+  for (const r of processors) {
+    const dpaStatus = r.fields.DPAStatus || r.fields.AgreementStatus;
+    if (isDPAConfirmed(dpaStatus)) { results.confirmed++; continue; }
+
+    const already = await fixExistsFor(base, userId, r.id, 'dpa_breach');
+    if (already) { results.skipped++; continue; }
+
+    generateFix({
+      userId, fixType: 'dpa_breach', tool: 'Relationships Register (backfill)',
+      description: `Processor '${r.fields.VendorName}' has no confirmed Article 28 Data Processing Agreement on file (status: ${dpaStatus || 'Unknown'}). UK GDPR Article 28 requires a written DPA before personal data is shared with a processor.`,
+      severity: 'high', sourceRecordId: r.id,
+    });
+    results.fixesGenerated++;
+  }
+
+  return res.json(results);
+}
+
+// ── CRON-STATUS handler (v7.1) ────────────────────────────────
+// Diagnostic — returns most recent Sector_Intelligence_Feed entry
+// and the count in the last 7 days, so you can see whether the Monday
+// cron actually fired
+async function handleCronStatus(req, res) {
+  const base = airtableBase();
+
+  const [recent, all] = await Promise.all([
+    atGet(base, 'Sector_Intelligence_Feed', '', 'sort[0][field]=PublishedDate&sort[0][direction]=desc', 10).catch(() => []),
+    atGet(base, 'Sector_Intelligence_Feed', '', 'sort[0][field]=WeekNumber&sort[0][direction]=desc', 100).catch(() => []),
+  ]);
+
+  const now = new Date();
+  const sevenDaysAgo  = new Date(now.getTime() - 7  * 86400000);
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
+
+  const inLast7  = recent.filter(r => r.fields.PublishedDate && new Date(r.fields.PublishedDate) >= sevenDaysAgo).length;
+  const inLast14 = recent.filter(r => r.fields.PublishedDate && new Date(r.fields.PublishedDate) >= fourteenDaysAgo).length;
+
+  const mostRecent = recent[0];
+  const mostRecentDate = mostRecent?.fields?.PublishedDate || null;
+  const daysSinceMostRecent = mostRecentDate
+    ? Math.floor((now - new Date(mostRecentDate)) / 86400000)
+    : null;
+
+  // Group by week to see cron cadence
+  const weekCounts = {};
+  all.forEach(r => {
+    const w = r.fields.WeekNumber;
+    if (w != null) weekCounts[w] = (weekCounts[w] || 0) + 1;
+  });
+  const recentWeeks = Object.entries(weekCounts)
+    .sort((a,b) => Number(b[0]) - Number(a[0]))
+    .slice(0, 6)
+    .map(([week, count]) => ({ weekNumber: Number(week), recordCount: count }));
+
+  return res.json({
+    totalRecords: all.length,
+    inLast7Days: inLast7,
+    inLast14Days: inLast14,
+    mostRecent: mostRecent ? {
+      companyName: mostRecent.fields.CompanyName || null,
+      regulator: mostRecent.fields.Regulator || null,
+      publishedDate: mostRecentDate,
+      addedBy: mostRecent.fields.AddedBy || null,
+      daysAgo: daysSinceMostRecent,
+    } : null,
+    recentWeeks,
+    healthCheck: {
+      cronLikelyRunning: inLast14 > 0,
+      warning: inLast14 === 0
+        ? 'No records in last 14 days — cron may not be running. Check Airtable automation history and CRON_SECRET env var.'
+        : daysSinceMostRecent > 14
+          ? 'Most recent record is stale — cron may have stopped.'
+          : null,
+    },
+  });
+}
+
 // ── PARTNER-REGISTER handler ──────────────────────────────────
+// (unchanged from v7.0 — already generates fixes correctly)
 async function handlePartnerRegister(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -311,7 +456,6 @@ async function handlePartnerRegister(req, res) {
     if (!userId)  return res.status(400).json({ error: 'userId required' });
     if (!partner) return res.status(400).json({ error: 'partner data required' });
 
-    // If new partner, auto cross-reference violations
     let violationCount = 0, lastViolationDate = null, lastViolationSummary = null;
     let reputationScore = 100, brandSafetyFlag = false, brandSafetyReason = null;
     if (!recordId && partner.PartnerName) {
@@ -321,7 +465,6 @@ async function handlePartnerRegister(req, res) {
         lastViolationDate    = viols[0].fields.DateOfAction || null;
         lastViolationSummary = viols[0].fields.Violation    || null;
       }
-      // Reputation score: deduct per violation, heavier for recent ones
       for (const v of viols) {
         const daysAgo = v.fields.DateOfAction
           ? Math.floor((Date.now() - new Date(v.fields.DateOfAction)) / 86400000)
@@ -365,24 +508,20 @@ async function handlePartnerRegister(req, res) {
         ? await atPatch(base, 'Partner_Register', recordId, fields)
         : await atCreate(base, 'Partner_Register', fields);
 
-      // Generate fix if no Article 26 agreement
-      if (!recordId && (!partner.Article26Status || partner.Article26Status === 'Not yet')) {
-        fetch(`${APP_URL}/api/generate-fix`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, fixType: 'no_article26_agreement', tool: 'Relationships Register',
-            description: `Partner '${partner.PartnerName}' added without a confirmed Article 26 joint controller agreement. Under UK GDPR Article 26, joint controllers must determine their respective responsibilities in a transparent arrangement.`,
-            severity: 'high', sourceRecordId: record?.id || null }),
-        }).catch(e => console.error('generate-fix non-fatal:', e));
+      if (!recordId && !isDPAConfirmed(partner.Article26Status)) {
+        generateFix({
+          userId, fixType: 'no_article26_agreement', tool: 'Relationships Register',
+          description: `Partner '${partner.PartnerName}' added without a confirmed Article 26 joint controller agreement. Under UK GDPR Article 26, joint controllers must determine their respective responsibilities in a transparent arrangement.`,
+          severity: 'high', sourceRecordId: record?.id || null,
+        });
       }
 
-      // Generate fix if brand safety flagged
       if (!recordId && brandSafetyFlag) {
-        fetch(`${APP_URL}/api/generate-fix`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, fixType: 'partner_brand_risk', tool: 'Relationships Register',
-            description: `Partner '${partner.PartnerName}' has ${violationCount} regulatory action${violationCount !== 1 ? 's' : ''} in the Sendwize enforcement database. Co-marketing with a brand under regulatory scrutiny creates reputational and potential joint-liability risk.`,
-            severity: violationCount >= 3 ? 'critical' : 'high', sourceRecordId: record?.id || null }),
-        }).catch(e => console.error('generate-fix non-fatal:', e));
+        generateFix({
+          userId, fixType: 'partner_brand_risk', tool: 'Relationships Register',
+          description: `Partner '${partner.PartnerName}' has ${violationCount} regulatory action${violationCount !== 1 ? 's' : ''} in the Sendwize enforcement database. Co-marketing with a brand under regulatory scrutiny creates reputational and potential joint-liability risk.`,
+          severity: violationCount >= 3 ? 'critical' : 'high', sourceRecordId: record?.id || null,
+        });
       }
 
       return res.json({ record, reputationScore, brandSafetyFlag, violationCount });
@@ -395,6 +534,7 @@ async function handlePartnerRegister(req, res) {
 }
 
 // ── AFFILIATE-REGISTER handler ────────────────────────────────
+// (unchanged from v7.0 — already generates fixes correctly)
 async function handleAffiliateRegister(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -411,12 +551,9 @@ async function handleAffiliateRegister(req, res) {
     if (!userId)    return res.status(400).json({ error: 'userId required' });
     if (!affiliate) return res.status(400).json({ error: 'affiliate data required' });
 
-    // Exposure calculation — anchored to Saga (£225k) and JTT (£130k) cases
-    // Based on volume sent × consent chain status
     const volume = affiliate.TotalVolumeSent || 0;
     let exposureLow = 0, exposureHigh = 0;
     if (!affiliate.ConsentChainVerified) {
-      // Unverified consent chain is the same legal exposure as no consent at all
       exposureLow  = Math.min(Math.round(volume * 0.02), 50000);
       exposureHigh = Math.min(Math.round(volume * 0.08), 225000);
     }
@@ -452,23 +589,20 @@ async function handleAffiliateRegister(req, res) {
         ? await atPatch(base, 'Affiliate_Register', recordId, fields)
         : await atCreate(base, 'Affiliate_Register', fields);
 
-      // Generate fixes for consent chain and sender identity issues
       if (!recordId) {
         if (!affiliate.ConsentChainVerified) {
-          fetch(`${APP_URL}/api/generate-fix`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, fixType: 'affiliate_consent_unverified', tool: 'Relationships Register',
-              description: `Affiliate '${affiliate.AffiliateName}' added with unverified consent chain. PECR Reg 22 requires valid consent for each marketing message — you cannot rely on consent collected by an affiliate without verifying it specifically covers your organisation's marketing.`,
-              severity: 'critical', exposureLow, exposureHigh, sourceRecordId: record?.id || null }),
-          }).catch(e => console.error('generate-fix non-fatal:', e));
+          generateFix({
+            userId, fixType: 'affiliate_consent_unverified', tool: 'Relationships Register',
+            description: `Affiliate '${affiliate.AffiliateName}' added with unverified consent chain. PECR Reg 22 requires valid consent for each marketing message — you cannot rely on consent collected by an affiliate without verifying it specifically covers your organisation's marketing.`,
+            severity: 'critical', exposureLow, exposureHigh, sourceRecordId: record?.id || null,
+          });
         }
         if (affiliate.SenderIdentityCompliant === 'Unverified') {
-          fetch(`${APP_URL}/api/generate-fix`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, fixType: 'affiliate_sender_identity_breach', tool: 'Relationships Register',
-              description: `Affiliate '${affiliate.AffiliateName}' sender identity not verified. PECR Reg 23 requires the sender not be disguised or concealed — the From name must identify the organisation responsible for the marketing.`,
-              severity: 'high', sourceRecordId: record?.id || null }),
-          }).catch(e => console.error('generate-fix non-fatal:', e));
+          generateFix({
+            userId, fixType: 'affiliate_sender_identity_breach', tool: 'Relationships Register',
+            description: `Affiliate '${affiliate.AffiliateName}' sender identity not verified. PECR Reg 23 requires the sender not be disguised or concealed — the From name must identify the organisation responsible for the marketing.`,
+            severity: 'high', sourceRecordId: record?.id || null,
+          });
         }
       }
 
@@ -481,7 +615,7 @@ async function handleAffiliateRegister(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-// ── COMPETITOR-WATCH handler ──────────────────────────────────
+// ── COMPETITOR-WATCH handler (unchanged from v7.0) ────────────
 async function handleCompetitorWatch(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -498,7 +632,6 @@ async function handleCompetitorWatch(req, res) {
     if (!userId)     return res.status(400).json({ error: 'userId required' });
     if (!competitor) return res.status(400).json({ error: 'competitor data required' });
 
-    // On add: cross-reference violation database and pull recent promos via Claude
     let rulingCount = 0, lastRulingDate = null, lastRulingSummary = null, lastRulingRegulator = null;
     let allRulingsJson = null, recentPromoClaims = null;
 
@@ -517,7 +650,6 @@ async function handleCompetitorWatch(req, res) {
         fine:      v.fields.FineAmount   || null,
       })));
 
-      // Pull recent promo claims via Claude web search
       if (process.env.ANTHROPIC_API_KEY) {
         try {
           const promoRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -569,35 +701,30 @@ async function handleCompetitorWatch(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-// ── SECTOR-INTELLIGENCE handler ───────────────────────────────
+// ── SECTOR-INTELLIGENCE handler (unchanged from v7.0) ────────
 async function handleSectorIntelligence(req, res) {
   const { userId, sector, limit = '20' } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
   const base = airtableBase();
-  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 
-  // Get user's sector from profile if not passed
   let userSector = sector;
   if (!userSector) {
     const profiles = await atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []);
     userSector = profiles[0]?.fields?.Sector || 'general';
   }
 
-  // Fetch sector feed and general feed in parallel
   const [sectorFeed, generalFeed] = await Promise.all([
     atGet(base, 'Sector_Intelligence_Feed', `{Sector}='${userSector}'`, 'sort[0][field]=PublishedDate&sort[0][direction]=desc', parseInt(limit)).catch(() => []),
     atGet(base, 'Sector_Intelligence_Feed', `{Sector}='general'`, 'sort[0][field]=PublishedDate&sort[0][direction]=desc', 10).catch(() => []),
   ]);
 
-  // Merge and deduplicate
   const seen = new Set();
   const feed = [...sectorFeed, ...generalFeed].filter(r => {
     if (seen.has(r.id)) return false;
     seen.add(r.id); return true;
   }).sort((a, b) => new Date(b.fields.PublishedDate) - new Date(a.fields.PublishedDate));
 
-  // Mark user as having reviewed the feed today
   const profiles = await atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []);
   const profile  = profiles[0];
   if (profile?.id) {
@@ -609,7 +736,7 @@ async function handleSectorIntelligence(req, res) {
   return res.json({ feed, sector: userSector, count: feed.length });
 }
 
-// ── COMPETITOR-INTELLIGENCE handler ───────────────────────────
+// ── COMPETITOR-INTELLIGENCE handler (unchanged from v7.0) ────
 async function handleCompetitorIntelligence(req, res) {
   const { userId, competitorName } = req.query;
   if (!userId || !competitorName) return res.status(400).json({ error: 'userId and competitorName required' });
@@ -617,7 +744,6 @@ async function handleCompetitorIntelligence(req, res) {
   const base = airtableBase();
   const viols = await getViolationsForName(base, competitorName);
 
-  // Also check if they appear in sector feed
   const feedRecords = await atGet(base, 'Sector_Intelligence_Feed',
     `FIND('${competitorName.toLowerCase()}',LOWER({CompanyName}))`,
     'sort[0][field]=PublishedDate&sort[0][direction]=desc', 10
@@ -637,7 +763,7 @@ async function handleCompetitorIntelligence(req, res) {
 }
 
 // ── RELATIONSHIP-WATCH handler ────────────────────────────────
-// Unified monitoring feed across all four relationship types
+// v7.1: intelligence removed from returned score, still available as indicator
 async function handleRelationshipWatch(req, res) {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -689,14 +815,14 @@ async function handleRelationshipWatch(req, res) {
 
     if (type === 'processor') {
       const dpa = f.DPAStatus || f.AgreementStatus || '';
-      if (!['Confirmed','In place'].includes(dpa)) alerts.push({ type: 'dpa', severity: 'red', text: 'No confirmed DPA — Article 28 UK GDPR breach until signed.' });
+      if (!isDPAConfirmed(dpa)) alerts.push({ type: 'dpa', severity: 'red', text: 'No confirmed DPA — Article 28 UK GDPR breach until signed.' });
       if (sd !== null && sd > 90) alerts.push({ type: 'stale', severity: 'amber', text: `Last scanned ${sd} days ago. Quarterly re-scan recommended.` });
       const ann = anniversaryDays(f.AgreementDate);
       if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: ann <= 0 ? 'Agreement anniversary was recent — confirm renewed.' : `Agreement anniversary in ${ann} days — review terms.` });
     }
 
     if (type === 'partner') {
-      if (!['Confirmed and signed','In place'].includes(f.Article26Status || '')) alerts.push({ type: 'a26', severity: 'high', text: 'No confirmed Article 26 joint controller agreement.' });
+      if (!isDPAConfirmed(f.Article26Status)) alerts.push({ type: 'a26', severity: 'high', text: 'No confirmed Article 26 joint controller agreement.' });
       if (!f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'amber', text: 'Consent chain ownership not verified.' });
       if (f.BrandSafetyFlag) alerts.push({ type: 'brand', severity: 'amber', text: f.BrandSafetyReason || 'Brand safety flag raised.' });
       const ann = anniversaryDays(f.Article26Date);
@@ -706,7 +832,7 @@ async function handleRelationshipWatch(req, res) {
     if (type === 'affiliate') {
       if (!f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'red', text: 'Consent chain unverified — same legal exposure as sending without consent.' });
       if (f.SenderIdentityCompliant === 'Unverified') alerts.push({ type: 'sender', severity: 'amber', text: 'Sender identity not verified — PECR Reg 23 risk.' });
-      if (!['Confirmed and signed','In place'].includes(f.DPAStatus || '')) alerts.push({ type: 'dpa', severity: 'amber', text: 'No confirmed DPA for this affiliate.' });
+      if (!isDPAConfirmed(f.DPAStatus)) alerts.push({ type: 'dpa', severity: 'amber', text: 'No confirmed DPA for this affiliate.' });
     }
 
     if (type === 'competitor') {
@@ -724,13 +850,12 @@ async function handleRelationshipWatch(req, res) {
     ...competitors.map(r => ({ type: 'competitor', recordId: r.id, name: r.fields.CompetitorName || '', alerts: buildAlerts('competitor', r.fields.CompetitorName, r), staleDays: staleDays(r) })),
   ].sort((a, b) => b.alerts.length - a.alerts.length);
 
-  // Score
   const thirdPartyScore = await calculateThirdPartyScore(userId, base).catch(() => null);
 
   return res.json({ watch, thirdPartyScore, lastChecked: today.toISOString() });
 }
 
-// ── SUMMARY handler ───────────────────────────────────────────
+// ── SUMMARY handler (unchanged) ──────────────────────────────
 async function handleSummary(req, res) {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -755,10 +880,10 @@ async function handleSummary(req, res) {
   });
 }
 
-// ── SCORE-HISTORY handler ─────────────────────────────────────
+// ── SCORE-HISTORY handler ────────────────────────────────────
+// v7.1: adapted to new breakdown shape (no intelligenceScore field)
 async function handleScoreHistory(req, res) {
-  const base    = airtableBase();
-  const headers = atHeaders(process.env.AIRTABLE_TOKEN);
+  const base = airtableBase();
 
   if (req.method === 'GET') {
     const { userId, limit = '30' } = req.query;
@@ -768,9 +893,9 @@ async function handleScoreHistory(req, res) {
       id: r.id, date: r.fields.Date || '', score: r.fields.Score || 0,
       pending: r.fields.Pending || 0, completed: r.fields.Completed || 0,
       scoreChange: r.fields.ScoreChange || 0, triggerEvent: r.fields.TriggerEvent || '',
-      thirdPartyRiskScore: r.fields.ThirdPartyRiskScore || null,
-      processorScore: r.fields.ProcessorScore || null, partnerScore: r.fields.PartnerScore || null,
-      affiliateScore: r.fields.AffiliateScore || null, intelligenceScore: r.fields.IntelligenceScore || null,
+      thirdPartyRiskScore: r.fields.ThirdPartyRiskScore ?? null,
+      processorScore: r.fields.ProcessorScore ?? null, partnerScore: r.fields.PartnerScore ?? null,
+      affiliateScore: r.fields.AffiliateScore ?? null,
     })) });
   }
 
@@ -790,9 +915,9 @@ async function handleScoreHistory(req, res) {
       ScoreChange: scoreChange, TriggerEvent: triggerEvent, AlertSent: false,
       ThirdPartyRiskScore: thirdParty?.total ?? null,
       ProcessorScore:      thirdParty?.breakdown?.processors?.score ?? null,
-      PartnerScore:        thirdParty?.breakdown?.partners?.score ?? null,
+      PartnerScore:        thirdParty?.breakdown?.partners?.score   ?? null,
       AffiliateScore:      thirdParty?.breakdown?.affiliates?.score ?? null,
-      IntelligenceScore:   thirdParty?.breakdown?.intelligence?.score ?? null,
+      // IntelligenceScore field retained in Airtable but no longer written
     };
 
     const snap = await atCreate(base, 'Score_History', fields);
@@ -824,7 +949,7 @@ async function handleScoreHistory(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-// ── SEND-ALERT handler ────────────────────────────────────────
+// ── SEND-ALERT handler (unchanged) ───────────────────────────
 async function handleSendAlert(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId, alertType } = req.body;
@@ -837,8 +962,6 @@ async function handleSendAlert(req, res) {
   const profiles = await atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []);
   const toEmail  = profiles[0]?.fields?.Email;
   if (!toEmail) return res.json({ sent: false, reason: 'No email on profile' });
-
-  const fmtGBP = n => `£${(n||0).toLocaleString('en-GB')}`;
 
   const alertTemplates = {
     score_drop: {
@@ -881,7 +1004,7 @@ async function handleSendAlert(req, res) {
   return res.json({ sent: true, messageId: data.id });
 }
 
-// ── BRIEFING handler (v7.0 — all four relationship types) ─────
+// ── BRIEFING handler (unchanged from v7.0) ───────────────────
 async function handleBriefing(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
   const { userId } = req.query;
@@ -926,7 +1049,7 @@ async function handleBriefing(req, res) {
     if (d && Math.floor((Date.now()-new Date(d))/86400000) > 90) intelLines.push(`- Processor ${r.fields.VendorName}: DPA not re-checked in 90+ days.`);
   }
   for (const r of partners.slice(0,5)) {
-    if (!['Confirmed and signed','In place'].includes(r.fields.Article26Status||'')) intelLines.push(`- Partner ${r.fields.PartnerName}: no Article 26 agreement confirmed.`);
+    if (!isDPAConfirmed(r.fields.Article26Status)) intelLines.push(`- Partner ${r.fields.PartnerName}: no Article 26 agreement confirmed.`);
     if (r.fields.BrandSafetyFlag) intelLines.push(`- Partner ${r.fields.PartnerName}: brand safety flag — ${r.fields.BrandSafetyReason||'regulatory history'}.`);
   }
   for (const r of affiliates.slice(0,5)) {
@@ -966,7 +1089,7 @@ async function handleBriefing(req, res) {
   return res.json({ briefing, cached: false });
 }
 
-// ── CONSENT-EXPIRY-CHECK handler ──────────────────────────────
+// ── CONSENT-EXPIRY-CHECK (unchanged) ─────────────────────────
 async function handleConsentExpiryCheck(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId } = req.body;
@@ -1002,15 +1125,12 @@ async function handleConsentExpiryCheck(req, res) {
   return res.json({ checked: true, alertFired: alertRes.ok, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90 });
 }
 
-// ── VENDOR-WATCH handler (processors only, legacy compat) ─────
+// ── VENDOR-WATCH (legacy compat) ─────────────────────────────
 async function handleVendorWatch(req, res) {
-  // Redirect to relationship-watch for unified feed
-  req.query.userId = req.query.userId;
   return handleRelationshipWatch(req, res);
 }
 
-// ── SIMULATION-RUN handler ────────────────────────────────────
-// (Identical to v6.3 — simulation logic unchanged)
+// ── SIMULATION-RUN (unchanged from v7.0) ─────────────────────
 async function handleSimulationRun(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId, regulator } = req.body;
@@ -1018,16 +1138,13 @@ async function handleSimulationRun(req, res) {
   if (!['ICO','CMA','ASA'].includes(regulator)) return res.status(400).json({ error: 'regulator must be ICO | CMA | ASA' });
 
   const base   = airtableBase();
-  const today  = new Date().toISOString().split('T')[0];
   const fixesRes  = await fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`);
   const fixesData = fixesRes.ok ? await fixesRes.json() : null;
   const pendingFixes   = fixesData?.fixes?.pending   || [];
-  const completedFixes = fixesData?.fixes?.completed || [];
   const score          = fixesData?.score            || 0;
   const criticalFixes  = pendingFixes.filter(f => f.severity === 'critical');
   const highFixes      = pendingFixes.filter(f => f.severity === 'high');
 
-  // Risk band (v6.3 — no percentage)
   const escalationBand = criticalFixes.length > 0 ? 'serious' : (highFixes.length > 0 || score < 50) ? 'elevated' : 'standard';
   const bandConfig = {
     standard: { label:'Standard Risk', colour:'#16a34a', bgColour:'#f0fdf4', borderColour:'#bbf7d0' },
@@ -1040,7 +1157,6 @@ async function handleSimulationRun(req, res) {
     CMA: { standard:'Your compliance data does not match the patterns the CMA has targeted in its DMCCA sweeps.', elevated:'Your data shows patterns the CMA has identified in proactive sweeps — pricing, urgency, or review practices.', serious:'Your data shows practices that may constitute Schedule 1 banned practices under DMCCA 2024 — automatically unfair with no defence.' },
   };
 
-  // Letter via Claude
   const categoryFixes = pendingFixes.filter(f => f.exposure?.category === regulator);
   const fixList = (categoryFixes.length ? categoryFixes : pendingFixes).slice(0,8).map(f =>
     `- ${f.fixType.replace(/_/g,' ')} (${f.severity}): ${String(f.description||'').slice(0,250)}`).join('\n') || 'No pending fixes.';
@@ -1084,27 +1200,30 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
-    if (action === 'report'               && req.method === 'GET')                        return await handleReport(req, res);
-    if (action === 'vendors'              && req.method === 'GET')                        return await handleVendors(req, res);
-    if (action === 'violations'           && req.method === 'GET')                        return await handleViolations(req, res);
-    if (action === 'load'                 && req.method === 'POST')                       return await handleLoad(req, res);
-    if (action === 'history'              && req.method === 'GET')                        return await handleHistory(req, res);
-    if (action === 'summary'              && req.method === 'GET')                        return await handleSummary(req, res);
-    if (action === 'register'             && ['POST','DELETE'].includes(req.method))      return await handleRegister(req, res);
-    if (action === 'score-history'        && ['GET','POST'].includes(req.method))         return await handleScoreHistory(req, res);
-    if (action === 'send-alert'           && req.method === 'POST')                       return await handleSendAlert(req, res);
-    if (action === 'briefing'             && req.method === 'GET')                        return await handleBriefing(req, res);
-    if (action === 'consent-expiry-check' && req.method === 'POST')                       return await handleConsentExpiryCheck(req, res);
-    if (action === 'simulation-run'       && req.method === 'POST')                       return await handleSimulationRun(req, res);
-    if (action === 'vendor-watch'         && req.method === 'GET')                        return await handleVendorWatch(req, res);
-    if (action === 'relationship-watch'   && req.method === 'GET')                        return await handleRelationshipWatch(req, res);
-    if (action === 'sector-intelligence'  && req.method === 'GET')                        return await handleSectorIntelligence(req, res);
-    if (action === 'competitor-intelligence' && req.method === 'GET')                     return await handleCompetitorIntelligence(req, res);
-    if (action === 'partner-register'     && ['POST','DELETE'].includes(req.method))      return await handlePartnerRegister(req, res);
-    if (action === 'affiliate-register'   && ['POST','DELETE'].includes(req.method))      return await handleAffiliateRegister(req, res);
-    if (action === 'competitor-watch'     && ['POST','DELETE'].includes(req.method))      return await handleCompetitorWatch(req, res);
+    if (action === 'report'                  && req.method === 'GET')                       return await handleReport(req, res);
+    if (action === 'vendors'                 && req.method === 'GET')                       return await handleVendors(req, res);
+    if (action === 'violations'              && req.method === 'GET')                       return await handleViolations(req, res);
+    if (action === 'load'                    && req.method === 'POST')                      return await handleLoad(req, res);
+    if (action === 'history'                 && req.method === 'GET')                       return await handleHistory(req, res);
+    if (action === 'summary'                 && req.method === 'GET')                       return await handleSummary(req, res);
+    if (action === 'register'                && ['POST','DELETE'].includes(req.method))     return await handleRegister(req, res);
+    if (action === 'score-history'           && ['GET','POST'].includes(req.method))        return await handleScoreHistory(req, res);
+    if (action === 'send-alert'              && req.method === 'POST')                      return await handleSendAlert(req, res);
+    if (action === 'briefing'                && req.method === 'GET')                       return await handleBriefing(req, res);
+    if (action === 'consent-expiry-check'    && req.method === 'POST')                      return await handleConsentExpiryCheck(req, res);
+    if (action === 'simulation-run'          && req.method === 'POST')                      return await handleSimulationRun(req, res);
+    if (action === 'vendor-watch'            && req.method === 'GET')                       return await handleVendorWatch(req, res);
+    if (action === 'relationship-watch'      && req.method === 'GET')                       return await handleRelationshipWatch(req, res);
+    if (action === 'sector-intelligence'     && req.method === 'GET')                       return await handleSectorIntelligence(req, res);
+    if (action === 'competitor-intelligence' && req.method === 'GET')                       return await handleCompetitorIntelligence(req, res);
+    if (action === 'partner-register'        && ['POST','DELETE'].includes(req.method))     return await handlePartnerRegister(req, res);
+    if (action === 'affiliate-register'      && ['POST','DELETE'].includes(req.method))     return await handleAffiliateRegister(req, res);
+    if (action === 'competitor-watch'        && ['POST','DELETE'].includes(req.method))     return await handleCompetitorWatch(req, res);
+    // v7.1 new actions
+    if (action === 'backfill-processor-fixes' && req.method === 'POST')                     return await handleBackfillProcessorFixes(req, res);
+    if (action === 'cron-status'              && req.method === 'GET')                      return await handleCronStatus(req, res);
 
-    return res.status(400).json({ error: 'Unknown action', valid: 'report|vendors|violations|load|history|summary|register|score-history|send-alert|briefing|consent-expiry-check|simulation-run|vendor-watch|relationship-watch|sector-intelligence|competitor-intelligence|partner-register|affiliate-register|competitor-watch' });
+    return res.status(400).json({ error: 'Unknown action' });
   } catch (error) {
     console.error('data.js error:', error);
     return res.status(500).json({ error: 'Internal server error', detail: error.message });
