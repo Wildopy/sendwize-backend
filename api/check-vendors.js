@@ -1,32 +1,32 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — check-vendors.js v4.29
-// POST { vendors: [{ name, isCustom, dpaStatus, dataTypes, contactVolume }], userId }
+// SENDWIZE — check-vendors.js v4.30
 //
-// v4.29 changes from v4.28:
-//   - B1: Privacy policy scraping for every vendor.
-//     Known vendors: scrape their PrivacyPolicyUrl from Airtable.
-//     Unknown vendors: Claude guesses the URL, we scrape it.
-//     Scraped excerpt attached to result.scrapedPolicy (source,
-//     url, excerpt, scrapedAt). Scrape failures are non-fatal —
-//     result.scrapedPolicy is null and analysis proceeds without.
-//   - B2: AI now returns a `gaps` array for unknown vendors —
-//     specific things missing from the scraped policy that should
-//     be there for UK GDPR / marketing use (SCCs mention, DPO,
-//     retention policy, security cert, sub-processor list, etc).
-//     Each gap emits its own fix via generate-fix.js. Gaps carry
-//     severity (high|medium|low) and one-line description.
-//   - AI prompt now uses scraped policy text when available.
-//     Falls back to Claude's general knowledge if scrape failed.
-//   - Result shape adds: scrapedPolicy, gaps (unknown only).
-//   - buildFixesForResult now emits gap fixes with sourceRecordId
-//     scoped per-gap: `vendor-{name-slug}-gap-{gap-slug}` for dedupe.
-//   - Fix descriptions include "based on public privacy policy at
-//     {url}, last scraped {date}" for traceability (D2 principle).
+// TWO REQUEST MODES:
+//
+// 1. BULK SCANNER (unchanged from v4.29):
+//    POST { vendors: [{name, isCustom, dpaStatus, dataTypes, contactVolume}], userId }
+//    Returns: { results: [...] }
+//    Used by: Processor Risk Scanner tool
+//
+// 2. SINGLE-VENDOR DPA SCAN (new in v4.30):
+//    POST { userId, vendorName, policyUrl, recordId }
+//    OR:  POST { userId, vendorName, pdfBase64, pdfFilename, recordId }
+//    Returns: { a28Clauses: { "a28-1": {status, note}, ... } }
+//    Used by: Commercial Relationships Register — DPA Review tab
+//
+// v4.30 changes from v4.29:
+//   + Branches at top of handler on request shape
+//   + New handleA28ScanRequest() handles both URL and PDF paths
+//   + PDF path sends Anthropic `document` content block directly
+//     (no server-side text extraction — Claude reads the PDF)
+//   + URL path reuses existing scrapePrivacyPolicy() helper
+//   + Both paths call the same Article 28 prompt
 // ─────────────────────────────────────────────────────────────
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const SCRAPE_TIMEOUT_MS = 8000;
 const SCRAPE_MAX_CHARS  = 12000;
 const SCRAPE_UA = 'Mozilla/5.0 (compatible; SendwizeComplianceBot/1.0; +https://sendwize.com/bot)';
+const PDF_MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -35,8 +35,175 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  const body = req.body ?? {};
+
+  // ── Mode detection ────────────────────────────────────────
+  // Single-vendor DPA scan request: has vendorName + (policyUrl OR pdfBase64)
+  if (body.vendorName && (body.policyUrl || body.pdfBase64)) {
+    return handleA28ScanRequest(body, res);
+  }
+
+  // Otherwise: existing bulk scanner flow
+  return handleBulkScanRequest(body, res);
+}
+
+// ═════════════════════════════════════════════════════════════
+// SINGLE-VENDOR DPA SCAN (v4.30, new)
+// ═════════════════════════════════════════════════════════════
+async function handleA28ScanRequest(body, res) {
+  const { userId, vendorName, policyUrl, pdfBase64, pdfFilename, recordId } = body;
+  if (!userId)     return res.status(400).json({ error: 'userId required' });
+  if (!vendorName) return res.status(400).json({ error: 'vendorName required' });
+
   try {
-    const { vendors, userId } = req.body ?? {};
+    let a28Clauses;
+
+    if (pdfBase64) {
+      // PDF upload path — send PDF directly to Claude
+      const approxBytes = Math.floor(pdfBase64.length * 0.75); // base64 is ~1.33x source
+      if (approxBytes > PDF_MAX_BYTES) {
+        return res.status(413).json({ error: 'PDF too large — max 10MB' });
+      }
+      a28Clauses = await analyzeA28FromPdf(vendorName, pdfBase64);
+    } else {
+      // URL scrape path
+      const scraped = await scrapePrivacyPolicy(policyUrl);
+      if (!scraped) {
+        return res.status(422).json({ error: 'Could not fetch or read that URL — try uploading the PDF instead' });
+      }
+      a28Clauses = await analyzeA28FromText(vendorName, scraped.excerpt, policyUrl);
+    }
+
+    if (!a28Clauses) {
+      return res.status(500).json({ error: 'Claude could not analyse this document — self-certify manually' });
+    }
+
+    return res.json({ a28Clauses });
+  } catch (e) {
+    console.error('A28 scan error:', e);
+    return res.status(500).json({ error: e.message || 'DPA scan failed' });
+  }
+}
+
+// ── Article 28 prompt (shared by both paths) ─────────────────
+const A28_INSTRUCTIONS = `You are reviewing a Data Processing Agreement against the 12 requirements of Article 28 UK GDPR.
+
+For each requirement, return "pass" if clearly present, "warn" if partially present or ambiguous, "fail" if absent. Return "warn" rather than "pass" if you have to infer strongly. If the document is not actually a DPA (e.g. it's a marketing page or a general privacy policy), mark all clauses "fail".
+
+Return ONLY JSON in this exact shape, no markdown fences, no preamble:
+{
+  "a28-1": {"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-2": {"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-3": {"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-4": {"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-5": {"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-6": {"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-7": {"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-8": {"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-9": {"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-10":{"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-11":{"status":"pass|warn|fail","note":"one short sentence"},
+  "a28-12":{"status":"pass|warn|fail","note":"one short sentence"}
+}
+
+Requirements:
+a28-1: Processing only on documented controller instructions (Art 28(3)(a))
+a28-2: Confidentiality obligation on authorised persons (Art 28(3)(b))
+a28-3: Appropriate technical and organisational security measures (Art 28(3)(c))
+a28-4: No sub-processors without prior written controller consent (Art 28(2)/(4))
+a28-5: Assists with data subject rights requests (Art 28(3)(e))
+a28-6: Assists with breach notification, DPIA, consultation (Art 28(3)(f))
+a28-7: Deletes or returns data after services end (Art 28(3)(g))
+a28-8: Allows audits and provides compliance evidence (Art 28(3)(h))
+a28-9: Subject matter, duration, nature, purpose, data types, data subjects specified (Art 28(3))
+a28-10: Adequate safeguard for UK data transferred outside UK (Art 44-49)
+a28-11: Controller identity and contact clearly stated
+a28-12: Processor identity and DPO (if required) clearly stated`;
+
+async function analyzeA28FromPdf(vendorName, pdfBase64) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method:  'POST',
+    headers: {
+      'Content-Type':      'application/json',
+      'x-api-key':         process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model:      'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 },
+          },
+          {
+            type: 'text',
+            text: `The vendor is "${vendorName}". Review the attached PDF as their Data Processing Agreement.\n\n${A28_INSTRUCTIONS}`,
+          },
+        ],
+      }],
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    console.error(`Claude PDF analysis failed (${response.status}):`, errText.slice(0, 300));
+    return null;
+  }
+  return extractA28Json(await response.json());
+}
+
+async function analyzeA28FromText(vendorName, policyText, policyUrl) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method:  'POST',
+    headers: {
+      'Content-Type':      'application/json',
+      'x-api-key':         process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model:      'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: `The vendor is "${vendorName}". The following text was scraped from their published policy at ${policyUrl}. Review it as their Data Processing Agreement.\n\nSCRAPED POLICY:\n"""\n${policyText}\n"""\n\n${A28_INSTRUCTIONS}`,
+      }],
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    console.error(`Claude URL analysis failed (${response.status}):`, errText.slice(0, 300));
+    return null;
+  }
+  return extractA28Json(await response.json());
+}
+
+function extractA28Json(claudeResponse) {
+  const text = claudeResponse.content?.find(b => b.type === 'text')?.text || '';
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    const parsed = JSON.parse(match[0]);
+    // Sanity check — must have at least one a28- key
+    const keys = Object.keys(parsed).filter(k => /^a28-\d+$/.test(k));
+    if (keys.length === 0) return null;
+    return parsed;
+  } catch (e) {
+    console.error('A28 JSON parse failed:', e.message);
+    return null;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+// BULK SCANNER (v4.29, unchanged — just renamed for clarity)
+// ═════════════════════════════════════════════════════════════
+async function handleBulkScanRequest(body, res) {
+  try {
+    const { vendors, userId } = body;
     if (!userId)                             return res.status(400).json({ error: 'Missing userId' });
     if (!vendors || !Array.isArray(vendors)) return res.status(400).json({ error: 'vendors array is required' });
     if (vendors.length === 0)                return res.status(400).json({ error: 'vendors array is empty' });
@@ -69,13 +236,11 @@ export default async function handler(req, res) {
     for (const vendor of vendors) {
       let result;
       if (vendor.isCustom) {
-        // Unknown vendor: guess URL → scrape → AI analyze with scraped text
         const guessedUrl   = await guessPrivacyPolicyUrl(vendor.name);
         const scrapedPolicy = guessedUrl ? await scrapePrivacyPolicy(guessedUrl) : null;
         result = await analyzeVendorWithAI(vendor.name, scrapedPolicy);
         result.scrapedPolicy = scrapedPolicy;
       } else {
-        // Known vendor: read library, scrape their published policy URL
         const libFields  = vendorLibrary[vendor.name.toLowerCase()] || null;
         result = handleKnownVendor(vendor.name, libFields);
         const policyUrl  = libFields?.PrivacyPolicyUrl || null;
@@ -182,12 +347,7 @@ export default async function handler(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// scrapePrivacyPolicy (B1)
-// Fetches a public privacy policy page, strips HTML, returns
-// { url, excerpt, scrapedAt } or null on failure.
-// Non-fatal: any failure returns null. Timeout at SCRAPE_TIMEOUT_MS.
-// Legal-OK: only fetches publicly served pages, sends identifying
-// User-Agent, respects HTTP status codes (no bypass attempts).
+// scrapePrivacyPolicy (unchanged from v4.29)
 // ─────────────────────────────────────────────────────────────
 async function scrapePrivacyPolicy(url) {
   if (!url || typeof url !== 'string') return null;
@@ -208,7 +368,6 @@ async function scrapePrivacyPolicy(url) {
     if (!/text\/html|xhtml/i.test(ct)) return null;
 
     const html = await res.text();
-    // Strip scripts, styles, comments, tags → collapse whitespace
     const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -238,9 +397,7 @@ async function scrapePrivacyPolicy(url) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// guessPrivacyPolicyUrl (B1)
-// Small Claude call to guess an unknown vendor's privacy policy
-// URL. Returns a URL string or null.
+// guessPrivacyPolicyUrl (unchanged from v4.29)
 // ─────────────────────────────────────────────────────────────
 async function guessPrivacyPolicyUrl(vendorName) {
   try {
@@ -264,7 +421,6 @@ async function guessPrivacyPolicyUrl(vendorName) {
     const data = await response.json();
     const raw  = (data.content?.[0]?.text || '').trim();
     if (!raw || /^unknown$/i.test(raw)) return null;
-    // Extract first URL
     const m = raw.match(/https?:\/\/[^\s"'<>]+/);
     return m ? m[0] : null;
   } catch (e) {
@@ -274,7 +430,7 @@ async function guessPrivacyPolicyUrl(vendorName) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// buildProcessingContext (unchanged from v4.28)
+// buildProcessingContext (unchanged from v4.29)
 // ─────────────────────────────────────────────────────────────
 function buildProcessingContext(result) {
   const ui      = result.userInput || {};
@@ -300,16 +456,14 @@ function buildProcessingContext(result) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// slugify — for stable sourceRecordId per gap
+// slugify (unchanged)
 // ─────────────────────────────────────────────────────────────
 function slugify(s) {
   return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 }
 
 // ─────────────────────────────────────────────────────────────
-// buildFixesForResult
-// v4.29: now also emits one fix per AI-identified `gap` from the
-// scraped policy analysis (unknown vendors only).
+// buildFixesForResult (unchanged from v4.29)
 // ─────────────────────────────────────────────────────────────
 function buildFixesForResult(result, userId, sourceRecordId) {
   const fixes = [];
@@ -335,7 +489,6 @@ function buildFixesForResult(result, userId, sourceRecordId) {
   const processingContext = buildProcessingContext(result);
   const nameSlug          = slugify(name);
 
-  // ── DPA fix — driven by user's answer ─────────────────────
   if (userDPA === 'no' || userDPA === 'unsure') {
     const severity = (hasSensitive || highVolume) ? 'critical' : 'high';
 
@@ -368,7 +521,6 @@ function buildFixesForResult(result, userId, sourceRecordId) {
     });
   }
 
-  // ── ICO not registered ────────────────────────────────────
   if (icoStatus === 'no') {
     fixes.push({
       userId, sourceRecordId, processingContext,
@@ -380,7 +532,6 @@ function buildFixesForResult(result, userId, sourceRecordId) {
     });
   }
 
-  // ── Breach history ────────────────────────────────────────
   if (breachIsKnown) {
     fixes.push({
       userId, sourceRecordId, processingContext,
@@ -392,7 +543,6 @@ function buildFixesForResult(result, userId, sourceRecordId) {
     });
   }
 
-  // ── International transfer with no mechanism ──────────────
   if (transferOccurs === 'yes' &&
       (transferMech === 'none' || transferMech === 'unknown' || transferMech === '')) {
     fixes.push({
@@ -405,9 +555,6 @@ function buildFixesForResult(result, userId, sourceRecordId) {
     });
   }
 
-  // ── B2: AI-identified gaps from scraped policy ────────────
-  // Unknown vendors only. Each gap emits its own fix so it can be
-  // resolved (or improved-on-rerun) independently.
   const gaps = Array.isArray(result.gaps) ? result.gaps : [];
   const scrapeUrl  = result.scrapedPolicy?.url  || null;
   const scrapeDate = result.scrapedPolicy?.scrapedAt?.split('T')[0] || null;
@@ -419,7 +566,6 @@ function buildFixesForResult(result, userId, sourceRecordId) {
       ? ` Based on public privacy policy at ${scrapeUrl} (scraped ${scrapeDate}).`
       : ` Based on Sendwize\u2019s AI review of ${name} \u2014 no public policy was located, so this gap could not be verified against source material. Confirm directly with ${name}.`;
     fixes.push({
-      // Per-gap sourceRecordId so each gap dedupes independently on rerun.
       userId,
       sourceRecordId: `vendor-${nameSlug}-gap-${gapSlug}`,
       processingContext,
@@ -435,7 +581,7 @@ function buildFixesForResult(result, userId, sourceRecordId) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// calculateRiskRating (unchanged)
+// calculateRiskRating (unchanged from v4.29)
 // ─────────────────────────────────────────────────────────────
 function calculateRiskRating(d) {
   const ico    = (d.icoRegistered                  || '').toLowerCase();
@@ -461,8 +607,7 @@ function calculateRiskRating(d) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// handleKnownVendor (unchanged from v4.28 — returns dimensions
-// from Airtable library, no AI call)
+// handleKnownVendor (unchanged from v4.29)
 // ─────────────────────────────────────────────────────────────
 function handleKnownVendor(name, fields) {
   if (!fields) {
@@ -560,11 +705,7 @@ function handleKnownVendor(name, fields) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// analyzeVendorWithAI (B2)
-// v4.29: accepts scrapedPolicy. If provided, prompt anchors the
-// analysis to the scraped text and asks for a `gaps` array. If
-// not provided, falls back to general-knowledge analysis (still
-// returns gaps but flagged as unverified).
+// analyzeVendorWithAI (unchanged from v4.29)
 // ─────────────────────────────────────────────────────────────
 async function analyzeVendorWithAI(vendorName, scrapedPolicy) {
   const scrapeBlock = scrapedPolicy?.excerpt
