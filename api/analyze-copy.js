@@ -1,49 +1,87 @@
-// api/analyze-copy.js  v5.3
-// AI Copy Scanner -- five content types, image analysis, text-only input.
+// api/analyze-copy.js  v5.4
+// AI Copy Scanner
 //
-// POST { contentType, userId, content, subject?, autoFix?, sendingContext?, images? }
-//
-// v5.3 changes from v5.2:
-//   - Substantiation violations (CAP 3.7, 12.1, 15.x, unsubstantiated comparatives etc.)
-//     now carry requiresEvidence:true instead of being written to generate-fix.
-//     Frontend renders these as self-certification cards — user ticks "I confirm we
-//     hold evidence on file" to dismiss. No fix record created. Genuine violations
-//     (consent, sender identity, fake urgency, pricing etc.) unchanged.
-//   - SYSTEM_PROMPT rewrite section overhauled: per-channel voice preservation rules.
-//     Email: subject line punch + CTA energy preserved. SMS: urgency + brevity kept.
-//     Social: hook + scroll-stop energy kept. Direct mail: narrative flow kept.
-//     Push: action verb preserved. Rule is fix what's broken, leave the rest alone.
-//   - mapViolationToFixType now returns null for substantiation-only violations so
-//     generateFixes skips them cleanly.
+// v5.4 changes from v5.3:
+//   ~ isEvidenceViolation() tightened:
+//       - EVIDENCE_REGULATIONS regex list narrowed to genuine substantiation
+//         contexts only (CAP 3.7 / 12.1 / 15.x + explicit "hold on file" language)
+//       - Removed loose /evidence.*before.*campaign/i and generic /substantiat/i
+//         which were catching content-omission violations
+//       - Added CAP 3.9 / 3.10 (material information omission) as explicit
+//         non-evidence: "no T&Cs", "missing offer terms", "missing disclosure"
+//         are content fixes, not evidence-required
+//   ~ generateFixes() dedup key changed:
+//       Before: seenTypes.has(fixType) — one 'misleading_claim' survives,
+//               the other 3 distinct claims get dropped
+//       After:  seenTypes.has(`${fixType}:${location.slice(0,50)}`) —
+//               distinct violations at different locations all write
+//   ~ Nothing else changed. Prompt, channel rules, output format unchanged.
 
 import crypto from 'crypto';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
-// ─── Violation categories that are substantiation prompts, not actionable fixes ──
-// These get requiresEvidence:true and are never written to generate-fix.
+// ─── Evidence-only violation detection ───────────────────────────────────
+// A violation is "evidence-required" only when the fix is: prove you have
+// documentary evidence on file. NOT when the fix is: add missing content
+// to the copy.
+
+// Regulations that are inherently substantiation contexts.
+// Tight list: CAP 3.7 (evidence), 12.1 (health), 15.1/15.2/15.6/15.7 (nutrition
+// and food supplement claims). NOT CAP 3.9/3.10 (material omission), NOT CAP 3.1
+// (misleading generally), NOT unrelated CAP rules that happen to mention 'evidence'.
 const EVIDENCE_REGULATIONS = [
-  /cap.*(3\.7|12\.1|15\.1|15\.2|15\.6|15\.7)/i,
-  /substantiat/i,
+  /cap\s*(code)?\s*3\.7\b/i,
+  /cap\s*(code)?\s*12\.1\b/i,
+  /cap\s*(code)?\s*15\.(1|2|6|7)\b/i,
   /nhc register/i,
-  /evidence.*held/i,
-  /hold.*evidence/i,
-  /documentary.*evidence/i,
+  /gb\s*nutrition\s*and\s*health\s*claims/i,
 ];
+
+// Recommendation phrases that unambiguously mean "you must hold evidence".
+// Tight list. Removed /evidence.*before.*campaign/i (matched "add offer terms
+// before sending" false positives) and /substantiat/i (too broad).
+const EVIDENCE_PHRASES = [
+  /hold.*(documentary\s+)?evidence.*(on file|before)/i,
+  /documentary\s+evidence\s+(must\s+)?(be\s+)?held/i,
+  /confirm.*you\s+hold.*evidence/i,
+  /evidence\s+must\s+(exist|be\s+held)\s+before\s+(the\s+)?(ad|campaign|send)/i,
+];
+
+// Explicit fixTypes that are always evidence-only (unchanged from v5.3).
 const EVIDENCE_FIX_TYPES = new Set([
   'unauthorised_health_claim',
   'unsubstantiated_comparative_claim',
-  // misleading_claim is only evidence-only when regulation matches; handled in isEvidenceViolation()
 ]);
+
+// Explicit exclusions — even if the text looks like it matches an evidence
+// pattern, these violation types are content fixes, not evidence certifications.
+// CAP 3.9 / 3.10 = material information omission (add missing T&Cs, disclosures).
+// The user cannot "certify they have this on file" because the fix is to add
+// missing content to the email itself.
+const NON_EVIDENCE_REGULATIONS = [
+  /cap\s*(code)?\s*3\.(9|10)\b/i,
+  /material\s+information\s+omission/i,
+  /pecr\s*reg\s*(22|23)/i,       // consent / sender identity — content/process fixes
+  /uk\s*gdpr\s*article\s*(6|7|13|14|17)/i, // consent / transparency / rights — content/process fixes
+  /fsma|fca\s*(handbook|cobs|conc)/i,       // FCA financial promotion approval — process gateway, not evidence
+];
 
 function isEvidenceViolation(violation) {
   const combined = `${violation.regulation || ''} ${violation.issue || ''} ${violation.recommendation || ''}`;
-  // Explicit evidence fix types
+
+  // Explicit non-evidence overrides win — check first.
+  if (NON_EVIDENCE_REGULATIONS.some(re => re.test(combined))) return false;
+
+  // Explicit evidence fix types.
   if (EVIDENCE_FIX_TYPES.has(violation._fixType)) return true;
-  // Regulation pattern match
+
+  // Regulation pattern match.
   if (EVIDENCE_REGULATIONS.some(re => re.test(combined))) return true;
-  // Recommendation language signals "hold evidence on file" not "fix the copy"
-  if (/hold.*on file|evidence.*before.*campaign|must hold documentary/i.test(combined)) return true;
+
+  // Recommendation phrase match.
+  if (EVIDENCE_PHRASES.some(re => re.test(combined))) return true;
+
   return false;
 }
 
@@ -76,6 +114,8 @@ Your task is to analyse the marketing content provided and:
 Enforcement case matching: only cite a real enforcement case in enforcement_note when the breach is virtually identical. Never fabricate a case -- omit enforcement_note entirely if uncertain.
 
 Substantiation scoping -- critical rule: When flagging unsubstantiated claims (CAP 3.7, 12.1, 15.1 etc.), focus only on what is absent from the marketing content itself. Do NOT judge whether underlying evidence exists. Frame as: "this claim requires substantiation to be held on file -- we cannot identify evidence of that basis in this content." Never say "no credible evidence could support this claim."
+
+Material omission scoping -- do NOT confuse content omission (missing T&Cs, missing disclosures, missing offer terms, missing risk warnings) with substantiation. Content omission is CAP 3.9/3.10 and is a copy fix (add the missing content). Substantiation is CAP 3.7 and is an evidence gate (marketer must hold evidence on file). Never combine these in one violation.
 
 ------------------------------------------------------------
 
@@ -155,27 +195,21 @@ ICO PECR ENFORCEMENT CASES:
 
 [ALLAY CLAIMS LTD -- GBP120,000 -- January 2026 -- Reg 22 PECR]
 Sent ~4 million unsolicited SMS messages. Soft opt-in failed on every condition. Claimed messages were 'service messages' -- ICO rejected this.
-Key takeaway: Soft opt-in only works if customers are given a genuinely functional way to refuse at the exact point of data collection.
 
 [ZMLUK LIMITED -- GBP105,000 -- December 2025 -- Reg 22 PECR]
-Sent ~67.8 million marketing emails using data purchased from a third-party lead generation website. Sign-up covered 361 partner companies with no ability to select specific ones.
-Key takeaway: Bought-in lists are only lawful if recipients specifically consented to hear from your organisation by name.
+Sent ~67.8 million marketing emails using data purchased from a third-party lead generation website.
 
 [HELLOFRESH -- GBP140,000 -- January 2024 -- Reg 22 PECR]
-Single tick box bundled age verification, free sample consent, and marketing consent. Former customers continued receiving marketing for up to 24 months after cancellation.
-Key takeaway: Consent must be channel-specific and unbundled from unrelated confirmations.
+Single tick box bundled age verification, free sample consent, and marketing consent.
 
 [WE BUY ANY CAR (WBAC) -- GBP200,000 -- September 2021 -- Reg 22 PECR]
-Claimed soft opt-in but the opt-out was only presented after customers received their valuation -- not at the point of data collection.
-Key takeaway: The soft opt-in opt-out must be offered at the point of data collection -- not after the transaction completes.
+Claimed soft opt-in but the opt-out was only presented after customers received their valuation.
 
 [SAGA SERVICES & SAGA PERSONAL FINANCE -- GBP150,000 + GBP75,000 -- September 2021 -- Reg 22 PECR]
 Sent 128m+ unsolicited emails relying on 'indirect consent' collected by affiliate partners.
-Key takeaway: Indirect consent is not valid for email or SMS marketing.
 
 [EASYLIFE LTD -- GBP130,000 (PECR) + GBP250,000 (UK GDPR) -- October 2022]
-1.3m+ unsolicited calls to TPS-registered individuals. Inferred health conditions from purchase data without consent.
-Key takeaway: Two separate enforcement risks can arise from the same marketing operation.
+1.3m+ unsolicited calls to TPS-registered individuals.
 
 ------------------------------------------------------------
 
@@ -187,220 +221,98 @@ Article 7: Consent must be as easy to withdraw as to give. Granular -- separate 
 Articles 13/14: At collection must state: controller identity, purpose and legal basis, retention period, data subject rights.
 Article 17: Unsubscribes must be actioned promptly.
 
-ICO UK GDPR ENFORCEMENT CASES:
-[JOIN THE TRIBOO LTD (JTT) -- GBP130,000 -- 2023] Consent not specific -- individuals consented to JTT, not the third-party brands whose emails were sent.
-[EXPERIAN LTD -- Enforcement notice -- 2020] Repurposing credit reference data on ~51 million UK individuals to build marketing profiles without knowledge.
-[OUTSOURCE STRATEGIES LTD -- GBP340,000 combined -- 2024] 1.43m+ unsolicited marketing calls to TPS-registered individuals. Deliberately targeted elderly and vulnerable people.
-[POXELL LTD -- GBP150,000 -- 2024] 2.6m+ unsolicited calls. Rotated caller IDs to avoid detection -- treated as deliberate knowing non-compliance.
-
 ------------------------------------------------------------
 
 SECTION 5 -- ASA CAP CODE RULES
 
 CAP 2.1: Marketing must be obviously identifiable. #ad required for influencer/paid partnership content.
-CAP 3.1: Must not materially mislead. Applies to claims, omissions, ambiguous statements, and overall impression.
-CAP 3.2: Obvious exaggerations unlikely to be taken literally are allowed (puffery). "World's best pizza" = puffery. "Clinically proven to reduce ageing by 50%" = verifiable claim requiring evidence.
+CAP 3.1: Must not materially mislead.
+CAP 3.2: Puffery allowed.
 CAP 3.3: Must not mislead by omitting material information.
-CAP 3.7: Evidence must be held before the campaign runs.
-CAP 3.9: Significant limitations and qualifications must be stated.
-CAP 3.10: Qualifications must be presented clearly -- covers small print effectively invisible to consumers.
-CAP 3.12: Must not present legal rights as a distinctive feature (e.g. "you can unsubscribe any time!" as a selling point).
-CAP 3.17: Price statements must not mislead by omission, undue emphasis or distortion.
-CAP 3.22: "Up to" and "from" price claims must not exaggerate availability or amount of benefits.
-CAP 3.23/3.24: "Free" must mean genuinely free. Marketers must make clear any commitment required.
-CAP 3.26: Must not use "free trial" to describe offers requiring a non-refundable purchase.
-CAP 3.30: Must not falsely state a product or offer is available only for a very limited time. Applies to fake countdown timers and fabricated stock claims.
-CAP 3.33--3.35: Comparative claims must be like-for-like and objectively compare material, relevant, verifiable and representative features.
-CAP 3.37: Comparisons with unidentifiable competitors must not give the marketer an unrepresentative advantage.
-CAP 3.39: Price comparisons with RRPs are likely to mislead if the RRP differs significantly from the price at which the product is generally sold.
-CAP 3.44: No fake consumer reviews.
-CAP 3.45: Incentivised reviews must be disclosed.
-CAP 3.46: Must not publish reviews in a misleading way -- includes selectively suppressing negative reviews.
-CAP 3.47: Must hold documentary evidence and contact details for testimonials. Results-based testimonials must reflect typical experience or state clearly that results are not typical.
-CAP 3.52: Must not display a trust mark or quality mark without authorisation. Must not claim approval or endorsement without it.
-CAP 8.1: Promoters are responsible for all aspects and all stages of their promotions.
-CAP 8.17/8.17.4: Significant conditions of a promotion must be clearly communicated. Promotions with a closing date must state that date clearly. "Ends soon" or "today only" without a specific date is a violation.
-CAP 12.1: Health claims must be substantiated. "Treats", "cures" or "prevents" a medical condition = medicinal claim requiring MHRA authorisation.
-CAP 15.1/15.1.1: Nutrition and health claims must be authorised on the GB NHC Register.
-CAP 15.6.3: Health claims referring to the recommendation of an individual health professional are not acceptable for food supplements.
-CAP 14.1: Financial promotions must be fair, clear and not misleading. Risk warnings required.
-CAP 16.1: Gambling ads must not appeal particularly to under-18s.
-CAP 18.1: Alcohol ads must not be directed at or strongly appeal to under-18s.
-
-ASA RULING EXAMPLES -- FAKE URGENCY & SCARCITY:
-[CLUEDUPP GAMES -- November 2023] "Only 14 tickets remaining" when 88% of inventory remained. Technical error is not a defence.
-[HAMMONDS FURNITURE -- October 2025] Countdown timer applied in consumer's eyes to entire offer, not just the 5% it technically covered.
-[UK FLOORING DIRECT -- August 2022] Countdown timer creates a legal obligation to retain evidence the promotion genuinely ended when stated.
-
-ASA RULING EXAMPLES -- FREE CLAIMS:
-[PLANETART UK -- August 2022] "FREE PHOTO PRINTS" with mandatory delivery charge. "FreePrints" trademark did not override the descriptive impression.
-[NOW TV -- September 2024] "7 day free trial -- cancel anytime" without prominent disclosure of auto-renewal terms.
-[BEER52 -- December 2024] "Free case of wine" referral reward required subscription purchase. Linking to T&Cs was insufficient -- emails have no space constraints.
-
-ASA RULING EXAMPLES -- HEALTH CLAIMS:
-[KOLLO HEALTH -- November 2023] Multiple claims for marine collagen supplement -- none authorised on GB NHC Register.
-[NOVOMINS NUTRITION -- July 2024] "Less Stress", "Less Anxiety", "Deeper Sleep" -- softening language does not escape disease treatment prohibition.
-[BETTERVITS -- September 2025] Exaggerating an authorised claim (removing "contributes to" or "normal") treated same as unauthorised claim. Using a health professional as influencer for food supplements triggers CAP 15.6.3 regardless of #ad disclosure.
-
-ASA RULING EXAMPLES -- DISCOUNT & PRICE CLAIMS:
-[SIMBA SLEEP -- CMA July 2024] Inflated "was" prices and inaccurate countdown clocks. CMA undertakings required.
-[VYTALIVING -- March 2024] "HALF PRICE" against an RRP the product had never actually sold at.
-[SECRET ESCAPES -- February 2025] Discount percentage inflated by including value of extras (dining credits) into the "was" price calculation.
-
-ASA RULING EXAMPLES -- TESTIMONIALS & REVIEWS:
-[TONIC HEALTH -- July 2025] Identical review wording attributed to two different customer names. Technical error still non-compliant.
-[OFFICIAL IPHONE UNLOCK -- September 2018] GBP3 refund offered for "a nice review" -- incentive explicitly conditional on sentiment.
-[CANDY COAT -- April 2019] Only positive reviews displayed; negative suppressed. Under DMCCA 2024 now explicitly prohibited by statute.
+CAP 3.7: Evidence must be held before the campaign runs. [SUBSTANTIATION — evidence-required category]
+CAP 3.9: Significant limitations and qualifications must be stated. [CONTENT OMISSION — copy fix, NOT evidence-required]
+CAP 3.10: Qualifications must be presented clearly. [CONTENT OMISSION — copy fix, NOT evidence-required]
+CAP 3.12: Must not present legal rights as a distinctive feature.
+CAP 3.17: Price statements must not mislead.
+CAP 3.22-3.30: Various pricing, free claims, urgency, scarcity rules.
+CAP 3.33--3.35: Comparative claims must be like-for-like and objective.
+CAP 3.44-3.47: Reviews and testimonials rules.
+CAP 3.52: Trust marks require authorisation.
+CAP 8.17: Promotions must state closing dates.
+CAP 12.1: Health claims must be substantiated. [SUBSTANTIATION — evidence-required category]
+CAP 15.1: Nutrition/health claims must be authorised on the GB NHC Register. [SUBSTANTIATION — evidence-required category]
+CAP 15.6.3: Health claims from individual health professionals not acceptable for food supplements.
+CAP 14.1: Financial promotions must be fair, clear and not misleading.
+CAP 16.1: Gambling ads not to appeal to under-18s.
+CAP 18.1: Alcohol ads not to appeal to under-18s.
 
 ------------------------------------------------------------
 
 SECTION 6 -- CMA RULES
 
-CMA -- Digital Markets, Competition and Consumers Act 2024 (DMCCA) -- in force from 6 April 2025
-
-DMCCA Schedule 20 -- Banned practices (automatically unfair, no context defence):
-* Falsely claiming to be a consumer (fake reviews).
-* Claiming a product can cure an illness if it cannot.
-* Creating a false impression of urgency.
-* Bait advertising.
-* Falsely claiming a product is only available for a limited time.
-
-Misleading actions (DMCCA s.226): False information about price, nature, composition, origin, availability. Reference pricing requires genuine previous price for meaningful period.
-
-Misleading omissions (DMCCA s.227): Drip pricing -- all mandatory costs must be shown upfront.
-
-Aggressive practices (DMCCA s.228): Harassment, coercion, exploiting vulnerability.
-
-Fake reviews (now statutory under DMCCA Schedule 20): Commissioning, publishing, or failing to prevent fake reviews is automatically unfair.
-
-Direct CMA enforcement: fines up to 10% of global annual turnover or GBP300,000 without court proceedings.
-
-Subscription contracts: 14-day cooling-off after free trial converts. Reminder before annual renewals. Cancellation as easy as sign-up.
-
-Environmental claims: Flag vague claims ("sustainable", "eco-friendly", "carbon neutral", "net zero") as HIGH severity unless content specifies the basis, scope, and pre-campaign evidence.
-
-CMA ENFORCEMENT CASES:
-[AMAZON -- June 2025] Fake reviews and catalogue abuse. Formal undertakings signed.
-[GOOGLE -- January 2025] Insufficient fake review detection. Undertakings signed.
-[WOWCHER -- August 2024] Fake countdown timers + pre-ticked paid membership box. ~GBP4m customer refunds.
-[SIMBA SLEEP -- July 2024] Misleading was/now reference pricing and inaccurate countdown clocks.
-
-------------------------------------------------------------
-
-SECTION 6A -- DMCCA 2024 ADDITIONAL RULES
-
-Fake reviews -- statutory prohibition (Schedule 20): Concealing an incentivised review is prohibited regardless of whether the incentive is money, discounts, free products, or invitations. Flag any review manipulation as CRITICAL.
-
-Drip pricing -- now explicitly statutory: Total price including all mandatory charges must appear in any invitation to purchase.
-
-CAP Code Section 11 -- Environmental claims:
-CAP 11.1: Basis of all environmental claims must be clear.
-CAP 11.3: Absolute claims ("zero carbon", "fully sustainable") require high substantiation.
-CAP 11.4: Claims must be based on full product life cycle unless stated otherwise.
-CAP 11.7: Must not mislead by highlighting absence of a damaging ingredient not typically found in competing products.
+DMCCA 2024 in force from 6 April 2025.
+Schedule 20 -- Banned practices (automatically unfair): fake reviews, false urgency, bait ads, false limited time.
+s.226 -- Misleading actions.
+s.227 -- Misleading omissions (drip pricing).
+s.228 -- Aggressive practices.
+Direct CMA fines up to 10% global turnover or GBP300,000.
 
 ------------------------------------------------------------
 
 SECTION 7 -- SECTOR-SPECIFIC RULES
 
-FINANCIAL SERVICES: Financial promotions require FCA approval (s.21 FSMA 2000). Risk warnings mandatory. "Representative APR" required when quoting credit costs.
-
-HEALTH & SUPPLEMENT PRODUCTS: Only authorised health claims permitted. "Treats", "cures", "prevents" = MHRA authorisation required. From 5 January 2026: ads for less healthy food/drink banned from paid-for online placements.
-
-FOOD & DRINK: "Natural", "organic", "free-range" have specific legal definitions. Alcohol: must not glamourise excessive drinking or appeal to under-18s.
-
-GAMBLING: Safer gambling messaging required. "Free bet" terms clearly disclosed upfront. Cannot target vulnerable people or those who have self-excluded.
-
-E-COMMERCE / RETAIL: "Was" prices must reflect genuine previous selling price for meaningful period (28 days minimum recommended). Delivery costs shown upfront.
-
-B2B MARKETING: BPRs apply. Comparative advertising naming a competitor must: (a) compare like-for-like, (b) objectively compare material verifiable features, (c) not create brand confusion, (d) not denigrate competitor trade marks, (e) not mislead. Flag any B2B comparative claim failing any condition as HIGH.
+FINANCIAL SERVICES: FCA approval (s.21 FSMA 2000) required for financial promotions. Risk warnings mandatory. This is a process gateway — the promotion must be approved by an FCA-authorised firm BEFORE sending. It is NOT an evidence-on-file substantiation issue.
+HEALTH & SUPPLEMENTS: Only authorised health claims. MHRA for medicinal claims.
+FOOD & DRINK, GAMBLING, E-COMMERCE, B2B: as per detailed rules.
 
 ------------------------------------------------------------
 
-SECTION 8 -- RED FLAGS -- ALWAYS CHECK
+SECTION 8 -- RED FLAGS
 
-SENDING CONTEXT (check first if present):
-* Purchased/rented list without specific consent by name
-* Indirect/partner consent (not valid for email/SMS)
-* Soft opt-in claimed but opt-out not at point of data collection
-* From name does not match consent holder (Reg 23)
-* Consent 'not sure' -- treat as invalid
-
-URGENCY & SCARCITY: Countdown timers, "Only X left", "Ends tonight/today/soon" without specific date, "Limited edition".
-PRICING: "Was/Now" without genuine previous price, drip pricing, "Free" with hidden conditions, buried subscription terms.
-CLAIMS: Superlatives presented as fact, statistics without source, "Up to X% off", health claims, comparative claims.
-CONSENT & DATA: Pre-ticked boxes, bundled consent, "our partners" without naming them, no privacy policy link.
-IDENTITY & TRANSPARENCY: Influencer content without #ad, undisclosed reviews, concealed sender, unauthorised trust marks (CAP 3.52).
-ENVIRONMENTAL: Vague "sustainable", "eco-friendly", "carbon neutral", "net zero" without basis, scope, pre-campaign evidence.
-VULNERABLE AUDIENCES: Content reaching children, exploitation of financial difficulty or health anxiety, high-pressure language targeting elderly.
+SENDING CONTEXT (first): purchased/rented lists, indirect consent, soft opt-in failures, sender/consent mismatch.
+URGENCY & SCARCITY: countdown without date, fake "only X left".
+PRICING: fake was/now, drip pricing, hidden conditions.
+CLAIMS: superlatives as fact, no source, comparative claims.
+CONSENT: pre-ticked, bundled, unnamed partners.
+IDENTITY: no #ad, undisclosed reviews, concealed sender, unauthorised trust marks.
+ENVIRONMENTAL: vague sustainability claims.
+VULNERABLE AUDIENCES: children, financial difficulty, health anxiety.
 
 ------------------------------------------------------------
 
-SECTION 9 -- FEW-SHOT EXAMPLES
+SECTION 9 -- FEW-SHOT EXAMPLES (illustrative only, not exhaustive)
 
-EXAMPLE 1 -- FAKE URGENCY (violation):
-Content: "FLASH SALE -- 50% OFF EVERYTHING! Offer ends tonight."
-{ "regulation": "CAP Code 3.7 / DMCCA Schedule 20", "severity": "high", "issue": "Urgency claim uses vague deadline 'ends tonight' without specific date or time. If this offer resets, it is a banned practice.", "location": "Subject line / headline", "recommendation": "State the exact end date and time ('Offer ends 23:59 15 March 2026'). Recurring 'ends tonight' flash sales are a CMA banned practice.", "enforcement_note": "ASA ruled against Hammonds Furniture (2025) for countdown timers not reflecting genuine expiry." }
+FAKE URGENCY: "ends tonight" without a specific date and time — CAP 3.7 / DMCCA Schedule 20 critical/high.
 
-EXAMPLE 2 -- FAKE URGENCY REWRITE (how to fix without losing energy):
-Original: "FLASH SALE -- 50% OFF EVERYTHING! Offer ends tonight."
-Fixed: "FLASH SALE -- 50% OFF EVERYTHING! Offer ends 23:59 Sunday 15 March."
-Note: same energy, same structure, same caps -- only the vague "tonight" replaced with a real date.
+FAKE URGENCY FIX: replace vague deadline with a real one, keep the energy.
 
-EXAMPLE 3 -- FREE CLAIM WITH HIDDEN CONDITIONS (violation):
-Content: "Get your FREE gift when you sign up -- no catch!" [gift requires GBP20 minimum purchase, in T&Cs only]
-{ "regulation": "CAP Code 3.9", "severity": "critical", "issue": "'Free' claim without disclosure of GBP20 minimum purchase. Condition is only in T&Cs -- must be prominent upfront.", "location": "Headline and CTA", "recommendation": "State condition prominently: 'Free gift with orders over GBP20'. Conditions must precede or accompany the free claim in the same visual field.", "enforcement_note": "Beer52 (2024) and PlanetArt (2022) both ruled against by ASA for 'free' claims where mandatory conditions were not in the same communication." }
+FREE CLAIM WITH HIDDEN CONDITIONS: "FREE gift" that requires GBP20 minimum purchase without prominent disclosure — CAP 3.9 (material omission, NOT evidence).
 
-EXAMPLE 5 -- CONSENT LANGUAGE (violation):
-Content: "By clicking Sign Up you agree to receive marketing from us and partners."
-{ "regulation": "UK GDPR Article 7 / PECR Reg 22", "severity": "critical", "issue": "Consent bundled with account creation. Extended to unnamed 'partners'. Neither freely given nor specific -- two failures in one sentence.", "location": "Sign-up form copy / CTA", "recommendation": "Separate marketing consent from account creation entirely. Use an unticked checkbox. Consent to third-party marketing requires naming each partner separately.", "enforcement_note": "ZMLUK (2025, GBP105,000) was fined for relying on consent collected by a website covering 361 unnamed partner companies." }
+CONSENT BUNDLING: "By clicking Sign Up you agree to receive marketing from us and partners" — UK GDPR Article 7 / PECR Reg 22 critical.
 
-EXAMPLE 7 -- HEALTH CLAIM (violation, requiresEvidence):
-Content: "Our vitamins boost your immune system and help fight off illness."
-{ "regulation": "CAP Code 12.1 / 3.7", "severity": "high", "issue": "'Help fight off illness' implies disease prevention -- an unauthorised medicinal claim. 'Boost immune system' requires a specific authorised claim from the GB NHC Register.", "location": "Product description", "recommendation": "Use only authorised health claims: 'Vitamin C contributes to the normal function of the immune system' is authorised. Check the GB Nutrition and Health Claims Register before sending." }
-Note: this is a requiresEvidence violation. The marketer confirms they hold the authorised claim basis on file to dismiss it.
+HEALTH CLAIM (evidence-required): "Boost your immune system" without a specific authorised claim — CAP 12.1 / 3.7. This IS evidence-required — marketer confirms they hold the GB NHC Register basis on file.
 
-EXAMPLE 9 -- REFERENCE PRICING (violation):
-Content: "WAS GBP200. NOW GBP49.99. Save 75%!" [product has only ever sold at GBP49.99]
-{ "regulation": "DMCCA s.226 / CAP Code 3.1", "severity": "critical", "issue": "'Was' price of GBP200 appears fabricated. If product has not genuinely sold at GBP200 for a meaningful period, this is a misleading price indication.", "location": "Pricing headline", "recommendation": "'Was' price must reflect genuine previous selling price for a minimum of 28 days. If you cannot evidence the higher price, remove the reference pricing.", "enforcement_note": "Simba Sleep (CMA, 2024) gave formal undertakings for inflated 'was' prices. Vytaliving (ASA, 2024) upheld for 'HALF PRICE' against an RRP the product had never sold at." }
+MATERIAL OMISSION (NOT evidence-required): "No terms and conditions" or "no risk warning" or "no offer terms" — CAP 3.9/3.10. This is a CONTENT fix — the marketer must ADD the missing content. Do NOT flag as requiresEvidence.
 
-EXAMPLE 11 -- PUFFERY (NOT a violation):
-Content: "The UK's most loved coffee brand."
-Not a violation. Acceptable puffery under CAP 3.2. Do not flag.
+FCA FINANCIAL PROMOTION UNAPPROVED (NOT evidence-required): sending without FCA approval under s.21 FSMA — this is a PROCESS GATEWAY, not evidence. The fix is: get approval before sending. Do NOT flag as requiresEvidence.
 
-EXAMPLE 12 -- AUTHORISED HEALTH CLAIM (NOT a violation):
-Content: "Vitamin D contributes to the normal function of the immune system."
-Not a violation. Authorised health claim on the GB NHC Register. No action required.
+REFERENCE PRICING: "WAS GBP200 NOW GBP49" without genuine sale history — DMCCA s.226 critical.
 
-EXAMPLE 13 -- STANDARD URGENCY WITH SPECIFIC DATE (NOT a violation):
-Content: "Sale ends midnight Sunday 16 March 2026."
-Not a violation. Specific end date given. Acceptable under CAP 8.17.4 provided sale genuinely ends then.
+PUFFERY: "UK's most loved" — not a violation.
 
-EXAMPLE 14 -- B2B COMPARATIVE CLAIM WITH DISCLOSED BASIS (NOT a violation):
-Content: "43% faster report generation than Excel -- based on our internal benchmark study of 50 finance teams, Q1 2026."
-Not a violation provided the study exists and is held on file (CAP 3.7). Basis is disclosed. Do not flag.
+AUTHORISED HEALTH CLAIM: "Vitamin D contributes to normal immune function" — not a violation.
 
-EXAMPLE 15 -- PROPERLY DISCLOSED INFLUENCER CONTENT (NOT a violation):
-Content: "#ad Obsessed with my new @BrandName moisturiser -- my skin has genuinely never looked better!"
-Not a violation. #ad at start, personal opinion not a verifiable health claim. CAP 2.1 satisfied.
-
-EXAMPLE 16 -- SOFT OPT-IN CORRECTLY APPLIED (NOT a violation):
-Content: "[On checkout page, immediately after purchase, unticked checkbox:] We'd like to send you offers on similar products by email. Tick here if you'd prefer not to receive these."
-Not a violation. Correctly applies PECR Reg 22(3) soft opt-in.
-
-EXAMPLE 17 -- TESTIMONIAL CORRECTLY DISCLOSED (NOT a violation):
-Content: "[Five stars] 'I've been using this for 6 months and my back pain has genuinely improved.' -- Sarah T, verified purchaser. Individual results may vary."
-Not a violation provided review is genuine, evidence held on file, and "results may vary" is prominent.
+SPECIFIC DATE URGENCY: "Sale ends 23:59 Sunday 16 March 2026" — not a violation.
 
 ------------------------------------------------------------
 
 SECTION 10 -- SEVERITY CALIBRATION & VERDICT LABELS
 
 SEVERITY:
-critical: Enforcement action likely if discovered. Examples: sending without PECR consent, broken consent chain, fake urgency (banned practice), fabricated reference prices, pre-ticked consent, no unsubscribe, third-party list without specific consent, fake reviews.
-high: Clear rule breach. Likely to result in ASA ruling or ICO investigation. Examples: "free" without disclosing conditions, vague deadline without date, undisclosed influencer content, bundled consent, greenwashing without evidence basis.
-medium: Probable rule breach. Less immediately enforceable. Examples: missing privacy policy link, vague testimonials, "limited stock" without evidence, missing T&C link.
-low: Best practice gap. Not a clear rule breach. Examples: small print legibility, complex opt-out process.
+critical: Enforcement action likely. Examples: sending without PECR consent, fake urgency (banned practice), fabricated pricing, pre-ticked consent, no unsubscribe, third-party list without specific consent, fake reviews, FCA financial promotion sent without approval.
+high: Clear rule breach. Examples: "free" without disclosing conditions, vague deadline, undisclosed influencer, bundled consent, greenwashing, missing material info (T&Cs, risk warnings).
+medium: Probable rule breach. Less immediately enforceable. Examples: missing privacy policy link, vague testimonials, "limited stock" without evidence.
+low: Best practice gap.
 
 VERDICT LABELS (use exact strings):
 Score 90--100, zero critical or high: "No issues found"
@@ -510,25 +422,30 @@ function getContextViolations(ctx) {
 
 function mapViolationToFixType(violation) {
   if (violation._fixType) return violation._fixType;
-  // Evidence-only violations: return null so generateFixes skips them
   if (isEvidenceViolation(violation)) return null;
+
   const combined = `${violation.issue || ''} ${violation.regulation || ''} ${violation.recommendation || ''}`.toLowerCase();
-  if (combined.match(/unsubscribe|opt.out/))                                         return 'missing_unsubscribe';
-  if (combined.match(/no consent|without consent|unsolicited|pecr.*consent|reg 22/)) return 'no_consent';
-  if (combined.match(/pre.tick|bundled consent/))                                    return 'invalid_consent_mechanism';
-  if (combined.match(/soft opt.in/))                                                 return 'no_soft_optin';
-  if (combined.match(/sender.*conceal|sender.*identity|reg 23/))                    return 'concealed_sender';
-  if (combined.match(/fake urgency|false urgency|ends soon|ends tonight|flash sale/)) return 'fake_urgency';
-  if (combined.match(/fake scarcity|only \d+ left/))                                return 'fake_scarcity';
-  if (combined.match(/reference pric|was.*now|fabricated.*price/))                  return 'misleading_reference_price';
-  if (combined.match(/free.*condition|free.*hidden|cap.*3\.9/))                     return 'misleading_free_claim';
-  if (combined.match(/testimonial|fake review|incentivi.*review/))                  return 'misleading_testimonial';
-  if (combined.match(/influencer|#ad/))                                              return 'undisclosed_ad';
-  if (combined.match(/drip pric|hidden fee/))                                        return 'drip_pricing';
-  if (combined.match(/greenwash|sustainable|carbon neutral/))                        return 'misleading_claim';
-  if (combined.match(/privacy policy/))                                              return 'no_privacy_policy';
-  if (combined.match(/postal address|registered address/))                           return 'missing_address';
-  if (combined.match(/third.party.*list|purchased.*data/))                           return 'third_party_list';
+
+  // Order matters — more specific patterns first.
+  if (combined.match(/unsubscribe|opt.out/))                                             return 'missing_unsubscribe';
+  if (combined.match(/pre.tick|bundled consent/))                                        return 'invalid_consent_mechanism';
+  if (combined.match(/no consent|without consent|unsolicited|pecr.*consent|reg\s*22/))   return 'no_consent';
+  if (combined.match(/soft opt.in/))                                                     return 'no_soft_optin';
+  if (combined.match(/sender.*conceal|sender.*identity|reg\s*23|identify.*organisation/)) return 'concealed_sender';
+  if (combined.match(/fca.*(approval|authorised|firm reference|s\.?\s*21|fsma)/))        return 'misleading_claim'; // FCA process — writes as ASA-category misleading_claim for now
+  if (combined.match(/risk warning|capital.at.risk|past performance/))                   return 'misleading_claim';
+  if (combined.match(/fake urgency|false urgency|ends soon|ends tonight|flash sale/))    return 'fake_urgency';
+  if (combined.match(/fake scarcity|only \d+ left/))                                     return 'fake_scarcity';
+  if (combined.match(/reference pric|was.*now|fabricated.*price/))                       return 'misleading_reference_price';
+  if (combined.match(/free.*condition|free.*hidden|cap.*3\.9/))                          return 'missing_terms';
+  if (combined.match(/material omission|terms.*condition|offer terms|t&c|disclosure/))   return 'missing_terms';
+  if (combined.match(/testimonial|fake review|incentivi.*review/))                       return 'misleading_testimonial';
+  if (combined.match(/influencer|#ad/))                                                  return 'undisclosed_ad';
+  if (combined.match(/drip pric|hidden fee/))                                            return 'drip_pricing';
+  if (combined.match(/greenwash|sustainable|carbon neutral/))                            return 'misleading_claim';
+  if (combined.match(/privacy policy/))                                                  return 'no_privacy_policy';
+  if (combined.match(/postal address|registered address/))                               return 'missing_address';
+  if (combined.match(/third.party.*list|purchased.*data/))                               return 'third_party_list';
   return 'misleading_claim';
 }
 
@@ -545,27 +462,55 @@ function contentHash(userId, contentType, content) {
 }
 
 async function generateFixes(userId, allViolations, emailChecks, sourceRecordId) {
-  const seenTypes = new Set();
+  // v5.4: dedup by fixType + location, not by fixType alone.
+  // Prevents distinct violations at different locations (e.g. two misleading_claim
+  // violations — one in subject, one in body) from collapsing into a single fix.
+  const seenKeys = new Set();
   const fixJobs   = [];
+
   for (const v of (allViolations || [])) {
-    // Skip evidence-only violations entirely -- they're self-certified in the UI
     if (v.requiresEvidence) continue;
     const fixType = mapViolationToFixType(v);
-    if (!fixType) continue; // null = evidence-only, skip
-    if (seenTypes.has(fixType)) continue;
-    seenTypes.add(fixType);
+    if (!fixType) continue;
+    const loc = String(v.location || '').slice(0, 50);
+    const dedupKey = `${fixType}|${loc}`;
+    if (seenKeys.has(dedupKey)) continue;
+    seenKeys.add(dedupKey);
     const source = v._fromContext ? 'Sending Context' : 'AI Checker';
-    fixJobs.push({ fixType, description: `${source}: ${v.issue || 'Compliance issue'} (${v.location || 'content'}) -- ${v.recommendation || 'Review required'}`, severity: mapViolationToSeverity(v) });
+    fixJobs.push({
+      fixType,
+      description: `${source}: ${v.issue || 'Compliance issue'} (${v.location || 'content'}) -- ${v.recommendation || 'Review required'}`,
+      severity: mapViolationToSeverity(v),
+    });
   }
+
   for (const c of (emailChecks || [])) {
     if (!c.fixType || c.status === 'pass') continue;
-    if (seenTypes.has(c.fixType)) continue;
-    seenTypes.add(c.fixType);
-    fixJobs.push({ fixType: c.fixType, description: `Email Scanner: ${c.title} -- ${c.description}`, severity: c.status === 'fail' ? 'high' : 'medium' });
+    const dedupKey = `${c.fixType}|${c.title || 'email-check'}`;
+    if (seenKeys.has(dedupKey)) continue;
+    seenKeys.add(dedupKey);
+    fixJobs.push({
+      fixType: c.fixType,
+      description: `Email Scanner: ${c.title} -- ${c.description}`,
+      severity: c.status === 'fail' ? 'high' : 'medium',
+    });
   }
+
   for (const job of fixJobs) {
     try {
-      const r = await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, fixType: job.fixType, description: job.description, tool: 'AI Checker', severity: job.severity, volume: null, sourceRecordId }) });
+      const r = await fetch(`${APP_URL}/api/generate-fix`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          fixType: job.fixType,
+          description: job.description,
+          tool: 'AI Checker',
+          severity: job.severity,
+          volume: null,
+          sourceRecordId,
+        }),
+      });
       const d = await r.json();
       if (d.skipped) console.log(`generate-fix duplicate skipped: ${job.fixType}`);
     } catch (err) {
@@ -623,7 +568,6 @@ export default async function handler(req, res) {
 
     console.log('Claude status:', claudeHttpRes.status);
     const message = await claudeHttpRes.json();
-    console.log('Claude raw response:', JSON.stringify(message).slice(0, 500));
 
     if (!claudeHttpRes.ok) {
       console.error('Claude API error:', claudeHttpRes.status, JSON.stringify(message));
@@ -700,7 +644,6 @@ export default async function handler(req, res) {
       console.error('AI_Compliance_Checks save error:', err);
     }
 
-    // Generate fixes -- evidence-only violations are skipped inside generateFixes
     if (allViolations.length > 0) {
       try { await generateFixes(userId, allViolations, [], savedRecordId); }
       catch (e) { console.error('generateFixes error:', e); }
@@ -712,10 +655,8 @@ export default async function handler(req, res) {
       body: JSON.stringify({ userId })
     }).catch(e => console.error('Streak update failed:', e));
 
-    // Clean internal props before sending to client
-    // requiresEvidence IS sent to the client so the frontend can render certify cards
     const cleanViolations = allViolations.map(({ _fromContext, _fixType, ...rest }) => rest);
-    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, contentType, checkHash });
+    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, contentType, checkHash, sourceRecordId: savedRecordId });
 
   } catch (error) {
     console.error('analyze-copy error:', error);
