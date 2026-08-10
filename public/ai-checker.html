@@ -169,6 +169,17 @@
     .evidence-section-label::after { content: ''; flex: 1; height: 1px; background: #fde68a; }
     .evidence-section-intro { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; padding: 10px 14px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; }
 
+    /* Finish and save panel */
+    .finish-panel { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; align-items: center; padding: 16px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); }
+    .finish-summary { flex: 1; min-width: 200px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .finish-summary strong { color: var(--text); }
+    .finish-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-finish { padding: 11px 20px; background: var(--orange); color: white; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s; }
+    .btn-finish:hover:not(:disabled) { background: #d4660f; }
+    .btn-finish:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-run-again { padding: 11px 20px; background: var(--white); color: var(--text); border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: border-color .15s; }
+    .btn-run-again:hover { border-color: var(--orange); color: var(--orange); }
+
     .no-violations { text-align: center; padding: 32px; color: var(--muted); font-size: 14px; }
     .no-violations-icon { font-size: 32px; margin-bottom: 10px; }
     .checks-section { display: none; }
@@ -279,7 +290,7 @@
           <div class="radio-group">
             <label class="radio-option"><input type="radio" name="consentSpecificity" value="specific" onchange="onContextChange()"><div class="radio-option-text">Yes &mdash; they specifically consented to our organisation by name</div></label>
             <label class="radio-option"><input type="radio" name="consentSpecificity" value="softOptIn" onchange="onContextChange()"><div class="radio-option-text">Soft opt-in &mdash; existing customers, marketing for similar products/services</div></label>
-            <label class="radio-option"><input type="radio" name="consentSpecificity" value="thirdParty" onchange="onContextChange()"><div class="radio-option-text">They consented to a third party or to &ldquo;our partners&rdquo; &mdash; not specifically our organisation<div class="radio-option-risk">&#9888; Critical &mdash; not valid consent under PECR</div></div></label>
+            <label class="radio-option"><input type="radio" name="consentSpecificity" value="thirdParty" onchange="onContextChange()"><div class="radio-option-text">They consented to a third party or &ldquo;our partners&rdquo; &mdash; not specifically our organisation<div class="radio-option-risk">&#9888; Critical &mdash; not valid consent under PECR</div></div></label>
             <label class="radio-option"><input type="radio" name="consentSpecificity" value="notSure" onchange="onContextChange()"><div class="radio-option-text">Not sure<div class="radio-option-risk">&#9888; If unsure, assume consent is not valid and do not send</div></div></label>
           </div>
         </div>
@@ -360,7 +371,7 @@
     <div class="risk-banner" id="riskBanner">
       <div class="risk-score-circle" id="riskCircle">
         <span class="risk-score-num" id="riskNum">&mdash;</span>
-        <span class="risk-score-label">SCORE</span>
+        <span class="risk-score-label">/ 100</span>
       </div>
       <div class="risk-verdict">
         <h2 id="verdictText">&mdash;</h2>
@@ -392,6 +403,17 @@
       <div class="section-title">Email Technical Checks</div>
       <div id="checksList"></div>
     </div>
+
+    <div class="finish-panel" id="finishPanel">
+      <div class="finish-summary" id="finishSummary">
+        Your check is saved to your compliance record. Certified evidence items will save when you finish.
+      </div>
+      <div class="finish-buttons">
+        <button class="btn-run-again" onclick="resetForm()">Run another check</button>
+        <button class="btn-finish" id="finishSaveBtn" onclick="finishAndSave()">Finish &amp; return to dashboard</button>
+      </div>
+    </div>
+
     <p class="disclaimer">Information only &mdash; not legal advice.</p>
   </div>
 
@@ -408,11 +430,18 @@
 </footer>
 
 <script>
-  const APP_URL = 'https://sendwize-backend.vercel.app';
-  let currentContentType = 'email';
-  let userId = null;
-  let lastCopy = '';
-  let contextSkipped = false;
+  var APP_URL = 'https://sendwize-backend.vercel.app';
+  var DASHBOARD_URL = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+
+  var currentContentType = 'email';
+  var userId = null;
+  var lastCopy = '';
+  var contextSkipped = false;
+
+  // v5.4 additions
+  var lastCheckSourceRecordId = null;  // set from analyze-copy response
+  var evidenceCertifications = [];     // items the user has ticked "I confirm"
+  var evidenceMap = {};                // certId -> source violation object
 
   function init() {
     userId = new URLSearchParams(window.location.search).get('userId');
@@ -450,9 +479,12 @@
     document.getElementById('formSection').style.display = 'none';
     renderResults(DEMO_RESULT);
     document.getElementById('resultsSection').prepend(notice);
+    // In demo mode, hide the finish button — no server record to save against
+    var fp = document.getElementById('finishPanel');
+    if (fp) fp.style.display = 'none';
   }
 
-  let contextOpen = true;
+  var contextOpen = true;
   function toggleContext() {
     contextOpen = !contextOpen;
     document.getElementById('contextBody').style.display = contextOpen ? '' : 'none';
@@ -581,6 +613,12 @@
 
   function renderResults(data) {
     stopLoading();
+    // v5.4: capture the source record ID from the server so we can attach
+    // certifications to it when the user hits Finish
+    lastCheckSourceRecordId = data.sourceRecordId || null;
+    evidenceCertifications = [];
+    evidenceMap = {};
+
     var score = data.score ?? 0;
     var violations = data.violations ?? [];
     var fixed = data.fixedVersion ?? '';
@@ -597,7 +635,6 @@
       document.getElementById('originalBox').textContent = lastCopy;
       document.getElementById('fixedBox').textContent = fixed;
       panel.classList.add('show');
-      // Rewrite note — explain what changed at a high level
       var changedCount = violations.filter(function(v) { return !v.requiresEvidence && (v.severity === 'critical' || v.severity === 'high'); }).length;
       var evidenceCount = violations.filter(function(v) { return v.requiresEvidence; }).length;
       var noteparts = [];
@@ -608,7 +645,6 @@
       panel.classList.remove('show');
     }
 
-    // Violations list — separate genuine violations from evidence-certify items
     var vEl = document.getElementById('violationsList');
     document.getElementById('violationsTitle').textContent = 'Compliance Issues';
 
@@ -620,7 +656,6 @@
     } else {
       var sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
 
-      // Sort genuine violations: context issues first, then by severity
       var sortedGenuine = genuineViolations.slice().sort(function(a, b) {
         var aCtx = (a.location||'').toLowerCase().includes('context') ? 0 : 1;
         var bCtx = (b.location||'').toLowerCase().includes('context') ? 0 : 1;
@@ -644,13 +679,14 @@
           '</div>';
       }).join('');
 
-      // Evidence certify section
       var evidenceHtml = '';
       if (evidenceViolations.length) {
         evidenceHtml += '<div class="evidence-section-label">Evidence check' + (evidenceViolations.length > 1 ? 's' : '') + '</div>';
         evidenceHtml += '<div class="evidence-section-intro">The items below require you to hold documentary evidence on file before sending &mdash; a price comparison, a clinical study, a benchmark report. The AI can\'t verify whether you have this evidence. Tick each one to confirm you do and dismiss it from the list.</div>';
         evidenceHtml += evidenceViolations.map(function(v, idx) {
           var certId = 'cert-' + idx + '-' + Date.now();
+          // v5.4: remember the source violation for this certId
+          evidenceMap[certId] = v;
           return '<div class="certify-item" id="certify-item-' + certId + '">' +
             '<div class="certify-header">' +
             '<span class="certify-badge">Evidence required</span>' +
@@ -671,10 +707,25 @@
       vEl.innerHTML = genuineHtml + evidenceHtml;
     }
 
+    // Update the finish summary line to reflect what will save
+    updateFinishSummary(violations, evidenceViolations);
+
     document.getElementById('checksSection').classList.remove('show');
     setLoadingState(false);
     document.getElementById('resultsSection').classList.add('show');
     document.getElementById('formSection').style.display = 'none';
+  }
+
+  function updateFinishSummary(allViolations, evidenceViolations) {
+    var el = document.getElementById('finishSummary');
+    if (!el) return;
+    var genuine = allViolations.filter(function(v) { return !v.requiresEvidence; }).length;
+    var evTotal = evidenceViolations.length;
+    var certified = evidenceCertifications.length;
+    var parts = [];
+    parts.push('<strong>' + genuine + '</strong> compliance issue' + (genuine !== 1 ? 's' : '') + ' recorded to your dashboard');
+    if (evTotal > 0) parts.push('<strong>' + certified + ' of ' + evTotal + '</strong> evidence item' + (evTotal !== 1 ? 's' : '') + ' certified');
+    el.innerHTML = parts.join(' &middot; ') + '. Certifications save when you finish.';
   }
 
   function onCertify(checkbox, certId) {
@@ -683,7 +734,54 @@
     if (checkbox.checked) {
       item.classList.add('certified');
       checkbox.disabled = true;
+      // Record the certification
+      var v = evidenceMap[certId];
+      if (v) {
+        evidenceCertifications.push({
+          regulation:     v.regulation || '',
+          issue:          v.issue || '',
+          location:       v.location || '',
+          recommendation: v.recommendation || '',
+          certified:      true,
+        });
+      }
+      // Refresh the finish summary
+      var allViolations = Object.values(evidenceMap);
+      // Re-compute from the DOM to avoid stale references
+      var evViolations = document.querySelectorAll('.certify-item');
+      updateFinishSummary(
+        [].concat(
+          Array.from(document.querySelectorAll('.violation-item')).map(function() { return { requiresEvidence: false }; }),
+          Array.from(evViolations).map(function() { return { requiresEvidence: true }; })
+        ),
+        Array.from(evViolations).map(function() { return { requiresEvidence: true }; })
+      );
     }
+  }
+
+  async function finishAndSave() {
+    var btn = document.getElementById('finishSaveBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving\u2026'; }
+    try {
+      if (lastCheckSourceRecordId && evidenceCertifications.length > 0) {
+        var res = await fetch(APP_URL + '/api/certify-evidence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userId,
+            checkRecordId: lastCheckSourceRecordId,
+            evidenceItems: evidenceCertifications,
+          })
+        });
+        if (!res.ok) {
+          // Non-blocking — the check itself is already saved server-side.
+          console.warn('Evidence certification save failed with status', res.status);
+        }
+      }
+    } catch (e) {
+      console.warn('Evidence certification error:', e);
+    }
+    window.location.href = DASHBOARD_URL;
   }
 
   async function copyCopy() {
@@ -710,7 +808,15 @@
     document.getElementById('contextSubtitle').textContent = '4 questions \u2014 catches consent chain issues that content analysis misses';
     document.getElementById('contextDot').className = 'context-status-dot';
     document.getElementById('contextStatusText').textContent = '0 of 4 questions answered';
-    clearError(); lastCopy = '';
+    clearError();
+    lastCopy = '';
+    lastCheckSourceRecordId = null;
+    evidenceCertifications = [];
+    evidenceMap = {};
+    var finishBtn = document.getElementById('finishSaveBtn');
+    if (finishBtn) { finishBtn.disabled = false; finishBtn.textContent = 'Finish & return to dashboard'; }
+    var fp = document.getElementById('finishPanel');
+    if (fp) fp.style.display = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
