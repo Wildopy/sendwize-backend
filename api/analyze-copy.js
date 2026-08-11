@@ -1,35 +1,26 @@
-// api/analyze-copy.js  v5.4
+// api/analyze-copy.js  v5.5
 // AI Copy Scanner
 //
-// v5.4 changes from v5.3:
-//   ~ isEvidenceViolation() tightened:
-//       - EVIDENCE_REGULATIONS regex list narrowed to genuine substantiation
-//         contexts only (CAP 3.7 / 12.1 / 15.x + explicit "hold on file" language)
-//       - Removed loose /evidence.*before.*campaign/i and generic /substantiat/i
-//         which were catching content-omission violations
-//       - Added CAP 3.9 / 3.10 (material information omission) as explicit
-//         non-evidence: "no T&Cs", "missing offer terms", "missing disclosure"
-//         are content fixes, not evidence-required
-//   ~ generateFixes() dedup key changed:
-//       Before: seenTypes.has(fixType) — one 'misleading_claim' survives,
-//               the other 3 distinct claims get dropped
-//       After:  seenTypes.has(`${fixType}:${location.slice(0,50)}`) —
-//               distinct violations at different locations all write
-//   ~ Nothing else changed. Prompt, channel rules, output format unchanged.
+// v5.5 changes from v5.4:
+//   ~ Prompt updated: evidence items now output as SEPARATE violations
+//     with requiresEvidence:true, not as [EVIDENCE REQUIRED:] markers
+//     embedded in fix text.
+//     Rationale: a critical violation ("cannot use word Guaranteed") and
+//     a substantiation gate ("hold audited fund data on file") are two
+//     distinct decisions. Users must fix the copy AND certify the evidence.
+//     Regulator-accurate; matches the Compliance_Fixes vs Evidence_Certifications
+//     data model.
+//   + Added explicit few-shot showing critical + evidence pair for same claim.
+//   + isEvidenceViolation() now trusts AI's explicit requiresEvidence flag
+//     as primary signal; regex is fallback only.
+//   + Post-process: strip [EVIDENCE REQUIRED: ...] markers from any
+//     recommendation or fixedVersion text (belt and braces).
 
 import crypto from 'crypto';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
-// ─── Evidence-only violation detection ───────────────────────────────────
-// A violation is "evidence-required" only when the fix is: prove you have
-// documentary evidence on file. NOT when the fix is: add missing content
-// to the copy.
-
-// Regulations that are inherently substantiation contexts.
-// Tight list: CAP 3.7 (evidence), 12.1 (health), 15.1/15.2/15.6/15.7 (nutrition
-// and food supplement claims). NOT CAP 3.9/3.10 (material omission), NOT CAP 3.1
-// (misleading generally), NOT unrelated CAP rules that happen to mention 'evidence'.
+// v5.5: primary signal is AI's own requiresEvidence flag. Regex is fallback.
 const EVIDENCE_REGULATIONS = [
   /cap\s*(code)?\s*3\.7\b/i,
   /cap\s*(code)?\s*12\.1\b/i,
@@ -38,9 +29,6 @@ const EVIDENCE_REGULATIONS = [
   /gb\s*nutrition\s*and\s*health\s*claims/i,
 ];
 
-// Recommendation phrases that unambiguously mean "you must hold evidence".
-// Tight list. Removed /evidence.*before.*campaign/i (matched "add offer terms
-// before sending" false positives) and /substantiat/i (too broad).
 const EVIDENCE_PHRASES = [
   /hold.*(documentary\s+)?evidence.*(on file|before)/i,
   /documentary\s+evidence\s+(must\s+)?(be\s+)?held/i,
@@ -48,41 +36,38 @@ const EVIDENCE_PHRASES = [
   /evidence\s+must\s+(exist|be\s+held)\s+before\s+(the\s+)?(ad|campaign|send)/i,
 ];
 
-// Explicit fixTypes that are always evidence-only (unchanged from v5.3).
 const EVIDENCE_FIX_TYPES = new Set([
   'unauthorised_health_claim',
   'unsubstantiated_comparative_claim',
+  'unsubstantiated_performance_claim',
 ]);
 
-// Explicit exclusions — even if the text looks like it matches an evidence
-// pattern, these violation types are content fixes, not evidence certifications.
-// CAP 3.9 / 3.10 = material information omission (add missing T&Cs, disclosures).
-// The user cannot "certify they have this on file" because the fix is to add
-// missing content to the email itself.
 const NON_EVIDENCE_REGULATIONS = [
   /cap\s*(code)?\s*3\.(9|10)\b/i,
   /material\s+information\s+omission/i,
-  /pecr\s*reg\s*(22|23)/i,       // consent / sender identity — content/process fixes
-  /uk\s*gdpr\s*article\s*(6|7|13|14|17)/i, // consent / transparency / rights — content/process fixes
-  /fsma|fca\s*(handbook|cobs|conc)/i,       // FCA financial promotion approval — process gateway, not evidence
+  /pecr\s*reg\s*(22|23)/i,
+  /uk\s*gdpr\s*article\s*(6|7|13|14|17)/i,
 ];
 
 function isEvidenceViolation(violation) {
+  if (violation.requiresEvidence === true)  return true;
+  if (violation.requiresEvidence === false) return false;
+
   const combined = `${violation.regulation || ''} ${violation.issue || ''} ${violation.recommendation || ''}`;
 
-  // Explicit non-evidence overrides win — check first.
   if (NON_EVIDENCE_REGULATIONS.some(re => re.test(combined))) return false;
-
-  // Explicit evidence fix types.
   if (EVIDENCE_FIX_TYPES.has(violation._fixType)) return true;
-
-  // Regulation pattern match.
   if (EVIDENCE_REGULATIONS.some(re => re.test(combined))) return true;
-
-  // Recommendation phrase match.
   if (EVIDENCE_PHRASES.some(re => re.test(combined))) return true;
-
   return false;
+}
+
+function stripEvidenceMarkers(text) {
+  if (!text) return text;
+  return String(text)
+    .replace(/\s*\[EVIDENCE REQUIRED:[^\]]*\]\s*/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 const SYSTEM_PROMPT = `
@@ -109,159 +94,149 @@ Your task is to analyse the marketing content provided and:
 4. Assign a risk score (0--100) where 100 = no issues found.
 5. Assign a verdict using the exact labels in Section 10.
 6. Calibrate severity using the exact definitions in Section 10.
-7. Generate a compliant rewrite following the REWRITE RULES in Section 2A exactly.
-
-Enforcement case matching: only cite a real enforcement case in enforcement_note when the breach is virtually identical. Never fabricate a case -- omit enforcement_note entirely if uncertain.
-
-Substantiation scoping -- critical rule: When flagging unsubstantiated claims (CAP 3.7, 12.1, 15.1 etc.), focus only on what is absent from the marketing content itself. Do NOT judge whether underlying evidence exists. Frame as: "this claim requires substantiation to be held on file -- we cannot identify evidence of that basis in this content." Never say "no credible evidence could support this claim."
-
-Material omission scoping -- do NOT confuse content omission (missing T&Cs, missing disclosures, missing offer terms, missing risk warnings) with substantiation. Content omission is CAP 3.9/3.10 and is a copy fix (add the missing content). Substantiation is CAP 3.7 and is an evidence gate (marketer must hold evidence on file). Never combine these in one violation.
+7. Generate a compliant rewrite following the REWRITE RULES in Section 2B exactly.
 
 ------------------------------------------------------------
 
-SECTION 2A -- REWRITE RULES (read carefully before generating fixedVersion)
+SECTION 2A -- CRITICAL RULE: CRITICAL VIOLATIONS vs EVIDENCE CHECKS
 
-The fixedVersion must fix every compliance issue identified. It must NOT flatten the copy into generic compliance language. Marketing that sounds like a legal disclaimer has failed.
+Every claim in the copy falls into ONE of three categories. You must classify accurately.
+
+CATEGORY 1 -- CRITICAL VIOLATION (no evidence fixes it)
+Some statements are simply not allowed under any circumstances, regardless of what evidence the marketer holds. Examples:
+* "Guaranteed 20% returns" -- cannot use "Guaranteed" for a market-linked product (FCA COBS 4.2)
+* "Capital is guaranteed and investors cannot lose money" -- false statement of fact
+* "We're confident it will continue to perform at this level" -- forward-looking projection as certainty
+* "No risk of losing your investment" -- misleading statement of fact
+* Fake urgency without genuine deadline
+* Pre-ticked consent
+* Missing unsubscribe
+
+For these: output as a violation. Set requiresEvidence: false. The fix is to REMOVE OR REWORD the offending statement.
+
+CATEGORY 2 -- EVIDENCE CHECK (evidence on file makes it OK)
+Some claims are lawful if the marketer holds documentary evidence on file. Examples:
+* "20% returns for the past 5 years" -- lawful with audited performance data + past-performance disclaimer
+* "UK's best-value service" -- lawful with a price-comparison study
+* "Boost your immune system" -- lawful with an authorised health claim from the GB NHC Register
+* "Only 50 places available" -- lawful with a documented, enforceable cap
+* "Clinically proven to reduce wrinkles" -- lawful with a clinical trial
+
+For these: output as a violation with requiresEvidence: true. The fix is to CONFIRM YOU HOLD THE EVIDENCE. The user will tick a certification box.
+
+CATEGORY 3 -- BOTH (same underlying claim triggers both)
+Sometimes ONE part of the copy triggers BOTH a critical violation AND a separate evidence check. Example:
+* "Our fund has delivered 20% returns every year for 5 years, and we're confident it will continue to perform at this level."
+  - Critical violation: forward-looking confidence statement ("we're confident it will continue") -- must be removed. No evidence fixes this.
+  - Evidence check: 5-year past performance claim ("20% returns every year for 5 years") -- lawful with audited data + mandatory past-performance disclaimer.
+
+For these: output TWO SEPARATE violations. One critical, one with requiresEvidence: true. Distinct decisions the marketer must make.
+
+CRITICAL FORMATTING RULE 1: Never embed "[EVIDENCE REQUIRED: ...]" markers inside a violation's recommendation. If evidence is required, output it as a separate violation with requiresEvidence: true.
+
+CRITICAL FORMATTING RULE 2: Never embed "[EVIDENCE REQUIRED: ...]" markers inside the fixedVersion rewrite. The rewrite should be clean copy the marketer could send. Any evidence checks belong in the violations array only.
+
+CRITICAL FORMATTING RULE 3: Every violation MUST have an explicit requiresEvidence boolean field. Do not omit this.
+
+------------------------------------------------------------
+
+SECTION 2B -- REWRITE RULES
+
+The fixedVersion must fix every critical violation. It must NOT flatten the copy into generic compliance language.
 
 CORE PRINCIPLE: Fix only what is broken. Preserve everything that is not.
 
-What "broken" means: false urgency without a date, unsubstantiated superlatives presented as fact, missing unsubscribe, concealed sender, fabricated pricing, prohibited health claims. Fix these specifically and surgically.
+What "broken" means: false urgency without a date, unsubstantiated superlatives presented as fact, missing unsubscribe, concealed sender, fabricated pricing, prohibited health claims, forward-looking projections presented as certainty, "guaranteed" claims for market-linked products.
 
 What is NOT broken and must be preserved:
-* Energy, urgency, enthusiasm, exclamation marks (where not tied to a false claim)
-* Punchy sentence structure, short paragraphs, fragmented sentences used for effect
-* CTAs and their verb strength ("Grab yours now", "Shop the drop", "Don't miss out" are fine unless the urgency claim is false)
+* Energy, urgency, enthusiasm (where not tied to a false claim)
+* Punchy sentence structure, short paragraphs
+* CTAs and their verb strength
 * Brand voice, tone, personality
-* The commercial argument -- if the offer is real, the excitement about it is real
+* The commercial argument
 
 PER-CHANNEL REWRITE INSTRUCTIONS:
 
-EMAIL:
-* Subject line: keep the energy and hook. If the original subject was punchy ("Last chance -- offer ends TONIGHT"), keep the punch, fix only the false element ("Last chance -- offer ends [specific date]"). Do not replace with something flat like "Your summer offer".
-* Body: keep paragraph length, rhythm, and sentence style of the original. If it was short and punchy, keep it short and punchy. If it was conversational, keep it conversational.
-* CTA button text: preserve the verb and energy ("Get 50% off now →" not "Click here").
-* Add missing compliance elements (unsubscribe, address) as a minimal footer -- do not work them into the body copy.
+EMAIL: Subject line: keep energy, fix only the false element. Body: keep paragraph length and rhythm. CTAs: preserve verbs. Compliance elements as minimal footer.
 
-SMS:
-* Character economy is the priority. Never make an SMS rewrite longer than the original unless adding a mandatory STOP instruction that was genuinely missing.
-* Keep the urgency verb ("Save £X today -- reply STOP to opt out" not "You may be eligible for a saving if you wish to proceed").
-* STOP instruction must appear but can go at the end in minimal form.
+SMS: Never longer than original unless STOP was missing. Keep urgency verb.
 
-SOCIAL:
-* Hook line is sacred. Never rewrite the first sentence into something generic. Fix the claim, keep the hook.
-* Hashtags: keep them all unless one is specifically the problem.
-* #ad: add it to the front if missing -- do not rewrite the rest to compensate.
-* Length: social rewrites must be the same length as the original ±20%.
+SOCIAL: Hook line sacred. Hashtags preserved. Same length ±20%.
 
-PUSH NOTIFICATION:
-* These are 40-60 words maximum. Every word costs. Fix the violation in the fewest possible words.
-* Keep the action verb in the CTA. "Tap to claim" not "Please visit our app".
+PUSH: 40-60 words. Fewest words. Keep action verb.
 
-DIRECT MAIL:
-* Preserve the narrative structure. If the original had a story arc (problem → solution → offer), keep it.
-* Headline punch is critical for direct mail -- never replace a strong headline with a weak one.
-* Offer terms and legal copy go in a clearly marked section at the bottom -- not woven into the main copy.
+DIRECT MAIL: Preserve narrative. Headline punch critical.
 
-UNIVERSAL RULES FOR ALL CHANNELS:
-* Never add qualifications inline that break the reading flow. Put them in a clearly labelled "Offer terms:" block at the end.
-* Never remove a real offer or real saving -- if it's genuine, it can stay, it just needs to be presented correctly.
-* Never replace first-person brand voice ("We've got something special") with passive voice ("Something special has been made available").
-* If the original had a specific statistic or claim that requires evidence, mark it with [EVIDENCE REQUIRED: confirm before sending] inline rather than deleting it -- the marketer may hold the evidence.
+UNIVERSAL:
+* Never add qualifications inline breaking flow. Put in "Offer terms:" block at end.
+* Never remove a real offer.
+* Never replace first-person brand voice with passive voice.
+* Do NOT include "[EVIDENCE REQUIRED: ...]" or any bracketed evidence markers in the rewrite.
 
 ------------------------------------------------------------
 
 SECTION 3 -- PECR RULES
 
-PECR (Privacy and Electronic Communications Regulations 2003)
+Reg 22 -- Consent for electronic marketing (individuals need prior consent or soft opt-in; B2B corporate emails more flexible; sole traders and partnerships still need consent).
+Reg 22 -- Unsubscribe (every marketing message must have simple, free, working opt-out).
+Reg 23 -- Sender identity (must not be disguised or concealed).
+Reg 6 -- Cookies and tracking (DUAA 2025 updates).
 
-Reg 22 -- Consent for electronic marketing:
-* Email and SMS to individuals requires prior consent or the soft opt-in exception.
-* Soft opt-in: valid ONLY if (a) contact purchased or negotiated to purchase from you, (b) marketing is for similar products/services, (c) opt-out was offered at collection AND in every message.
-* B2B email to corporate addresses has more flexibility but sole traders and partnerships still require consent.
-
-Reg 22 -- Unsubscribe:
-* Every marketing message MUST include a simple, free, working means to opt out.
-* A broken link, an unanswered 'reply to unsubscribe', or a hidden opt-out in footer text are all violations.
-
-Reg 23 -- Sender identity:
-* The sender must not be disguised or concealed.
-* The From field and subject line must identify the real organisation.
-* noreply@ is not itself a violation, but providing no valid reply address when the opt-out relies on replying is.
-
-Reg 6 -- Cookies and tracking:
-* The Data (Use and Access) Act 2025 (DUAA) updates Regulation 6 of PECR, expanding cookie consent exemptions for analytics, security, and technical functionality, provided transparency and easy opt-out options are maintained.
-
-ICO PECR ENFORCEMENT CASES:
-
-[ALLAY CLAIMS LTD -- GBP120,000 -- January 2026 -- Reg 22 PECR]
-Sent ~4 million unsolicited SMS messages. Soft opt-in failed on every condition. Claimed messages were 'service messages' -- ICO rejected this.
-
-[ZMLUK LIMITED -- GBP105,000 -- December 2025 -- Reg 22 PECR]
-Sent ~67.8 million marketing emails using data purchased from a third-party lead generation website.
-
-[HELLOFRESH -- GBP140,000 -- January 2024 -- Reg 22 PECR]
-Single tick box bundled age verification, free sample consent, and marketing consent.
-
-[WE BUY ANY CAR (WBAC) -- GBP200,000 -- September 2021 -- Reg 22 PECR]
-Claimed soft opt-in but the opt-out was only presented after customers received their valuation.
-
-[SAGA SERVICES & SAGA PERSONAL FINANCE -- GBP150,000 + GBP75,000 -- September 2021 -- Reg 22 PECR]
-Sent 128m+ unsolicited emails relying on 'indirect consent' collected by affiliate partners.
-
-[EASYLIFE LTD -- GBP130,000 (PECR) + GBP250,000 (UK GDPR) -- October 2022]
-1.3m+ unsolicited calls to TPS-registered individuals.
+Recent ICO PECR cases (illustrative):
+[ALLAY CLAIMS LTD -- GBP120,000 -- January 2026 -- Reg 22 PECR] ~4m unsolicited SMS
+[ZMLUK LIMITED -- GBP105,000 -- December 2025 -- Reg 22 PECR] ~67.8m emails using purchased data
+[HELLOFRESH -- GBP140,000 -- January 2024 -- Reg 22 PECR] Bundled consent
+[WE BUY ANY CAR -- GBP200,000 -- September 2021 -- Reg 22 PECR] Soft opt-in failure
+[SAGA -- GBP150,000 + GBP75,000 -- September 2021 -- Reg 22 PECR] Indirect consent via affiliates
+[EASYLIFE -- GBP130,000 (PECR) + GBP250,000 (UK GDPR) -- October 2022] TPS breach
 
 ------------------------------------------------------------
 
 SECTION 4 -- UK GDPR RULES
 
-Article 5: Lawfulness, fairness, transparency. Purpose limitation. Data minimisation.
-Article 6: Consent (6(1)(a)) or legitimate interests (6(1)(f)). LI requires genuine balance test. Pre-ticked boxes = not consent. Bundled consent = not consent.
-Article 7: Consent must be as easy to withdraw as to give. Granular -- separate consent for different purposes.
-Articles 13/14: At collection must state: controller identity, purpose and legal basis, retention period, data subject rights.
-Article 17: Unsubscribes must be actioned promptly.
+Article 5: Lawfulness, fairness, transparency. Article 6: Consent or LI. Pre-ticked = not consent. Article 7: Consent as easy to withdraw as give. Articles 13/14: Controller identity, purpose, retention, rights at collection. Article 17: Unsubscribes actioned.
 
 ------------------------------------------------------------
 
 SECTION 5 -- ASA CAP CODE RULES
 
-CAP 2.1: Marketing must be obviously identifiable. #ad required for influencer/paid partnership content.
+CAP 2.1: Marketing obviously identifiable. #ad required.
 CAP 3.1: Must not materially mislead.
 CAP 3.2: Puffery allowed.
-CAP 3.3: Must not mislead by omitting material information.
-CAP 3.7: Evidence must be held before the campaign runs. [SUBSTANTIATION — evidence-required category]
-CAP 3.9: Significant limitations and qualifications must be stated. [CONTENT OMISSION — copy fix, NOT evidence-required]
-CAP 3.10: Qualifications must be presented clearly. [CONTENT OMISSION — copy fix, NOT evidence-required]
-CAP 3.12: Must not present legal rights as a distinctive feature.
-CAP 3.17: Price statements must not mislead.
-CAP 3.22-3.30: Various pricing, free claims, urgency, scarcity rules.
-CAP 3.33--3.35: Comparative claims must be like-for-like and objective.
-CAP 3.44-3.47: Reviews and testimonials rules.
-CAP 3.52: Trust marks require authorisation.
-CAP 8.17: Promotions must state closing dates.
-CAP 12.1: Health claims must be substantiated. [SUBSTANTIATION — evidence-required category]
-CAP 15.1: Nutrition/health claims must be authorised on the GB NHC Register. [SUBSTANTIATION — evidence-required category]
-CAP 15.6.3: Health claims from individual health professionals not acceptable for food supplements.
-CAP 14.1: Financial promotions must be fair, clear and not misleading.
-CAP 16.1: Gambling ads not to appeal to under-18s.
-CAP 18.1: Alcohol ads not to appeal to under-18s.
+CAP 3.3: Must not mislead by omission.
+CAP 3.7: Evidence must be held before campaign runs. [EVIDENCE CHECK]
+CAP 3.9: Significant limitations must be stated. [CRITICAL -- content omission]
+CAP 3.10: Qualifications clear. [CRITICAL -- content omission]
+CAP 3.17: Price statements not misleading.
+CAP 3.22-3.30: Pricing, free claims, urgency, scarcity.
+CAP 3.33-3.35: Comparative claims like-for-like.
+CAP 3.44-3.47: Reviews and testimonials.
+CAP 8.17: Promotions state closing dates.
+CAP 12.1: Health claims substantiated. [EVIDENCE CHECK]
+CAP 14.1: Financial promotions fair, clear, not misleading. [CRITICAL for forward-looking or guaranteed]
+CAP 15.1: Nutrition/health claims authorised on GB NHC Register. [EVIDENCE CHECK]
 
 ------------------------------------------------------------
 
 SECTION 6 -- CMA RULES
 
-DMCCA 2024 in force from 6 April 2025.
-Schedule 20 -- Banned practices (automatically unfair): fake reviews, false urgency, bait ads, false limited time.
-s.226 -- Misleading actions.
-s.227 -- Misleading omissions (drip pricing).
-s.228 -- Aggressive practices.
-Direct CMA fines up to 10% global turnover or GBP300,000.
+DMCCA 2024 in force from 6 April 2025. Schedule 20 banned practices (fake reviews, false urgency, bait ads). s.226 misleading actions. s.227 misleading omissions. s.228 aggressive practices. Direct CMA fines up to 10% global turnover or GBP300,000.
 
 ------------------------------------------------------------
 
 SECTION 7 -- SECTOR-SPECIFIC RULES
 
-FINANCIAL SERVICES: FCA approval (s.21 FSMA 2000) required for financial promotions. Risk warnings mandatory. This is a process gateway — the promotion must be approved by an FCA-authorised firm BEFORE sending. It is NOT an evidence-on-file substantiation issue.
+FINANCIAL SERVICES: FCA approval (s.21 FSMA 2000) required for financial promotions. Risk warnings mandatory. This is a PROCESS GATEWAY, not evidence.
+
+FCA COBS 4.2: Financial promotions fair, clear, not misleading. "Guaranteed" cannot be used for market-linked products. Forward-looking statements as certainty prohibited. [CRITICAL -- cannot be fixed by evidence]
+
+FCA COBS 4.6: Past performance shown only with:
+* 5+ years of data (or full life if shorter)
+* Mandatory: "Past performance is not a reliable indicator of future returns"
+* Prominent capital-at-risk warning
+Past performance data itself is [EVIDENCE CHECK] -- user certifies audited data on file.
+Presenting past performance as an indicator of future returns is [CRITICAL].
+
 HEALTH & SUPPLEMENTS: Only authorised health claims. MHRA for medicinal claims.
 FOOD & DRINK, GAMBLING, E-COMMERCE, B2B: as per detailed rules.
 
@@ -269,65 +244,102 @@ FOOD & DRINK, GAMBLING, E-COMMERCE, B2B: as per detailed rules.
 
 SECTION 8 -- RED FLAGS
 
-SENDING CONTEXT (first): purchased/rented lists, indirect consent, soft opt-in failures, sender/consent mismatch.
-URGENCY & SCARCITY: countdown without date, fake "only X left".
-PRICING: fake was/now, drip pricing, hidden conditions.
-CLAIMS: superlatives as fact, no source, comparative claims.
-CONSENT: pre-ticked, bundled, unnamed partners.
-IDENTITY: no #ad, undisclosed reviews, concealed sender, unauthorised trust marks.
-ENVIRONMENTAL: vague sustainability claims.
-VULNERABLE AUDIENCES: children, financial difficulty, health anxiety.
+Consent chain (purchased lists, indirect consent, sender/consent mismatch).
+Urgency/scarcity (countdown without date, fake "only X left").
+Pricing (fake was/now, drip pricing, hidden conditions).
+Claims (superlatives as fact, no source, comparative claims).
+Consent (pre-ticked, bundled, unnamed partners).
+Identity (no #ad, undisclosed reviews, concealed sender, unauthorised trust marks).
+Environmental (vague sustainability).
+Vulnerable audiences (children, financial difficulty, health anxiety).
+Financial ("guaranteed", forward-looking, missing risk warnings, past performance without disclaimer).
 
 ------------------------------------------------------------
 
-SECTION 9 -- FEW-SHOT EXAMPLES (illustrative only, not exhaustive)
+SECTION 9 -- FEW-SHOT EXAMPLES
 
-FAKE URGENCY: "ends tonight" without a specific date and time — CAP 3.7 / DMCCA Schedule 20 critical/high.
+FAKE URGENCY (CRITICAL, requiresEvidence: false): "ends tonight" without date. Fix: use specific date.
 
-FAKE URGENCY FIX: replace vague deadline with a real one, keep the energy.
+FREE WITH HIDDEN CONDITIONS (CRITICAL, requiresEvidence: false): "FREE gift" requiring GBP20 min without disclosure. Fix: add disclosure.
 
-FREE CLAIM WITH HIDDEN CONDITIONS: "FREE gift" that requires GBP20 minimum purchase without prominent disclosure — CAP 3.9 (material omission, NOT evidence).
+CONSENT BUNDLING (CRITICAL, requiresEvidence: false): Bundled marketing consent. Fix: separate opt-in.
 
-CONSENT BUNDLING: "By clicking Sign Up you agree to receive marketing from us and partners" — UK GDPR Article 7 / PECR Reg 22 critical.
+HEALTH CLAIM (EVIDENCE CHECK, requiresEvidence: true): "Boost your immune system" without authorised claim. Recommendation: "Confirm you hold the GB NHC Register authorised claim reference for this statement."
 
-HEALTH CLAIM (evidence-required): "Boost your immune system" without a specific authorised claim — CAP 12.1 / 3.7. This IS evidence-required — marketer confirms they hold the GB NHC Register basis on file.
+MATERIAL OMISSION (CRITICAL, requiresEvidence: false): "No T&Cs" or "no risk warning" -- CAP 3.9/3.10. Fix: add missing content.
 
-MATERIAL OMISSION (NOT evidence-required): "No terms and conditions" or "no risk warning" or "no offer terms" — CAP 3.9/3.10. This is a CONTENT fix — the marketer must ADD the missing content. Do NOT flag as requiresEvidence.
+FCA UNAPPROVED (CRITICAL, requiresEvidence: false): Financial promotion without s.21 approval. Fix: obtain approval before sending.
 
-FCA FINANCIAL PROMOTION UNAPPROVED (NOT evidence-required): sending without FCA approval under s.21 FSMA — this is a PROCESS GATEWAY, not evidence. The fix is: get approval before sending. Do NOT flag as requiresEvidence.
+REFERENCE PRICING (CRITICAL, requiresEvidence: false): "WAS £200 NOW £49" without 28-day history. Fix: prove history or remove.
 
-REFERENCE PRICING: "WAS GBP200 NOW GBP49" without genuine sale history — DMCCA s.226 critical.
-
-PUFFERY: "UK's most loved" — not a violation.
-
-AUTHORISED HEALTH CLAIM: "Vitamin D contributes to normal immune function" — not a violation.
-
-SPECIFIC DATE URGENCY: "Sale ends 23:59 Sunday 16 March 2026" — not a violation.
+PUFFERY (not a violation): "UK's most loved".
+AUTHORISED HEALTH CLAIM (not a violation): "Vitamin D contributes to normal immune function".
+SPECIFIC DATE URGENCY (not a violation): "Sale ends 23:59 Sunday 16 March 2026".
 
 ------------------------------------------------------------
 
-SECTION 10 -- SEVERITY CALIBRATION & VERDICT LABELS
+SECTION 9A -- WORKED EXAMPLE: CRITICAL + EVIDENCE ON SAME CLAIM
+
+Input copy: "Our fund has delivered 20% returns every year for the past five years, and we're confident it will continue to perform at this level. Past performance is a reliable indicator of future returns."
+
+Correct output -- THREE separate violations for this one paragraph:
+
+Violation 1 (CRITICAL, requiresEvidence: false):
+{
+  "regulation": "FCA COBS 4.2",
+  "severity": "critical",
+  "issue": "'We're confident it will continue to perform at this level' is a forward-looking projection presented as near-certainty. FCA COBS 4.2 prohibits presenting future performance as reliable or guaranteed.",
+  "location": "Email body, paragraph 1",
+  "recommendation": "Remove the forward-looking confidence statement. Do not replace with any statement implying future returns are predictable.",
+  "requiresEvidence": false
+}
+
+Violation 2 (CRITICAL, requiresEvidence: false):
+{
+  "regulation": "FCA COBS 4.6",
+  "severity": "critical",
+  "issue": "'Past performance is a reliable indicator of future returns' directly contradicts the mandatory FCA disclaimer. This statement is prohibited.",
+  "location": "Email body, closing line",
+  "recommendation": "Remove this sentence entirely. Replace with the mandatory FCA disclaimer: 'Past performance is not a reliable indicator of future returns. Capital at risk.'",
+  "requiresEvidence": false
+}
+
+Violation 3 (EVIDENCE CHECK, requiresEvidence: true):
+{
+  "regulation": "FCA COBS 4.6",
+  "severity": "high",
+  "issue": "The claim of '20% returns every year for the past five years' requires audited historical performance data on file. We cannot verify whether you hold this data.",
+  "location": "Email body, paragraph 1 -- past performance claim",
+  "recommendation": "Confirm you hold audited five-year performance data for this fund on file, calculated in accordance with FCA COBS 4.6 methodology.",
+  "requiresEvidence": true
+}
+
+Three violations from one paragraph. Two critical fixes (rewrite the copy). One evidence check (certify audited data exists). Do not combine. Do not embed [EVIDENCE REQUIRED:] markers.
+
+------------------------------------------------------------
+
+SECTION 10 -- SEVERITY & VERDICT
 
 SEVERITY:
-critical: Enforcement action likely. Examples: sending without PECR consent, fake urgency (banned practice), fabricated pricing, pre-ticked consent, no unsubscribe, third-party list without specific consent, fake reviews, FCA financial promotion sent without approval.
-high: Clear rule breach. Examples: "free" without disclosing conditions, vague deadline, undisclosed influencer, bundled consent, greenwashing, missing material info (T&Cs, risk warnings).
-medium: Probable rule breach. Less immediately enforceable. Examples: missing privacy policy link, vague testimonials, "limited stock" without evidence.
+critical: Enforcement likely. PECR consent missing, fake urgency, fabricated pricing, pre-ticked consent, no unsubscribe, third-party list without consent, fake reviews, FCA without approval, "guaranteed" for market-linked, forward-looking projections.
+high: Clear rule breach. "Free" without disclosure, vague deadline, undisclosed influencer, bundled consent, greenwashing, missing risk warnings, past performance requiring documented data (EVIDENCE CHECK).
+medium: Probable breach.
 low: Best practice gap.
 
-VERDICT LABELS (use exact strings):
-Score 90--100, zero critical or high: "No issues found"
-Score 75--89, zero critical: "Minor issues to address"
-Score 50--74, zero critical: "Review required before sending"
-Score 25--49, OR any critical issue: "Do not send -- address critical issues first"
-Score 0--24: "Significant violations identified"
+VERDICTS (exact):
+90-100, 0 critical/high: "No issues found"
+75-89, 0 critical: "Minor issues to address"
+50-74, 0 critical: "Review required before sending"
+25-49 OR any critical: "Do not send -- address critical issues first"
+0-24: "Significant violations identified"
 
-RISK SCORE: Start at 100. Critical: deduct 25--35. High: deduct 10--20. Medium: deduct 5--10. Low: deduct 1--5. Multiple of same type: deduct once. Minimum 0.
+SCORE: Start at 100. Critical: -25 to -35. High: -10 to -20. Medium: -5 to -10. Low: -1 to -5. Multiple same type: once. Min 0. Evidence-check counts as high for scoring.
 
 ------------------------------------------------------------
 
 SECTION 11 -- OUTPUT FORMAT
 
-Respond ONLY in this exact JSON format. No preamble. No markdown fences. No commentary outside the JSON.
+Respond ONLY in this exact JSON. No preamble. No markdown fences.
 
 {
   "score": 85,
@@ -339,46 +351,52 @@ Respond ONLY in this exact JSON format. No preamble. No markdown fences. No comm
       "issue": "Time-limited offer without specific end date",
       "location": "Subject line -- 'Flash sale ends soon'",
       "recommendation": "Replace 'ends soon' with exact date and time.",
-      "enforcement_note": "Only include when you know a real, virtually identical case. Omit entirely if uncertain."
+      "requiresEvidence": false,
+      "enforcement_note": "Only when case is virtually identical. Omit if uncertain."
+    },
+    {
+      "regulation": "CAP Code 12.1 / GB NHC Register",
+      "severity": "high",
+      "issue": "Health claim 'boosts immunity' requires an authorised claim reference on file.",
+      "location": "Body paragraph 2",
+      "recommendation": "Confirm you hold the GB NHC Register authorised claim reference for this statement.",
+      "requiresEvidence": true
     }
   ],
-  "fixedVersion": "FULL REWRITTEN COMPLIANT VERSION HERE -- following Section 2A rewrite rules exactly. Fix what is broken. Preserve everything else. Keep the energy.",
+  "fixedVersion": "FULL REWRITTEN COMPLIANT VERSION. Follow Section 2B rules. Fix critical violations by rewriting. Do NOT include [EVIDENCE REQUIRED:] markers. Clean sendable copy.",
   "summary": "One sentence plain English assessment."
 }
+
+EVERY violation MUST have a requiresEvidence boolean. Do not omit this field.
 `;
 
 const CHANNEL_RULES = {
   email: `CHANNEL: EMAIL
-Apply: PECR Reg 22 (consent / soft opt-in), Reg 23 (sender identity), UK GDPR, ASA CAP Code, CMA/DMCCA rules.
-Check: unsubscribe mechanism, postal address, sender identification, consent signals, all CAP Code and DMCCA red flags.
-Rewrite: follow Section 2A EMAIL rules. Subject line energy is sacred. Add compliance elements as minimal footer.`,
+Apply: PECR Reg 22 (consent / soft opt-in), Reg 23 (sender identity), UK GDPR, ASA CAP Code, CMA/DMCCA rules, plus sector rules (FCA for financial services).
+Check: unsubscribe mechanism, postal address, sender identification, consent signals, all CAP Code and DMCCA red flags, plus any sector-specific rules that apply.
+Rewrite: follow Section 2B EMAIL rules. Subject line energy is sacred. Add compliance elements as minimal footer. No [EVIDENCE REQUIRED:] markers.`,
 
   sms: `CHANNEL: SMS
-Apply: PECR Reg 22 (consent -- stricter than email), ASA CAP Code for promotional content.
-Additional SMS-specific checks:
-* Is there a STOP opt-out keyword? (e.g. "Reply STOP to opt out") -- mandatory.
-* Does the message exceed 160 characters? Flag if so -- note the character count.
-* Is the sender identity clear from the opening words?
-* No HTML -- plain text only.
-UK GDPR applies to any data processing referenced.
-Rewrite: follow Section 2A SMS rules. Never make it longer. STOP instruction appended minimally.`,
+Apply: PECR Reg 22 (stricter than email), ASA CAP Code.
+Additional: STOP opt-out mandatory. Flag if over 160 chars. Sender identity clear from opening. Plain text only.
+Rewrite: follow Section 2B SMS rules. Never longer. STOP minimal.`,
 
-  push: `CHANNEL: PUSH NOTIFICATION
-Apply: PECR Reg 22 (consent required for push notifications), ASA CAP Code for promotional claims.
-Check: whether consent for push was likely obtained at app install, claim accuracy, urgency/scarcity language.
-Rewrite: follow Section 2A PUSH rules. Fix in fewest possible words. Keep action verb.`,
+  push: `CHANNEL: PUSH
+Apply: PECR Reg 22, ASA CAP Code.
+Check: consent likely at install, claim accuracy, urgency/scarcity.
+Rewrite: follow Section 2B PUSH rules. Fewest words. Keep action verb.`,
 
-  social: `CHANNEL: SOCIAL AD / SOCIAL POST
-Apply: ASA CAP Code (primary), CMA/DMCCA rules.
-DO NOT apply PECR Reg 22 consent rules -- these do not apply to social ads directed at audiences.
-Check: #ad disclosure where required, misleading claims, fake urgency/scarcity, reference pricing, testimonials, greenwashing, age-restricted products.
-Rewrite: follow Section 2A SOCIAL rules. Hook line is sacred. Same length ±20%.`,
+  social: `CHANNEL: SOCIAL AD / POST
+Apply: ASA CAP Code (primary), CMA/DMCCA.
+DO NOT apply PECR Reg 22.
+Check: #ad disclosure, misleading claims, fake urgency/scarcity, reference pricing, testimonials, greenwashing.
+Rewrite: follow Section 2B SOCIAL rules. Hook sacred. Same length ±20%.`,
 
-  directmail: `CHANNEL: DIRECT MAIL (physical post)
-Apply: UK GDPR (legitimate interests most common basis -- full LI balance test required), ASA CAP Code, CMA/DMCCA rules.
-DO NOT apply PECR Reg 22 -- PECR applies to electronic communications only.
-Check: LI basis validity, misleading claims, reference pricing, urgency/scarcity, opt-out mechanism (MPS reference is best practice), sender identification.
-Rewrite: follow Section 2A DIRECT MAIL rules. Preserve narrative structure and headline punch.`
+  directmail: `CHANNEL: DIRECT MAIL
+Apply: UK GDPR (LI most common basis), ASA CAP Code, CMA/DMCCA.
+DO NOT apply PECR Reg 22.
+Check: LI validity, misleading claims, reference pricing, urgency, opt-out (MPS), sender identification.
+Rewrite: follow Section 2B DIRECT MAIL rules. Preserve narrative and headline punch.`
 };
 
 function buildSendingContextBlock(ctx) {
@@ -400,22 +418,22 @@ function getContextViolations(ctx) {
   if (!ctx) return [];
   const violations = [];
   if (ctx.listSource === 'purchased') {
-    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List purchased or rented from a third party. Recipients must have specifically consented to receive marketing from your organisation by name.', location: 'Sending context -- list source', recommendation: 'Do not send to this list until you can verify valid consent.', enforcement_note: 'ZMLUK (GBP105,000, December 2025) sent 67.8 million emails using purchased data.', _fixType: 'third_party_list', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List purchased or rented from a third party. Recipients must have specifically consented to receive marketing from your organisation by name.', location: 'Sending context -- list source', recommendation: 'Do not send to this list until you can verify valid consent.', enforcement_note: 'ZMLUK (GBP105,000, December 2025) sent 67.8 million emails using purchased data.', requiresEvidence: false, _fixType: 'third_party_list', _fromContext: true });
   }
   if (ctx.listSource === 'partner') {
-    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List provided by a partner or affiliate -- indirect consent is insufficient for email or SMS marketing.', location: 'Sending context -- list source', recommendation: 'Each organisation sending marketing must have consent obtained specifically for their own communications.', enforcement_note: 'Saga Services (GBP225,000 combined, 2021) were fined for relying on indirect consent.', _fixType: 'invalid_consent_mechanism', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List provided by a partner or affiliate -- indirect consent is insufficient for email or SMS marketing.', location: 'Sending context -- list source', recommendation: 'Each organisation sending marketing must have consent obtained specifically for their own communications.', enforcement_note: 'Saga Services (GBP225,000 combined, 2021) were fined for relying on indirect consent.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
   }
   if (ctx.consentSpecificity === 'thirdParty') {
-    violations.push({ regulation: 'PECR Reg 22 / UK GDPR Article 7', severity: 'critical', issue: 'Recipients consented to a third party or "our partners" -- not to your organisation by name.', location: 'Sending context -- consent specificity', recommendation: 'Stop sending to this list. Consent must specifically name your organisation.', enforcement_note: 'ZMLUK (GBP105,000, 2025): consent covering 361 unnamed companies was invalid.', _fixType: 'invalid_consent_mechanism', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22 / UK GDPR Article 7', severity: 'critical', issue: 'Recipients consented to a third party or "our partners" -- not to your organisation by name.', location: 'Sending context -- consent specificity', recommendation: 'Stop sending to this list. Consent must specifically name your organisation.', enforcement_note: 'ZMLUK (GBP105,000, 2025): consent covering 361 unnamed companies was invalid.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
   }
   if (ctx.consentSpecificity === 'notSure') {
-    violations.push({ regulation: 'PECR Reg 22', severity: 'high', issue: 'Consent basis is unclear. Do not send unless you can confirm valid consent.', location: 'Sending context -- consent specificity', recommendation: 'Verify your consent records before sending.', _fixType: 'invalid_consent_mechanism', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'high', issue: 'Consent basis is unclear. Do not send unless you can confirm valid consent.', location: 'Sending context -- consent specificity', recommendation: 'Verify your consent records before sending.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
   }
   if (ctx.senderRelationship === 'thirdParty' && ctx.fromNameMatch === 'no') {
-    violations.push({ regulation: 'PECR Reg 23', severity: 'critical', issue: 'A third-party agency is sending on your behalf and the From name does not match the organisation that collected consent.', location: 'Sending context -- sender relationship and From name mismatch', recommendation: 'The From name must clearly identify the brand that collected consent.', enforcement_note: 'Join the Triboo (GBP130,000, 2023) sent emails appearing to come from third-party brands.', _fixType: 'concealed_sender', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 23', severity: 'critical', issue: 'A third-party agency is sending on your behalf and the From name does not match the organisation that collected consent.', location: 'Sending context -- sender relationship and From name mismatch', recommendation: 'The From name must clearly identify the brand that collected consent.', enforcement_note: 'Join the Triboo (GBP130,000, 2023) sent emails appearing to come from third-party brands.', requiresEvidence: false, _fixType: 'concealed_sender', _fromContext: true });
   }
   if (ctx.fromNameMatch === 'no' && ctx.senderRelationship !== 'thirdParty') {
-    violations.push({ regulation: 'PECR Reg 23', severity: 'high', issue: 'The From name does not match the organisation that collected consent.', location: 'Sending context -- From name mismatch', recommendation: 'Ensure the From name clearly identifies the organisation that collected consent.', _fixType: 'concealed_sender', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 23', severity: 'high', issue: 'The From name does not match the organisation that collected consent.', location: 'Sending context -- From name mismatch', recommendation: 'Ensure the From name clearly identifies the organisation that collected consent.', requiresEvidence: false, _fixType: 'concealed_sender', _fromContext: true });
   }
   return violations;
 }
@@ -426,13 +444,13 @@ function mapViolationToFixType(violation) {
 
   const combined = `${violation.issue || ''} ${violation.regulation || ''} ${violation.recommendation || ''}`.toLowerCase();
 
-  // Order matters — more specific patterns first.
   if (combined.match(/unsubscribe|opt.out/))                                             return 'missing_unsubscribe';
   if (combined.match(/pre.tick|bundled consent/))                                        return 'invalid_consent_mechanism';
   if (combined.match(/no consent|without consent|unsolicited|pecr.*consent|reg\s*22/))   return 'no_consent';
   if (combined.match(/soft opt.in/))                                                     return 'no_soft_optin';
   if (combined.match(/sender.*conceal|sender.*identity|reg\s*23|identify.*organisation/)) return 'concealed_sender';
-  if (combined.match(/fca.*(approval|authorised|firm reference|s\.?\s*21|fsma)/))        return 'misleading_claim'; // FCA process — writes as ASA-category misleading_claim for now
+  if (combined.match(/fca.*(approval|authorised|firm reference|s\.?\s*21|fsma)/))        return 'misleading_claim';
+  if (combined.match(/guaranteed|guarantee.*return|forward.looking|cobs\s*4\.2/))        return 'misleading_claim';
   if (combined.match(/risk warning|capital.at.risk|past performance/))                   return 'misleading_claim';
   if (combined.match(/fake urgency|false urgency|ends soon|ends tonight|flash sale/))    return 'fake_urgency';
   if (combined.match(/fake scarcity|only \d+ left/))                                     return 'fake_scarcity';
@@ -462,11 +480,8 @@ function contentHash(userId, contentType, content) {
 }
 
 async function generateFixes(userId, allViolations, emailChecks, sourceRecordId) {
-  // v5.4: dedup by fixType + location, not by fixType alone.
-  // Prevents distinct violations at different locations (e.g. two misleading_claim
-  // violations — one in subject, one in body) from collapsing into a single fix.
   const seenKeys = new Set();
-  const fixJobs   = [];
+  const fixJobs  = [];
 
   for (const v of (allViolations || [])) {
     if (v.requiresEvidence) continue;
@@ -539,7 +554,7 @@ export default async function handler(req, res) {
     const contextBlock      = buildSendingContextBlock(sendingContext);
     const analysisContent   = contextBlock ? `${contextBlock}\n\n[COPY TO ANALYSE]\n${copyText}` : copyText;
 
-    const userMessage = `${CHANNEL_RULES[contentType]}\n\nCONTENT TO ANALYSE:\n${analysisContent}${autoFix ? '\nGenerate a fixedVersion field in the JSON following the Section 2A rewrite rules exactly. Fix compliance issues. Preserve brand voice, energy, and marketing punch.' : ''}`;
+    const userMessage = `${CHANNEL_RULES[contentType]}\n\nCONTENT TO ANALYSE:\n${analysisContent}${autoFix ? '\nGenerate a fixedVersion field in the JSON following the Section 2B rewrite rules exactly. Fix compliance issues. Preserve brand voice, energy, and marketing punch. Do NOT include [EVIDENCE REQUIRED:] markers in the rewrite.' : ''}`;
 
     const messageContent = [{ type: 'text', text: userMessage }];
     const validMediaTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -584,11 +599,16 @@ export default async function handler(req, res) {
       aiAnalysis = { score: 50, verdict: 'Analysis Error', violations: [], summary: message.content[0]?.text || 'Error' };
     }
 
-    // Tag AI violations that are evidence-only
-    const taggedAiViolations = (aiAnalysis?.violations || []).map(v => ({
-      ...v,
-      requiresEvidence: isEvidenceViolation(v),
-    }));
+    // v5.5: strip any leftover [EVIDENCE REQUIRED:] markers from AI output
+    if (aiAnalysis.fixedVersion) aiAnalysis.fixedVersion = stripEvidenceMarkers(aiAnalysis.fixedVersion);
+
+    // Tag AI violations, respecting AI's explicit requiresEvidence flag
+    const taggedAiViolations = (aiAnalysis?.violations || []).map(v => {
+      const cleaned = { ...v };
+      if (cleaned.recommendation) cleaned.recommendation = stripEvidenceMarkers(cleaned.recommendation);
+      cleaned.requiresEvidence = isEvidenceViolation(cleaned);
+      return cleaned;
+    });
 
     const contextFixTypes = new Set(contextViolations.map(v => v._fixType));
     const aiViolations    = taggedAiViolations.filter(v => !contextFixTypes.has(mapViolationToFixType(v)));
@@ -611,7 +631,6 @@ export default async function handler(req, res) {
       else                                   finalVerdict = 'No issues found';
     }
 
-    // Save to Airtable
     let savedRecordId = null;
     try {
       const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
