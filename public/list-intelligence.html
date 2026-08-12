@@ -47,6 +47,52 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .btn-sm{padding:8px 16px;font-size:13px}.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .fgrp label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:5px}
 .fgrp select,.fgrp input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t)}.fgrp select:focus,.fgrp input:focus{outline:none;border-color:var(--o)}
+
+/* NEW — List name field on mapping screen */
+.list-name-card{background:var(--w);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:14px;box-shadow:var(--sh)}
+.list-name-card h3{font-size:14px;font-weight:700;margin-bottom:3px}
+.list-name-card .lnc-sub{font-size:12px;color:var(--mu);margin-bottom:12px;line-height:1.5}
+.list-name-card input{width:100%;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:11px 14px;border:1px solid var(--bm);border-radius:8px;background:var(--w);color:var(--t)}
+.list-name-card input:focus{outline:none;border-color:var(--o);box-shadow:0 0 0 3px rgba(234,115,23,.12)}
+
+/* NEW — Lists landing screen */
+.landing-hdr{margin-bottom:24px}
+.landing-hdr h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px}
+.landing-hdr p{font-size:14px;color:var(--tm)}
+.lists-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:24px}
+.list-card{background:var(--w);border:1.5px solid var(--b);border-radius:var(--rad-lg);padding:18px 20px;cursor:pointer;transition:all .15s;box-shadow:var(--sh);text-align:left;font-family:inherit;width:100%}
+.list-card:hover{border-color:var(--o);transform:translateY(-1px);box-shadow:var(--shm)}
+.list-card.attn{border-color:var(--rc);background:var(--rb)}
+.list-card.attn:hover{border-color:var(--r)}
+.lc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.lc-name{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--t);line-height:1.3}
+.lc-badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.lc-badge.attn{background:var(--r);color:#fff}
+.lc-badge.ok{background:var(--gb);color:var(--g);border:1px solid var(--gc)}
+.lc-value{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;color:var(--t);line-height:1;margin-bottom:2px}
+.lc-value-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:10px}
+.lc-meta{display:flex;flex-direction:column;gap:3px;padding-top:10px;border-top:1px solid var(--b)}
+.list-card.attn .lc-meta{border-top-color:var(--rc)}
+.lc-meta-row{font-size:11px;color:var(--tm);display:flex;justify-content:space-between;gap:6px}
+.lc-meta-row.attn-reason{color:var(--r);font-weight:600}
+.landing-actions{display:flex;gap:10px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--b)}
+
+/* NEW — List picker in results header */
+.list-picker-wrap{position:relative;display:inline-block}
+.list-picker-btn{display:inline-flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:7px 12px;border:1px solid var(--b);border-radius:8px;background:var(--w);color:var(--t);cursor:pointer;transition:border-color .15s}
+.list-picker-btn:hover{border-color:var(--o)}
+.list-picker-btn .lp-chev{font-size:9px;color:var(--mu);transition:transform .15s}
+.list-picker-btn.open .lp-chev{transform:rotate(180deg)}
+.list-picker-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;background:var(--w);border:1px solid var(--b);border-radius:10px;box-shadow:var(--sh-lg);min-width:240px;max-width:320px;z-index:60;overflow:hidden}
+.list-picker-menu.open{display:block}
+.lp-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;font-family:inherit;font-size:13px;background:none;border:none;width:100%;text-align:left;cursor:pointer;border-bottom:1px solid var(--b);transition:background .12s}
+.lp-item:last-child{border-bottom:none}
+.lp-item:hover{background:var(--bg)}
+.lp-item.current{background:var(--ol);font-weight:600}
+.lp-item-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lp-item-dot{width:6px;height:6px;border-radius:50%;background:var(--r);flex-shrink:0}
+.lp-item-add{color:var(--o);font-weight:600;border-top:2px solid var(--b)}
+
 .map-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:22px;margin-bottom:14px;box-shadow:var(--sh)}.map-card h3{font-size:14px;font-weight:700;margin-bottom:3px}.map-meta{font-size:12px;color:var(--mu);margin-bottom:14px}
 .map-table{width:100%;border-collapse:collapse}.map-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);padding:7px 10px;text-align:left;border-bottom:1px solid var(--b)}.map-table td{padding:9px 10px;border-bottom:1px solid var(--b);font-size:13px}.map-table tr:last-child td{border-bottom:none}.map-table select{font-family:'DM Sans',sans-serif;font-size:12px;padding:4px 8px;border:1px solid var(--b);border-radius:6px;background:var(--bg);color:var(--t)}
 .samp-pill{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu);background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--b)}
@@ -56,6 +102,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .demo-banner{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--o);border-radius:var(--rad);padding:12px 18px;margin-bottom:20px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .demo-banner-txt{font-size:13px;color:#92400e;font-weight:500}.demo-dl{font-size:12px;font-weight:600;color:var(--o);text-decoration:none;border:1px solid var(--o);padding:5px 10px;border-radius:6px;white-space:nowrap}.demo-dl:hover{background:var(--ol)}.demo-dismiss{background:var(--o);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 .results-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+.results-hdr-left{min-width:0;flex:1}
+.results-hdr h1{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px;line-height:1.3;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .val-hero{background:var(--t);border-radius:var(--rad-lg);padding:28px 28px 24px;margin-bottom:20px;position:relative;overflow:hidden}
 .val-hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,rgba(234,115,23,.15),rgba(234,115,23,0));pointer-events:none}
 .val-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.5);margin-bottom:8px}
@@ -140,7 +188,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
 .toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
-#upload-screen,#mapping-screen,#results-screen{display:none}
+#upload-screen,#mapping-screen,#results-screen,#lists-landing-screen{display:none}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
@@ -160,6 +208,21 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> See an example valuation</button>
   </div>
 </div>
+
+<!-- ─── NEW: LISTS LANDING SCREEN ─── -->
+<div class="page" id="lists-landing-screen">
+  <div class="landing-hdr">
+    <div class="tool-tag">List Intelligence</div>
+    <h1>Your lists</h1>
+    <p>Each list is tracked separately. Consent and deliverability decay over time &mdash; re-upload to keep the picture current.</p>
+  </div>
+  <div class="lists-grid" id="listsGrid"></div>
+  <div class="landing-actions">
+    <button class="btn btn-primary" onclick="startNewList()">+ Analyse a new list</button>
+    <button class="btn btn-ghost" onclick="loadListDemo()">See an example valuation</button>
+  </div>
+</div>
+
 <div class="page" id="upload-screen">
   <div style="margin-bottom:32px;animation:fadeUp .4s ease">
     <div class="tool-tag">List Intelligence &mdash; List Valuation &amp; Compliance Audit</div>
@@ -208,6 +271,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:32px">
     <button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Continue &rarr;</button>
     <button class="btn btn-ghost" onclick="loadListDemo()">See an example valuation &rarr;</button>
+    <button class="btn btn-ghost" id="btnBackToLists" onclick="showScreen('lists-landing')" style="display:none">&larr; Back to your lists</button>
   </div>
   <div style="padding-top:24px;border-top:1px solid var(--b)">
     <p style="font-size:13px;color:var(--mu);margin-bottom:10px">Previously analysed a list?</p>
@@ -220,9 +284,17 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="page" id="mapping-screen">
   <div style="margin-bottom:24px">
     <div class="tool-tag">Step 2 of 3</div>
-    <h1 style="font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px">Confirm your columns</h1>
-    <p style="font-size:14px;color:var(--tm)">We&apos;ve detected column types automatically. Correct anything that looks wrong.</p>
+    <h1 style="font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px">Confirm your list &amp; columns</h1>
+    <p style="font-size:14px;color:var(--tm)">Name this list so you can track it over time, then check the column mapping.</p>
   </div>
+
+  <!-- NEW: List name field -->
+  <div class="list-name-card">
+    <h3>What do you want to call this list?</h3>
+    <p class="lnc-sub">Named lists are tracked separately &mdash; you can re-upload later and see what changed. Pick something you&rsquo;ll recognise (e.g. &ldquo;Main list&rdquo;, &ldquo;VIP customers&rdquo;, &ldquo;Newsletter subs&rdquo;).</p>
+    <input type="text" id="listNameInput" placeholder="Main list" maxlength="80" oninput="onListNameChange()">
+  </div>
+
   <div id="mappingTable"></div>
   <div id="mappingLimitWarn"></div>
   <div class="context-card" id="contextCard">
@@ -235,7 +307,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <p class="ctx-note">Used only to calculate estimated list value. Stored to your profile &mdash; you won&apos;t be asked again.</p>
   </div>
   <div class="btn-row">
-    <button class="btn btn-primary" onclick="submitUpload()">Analyse my list &rarr;</button>
+    <button class="btn btn-primary" id="btnAnalyse" onclick="submitUpload()">Analyse my list &rarr;</button>
     <button class="btn btn-ghost" onclick="showScreen('upload')">&larr; Back</button>
   </div>
 </div>
@@ -244,16 +316,17 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="demo-banner-txt">&#128203; Example valuation &mdash; showing what your real analysis looks like. Upload your own list to see your actual compliance picture.</div>
     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
       <a class="demo-dl" id="listDemoDlLink" href="#" download="sendwize-example-contact-list.csv">Download CSV &#8595;</a>
-      <button class="demo-dismiss" onclick="showScreen('upload')">Upload your own &rarr;</button>
+      <button class="demo-dismiss" onclick="startNewList()">Upload your own &rarr;</button>
     </div>
   </div>
   <div class="results-hdr">
-    <div>
-      <h1 style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">List Valuation &amp; Compliance Audit</h1>
+    <div class="results-hdr-left">
+      <h1 id="resultsTitle">List Valuation &amp; Compliance Audit</h1>
       <div id="resultsMeta" style="font-size:13px;color:var(--mu)"></div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-ghost btn-sm" onclick="showScreen('upload')">+ Upload new list</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <div id="listPickerHost"></div>
+      <button class="btn btn-ghost btn-sm" onclick="startNewList()">+ New list</button>
     </div>
   </div>
   <div style="margin-bottom:28px">
@@ -319,6 +392,9 @@ var API    = 'https://sendwize-backend.vercel.app/api/list-intelligence';
 var userId = new URLSearchParams(window.location.search).get('userId') || '';
 var parsedCSV=null, detectedMapping={}, lastResults=null;
 var downloadIndices=null;
+var allLists=[];              // NEW — populated by getListsSummary
+var currentListName=null;     // NEW — which list is shown in results
+var currentFilename='';       // NEW — for name pre-fill
 var TF=[
   {v:'ignore',l:'\u2014 ignore \u2014'},{v:'email',l:'Email address'},
   {v:'date_added',l:'Date added / joined'},{v:'last_engagement',l:'Last engagement date'},
@@ -333,9 +409,35 @@ function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 function sid(s){return s.replace(/[^a-zA-Z0-9_]/g,'_');}
 function hideGateAndDemo(){el('gateScreen').classList.remove('show');showScreen('upload');loadListDemo();}
 function showScreen(s){
-  ['upload','mapping','results'].forEach(function(n){el(n+'-screen').style.display=n===s?'block':'none';});
+  ['upload','mapping','results','lists-landing'].forEach(function(n){
+    var elx=el(n+'-screen');if(elx)elx.style.display=n===s?'block':'none';
+  });
   window.scrollTo(0,0);
+  // Close any open list picker on screen change
+  var lpm=document.querySelector('.list-picker-menu.open');if(lpm)lpm.classList.remove('open');
+  var lpb=document.querySelector('.list-picker-btn.open');if(lpb)lpb.classList.remove('open');
 }
+
+// ─── NEW: derive a sensible list name from a filename ───
+function filenameToListName(fname){
+  if(!fname)return'';
+  // Strip extension
+  var name=fname.replace(/\.[^.]+$/,'');
+  // Common noise words in ESP exports
+  name=name.replace(/[-_.](export|download|list|subscribers|contacts|csv|final|copy|latest)([-_.]|$)/gi,' ');
+  // Long hashy/UUID-looking runs
+  if(/[a-f0-9]{16,}/i.test(name))name=name.replace(/[a-f0-9]{16,}/gi,' ');
+  // Long digit sequences (likely IDs)
+  name=name.replace(/\d{6,}/g,' ');
+  // Replace separators with spaces
+  name=name.replace(/[-_.]+/g,' ').replace(/\s+/g,' ').trim();
+  // If nothing meaningful left, fall back
+  if(!name||name.length<2||/^\d+$/.test(name))return'Main list';
+  // Title case
+  name=name.split(' ').filter(Boolean).map(function(w){return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();}).join(' ');
+  return name.slice(0,80);
+}
+
 function switchRegTab(tab){
   ['ico','asa','cma'].forEach(function(t){
     var btn=el('reg-tab-'+t);var panel=el('reg-panel-'+t);
@@ -356,9 +458,10 @@ function downloadTierCSV(tier){
     }).join(',');
   })).join('\n');
   var labels={active:'clean-list',recoverable:'re-consent-list',atRisk:'at-risk-list',liability:'suppression-list'};
+  var listSlug=(currentListName||'list').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download='sendwize-'+(labels[tier]||tier)+'-'+new Date().toISOString().split('T')[0]+'.csv';
+  a.download='sendwize-'+listSlug+'-'+(labels[tier]||tier)+'-'+new Date().toISOString().split('T')[0]+'.csv';
   a.click();
   showToast('Downloading '+rows.length.toLocaleString()+' contacts','ok');
 }
@@ -371,7 +474,9 @@ function readFile(file){
   r.onload=function(e){
     var p=parseCSV(e.target.result);
     if(!p.rows.length){showToast('Could not parse CSV \u2014 ensure it has a header row','er');return;}
-    parsedCSV=p;el('uploadZone').classList.add('loaded');
+    parsedCSV=p;
+    currentFilename=file.name;
+    el('uploadZone').classList.add('loaded');
     el('uzFname').textContent=file.name+' \u00b7 '+p.rows.length.toLocaleString()+' contacts';
     el('btnContinue').disabled=false;
   };
@@ -395,6 +500,16 @@ async function goMapping(){
   try{
     var resp=await fetch(API+'?userId='+userId+'&action=detect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({headers:parsedCSV.headers,rows:parsedCSV.rows.slice(0,30)})});
     var json=await resp.json();detectedMapping=json.mapping||{};hideLoading();
+
+    // Pre-fill list name from filename (user can edit)
+    var suggestedName=filenameToListName(currentFilename)||'Main list';
+    // If the suggestion collides with an existing list, append " (2)" etc.
+    var existingNames=allLists.map(function(l){return(l.listName||'').toLowerCase();});
+    var final=suggestedName;var n=2;
+    while(existingNames.indexOf(final.toLowerCase())>=0){final=suggestedName+' ('+n+')';n++;}
+    el('listNameInput').value=final;
+    onListNameChange();
+
     buildMappingTable();
     try{
       var pr=await fetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId='+userId);
@@ -403,6 +518,13 @@ async function goMapping(){
     }catch(e){}
     showScreen('mapping');
   }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
+}
+function onListNameChange(){
+  var v=(el('listNameInput').value||'').trim();
+  var btn=el('btnAnalyse');
+  if(!btn)return;
+  btn.disabled=v.length===0;
+  btn.style.opacity=v.length?'1':'.4';
 }
 function buildMappingTable(){
   var samp=parsedCSV.rows[0]||{};
@@ -449,37 +571,133 @@ function checkMappingCoverage(){
   host.innerHTML=msg;
 }
 async function submitUpload(){
+  var listName=(el('listNameInput').value||'').trim();
+  if(!listName){showToast('Give your list a name to continue','er');el('listNameInput').focus();return;}
   var mapping={};
   parsedCSV.headers.forEach(function(h){var s=el('map-'+sid(h));if(s&&s.value&&s.value!=='ignore')mapping[h]=s.value;});
   if(!Object.values(mapping).includes('email')){showToast('Please map at least one column to Email address','er');return;}
   var sector=el('ctxSector').value||'ecommerce';var aov=parseFloat(el('ctxAov').value)||50;
   showLoading('Analysing across four dimensions\u2026');
   try{
-    var resp=await fetch(API+'?userId='+userId+'&action=upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:parsedCSV.rows,fieldMapping:mapping,sector:sector,aov:aov,uploadVersion:Date.now()})});
+    var resp=await fetch(API+'?userId='+userId+'&action=upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:listName,rows:parsedCSV.rows,fieldMapping:mapping,sector:sector,aov:aov,uploadVersion:Date.now()})});
     var json=await resp.json();if(!json.success)throw new Error(json.error||'Upload failed');
     hideLoading();
     lastResults=json;
+    currentListName=json.listName||listName;
     downloadIndices=json.downloadIndices||null;
+    // Refresh lists summary so the picker reflects the new/updated entry
+    try{
+      var lr=await fetch(API+'?userId='+userId+'&action=lists');
+      var lj=await lr.json();allLists=(lj&&lj.lists)||[];
+    }catch(e){}
     renderResults(json);showScreen('results');
     showToast('Analysis complete \u2014 '+fmt(json.totalContacts)+' contacts processed','ok');
   }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
 }
-async function loadResults(){
-  if(lastResults){renderResults(lastResults);showScreen('results');return;}
+async function loadResults(listName){
+  // Optional listName arg for switching between named lists
+  if(lastResults&&!listName){renderResults(lastResults);showScreen('results');return;}
   if(!userId){showToast('No user ID \u2014 return to dashboard','er');return;}
-  showLoading('Loading your last valuation\u2026');
+  showLoading('Loading valuation\u2026');
   try{
-    var resp=await fetch(API+'?userId='+userId+'&action=load');
+    var qs='?userId='+userId+'&action=load';
+    if(listName)qs+='&listName='+encodeURIComponent(listName);
+    var resp=await fetch(API+qs);
     var json=await resp.json();hideLoading();
     if(!json.hasData){showToast('No previous analysis found \u2014 upload a list to get started','');return;}
     lastResults=json;
+    currentListName=json.listName||listName||null;
+    allLists=(json.lists)||allLists;
     downloadIndices=null;
     renderResults(json);showScreen('results');
   }catch(err){hideLoading();showToast('Could not load \u2014 please try again','er');}
 }
+async function switchList(listName){
+  if(!listName||listName===currentListName)return;
+  await loadResults(listName);
+}
+function startNewList(){
+  // Reset the upload flow for a fresh list
+  parsedCSV=null;currentFilename='';downloadIndices=null;
+  el('uploadZone').classList.remove('loaded');
+  el('uzFname').textContent='';
+  el('fileInput').value='';
+  el('btnContinue').disabled=true;
+  // Show "back to lists" button if there are any
+  var backBtn=el('btnBackToLists');if(backBtn)backBtn.style.display=allLists.length?'inline-flex':'none';
+  showScreen('upload');
+}
+function renderListsLanding(){
+  var host=el('listsGrid');if(!host)return;
+  if(!allLists.length){
+    host.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--mu);font-size:14px">No lists yet. Upload one to get started.</div>';
+    return;
+  }
+  host.innerHTML=allLists.map(function(l){
+    var days=l.daysSinceLastCheck;
+    var daysTxt=days==null?'\u2014':days===0?'today':days===1?'yesterday':days+' days ago';
+    var reasons=(l.needsAttentionReasons||[]).slice(0,2);
+    var reasonHtml=reasons.map(function(r){return'<div class="lc-meta-row attn-reason">\u26A0\uFE0F '+escH(r)+'</div>';}).join('');
+    var badge=l.needsAttention
+      ?'<span class="lc-badge attn">Needs attention</span>'
+      :'<span class="lc-badge ok">Good standing</span>';
+    return'<button class="list-card'+(l.needsAttention?' attn':'')+'" onclick="switchList(\''+escH(l.listName).replace(/\'/g,"\\\'")+'\')">'
+      +'<div class="lc-top"><div class="lc-name">'+escH(l.listName)+'</div>'+badge+'</div>'
+      +'<div class="lc-value-lbl">List value</div>'
+      +'<div class="lc-value">'+fmtGBP(l.assetValue)+'</div>'
+      +'<div class="lc-meta">'
+      +'<div class="lc-meta-row"><span>Contacts</span><span>'+fmt(l.totalContacts)+'</span></div>'
+      +'<div class="lc-meta-row"><span>Last checked</span><span>'+daysTxt+'</span></div>'
+      +reasonHtml
+      +'</div></button>';
+  }).join('');
+}
+function renderListPicker(){
+  var host=el('listPickerHost');if(!host)return;
+  if(!allLists.length||(allLists.length===1&&!currentListName)){host.innerHTML='';return;}
+  var cur=currentListName||(allLists[0]&&allLists[0].listName)||'\u2014';
+  host.innerHTML='<div class="list-picker-wrap">'
+    +'<button class="list-picker-btn" onclick="toggleListPicker(event)"><span>&#128203;</span><span>'+escH(cur)+'</span><span class="lp-chev">\u25BE</span></button>'
+    +'<div class="list-picker-menu">'
+    +allLists.map(function(l){
+      var isCur=l.listName===currentListName;
+      var dot=l.needsAttention?'<span class="lp-item-dot"></span>':'';
+      return'<button class="lp-item'+(isCur?' current':'')+'" onclick="chooseList(\''+escH(l.listName).replace(/\'/g,"\\\'")+'\')"><span class="lp-item-name">'+escH(l.listName)+'</span>'+dot+'</button>';
+    }).join('')
+    +'<button class="lp-item lp-item-add" onclick="chooseNewList()"><span class="lp-item-name">+ Analyse a new list</span></button>'
+    +'</div></div>';
+}
+function toggleListPicker(ev){
+  ev.stopPropagation();
+  var btn=ev.currentTarget;
+  var menu=btn.parentElement.querySelector('.list-picker-menu');
+  var isOpen=menu.classList.contains('open');
+  menu.classList.toggle('open',!isOpen);
+  btn.classList.toggle('open',!isOpen);
+}
+function chooseList(name){
+  var lpm=document.querySelector('.list-picker-menu.open');if(lpm)lpm.classList.remove('open');
+  var lpb=document.querySelector('.list-picker-btn.open');if(lpb)lpb.classList.remove('open');
+  switchList(name);
+}
+function chooseNewList(){
+  var lpm=document.querySelector('.list-picker-menu.open');if(lpm)lpm.classList.remove('open');
+  startNewList();
+}
+document.addEventListener('click',function(ev){
+  if(ev.target.closest('.list-picker-wrap'))return;
+  var lpm=document.querySelector('.list-picker-menu.open');if(lpm)lpm.classList.remove('open');
+  var lpb=document.querySelector('.list-picker-btn.open');if(lpb)lpb.classList.remove('open');
+});
 function renderResults(d){
   var total=d.totalContacts||0;
   var pct=function(n){return total>0?Math.round(n/total*100):0;};
+  // Title reflects the named list
+  var titleName=d.listName||currentListName||'';
+  el('resultsTitle').innerHTML=titleName
+    ?'<span>'+escH(titleName)+'</span><span style="font-size:13px;font-weight:500;color:var(--mu)">List Valuation &amp; Compliance Audit</span>'
+    :'List Valuation &amp; Compliance Audit';
+  renderListPicker();
   var metaParts=[];
   if(d.checkDate)metaParts.push('Analysed '+fmtDate(d.checkDate));
   if(d.sector)metaParts.push(capFirst(d.sector));
@@ -642,8 +860,8 @@ function renderChangeAndCountdown(d){
   if(ch&&ch.daysSincePrevious!=null&&ch.daysSincePrevious>=14){
     html+='<div class="li-change-stale">'+
       '<div style="font-size:18px;flex-shrink:0">&#x23F3;</div>'+
-      '<div class="li-change-stale-txt">It has been '+ch.daysSincePrevious+' days since your last upload. Consent and deliverability decay over time \u2014 upload your latest list to confirm the current picture.</div>'+
-      '<button class="btn btn-primary btn-sm" onclick="showScreen(\'upload\')">Upload latest &rarr;</button>'+
+      '<div class="li-change-stale-txt">It has been '+ch.daysSincePrevious+' days since your last upload of this list. Consent and deliverability decay over time \u2014 upload the latest to confirm the current picture.</div>'+
+      '<button class="btn btn-primary btn-sm" onclick="startNewList()">Upload latest &rarr;</button>'+
       '</div>';
   }
   if(ce&&((ce.in30||0)+(ce.in60||0)+(ce.in90||0))>0){
@@ -686,23 +904,26 @@ function generateFixRecord(){
   if(!userId||!lastResults){showToast('Sign in to create fix records on your dashboard','er');return;}
   var liabCount=lastResults.liabilityCount||0;
   if(!liabCount){showToast('No liability contacts \u2014 no fix record needed','ok');return;}
+  var listLabel=lastResults.listName||currentListName||'this list';
   fetch('https://sendwize-backend.vercel.app/api/generate-fix',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({userId:userId,fixType:'consent_expired',description:'List Intelligence: '+fmt(liabCount)+' contacts are below the consent strength threshold and represent ICO enforcement risk under PECR Regulation 22. Suppress or re-consent before any marketing send.',tool:'List Intelligence',severity:liabCount>(lastResults.totalContacts||0)*0.2?'critical':'high',contactVolume:liabCount,sourceRecordId:'li-liability'})
+    body:JSON.stringify({userId:userId,fixType:'consent_expired',description:'List Intelligence \u2014 "'+listLabel+'": '+fmt(liabCount)+' contacts are below the consent strength threshold and represent ICO enforcement risk under PECR Regulation 22. Suppress or re-consent before any marketing send.',tool:'List Intelligence',severity:liabCount>(lastResults.totalContacts||0)*0.2?'critical':'high',contactVolume:liabCount,sourceRecordId:'li-liability:'+(listLabel.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))})
   }).then(function(){showToast('Fix record created on your dashboard','ok');}).catch(function(){showToast('Could not create fix record \u2014 try again','er');});
 }
 async function generateCert(){
   var seg=el('certSeg').value||'Full list';var type=el('certType').value;
   showLoading('Generating clearance record\u2026');
   try{
-    var resp=await fetch(API+'?userId='+userId+'&action=certificate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({segmentName:seg,campaignType:type})});
+    var body={segmentName:seg,campaignType:type};
+    if(currentListName)body.listName=currentListName;
+    var resp=await fetch(API+'?userId='+userId+'&action=certificate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var json=await resp.json();hideLoading();
     if(!json.success)throw new Error(json.error);
     var r=json.result.toLowerCase();
     var ce=el('certResult');ce.className='cert-result '+r;ce.style.display='block';
     ce.innerHTML='<div class="cert-verdict">'+escH(json.result)+'</div>'+
       '<div class="cert-detail">'+certDescription(json.result,json)+'</div>'+
-      '<div class="cert-id">Certificate ID: '+escH(json.certificateId||'\u2014')+' \u00b7 '+fmtDate(json.date)+'</div>';
+      '<div class="cert-id">Certificate ID: '+escH(json.certificateId||'\u2014')+' \u00b7 List: '+escH(json.listName||currentListName||'\u2014')+' \u00b7 '+fmtDate(json.date)+'</div>';
     ce.scrollIntoView({behavior:'smooth',block:'nearest'});
     showToast('Clearance record saved to your dashboard','ok');
   }catch(err){hideLoading();showToast('Certificate failed: '+err.message,'er');}
@@ -723,6 +944,7 @@ function loadListDemo(){
   setTimeout(function(){
     var demoResults={
       success:true,totalContacts:24,duplicatesRemoved:1,
+      listName:'Example list',
       activeCount:9,recoverableCount:7,atRiskCount:4,liabilityCount:4,
       assetValue:2847.50,
       icoStatus:'Review recommended \u2014 contacts approaching threshold',
@@ -739,6 +961,7 @@ function loadListDemo(){
       consentExpiring:{in30:3,in60:4,in90:7,valueAtRisk:1240.00},
     };
     hideLoading();lastResults=demoResults;
+    currentListName='Example list';
     downloadIndices=null;
     renderResults(demoResults);showScreen('results');
     var blob=new Blob([LIST_DEMO_CSV],{type:'text/csv'});
@@ -747,19 +970,34 @@ function loadListDemo(){
     showToast('Viewing example valuation \u2014 upload your own list to see your real results','');
   },800);
 }
+
+// ─── INIT ───
 if(!userId){el('gateScreen').classList.add('show');}
 else{
-  showScreen('upload');
-  fetch(API+'?userId='+userId+'&action=load')
+  // Fetch lists summary first — decide which screen to show
+  fetch(API+'?userId='+userId+'&action=lists')
     .then(function(r){return r.json();})
     .then(function(json){
-      if(json.hasData){
-        lastResults=json;
-        var link=el('lastValuationLink');
-        if(link)link.style.display='block';
+      allLists=(json&&json.lists)||[];
+      var qsListName=new URLSearchParams(window.location.search).get('listName');
+      if(qsListName){
+        // Deep link into a specific list
+        loadResults(qsListName);
+      } else if(allLists.length===0){
+        showScreen('upload');
+      } else if(allLists.length===1){
+        // Single list — jump straight in, same UX as before
+        loadResults(allLists[0].listName);
+      } else {
+        // Multiple lists — show the landing
+        renderListsLanding();
+        showScreen('lists-landing');
       }
     })
-    .catch(function(){});
+    .catch(function(){
+      // Fallback if lists endpoint fails — show upload screen
+      showScreen('upload');
+    });
 }
 </script>
 <footer class="sw-ph-footer">
