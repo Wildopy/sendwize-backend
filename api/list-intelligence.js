@@ -1,23 +1,35 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-intelligence.js v1.3
-// POST /api/list-intelligence?action=upload  — CSV analysis
-// GET  /api/list-intelligence?action=load    — load last results
-// POST /api/list-intelligence?action=certificate — generate pre-send cert
+// SENDWIZE — list-intelligence.js v1.5
 //
-// v1.3 changes from v1.2:
-//   - upload response now includes activeIndices, recoverableIndices,
-//     atRiskIndices, liabilityIndices — arrays of row indices from
-//     the original upload. Frontend uses these to build downloadable
-//     CSVs client-side without any PII hitting Airtable.
-//   - analyseList() returns indices alongside counts. Emails are
-//     never stored server-side in plain text — hashing unchanged.
-//   - atCreate for List_Intelligence_Checks now writes ASANote
-//     and CMANote fields (bug fix from v1.2).
-//   - ASA/CMA signals expanded: role-based addresses, domain
-//     concentration, and data quality flags now feed into
-//     regulator-specific notes rather than a single threshold check.
-//   - All other code identical to v1.2.
+// POST /api/list-intelligence?action=upload       — CSV analysis (listName required)
+// GET  /api/list-intelligence?action=load         — load latest, or specific list via &listName=
+// GET  /api/list-intelligence?action=lists        — summary of every named list for user
+// POST /api/list-intelligence?action=certificate  — pre-send clearance (listName optional, defaults to latest)
+// POST /api/list-intelligence?action=detect       — column detection (unchanged)
+//
+// v1.5 changes from v1.4:
+//   - LISTNAME PERSISTENCE. Every LI record now carries a ListName. Snapshots,
+//     opportunities, contacts, checks and certificates are all keyed by
+//     (UserID, ListName). Re-uploading a named list overwrites current state
+//     and snapshots the previous one — matching Audience Read's pattern.
+//   - `load` accepts an optional listName. Without it, returns the most
+//     recently checked list PLUS a `lists` summary array so the frontend
+//     can either land straight in the last view or show a picker.
+//   - New `lists` action returns { listName, checkDate, daysSincePrevious,
+//     assetValue, liabilityCount, totalContacts, needsAttention } for every
+//     named list a user has. Powers the "your lists" landing state and any
+//     future dashboard counter.
+//   - Fix sourceRecordId now embeds a slug of the list name:
+//       'li-liability:main-list'  /  'li-commercial:vip-customers'
+//     So each list emits its own fix lineage. Refresh / mark-improved /
+//     create-fresh logic still works per-list.
+//   - `getListSnapshots` and `buildListComparison` are per-list.
+//   - LEGACY: rows without ListName are treated as belonging to 'Main list'
+//     for read paths, so old data still surfaces. Backfill script is:
+//       records where ListName is empty → set ListName='Main list'.
+//     Run once before this deploys, then this defensive branch can go.
 // ─────────────────────────────────────────────────────────────
+
 import crypto from 'crypto';
 import { atFetch } from './_airtable.js';
 
@@ -26,10 +38,39 @@ const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const AT_BASE  = `https://api.airtable.com/v0/${BASE_ID}`;
 
+const LEGACY_LIST_NAME = 'Main list';
+
 const atH = () => ({
   Authorization:  `Bearer ${AT_TOKEN}`,
   'Content-Type': 'application/json',
 });
+
+// ── Slug for stable sourceRecordId per named list ─────────────
+function slugify(name) {
+  return String(name || LEGACY_LIST_NAME)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64) || 'main-list';
+}
+
+// Normalise a listName to the canonical form we store.
+// Trims, collapses whitespace, caps at 80 chars, falls back to 'Main list'.
+function normaliseListName(raw) {
+  const clean = String(raw || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  return clean || LEGACY_LIST_NAME;
+}
+
+// Airtable filterByFormula fragment that matches a listName, tolerating
+// legacy rows where ListName is empty (treated as 'Main list').
+function listNameFormulaFragment(listName) {
+  const target = String(listName).replace(/'/g, "\\'");
+  if (listName === LEGACY_LIST_NAME) {
+    return `OR({ListName}='${target}',{ListName}='')`;
+  }
+  return `{ListName}='${target}'`;
+}
 
 // ── Airtable helpers ──────────────────────────────────────────
 async function atGet(table, formula, sort = '', max = 100) {
@@ -67,15 +108,12 @@ async function atPatch(table, id, fields) {
   return await r.json();
 }
 
-// ── SHA-256 hash ──────────────────────────────────────────────
 function hashEmail(email) {
-  return crypto.createHash('sha256')
-    .update((email || '').toLowerCase().trim())
-    .digest('hex');
+  return crypto.createHash('sha256').update((email || '').toLowerCase().trim()).digest('hex');
 }
 
 // ─────────────────────────────────────────────────────────────
-// COLUMN AUTO-DETECTION
+// COLUMN AUTO-DETECTION — unchanged from v1.4
 // ─────────────────────────────────────────────────────────────
 function detectListColumns(headers, rows) {
   const sample = rows.slice(0, 30);
@@ -143,7 +181,7 @@ function normaliseDate(raw) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// KNOWN DISPOSABLE / SPAM TRAP / TYPO DOMAINS
+// KNOWN DOMAINS + SECTOR BENCHMARKS — unchanged from v1.4
 // ─────────────────────────────────────────────────────────────
 const DISPOSABLE_DOMAINS = new Set([
   'mailinator.com','guerrillamail.com','10minutemail.com','throwam.com',
@@ -161,26 +199,23 @@ const ROLE_PREFIXES = new Set([
 const SPAM_TRAP_INDICATORS = ['spam','trap','test','fake','invalid','bounce'];
 
 const TYPO_DOMAINS = {
-  'gmai.com': 'gmail.com', 'gmial.com': 'gmail.com', 'gamil.com': 'gmail.com',
-  'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
-  'yahooo.com': 'yahoo.com', 'yaho.com': 'yahoo.com',
-  'outlok.com': 'outlook.com', 'outloo.com': 'outlook.com',
-  'livee.com': 'live.com', 'iclod.com': 'icloud.com',
+  'gmai.com':'gmail.com','gmial.com':'gmail.com','gamil.com':'gmail.com',
+  'hotmial.com':'hotmail.com','hotmai.com':'hotmail.com',
+  'yahooo.com':'yahoo.com','yaho.com':'yahoo.com',
+  'outlok.com':'outlook.com','outloo.com':'outlook.com',
+  'livee.com':'live.com','iclod.com':'icloud.com',
 };
 
-// ─────────────────────────────────────────────────────────────
-// SECTOR BENCHMARKS
-// ─────────────────────────────────────────────────────────────
 const SECTOR_BENCHMARKS = {
-  ecommerce:   { conversionRate: 0.025, avgOrderMultiplier: 1.0 },
-  finance:     { conversionRate: 0.008, avgOrderMultiplier: 4.0 },
-  healthcare:  { conversionRate: 0.012, avgOrderMultiplier: 2.5 },
-  agency:      { conversionRate: 0.015, avgOrderMultiplier: 3.0 },
-  other:       { conversionRate: 0.018, avgOrderMultiplier: 1.2 },
+  ecommerce:  { conversionRate: 0.025, avgOrderMultiplier: 1.0 },
+  finance:    { conversionRate: 0.008, avgOrderMultiplier: 4.0 },
+  healthcare: { conversionRate: 0.012, avgOrderMultiplier: 2.5 },
+  agency:     { conversionRate: 0.015, avgOrderMultiplier: 3.0 },
+  other:      { conversionRate: 0.018, avgOrderMultiplier: 1.2 },
 };
 
 // ─────────────────────────────────────────────────────────────
-// DIMENSION 1 — CONSENT TRAJECTORY
+// DIMENSIONS 1–4 — unchanged from v1.4
 // ─────────────────────────────────────────────────────────────
 const CONSENT_DECAY_HALF_LIFE_DAYS = 365;
 const CONSENT_THRESHOLD = 20;
@@ -197,30 +232,25 @@ function dimension1_consent(contact) {
     const daysSinceEng = Math.max(0, (now - lastEng) / 86400000);
     const engType      = (contact.engagementType || '').toLowerCase();
     let resetStrength  = 0;
-    if (engType.includes('purchas') || engType.includes('order') || engType.includes('buy')) {
-      resetStrength = 0.6;
-    } else if (engType.includes('click')) {
-      resetStrength = 0.4;
-    } else if (engType.includes('open')) {
-      resetStrength = 0.2;
-    } else {
-      resetStrength = 0.15;
-    }
+    if (engType.includes('purchas') || engType.includes('order') || engType.includes('buy')) resetStrength = 0.6;
+    else if (engType.includes('click')) resetStrength = 0.4;
+    else if (engType.includes('open'))  resetStrength = 0.2;
+    else resetStrength = 0.15;
     engagementReset = resetStrength * Math.pow(0.5, daysSinceEng / CONSENT_DECAY_HALF_LIFE_DAYS);
   }
 
   let disengagementPenalty = 0;
   if (contact.lastEngagement) {
-    const daysSinceEng = (now - new Date(contact.lastEngagement)) / 86400000;
+    const daysSinceEng = (new Date() - new Date(contact.lastEngagement)) / 86400000;
     if (daysSinceEng > 180) disengagementPenalty = 0.15;
     if (daysSinceEng > 365) disengagementPenalty = 0.30;
   } else if (daysOld > 180) {
     disengagementPenalty = 0.20;
   }
 
-  const rawStrength     = Math.min(1, baseDecay + engagementReset - disengagementPenalty);
-  const consentStrength = Math.round(Math.max(0, rawStrength) * 100);
-  const decayPerMonth   = (1 - Math.pow(0.5, 30 / CONSENT_DECAY_HALF_LIFE_DAYS)) * 100;
+  const rawStrength      = Math.min(1, baseDecay + engagementReset - disengagementPenalty);
+  const consentStrength  = Math.round(Math.max(0, rawStrength) * 100);
+  const decayPerMonth    = (1 - Math.pow(0.5, 30 / CONSENT_DECAY_HALF_LIFE_DAYS)) * 100;
   const consentDecayRate = parseFloat(decayPerMonth.toFixed(2));
 
   const currentFraction   = rawStrength;
@@ -231,64 +261,42 @@ function dimension1_consent(contact) {
       CONSENT_DECAY_HALF_LIFE_DAYS * Math.log(currentFraction / thresholdFraction) / Math.log(2)
     );
   }
-
   return { consentStrength, consentDecayRate, daysToThreshold };
 }
 
-// ─────────────────────────────────────────────────────────────
-// DIMENSION 2 — DELIVERABILITY TRAJECTORY
-// ─────────────────────────────────────────────────────────────
 function dimension2_deliverability(contact, domainCounts, totalContacts) {
-  const email  = (contact.email || '').toLowerCase().trim();
-  const parts  = email.split('@');
+  const email = (contact.email || '').toLowerCase().trim();
+  const parts = email.split('@');
   if (parts.length !== 2) return { deliverabilityScore: 0, primaryRisk: 'invalid_format' };
-
   const local  = parts[0];
   const domain = parts[1];
-  let score    = 100;
+  let score = 100;
   let primaryRisk = null;
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
-    return { deliverabilityScore: 0, primaryRisk: 'invalid_format' };
-  }
-  if (DISPOSABLE_DOMAINS.has(domain)) {
-    return { deliverabilityScore: 10, primaryRisk: 'disposable_domain' };
-  }
-  if (SPAM_TRAP_INDICATORS.some(t => local.includes(t))) {
-    score -= 50; primaryRisk = primaryRisk || 'spam_trap_indicator';
-  }
-  if (TYPO_DOMAINS[domain]) {
-    score -= 40; primaryRisk = primaryRisk || 'typo_domain';
-  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { deliverabilityScore: 0, primaryRisk: 'invalid_format' };
+  if (DISPOSABLE_DOMAINS.has(domain)) return { deliverabilityScore: 10, primaryRisk: 'disposable_domain' };
+  if (SPAM_TRAP_INDICATORS.some(t => local.includes(t))) { score -= 50; primaryRisk = primaryRisk || 'spam_trap_indicator'; }
+  if (TYPO_DOMAINS[domain]) { score -= 40; primaryRisk = primaryRisk || 'typo_domain'; }
   const localPrefix = local.split('+')[0].split('.')[0];
-  if (ROLE_PREFIXES.has(localPrefix)) {
-    score -= 25; primaryRisk = primaryRisk || 'role_based';
-  }
+  if (ROLE_PREFIXES.has(localPrefix)) { score -= 25; primaryRisk = primaryRisk || 'role_based'; }
   if (/\d{1,4}$/.test(local) && parseInt(local.match(/\d+$/)[0]) < 100) {
     score -= 10; primaryRisk = primaryRisk || 'sequential_pattern';
   }
   const domainPct = (domainCounts[domain] || 0) / Math.max(totalContacts, 1);
-  if (domainPct > 0.4) {
-    score -= 20; primaryRisk = primaryRisk || 'domain_concentration';
-  } else if (domainPct > 0.25) {
-    score -= 10;
-  }
+  if (domainPct > 0.4) { score -= 20; primaryRisk = primaryRisk || 'domain_concentration'; }
+  else if (domainPct > 0.25) score -= 10;
+
   if (contact.lastEngagement) {
     const daysOld      = (new Date() - new Date(contact.dateAdded || new Date())) / 86400000;
     const daysSinceEng = (new Date() - new Date(contact.lastEngagement)) / 86400000;
     const engRatio     = daysOld > 0 ? Math.min(1, 1 - daysSinceEng / daysOld) : 0.5;
     if (engRatio > 0.7)      score += 10;
     else if (engRatio < 0.2) score -= 15;
-  } else {
-    score -= 10;
-  }
+  } else score -= 10;
 
   return { deliverabilityScore: Math.max(0, Math.min(100, Math.round(score))), primaryRisk: primaryRisk || 'none' };
 }
 
-// ─────────────────────────────────────────────────────────────
-// DIMENSION 3 — COMMERCIAL TRAJECTORY
-// ─────────────────────────────────────────────────────────────
 function dimension3_commercial(contact, sector, aov) {
   const benchmark = SECTOR_BENCHMARKS[sector] || SECTOR_BENCHMARKS.other;
   const baseValue = benchmark.conversionRate * (aov || 50) * benchmark.avgOrderMultiplier;
@@ -297,28 +305,19 @@ function dimension3_commercial(contact, sector, aov) {
   if (contact.lastEngagement) {
     const daysSinceEng = (new Date() - new Date(contact.lastEngagement)) / 86400000;
     const engType      = (contact.engagementType || '').toLowerCase();
-    if (engType.includes('purchas') || engType.includes('order')) {
-      engMultiplier = daysSinceEng < 90 ? 2.5 : daysSinceEng < 180 ? 1.8 : 1.2;
-    } else if (engType.includes('click')) {
-      engMultiplier = daysSinceEng < 90 ? 1.5 : daysSinceEng < 180 ? 1.1 : 0.8;
-    } else if (engType.includes('open')) {
-      engMultiplier = daysSinceEng < 90 ? 1.1 : daysSinceEng < 180 ? 0.9 : 0.6;
-    } else {
-      engMultiplier = daysSinceEng < 90 ? 0.9 : daysSinceEng < 365 ? 0.7 : 0.4;
-    }
+    if (engType.includes('purchas') || engType.includes('order')) engMultiplier = daysSinceEng < 90 ? 2.5 : daysSinceEng < 180 ? 1.8 : 1.2;
+    else if (engType.includes('click')) engMultiplier = daysSinceEng < 90 ? 1.5 : daysSinceEng < 180 ? 1.1 : 0.8;
+    else if (engType.includes('open'))  engMultiplier = daysSinceEng < 90 ? 1.1 : daysSinceEng < 180 ? 0.9 : 0.6;
+    else                                engMultiplier = daysSinceEng < 90 ? 0.9 : daysSinceEng < 365 ? 0.7 : 0.4;
   }
 
   const commercialValue   = parseFloat((baseValue * engMultiplier).toFixed(2));
   const decayedMultiplier = engMultiplier * 0.85;
   const interventionValue = parseFloat((baseValue * (engMultiplier - decayedMultiplier)).toFixed(2));
   const direction = engMultiplier > 1.0 ? 'growing' : engMultiplier > 0.7 ? 'stable' : 'declining';
-
   return { commercialValue, interventionValue, direction };
 }
 
-// ─────────────────────────────────────────────────────────────
-// DIMENSION 4 — RISK TRAJECTORY
-// ─────────────────────────────────────────────────────────────
 function dimension4_risk(consentResult) {
   const { consentStrength, consentDecayRate, daysToThreshold } = consentResult;
   const thresholdProximity = Math.max(0, 1 - (consentStrength - CONSENT_THRESHOLD) / 80);
@@ -326,9 +325,6 @@ function dimension4_risk(consentResult) {
   return { riskAcceleration, daysToThreshold };
 }
 
-// ─────────────────────────────────────────────────────────────
-// PRIORITISATION
-// ─────────────────────────────────────────────────────────────
 function prioritisationScore(consent, commercial, risk, deliverability, maxCommercial) {
   const cScore   = consent.consentStrength / 100;
   const comScore = maxCommercial > 0 ? commercial.commercialValue / maxCommercial : 0;
@@ -338,7 +334,7 @@ function prioritisationScore(consent, commercial, risk, deliverability, maxComme
 }
 
 // ─────────────────────────────────────────────────────────────
-// LIST-LEVEL ANALYSIS
+// LIST-LEVEL ANALYSIS — unchanged from v1.4
 // ─────────────────────────────────────────────────────────────
 function analyseList(contacts, sector, aov) {
   const domainCounts = {};
@@ -384,12 +380,10 @@ function analyseList(contacts, sector, aov) {
 
   const active      = scored.filter(c => c.consentStrength >= 60 && c.deliverabilityScore >= 60);
   const recoverable = scored.filter(c => c.consentStrength >= CONSENT_THRESHOLD && c.consentStrength < 60 && c.deliverabilityScore >= 40);
-  const atRisk      = scored.filter(c => c.consentStrength >= CONSENT_THRESHOLD && c.deliverabilityScore < 40);
+  const atRisk     = scored.filter(c => c.consentStrength >= CONSENT_THRESHOLD && c.deliverabilityScore < 40);
   const liability   = scored.filter(c => c.consentStrength < CONSENT_THRESHOLD);
 
-  const assetValue = parseFloat(
-    [...active, ...recoverable].reduce((s, c) => s + c.commercialValue, 0).toFixed(2)
-  );
+  const assetValue = parseFloat([...active, ...recoverable].reduce((s, c) => s + c.commercialValue, 0).toFixed(2));
 
   const aboveThreshold = scored.filter(c => c.daysToThreshold !== null);
   const expiring30 = aboveThreshold.filter(c => c.daysToThreshold <= 30).length;
@@ -405,37 +399,21 @@ function analyseList(contacts, sector, aov) {
   if (liabilityPct > 0.3)      icoStatus = 'High risk \u2014 significant portion below consent threshold';
   else if (liabilityPct > 0.1) icoStatus = 'Review recommended \u2014 contacts approaching threshold';
 
-  const roleBasedCount   = scored.filter(c => c.primaryRisk === 'role_based').length;
-  const disposableCount  = scored.filter(c => c.primaryRisk === 'disposable_domain').length;
-  const domainConc       = Object.values(domainCounts).some(n => n / unique.length > 0.4);
-  const asaSignals       = [];
-  if (roleBasedCount > 0) {
-    asaSignals.push(`${roleBasedCount} role-based address${roleBasedCount !== 1 ? 'es' : ''} (e.g. info@, admin@) — promotional email to these may not reach a named individual, which is relevant to how the recipient can exercise their right to unsubscribe.`);
-  }
-  if (disposableCount > 0) {
-    asaSignals.push(`${disposableCount} disposable domain${disposableCount !== 1 ? 's' : ''} — these addresses are unlikely to reach a real, identifiable individual.`);
-  }
-  if (liabilityPct > 0.1) {
-    asaSignals.push(`${liability.length} contacts (${Math.round(liabilityPct * 100)}%) are below the consent threshold. Promotional content sent to these contacts is being sent without a clear prior relationship signal.`);
-  }
-  const asaNote = asaSignals.length > 0
-    ? 'ASA signals from this list: ' + asaSignals.join(' ')
-    : null;
+  const roleBasedCount  = scored.filter(c => c.primaryRisk === 'role_based').length;
+  const disposableCount = scored.filter(c => c.primaryRisk === 'disposable_domain').length;
+  const domainConc      = Object.values(domainCounts).some(n => n / unique.length > 0.4);
+  const asaSignals      = [];
+  if (roleBasedCount > 0)  asaSignals.push(`${roleBasedCount} role-based address${roleBasedCount !== 1 ? 'es' : ''} (e.g. info@, admin@) — promotional email to these may not reach a named individual, which is relevant to how the recipient can exercise their right to unsubscribe.`);
+  if (disposableCount > 0) asaSignals.push(`${disposableCount} disposable domain${disposableCount !== 1 ? 's' : ''} — these addresses are unlikely to reach a real, identifiable individual.`);
+  if (liabilityPct > 0.1)  asaSignals.push(`${liability.length} contacts (${Math.round(liabilityPct * 100)}%) are below the consent threshold. Promotional content sent to these contacts is being sent without a clear prior relationship signal.`);
+  const asaNote = asaSignals.length ? 'ASA signals from this list: ' + asaSignals.join(' ') : null;
 
   const cmaSignals = [];
-  if (liabilityPct > 0.15) {
-    cmaSignals.push(`${liability.length} contacts are below the consent threshold. If promotional pricing claims are sent to this segment, the commercial context of those claims is weakened by the absence of a prior relationship signal.`);
-  }
-  if (domainConc) {
-    cmaSignals.push(`Domain concentration detected — over 40% of your list shares one domain. This suggests a high proportion of professional or organisational addresses, which may have different expectations around promotional content.`);
-  }
-  if (scored.filter(c => c.primaryRisk === 'spam_trap_indicator').length > 0) {
-    const n = scored.filter(c => c.primaryRisk === 'spam_trap_indicator').length;
-    cmaSignals.push(`${n} address${n !== 1 ? 'es' : ''} contain spam trap indicators. Sending promotional content to these harms your sender reputation and the deliverability of commercial messages to your clean contacts.`);
-  }
-  const cmaNote = cmaSignals.length > 0
-    ? 'CMA signals from this list: ' + cmaSignals.join(' ')
-    : null;
+  if (liabilityPct > 0.15) cmaSignals.push(`${liability.length} contacts are below the consent threshold. If promotional pricing claims are sent to this segment, the commercial context of those claims is weakened by the absence of a prior relationship signal.`);
+  if (domainConc)          cmaSignals.push(`Domain concentration detected — over 40% of your list shares one domain. This suggests a high proportion of professional or organisational addresses, which may have different expectations around promotional content.`);
+  const spamCount = scored.filter(c => c.primaryRisk === 'spam_trap_indicator').length;
+  if (spamCount > 0)       cmaSignals.push(`${spamCount} address${spamCount !== 1 ? 'es' : ''} contain spam trap indicators. Sending promotional content to these harms your sender reputation and the deliverability of commercial messages to your clean contacts.`);
+  const cmaNote = cmaSignals.length ? 'CMA signals from this list: ' + cmaSignals.join(' ') : null;
 
   const invalidFormat = scored.filter(c => c.primaryRisk === 'invalid_format').length;
   const roleBased     = scored.filter(c => c.primaryRisk === 'role_based').length;
@@ -444,13 +422,13 @@ function analyseList(contacts, sector, aov) {
   const concentrated  = Object.values(domainCounts).filter(n => n / unique.length > 0.4).length > 0;
 
   const dataQualityFlags = [];
-  if (invalidFormat > 0) dataQualityFlags.push(`${invalidFormat} invalid email format${invalidFormat !== 1 ? 's' : ''}`);
+  if (invalidFormat > 0)   dataQualityFlags.push(`${invalidFormat} invalid email format${invalidFormat !== 1 ? 's' : ''}`);
   if (disposableCount > 0) dataQualityFlags.push(`${disposableCount} disposable domain${disposableCount !== 1 ? 's' : ''}`);
-  if (roleBased > 0)     dataQualityFlags.push(`${roleBased} role-based address${roleBased !== 1 ? 'es' : ''}`);
-  if (typos > 0)         dataQualityFlags.push(`${typos} likely typo domain${typos !== 1 ? 's' : ''}`);
-  if (spamTraps > 0)     dataQualityFlags.push(`${spamTraps} spam trap indicator${spamTraps !== 1 ? 's' : ''}`);
-  if (duplicates > 0)    dataQualityFlags.push(`${duplicates} duplicate${duplicates !== 1 ? 's' : ''} removed`);
-  if (concentrated)      dataQualityFlags.push('Domain concentration risk \u2014 over 40% from one domain');
+  if (roleBased > 0)       dataQualityFlags.push(`${roleBased} role-based address${roleBased !== 1 ? 'es' : ''}`);
+  if (typos > 0)           dataQualityFlags.push(`${typos} likely typo domain${typos !== 1 ? 's' : ''}`);
+  if (spamTraps > 0)       dataQualityFlags.push(`${spamTraps} spam trap indicator${spamTraps !== 1 ? 's' : ''}`);
+  if (duplicates > 0)      dataQualityFlags.push(`${duplicates} duplicate${duplicates !== 1 ? 's' : ''} removed`);
+  if (concentrated)        dataQualityFlags.push('Domain concentration risk \u2014 over 40% from one domain');
 
   return {
     totalContacts:     unique.length,
@@ -482,24 +460,13 @@ function analyseList(contacts, sector, aov) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FIX EMISSION — v1.4 (C1.3)
-// One fix per finding. On rerun, look up existing pending fix for
-// this userId+fixType+sourceRecordId+Tool="List Intelligence". Then:
-//   - Finding present + no existing fix → create via generate-fix (Case E)
-//   - Finding present + existing pending → refresh Description/Exposure,
-//     clear any stale ImprovedOnRerun hint (Case C)
-//   - Finding resolved + existing pending → patch with ImprovedOnRerun
-//     JSON so the dashboard can render "improved on rerun" without
-//     auto-closing the fix (Case A) — user still confirms manually
-//   - Finding absent + no existing fix → nothing to do (Case B)
-// Mirrors the audience-read.js v7.3 pattern from session 5.
+// FIX EMISSION — v1.5 (per-list sourceRecordId)
+// sourceRecordId is now `${type}:${slug(listName)}` so each named list
+// gets its own fix lineage. Refresh / mark-improved / dedupe-check all
+// still work per-list.
 // ─────────────────────────────────────────────────────────────
-
-// SourceRecordID constants — stable so lookup keys don't drift.
-// 'li-commercial' is kept as-is for backward-compatibility with any
-// pending fixes already created by v1.3 in production.
-const LI_SRC_LIABILITY       = 'li-liability';
-const LI_SRC_COMMERCIAL_LOSS = 'li-commercial';
+function liabilitySourceId(listName)      { return `li-liability:${slugify(listName)}`; }
+function commercialLossSourceId(listName) { return `li-commercial:${slugify(listName)}`; }
 
 async function findPendingLIFix(userId, fixType, sourceRecordId) {
   const formula = `AND({UserID}="${userId}",{FixType}="${fixType}",{Tool}="List Intelligence",{SourceRecordID}="${sourceRecordId}",{Status}="Pending")`;
@@ -520,12 +487,8 @@ async function markLIFixImproved(fixId, previousDescription, newStateSummary) {
       detectedAt:    new Date().toISOString(),
       source:        'list-intelligence',
     };
-    await atPatch('Compliance_Fixes', fixId, {
-      ImprovedOnRerun: JSON.stringify(hint),
-    });
-  } catch (e) {
-    console.error('markLIFixImproved error (non-fatal):', e);
-  }
+    await atPatch('Compliance_Fixes', fixId, { ImprovedOnRerun: JSON.stringify(hint) });
+  } catch (e) { console.error('markLIFixImproved error (non-fatal):', e); }
 }
 
 async function refreshLIFix(fixId, description, exposureLow, exposureHigh) {
@@ -534,64 +497,45 @@ async function refreshLIFix(fixId, description, exposureLow, exposureHigh) {
     if (exposureLow  != null) fields.ExposureLow  = exposureLow;
     if (exposureHigh != null) fields.ExposureHigh = exposureHigh;
     await atPatch('Compliance_Fixes', fixId, fields);
-  } catch (e) {
-    console.error('refreshLIFix error (non-fatal):', e);
-  }
+  } catch (e) { console.error('refreshLIFix error (non-fatal):', e); }
 }
 
-async function emitLIFix(userId, spec) {
-  // spec: { fixType, sourceRecordId, presentNow, description, severity, contactVolume, exposureLow, exposureHigh, resolvedSummary }
+async function emitLIFix(userId, listName, spec) {
+  // spec: { fixType, sourceRecordId, presentNow, description, severity,
+  //         contactVolume, exposureLow, exposureHigh, resolvedSummary }
   const existing = await findPendingLIFix(userId, spec.fixType, spec.sourceRecordId);
 
   if (!spec.presentNow) {
-    // Case A: previously flagged, now resolved
     if (existing) {
       await markLIFixImproved(
         existing.id,
         existing.fields?.Description || '',
-        spec.resolvedSummary || `Finding resolved on rerun (${new Date().toISOString().split('T')[0]}).`
+        spec.resolvedSummary || `Finding resolved on rerun for "${listName}" (${new Date().toISOString().split('T')[0]}).`
       );
     }
-    // Case B: nothing to do
     return;
   }
 
   if (existing) {
-    // Case C: refresh existing pending fix in place
-    await refreshLIFix(
-      existing.id,
-      spec.description,
-      spec.exposureLow  ?? null,
-      spec.exposureHigh ?? null
-    );
+    await refreshLIFix(existing.id, spec.description, spec.exposureLow ?? null, spec.exposureHigh ?? null);
     return;
   }
 
-  // Case E: no existing fix — create via generate-fix.
-  // Defensive check first: our findPendingLIFix lookup filters by SourceRecordID.
-  // If the Airtable field is missing/misnamed, or generate-fix.js isn't writing
-  // sourceRecordId into it, the lookup will always return null and we'll create
-  // a fresh fix on every upload — silent duplication.
-  // Cross-check: query pending fixes of this fixType+Tool without the
-  // SourceRecordID filter. If any come back, we're about to duplicate.
+  // Dedupe-miss diagnostic. If SourceRecordID field is missing/misnamed, our
+  // lookup by sourceRecordId always misses and we'd silently duplicate. Warn
+  // if OTHER pending fixes of the same type exist for the same list.
   try {
-    const broadFormula = `AND({UserID}="${userId}",{FixType}="${spec.fixType}",{Tool}="List Intelligence",{Status}="Pending")`;
+    const broadFormula = `AND({UserID}="${userId}",{FixType}="${spec.fixType}",{Tool}="List Intelligence",{Status}="Pending",FIND("${slugify(listName)}",{SourceRecordID}))`;
     const others = await atGet('Compliance_Fixes', broadFormula, '', 3);
     if (others.length > 0) {
-      const existingIds = others.map(r => r.id).join(', ');
       console.warn(
         `[list-intelligence] SUSPECTED DEDUPE MISS: about to create ${spec.fixType} ` +
         `(sourceRecordId=${spec.sourceRecordId}) but ${others.length} pending fix(es) ` +
-        `of this type already exist for userId=${userId}. Most likely cause: ` +
-        `Compliance_Fixes.SourceRecordID field missing, misnamed, or not being written ` +
-        `by generate-fix.js. Existing record IDs: ${existingIds}. ` +
-        `Fix the schema/writer before this scales.`
+        `of this type already exist for list="${listName}" userId=${userId}. ` +
+        `Check Compliance_Fixes.SourceRecordID field is populated correctly by generate-fix.js.`
       );
     }
-  } catch (e) {
-    // Diagnostic only — swallow so it never blocks the real create.
-    console.error('emitLIFix dedupe-miss check failed (non-fatal):', e);
-  }
+  } catch (e) { console.error('emitLIFix dedupe-miss check failed (non-fatal):', e); }
 
   try {
     const body = {
@@ -610,17 +554,15 @@ async function emitLIFix(userId, spec) {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(body),
     });
-  } catch (e) {
-    console.error(`emitLIFix create ${spec.fixType} non-fatal:`, e);
-  }
+  } catch (e) { console.error(`emitLIFix create ${spec.fixType} non-fatal:`, e); }
 }
 
 // ─────────────────────────────────────────────────────────────
-// OPPORTUNITY GENERATION
+// OPPORTUNITY GENERATION — unchanged from v1.4
 // ─────────────────────────────────────────────────────────────
-function generateOpportunities(analysis, sector, aov) {
+function generateOpportunities(analysis) {
   const opps = [];
-  const { recoverable, atRisk, active, scored } = analysis;
+  const { recoverable, active, scored } = analysis;
 
   if (recoverable.length > 0) {
     const totalValue = recoverable.reduce((s, c) => s + c.interventionValue, 0);
@@ -678,11 +620,12 @@ function generateOpportunities(analysis, sector, aov) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SNAPSHOT STORAGE
+// PER-LIST SNAPSHOT STORAGE + COMPARISON
 // ─────────────────────────────────────────────────────────────
-async function snapshotList(userId, analysis, assetValue) {
+async function snapshotList(userId, listName, analysis) {
   await atCreate('List_Intelligence_Snapshots', {
     UserID:            userId,
+    ListName:          listName,
     SnapshotDate:      new Date().toISOString().slice(0, 10),
     SnapshotTimestamp: new Date().toISOString(),
     TotalContacts:     analysis.totalContacts,
@@ -691,17 +634,18 @@ async function snapshotList(userId, analysis, assetValue) {
     AtRiskCount:       analysis.atRiskCount,
     LiabilityCount:    analysis.liabilityCount,
     LiabilityPct:      analysis.liabilityPct,
-    AssetValue:        assetValue,
+    AssetValue:        analysis.assetValue,
     Expiring30:        analysis.expiring30,
     Expiring60:        analysis.expiring60,
     Expiring90:        analysis.expiring90,
   });
 }
 
-async function getListSnapshots(userId, max = 12) {
+async function getListSnapshots(userId, listName, max = 12) {
+  const formula = `AND({UserID}='${userId}',${listNameFormulaFragment(listName)})`;
   const records = await atGet(
     'List_Intelligence_Snapshots',
-    `{UserID}='${userId}'`,
+    formula,
     'sort[0][field]=SnapshotTimestamp&sort[0][direction]=desc',
     max
   );
@@ -759,6 +703,55 @@ function buildListComparison(cur, prev) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// LISTS SUMMARY — powers the "your lists" landing state and any
+// future dashboard counter.
+// ─────────────────────────────────────────────────────────────
+async function getListsSummary(userId) {
+  // Fetch all checks for user, group by ListName, keep newest per list.
+  const records = await atGet(
+    'List_Intelligence_Checks',
+    `{UserID}='${userId}'`,
+    'sort[0][field]=CheckDate&sort[0][direction]=desc',
+    500
+  );
+  const byList = new Map();
+  for (const r of records) {
+    const rawName  = r.fields.ListName;
+    const listName = rawName && String(rawName).trim() ? String(rawName).trim() : LEGACY_LIST_NAME;
+    if (byList.has(listName)) continue; // already have the newest
+    byList.set(listName, r.fields);
+  }
+  const now = new Date().toISOString().slice(0, 10);
+  const out = [];
+  for (const [listName, f] of byList.entries()) {
+    const days = daysBetween(now, f.CheckDate);
+    const liability = f.LiabilityCount || 0;
+    const stale = days != null && days >= 14;
+    out.push({
+      listName,
+      checkDate:         f.CheckDate,
+      daysSinceLastCheck: days,
+      totalContacts:     f.TotalContacts || 0,
+      assetValue:        f.AssetValue || 0,
+      liabilityCount:    liability,
+      icoStatus:         f.ICOStatus || 'Good standing',
+      sector:            f.Sector || null,
+      needsAttention:    liability > 0 || stale,
+      needsAttentionReasons: [
+        ...(liability > 0 ? [`${liability} contact${liability !== 1 ? 's' : ''} below consent threshold`] : []),
+        ...(stale ? [`No check in ${days} days`] : []),
+      ],
+    });
+  }
+  // Sort: needsAttention first, then most-recently-checked.
+  out.sort((a, b) => {
+    if (a.needsAttention !== b.needsAttention) return a.needsAttention ? -1 : 1;
+    return (b.checkDate || '').localeCompare(a.checkDate || '');
+  });
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────
 // MAIN HANDLER
 // ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
@@ -773,24 +766,56 @@ export default async function handler(req, res) {
   const action = req.query.action || req.body?.action || 'load';
 
   try {
+    // ── DETECT ──────────────────────────────────────────────
     if (action === 'detect') {
       const { headers, rows } = req.body;
       if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
       return res.status(200).json({ success: true, mapping: detectListColumns(headers, rows) });
     }
 
+    // ── LISTS ───────────────────────────────────────────────
+    if (action === 'lists') {
+      const lists = await getListsSummary(userId);
+      return res.status(200).json({ success: true, lists });
+    }
+
+    // ── LOAD ────────────────────────────────────────────────
+    // With listName: return that list.
+    // Without: return the most recently checked list PLUS a `lists` array.
     if (action === 'load') {
-      const [checks, opps] = await Promise.all([
-        atGet('List_Intelligence_Checks', `{UserID}='${userId}'`,
+      const listName = req.query.listName ? normaliseListName(req.query.listName) : null;
+
+      let checkFormula;
+      if (listName) {
+        checkFormula = `AND({UserID}='${userId}',${listNameFormulaFragment(listName)})`;
+      } else {
+        checkFormula = `{UserID}='${userId}'`;
+      }
+
+      const [checks, oppsAll, lists] = await Promise.all([
+        atGet('List_Intelligence_Checks', checkFormula,
           'sort[0][field]=CheckDate&sort[0][direction]=desc', 1),
         atGet('List_Opportunities', `AND({UserID}='${userId}',{Status}='Open')`,
-          'sort[0][field]=CurrentValue&sort[0][direction]=desc', 50),
+          'sort[0][field]=CurrentValue&sort[0][direction]=desc', 200),
+        getListsSummary(userId),
       ]);
-      if (!checks.length) return res.status(200).json({ success: true, hasData: false });
+
+      if (!checks.length) return res.status(200).json({ success: true, hasData: false, lists });
 
       const latest = checks[0].fields;
-      const now    = new Date();
+      const resolvedListName = latest.ListName && String(latest.ListName).trim()
+        ? String(latest.ListName).trim()
+        : LEGACY_LIST_NAME;
 
+      // Opps filtered to this list (legacy opps without ListName treated as Main list).
+      const opps = oppsAll.filter(o => {
+        const on = o.fields.ListName && String(o.fields.ListName).trim()
+          ? String(o.fields.ListName).trim()
+          : LEGACY_LIST_NAME;
+        return on === resolvedListName;
+      });
+
+      const now = new Date();
       const decayedOpps = opps.map(o => {
         const created   = o.fields.CreatedDate ? new Date(o.fields.CreatedDate) : now;
         const monthsOld = (now - created) / (30 * 86400000);
@@ -809,12 +834,14 @@ export default async function handler(req, res) {
       });
 
       const unrealisedTotal = decayedOpps.reduce((s, o) => s + o.currentValue, 0);
-      const snaps   = await getListSnapshots(userId, 12);
+      const snaps   = await getListSnapshots(userId, resolvedListName, 12);
       const changes = snaps.length >= 2 ? buildListComparison(snaps[0], snaps[1]) : null;
 
       return res.status(200).json({
         success:          true,
         hasData:          true,
+        listName:         resolvedListName,
+        lists,
         checkDate:        latest.CheckDate,
         totalContacts:    latest.TotalContacts,
         activeCount:      latest.ActiveCount,
@@ -836,21 +863,26 @@ export default async function handler(req, res) {
           : null,
         changes,
         history: snaps.slice(0, 8).reverse().map(s => ({
-          date:          s.date,
-          assetValue:    s.assetValue,
+          date:           s.date,
+          assetValue:     s.assetValue,
           liabilityCount: s.liabilityCount,
-          activeCount:   s.activeCount,
+          activeCount:    s.activeCount,
         })),
         downloadIndices: null,
       });
     }
 
+    // ── UPLOAD ──────────────────────────────────────────────
     if (action === 'upload') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-      const { rows, fieldMapping, sector, aov, uploadVersion } = req.body;
+      const { rows, fieldMapping, sector, aov, uploadVersion, listName: rawListName } = req.body;
       if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
 
+      // NEW: listName is required. Frontend prompts with filename-prefill,
+      // so this should never be missing from a real client, but we tolerate
+      // by falling back to 'Main list' — same as legacy rows.
+      const listName  = normaliseListName(rawListName);
       const sectorVal = sector || 'ecommerce';
       const aovVal    = parseFloat(aov) || 50;
       const version   = uploadVersion || 1;
@@ -884,20 +916,22 @@ export default async function handler(req, res) {
 
       if (!contacts.length) return res.status(400).json({ error: 'No valid email addresses found.' });
 
-      const priorSnaps = await getListSnapshots(userId, 1);
+      // Prior snapshot for THIS list (not user-wide).
+      const priorSnaps = await getListSnapshots(userId, listName, 1);
       const priorSnap  = priorSnaps[0] || null;
 
-      const analysis     = analyseList(contacts, sectorVal, aovVal);
-      const opportunities = generateOpportunities(analysis, sectorVal, aovVal);
-      const today        = new Date().toISOString().split('T')[0];
+      const analysis      = analyseList(contacts, sectorVal, aovVal);
+      const opportunities = generateOpportunities(analysis);
+      const today         = new Date().toISOString().split('T')[0];
 
+      // Profile enrichment — unchanged.
       try {
         const profileRecs = await atGet('User_Profile', `{UserID}='${userId}'`, '', 1);
         if (profileRecs.length) {
           const pf = profileRecs[0].fields;
           const profileUpdate = {};
-          if (!pf.Sector && sectorVal)             profileUpdate.Sector = sectorVal;
-          if (!pf.AverageOrderValue && aovVal)     profileUpdate.AverageOrderValue = aovVal;
+          if (!pf.Sector && sectorVal)         profileUpdate.Sector = sectorVal;
+          if (!pf.AverageOrderValue && aovVal) profileUpdate.AverageOrderValue = aovVal;
           if (Object.keys(profileUpdate).length) {
             await atPatch('User_Profile', profileRecs[0].id, profileUpdate);
           }
@@ -906,6 +940,7 @@ export default async function handler(req, res) {
 
       await atCreate('List_Intelligence_Checks', {
         UserID:            userId,
+        ListName:          listName,
         CheckDate:         today,
         TotalContacts:     analysis.totalContacts,
         ActiveCount:       analysis.activeCount,
@@ -923,11 +958,12 @@ export default async function handler(req, res) {
         CMANote:           analysis.cmaNote  || null,
       });
 
-      await snapshotList(userId, analysis, analysis.assetValue);
+      await snapshotList(userId, listName, analysis);
 
       for (const opp of opportunities) {
         await atCreate('List_Opportunities', {
           UserID:            userId,
+          ListName:          listName,
           OpportunityType:   opp.type,
           Description:       opp.description,
           EstimatedValue:    opp.estimatedValue,
@@ -948,6 +984,7 @@ export default async function handler(req, res) {
       for (const c of topContacts) {
         await atCreate('List_Contacts', {
           UserID:              userId,
+          ListName:            listName,
           EmailHash:           hashEmail(c.email),
           DateAdded:           c.dateAdded       || null,
           LastEngagement:      c.lastEngagement  || null,
@@ -962,39 +999,36 @@ export default async function handler(req, res) {
         });
       }
 
-      // ── FIX EMISSION — v1.4 (C1.3) ─────────────────────────
-      // Two finds, two fixes, each with stable sourceRecordId so
-      // rerun behaviour is: refresh in place, mark improved when
-      // resolved, or create fresh — never blindly duplicate.
-
-      // Finding 1: consent-threshold liability (ICO)
-      await emitLIFix(userId, {
+      // ── FIX EMISSION — per-list sourceRecordId ─────────────
+      await emitLIFix(userId, listName, {
         fixType:         'consent_expired',
-        sourceRecordId:  LI_SRC_LIABILITY,
+        sourceRecordId:  liabilitySourceId(listName),
         presentNow:      analysis.liabilityCount > 0,
-        description:     `List Intelligence: ${analysis.liabilityCount.toLocaleString('en-GB')} contact${analysis.liabilityCount !== 1 ? 's are' : ' is'} below the consent strength threshold and represent${analysis.liabilityCount !== 1 ? '' : 's'} ICO enforcement risk under PECR Regulation 22. Suppress or re-consent before any marketing send.`,
+        description:     `List Intelligence — "${listName}": ${analysis.liabilityCount.toLocaleString('en-GB')} contact${analysis.liabilityCount !== 1 ? 's are' : ' is'} below the consent strength threshold and represent${analysis.liabilityCount !== 1 ? '' : 's'} ICO enforcement risk under PECR Regulation 22. Suppress or re-consent before any marketing send.`,
         severity:        analysis.liabilityCount > analysis.totalContacts * 0.2 ? 'critical' : 'high',
         contactVolume:   analysis.liabilityCount,
-        resolvedSummary: `List Intelligence rerun on ${today}: 0 contacts below the consent strength threshold. Prior liability appears resolved — confirm and close on your dashboard.`,
+        resolvedSummary: `List Intelligence rerun on "${listName}" (${today}): 0 contacts below the consent strength threshold. Prior liability appears resolved — confirm and close on your dashboard.`,
       });
 
-      // Finding 2: commercial value expiring inside 90 days
       const expiringContacts = (analysis.expiring30 || 0) + (analysis.expiring60 || 0) + (analysis.expiring90 || 0);
       const commercialPresent = analysis.valueExpiring90 >= 100;
-      await emitLIFix(userId, {
+      await emitLIFix(userId, listName, {
         fixType:         'commercial_loss',
-        sourceRecordId:  LI_SRC_COMMERCIAL_LOSS,
+        sourceRecordId:  commercialLossSourceId(listName),
         presentNow:      commercialPresent,
         description:     commercialPresent
-          ? `List Intelligence: approximately \u00a3${Math.round(analysis.valueExpiring90).toLocaleString('en-GB')} of estimated list value sits with ${expiringContacts.toLocaleString('en-GB')} contact${expiringContacts !== 1 ? 's' : ''} whose consent is projected to expire within 90 days.`
-          : `List Intelligence: commercial value at risk within 90 days below the alert threshold.`,
+          ? `List Intelligence — "${listName}": approximately \u00a3${Math.round(analysis.valueExpiring90).toLocaleString('en-GB')} of estimated list value sits with ${expiringContacts.toLocaleString('en-GB')} contact${expiringContacts !== 1 ? 's' : ''} whose consent is projected to expire within 90 days.`
+          : `List Intelligence — "${listName}": commercial value at risk within 90 days below the alert threshold.`,
         severity:        'medium',
         contactVolume:   expiringContacts,
         exposureLow:     commercialPresent ? Math.round(analysis.valueExpiring90 * 0.5) : null,
         exposureHigh:    commercialPresent ? Math.round(analysis.valueExpiring90)       : null,
-        resolvedSummary: `List Intelligence rerun on ${today}: commercial value at risk within 90 days has fallen below the alert threshold. Prior concern appears resolved — confirm and close on your dashboard.`,
+        resolvedSummary: `List Intelligence rerun on "${listName}" (${today}): commercial value at risk within 90 days has fallen below the alert threshold.`,
       });
 
+      // Suppression is user-wide, not list-scoped. A toxic contact on the VIP
+      // list is toxic on the Main list too. We include listName in Source for
+      // auditability but the write itself stays global.
       for (const c of analysis.liability.slice(0, 200)) {
         try {
           await atCreate('Suppression_Registry', {
@@ -1002,7 +1036,7 @@ export default async function handler(req, res) {
             EmailHash:       hashEmail(c.email),
             SuppressionTier: 'Soft',
             DateAdded:       today,
-            Source:          'List Intelligence \u2014 consent below threshold',
+            Source:          `List Intelligence \u2014 "${listName}" \u2014 consent below threshold`,
             Notes:           `ConsentStrength: ${c.consentStrength}. DaysToThreshold: ${c.daysToThreshold ?? 'already crossed'}.`,
           });
         } catch(e) { /* non-fatal */ }
@@ -1016,6 +1050,7 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         success:           true,
+        listName,
         totalContacts:     analysis.totalContacts,
         duplicatesRemoved: analysis.duplicatesRemoved,
         activeCount:       analysis.activeCount,
@@ -1042,23 +1077,35 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── CERTIFICATE ─────────────────────────────────────────
     if (action === 'certificate') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-      const { segmentName, campaignType, linkedDossierId } = req.body;
+      const { segmentName, campaignType, linkedDossierId, listName: rawListName } = req.body;
+      const listName = rawListName ? normaliseListName(rawListName) : null;
+
+      const formula = listName
+        ? `AND({UserID}='${userId}',${listNameFormulaFragment(listName)})`
+        : `{UserID}='${userId}'`;
+
       const checks = await atGet('List_Intelligence_Checks',
-        `{UserID}='${userId}'`,
+        formula,
         'sort[0][field]=CheckDate&sort[0][direction]=desc', 1
       );
       if (!checks.length) return res.status(400).json({ error: 'No List Intelligence data found. Upload a list first.' });
 
-      const latest      = checks[0].fields;
-      const today       = new Date().toISOString().split('T')[0];
+      const latest       = checks[0].fields;
+      const resolvedList = latest.ListName && String(latest.ListName).trim()
+        ? String(latest.ListName).trim()
+        : LEGACY_LIST_NAME;
+      const today        = new Date().toISOString().split('T')[0];
       const liabilityPct = latest.TotalContacts > 0 ? latest.LiabilityCount / latest.TotalContacts : 0;
-      const result      = liabilityPct < 0.05 && latest.ICOStatus === 'Good standing' ? 'Pass' : liabilityPct < 0.15 ? 'Review' : 'Fail';
+      const result       = liabilityPct < 0.05 && latest.ICOStatus === 'Good standing' ? 'Pass' :
+                           liabilityPct < 0.15 ? 'Review' : 'Fail';
 
       const cert = await atCreate('PreSend_Certificates', {
         UserID:              userId,
+        ListName:            resolvedList,
         CertificateDate:     today,
         SegmentName:         segmentName || 'Full list',
         CampaignType:        campaignType || null,
@@ -1075,6 +1122,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success:         true,
         certificateId:   cert?.id,
+        listName:        resolvedList,
         result,
         contactsChecked: latest.TotalContacts,
         consentFlags:    latest.LiabilityCount,
