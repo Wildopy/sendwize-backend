@@ -1,28 +1,22 @@
-// api/audience-read.js — Sendwize Audience Read v7.4
+// api/audience-read.js — Sendwize Audience Read v7.5
 // Seven deterministic algorithms + derived send-window projection.
 // Zero AI. Zero external data.
 //
-// v7.4 changes from v7.3:
-//   FIX #3: normaliseRate no longer guesses. Takes an explicit `unit` hint
-//     ('percentage' | 'decimal_fraction') per column, sent from the mapping
-//     screen. Explicit % symbol in the value still wins over the hint.
-//   FIX #6/#3 guard: any segment whose interpreted selfBaseline > 5% is
-//     rejected as implausible — indicates the user picked the wrong rate
-//     interpretation. Frontend surfaces the mapping error.
-//   FIX #6 pre-send: algorithm6_predictiveSend forces Red verdict if the
-//     fingerprint baseline is implausible. No green light on broken data.
-//   FIX #8: detectColumnType replaced with scoreColumn — a scoring model.
-//     Each column scores against each target field, highest wins, and a
-//     confidence level ('high'|'medium'|'low') is returned per mapping.
-//   FIX #5: `detect` action returns `noSegmentDetected` flag when nothing
-//     scored high enough on segment — frontend uses this to hard-block.
+// v7.5 changes from v7.4:
+//   - PreviousState is now captured on upsert and written back to Airtable.
+//     Enables state-transition detection without a snapshot lookup.
+//   - maybeFireAudienceAlert replaced with maybeFireTransitionAlert. Fires
+//     only on worsening transitions into warn/bad states. No nagging.
+//   - upsertSegment now returns { priorState, newState, isNew, recordId }
+//     so the caller can wire alerts and generate-fix without an extra atGet.
+//   - upload response for each segment now includes previousState and
+//     stateChanged so the frontend can render a "was: X" pill.
+//   - STATE_RANK moved to the top of the file (used by transition detection
+//     as well as buildChangeComparison).
 //
-// API additions:
-//   - `detect` now returns { mapping, confidence, rateColumns, noSegmentDetected }.
-//   - `upload` accepts `rateUnits: { [columnName]: 'percentage'|'decimal_fraction' }`
-//     and applies them per column via normaliseRate.
-//   - `upload` returns 400 with `code: 'IMPLAUSIBLE_BASELINE'` if any segment
-//     has a baseline over 5%, so the frontend can walk the user back to mapping.
+// v7.4 changes preserved: normaliseRate takes explicit unit hint, implausible
+// baseline guard, scoreColumn detection model, rate-unit toggle, no-segment
+// detection.
 
 const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -34,6 +28,14 @@ const AT_HEADERS = () => ({
 });
 
 const IMPLAUSIBLE_BASELINE_THRESHOLD = 0.05; // >5% avg unsub = broken mapping
+
+// State ordering used by transition detection and change comparison.
+// Lower rank = worse. Regressions (newRank < priorRank) fire alerts.
+const STATE_RANK = {
+  'Complaint risk': 0, 'Damaged': 1, 'Fatigue building': 2, 'Cooling': 3,
+  'Recovering': 4, 'Neutral': 5, 'Healthy': 6,
+  'Highly receptive post-gap': 7, 'Peak receptiveness': 8,
+};
 
 const BENCHMARKS = {
   ecommerce: {
@@ -122,12 +124,7 @@ async function atPatch(table, recordId, fields) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FIX #8 — Column detection as a scoring model.
-// Each column scores against each candidate target. We then greedily
-// assign the highest-scoring (column, target) pairs, one column per
-// target and one target per column. Confidence is derived from the
-// winning score: high (≥70), medium (45–69), low (30–44).
-// Scores below 30 don't get mapped at all.
+// COLUMN DETECTION — unchanged from v7.4
 // ─────────────────────────────────────────────────────────────
 function scoreColumn(header, values) {
   const lc = String(header).toLowerCase().trim();
@@ -140,7 +137,6 @@ function scoreColumn(header, values) {
   };
   if (!sample.length) return scores;
 
-  // Value-shape analysis
   const dateRe = /^\d{4}-\d{2}-\d{2}|^\d{1,2}\/\d{1,2}\/\d{2,4}/;
   const dateHitRatio = sample.filter(v => dateRe.test(String(v).trim())).length / sample.length;
   const nums = sample.map(v => parseFloat(String(v).replace('%', '').replace(/,/g, ''))).filter(n => !isNaN(n));
@@ -150,64 +146,50 @@ function scoreColumn(header, values) {
   const allSubHundred = nums.length && nums.every(n => n >= 0 && n <= 100);
   const bigNums = nums.length && nums.every(n => n > 10);
 
-  // Date
   if (/\b(date|sent[_ ]?on|send[_ ]?date|delivered[_ ]?at|timestamp)\b/.test(lc)) scores.date += 50;
   if (dateHitRatio > 0.8) scores.date += 60;
   else if (dateHitRatio > 0.5) scores.date += 30;
 
-  // Segment / list / audience
   if (/\b(segment|list|audience|list[_ ]?name|audience[_ ]?name)\b/.test(lc)) scores.segment += 70;
   if (/\b(group|tag|cohort)\b/.test(lc)) scores.segment += 45;
-  if (numRatio < 0.3 && !dateHitRatio) scores.segment += 10; // text-y columns
+  if (numRatio < 0.3 && !dateHitRatio) scores.segment += 10;
 
-  // Campaign name
   if (/^(campaign|email|subject)( |_)?name?$/i.test(lc)) scores.campaign_name += 75;
   if (/\b(campaign|subject|email[_ ]?name)\b/.test(lc)) scores.campaign_name += 50;
   if (lc === 'name') scores.campaign_name += 30;
 
-  // Campaign type
   if (/\b(type|kind|category|template)\b/.test(lc)) scores.campaign_type += 60;
 
-  // Unsubscribe — rate vs count is data-shape-driven
   const isUnsub = /\b(unsub|opt[-_ ]?out|opted[-_ ]?out|opt out)\b/.test(lc);
   if (isUnsub) {
-    if (/\brate\b/.test(lc) || hasPct) {
-      scores.unsubscribe_rate += 80;
-    } else if (/\bcount\b/.test(lc) || /\bnumber\b/.test(lc) || /#/.test(lc)) {
-      scores.unsubscribe_count += 80;
-    } else {
-      // Ambiguous — data shape decides
+    if (/\brate\b/.test(lc) || hasPct) scores.unsubscribe_rate += 80;
+    else if (/\bcount\b/.test(lc) || /\bnumber\b/.test(lc) || /#/.test(lc)) scores.unsubscribe_count += 80;
+    else {
       if (hasPct || allSubOne) scores.unsubscribe_rate += 65;
       else if (bigNums) scores.unsubscribe_count += 65;
       else { scores.unsubscribe_rate += 40; scores.unsubscribe_count += 40; }
     }
   }
 
-  // Open rate
   if (/\bopen/.test(lc) && !/\bopened\b/.test(lc)) {
     if (hasPct || allSubOne || allSubHundred) scores.open_rate += 75;
     else scores.open_rate += 45;
   }
 
-  // Click rate
   if (/\bclick/.test(lc) && !/\bunique\b/.test(lc) && !/\bthrough\b/.test(lc)) {
     if (hasPct || allSubOne || allSubHundred) scores.click_rate += 75;
     else scores.click_rate += 45;
   }
   if (/\bctr\b|click[_ ]?rate|click[_ ]?through/.test(lc)) scores.click_rate += 20;
 
-  // Complaint / spam
   if (/\b(complaint|spam|abuse|reported)\b/.test(lc)) scores.complaint_count += 75;
 
-  // Volume sent
   if (/\b(sent|volume|delivered|recipients|sends|total[_ ]?sent)\b/.test(lc)) {
     if (bigNums || numRatio > 0.8) scores.volume_sent += 70;
     else scores.volume_sent += 35;
   }
 
-  // Explicit negative signals — don't map revenue/bounce anywhere
   if (/\b(bounce|revenue|£|\$|gbp|usd|sales|orders)\b/.test(lc)) {
-    // Zero everything — this column is noise for our purposes
     for (const k of Object.keys(scores)) scores[k] = 0;
   }
 
@@ -217,10 +199,7 @@ function scoreColumn(header, values) {
 function autoMapColumns(headers, rows) {
   const sampleSize = Math.min(rows.length, 20);
   const allScores = {};
-  for (const h of headers) {
-    allScores[h] = scoreColumn(h, rows.slice(0, sampleSize).map(r => r[h]));
-  }
-  // Build all (header, target, score) claims above threshold, sort desc, greedy assign
+  for (const h of headers) allScores[h] = scoreColumn(h, rows.slice(0, sampleSize).map(r => r[h]));
   const claims = [];
   for (const h of headers) {
     for (const [target, score] of Object.entries(allScores[h])) {
@@ -239,7 +218,6 @@ function autoMapColumns(headers, rows) {
     usedHeader.add(c.h);
     usedTarget.add(c.target);
   }
-  // Unmapped columns → empty target
   for (const h of headers) {
     if (!(h in mapping)) { mapping[h] = ''; confidence[h] = 'none'; }
   }
@@ -262,15 +240,6 @@ function normaliseDate(raw) {
   return null;
 }
 
-// ─────────────────────────────────────────────────────────────
-// FIX #3 — normaliseRate now takes an explicit unit hint.
-//   unit = 'percentage'      → value is a percent (22 means 22%)
-//   unit = 'decimal_fraction'→ value is already a fraction (0.22 = 22%)
-//   unit = undefined         → legacy heuristic (only for backward-compat
-//                              paths like the log/presend actions where
-//                              the user typed the number directly)
-// An explicit % symbol in the value ALWAYS wins over the hint.
-// ─────────────────────────────────────────────────────────────
 function normaliseRate(v, unit) {
   if (v === null || v === undefined || v === '') return null;
   const raw = String(v).trim();
@@ -280,7 +249,6 @@ function normaliseRate(v, unit) {
   if (hasPct) return n / 100;
   if (unit === 'percentage') return n / 100;
   if (unit === 'decimal_fraction') return n;
-  // Legacy fallback — the ambiguous case we're trying to eliminate
   return n > 1 ? n / 100 : n;
 }
 
@@ -317,6 +285,9 @@ function calcSubscriberLoss(campaigns, bench) {
   return { totalExcessUnsubs: totalLost, damagingCampaigns: totalDamagingCampaigns, breakdown: breakdown.slice(-5) };
 }
 
+// ─────────────────────────────────────────────────────────────
+// ALGORITHMS 1-7 + SEND WINDOW — unchanged from v7.4
+// ─────────────────────────────────────────────────────────────
 function algorithm1_fingerprint(campaigns, bench) {
   const n = campaigns.length;
   if (!n) return null;
@@ -484,11 +455,9 @@ function algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance
   return { state: 'Neutral', verdict: 'No strong signals — proceed normally', statement: `Average unsubscribe rate ${avgPct} vs UK ${bench.label} benchmark of ${benchPct}. ${capNote} No strong trend in either direction after ${n} campaign${n !== 1 ? 's' : ''}.`, action: 'Proceed with your planned campaign. Monitor unsubscribes on the next send.', statementCommercial: 'Neutral state means sends will perform at your historical average rates.', statementRegulatory: null, regulatoryNote: null, confidence: r2(Math.min(baseConf, 0.65)) };
 }
 
-// FIX #6 — pre-send guard against implausible baselines
 function algorithm6_predictiveSend(segment, campaignType, sendDate, fingerprint, trustVelocity, freqTolerance, bench) {
   if (!fingerprint) return { verdict: 'Amber', confidence: 0.5, reason: 'Not enough historical data to predict impact. Proceed cautiously.', alternatives: [], predictedUnsubRange: null };
 
-  // Guard: implausible baseline means the CSV was mapped wrong. Never green-light.
   if (fingerprint.selfBaseline > IMPLAUSIBLE_BASELINE_THRESHOLD) {
     return {
       verdict: 'Red',
@@ -668,18 +637,88 @@ async function generateFixes(userId, segmentName, sentiment, sourceRecordId) {
   }
 }
 
-async function maybeFireAudienceAlert(userId, segmentName, sentiment) {
-  if (!['Complaint risk', 'Damaged'].includes(sentiment.state)) return;
+// ─────────────────────────────────────────────────────────────
+// STATE-TRANSITION ALERTS — v7.5
+//
+// Fires when a segment worsens into a warn or bad state.
+// - No fire on brand-new segments (no prior).
+// - No fire on same-state uploads (avoids nagging).
+// - No fire on improvements (Damaged → Recovering, Cooling → Healthy).
+// - alertType is 'audience_damaged' for severe (Damaged/Complaint risk),
+//   'segment_state_change' otherwise. The send-alert endpoint handles
+//   template + rate limiting per user per day.
+// ─────────────────────────────────────────────────────────────
+async function maybeFireTransitionAlert(userId, segmentName, priorState, newState, sentiment) {
+  if (!priorState || priorState === newState) return;
+  const priorRank = STATE_RANK[priorState] != null ? STATE_RANK[priorState] : 5;
+  const newRank   = STATE_RANK[newState]   != null ? STATE_RANK[newState]   : 5;
+  if (newRank >= priorRank) return;                    // improvement or same — skip
+  if (newRank > STATE_RANK['Cooling']) return;         // still in a good state — skip
+
+  const severe    = ['Damaged', 'Complaint risk'].includes(newState);
+  const alertType = severe ? 'audience_damaged' : 'segment_state_change';
+
   try {
-    await fetch(`${APP_URL}/api/data?action=send-alert`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, alertType: 'audience_damaged', segmentName, sentimentState: sentiment.state, regulatoryNote: sentiment.regulatoryNote || null }) });
-  } catch (err) { console.error('audience_damaged alert failed (non-fatal):', err); }
+    await fetch(`${APP_URL}/api/data?action=send-alert`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        alertType,
+        segmentName,
+        previousState:  priorState,
+        sentimentState: newState,
+        regulatoryNote: sentiment?.regulatoryNote || null,
+      }),
+    });
+  } catch (err) {
+    console.error('transition alert failed (non-fatal):', err);
+  }
 }
 
+// ─────────────────────────────────────────────────────────────
+// UPSERT SEGMENT — v7.5
+// Captures priorState before overwrite, writes PreviousState, returns
+// { priorState, newState, isNew, recordId } so callers can fire alerts
+// and generate-fix without an extra atGet.
+// ─────────────────────────────────────────────────────────────
 async function upsertSegment(userId, segmentName, data) {
-  const records = await atGet('Audience_Read_Segments', `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`, '', 1);
-  const fields = { UserID: userId, SegmentName: segmentName, FingerprintJSON: JSON.stringify(data.fingerprint), TrustVelocity: data.trustVelocity.velocity, TrustVelocityDirection: data.trustVelocity.direction, RelationshipCapital: data.relationshipCapital, FrequencyTolerance: data.freqTolerance.toleranceRemaining, OptimalNextSendDate: data.freqTolerance.optimalNextSend, SentimentState: data.sentiment.state, SentimentConfidence: data.sentiment.confidence, LastUpdated: new Date().toISOString().slice(0, 10), CampaignCount: data.fingerprint?.campaignCount || 0, DataQuality: data.dataQuality, Sector: data.sector || 'general' };
-  if (records.length) await atPatch('Audience_Read_Segments', records[0].id, fields);
-  else await atCreate('Audience_Read_Segments', fields);
+  const records = await atGet(
+    'Audience_Read_Segments',
+    `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`,
+    '', 1
+  );
+  const priorState = records.length ? (records[0].fields.SentimentState || null) : null;
+  const newState   = data.sentiment.state;
+  const isNew      = !records.length;
+
+  const fields = {
+    UserID: userId,
+    SegmentName: segmentName,
+    FingerprintJSON: JSON.stringify(data.fingerprint),
+    TrustVelocity: data.trustVelocity.velocity,
+    TrustVelocityDirection: data.trustVelocity.direction,
+    RelationshipCapital: data.relationshipCapital,
+    FrequencyTolerance: data.freqTolerance.toleranceRemaining,
+    OptimalNextSendDate: data.freqTolerance.optimalNextSend,
+    SentimentState: newState,
+    PreviousState: priorState, // v7.5 — for state-transition detection
+    SentimentConfidence: data.sentiment.confidence,
+    LastUpdated: new Date().toISOString().slice(0, 10),
+    CampaignCount: data.fingerprint?.campaignCount || 0,
+    DataQuality: data.dataQuality,
+    Sector: data.sector || 'general',
+  };
+
+  let recordId;
+  if (records.length) {
+    await atPatch('Audience_Read_Segments', records[0].id, fields);
+    recordId = records[0].id;
+  } else {
+    const created = await atCreate('Audience_Read_Segments', fields);
+    recordId = created?.id;
+  }
+  return { priorState, newState, isNew, recordId };
 }
 
 async function saveCampaign(userId, segmentName, campaign, impact) {
@@ -690,8 +729,6 @@ async function loadCampaigns(userId) {
   const records = await atGet('Audience_Read_Campaigns', `{UserID}="${userId}"`, 'sort[0][field]=SendDate&sort[0][direction]=asc', 500);
   return records.map(r => ({ segment: r.fields.SegmentName, campaign_name: r.fields.CampaignName, campaign_type: r.fields.CampaignType, date: r.fields.SendDate, volume_sent: r.fields.VolumeSent || null, unsubscribe_count: r.fields.UnsubscribeCount || 0, open_rate: r.fields.OpenRate || null, click_rate: r.fields.ClickRate || null, complaint_count: r.fields.ComplaintCount || null }));
 }
-
-const STATE_RANK = { 'Complaint risk': 0, 'Damaged': 1, 'Fatigue building': 2, 'Cooling': 3, 'Recovering': 4, 'Neutral': 5, 'Healthy': 6, 'Highly receptive post-gap': 7, 'Peak receptiveness': 8 };
 
 async function snapshotSegment(userId, segmentName, data) {
   await atCreate('Audience_Read_Snapshots', { UserID: userId, SegmentName: segmentName, SnapshotDate: new Date().toISOString().slice(0, 10), SnapshotTimestamp: new Date().toISOString(), State: data.sentiment?.state || 'Neutral', Capital: data.capital != null ? data.capital : (data.relationshipCapital || 0), AvgUnsubRate: data.fingerprint?.selfBaseline || null, ExcessUnsubs: data.subscriberLoss?.totalExcessUnsubs || 0, CampaignCount: data.fingerprint?.campaignCount || 0, Sector: data.sector || 'general' });
@@ -744,6 +781,9 @@ function buildChangeComparison(currentMap, priorMap) {
   return { summary: { improved, worsened, unchanged, brandNew, daysSinceLast, total: segments.length }, segments };
 }
 
+// ─────────────────────────────────────────────────────────────
+// MAIN HANDLER
+// ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -758,7 +798,6 @@ export default async function handler(req, res) {
       const { headers, rows } = req.body;
       if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
       const { mapping, confidence } = autoMapColumns(headers, rows);
-      // Identify rate columns for the frontend unit toggle
       const rateColumns = Object.entries(mapping)
         .filter(([, t]) => t === 'unsubscribe_rate' || t === 'open_rate' || t === 'click_rate')
         .map(([h, t]) => {
@@ -766,7 +805,6 @@ export default async function handler(req, res) {
           const hasPctInData = rows.slice(0, 20).some(r => String(r[h] || '').includes('%'));
           return { column: h, target: t, firstValue: firstVal == null ? null : String(firstVal), hasPctSymbol: hasPctInData };
         });
-      // Did segment get mapped at all?
       const noSegmentDetected = !Object.values(mapping).includes('segment');
       return res.status(200).json({ success: true, mapping, confidence, rateColumns, noSegmentDetected });
     }
@@ -786,7 +824,7 @@ export default async function handler(req, res) {
       const { rows, fieldMapping, cpl, rateUnits } = req.body;
       if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
       const cplVal = (cpl != null && Number.isFinite(Number(cpl)) && Number(cpl) > 0) ? Number(cpl) : null;
-      const units = rateUnits || {}; // { columnName: 'percentage' | 'decimal_fraction' }
+      const units = rateUnits || {};
       const rawRows = rows.map(row => {
         const c = { segment: null, date: null, unsubscribe_count: null, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null };
         for (const [header, targetField] of Object.entries(fieldMapping || {})) {
@@ -824,8 +862,6 @@ export default async function handler(req, res) {
       const campaigns = Object.values(mergeMap);
       if (!campaigns.length) return res.status(400).json({ error: 'No valid rows found. Check that a date column is present and correctly mapped.' });
 
-      // FIX #3 — Plausibility guard. Compute each segment's baseline before
-      // committing anything, and refuse if any is implausibly high.
       const segmentGroups = buildSegmentData(campaigns);
       const implausible = [];
       for (const [segName, segCamps] of Object.entries(segmentGroups)) {
@@ -850,15 +886,38 @@ export default async function handler(req, res) {
       const currentMap = {};
       for (const [segmentName, segCampaigns] of Object.entries(segmentGroups)) {
         const data = runAlgorithms(segCampaigns, sector);
-        for (const c of segCampaigns) { const impact = algorithm3_campaignImpact(c, segCampaigns, data.fingerprint, getBenchmark(sector)); await saveCampaign(userId, segmentName, c, impact); }
-        await upsertSegment(userId, segmentName, { fingerprint: data.fingerprint, trustVelocity: data.trustVelocity, freqTolerance: data.freqTolerance, sentiment: data.sentiment, relationshipCapital: data.capital, dataQuality: data.dataQuality, sector });
+        for (const c of segCampaigns) {
+          const impact = algorithm3_campaignImpact(c, segCampaigns, data.fingerprint, getBenchmark(sector));
+          await saveCampaign(userId, segmentName, c, impact);
+        }
+
+        // v7.5 — upsert returns priorState + recordId in one call
+        const upsert = await upsertSegment(userId, segmentName, {
+          fingerprint:         data.fingerprint,
+          trustVelocity:       data.trustVelocity,
+          freqTolerance:       data.freqTolerance,
+          sentiment:           data.sentiment,
+          relationshipCapital: data.capital,
+          dataQuality:         data.dataQuality,
+          sector,
+        });
         await snapshotSegment(userId, segmentName, { ...data, sector });
-        currentMap[segmentName] = { state: data.sentiment.state, capital: data.capital, avgUnsubRate: data.fingerprint?.selfBaseline || null, excessUnsubs: data.subscriberLoss?.totalExcessUnsubs || 0 };
-        const segRecord = await atGet('Audience_Read_Segments', `AND({UserID}="${userId}",{SegmentName}="${segmentName}")`, '', 1);
-        const segRecordId = segRecord[0]?.id || null;
-        await generateFixes(userId, segmentName, data.sentiment, segRecordId);
-        await maybeFireAudienceAlert(userId, segmentName, data.sentiment);
-        savedSegments[segmentName] = { ...data, impacts: data.impacts.slice(-5) };
+        currentMap[segmentName] = {
+          state:         data.sentiment.state,
+          capital:       data.capital,
+          avgUnsubRate:  data.fingerprint?.selfBaseline || null,
+          excessUnsubs:  data.subscriberLoss?.totalExcessUnsubs || 0,
+        };
+        await generateFixes(userId, segmentName, data.sentiment, upsert.recordId);
+        await maybeFireTransitionAlert(userId, segmentName, upsert.priorState, upsert.newState, data.sentiment);
+
+        savedSegments[segmentName] = {
+          ...data,
+          impacts:       data.impacts.slice(-5),
+          previousState: upsert.priorState,                                             // v7.5
+          stateChanged:  !!(upsert.priorState && upsert.priorState !== upsert.newState),// v7.5
+          isNewSegment:  upsert.isNew,                                                   // v7.5
+        };
       }
       if (cplVal) {
         let totalExcess = 0;
@@ -884,11 +943,32 @@ export default async function handler(req, res) {
       const bench = getBenchmark(sector);
       const impact = algorithm3_campaignImpact(campaign, segCampaigns, data.fingerprint, bench);
       await saveCampaign(userId, campaign.segment, campaign, impact);
-      await upsertSegment(userId, campaign.segment, { fingerprint: data.fingerprint, trustVelocity: data.trustVelocity, freqTolerance: data.freqTolerance, sentiment: data.sentiment, relationshipCapital: data.capital, dataQuality: data.dataQuality, sector });
+
+      // v7.5 — upsert returns priorState + recordId in one call
+      const upsert = await upsertSegment(userId, campaign.segment, {
+        fingerprint:         data.fingerprint,
+        trustVelocity:       data.trustVelocity,
+        freqTolerance:       data.freqTolerance,
+        sentiment:           data.sentiment,
+        relationshipCapital: data.capital,
+        dataQuality:         data.dataQuality,
+        sector,
+      });
       await snapshotSegment(userId, campaign.segment, { ...data, sector });
-      await generateFixes(userId, campaign.segment, data.sentiment, null);
-      await maybeFireAudienceAlert(userId, campaign.segment, data.sentiment);
-      return res.status(200).json({ success: true, impact, sentiment: data.sentiment, trustVelocity: data.trustVelocity, capital: data.capital, freqTolerance: data.freqTolerance, sendWindow: data.sendWindow });
+      await generateFixes(userId, campaign.segment, data.sentiment, upsert.recordId);
+      await maybeFireTransitionAlert(userId, campaign.segment, upsert.priorState, upsert.newState, data.sentiment);
+
+      return res.status(200).json({
+        success: true,
+        impact,
+        sentiment: data.sentiment,
+        trustVelocity: data.trustVelocity,
+        capital: data.capital,
+        freqTolerance: data.freqTolerance,
+        sendWindow: data.sendWindow,
+        previousState: upsert.priorState,                                             // v7.5
+        stateChanged:  !!(upsert.priorState && upsert.priorState !== upsert.newState),// v7.5
+      });
     }
     if (action === 'presend') {
       const { segment, campaignType, sendDate } = req.body;
@@ -903,7 +983,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, prediction });
     }
     if (action === 'methodology') {
-      // Full benchmark table + sources, for the methodology modal
       const table = Object.entries(BENCHMARKS).map(([key, b]) => ({
         sector: key, label: b.label,
         unsubGood: b.unsubGood, unsubNormal: b.unsubNormal, unsubConcern: b.unsubConcern, unsubDamaged: b.unsubDamaged,
