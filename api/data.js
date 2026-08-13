@@ -1,19 +1,18 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.1
+// SENDWIZE — data.js v7.2
 // Commercial Relationships & Risk Register
 //
-// v7.1 changes (from v7.0):
-//   ~ calculateThirdPartyScore() rewritten:
-//       - Intelligence removed from score (now a passive indicator)
-//       - Empty categories excluded from denominator (N/A state)
-//       - Three categories only: processors, partners, affiliates
-//       - Score is out of 100 but only across applicable categories
-//   + handleRegister now generates dpa_breach fix for unconfirmed DPA
-//     (matches partner/affiliate pattern — feeds main compliance score)
-//   + New action: backfill-processor-fixes
-//       One-off: walks existing processors and generates missing fixes
-//   + New action: cron-status
-//       Diagnostic — last cron run, count, last error
+// v7.2 changes (from v7.1):
+//   + New alertTemplate: segment_state_change — for AR mild transitions
+//     (Healthy → Cooling, Cooling → Fatigue building, etc). Severe
+//     transitions (→ Damaged, → Complaint risk) still use audience_damaged.
+//   ~ audience_damaged template enhanced to show previousState when
+//     Audience Read passes it (from v7.5+ backend). Old callers that
+//     don't pass previousState still render correctly.
+//
+// v7.1 changes preserved: calculateThirdPartyScore rewritten,
+// dpa_breach fix on processor register, backfill-processor-fixes,
+// cron-status.
 // ─────────────────────────────────────────────────────────────
 
 import { atFetch } from './_airtable.js';
@@ -67,17 +66,12 @@ function airtableBase() {
 }
 
 // ── DPA status check helper ───────────────────────────────────
-// Confirmed statuses across processors/partners/affiliates
 const DPA_CONFIRMED = ['Confirmed', 'Confirmed and signed', 'In place'];
 function isDPAConfirmed(status) {
   return DPA_CONFIRMED.includes(status || '');
 }
 
 // ── Third-party risk score (v7.1 — rewritten) ────────────────
-// Score = weighted average of applicable categories only
-// Applicable = user has ≥1 record in that category
-// Intelligence is NOT in the score — shown separately as a passive indicator
-// Returns null category = not applicable (N/A)
 async function calculateThirdPartyScore(userId, base) {
   const [processors, partners, affiliates, profile] = await Promise.all([
     atGet(base, 'Vendor_Register',   `{UserID}='${userId}'`, '', 50).catch(() => []),
@@ -86,7 +80,6 @@ async function calculateThirdPartyScore(userId, base) {
     atGet(base, 'User_Profile',      `{UserID}='${userId}'`, '', 1).catch(() => []),
   ]);
 
-  // Each category scores 0-100 within itself, applicable only if count > 0
   function processorCategoryScore(records) {
     if (!records.length) return null;
     const noDPA  = records.filter(r => !isDPAConfirmed(r.fields.DPAStatus || r.fields.AgreementStatus)).length;
@@ -95,7 +88,6 @@ async function calculateThirdPartyScore(userId, base) {
       const d = r.fields.LastChecked || r.fields.LastAutoChecked;
       return d && Math.floor((Date.now() - new Date(d)) / 86400000) > 90;
     }).length;
-    // Weighted: DPA missing is biggest penalty
     const dpaGap   = (noDPA / records.length)  * 50;
     const riskGap  = (hiRisk / records.length) * 30;
     const staleGap = (stale / records.length)  * 20;
@@ -118,7 +110,6 @@ async function calculateThirdPartyScore(userId, base) {
     const noDPA      = records.filter(r => !isDPAConfirmed(r.fields.DPAStatus)).length;
     const noConsent  = records.filter(r => !r.fields.ConsentChainVerified).length;
     const noSenderID = records.filter(r => r.fields.SenderIdentityCompliant === 'Unverified').length;
-    // Consent chain is the biggest lever here — Saga/JTT anchor
     const consentGap = (noConsent / records.length)  * 50;
     const senderGap  = (noSenderID / records.length) * 30;
     const dpaGap     = (noDPA / records.length)      * 20;
@@ -129,20 +120,18 @@ async function calculateThirdPartyScore(userId, base) {
   const part = partnerCategoryScore(partners);
   const aff  = affiliateCategoryScore(affiliates);
 
-  // Overall = average of applicable categories only
   const applicable = [proc, part, aff].filter(s => s !== null);
   const total = applicable.length
     ? Math.round(applicable.reduce((a,b) => a+b, 0) / applicable.length)
-    : null; // null = no relationships registered at all
+    : null;
 
-  // Intelligence indicator — passive, not scored
   const lastReview = profile[0]?.fields?.LastIntelligenceFeedReview || null;
   const daysSinceReview = lastReview
     ? Math.floor((Date.now() - new Date(lastReview)) / 86400000)
     : null;
 
   return {
-    total,                    // 0-100 or null
+    total,
     applicableCount: applicable.length,
     breakdown: {
       processors: { score: proc, count: processors.length, applicable: proc !== null },
@@ -175,8 +164,6 @@ function generateFix(payload) {
   }).catch(e => console.error('generate-fix non-fatal:', e));
 }
 
-// Check if a fix already exists for a given source record + fix type
-// Prevents duplicates when a processor is edited or re-added
 async function fixExistsFor(base, userId, sourceRecordId, fixType) {
   if (!sourceRecordId) return false;
   const formula = `AND({UserID}='${userId}',{SourceRecordId}='${sourceRecordId}',{FixType}='${fixType}',{Status}!='completed',{Status}!='dismissed')`;
@@ -206,7 +193,7 @@ async function handleReport(req, res) {
   }
 }
 
-// ── VENDORS handler (known vendor database) ───────────────────
+// ── VENDORS handler ───────────────────────────────────────────
 async function handleVendors(req, res) {
   try {
     const records = await atGet(airtableBase(), 'Marketing_Vendors', '', 'sort[0][field]=VendorName', 200);
@@ -280,7 +267,6 @@ async function handleHistory(req, res) {
 }
 
 // ── REGISTER handler (Vendor_Register — processors) ──────────
-// v7.1: generates dpa_breach fix when DPA is unconfirmed
 async function handleRegister(req, res) {
   const base = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -322,8 +308,6 @@ async function handleRegister(req, res) {
         ? await atPatch(base, 'Vendor_Register', recordId, fields)
         : await atCreate(base, 'Vendor_Register', fields);
 
-      // v7.1: fire dpa_breach fix if DPA not confirmed
-      // Applies on create AND when an existing record moves back to unconfirmed
       const dpaStatus = vendor.DPAStatus || vendor.AgreementStatus;
       let fixGenerated = false;
       if (!isDPAConfirmed(dpaStatus)) {
@@ -348,9 +332,7 @@ async function handleRegister(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-// ── BACKFILL-PROCESSOR-FIXES handler (v7.1) ───────────────────
-// One-off: walks existing Vendor_Register records for a user and generates
-// dpa_breach fixes for any processor that doesn't already have one
+// ── BACKFILL-PROCESSOR-FIXES handler ─────────────────────────
 async function handleBackfillProcessorFixes(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId } = req.body;
@@ -379,10 +361,7 @@ async function handleBackfillProcessorFixes(req, res) {
   return res.json(results);
 }
 
-// ── CRON-STATUS handler (v7.1) ────────────────────────────────
-// Diagnostic — returns most recent Sector_Intelligence_Feed entry
-// and the count in the last 7 days, so you can see whether the Monday
-// cron actually fired
+// ── CRON-STATUS handler ───────────────────────────────────────
 async function handleCronStatus(req, res) {
   const base = airtableBase();
 
@@ -404,7 +383,6 @@ async function handleCronStatus(req, res) {
     ? Math.floor((now - new Date(mostRecentDate)) / 86400000)
     : null;
 
-  // Group by week to see cron cadence
   const weekCounts = {};
   all.forEach(r => {
     const w = r.fields.WeekNumber;
@@ -439,7 +417,6 @@ async function handleCronStatus(req, res) {
 }
 
 // ── PARTNER-REGISTER handler ──────────────────────────────────
-// (unchanged from v7.0 — already generates fixes correctly)
 async function handlePartnerRegister(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -534,7 +511,6 @@ async function handlePartnerRegister(req, res) {
 }
 
 // ── AFFILIATE-REGISTER handler ────────────────────────────────
-// (unchanged from v7.0 — already generates fixes correctly)
 async function handleAffiliateRegister(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -615,7 +591,7 @@ async function handleAffiliateRegister(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-// ── COMPETITOR-WATCH handler (unchanged from v7.0) ────────────
+// ── COMPETITOR-WATCH handler ──────────────────────────────────
 async function handleCompetitorWatch(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -701,7 +677,7 @@ async function handleCompetitorWatch(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-// ── SECTOR-INTELLIGENCE handler (unchanged from v7.0) ────────
+// ── SECTOR-INTELLIGENCE handler ──────────────────────────────
 async function handleSectorIntelligence(req, res) {
   const { userId, sector, limit = '20' } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -736,7 +712,7 @@ async function handleSectorIntelligence(req, res) {
   return res.json({ feed, sector: userSector, count: feed.length });
 }
 
-// ── COMPETITOR-INTELLIGENCE handler (unchanged from v7.0) ────
+// ── COMPETITOR-INTELLIGENCE handler ──────────────────────────
 async function handleCompetitorIntelligence(req, res) {
   const { userId, competitorName } = req.query;
   if (!userId || !competitorName) return res.status(400).json({ error: 'userId and competitorName required' });
@@ -763,7 +739,6 @@ async function handleCompetitorIntelligence(req, res) {
 }
 
 // ── RELATIONSHIP-WATCH handler ────────────────────────────────
-// v7.1: intelligence removed from returned score, still available as indicator
 async function handleRelationshipWatch(req, res) {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -855,7 +830,7 @@ async function handleRelationshipWatch(req, res) {
   return res.json({ watch, thirdPartyScore, lastChecked: today.toISOString() });
 }
 
-// ── SUMMARY handler (unchanged) ──────────────────────────────
+// ── SUMMARY handler ──────────────────────────────────────────
 async function handleSummary(req, res) {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -881,7 +856,6 @@ async function handleSummary(req, res) {
 }
 
 // ── SCORE-HISTORY handler ────────────────────────────────────
-// v7.1: adapted to new breakdown shape (no intelligenceScore field)
 async function handleScoreHistory(req, res) {
   const base = airtableBase();
 
@@ -917,7 +891,6 @@ async function handleScoreHistory(req, res) {
       ProcessorScore:      thirdParty?.breakdown?.processors?.score ?? null,
       PartnerScore:        thirdParty?.breakdown?.partners?.score   ?? null,
       AffiliateScore:      thirdParty?.breakdown?.affiliates?.score ?? null,
-      // IntelligenceScore field retained in Airtable but no longer written
     };
 
     const snap = await atCreate(base, 'Score_History', fields);
@@ -949,7 +922,9 @@ async function handleScoreHistory(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-// ── SEND-ALERT handler (unchanged) ───────────────────────────
+// ── SEND-ALERT handler ───────────────────────────────────────
+// v7.2: adds segment_state_change template, enhances audience_damaged
+// to show previousState when Audience Read passes it.
 async function handleSendAlert(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId, alertType } = req.body;
@@ -982,7 +957,12 @@ async function handleSendAlert(req, res) {
     },
     audience_damaged: {
       subject: `📊 Sendwize: audience alert — ${req.body.segmentName || 'a segment'} needs attention`,
-      html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Audience Read alert</h2><p style="color:#555;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved to <strong>${req.body.sentimentState || 'a negative state'}</strong>.</p>${req.body.regulatoryNote ? `<p style="background:#fdf4ff;border-left:4px solid #7e22ce;padding:12px 16px;font-size:13px;color:#555">${req.body.regulatoryNote}</p>` : ''}<a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View Audience Read →</a></div></div>`,
+      html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Audience Read alert</h2><p style="color:#555;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved${req.body.previousState ? ` from <strong>${req.body.previousState}</strong>` : ''} to <strong>${req.body.sentimentState || 'a negative state'}</strong>.</p>${req.body.regulatoryNote ? `<p style="background:#fdf4ff;border-left:4px solid #7e22ce;padding:12px 16px;font-size:13px;color:#555">${req.body.regulatoryNote}</p>` : ''}<a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View Audience Read →</a></div></div>`,
+    },
+    // v7.2 — new template for mild AR state transitions (Healthy → Cooling etc)
+    segment_state_change: {
+      subject: `📉 Sendwize: ${req.body.segmentName || 'a segment'} moved to ${req.body.sentimentState || 'a new state'}`,
+      html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Audience state change</h2><p style="color:#555;margin:0 0 20px;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved from <strong>${req.body.previousState || 'a healthier state'}</strong> to <strong>${req.body.sentimentState || 'a warning state'}</strong>.</p><p style="color:#555;margin:0 0 24px;font-size:14px">This is an early signal, not damage — but the trend is going the wrong way. Open Audience Read to see what changed and the recommended action.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open Audience Read →</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>`,
     },
   };
 
@@ -1004,7 +984,7 @@ async function handleSendAlert(req, res) {
   return res.json({ sent: true, messageId: data.id });
 }
 
-// ── BRIEFING handler (unchanged from v7.0) ───────────────────
+// ── BRIEFING handler ─────────────────────────────────────────
 async function handleBriefing(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
   const { userId } = req.query;
@@ -1089,7 +1069,7 @@ async function handleBriefing(req, res) {
   return res.json({ briefing, cached: false });
 }
 
-// ── CONSENT-EXPIRY-CHECK (unchanged) ─────────────────────────
+// ── CONSENT-EXPIRY-CHECK ─────────────────────────────────────
 async function handleConsentExpiryCheck(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId } = req.body;
@@ -1130,7 +1110,7 @@ async function handleVendorWatch(req, res) {
   return handleRelationshipWatch(req, res);
 }
 
-// ── SIMULATION-RUN (unchanged from v7.0) ─────────────────────
+// ── SIMULATION-RUN ───────────────────────────────────────────
 async function handleSimulationRun(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId, regulator } = req.body;
@@ -1219,7 +1199,6 @@ export default async function handler(req, res) {
     if (action === 'partner-register'        && ['POST','DELETE'].includes(req.method))     return await handlePartnerRegister(req, res);
     if (action === 'affiliate-register'      && ['POST','DELETE'].includes(req.method))     return await handleAffiliateRegister(req, res);
     if (action === 'competitor-watch'        && ['POST','DELETE'].includes(req.method))     return await handleCompetitorWatch(req, res);
-    // v7.1 new actions
     if (action === 'backfill-processor-fixes' && req.method === 'POST')                     return await handleBackfillProcessorFixes(req, res);
     if (action === 'cron-status'              && req.method === 'GET')                      return await handleCronStatus(req, res);
 
