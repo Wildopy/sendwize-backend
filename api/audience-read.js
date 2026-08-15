@@ -133,12 +133,6 @@ async function atPatch(table, recordId, fields) {
   return await r.json();
 }
 
-// ─────────────────────────────────────────────────────────────
-// AI COLUMN MAPPER — v7.6
-// One Claude call replaces 120 lines of regex. Falls back to
-// deterministic autoMapColumns if the API call fails.
-// ─────────────────────────────────────────────────────────────
-
 const AI_MAP_SYSTEM = `You are a CSV column classifier for an email marketing analytics tool.
 
 You will receive column headers and a few sample values from a campaign performance CSV export. Your job is to map each column to exactly one target field, or "ignore" if it doesn't fit any target.
@@ -155,24 +149,32 @@ TARGET FIELDS (use these exact strings):
 - click_rate        — click-through rate as a decimal or percentage
 - click_count       — raw number of clicks (NOT a rate)
 - complaint_count   — spam complaints, abuse reports
-- volume_sent       — contacts sent, emails delivered, recipients, list size
-- ignore            — bounce rate, revenue, IDs, or anything else
+- volume_sent       — total contacts sent to, recipients, list size at send
+- delivered_count   — emails/messages successfully delivered (not bounced)
+- bounce_count      — hard or soft bounces
+- revenue           — revenue, sales, or order value from this campaign (any currency)
+- channel           — send channel: email, sms, push, direct_mail
+- consent_basis     — legal basis for sending: direct_opt_in, soft_opt_in, legitimate_interest, purchased, partner, mixed, unknown
+- ignore            — internal IDs, URLs, timestamps, or anything else
 
 CRITICAL RULES:
-1. Distinguish COUNTS from RATES. A column with values like 566, 1200, 42 is a COUNT. A column with values like 0.35, 22.5%, 0.003 is a RATE. Never map a count column to a rate target or vice versa.
-2. "delivered" with large integer values (e.g. 1178) is volume_sent, not a rate.
+1. Distinguish COUNTS from RATES. A column with values like 566, 1200, 42 is a COUNT. A column with values like 0.35, 22.5%, 0.003 is a RATE. Never map a count to a rate target or vice versa.
+2. "delivered" with large integer values (e.g. 1178) is delivered_count, NOT volume_sent. "contacts_sent", "recipients", "sent" with large integers = volume_sent.
 3. "opens" or "unique_opens" with integer values is open_count. "open_rate" with decimal/percentage values is open_rate.
 4. "clicks" with integer values is click_count. "click_rate" or "ctr" with decimal/percentage values is click_rate.
-5. "contacts_sent", "emails_sent", "recipients", "sent" with large integers = volume_sent.
-6. Each target can only be assigned once. If two columns could be volume_sent (e.g. "contacts_sent" and "delivered"), pick the one that better represents total audience size (usually "contacts_sent" or "sent"). Map the other to "ignore".
-7. For rate columns, note whether the values appear to be percentages (22.5, 3.1) or decimal fractions (0.225, 0.031). Set "unit" to "percentage" or "decimal_fraction".
+5. Each target can only be assigned once. If two columns could be volume_sent (e.g. "contacts_sent" and "recipients"), pick the better one. Map the other to "ignore".
+6. For rate columns, note whether the values appear to be percentages (22.5, 3.1) or decimal fractions (0.225, 0.031). Set "unit" to "percentage" or "decimal_fraction".
+7. Revenue columns contain monetary values (5011.72, £120, $500). Map to "revenue" regardless of currency.
+8. Consent/legal basis columns contain values like "opt_in", "direct_opt_in", "soft_opt_in", "legitimate_interest", "purchased", "consent", "li". Map to "consent_basis".
+9. Channel columns contain values like "email", "sms", "push", "direct_mail". Map to "channel".
+10. Bounce columns with integer values = bounce_count.
 
 Respond with ONLY a JSON object, no markdown, no explanation:
 {
   "columns": [
     { "header": "campaign_date", "target": "date", "confidence": "high" },
     { "header": "opens", "target": "open_count", "confidence": "high", "unit": null },
-    { "header": "open_rate", "target": "open_rate", "confidence": "high", "unit": "decimal_fraction" }
+    { "header": "consent_basis", "target": "consent_basis", "confidence": "high", "unit": null }
   ]
 }
 
