@@ -1121,6 +1121,25 @@ export default async function handler(req, res) {
             c._clickCount = val !== '' && val != null
               ? (parseInt(String(val).replace(/,/g, '')) || null) : null;
           }
+          // v7.7: extended fields
+          else if (targetField === 'delivered_count') {
+            c._deliveredCount = val !== '' && val != null
+              ? (parseInt(String(val).replace(/,/g, '')) || null) : null;
+          }
+          else if (targetField === 'bounce_count') {
+            c._bounceCount = val !== '' && val != null
+              ? (parseInt(String(val).replace(/,/g, '')) || null) : null;
+          }
+          else if (targetField === 'revenue') {
+            c.revenue = val !== '' && val != null
+              ? (parseFloat(String(val).replace(/[£$€,]/g, '')) || null) : null;
+          }
+          else if (targetField === 'channel') {
+            c.channel = String(val || '').trim().toLowerCase() || null;
+          }
+          else if (targetField === 'consent_basis') {
+            c.consent_basis = normaliseConsentBasis(String(val || '').trim()) || null;
+          }
         }
         if (c._unsubRate !== undefined && c.unsubscribe_count === null && c.volume_sent) { c.unsubscribe_count = Math.round(c._unsubRate * c.volume_sent); }
         else if (c._unsubRate !== undefined && c.unsubscribe_count === null) { c.unsubscribe_count = Math.round(c._unsubRate * 1000); c.volume_sent = 1000; }
