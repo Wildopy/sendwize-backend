@@ -1,22 +1,29 @@
-// api/audience-read.js — Sendwize Audience Read v7.5
+// api/audience-read.js — Sendwize Audience Read v7.6
 // Seven deterministic algorithms + derived send-window projection.
-// Zero AI. Zero external data.
+// Zero AI in scoring. Zero external data.
 //
-// v7.5 changes from v7.4:
-//   - PreviousState is now captured on upsert and written back to Airtable.
-//     Enables state-transition detection without a snapshot lookup.
-//   - maybeFireAudienceAlert replaced with maybeFireTransitionAlert. Fires
-//     only on worsening transitions into warn/bad states. No nagging.
-//   - upsertSegment now returns { priorState, newState, isNew, recordId }
-//     so the caller can wire alerts and generate-fix without an extra atGet.
-//   - upload response for each segment now includes previousState and
-//     stateChanged so the frontend can render a "was: X" pill.
-//   - STATE_RANK moved to the top of the file (used by transition detection
-//     as well as buildChangeComparison).
+// v7.6 changes from v7.5:
+//   - Column detection replaced with Claude API call (aiMapColumns).
+//     Falls back to deterministic autoMapColumns if API fails.
+//     Fixes: underscore word-boundary bug (contacts_sent → ignore),
+//     count-vs-rate confusion (clicks=149 → "149%?"), and handles
+//     arbitrary ESP export formats without regex maintenance.
+//   - New target fields: open_count, click_count. Upload handler
+//     converts counts → rates when volume_sent is present.
+//   - detect response includes detectedUnit per rate column so the
+//     frontend can pre-select the unit toggle.
+//   - generateNarrative: after algorithms run, one Claude call
+//     synthesises the numbers into a plain-English paragraph for
+//     marketing managers. Sits ON TOP of deterministic output,
+//     never replaces it. Labelled as AI-generated interpretation.
+//   - Pre-send narrative: algorithm 6 Monte Carlo results explained
+//     in the user's specific context.
 //
-// v7.4 changes preserved: normaliseRate takes explicit unit hint, implausible
-// baseline guard, scoreColumn detection model, rate-unit toggle, no-segment
-// detection.
+// v7.5 changes preserved: PreviousState capture, maybeFireTransitionAlert,
+//   upsertSegment returns { priorState, newState, isNew, recordId }.
+// v7.4 changes preserved: normaliseRate explicit unit hint, implausible
+//   baseline guard, scoreColumn detection model, rate-unit toggle,
+//   no-segment detection.
 
 const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -96,6 +103,9 @@ const BENCHMARKS = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────
+// AIRTABLE HELPERS — unchanged
+// ─────────────────────────────────────────────────────────────
 async function atGet(table, formula, sort = '', max = 100) {
   let url = `${AT_BASE}/${encodeURIComponent(table)}?maxRecords=${max}`;
   if (formula) url += `&filterByFormula=${encodeURIComponent(formula)}`;
@@ -124,7 +134,222 @@ async function atPatch(table, recordId, fields) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// COLUMN DETECTION — unchanged from v7.4
+// AI COLUMN MAPPER — v7.6
+// One Claude call replaces 120 lines of regex. Falls back to
+// deterministic autoMapColumns if the API call fails.
+// ─────────────────────────────────────────────────────────────
+
+const AI_MAP_SYSTEM = `You are a CSV column classifier for an email marketing analytics tool.
+
+You will receive column headers and a few sample values from a campaign performance CSV export. Your job is to map each column to exactly one target field, or "ignore" if it doesn't fit any target.
+
+TARGET FIELDS (use these exact strings):
+- date              — when the campaign was sent
+- segment           — list name, audience name, segment, cohort, tag
+- campaign_name     — campaign title, email name, subject
+- campaign_type     — e.g. promotional, newsletter, transactional
+- unsubscribe_rate  — unsub rate as a decimal or percentage
+- unsubscribe_count — raw number of unsubscribes
+- open_rate         — open rate as a decimal or percentage
+- open_count        — raw number of opens (NOT a rate)
+- click_rate        — click-through rate as a decimal or percentage
+- click_count       — raw number of clicks (NOT a rate)
+- complaint_count   — spam complaints, abuse reports
+- volume_sent       — contacts sent, emails delivered, recipients, list size
+- ignore            — bounce rate, revenue, IDs, or anything else
+
+CRITICAL RULES:
+1. Distinguish COUNTS from RATES. A column with values like 566, 1200, 42 is a COUNT. A column with values like 0.35, 22.5%, 0.003 is a RATE. Never map a count column to a rate target or vice versa.
+2. "delivered" with large integer values (e.g. 1178) is volume_sent, not a rate.
+3. "opens" or "unique_opens" with integer values is open_count. "open_rate" with decimal/percentage values is open_rate.
+4. "clicks" with integer values is click_count. "click_rate" or "ctr" with decimal/percentage values is click_rate.
+5. "contacts_sent", "emails_sent", "recipients", "sent" with large integers = volume_sent.
+6. Each target can only be assigned once. If two columns could be volume_sent (e.g. "contacts_sent" and "delivered"), pick the one that better represents total audience size (usually "contacts_sent" or "sent"). Map the other to "ignore".
+7. For rate columns, note whether the values appear to be percentages (22.5, 3.1) or decimal fractions (0.225, 0.031). Set "unit" to "percentage" or "decimal_fraction".
+
+Respond with ONLY a JSON object, no markdown, no explanation:
+{
+  "columns": [
+    { "header": "campaign_date", "target": "date", "confidence": "high" },
+    { "header": "opens", "target": "open_count", "confidence": "high", "unit": null },
+    { "header": "open_rate", "target": "open_rate", "confidence": "high", "unit": "decimal_fraction" }
+  ]
+}
+
+confidence: "high" if obvious, "medium" if reasonable guess, "low" if uncertain.
+unit: only for rate targets. null for everything else.`;
+
+async function aiMapColumns(headers, sampleRows) {
+  const sample = headers.map(h => {
+    const vals = sampleRows
+      .slice(0, 5)
+      .map(r => r[h])
+      .filter(v => v !== null && v !== undefined && v !== '')
+      .slice(0, 3);
+    return { header: h, samples: vals };
+  });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: AI_MAP_SYSTEM,
+        messages: [{ role: 'user', content: `Map these CSV columns:\n${JSON.stringify(sample)}` }],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error('AI column mapper HTTP error:', res.status);
+      return null;
+    }
+
+    const msg = await res.json();
+    const raw = msg.content?.[0]?.text || '';
+    const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    return JSON.parse(jsonMatch ? jsonMatch[0] : cleaned);
+  } catch (e) {
+    console.error('AI column mapper failed (falling back to deterministic):', e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// AI NARRATIVE GENERATION — v7.6
+// Synthesises deterministic algorithm outputs into a plain-English
+// paragraph for marketing managers. Sits ON TOP of the scoring —
+// never replaces it. Non-blocking: if it fails, upload still succeeds.
+// ─────────────────────────────────────────────────────────────
+
+const NARRATIVE_SYSTEM = `You are a UK email marketing analyst writing for marketing managers who don't think in statistical terms. You receive algorithm outputs from a compliance tool and write ONE short paragraph (3-5 sentences) explaining what the numbers mean in plain English.
+
+Rules:
+- Be specific: name the segment, cite the actual rates and benchmarks, mention the campaign types that caused damage.
+- Be actionable: say what to do and when.
+- Never invent numbers. Only use figures from the data provided.
+- Never say "compliant" or "in breach". Use "the ICO expects..." or "this pattern is one regulators monitor" if relevant.
+- If the state is Healthy or Peak receptiveness, keep it short and encouraging.
+- If there's a state transition, lead with what changed and why.
+- Write as a knowledgeable colleague, not a chatbot. No greetings, no "here's what I found".
+- This is not legal advice. Don't add a disclaimer — the product handles that.`;
+
+async function generateNarrative(segmentName, data, priorState) {
+  const context = {
+    segment: segmentName,
+    state: data.sentiment?.state,
+    previousState: priorState || null,
+    verdict: data.sentiment?.verdict,
+    action: data.sentiment?.action,
+    avgUnsubRate: data.fingerprint?.selfBaseline,
+    benchmarkRate: data.bench?.unsubNormal,
+    benchmarkLabel: data.bench?.label,
+    trustDirection: data.trustVelocity?.direction,
+    capital: data.capital,
+    toleranceRemaining: data.freqTolerance?.toleranceRemaining,
+    recentSendCount: data.freqTolerance?.recentSendCount,
+    optimalNextSend: data.freqTolerance?.optimalNextSend,
+    campaignCount: data.fingerprint?.campaignCount,
+    excessUnsubs: data.subscriberLoss?.totalExcessUnsubs,
+    typeSensitivity: data.fingerprint?.campaignTypeSensitivity,
+    sendWindow: data.sendWindow ? {
+      windowType: data.sendWindow.windowType,
+      earliestSafeDate: data.sendWindow.earliestSafeDate,
+      reasoning: data.sendWindow.reasoning,
+    } : null,
+    worstImpacts: (data.impacts || [])
+      .filter(i => i.category === 'Damaged' || i.category === 'Caused fatigue')
+      .slice(-3)
+      .map(i => ({ campaign: i.campaign_name, date: i.date, category: i.category, excessUnsubs: i.excessUnsubs })),
+  };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 300,
+        system: NARRATIVE_SYSTEM,
+        messages: [{ role: 'user', content: `Explain this segment's state to a marketing manager:\n${JSON.stringify(context)}` }],
+      }),
+    });
+
+    if (!res.ok) return null;
+    const msg = await res.json();
+    return msg.content?.[0]?.text?.trim() || null;
+  } catch (e) {
+    console.error('Narrative generation failed (non-fatal):', e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// PRE-SEND NARRATIVE — v7.6
+// Explains the Monte Carlo pre-send check results in context.
+// ─────────────────────────────────────────────────────────────
+
+const PRESEND_NARRATIVE_SYSTEM = `You are a UK email marketing analyst. You receive pre-send prediction data from a Monte Carlo simulation and write ONE short paragraph (3-4 sentences) explaining the risk to a marketing manager.
+
+Rules:
+- Name the segment and campaign type.
+- Cite the predicted unsub range and benchmark.
+- If there are alternatives, explain the safest option and why.
+- Be direct: "Send it" or "Hold off" — then explain.
+- Never invent numbers. Only use figures from the data provided.
+- No greetings, no disclaimers, no chatbot tone.`;
+
+async function generatePresendNarrative(segment, campaignType, prediction, bench) {
+  const context = {
+    segment,
+    campaignType,
+    verdict: prediction.verdict,
+    spikeProb: prediction.spikeProb,
+    predictedRange: prediction.predictedUnsubRange,
+    benchmarkRate: prediction.benchmarkRate,
+    benchmarkLabel: bench?.label,
+    alternatives: prediction.alternatives,
+    mappingIssue: prediction.mappingIssue || false,
+  };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 250,
+        system: PRESEND_NARRATIVE_SYSTEM,
+        messages: [{ role: 'user', content: `Explain this pre-send prediction:\n${JSON.stringify(context)}` }],
+      }),
+    });
+
+    if (!res.ok) return null;
+    const msg = await res.json();
+    return msg.content?.[0]?.text?.trim() || null;
+  } catch (e) {
+    console.error('Pre-send narrative failed (non-fatal):', e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// COLUMN DETECTION (deterministic fallback) — unchanged from v7.4
+// Kept as safety net if Claude API is unreachable.
 // ─────────────────────────────────────────────────────────────
 function scoreColumn(header, values) {
   const lc = String(header).toLowerCase().trim();
@@ -224,6 +449,9 @@ function autoMapColumns(headers, rows) {
   return { mapping, confidence };
 }
 
+// ─────────────────────────────────────────────────────────────
+// DATE + RATE NORMALISATION — unchanged
+// ─────────────────────────────────────────────────────────────
 function normaliseDate(raw) {
   if (!raw) return null;
   const s = String(raw).trim();
@@ -638,22 +866,14 @@ async function generateFixes(userId, segmentName, sentiment, sourceRecordId) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// STATE-TRANSITION ALERTS — v7.5
-//
-// Fires when a segment worsens into a warn or bad state.
-// - No fire on brand-new segments (no prior).
-// - No fire on same-state uploads (avoids nagging).
-// - No fire on improvements (Damaged → Recovering, Cooling → Healthy).
-// - alertType is 'audience_damaged' for severe (Damaged/Complaint risk),
-//   'segment_state_change' otherwise. The send-alert endpoint handles
-//   template + rate limiting per user per day.
+// STATE-TRANSITION ALERTS — v7.5, unchanged
 // ─────────────────────────────────────────────────────────────
 async function maybeFireTransitionAlert(userId, segmentName, priorState, newState, sentiment) {
   if (!priorState || priorState === newState) return;
   const priorRank = STATE_RANK[priorState] != null ? STATE_RANK[priorState] : 5;
   const newRank   = STATE_RANK[newState]   != null ? STATE_RANK[newState]   : 5;
-  if (newRank >= priorRank) return;                    // improvement or same — skip
-  if (newRank > STATE_RANK['Cooling']) return;         // still in a good state — skip
+  if (newRank >= priorRank) return;
+  if (newRank > STATE_RANK['Cooling']) return;
 
   const severe    = ['Damaged', 'Complaint risk'].includes(newState);
   const alertType = severe ? 'audience_damaged' : 'segment_state_change';
@@ -677,10 +897,7 @@ async function maybeFireTransitionAlert(userId, segmentName, priorState, newStat
 }
 
 // ─────────────────────────────────────────────────────────────
-// UPSERT SEGMENT — v7.5
-// Captures priorState before overwrite, writes PreviousState, returns
-// { priorState, newState, isNew, recordId } so callers can fire alerts
-// and generate-fix without an extra atGet.
+// UPSERT SEGMENT — v7.5, unchanged
 // ─────────────────────────────────────────────────────────────
 async function upsertSegment(userId, segmentName, data) {
   const records = await atGet(
@@ -702,7 +919,7 @@ async function upsertSegment(userId, segmentName, data) {
     FrequencyTolerance: data.freqTolerance.toleranceRemaining,
     OptimalNextSendDate: data.freqTolerance.optimalNextSend,
     SentimentState: newState,
-    PreviousState: priorState, // v7.5 — for state-transition detection
+    PreviousState: priorState,
     SentimentConfidence: data.sentiment.confidence,
     LastUpdated: new Date().toISOString().slice(0, 10),
     CampaignCount: data.fingerprint?.campaignCount || 0,
@@ -794,20 +1011,70 @@ export default async function handler(req, res) {
   const action = req.query.action || req.body?.action || 'load';
   const sector = req.query.sector || req.body?.sector || 'general';
   try {
+
+    // ─────────────────────────────────────────────────────────
+    // DETECT — v7.6: AI-powered, deterministic fallback
+    // ─────────────────────────────────────────────────────────
     if (action === 'detect') {
       const { headers, rows } = req.body;
       if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
-      const { mapping, confidence } = autoMapColumns(headers, rows);
+
+      // Try AI-powered detection first
+      const aiResult = await aiMapColumns(headers, rows);
+
+      let mapping = {};
+      let confidence = {};
+      const units = {};  // header → 'percentage' | 'decimal_fraction'
+
+      if (aiResult?.columns) {
+        const usedTargets = new Set();
+        for (const col of aiResult.columns) {
+          const h = col.header;
+          if (!headers.includes(h)) continue;
+          const target = col.target || 'ignore';
+          if (target === 'ignore' || usedTargets.has(target)) {
+            mapping[h] = '';
+            confidence[h] = 'none';
+          } else {
+            mapping[h] = target;
+            confidence[h] = col.confidence || 'medium';
+            usedTargets.add(target);
+            if (col.unit) units[h] = col.unit;
+          }
+        }
+        // Fill in any headers the AI didn't mention
+        for (const h of headers) {
+          if (!(h in mapping)) { mapping[h] = ''; confidence[h] = 'none'; }
+        }
+      } else {
+        // Fallback to deterministic scorer
+        const fallback = autoMapColumns(headers, rows);
+        mapping = fallback.mapping;
+        confidence = fallback.confidence;
+      }
+
+      // Build rateColumns for the unit-toggle UI
       const rateColumns = Object.entries(mapping)
         .filter(([, t]) => t === 'unsubscribe_rate' || t === 'open_rate' || t === 'click_rate')
         .map(([h, t]) => {
           const firstVal = rows.slice(0, 20).map(r => r[h]).find(v => v !== null && v !== undefined && v !== '') || null;
           const hasPctInData = rows.slice(0, 20).some(r => String(r[h] || '').includes('%'));
-          return { column: h, target: t, firstValue: firstVal == null ? null : String(firstVal), hasPctSymbol: hasPctInData };
+          return {
+            column: h,
+            target: t,
+            firstValue: firstVal == null ? null : String(firstVal),
+            hasPctSymbol: hasPctInData,
+            detectedUnit: units[h] || null,   // v7.6: AI-detected unit
+          };
         });
+
       const noSegmentDetected = !Object.values(mapping).includes('segment');
       return res.status(200).json({ success: true, mapping, confidence, rateColumns, noSegmentDetected });
     }
+
+    // ─────────────────────────────────────────────────────────
+    // LOAD — unchanged except narrative generation
+    // ─────────────────────────────────────────────────────────
     if (action === 'load') {
       const allCampaigns = await loadCampaigns(userId);
       const segmentData = buildSegmentData(allCampaigns);
@@ -820,6 +1087,10 @@ export default async function handler(req, res) {
       const changes = Object.keys(curMap).length ? buildChangeComparison(curMap, prevMap) : null;
       return res.status(200).json({ success: true, segments: results, recommendations, sector, changes });
     }
+
+    // ─────────────────────────────────────────────────────────
+    // UPLOAD — v7.6: count fields + narrative generation
+    // ─────────────────────────────────────────────────────────
     if (action === 'upload') {
       const { rows, fieldMapping, cpl, rateUnits } = req.body;
       if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
@@ -839,10 +1110,28 @@ export default async function handler(req, res) {
           else if (targetField === 'complaint_count') c.complaint_count = val !== '' && val != null ? (parseInt(val) || null) : null;
           else if (targetField === 'campaign_name') c.campaign_name = String(val || '').trim() || null;
           else if (targetField === 'campaign_type') c.campaign_type = String(val || '').trim() || null;
+          // v7.6: count columns — AI mapper can now detect these
+          else if (targetField === 'open_count') {
+            c._openCount = val !== '' && val != null
+              ? (parseInt(String(val).replace(/,/g, '')) || null) : null;
+          }
+          else if (targetField === 'click_count') {
+            c._clickCount = val !== '' && val != null
+              ? (parseInt(String(val).replace(/,/g, '')) || null) : null;
+          }
         }
         if (c._unsubRate !== undefined && c.unsubscribe_count === null && c.volume_sent) { c.unsubscribe_count = Math.round(c._unsubRate * c.volume_sent); }
         else if (c._unsubRate !== undefined && c.unsubscribe_count === null) { c.unsubscribe_count = Math.round(c._unsubRate * 1000); c.volume_sent = 1000; }
         delete c._unsubRate;
+        // v7.6: convert counts → rates when volume is available
+        if (c._openCount != null && c.open_rate === null && c.volume_sent) {
+          c.open_rate = c._openCount / c.volume_sent;
+        }
+        if (c._clickCount != null && c.click_rate === null && c.volume_sent) {
+          c.click_rate = c._clickCount / c.volume_sent;
+        }
+        delete c._openCount;
+        delete c._clickCount;
         return c;
       }).filter(c => c.date);
       const mergeMap = {};
@@ -884,6 +1173,10 @@ export default async function handler(req, res) {
       for (const seg of Object.keys(priorSnapsBySeg)) { priorMap[seg] = priorSnapsBySeg[seg][0]; }
       const savedSegments = {};
       const currentMap = {};
+
+      // v7.6: collect narrative promises — run in parallel, don't block upload
+      const narrativePromises = {};
+
       for (const [segmentName, segCampaigns] of Object.entries(segmentGroups)) {
         const data = runAlgorithms(segCampaigns, sector);
         for (const c of segCampaigns) {
@@ -891,7 +1184,6 @@ export default async function handler(req, res) {
           await saveCampaign(userId, segmentName, c, impact);
         }
 
-        // v7.5 — upsert returns priorState + recordId in one call
         const upsert = await upsertSegment(userId, segmentName, {
           fingerprint:         data.fingerprint,
           trustVelocity:       data.trustVelocity,
@@ -911,14 +1203,29 @@ export default async function handler(req, res) {
         await generateFixes(userId, segmentName, data.sentiment, upsert.recordId);
         await maybeFireTransitionAlert(userId, segmentName, upsert.priorState, upsert.newState, data.sentiment);
 
+        // v7.6: fire narrative generation in parallel (non-blocking)
+        narrativePromises[segmentName] = generateNarrative(segmentName, data, upsert.priorState);
+
         savedSegments[segmentName] = {
           ...data,
           impacts:       data.impacts.slice(-5),
-          previousState: upsert.priorState,                                             // v7.5
-          stateChanged:  !!(upsert.priorState && upsert.priorState !== upsert.newState),// v7.5
-          isNewSegment:  upsert.isNew,                                                   // v7.5
+          previousState: upsert.priorState,
+          stateChanged:  !!(upsert.priorState && upsert.priorState !== upsert.newState),
+          isNewSegment:  upsert.isNew,
         };
       }
+
+      // v7.6: await narratives and attach to saved segments
+      for (const [segmentName, promise] of Object.entries(narrativePromises)) {
+        try {
+          const narrative = await promise;
+          if (narrative) savedSegments[segmentName].narrative = narrative;
+        } catch (e) {
+          // Non-fatal — upload succeeds without narrative
+          console.error(`Narrative for ${segmentName} failed:`, e.message);
+        }
+      }
+
       if (cplVal) {
         let totalExcess = 0;
         for (const seg of Object.keys(currentMap)) { totalExcess += currentMap[seg].excessUnsubs || 0; }
@@ -934,6 +1241,10 @@ export default async function handler(req, res) {
       const changes = buildChangeComparison(currentMap, priorMap);
       return res.status(200).json({ success: true, segments: savedSegments, campaignsSaved: campaigns.length, sector, changes });
     }
+
+    // ─────────────────────────────────────────────────────────
+    // LOG — v7.6: adds narrative
+    // ─────────────────────────────────────────────────────────
     if (action === 'log') {
       const { campaign } = req.body;
       if (!campaign?.date || !campaign?.segment) return res.status(400).json({ error: 'campaign with date and segment required' });
@@ -944,7 +1255,6 @@ export default async function handler(req, res) {
       const impact = algorithm3_campaignImpact(campaign, segCampaigns, data.fingerprint, bench);
       await saveCampaign(userId, campaign.segment, campaign, impact);
 
-      // v7.5 — upsert returns priorState + recordId in one call
       const upsert = await upsertSegment(userId, campaign.segment, {
         fingerprint:         data.fingerprint,
         trustVelocity:       data.trustVelocity,
@@ -958,6 +1268,14 @@ export default async function handler(req, res) {
       await generateFixes(userId, campaign.segment, data.sentiment, upsert.recordId);
       await maybeFireTransitionAlert(userId, campaign.segment, upsert.priorState, upsert.newState, data.sentiment);
 
+      // v7.6: narrative for single-campaign log
+      let narrative = null;
+      try {
+        narrative = await generateNarrative(campaign.segment, data, upsert.priorState);
+      } catch (e) {
+        console.error('Log narrative failed (non-fatal):', e.message);
+      }
+
       return res.status(200).json({
         success: true,
         impact,
@@ -966,10 +1284,15 @@ export default async function handler(req, res) {
         capital: data.capital,
         freqTolerance: data.freqTolerance,
         sendWindow: data.sendWindow,
-        previousState: upsert.priorState,                                             // v7.5
-        stateChanged:  !!(upsert.priorState && upsert.priorState !== upsert.newState),// v7.5
+        previousState: upsert.priorState,
+        stateChanged:  !!(upsert.priorState && upsert.priorState !== upsert.newState),
+        narrative,   // v7.6
       });
     }
+
+    // ─────────────────────────────────────────────────────────
+    // PRESEND — v7.6: adds narrative
+    // ─────────────────────────────────────────────────────────
     if (action === 'presend') {
       const { segment, campaignType, sendDate } = req.body;
       if (!segment || !campaignType) return res.status(400).json({ error: 'segment and campaignType required' });
@@ -980,8 +1303,18 @@ export default async function handler(req, res) {
       const trustVelocity = algorithm2_trustVelocity(segCampaigns, fingerprint);
       const freqTolerance = algorithm4_frequencyTolerance(segCampaigns, fingerprint);
       const prediction = algorithm6_predictiveSend(segment, campaignType, sendDate, fingerprint, trustVelocity, freqTolerance, bench);
-      return res.status(200).json({ success: true, prediction });
+
+      // v7.6: narrative explanation of the Monte Carlo results
+      let narrative = null;
+      try {
+        narrative = await generatePresendNarrative(segment, campaignType, prediction, bench);
+      } catch (e) {
+        console.error('Pre-send narrative failed (non-fatal):', e.message);
+      }
+
+      return res.status(200).json({ success: true, prediction, narrative });
     }
+
     if (action === 'methodology') {
       const table = Object.entries(BENCHMARKS).map(([key, b]) => ({
         sector: key, label: b.label,
@@ -997,6 +1330,9 @@ export default async function handler(req, res) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// UTILITY FUNCTIONS — unchanged
+// ─────────────────────────────────────────────────────────────
 function r2(n) { return Math.round(n * 100) / 100; }
 function r4(n) { return Math.round(n * 10000) / 10000; }
 function mean_arr(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
