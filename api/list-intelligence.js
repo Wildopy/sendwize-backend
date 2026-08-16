@@ -1,33 +1,22 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-intelligence.js v1.5
+// SENDWIZE — list-intelligence.js v1.6
 //
 // POST /api/list-intelligence?action=upload       — CSV analysis (listName required)
 // GET  /api/list-intelligence?action=load         — load latest, or specific list via &listName=
 // GET  /api/list-intelligence?action=lists        — summary of every named list for user
 // POST /api/list-intelligence?action=certificate  — pre-send clearance (listName optional, defaults to latest)
-// POST /api/list-intelligence?action=detect       — column detection (unchanged)
+// POST /api/list-intelligence?action=detect       — column detection (v1.6: AI-powered, deterministic fallback)
 //
-// v1.5 changes from v1.4:
-//   - LISTNAME PERSISTENCE. Every LI record now carries a ListName. Snapshots,
-//     opportunities, contacts, checks and certificates are all keyed by
-//     (UserID, ListName). Re-uploading a named list overwrites current state
-//     and snapshots the previous one — matching Audience Read's pattern.
-//   - `load` accepts an optional listName. Without it, returns the most
-//     recently checked list PLUS a `lists` summary array so the frontend
-//     can either land straight in the last view or show a picker.
-//   - New `lists` action returns { listName, checkDate, daysSincePrevious,
-//     assetValue, liabilityCount, totalContacts, needsAttention } for every
-//     named list a user has. Powers the "your lists" landing state and any
-//     future dashboard counter.
-//   - Fix sourceRecordId now embeds a slug of the list name:
-//       'li-liability:main-list'  /  'li-commercial:vip-customers'
-//     So each list emits its own fix lineage. Refresh / mark-improved /
-//     create-fresh logic still works per-list.
-//   - `getListSnapshots` and `buildListComparison` are per-list.
-//   - LEGACY: rows without ListName are treated as belonging to 'Main list'
-//     for read paths, so old data still surfaces. Backfill script is:
-//       records where ListName is empty → set ListName='Main list'.
-//     Run once before this deploys, then this defensive branch can go.
+// v1.6 changes from v1.5:
+//   - AI COLUMN MAPPER. detect action now calls Claude API to classify
+//     columns. Falls back to deterministic detectListColumns if API fails.
+//     Fixes ambiguous ESP exports where date columns aren't labelled
+//     clearly, or engagement type columns have unusual names.
+//   - ~£0.001 per detect call. Non-blocking — deterministic fallback
+//     always available.
+//
+// v1.5 changes preserved: listName persistence, per-list snapshots,
+//   per-list fix sourceRecordId, lists action, legacy tolerance.
 // ─────────────────────────────────────────────────────────────
 
 import crypto from 'crypto';
@@ -113,7 +102,94 @@ function hashEmail(email) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// COLUMN AUTO-DETECTION — unchanged from v1.4
+// AI COLUMN MAPPER — v1.6
+// One Claude call to classify contact list columns. Falls back to
+// deterministic detectListColumns if the API call fails.
+// ─────────────────────────────────────────────────────────────
+
+const AI_MAP_LIST_SYSTEM = `You are a CSV column classifier for a contact list analysis tool.
+
+You will receive column headers and sample values from a contact list CSV export (typically from Klaviyo, Mailchimp, Dotdigital, HubSpot, or a CRM). Your job is to map each column to exactly one target field, or "ignore" if it doesn't fit any target.
+
+TARGET FIELDS (use these exact strings):
+- email              — email address
+- date_added         — when the contact was added, joined, signed up, subscribed, or created
+- last_engagement    — last activity date: last open, last click, last visit, last active
+- last_purchase      — last purchase or order date
+- engagement_type    — type of engagement: purchase, click, open, visit
+- segment            — list name, segment, group, tag, audience
+- status             — subscription status: subscribed, unsubscribed, active, bounced
+- order_value        — order value, spend, LTV, revenue (monetary)
+- engagement_count   — number of opens, clicks, sessions, orders (integer count)
+- ignore             — names, IDs, phone numbers, addresses, or anything else
+
+CRITICAL RULES:
+1. Email columns contain @ signs. Map the first one found, ignore duplicates.
+2. Date columns contain values like 2023-01-15, 15/01/2023, Jan 15 2023. Distinguish:
+   - "created", "joined", "signed_up", "subscribed", "added" → date_added
+   - "last_open", "last_click", "last_active", "last_engagement" → last_engagement
+   - "last_purchase", "last_order", "last_buy" → last_purchase
+   - If ambiguous and only one date column exists, prefer date_added.
+3. Status columns have values like "subscribed", "active", "bounced", "unsubscribed".
+4. Monetary columns (£, $, values like 65.00, 120.50) → order_value.
+5. Integer count columns (opens: 12, clicks: 5) → engagement_count.
+6. Each target can only be assigned once.
+7. Names, phone numbers, addresses, company names → ignore.
+
+Respond with ONLY a JSON object, no markdown, no explanation:
+{
+  "columns": [
+    { "header": "email_address", "target": "email", "confidence": "high" },
+    { "header": "created_at", "target": "date_added", "confidence": "high" }
+  ]
+}
+
+confidence: "high" if obvious, "medium" if reasonable guess, "low" if uncertain.`;
+
+async function aiMapListColumns(headers, sampleRows) {
+  const sample = headers.map(h => {
+    const vals = sampleRows
+      .slice(0, 5)
+      .map(r => r[h])
+      .filter(v => v !== null && v !== undefined && v !== '')
+      .slice(0, 3);
+    return { header: h, samples: vals };
+  });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: AI_MAP_LIST_SYSTEM,
+        messages: [{ role: 'user', content: `Map these CSV columns:\n${JSON.stringify(sample)}` }],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error('AI list column mapper HTTP error:', res.status);
+      return null;
+    }
+
+    const msg = await res.json();
+    const raw = msg.content?.[0]?.text || '';
+    const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    return JSON.parse(jsonMatch ? jsonMatch[0] : cleaned);
+  } catch (e) {
+    console.error('AI list column mapper failed (falling back to deterministic):', e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// COLUMN AUTO-DETECTION (deterministic fallback) — unchanged from v1.4
 // ─────────────────────────────────────────────────────────────
 function detectListColumns(headers, rows) {
   const sample = rows.slice(0, 30);
@@ -461,9 +537,6 @@ function analyseList(contacts, sector, aov) {
 
 // ─────────────────────────────────────────────────────────────
 // FIX EMISSION — v1.5 (per-list sourceRecordId)
-// sourceRecordId is now `${type}:${slug(listName)}` so each named list
-// gets its own fix lineage. Refresh / mark-improved / dedupe-check all
-// still work per-list.
 // ─────────────────────────────────────────────────────────────
 function liabilitySourceId(listName)      { return `li-liability:${slugify(listName)}`; }
 function commercialLossSourceId(listName) { return `li-commercial:${slugify(listName)}`; }
@@ -501,8 +574,6 @@ async function refreshLIFix(fixId, description, exposureLow, exposureHigh) {
 }
 
 async function emitLIFix(userId, listName, spec) {
-  // spec: { fixType, sourceRecordId, presentNow, description, severity,
-  //         contactVolume, exposureLow, exposureHigh, resolvedSummary }
   const existing = await findPendingLIFix(userId, spec.fixType, spec.sourceRecordId);
 
   if (!spec.presentNow) {
@@ -521,9 +592,6 @@ async function emitLIFix(userId, listName, spec) {
     return;
   }
 
-  // Dedupe-miss diagnostic. If SourceRecordID field is missing/misnamed, our
-  // lookup by sourceRecordId always misses and we'd silently duplicate. Warn
-  // if OTHER pending fixes of the same type exist for the same list.
   try {
     const broadFormula = `AND({UserID}="${userId}",{FixType}="${spec.fixType}",{Tool}="List Intelligence",{Status}="Pending",FIND("${slugify(listName)}",{SourceRecordID}))`;
     const others = await atGet('Compliance_Fixes', broadFormula, '', 3);
@@ -620,7 +688,7 @@ function generateOpportunities(analysis) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PER-LIST SNAPSHOT STORAGE + COMPARISON
+// PER-LIST SNAPSHOT STORAGE + COMPARISON — unchanged from v1.5
 // ─────────────────────────────────────────────────────────────
 async function snapshotList(userId, listName, analysis) {
   await atCreate('List_Intelligence_Snapshots', {
@@ -703,11 +771,9 @@ function buildListComparison(cur, prev) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// LISTS SUMMARY — powers the "your lists" landing state and any
-// future dashboard counter.
+// LISTS SUMMARY — unchanged from v1.5
 // ─────────────────────────────────────────────────────────────
 async function getListsSummary(userId) {
-  // Fetch all checks for user, group by ListName, keep newest per list.
   const records = await atGet(
     'List_Intelligence_Checks',
     `{UserID}='${userId}'`,
@@ -718,7 +784,7 @@ async function getListsSummary(userId) {
   for (const r of records) {
     const rawName  = r.fields.ListName;
     const listName = rawName && String(rawName).trim() ? String(rawName).trim() : LEGACY_LIST_NAME;
-    if (byList.has(listName)) continue; // already have the newest
+    if (byList.has(listName)) continue;
     byList.set(listName, r.fields);
   }
   const now = new Date().toISOString().slice(0, 10);
@@ -743,7 +809,6 @@ async function getListsSummary(userId) {
       ],
     });
   }
-  // Sort: needsAttention first, then most-recently-checked.
   out.sort((a, b) => {
     if (a.needsAttention !== b.needsAttention) return a.needsAttention ? -1 : 1;
     return (b.checkDate || '').localeCompare(a.checkDate || '');
@@ -766,11 +831,39 @@ export default async function handler(req, res) {
   const action = req.query.action || req.body?.action || 'load';
 
   try {
-    // ── DETECT ──────────────────────────────────────────────
+    // ── DETECT — v1.6: AI-powered, deterministic fallback ───
     if (action === 'detect') {
       const { headers, rows } = req.body;
       if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
-      return res.status(200).json({ success: true, mapping: detectListColumns(headers, rows) });
+
+      // Try AI-powered detection first
+      const aiResult = await aiMapListColumns(headers, rows);
+
+      let mapping = {};
+
+      if (aiResult?.columns) {
+        const usedTargets = new Set();
+        for (const col of aiResult.columns) {
+          const h = col.header;
+          if (!headers.includes(h)) continue;
+          const target = col.target || 'ignore';
+          if (target === 'ignore' || usedTargets.has(target)) {
+            mapping[h] = 'ignore';
+          } else {
+            mapping[h] = target;
+            usedTargets.add(target);
+          }
+        }
+        // Fill in any headers the AI didn't mention
+        for (const h of headers) {
+          if (!(h in mapping)) mapping[h] = 'ignore';
+        }
+      } else {
+        // Fallback to deterministic detector
+        mapping = detectListColumns(headers, rows);
+      }
+
+      return res.status(200).json({ success: true, mapping });
     }
 
     // ── LISTS ───────────────────────────────────────────────
@@ -780,8 +873,6 @@ export default async function handler(req, res) {
     }
 
     // ── LOAD ────────────────────────────────────────────────
-    // With listName: return that list.
-    // Without: return the most recently checked list PLUS a `lists` array.
     if (action === 'load') {
       const listName = req.query.listName ? normaliseListName(req.query.listName) : null;
 
@@ -807,7 +898,6 @@ export default async function handler(req, res) {
         ? String(latest.ListName).trim()
         : LEGACY_LIST_NAME;
 
-      // Opps filtered to this list (legacy opps without ListName treated as Main list).
       const opps = oppsAll.filter(o => {
         const on = o.fields.ListName && String(o.fields.ListName).trim()
           ? String(o.fields.ListName).trim()
@@ -879,9 +969,6 @@ export default async function handler(req, res) {
       const { rows, fieldMapping, sector, aov, uploadVersion, listName: rawListName } = req.body;
       if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
 
-      // NEW: listName is required. Frontend prompts with filename-prefill,
-      // so this should never be missing from a real client, but we tolerate
-      // by falling back to 'Main list' — same as legacy rows.
       const listName  = normaliseListName(rawListName);
       const sectorVal = sector || 'ecommerce';
       const aovVal    = parseFloat(aov) || 50;
@@ -916,7 +1003,6 @@ export default async function handler(req, res) {
 
       if (!contacts.length) return res.status(400).json({ error: 'No valid email addresses found.' });
 
-      // Prior snapshot for THIS list (not user-wide).
       const priorSnaps = await getListSnapshots(userId, listName, 1);
       const priorSnap  = priorSnaps[0] || null;
 
@@ -924,7 +1010,6 @@ export default async function handler(req, res) {
       const opportunities = generateOpportunities(analysis);
       const today         = new Date().toISOString().split('T')[0];
 
-      // Profile enrichment — unchanged.
       try {
         const profileRecs = await atGet('User_Profile', `{UserID}='${userId}'`, '', 1);
         if (profileRecs.length) {
@@ -999,7 +1084,6 @@ export default async function handler(req, res) {
         });
       }
 
-      // ── FIX EMISSION — per-list sourceRecordId ─────────────
       await emitLIFix(userId, listName, {
         fixType:         'consent_expired',
         sourceRecordId:  liabilitySourceId(listName),
@@ -1026,9 +1110,6 @@ export default async function handler(req, res) {
         resolvedSummary: `List Intelligence rerun on "${listName}" (${today}): commercial value at risk within 90 days has fallen below the alert threshold.`,
       });
 
-      // Suppression is user-wide, not list-scoped. A toxic contact on the VIP
-      // list is toxic on the Main list too. We include listName in Source for
-      // auditability but the write itself stays global.
       for (const c of analysis.liability.slice(0, 200)) {
         try {
           await atCreate('Suppression_Registry', {
