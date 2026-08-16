@@ -626,6 +626,72 @@ async function emitLIFix(userId, listName, spec) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// AI NARRATIVE GENERATION — v1.6
+// One plain-English paragraph explaining the list's valuation and
+// compliance picture. Non-blocking — upload always returns even if
+// this fails.
+// ─────────────────────────────────────────────────────────────
+
+const LIST_NARRATIVE_SYSTEM = `You are a UK email marketing analyst writing for marketing managers who don't think in compliance terms. You receive list valuation and compliance data and write ONE short paragraph (3-5 sentences) explaining what the numbers mean.
+
+Rules:
+- Name the list. Cite actual numbers: list value, liability count, recoverable count, consent expiry windows.
+- Be actionable: say what to do and when. If there are liability contacts, say to suppress them. If contacts are expiring, say to run a re-consent campaign.
+- If the list is clean (no liabilities, high active count), keep it short and encouraging.
+- Never invent numbers. Only use figures from the data provided.
+- Never say "compliant" or "in breach". Use "the ICO expects..." if relevant.
+- Write as a knowledgeable colleague, not a chatbot. No greetings, no sign-offs.
+- Not legal advice.`;
+
+async function generateListNarrative(listName, analysis, changes) {
+  const context = {
+    listName,
+    totalContacts:    analysis.totalContacts,
+    activeCount:      analysis.activeCount,
+    recoverableCount: analysis.recoverableCount,
+    atRiskCount:      analysis.atRiskCount,
+    liabilityCount:   analysis.liabilityCount,
+    assetValue:       analysis.assetValue,
+    icoStatus:        analysis.icoStatus,
+    expiring30:       analysis.expiring30,
+    expiring60:       analysis.expiring60,
+    expiring90:       analysis.expiring90,
+    valueExpiring90:  analysis.valueExpiring90,
+    dataQualityFlags: analysis.dataQualityFlags,
+    changes: changes ? {
+      direction:       changes.direction,
+      valueDelta:      changes.valueDelta,
+      liabilityDelta:  changes.liabilityDelta,
+      activeDelta:     changes.activeDelta,
+      daysSincePrevious: changes.daysSincePrevious,
+    } : null,
+  };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 300,
+        system: LIST_NARRATIVE_SYSTEM,
+        messages: [{ role: 'user', content: `Explain this list's state:\n${JSON.stringify(context)}` }],
+      }),
+    });
+    if (!res.ok) return null;
+    const msg = await res.json();
+    return msg.content?.[0]?.text?.trim() || null;
+  } catch (e) {
+    console.error('List narrative failed (non-fatal):', e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // OPPORTUNITY GENERATION — unchanged from v1.4
 // ─────────────────────────────────────────────────────────────
 function generateOpportunities(analysis) {
@@ -1129,6 +1195,14 @@ export default async function handler(req, res) {
         priorSnap
       );
 
+      // v1.6: AI narrative — non-blocking, fire-and-forget
+      let narrative = null;
+      try {
+        narrative = await generateListNarrative(listName, analysis, changes);
+      } catch (e) {
+        console.error('List narrative failed (non-fatal):', e.message);
+      }
+
       return res.status(200).json({
         success:           true,
         listName,
@@ -1149,6 +1223,7 @@ export default async function handler(req, res) {
         cmaNote:           analysis.cmaNote  || null,
         consentExpiring:   { in30: analysis.expiring30, in60: analysis.expiring60, in90: analysis.expiring90, valueAtRisk: analysis.valueExpiring90 },
         changes,
+        narrative,
         downloadIndices: {
           active:      analysis.activeIndices,
           recoverable: analysis.recoverableIndices,
