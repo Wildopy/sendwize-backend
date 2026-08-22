@@ -709,6 +709,7 @@ function renderResults(d){
   var liabCount=d.liabilityCount||0;
   var usableCount=total-liabCount;
   el('valHero').innerHTML='<div class="val-hero">'+
+    if(d.narrative){el('valHero').innerHTML+='<div class="li-narrative">'+escH(d.narrative)+'</div>';}
     '<div class="val-hero-bg"></div>'+
     '<div class="val-eyebrow">Estimated list value (actionable contacts only)</div>'+
     '<div class="val-amount">'+fmtGBP(d.assetValue)+'</div>'+
