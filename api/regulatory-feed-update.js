@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // SENDWIZE — api/regulatory-feed-update.js
-// Weekly cron endpoint — fires from Airtable automation every Monday 07:00 UK.
+// Weekly cron endpoint — fires every Monday 07:00 UTC via Vercel Cron.
 //
 // What it does:
 //   1. Calls Claude with web_search enabled
@@ -11,9 +11,11 @@
 //      - Violation_Database (permanent enforcement record)
 //   4. Cross-references new rulings against Competitor_Watch records
 //      and fires competitor_ruling alerts for any matches
+//   5. Re-scans all active competitors' current marketing promotions
+//      and updates RecentPromoClaims on each Competitor_Watch record
 //
-// Trigger: POST from Airtable automation with { secret: CRON_SECRET }
-// CRON_SECRET must match process.env.CRON_SECRET on Vercel.
+// Trigger: Vercel Cron (GET with Authorization header) or manual POST
+// with { secret: CRON_SECRET }.
 // ─────────────────────────────────────────────────────────────
 
 import { atFetch } from './_airtable.js';
@@ -47,28 +49,72 @@ function getWeekNumber() {
   return `${now.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
+// ── Airtable helpers (local to this file) ─────────────────────
+function atHeaders() {
+  return { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
+}
+
+function airtableBase() {
+  return `https://api.airtable.com/v0/${process.env.BASE_ID}`;
+}
+
 async function atGet(table, formula, sort, max = 50) {
-  const base = `https://api.airtable.com/v0/${process.env.BASE_ID}`;
+  const base = airtableBase();
   let url = `${base}/${encodeURIComponent(table)}?maxRecords=${max}`;
   if (formula) url += `&filterByFormula=${encodeURIComponent(formula)}`;
   if (sort)    url += `&${sort}`;
-  const r = await atFetch(url, { headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` } });
+  const r = await atFetch(url, { headers: atHeaders() });
   if (!r.ok) throw new Error(`GET ${table}: ${r.status}`);
   return (await r.json()).records || [];
 }
 
 async function atCreate(table, fields) {
-  const base  = `https://api.airtable.com/v0/${process.env.BASE_ID}`;
+  const base  = airtableBase();
   const clean = Object.fromEntries(Object.entries(fields).filter(([,v]) => v !== null && v !== undefined && v !== ''));
   const r = await atFetch(`${base}/${encodeURIComponent(table)}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+    headers: atHeaders(),
     body: JSON.stringify({ records: [{ fields: clean }] }),
   });
   if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.error?.message || `POST ${table}: ${r.status}`); }
   return (await r.json()).records?.[0];
 }
 
+async function atPatch(table, recordId, fields) {
+  const base  = airtableBase();
+  const clean = Object.fromEntries(Object.entries(fields).filter(([,v]) => v !== null && v !== undefined && v !== ''));
+  const r = await atFetch(`${base}/${encodeURIComponent(table)}/${recordId}`, {
+    method: 'PATCH',
+    headers: atHeaders(),
+    body: JSON.stringify({ fields: clean }),
+  });
+  if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.error?.message || `PATCH ${table}: ${r.status}`); }
+  return await r.json();
+}
+
+// ── Auth verification ─────────────────────────────────────────
+// Accepts either:
+//   - Vercel Cron: GET with x-vercel-cron-auth header matching CRON_SECRET
+//   - Manual trigger: POST with { secret: CRON_SECRET } in body
+//   - Fallback: Authorization: Bearer <CRON_SECRET> header
+function verifyAuth(req) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return false;
+
+  // Vercel Cron sends this header automatically (Pro/Enterprise)
+  if (req.headers?.['x-vercel-cron-auth'] === cronSecret) return true;
+
+  // Authorization header (manual triggers, testing)
+  const authHeader = req.headers?.['authorization'] || '';
+  if (authHeader === `Bearer ${cronSecret}`) return true;
+
+  // POST body secret (legacy / Airtable automation trigger)
+  if (req.method === 'POST' && req.body?.secret === cronSecret) return true;
+
+  return false;
+}
+
+// ── Enforcement scan (existing) ───────────────────────────────
 async function scanRegulator(regulator, claudeKey) {
   const queries = {
     ICO: `Find ICO (Information Commissioner's Office) enforcement decisions, fines, and undertakings published in the last 7 days. Focus on direct marketing, email marketing, PECR, and UK GDPR enforcement cases. Include the company name, fine amount if any, and a brief description of the violation.`,
@@ -113,9 +159,9 @@ Return ONLY the JSON array. No other text.`,
     return [];
   }
 
-  const data    = await res.json();
-  const text    = data.content?.find(b => b.type === 'text')?.text || '';
-  const match   = text.match(/\[[\s\S]*\]/);
+  const data  = await res.json();
+  const text  = data.content?.find(b => b.type === 'text')?.text || '';
+  const match = text.match(/\[[\s\S]*\]/);
   if (!match) return [];
 
   try {
@@ -126,16 +172,95 @@ Return ONLY the JSON array. No other text.`,
   }
 }
 
+// ── Competitor promo re-scan ──────────────────────────────────
+// Runs the same promo scan as handleCompetitorWatch in data.js,
+// but for all active competitors, updating their records weekly.
+async function scanCompetitorPromos(competitors, claudeKey) {
+  const results = { scanned: 0, updated: 0, errors: [] };
+  const today = new Date().toISOString().split('T')[0];
+
+  // Process in batches of 3 to avoid hammering the API
+  for (let i = 0; i < competitors.length; i += 3) {
+    const batch = competitors.slice(i, i + 3);
+
+    const batchResults = await Promise.allSettled(
+      batch.map(async (comp) => {
+        const name = comp.fields.CompetitorName;
+        if (!name) return null;
+
+        results.scanned++;
+
+        try {
+          const promoRes = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': claudeKey,
+              'anthropic-version': '2023-06-01',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-6',
+              max_tokens: 400,
+              tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+              messages: [{
+                role: 'user',
+                content: `Search for current marketing promotions, discount claims, urgency claims, or pricing tactics being used by ${name} in the UK right now. Return ONLY a JSON array of up to 5 objects: [{"claimType":"fake_urgency|reference_pricing|superlative|free_claim|other","description":"brief description","complianceNote":"brief compliance observation"}]. No other text.`,
+              }],
+            }),
+          });
+
+          if (!promoRes.ok) {
+            console.error(`Promo scan failed for ${name}:`, promoRes.status);
+            return null;
+          }
+
+          const promoData = await promoRes.json();
+          const text  = promoData.content?.find(b => b.type === 'text')?.text || '';
+          const match = text.match(/\[[\s\S]*\]/);
+
+          const promoClaims = match ? match[0] : null;
+
+          // Update the Competitor_Watch record with fresh promo data
+          await atPatch('Competitor_Watch', comp.id, {
+            RecentPromoClaims: promoClaims,
+            RecentPromoDate:   today,
+            LastAutoChecked:   today,
+          });
+
+          results.updated++;
+          return { name, claimsFound: promoClaims ? true : false };
+
+        } catch (e) {
+          console.error(`Promo scan error for ${name}:`, e.message);
+          results.errors.push({ competitor: name, error: e.message });
+          return null;
+        }
+      })
+    );
+
+    // Brief pause between batches to be kind to rate limits
+    if (i + 3 < competitors.length) {
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+
+  return results;
+}
+
+// ── Main handler ──────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST')   return res.status(405).json({ error: 'POST only' });
 
-  // Verify cron secret
-  const { secret } = req.body || {};
-  if (!secret || secret !== process.env.CRON_SECRET) {
+  // Accept GET (Vercel Cron) or POST (manual trigger)
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ error: 'GET or POST only' });
+  }
+
+  // Verify auth
+  if (!verifyAuth(req)) {
     return res.status(401).json({ error: 'Unauthorised' });
   }
 
@@ -145,9 +270,9 @@ export default async function handler(req, res) {
   const weekNumber = getWeekNumber();
   console.log(`Regulatory feed update starting — week ${weekNumber}`);
 
-  const results = { written: 0, skipped: 0, errors: [], competitorAlerts: 0 };
+  const results = { written: 0, skipped: 0, errors: [], competitorAlerts: 0, promoScan: null };
 
-  // Scan all three regulators in parallel
+  // ── Phase 1: Enforcement scan (ICO, ASA, CMA) ──────────────
   const [icoItems, asaItems, cmaItems] = await Promise.all([
     scanRegulator('ICO', ANTHROPIC_KEY),
     scanRegulator('ASA', ANTHROPIC_KEY),
@@ -171,7 +296,7 @@ export default async function handler(req, res) {
   }
   const existingNames = new Set(existingThisWeek.map(r => (r.fields.CompanyName || '').toLowerCase()));
 
-  // Load competitor watch records for cross-referencing
+  // Load ALL active competitor watch records (used for both phases)
   let allCompetitors = [];
   try {
     allCompetitors = await atGet('Competitor_Watch', `{WatchStatus}=1`, '', 200);
@@ -179,12 +304,11 @@ export default async function handler(req, res) {
     console.error('Could not load competitor watch (non-fatal):', e.message);
   }
 
-  // Process each item
+  // Process each enforcement item
   for (const item of allItems) {
     try {
       const companyLower = (item.companyName || '').toLowerCase();
 
-      // Deduplicate by company + week
       if (existingNames.has(companyLower)) {
         results.skipped++;
         continue;
@@ -194,34 +318,33 @@ export default async function handler(req, res) {
 
       // Write to Sector_Intelligence_Feed
       await atCreate('Sector_Intelligence_Feed', {
-        Sector:                 sector,
-        Regulator:              item.regulator,
-        PublishedDate:          item.publishedDate || new Date().toISOString().split('T')[0],
-        CompanyName:            item.companyName || '',
-        RulingSummary:          (item.rulingSummary || '').slice(0, 500),
-        ClaimTypes:             Array.isArray(item.claimTypes) ? JSON.stringify(item.claimTypes) : '',
-        FineAmount:             item.fineAmount || null,
-        RulingUrl:              item.rulingUrl || '',
-        RelevantToSendwize:     item.relevantToEmailMarketing !== false,
-        ActionableForUsers:     (item.actionableNote || '').slice(0, 300),
-        WeekNumber:             weekNumber,
-        AddedBy:                'Auto',
+        Sector:             sector,
+        Regulator:          item.regulator,
+        PublishedDate:      item.publishedDate || new Date().toISOString().split('T')[0],
+        CompanyName:        item.companyName || '',
+        RulingSummary:      (item.rulingSummary || '').slice(0, 500),
+        ClaimTypes:         Array.isArray(item.claimTypes) ? JSON.stringify(item.claimTypes) : '',
+        FineAmount:         item.fineAmount || null,
+        RulingUrl:          item.rulingUrl || '',
+        RelevantToSendwize: item.relevantToEmailMarketing !== false,
+        ActionableForUsers: (item.actionableNote || '').slice(0, 300),
+        WeekNumber:         weekNumber,
+        AddedBy:            'Auto',
       });
 
-      // Also write to Violation_Database if not already there
+      // Also write to Violation_Database
       try {
         await atCreate('Violation_Database', {
-          CompanyName:    item.companyName || '',
-          Regulator:      item.regulator,
-          DateOfAction:   item.publishedDate || new Date().toISOString().split('T')[0],
-          Violation:      (item.rulingSummary || '').slice(0, 500),
-          FineAmount:     item.fineAmount || null,
-          ViolationType:  Array.isArray(item.claimTypes) ? item.claimTypes[0] : 'other',
-          Sector:         sector,
-          Source:         'Auto-feed',
+          CompanyName:   item.companyName || '',
+          Regulator:     item.regulator,
+          DateOfAction:  item.publishedDate || new Date().toISOString().split('T')[0],
+          Violation:     (item.rulingSummary || '').slice(0, 500),
+          FineAmount:    item.fineAmount || null,
+          ViolationType: Array.isArray(item.claimTypes) ? item.claimTypes[0] : 'other',
+          Sector:        sector,
+          Source:        'Auto-feed',
         });
       } catch (ve) {
-        // Violation_Database write failing is non-fatal — may be duplicate
         console.warn('Violation_Database write skipped (may be duplicate):', ve.message);
       }
 
@@ -262,16 +385,34 @@ export default async function handler(req, res) {
     }
   }
 
-  console.log(`Feed update complete — written: ${results.written}, skipped: ${results.skipped}, competitor alerts: ${results.competitorAlerts}, errors: ${results.errors.length}`);
+  // ── Phase 2: Competitor promo re-scan ───────────────────────
+  // Re-scan what each watched competitor is currently promoting.
+  // This catches risky marketing activity, not just enforcement.
+  if (allCompetitors.length > 0) {
+    console.log(`Starting promo re-scan for ${allCompetitors.length} active competitors`);
+    results.promoScan = await scanCompetitorPromos(allCompetitors, ANTHROPIC_KEY);
+    console.log(`Promo re-scan complete — scanned: ${results.promoScan.scanned}, updated: ${results.promoScan.updated}`);
+  } else {
+    results.promoScan = { scanned: 0, updated: 0, errors: [] };
+  }
+
+  console.log(`Feed update complete — enforcement written: ${results.written}, skipped: ${results.skipped}, competitor alerts: ${results.competitorAlerts}, promo re-scans: ${results.promoScan.updated}, errors: ${results.errors.length}`);
 
   return res.status(200).json({
-    success:           true,
-    week:              weekNumber,
-    itemsFound:        allItems.length,
-    written:           results.written,
-    skipped:           results.skipped,
-    competitorAlerts:  results.competitorAlerts,
-    errors:            results.errors,
-    breakdown:         { ICO: icoItems.length, ASA: asaItems.length, CMA: cmaItems.length },
+    success:          true,
+    week:             weekNumber,
+    enforcement: {
+      itemsFound:       allItems.length,
+      written:          results.written,
+      skipped:          results.skipped,
+      competitorAlerts: results.competitorAlerts,
+      breakdown:        { ICO: icoItems.length, ASA: asaItems.length, CMA: cmaItems.length },
+    },
+    promoScan: {
+      competitorsScanned: results.promoScan.scanned,
+      updated:            results.promoScan.updated,
+      errors:             results.promoScan.errors.length,
+    },
+    errors: results.errors,
   });
 }
