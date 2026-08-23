@@ -496,6 +496,11 @@ async function handlePartnerRegister(req, res) {
       A26ClauseResults: partner.A26ClauseResults,
       PrivacyReviewResults: partner.PrivacyReviewResults,
       Notes: partner.Notes,
+      // v7.3 — ASA/CAP/CMA fields
+      RelationshipActivity: partner.RelationshipActivity,
+      MarketingChannels: Array.isArray(partner.MarketingChannels) ? JSON.stringify(partner.MarketingChannels) : partner.MarketingChannels,
+      AdComplianceReviewed: partner.AdComplianceReviewed || false,
+      PricingComplianceReviewed: partner.PricingComplianceReviewed || false,
       AddedDate: recordId ? undefined : new Date().toISOString().split('T')[0],
       LastChecked: recordId ? undefined : new Date().toISOString().split('T')[0],
       // v7.3 — ASA/CAP/CMA fields
@@ -611,6 +616,11 @@ async function handleAffiliateRegister(req, res) {
       ExposureEstimateHigh: exposureHigh || null,
       Notes: affiliate.Notes,
       LastChecked: recordId ? undefined : new Date().toISOString().split('T')[0],
+      // v7.3 — ASA/CAP/CMA fields
+      RelationshipActivity: affiliate.RelationshipActivity,
+      MarketingMaterialsReviewed: affiliate.MarketingMaterialsReviewed || false,
+      AdDisclosureCompliant: affiliate.AdDisclosureCompliant || 'Unverified',
+      LandingPageReviewed: affiliate.LandingPageReviewed || false,
       // v7.3 — ASA/CAP/CMA fields
       RelationshipActivity: affiliate.RelationshipActivity,
       MarketingMaterialsReviewed: affiliate.MarketingMaterialsReviewed || false,
@@ -896,6 +906,15 @@ async function handleRelationshipWatch(req, res) {
       if (!isDPAConfirmed(f.Article26Status)) alerts.push({ type: 'a26', severity: 'high', text: 'No confirmed Article 26 joint controller agreement.' });
       if (!f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'amber', text: 'Consent chain ownership not verified.' });
       if (f.BrandSafetyFlag) alerts.push({ type: 'brand', severity: 'amber', text: f.BrandSafetyReason || 'Brand safety flag raised.' });
+      // v7.3 — ASA/CAP/CMA alerts for partners
+      const partActivity = f.RelationshipActivity || '';
+      const needsAdReview = ['joint_ads', 'co_branded_content', 'influencer'].includes(partActivity);
+      if (needsAdReview && !f.AdComplianceReviewed) {
+        alerts.push({ type: 'ad_compliance', severity: 'amber', text: `Joint advertising content with ${name} not reviewed against CAP Code.` });
+      }
+      if (['joint_ads', 'co_branded_content', 'lead_generation'].includes(partActivity) && !f.PricingComplianceReviewed) {
+        alerts.push({ type: 'pricing', severity: 'amber', text: `Pricing claims in campaigns with ${name} not verified against CMA/DMCCA 2024.` });
+      }
       const ann = anniversaryDays(f.Article26Date);
       if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: `Article 26 agreement review due in ${ann} days.` });
  
@@ -1065,6 +1084,10 @@ async function handleSendAlert(req, res) {
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Audience Read alert</h2><p style="color:#555;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved${req.body.previousState ? ` from <strong>${req.body.previousState}</strong>` : ''} to <strong>${req.body.sentimentState || 'a negative state'}</strong>.</p>${req.body.regulatoryNote ? `<p style="background:#fdf4ff;border-left:4px solid #7e22ce;padding:12px 16px;font-size:13px;color:#555">${req.body.regulatoryNote}</p>` : ''}<a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View Audience Read →</a></div></div>`,
     },
     // v7.2 — new template for mild AR state transitions (Healthy → Cooling etc)
+    dossier_compliance_change: {
+      subject: `⚠️ Sendwize: compliance change affecting ${req.body.campaignTitle || 'a campaign'}`,
+      html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Campaign compliance alert</h2><p style="color:#555;margin:0 0 16px;font-size:14px">A new regulatory ruling this week affects claim types used in your campaign <strong>${req.body.campaignTitle || 'Untitled'}</strong>.</p><p style="background:#fdf4ff;border-left:4px solid #7e22ce;padding:12px 16px;font-size:13px;color:#555;margin:0 0 16px"><strong>Matching claim types:</strong> ${req.body.claimTypes || 'unknown'}<br><strong>New rulings this week:</strong> ${req.body.rulingCount || 0}</p><p style="color:#555;font-size:14px;margin:0 0 24px">Open your campaign dossier to review the ruling and check whether your evidence still holds.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open campaign dossier →</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>`,
+    },
     segment_state_change: {
       subject: `📉 Sendwize: ${req.body.segmentName || 'a segment'} moved to ${req.body.sentimentState || 'a new state'}`,
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Audience state change</h2><p style="color:#555;margin:0 0 20px;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved from <strong>${req.body.previousState || 'a healthier state'}</strong> to <strong>${req.body.sentimentState || 'a warning state'}</strong>.</p><p style="color:#555;margin:0 0 24px;font-size:14px">This is an early signal, not damage — but the trend is going the wrong way. Open Audience Read to see what changed and the recommended action.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open Audience Read →</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>`,
