@@ -874,15 +874,16 @@ async function handleRelationshipWatch(req, res) {
     }));
   }
 
+ // v7.3 — replace the buildAlerts function inside handleRelationshipWatch
   function buildAlerts(type, name, record) {
     const alerts = [];
     const f = record.fields;
     const sd = staleDays(record);
     const viols = crossRefViolations(name);
-
+ 
     if (viols.length > 0) alerts.push({ type: 'enforcement', severity: 'amber',
       text: `${viols.length} regulatory action${viols.length !== 1 ? 's' : ''} found in enforcement database for ${name}.`, detail: viols });
-
+ 
     if (type === 'processor') {
       const dpa = f.DPAStatus || f.AgreementStatus || '';
       if (!isDPAConfirmed(dpa)) alerts.push({ type: 'dpa', severity: 'red', text: 'No confirmed DPA — Article 28 UK GDPR breach until signed.' });
@@ -890,41 +891,50 @@ async function handleRelationshipWatch(req, res) {
       const ann = anniversaryDays(f.AgreementDate);
       if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: ann <= 0 ? 'Agreement anniversary was recent — confirm renewed.' : `Agreement anniversary in ${ann} days — review terms.` });
     }
-
+ 
     if (type === 'partner') {
       if (!isDPAConfirmed(f.Article26Status)) alerts.push({ type: 'a26', severity: 'high', text: 'No confirmed Article 26 joint controller agreement.' });
       if (!f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'amber', text: 'Consent chain ownership not verified.' });
       if (f.BrandSafetyFlag) alerts.push({ type: 'brand', severity: 'amber', text: f.BrandSafetyReason || 'Brand safety flag raised.' });
       const ann = anniversaryDays(f.Article26Date);
       if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: `Article 26 agreement review due in ${ann} days.` });
+ 
+      // v7.3 — ASA/CAP/CMA alerts for partners
+      const activity = f.RelationshipActivity || '';
+      const needsAdReview = ['joint_ads', 'co_branded_content', 'influencer'].includes(activity);
+      if (needsAdReview && !f.AdComplianceReviewed) {
+        alerts.push({ type: 'ad_compliance', severity: 'amber', text: `Joint advertising content with ${name} not reviewed against CAP Code — you share responsibility for claims in co-branded material.` });
+      }
+      if (['joint_ads', 'co_branded_content', 'lead_generation'].includes(activity) && !f.PricingComplianceReviewed) {
+        alerts.push({ type: 'pricing', severity: 'amber', text: `Pricing and promotional claims in campaigns with ${name} not verified against CMA/DMCCA 2024.` });
+      }
     }
-
+ 
     if (type === 'affiliate') {
       if (!f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'red', text: 'Consent chain unverified — same legal exposure as sending without consent.' });
       if (f.SenderIdentityCompliant === 'Unverified') alerts.push({ type: 'sender', severity: 'amber', text: 'Sender identity not verified — PECR Reg 23 risk.' });
       if (!isDPAConfirmed(f.DPAStatus)) alerts.push({ type: 'dpa', severity: 'amber', text: 'No confirmed DPA for this affiliate.' });
+ 
+      // v7.3 — ASA/CAP/CMA alerts for affiliates
+      if (!f.MarketingMaterialsReviewed) {
+        alerts.push({ type: 'materials', severity: 'amber', text: `Marketing materials for ${name} not reviewed against CAP Code — you are responsible for claims made on your behalf.` });
+      }
+      const affActivity = (f.RelationshipActivity || f.AffiliateType || '').toLowerCase();
+      if (affActivity.includes('influencer') && f.AdDisclosureCompliant !== 'Verified') {
+        alerts.push({ type: 'disclosure', severity: 'red', text: `Influencer ${name} ad disclosure not verified — ASA requires clear #ad labelling on all paid content.` });
+      }
+      if ((affActivity.includes('lead') || affActivity.includes('comparison') || affActivity.includes('cashback')) && !f.LandingPageReviewed) {
+        alerts.push({ type: 'landing_page', severity: 'amber', text: `Landing pages for ${name} not reviewed for consent capture compliance and CMA pricing rules.` });
+      }
     }
-
+ 
     if (type === 'competitor') {
       if (f.RulingCount > 0) alerts.push({ type: 'ruling', severity: 'amber', text: `${f.RulingCount} regulatory action${f.RulingCount !== 1 ? 's' : ''} on record. Check if any claim types match your own campaigns.` });
       if (sd !== null && sd > 30) alerts.push({ type: 'stale', severity: 'amber', text: `Intelligence last updated ${sd} days ago. Competitor is checked automatically each week.` });
     }
-
+ 
     return alerts;
   }
-
-  const watch = [
-    ...vendors.map(r => ({ type: 'processor', recordId: r.id, name: r.fields.VendorName || '', alerts: buildAlerts('processor', r.fields.VendorName, r), staleDays: staleDays(r) })),
-    ...partners.map(r => ({ type: 'partner', recordId: r.id, name: r.fields.PartnerName || '', alerts: buildAlerts('partner', r.fields.PartnerName, r), staleDays: staleDays(r) })),
-    ...affiliates.map(r => ({ type: 'affiliate', recordId: r.id, name: r.fields.AffiliateName || '', alerts: buildAlerts('affiliate', r.fields.AffiliateName, r), staleDays: staleDays(r) })),
-    ...competitors.map(r => ({ type: 'competitor', recordId: r.id, name: r.fields.CompetitorName || '', alerts: buildAlerts('competitor', r.fields.CompetitorName, r), staleDays: staleDays(r) })),
-  ].sort((a, b) => b.alerts.length - a.alerts.length);
-
-  const thirdPartyScore = await calculateThirdPartyScore(userId, base).catch(() => null);
-
-  return res.json({ watch, thirdPartyScore, lastChecked: today.toISOString() });
-}
-
 // ── SUMMARY handler ──────────────────────────────────────────
 async function handleSummary(req, res) {
   const { userId } = req.query;
