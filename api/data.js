@@ -436,23 +436,23 @@ async function handleCronStatus(req, res) {
   });
 }
 
-// ── PARTNER-REGISTER handler ──────────────────────────────────
+// ── PARTNER-REGISTER handler (v7.3 — ASA/CAP/CMA dimensions) ──
 async function handlePartnerRegister(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
-
+ 
   if (req.method === 'DELETE') {
     const { recordId } = req.query;
     if (!recordId) return res.status(400).json({ error: 'recordId required' });
     try { await atDelete(base, 'Partner_Register', recordId); return res.json({ deleted: true }); }
     catch (e) { return res.status(500).json({ error: e.message }); }
   }
-
+ 
   if (req.method === 'POST') {
     const { recordId, partner } = req.body;
     if (!userId)  return res.status(400).json({ error: 'userId required' });
     if (!partner) return res.status(400).json({ error: 'partner data required' });
-
+ 
     let violationCount = 0, lastViolationDate = null, lastViolationSummary = null;
     let reputationScore = 100, brandSafetyFlag = false, brandSafetyReason = null;
     if (!recordId && partner.PartnerName) {
@@ -474,7 +474,7 @@ async function handlePartnerRegister(req, res) {
         brandSafetyReason = `${violationCount} regulatory action${violationCount !== 1 ? 's' : ''} found in Sendwize enforcement database.`;
       }
     }
-
+ 
     const fields = {
       UserID: userId, PartnerName: partner.PartnerName, PartnerType: partner.PartnerType,
       RelationshipDescription: partner.RelationshipDescription,
@@ -498,37 +498,70 @@ async function handlePartnerRegister(req, res) {
       Notes: partner.Notes,
       AddedDate: recordId ? undefined : new Date().toISOString().split('T')[0],
       LastChecked: recordId ? undefined : new Date().toISOString().split('T')[0],
+      // v7.3 — ASA/CAP/CMA fields
+      RelationshipActivity: partner.RelationshipActivity,
+      MarketingChannels: Array.isArray(partner.MarketingChannels) ? JSON.stringify(partner.MarketingChannels) : partner.MarketingChannels,
+      AdComplianceReviewed: partner.AdComplianceReviewed || false,
+      PricingComplianceReviewed: partner.PricingComplianceReviewed || false,
     };
-
+ 
     try {
       const record = recordId
         ? await atPatch(base, 'Partner_Register', recordId, fields)
         : await atCreate(base, 'Partner_Register', fields);
-
+ 
+      const fixesGenerated = [];
+ 
       if (!recordId && !isDPAConfirmed(partner.Article26Status)) {
         generateFix({
           userId, fixType: 'no_article26_agreement', tool: 'Relationships Register',
           description: `Partner '${partner.PartnerName}' added without a confirmed Article 26 joint controller agreement. Under UK GDPR Article 26, joint controllers must determine their respective responsibilities in a transparent arrangement.`,
           severity: 'high', sourceRecordId: record?.id || null,
         });
+        fixesGenerated.push('no_article26_agreement');
       }
-
+ 
       if (!recordId && brandSafetyFlag) {
         generateFix({
           userId, fixType: 'partner_brand_risk', tool: 'Relationships Register',
           description: `Partner '${partner.PartnerName}' has ${violationCount} regulatory action${violationCount !== 1 ? 's' : ''} in the Sendwize enforcement database. Co-marketing with a brand under regulatory scrutiny creates reputational and potential joint-liability risk.`,
           severity: violationCount >= 3 ? 'critical' : 'high', sourceRecordId: record?.id || null,
         });
+        fixesGenerated.push('partner_brand_risk');
       }
-
-      return res.json({ record, reputationScore, brandSafetyFlag, violationCount });
+ 
+      // v7.3 — ASA/CAP: joint advertising compliance
+      const activity = partner.RelationshipActivity || '';
+      const adActivities = ['joint_ads', 'co_branded_content', 'influencer'];
+      if (!recordId && adActivities.includes(activity) && !partner.AdComplianceReviewed) {
+        generateFix({
+          userId, fixType: 'unreviewed_joint_ads', tool: 'Relationships Register',
+          description: `Partner '${partner.PartnerName}' is involved in ${activity.replace(/_/g, ' ')} but joint advertising content has not been reviewed against the CAP Code. Under CAP Code sections 3 (misleading) and 8 (pricing), both parties are responsible for claims in joint advertising.`,
+          severity: 'high', sourceRecordId: record?.id || null,
+        });
+        fixesGenerated.push('unreviewed_joint_ads');
+      }
+ 
+      // v7.3 — CMA/DMCCA: pricing claims in co-branded campaigns
+      const pricingActivities = ['joint_ads', 'co_branded_content', 'lead_generation'];
+      if (!recordId && pricingActivities.includes(activity) && !partner.PricingComplianceReviewed) {
+        generateFix({
+          userId, fixType: 'partner_pricing_claims', tool: 'Relationships Register',
+          description: `Partner '${partner.PartnerName}' runs ${activity.replace(/_/g, ' ')} but pricing and promotional claims have not been verified against CMA/DMCCA 2024 requirements. Reference pricing, drip pricing, and fake urgency in co-branded campaigns create joint liability under Schedule 1 banned practices.`,
+          severity: 'medium', sourceRecordId: record?.id || null,
+        });
+        fixesGenerated.push('partner_pricing_claims');
+      }
+ 
+      return res.json({ record, reputationScore, brandSafetyFlag, violationCount, fixesGenerated });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
   }
-
+ 
   return res.status(405).json({ error: 'Method not allowed' });
 }
+ 
 
 // ── AFFILIATE-REGISTER handler ────────────────────────────────
 async function handleAffiliateRegister(req, res) {
