@@ -1,14 +1,23 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.2
+// SENDWIZE — data.js v7.3
 // Commercial Relationships & Risk Register
 //
-// v7.2 changes (from v7.1):
-//   + New alertTemplate: segment_state_change — for AR mild transitions
-//     (Healthy → Cooling, Cooling → Fatigue building, etc). Severe
-//     transitions (→ Damaged, → Complaint risk) still use audience_damaged.
-//   ~ audience_damaged template enhanced to show previousState when
-//     Audience Read passes it (from v7.5+ backend). Old callers that
-//     don't pass previousState still render correctly.
+// v7.3 changes (from v7.2):
+//   + Partner register: RelationshipActivity, MarketingChannels,
+//     AdComplianceReviewed, PricingComplianceReviewed fields added.
+//     New fix types: unreviewed_joint_ads, partner_pricing_claims.
+//   + Affiliate register: RelationshipActivity, MarketingMaterialsReviewed,
+//     AdDisclosureCompliant, LandingPageReviewed fields added.
+//     New fix types: affiliate_misleading_claims, affiliate_ad_disclosure,
+//     lead_gen_consent_gap.
+//   + calculateThirdPartyScore: partner scoring rebalanced to include
+//     ad compliance dimension (A26 40pts, consent 20pts, brand 15pts,
+//     ad compliance 25pts). Affiliate scoring rebalanced to include
+//     materials review (consent 35pts, materials 25pts, sender 20pts,
+//     DPA 20pts).
+//   + handleRelationshipWatch: new alert types for ad compliance,
+//     pricing compliance, marketing materials, influencer disclosure,
+//     and lead gen landing pages.
 //
 // v7.1 changes preserved: calculateThirdPartyScore rewritten,
 // dpa_breach fix on processor register, backfill-processor-fixes,
@@ -71,7 +80,8 @@ function isDPAConfirmed(status) {
   return DPA_CONFIRMED.includes(status || '');
 }
 
-// ── Third-party risk score (v7.1 — rewritten) ────────────────
+
+// ── Third-party risk score (v7.3 — ad compliance dimensions added) ──
 async function calculateThirdPartyScore(userId, base) {
   const [processors, partners, affiliates, profile] = await Promise.all([
     atGet(base, 'Vendor_Register',   `{UserID}='${userId}'`, '', 50).catch(() => []),
@@ -79,7 +89,7 @@ async function calculateThirdPartyScore(userId, base) {
     atGet(base, 'Affiliate_Register',`{UserID}='${userId}'`, '', 50).catch(() => []),
     atGet(base, 'User_Profile',      `{UserID}='${userId}'`, '', 1).catch(() => []),
   ]);
-
+ 
   function processorCategoryScore(records) {
     if (!records.length) return null;
     const noDPA  = records.filter(r => !isDPAConfirmed(r.fields.DPAStatus || r.fields.AgreementStatus)).length;
@@ -93,43 +103,53 @@ async function calculateThirdPartyScore(userId, base) {
     const staleGap = (stale / records.length)  * 20;
     return Math.max(0, Math.round(100 - dpaGap - riskGap - staleGap));
   }
-
+ 
+  // v7.3: rebalanced to include ad compliance dimension
   function partnerCategoryScore(records) {
     if (!records.length) return null;
     const noA26   = records.filter(r => !isDPAConfirmed(r.fields.Article26Status)).length;
     const noChain = records.filter(r => !r.fields.ConsentChainVerified).length;
     const flagged = records.filter(r => r.fields.BrandSafetyFlag).length;
-    const a26Gap    = (noA26 / records.length)   * 50;
-    const chainGap  = (noChain / records.length) * 30;
-    const brandGap  = (flagged / records.length) * 20;
-    return Math.max(0, Math.round(100 - a26Gap - chainGap - brandGap));
+    const noAdReview = records.filter(r => {
+      const activity = r.fields.RelationshipActivity || '';
+      const needsReview = ['joint_ads', 'co_branded_content', 'influencer'].includes(activity);
+      return needsReview && !r.fields.AdComplianceReviewed;
+    }).length;
+    const a26Gap    = (noA26 / records.length)       * 40;
+    const chainGap  = (noChain / records.length)     * 20;
+    const brandGap  = (flagged / records.length)     * 15;
+    const adGap     = (noAdReview / records.length)  * 25;
+    return Math.max(0, Math.round(100 - a26Gap - chainGap - brandGap - adGap));
   }
-
+ 
+  // v7.3: rebalanced to include marketing materials dimension
   function affiliateCategoryScore(records) {
     if (!records.length) return null;
-    const noDPA      = records.filter(r => !isDPAConfirmed(r.fields.DPAStatus)).length;
-    const noConsent  = records.filter(r => !r.fields.ConsentChainVerified).length;
-    const noSenderID = records.filter(r => r.fields.SenderIdentityCompliant === 'Unverified').length;
-    const consentGap = (noConsent / records.length)  * 50;
-    const senderGap  = (noSenderID / records.length) * 30;
-    const dpaGap     = (noDPA / records.length)      * 20;
-    return Math.max(0, Math.round(100 - consentGap - senderGap - dpaGap));
+    const noDPA        = records.filter(r => !isDPAConfirmed(r.fields.DPAStatus)).length;
+    const noConsent    = records.filter(r => !r.fields.ConsentChainVerified).length;
+    const noSenderID   = records.filter(r => r.fields.SenderIdentityCompliant === 'Unverified').length;
+    const noMaterials  = records.filter(r => !r.fields.MarketingMaterialsReviewed).length;
+    const consentGap   = (noConsent / records.length)    * 35;
+    const materialsGap = (noMaterials / records.length)  * 25;
+    const senderGap    = (noSenderID / records.length)   * 20;
+    const dpaGap       = (noDPA / records.length)        * 20;
+    return Math.max(0, Math.round(100 - consentGap - materialsGap - senderGap - dpaGap));
   }
-
+ 
   const proc = processorCategoryScore(processors);
   const part = partnerCategoryScore(partners);
   const aff  = affiliateCategoryScore(affiliates);
-
+ 
   const applicable = [proc, part, aff].filter(s => s !== null);
   const total = applicable.length
     ? Math.round(applicable.reduce((a,b) => a+b, 0) / applicable.length)
     : null;
-
+ 
   const lastReview = profile[0]?.fields?.LastIntelligenceFeedReview || null;
   const daysSinceReview = lastReview
     ? Math.floor((Date.now() - new Date(lastReview)) / 86400000)
     : null;
-
+ 
   return {
     total,
     applicableCount: applicable.length,
@@ -145,7 +165,7 @@ async function calculateThirdPartyScore(userId, base) {
     },
   };
 }
-
+ 
 // ── Cross-reference violations for a named entity ─────────────
 async function getViolationsForName(base, name) {
   if (!name) return [];
