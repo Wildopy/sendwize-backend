@@ -582,8 +582,30 @@ async function handleDossierGet(req, res) {
     SenderIdentity: f.SenderIdentity || '',
     CreatedDate: f.CreatedDate || '', UpdatedAt: f.UpdatedAt || '',
     SubmittedAt: f.SubmittedAt || '', LastVerified: f.LastVerified || '',
+    MonitoredClaimTypes: f.MonitoredClaimTypes || '[]',
+    ComplianceAlertsJson: f.ComplianceAlertsJson || '[]',
+    LastComplianceCheck: f.LastComplianceCheck || '',
     moduleFields,
   });
+}
+
+// v7.3 — Extract monitored claim types from dossier for campaign monitoring
+function extractMonitoredClaimTypes(moduleFields) {
+  const cc = moduleFields?.ContentCheck || {};
+  const types = [];
+  if (cc.pricingCompliant && !cc.pricingCompliant.includes('no pricing')) {
+    types.push('reference_pricing');
+    types.push('drip_pricing');
+  }
+  if (cc.referencePriceEvidence) types.push('reference_pricing');
+  if (cc.urgencyGenuine && cc.urgencyGenuine !== 'No urgency language used') types.push('fake_urgency');
+  if (cc.substantiatedClaims) types.push('misleading_claim');
+  if (cc.substantiatedClaims && /health|vitamin|supplement|wellbeing|medical/i.test(cc.substantiatedClaims)) types.push('health_claim');
+  if (cc.aiCheckerRun && cc.aiCheckerRun.includes('issues found')) types.push('misleading_claim');
+  const cm = moduleFields?.ConsentMechanism || {};
+  if (cm.lawfulBasis === 'Legitimate interest (UK GDPR)') types.push('legitimate_interest_abuse');
+  if (cm.lawfulBasis === 'Explicit consent (PECR)' || cm.lawfulBasis === 'Soft opt-in (PECR)') types.push('consent_missing');
+  return [...new Set(types)];
 }
 
 async function handleDossierSubmit(req, res) {
@@ -622,6 +644,7 @@ async function handleDossierSubmit(req, res) {
   history.push(snapshot);
   const evidenceStrength = calculateOverallStrength(moduleFields);
   const healthScore      = calculateHealthScore(moduleFields);
+  const monitoredClaimTypes = extractMonitoredClaimTypes(moduleFields);
   // ── Generate The Letter (v4.31) ───────────────────────────────
   // Run in parallel with fix generation to keep response time reasonable
   const letterPromise = generateLetter(
@@ -663,6 +686,8 @@ async function handleDossierSubmit(req, res) {
         VersionHistory:   JSON.stringify(history),
         EvidenceStrength: evidenceStrength,
         HealthScore:      healthScore,
+        MonitoredClaimTypes: JSON.stringify(monitoredClaimTypes),
+        ComplianceAlertsJson: '[]',
       }}),
     });
   } catch(e) { console.error('Dossier status update failed (non-fatal):', e); }
@@ -675,6 +700,7 @@ async function handleDossierSubmit(req, res) {
     fixesGenerated: fixResults.filter(f => f.status === 'created').length,
     fixResults, evidenceStrength, healthScore,
     snapshotVersion: snapshot.version,
+    monitoredClaimTypes,
     letter,  // v4.31 — { type, lens, content, generatedAt }
   });
 }
