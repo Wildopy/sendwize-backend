@@ -563,23 +563,23 @@ async function handlePartnerRegister(req, res) {
 }
  
 
-// ── AFFILIATE-REGISTER handler ────────────────────────────────
+// ── AFFILIATE-REGISTER handler (v7.3 — ASA/CAP/CMA dimensions) ──
 async function handleAffiliateRegister(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
-
+ 
   if (req.method === 'DELETE') {
     const { recordId } = req.query;
     if (!recordId) return res.status(400).json({ error: 'recordId required' });
     try { await atDelete(base, 'Affiliate_Register', recordId); return res.json({ deleted: true }); }
     catch (e) { return res.status(500).json({ error: e.message }); }
   }
-
+ 
   if (req.method === 'POST') {
     const { recordId, affiliate } = req.body;
     if (!userId)    return res.status(400).json({ error: 'userId required' });
     if (!affiliate) return res.status(400).json({ error: 'affiliate data required' });
-
+ 
     const volume = affiliate.TotalVolumeSent || 0;
     let exposureLow = 0, exposureHigh = 0;
     if (!affiliate.ConsentChainVerified) {
@@ -590,7 +590,7 @@ async function handleAffiliateRegister(req, res) {
       exposureLow  += 5000;
       exposureHigh += 30000;
     }
-
+ 
     const fields = {
       UserID: userId, AffiliateName: affiliate.AffiliateName, AffiliateType: affiliate.AffiliateType,
       DPAStatus: affiliate.DPAStatus || 'Not yet',
@@ -611,20 +611,29 @@ async function handleAffiliateRegister(req, res) {
       ExposureEstimateHigh: exposureHigh || null,
       Notes: affiliate.Notes,
       LastChecked: recordId ? undefined : new Date().toISOString().split('T')[0],
+      // v7.3 — ASA/CAP/CMA fields
+      RelationshipActivity: affiliate.RelationshipActivity,
+      MarketingMaterialsReviewed: affiliate.MarketingMaterialsReviewed || false,
+      AdDisclosureCompliant: affiliate.AdDisclosureCompliant || 'Unverified',
+      LandingPageReviewed: affiliate.LandingPageReviewed || false,
     };
-
+ 
     try {
       const record = recordId
         ? await atPatch(base, 'Affiliate_Register', recordId, fields)
         : await atCreate(base, 'Affiliate_Register', fields);
-
+ 
+      const fixesGenerated = [];
+ 
       if (!recordId) {
+        // Existing PECR fixes
         if (!affiliate.ConsentChainVerified) {
           generateFix({
             userId, fixType: 'affiliate_consent_unverified', tool: 'Relationships Register',
             description: `Affiliate '${affiliate.AffiliateName}' added with unverified consent chain. PECR Reg 22 requires valid consent for each marketing message — you cannot rely on consent collected by an affiliate without verifying it specifically covers your organisation's marketing.`,
             severity: 'critical', exposureLow, exposureHigh, sourceRecordId: record?.id || null,
           });
+          fixesGenerated.push('affiliate_consent_unverified');
         }
         if (affiliate.SenderIdentityCompliant === 'Unverified') {
           generateFix({
@@ -632,15 +641,48 @@ async function handleAffiliateRegister(req, res) {
             description: `Affiliate '${affiliate.AffiliateName}' sender identity not verified. PECR Reg 23 requires the sender not be disguised or concealed — the From name must identify the organisation responsible for the marketing.`,
             severity: 'high', sourceRecordId: record?.id || null,
           });
+          fixesGenerated.push('affiliate_sender_identity_breach');
+        }
+ 
+        // v7.3 — ASA/CAP: affiliate marketing materials review
+        if (!affiliate.MarketingMaterialsReviewed) {
+          generateFix({
+            userId, fixType: 'affiliate_misleading_claims', tool: 'Relationships Register',
+            description: `Affiliate '${affiliate.AffiliateName}' marketing materials have not been reviewed against the CAP Code. Under CAP, you are responsible for claims made on your behalf by affiliates — including pricing claims, health claims, and comparative claims.`,
+            severity: 'high', sourceRecordId: record?.id || null,
+          });
+          fixesGenerated.push('affiliate_misleading_claims');
+        }
+ 
+        // v7.3 — ASA: influencer ad disclosure
+        const affActivity = (affiliate.RelationshipActivity || affiliate.AffiliateType || '').toLowerCase();
+        if (affActivity.includes('influencer') && affiliate.AdDisclosureCompliant !== 'Verified') {
+          generateFix({
+            userId, fixType: 'affiliate_ad_disclosure', tool: 'Relationships Register',
+            description: `Influencer affiliate '${affiliate.AffiliateName}' ad disclosure not verified. The ASA requires all paid-for content to be clearly identified as advertising (#ad, #sponsored). The ASA has upheld complaints against brands for influencer posts not clearly labelled — the brand, not just the influencer, is liable.`,
+            severity: 'high', sourceRecordId: record?.id || null,
+          });
+          fixesGenerated.push('affiliate_ad_disclosure');
+        }
+ 
+        // v7.3 — CMA/PECR: lead gen landing page review
+        const isLeadGen = affActivity.includes('lead') || affActivity.includes('comparison') || affActivity.includes('cashback');
+        if (isLeadGen && !affiliate.LandingPageReviewed) {
+          generateFix({
+            userId, fixType: 'lead_gen_consent_gap', tool: 'Relationships Register',
+            description: `Lead generation affiliate '${affiliate.AffiliateName}' landing pages have not been reviewed. CMA/DMCCA 2024 requires transparent pricing and claims on lead gen pages, and PECR requires consent to specifically name your organisation. Saga Group was fined £225k for consent collected by affiliates that did not name Saga.`,
+            severity: 'critical', sourceRecordId: record?.id || null,
+          });
+          fixesGenerated.push('lead_gen_consent_gap');
         }
       }
-
-      return res.json({ record, exposureLow, exposureHigh });
+ 
+      return res.json({ record, exposureLow, exposureHigh, fixesGenerated });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
   }
-
+ 
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
