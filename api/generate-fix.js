@@ -1,20 +1,16 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — generate-fix.js v6.5
+// SENDWIZE — generate-fix.js v7.3
 //
-// v6.5 changes from v6.4:
-//   ~ Dedup formula now includes OriginalFixType so distinct
-//     violations mapping to the same canonical fixType don't
-//     kill each other on shared sourceRecordId.
-//     Before: {UserID}='x' AND {FixType}='suppression_breach' AND
-//             {SourceRecordID}='y' AND {Status}='pending'
-//             → collapses missing_unsubscribe + concealed_sender into 1
-//     After:  {UserID}='x' AND {FixType}='suppression_breach' AND
-//             {OriginalFixType}='missing_unsubscribe' AND
-//             {SourceRecordID}='y' AND {Status}='pending'
-//             → both write, dashboard can render them distinctly
-//   ~ When wasRemapped is false (rare — direct canonical write),
-//     dedup still checks OriginalFixType = FixType for consistency.
-//   ~ Everything else unchanged from v6.4.
+// v7.3 changes from v6.5:
+//   + Five new canonical fix types for ASA/CAP/CMA relationship
+//     register dimensions: unreviewed_joint_ads, partner_pricing_claims,
+//     affiliate_misleading_claims, affiliate_ad_disclosure,
+//     lead_gen_consent_gap.
+//   + EXPOSURE_CONSTANTS updated with corresponding categories and
+//     ranges. lead_gen_consent_gap anchored to Saga £225k.
+//   ~ Everything else unchanged from v6.5.
+//
+// v6.5 changes preserved: dedup formula includes OriginalFixType.
 // ─────────────────────────────────────────────────────────────
 
 const LEGACY_TYPE_MAP = {
@@ -45,6 +41,12 @@ const LEGACY_TYPE_MAP = {
   reconsent_sent:                     null,
   asa_liability:                      'asa_liability',
   commercial_risk:                    'commercial_loss',
+  // v7.3 — ASA/CAP/CMA relationship register fix types
+  unreviewed_joint_ads:               'unreviewed_joint_ads',
+  partner_pricing_claims:             'partner_pricing_claims',
+  affiliate_misleading_claims:        'affiliate_misleading_claims',
+  affiliate_ad_disclosure:            'affiliate_ad_disclosure',
+  lead_gen_consent_gap:               'lead_gen_consent_gap',
 };
 
 const EXPOSURE_CONSTANTS = {
@@ -65,6 +67,12 @@ const EXPOSURE_CONSTANTS = {
   segment_damaged:               { category: 'Commercial' },
   segment_cooling:               { category: 'Commercial' },
   segment_declining_engagement:  { category: 'Commercial' },
+  // v7.3 — ASA/CAP/CMA relationship register fix types
+  unreviewed_joint_ads:          { category: 'ASA' },
+  partner_pricing_claims:        { category: 'CMA' },
+  affiliate_misleading_claims:   { category: 'ASA' },
+  affiliate_ad_disclosure:       { category: 'ASA' },
+  lead_gen_consent_gap:          { category: 'ICO', realisticLow: 10000, realisticHigh: 225000 },
 };
 
 const ICO_LEGAL_MAX    = '\u00a317.5M or 4% of global annual turnover \u2014 whichever is higher (DUAA 2025)';
@@ -134,9 +142,6 @@ export default async function handler(req, res) {
     } catch(e) { console.error('Profile load failed (non-fatal):', e); }
 
     // ── v6.5: dedup on canonical + ORIGINAL fixType ─────────
-    // Prevents distinct violations (missing_unsubscribe, concealed_sender)
-    // that map to the same canonical (suppression_breach) from killing
-    // each other when they share a sourceRecordId.
     if (sourceRecordId) {
       try {
         const formula = `AND({UserID}='${userId}',{FixType}='${canonical}',{OriginalFixType}='${original}',{SourceRecordID}='${sourceRecordId}',{Status}='pending')`;
@@ -160,8 +165,6 @@ export default async function handler(req, res) {
       try { processingContextStr = JSON.stringify(processingContext); } catch(e) {}
     }
 
-    // v6.5: OriginalFixType is now ALWAYS written (not just when remapped)
-    // Downstream (dashboard, dedup) can rely on it existing.
     const fields = Object.fromEntries(Object.entries({
       UserID:            userId,
       FixType:           canonical,
