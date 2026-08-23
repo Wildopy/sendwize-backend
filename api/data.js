@@ -917,16 +917,6 @@ async function handleRelationshipWatch(req, res) {
       }
       const ann = anniversaryDays(f.Article26Date);
       if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: `Article 26 agreement review due in ${ann} days.` });
- 
-      // v7.3 — ASA/CAP/CMA alerts for partners
-      const activity = f.RelationshipActivity || '';
-      const needsAdReview = ['joint_ads', 'co_branded_content', 'influencer'].includes(activity);
-      if (needsAdReview && !f.AdComplianceReviewed) {
-        alerts.push({ type: 'ad_compliance', severity: 'amber', text: `Joint advertising content with ${name} not reviewed against CAP Code — you share responsibility for claims in co-branded material.` });
-      }
-      if (['joint_ads', 'co_branded_content', 'lead_generation'].includes(activity) && !f.PricingComplianceReviewed) {
-        alerts.push({ type: 'pricing', severity: 'amber', text: `Pricing and promotional claims in campaigns with ${name} not verified against CMA/DMCCA 2024.` });
-      }
     }
  
     if (type === 'affiliate') {
