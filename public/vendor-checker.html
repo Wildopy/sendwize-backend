@@ -1,3 +1,5 @@
+WARNING: Could not find: TYPE_CONFIG partners
+WARNING: Could not find: TYPE_CONFIG affiliates
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -479,7 +481,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <span class="type-card-arrow"><i class="ph ph-arrow-right icon-16"></i></span>
       </div>
       <div class="type-card-name">Partners</div>
-      <div class="type-card-desc">Brands you share data with or co-market alongside.</div>
+      <div class="type-card-desc">Brands you co-market with, run joint ads alongside, or share data with.</div>
       <div class="type-card-meta">
         <span class="type-card-count"><strong id="tcPartN">0</strong> registered</span>
         <span class="type-card-status tc-status-empty" id="tcPartPill"><span class="tc-status-dot"></span>Not started</span>
@@ -491,7 +493,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <span class="type-card-arrow"><i class="ph ph-arrow-right icon-16"></i></span>
       </div>
       <div class="type-card-name">Affiliates</div>
-      <div class="type-card-desc">Third parties sending marketing on your behalf.</div>
+      <div class="type-card-desc">Anyone promoting your brand — email senders, influencers, lead generators.</div>
       <div class="type-card-meta">
         <span class="type-card-count"><strong id="tcAffN">0</strong> registered</span>
         <span class="type-card-status tc-status-empty" id="tcAffPill"><span class="tc-status-dot"></span>Not started</span>
@@ -599,29 +601,29 @@ var TYPE_CONFIG = {
     title:'Co-marketing Partners', icon:'handshake',
     sub:'Article 26 UK GDPR joint controllers — brands you share data with or run joint campaigns alongside.',
     emptyTitle:'Add your first partner',
-    emptySub:'Any brand you co-market with or share customer data with needs an Article 26 joint controller agreement. Adding them here checks their regulatory history and tracks the agreement.',
+    emptySub:'Any brand you co-market with, run joint ads alongside, or share customer data with. We check their regulatory history, track the Article 26 agreement, and flag advertising compliance gaps across CAP Code and CMA/DMCCA.',
     addLabel:'Add partner', modalKey:'partner',
     steps:[
-      {title:'Add partner',desc:'Name and type'},
-      {title:'Confirm Art. 26',desc:'Joint arrangement'},
+      {title:'Add partner',desc:'Name, type, and activity'},
+      {title:'Confirm Art. 26',desc:'Joint controller arrangement'},
       {title:'Verify consent',desc:'Chain ownership'},
-      {title:'Brand safety',desc:'No flags raised'},
+      {title:'Compliance review',desc:'Brand safety, CAP and CMA checks'},
     ],
-    stepShort:['Added','Art. 26','Consent','Safety'],
+    stepShort:['Added','Art. 26','Consent','Compliance'],
   },
   affiliates: {
-    title:'Affiliates & Third-Party Senders', icon:'link',
-    sub:'PECR consent chain — you are legally responsible for anyone sending marketing on your behalf.',
-    emptyTitle:'Add an affiliate or third-party sender',
-    emptySub:'Cashback sites, comparison sites, publisher networks, influencer partners — any third party that sends emails using your brand. Saga was fined £225k for affiliate sends without a verified consent chain.',
+    title:'Affiliates & Third-Party Promoters', icon:'link',
+    sub:'Anyone promoting your brand — email senders, influencers, lead generators, comparison sites. You are responsible for their claims and consent under PECR, CAP Code, and CMA/DMCCA.',
+    emptyTitle:'Add an affiliate or third-party promoter',
+    emptySub:'Email affiliates, influencers, cashback sites, comparison sites, lead generators — any third party promoting your brand. We check consent chains, sender identity, marketing materials, ad disclosure, and landing page compliance.',
     addLabel:'Add affiliate', modalKey:'affiliate',
     steps:[
-      {title:'Add affiliate',desc:'Name and volume'},
+      {title:'Add affiliate',desc:'Name, type, and activity'},
       {title:'Confirm DPA',desc:'Agreement in place'},
-      {title:'Verify consent',desc:'Chain covers you'},
-      {title:'Sender ID',desc:'PECR Reg 23'},
+      {title:'Verify consent',desc:'Chain and landing pages'},
+      {title:'Marketing compliance',desc:'Materials, disclosure, sender ID'},
     ],
-    stepShort:['Added','DPA','Consent','Sender'],
+    stepShort:['Added','DPA','Consent','Marketing'],
   },
   competitors: {
     title:'Competitor Watch', icon:'magnifying-glass',
@@ -681,8 +683,11 @@ var QA_PROC_MORE = [
   {label:'Forms',       items:['Typeform','SurveyMonkey','Jotform']},
   {label:'Agencies',    items:['Ogilvy UK','VCCP','Merkle UK','Jellyfish','MediaCom UK','Mindshare UK']},
 ];
-var QA_PART = ['PR Agency','Creative Agency','Media Agency','Brand Partner','Charity Partner','Trade Association','Retail Partner','Technology Partner'];
-var QA_AFF  = ['Cashback Site','Comparison Site','Email Affiliate','Voucher Site','Lead Generator','Publisher Network','Influencer Affiliate','Review Platform'];
+var QA_PART = ['Joint Advertising Partner','Co-branded Content Partner','Influencer Partner','Lead Generation Partner','Data Sharing Partner','PR Agency','Creative Agency','Media Agency','Retail Partner','Technology Partner'];
+var QA_AFF  = ['Cashback Site','Comparison Site','Email Affiliate','Voucher Site','Lead Generator','Publisher Network','Influencer','Review Platform','Social Media Partner'];
+
+var AFF_TYPE_TO_ACTIVITY = {'Cashback Site':'cashback','Comparison Site':'comparison','Email Affiliate':'email_affiliate','Voucher Site':'voucher','Lead Generator':'lead_generation','Publisher Network':'publisher','Influencer':'influencer','Review Platform':'publisher','Social Media Partner':'influencer','Other':''};
+var PARTNER_TYPE_TO_ACTIVITY = {'Joint Advertising Partner':'joint_ads','Co-branded Content Partner':'co_branded_content','Influencer Partner':'influencer','Lead Generation Partner':'lead_generation','Data Sharing Partner':'data_sharing','PR Agency':'co_branded_content','Creative Agency':'co_branded_content','Media Agency':'joint_ads','Retail Partner':'joint_ads','Technology Partner':'data_sharing','Agency':'co_branded_content','Co-marketing Brand':'joint_ads','Other':''};
 
 var SECTORS = ['ecommerce','b2b','finance','health','media','charity','gambling','general'];
 
@@ -924,11 +929,19 @@ function getRowStatus(rec) {
   }
   if (currentType==='partners') {
     if (!isDPAConfirmed(f.Article26Status) || f.BrandSafetyFlag) return 'risk';
+    var activity = f.RelationshipActivity || '';
+    var needsAdReview = ['joint_ads','co_branded_content','influencer'].indexOf(activity) >= 0;
+    if (needsAdReview && !f.AdComplianceReviewed) return 'attn';
+    if (['joint_ads','co_branded_content','lead_generation'].indexOf(activity) >= 0 && !f.PricingComplianceReviewed) return 'attn';
     if (!f.ConsentChainVerified) return 'attn';
     return 'clear';
   }
   if (currentType==='affiliates') {
     if (!f.ConsentChainVerified || f.SenderIdentityCompliant==='Unverified') return 'risk';
+    if (!f.MarketingMaterialsReviewed) return 'attn';
+    var affAct = (f.RelationshipActivity || f.AffiliateType || '').toLowerCase();
+    if (affAct.indexOf('influencer') >= 0 && f.AdDisclosureCompliant !== 'Verified') return 'attn';
+    if ((affAct.indexOf('lead') >= 0 || affAct.indexOf('comparison') >= 0 || affAct.indexOf('cashback') >= 0) && !f.LandingPageReviewed) return 'attn';
     if (!isDPAConfirmed(f.DPAStatus)) return 'attn';
     return 'clear';
   }
@@ -948,18 +961,35 @@ function getRowProgress(rec) {
     steps.push(isDPAConfirmed(f.DPAStatus||f.AgreementStatus) ? 'done' : 'risk');
     var scanned = false;
     try { scanned = f.DPAClauseResults && Object.keys(JSON.parse(f.DPAClauseResults)).length > 0; } catch(e){}
-    steps.push(scanned ? 'done' : 'todo');
+    if (scanned) {
+      var clauseResults = {};
+      try { clauseResults = JSON.parse(f.DPAClauseResults); } catch(e){}
+      var failCount = Object.values(clauseResults).filter(function(v){return v.status==='fail';}).length;
+      steps.push(failCount > 0 ? 'partial' : 'done');
+    } else {
+      steps.push('todo');
+    }
     steps.push(isStale(f.LastChecked||f.LastAutoChecked) ? 'partial' : 'done');
   } else if (currentType==='partners') {
     steps.push('done');
     steps.push(isDPAConfirmed(f.Article26Status) ? 'done' : 'risk');
     steps.push(f.ConsentChainVerified ? 'done' : 'todo');
-    steps.push(f.BrandSafetyFlag ? 'risk' : 'done');
+    var compOk = !f.BrandSafetyFlag;
+    var activity = f.RelationshipActivity || '';
+    if (['joint_ads','co_branded_content','influencer'].indexOf(activity) >= 0 && !f.AdComplianceReviewed) compOk = false;
+    if (['joint_ads','co_branded_content','lead_generation'].indexOf(activity) >= 0 && !f.PricingComplianceReviewed) compOk = false;
+    steps.push(f.BrandSafetyFlag ? 'risk' : compOk ? 'done' : 'partial');
   } else if (currentType==='affiliates') {
     steps.push('done');
     steps.push(isDPAConfirmed(f.DPAStatus) ? 'done' : 'partial');
-    steps.push(f.ConsentChainVerified ? 'done' : 'risk');
-    steps.push(f.SenderIdentityCompliant==='Verified' ? 'done' : f.SenderIdentityCompliant==='Partial' ? 'partial' : 'risk');
+    var chainOk = !!f.ConsentChainVerified;
+    var affAct = (f.RelationshipActivity || f.AffiliateType || '').toLowerCase();
+    if ((affAct.indexOf('lead') >= 0 || affAct.indexOf('comparison') >= 0 || affAct.indexOf('cashback') >= 0) && !f.LandingPageReviewed) chainOk = false;
+    steps.push(f.ConsentChainVerified ? (chainOk ? 'done' : 'partial') : 'risk');
+    var mktOk = f.SenderIdentityCompliant === 'Verified' || f.SenderIdentityCompliant === 'N/A';
+    if (!f.MarketingMaterialsReviewed) mktOk = false;
+    if (affAct.indexOf('influencer') >= 0 && f.AdDisclosureCompliant !== 'Verified') mktOk = false;
+    steps.push(mktOk ? 'done' : f.SenderIdentityCompliant === 'Unverified' ? 'risk' : 'partial');
   }
   return steps;
 }
@@ -1115,7 +1145,10 @@ function renderDetailOverview(rec) {
       ['Consent verified',f.ConsentChainVerified?'<span class="pill pg">Verified</span>':'<span class="pill pr">Not yet</span>'],
       ['Reputation score','<span class="pill '+rc+'">'+rep+'/100</span>'+(f.ViolationCount>0?' ('+f.ViolationCount+' enforcement action'+(f.ViolationCount!==1?'s':'')+' found)':'')],
       ['Brand safety',f.BrandSafetyFlag?'<span class="pill pr">'+escH(f.BrandSafetyReason||'Flagged')+'</span>':'<span class="pill pg">Clear</span>'],
+      ['Ad compliance (CAP)',f.AdComplianceReviewed?'<span class="pill pg">Reviewed</span>':'<span class="pill py">Not reviewed</span>'],
+      ['Pricing compliance (CMA)',f.PricingComplianceReviewed?'<span class="pill pg">Verified</span>':'<span class="pill py">Not verified</span>'],
     ];
+    if (f.RelationshipActivity) { var actLabels={joint_ads:'Joint advertising',co_branded_content:'Co-branded content',influencer:'Influencer partnership',lead_generation:'Lead generation',data_sharing:'Data sharing',email_sending:'Email sending'}; rows.splice(0,0,['Relationship activity',actLabels[f.RelationshipActivity]||f.RelationshipActivity]); }
     if (f.Notes) rows.push(['Notes',escH(f.Notes)]);
   } else if (t==='affiliates') {
     var dp2 = f.DPAStatus||'Not yet';
@@ -1127,8 +1160,12 @@ function renderDetailOverview(rec) {
       ['Sender identity',f.SenderIdentityCompliant==='Verified'?'<span class="pill pg">Verified</span>':f.SenderIdentityCompliant==='Partial'?'<span class="pill py">Partial</span>':'<span class="pill pr">Unverified</span>'],
       ['From name used',f.FromNameUsed?escH(f.FromNameUsed):'<span style="color:var(--mu)">Not recorded</span>'],
       ['Volume sent',f.TotalVolumeSent?(parseInt(f.TotalVolumeSent)||0).toLocaleString():'<span style="color:var(--mu)">\u2014</span>'],
+      ['Marketing materials',f.MarketingMaterialsReviewed?'<span class="pill pg">Reviewed</span>':'<span class="pill py">Not reviewed</span>'],
+      ['Ad disclosure (#ad)',f.AdDisclosureCompliant==='Verified'?'<span class="pill pg">Verified</span>':f.AdDisclosureCompliant==='N/A'?'<span class="pill pmu">N/A</span>':'<span class="pill pr">Not verified</span>'],
+      ['Landing pages',f.LandingPageReviewed?'<span class="pill pg">Reviewed</span>':'<span class="pill py">Not reviewed</span>'],
       ['Exposure estimate',(expLow||expHigh)?'<span style="color:var(--r);font-weight:600">\u00a3'+fmtNum(expLow)+'\u2013\u00a3'+fmtNum(expHigh)+'</span>':'<span style="color:var(--g)">None calculated</span>'],
     ];
+    if (f.RelationshipActivity || f.AffiliateType) { var affActLabels={email_affiliate:'Email affiliate',cashback:'Cashback site',comparison:'Comparison site',lead_generation:'Lead generator',influencer:'Influencer',publisher:'Publisher network',voucher:'Voucher site'}; rows.splice(0,0,['Activity type',affActLabels[f.RelationshipActivity||'']||f.AffiliateType||'']); }
     if (f.Notes) rows.push(['Notes',escH(f.Notes)]);
   } else {
     rows = [
@@ -1246,7 +1283,7 @@ function runDPAScan(recordId, mode) {
     var url = (document.getElementById('dpa-url')||{}).value||'';
     if (!url) { showToast('Enter a URL first','er'); return; }
     if (res) res.innerHTML = '<div class="scan-spin-wrap"><div class="scan-spin"></div>Scanning '+escH(getName(rec.fields))+' policy\u2026</div>';
-    fetch(APP_URL+'/api/check-vendors', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), policyUrl:url, recordId:recordId})})
+    fetch(APP_URL+'/api/dpa-scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), vendorRegisterId:recordId, sourceType:'url', sourceContent:url})})
       .then(function(r){return r.json();})
       .then(function(d){ handleScanResult(d, rec, res); })
       .catch(function(){ if (res) res.innerHTML=''; showToast('Scan failed \u2014 self-certify manually','er'); });
@@ -1257,7 +1294,7 @@ function runDPAScan(recordId, mode) {
     var reader = new FileReader();
     reader.onload = function(){
       var base64 = (reader.result||'').split(',')[1]||'';
-      fetch(APP_URL+'/api/check-vendors', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), pdfBase64:base64, pdfFilename:file.name, recordId:recordId})})
+      fetch(APP_URL+'/api/dpa-scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), vendorRegisterId:recordId, sourceType:'pdf', sourceContent:base64})})
         .then(function(r){return r.json();})
         .then(function(d){ handleScanResult(d, rec, res); scanFile[currentType]=null; })
         .catch(function(){ if (res) res.innerHTML=''; showToast('Scan failed \u2014 self-certify manually','er'); });
@@ -1268,10 +1305,30 @@ function runDPAScan(recordId, mode) {
 
 function handleScanResult(d, rec, res) {
   if (res) res.innerHTML = '';
-  clauseCache[rec.id] = d.a28Clauses || {};
-  if (!d.a28Clauses) { A28.forEach(function(c){ clauseCache[rec.id][c.id] = { status:'warn', note:'Policy found but clauses not individually verified.' }; }); }
+  if (d.error) { showToast(d.error, 'er'); return; }
+  clauseCache[rec.id] = {};
+  if (d.results && Array.isArray(d.results)) {
+    d.results.forEach(function(r) {
+      var uiStatus = r.status === 'found' ? 'pass' : r.status === 'partial' ? 'warn' : 'fail';
+      clauseCache[rec.id][r.id] = { status: uiStatus, note: r.quote || r.missingDetail || '' };
+    });
+  } else if (d.a28Clauses) { clauseCache[rec.id] = d.a28Clauses; }
+  var action = currentType==='processors'?'register':currentType==='affiliates'?'affiliate-register':'partner-register';
+  var patchKey = currentType==='processors'?'vendor':currentType==='affiliates'?'affiliate':'partner';
+  var patchData = { userId: userId, recordId: rec.id };
+  patchData[patchKey] = { DPAClauseResults: JSON.stringify(clauseCache[rec.id]) };
+  if (currentType==='processors') patchData[patchKey].VendorName = rec.fields.VendorName;
+  else if (currentType==='affiliates') patchData[patchKey].AffiliateName = rec.fields.AffiliateName;
+  else patchData[patchKey].PartnerName = rec.fields.PartnerName;
+  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patchData)}).catch(function(){});
+  if (res && d.counts) {
+    var scoreColor = (d.score||0) >= 80 ? 'var(--g)' : (d.score||0) >= 50 ? 'var(--y)' : 'var(--r)';
+    var bannerCls = (d.score||0) >= 80 ? 'green' : (d.score||0) >= 50 ? '' : 'red';
+    res.innerHTML = '<div class="info-banner '+bannerCls+'"><i class="ph ph-'+((d.score||0) >= 80 ? 'check-circle' : 'warning-circle')+' icon-16"></i><div><strong>DPA scan: '+(d.counts.found||0)+'/'+(d.counts.total||12)+' clauses found</strong>'+(d.counts.missing > 0 ? ' \u00b7 '+d.counts.missing+' missing' : '')+'. Score: <strong style="color:'+scoreColor+'">'+(d.score||0)+'%</strong></div></div>';
+  }
   renderDPAReview(rec);
   showToast('DPA scan complete','ok');
+  loadAll();
 }
 
 function renderA26Review(rec) {
@@ -1422,6 +1479,9 @@ function saveEdit(recordId, entityName) {
     d.ConsentChainOwner = (document.getElementById('ef-consent')||{}).value;
     d.ConsentChainVerified = (document.getElementById('ef-cchain')||{}).value === 'true';
     d.DataSharedDescription = (document.getElementById('ef-data')||{}).value;
+    d.RelationshipActivity = (document.getElementById('ef-activity')||{}).value;
+    d.AdComplianceReviewed = (document.getElementById('ef-adcomp')||{}).value === 'true';
+    d.PricingComplianceReviewed = (document.getElementById('ef-pricing')||{}).value === 'true';
   } else {
     action='affiliate-register'; pKey='affiliate';
     d.AffiliateName = entityName;
@@ -1430,6 +1490,9 @@ function saveEdit(recordId, entityName) {
     d.ConsentChainVerified = (document.getElementById('ef-cchain')||{}).value === 'true';
     d.SenderIdentityCompliant = (document.getElementById('ef-sender')||{}).value;
     d.FromNameUsed = (document.getElementById('ef-fromname')||{}).value;
+    d.MarketingMaterialsReviewed = (document.getElementById('ef-materials')||{}).value === 'true';
+    d.AdDisclosureCompliant = (document.getElementById('ef-disclosure')||{}).value;
+    d.LandingPageReviewed = (document.getElementById('ef-landing')||{}).value === 'true';
   }
   var body = { userId: userId, recordId: recordId };
   body[pKey] = d;
@@ -1549,9 +1612,9 @@ function openModal(type) {
   if (type==='processor') {
     form = '<div class="form-grid"><div class="fg"><label>Vendor name *</label><input type="text" id="m-name" placeholder="e.g. Mailchimp"></div><div class="fg"><label>Type</label><select id="m-type"><option value="">— select —</option><option>Email Service Provider</option><option>CRM</option><option>Analytics</option><option>Advertising Platform</option><option>Payment Processor</option><option>Cloud Storage</option><option>Customer Support</option><option>Other</option></select></div><div class="fg"><label>DPA Status</label><select id="m-dpa"><option value="Not yet">Not yet</option><option value="Requested">Requested</option><option value="In place">In place</option><option value="Confirmed">Confirmed</option></select></div><div class="fg"><label>Agreement date</label><input type="date" id="m-date"></div></div><div class="fg"><label>Privacy policy / DPA URL</label><input type="url" id="m-url" placeholder="https://vendor.com/privacy"></div><div class="fg"><label>Transfer destination</label><select id="m-transfer"><option value="">UK only</option><option>EU</option><option>USA - DPF</option><option>USA - SCCs</option><option>Unknown</option></select></div><div class="fg"><label>Notes</label><textarea id="m-notes" rows="2"></textarea></div>';
   } else if (type==='partner') {
-    form = '<div class="form-grid"><div class="fg"><label>Partner name *</label><input type="text" id="m-name" placeholder="e.g. Brand X"></div><div class="fg"><label>Type</label><select id="m-type"><option>Agency</option><option>Co-marketing Brand</option><option>Data Sharing Partner</option><option>Technology Partner</option><option>Other</option></select></div><div class="fg"><label>Article 26 Status</label><select id="m-a26"><option value="Not yet">Not yet</option><option value="Requested">Requested</option><option value="In place">In place</option><option value="Confirmed and signed">Confirmed and signed</option></select></div><div class="fg"><label>Consent chain owner</label><select id="m-consent"><option>Unknown</option><option>Us</option><option>Partner</option><option>Joint</option></select></div></div><div class="fg"><label>Privacy policy URL</label><input type="url" id="m-url" placeholder="https://partner.com/privacy"></div><div class="fg"><label>What data is shared?</label><input type="text" id="m-data" placeholder="e.g. Email addresses, purchase history"></div><div class="fg"><label>Notes</label><textarea id="m-notes" rows="2"></textarea></div>';
+    form = '<div class="form-grid"><div class="fg"><label>Partner name *</label><input type="text" id="m-name" placeholder="e.g. Brand X"></div><div class="fg"><label>Type</label><select id="m-type"><option value="Joint Advertising Partner">Joint Advertising Partner</option><option value="Co-branded Content Partner">Co-branded Content Partner</option><option value="Influencer Partner">Influencer Partner</option><option value="Lead Generation Partner">Lead Generation Partner</option><option value="Data Sharing Partner">Data Sharing Partner</option><option value="Agency">Agency</option><option value="Other">Other</option></select></div><div class="fg"><label>Relationship activity *</label><select id="m-activity"><option value="">\u2014 what do you do together? \u2014</option><option value="joint_ads">Joint advertising campaigns</option><option value="co_branded_content">Co-branded content</option><option value="influencer">Influencer partnership</option><option value="lead_generation">Lead generation</option><option value="data_sharing">Data sharing only</option><option value="email_sending">Email sending on your behalf</option></select></div><div class="fg"><label>Article 26 Status</label><select id="m-a26"><option value="Not yet">Not yet</option><option value="Requested">Requested</option><option value="In place">In place</option><option value="Confirmed and signed">Confirmed and signed</option></select></div><div class="fg"><label>Consent chain owner</label><select id="m-consent"><option>Unknown</option><option>Us</option><option>Partner</option><option>Joint</option></select></div></div><div class="fg"><label>Privacy policy URL</label><input type="url" id="m-url" placeholder="https://partner.com/privacy"></div><div class="fg"><label>What data is shared?</label><input type="text" id="m-data" placeholder="e.g. Email addresses, purchase history"></div><div class="fg"><label>Notes</label><textarea id="m-notes" rows="2"></textarea></div>';
   } else if (type==='affiliate') {
-    form = '<div class="form-grid"><div class="fg"><label>Affiliate name *</label><input type="text" id="m-name" placeholder="e.g. Cashback Site X"></div><div class="fg"><label>Type</label><select id="m-type"><option>Cashback Site</option><option>Comparison Site</option><option>Email Affiliate</option><option>Voucher Site</option><option>Lead Generator</option><option>Publisher Network</option><option>Influencer</option><option>Other</option></select></div><div class="fg"><label>DPA Status</label><select id="m-dpa"><option value="Not yet">Not yet</option><option value="Requested">Requested</option><option value="In place">In place</option><option value="Confirmed and signed">Confirmed and signed</option></select></div><div class="fg"><label>Sender identity</label><select id="m-sender"><option value="Unverified">Unverified</option><option value="Partial">Partial</option><option value="Verified">Verified</option></select></div></div><div class="form-grid"><div class="fg"><label>From name they use</label><input type="text" id="m-fromname" placeholder="e.g. Deals from Brand X"></div><div class="fg"><label>Est. volume sent</label><input type="number" id="m-vol" placeholder="e.g. 50000"></div></div><div class="fg"><label>Consent chain notes</label><textarea id="m-notes" rows="2" placeholder="How was consent collected? Does it name your organisation specifically?"></textarea></div>';
+    form = '<div class="form-grid"><div class="fg"><label>Affiliate name *</label><input type="text" id="m-name" placeholder="e.g. Cashback Site X"></div><div class="fg"><label>Type</label><select id="m-type"><option>Cashback Site</option><option>Comparison Site</option><option>Email Affiliate</option><option>Voucher Site</option><option>Lead Generator</option><option>Publisher Network</option><option>Influencer</option><option>Other</option></select></div><div class="fg"><label>DPA Status</label><select id="m-dpa"><option value="Not yet">Not yet</option><option value="Requested">Requested</option><option value="In place">In place</option><option value="Confirmed and signed">Confirmed and signed</option></select></div><div class="fg"><label>Sender identity</label><select id="m-sender"><option value="Unverified">Unverified</option><option value="Partial">Partial</option><option value="Verified">Verified</option><option value="N/A">N/A (not email)</option></select></div></div><div class="form-grid"><div class="fg"><label>From name they use</label><input type="text" id="m-fromname" placeholder="e.g. Deals from Brand X"></div><div class="fg"><label>Est. volume sent</label><input type="number" id="m-vol" placeholder="e.g. 50000"></div></div><div class="fg"><label>Consent chain notes</label><textarea id="m-notes" rows="2" placeholder="How was consent collected? Does it name your organisation specifically?"></textarea></div>';
   } else {
     form = '<div class="form-grid"><div class="fg"><label>Competitor name *</label><input type="text" id="m-name" placeholder="e.g. Brand X"></div><div class="fg"><label>Sector</label><select id="m-sector">'+SECTORS.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('')+'</select></div></div><div class="fg"><label>Website URL (helps intelligence scan)</label><input type="url" id="m-url" placeholder="https://brandx.com"></div><div class="fg"><label>Notes</label><textarea id="m-notes" rows="2"></textarea></div>';
   }
@@ -1572,10 +1635,12 @@ function submitModal() {
     bodyData = { userId:userId, vendor:{ VendorName:name, VendorType:(document.getElementById('m-type')||{}).value, DPAStatus:(document.getElementById('m-dpa')||{}).value, AgreementDate:(document.getElementById('m-date')||{}).value, PrivacyPolicyUrl:(document.getElementById('m-url')||{}).value, TransferDestination:(document.getElementById('m-transfer')||{}).value, Notes:(document.getElementById('m-notes')||{}).value } };
   } else if (modalType==='partner') {
     action = 'partner-register';
-    bodyData = { userId:userId, partner:{ PartnerName:name, PartnerType:(document.getElementById('m-type')||{}).value, Article26Status:(document.getElementById('m-a26')||{}).value, ConsentChainOwner:(document.getElementById('m-consent')||{}).value, PrivacyPolicyUrl:(document.getElementById('m-url')||{}).value, DataSharedDescription:(document.getElementById('m-data')||{}).value, Notes:(document.getElementById('m-notes')||{}).value } };
+    var partnerActivity = (document.getElementById('m-activity')||{}).value || PARTNER_TYPE_TO_ACTIVITY[(document.getElementById('m-type')||{}).value] || '';
+    bodyData = { userId:userId, partner:{ PartnerName:name, PartnerType:(document.getElementById('m-type')||{}).value, Article26Status:(document.getElementById('m-a26')||{}).value, ConsentChainOwner:(document.getElementById('m-consent')||{}).value, PrivacyPolicyUrl:(document.getElementById('m-url')||{}).value, DataSharedDescription:(document.getElementById('m-data')||{}).value, Notes:(document.getElementById('m-notes')||{}).value, RelationshipActivity:partnerActivity } };
   } else if (modalType==='affiliate') {
     action = 'affiliate-register';
-    bodyData = { userId:userId, affiliate:{ AffiliateName:name, AffiliateType:(document.getElementById('m-type')||{}).value, DPAStatus:(document.getElementById('m-dpa')||{}).value, SenderIdentityCompliant:(document.getElementById('m-sender')||{}).value, FromNameUsed:(document.getElementById('m-fromname')||{}).value, TotalVolumeSent:parseInt((document.getElementById('m-vol')||{}).value)||null, ConsentChainNotes:(document.getElementById('m-notes')||{}).value } };
+    var affActivity = AFF_TYPE_TO_ACTIVITY[(document.getElementById('m-type')||{}).value] || '';
+    bodyData = { userId:userId, affiliate:{ AffiliateName:name, AffiliateType:(document.getElementById('m-type')||{}).value, DPAStatus:(document.getElementById('m-dpa')||{}).value, SenderIdentityCompliant:(document.getElementById('m-sender')||{}).value, FromNameUsed:(document.getElementById('m-fromname')||{}).value, TotalVolumeSent:parseInt((document.getElementById('m-vol')||{}).value)||null, ConsentChainNotes:(document.getElementById('m-notes')||{}).value, RelationshipActivity:affActivity } };
   } else {
     action = 'competitor-watch';
     bodyData = { userId:userId, competitor:{ CompetitorName:name, Sector:(document.getElementById('m-sector')||{}).value, WebsiteUrl:(document.getElementById('m-url')||{}).value, Notes:(document.getElementById('m-notes')||{}).value, WatchStatus:true } };
@@ -1703,3 +1768,4 @@ function escJ(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g
 </script>
 </body>
 </html>
+Patched: 113551 -> 121256 chars, all patches applied 
