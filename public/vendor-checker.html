@@ -442,7 +442,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <div class="ss-sub" id="sbTotalSub">out of 100</div>
     </div>
     <div class="ss-tile">
-      <div class="ss-label">Processors</div>
+      <div class="ss-label">Platforms</div>
       <div class="ss-row"><div class="ss-num mu" id="sbProc">&mdash;</div></div>
       <div class="ss-sub" id="sbProcSub">not started</div>
     </div>
@@ -466,8 +466,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <span class="type-card-icon"><i class="ph ph-package icon-20"></i></span>
         <span class="type-card-arrow"><i class="ph ph-arrow-right icon-16"></i></span>
       </div>
-      <div class="type-card-name">Processors</div>
-      <div class="type-card-desc">Vendors that process your customer data on your behalf.</div>
+      <div class="type-card-name">Platform Vendors</div>
+      <div class="type-card-desc">Your marketing platforms, CRMs, analytics, and payment providers.</div>
       <div class="type-card-meta">
         <span class="type-card-count"><strong id="tcProcN">0</strong> registered</span>
         <span class="type-card-status tc-status-empty" id="tcProcPill"><span class="tc-status-dot"></span>Not started</span>
@@ -515,12 +515,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div class="work-area" id="workArea">
     <div class="work-hdr">
       <div>
-        <div class="work-hdr-title"><i class="ph ph-package icon-20" id="workHdrIcon"></i><span id="workTitle">Data Processors</span></div>
-        <p class="work-hdr-sub" id="workSub">Article 28 UK GDPR — any vendor that processes personal data on your behalf.</p>
+        <div class="work-hdr-title"><i class="ph ph-package icon-20" id="workHdrIcon"></i><span id="workTitle">Platform Vendors</span></div>
+        <p class="work-hdr-sub" id="workSub">Your marketing stack — every platform handling customer data on your behalf.</p>
       </div>
       <div class="work-hdr-actions" id="workActions">
         <button class="btn btn-ghost btn-sm" id="workExport" onclick="exportCSV()"><i class="ph ph-download-simple icon-16"></i>CSV</button>
-        <button class="btn btn-primary btn-sm" id="workAdd" onclick="openModal('processor')"><i class="ph ph-plus icon-16"></i>Add</button>
+        <button class="btn btn-primary btn-sm" id="workAdd" onclick="openModal('processor')"><i class="ph ph-plus icon-16"></i>Add platform</button>
       </div>
     </div>
     <div class="work-body">
@@ -582,22 +582,22 @@ var scanFile = { processors:null, partners:null, affiliates:null };
 
 var TYPE_CONFIG = {
   processors: {
-    title:'Data Processors', icon:'package',
-    sub:'Article 28 UK GDPR — any vendor that processes personal data on your behalf.',
-    emptyTitle:'Start with your email marketing platform',
-    emptySub:'Add the processors handling your customer data. We\'ll check each one against the enforcement database and flag any DPA gaps to your dashboard.',
-    addLabel:'Add processor', modalKey:'processor',
+    title:'Platform Vendors', icon:'package',
+    sub:'Your marketing stack — every platform handling customer data on your behalf.',
+    emptyTitle:'Start with your marketing platform',
+    emptySub:'Add the platforms in your marketing stack — email, CRM, analytics, ads, payments. We check each one against the enforcement database, scan their data agreements, and flag gaps to your dashboard.',
+    addLabel:'Add platform', modalKey:'processor',
     steps:[
-      {title:'Add processor',desc:'Name and type'},
-      {title:'Confirm DPA',desc:'Article 28 in place'},
-      {title:'Scan policy',desc:'URL or PDF upload'},
+      {title:'Add platform',desc:'Name and type'},
+      {title:'Data agreement',desc:'DPA confirmed'},
+      {title:'Scan agreement',desc:'URL or PDF upload'},
       {title:'Keep current',desc:'Re-check quarterly'},
     ],
     stepShort:['Added','DPA','Policy','Current'],
   },
   partners: {
-    title:'Co-marketing Partners', icon:'handshake',
-    sub:'Article 26 UK GDPR joint controllers — brands you share data with or run joint campaigns alongside.',
+    title:'Partners & Joint Ventures', icon:'handshake',
+    sub:'Brands you co-market with, run joint campaigns alongside, or share customer data with.',
     emptyTitle:'Add your first partner',
     emptySub:'Any brand you co-market with, run joint ads alongside, or share customer data with. We check their regulatory history, track the Article 26 agreement, and flag advertising compliance gaps across CAP Code and CMA/DMCCA.',
     addLabel:'Add partner', modalKey:'partner',
@@ -1597,10 +1597,10 @@ function renderIntel(sector) {
 
 function openModal(type) {
   modalType = type;
-  var titles = { processor:'Add processor', partner:'Add co-marketing partner', affiliate:'Add affiliate', competitor:'Add competitor' };
+  var titles = { processor:'Add a platform', partner:'Add co-marketing partner', affiliate:'Add affiliate', competitor:'Add competitor' };
   var subs = {
-    processor:'Any third party that processes personal data on your behalf (Art 28 UK GDPR).',
-    partner:'A brand you share data with or run joint campaigns alongside. Requires Article 26 joint controller agreement.',
+    processor:'Any platform in your marketing stack that handles customer data — email, CRM, analytics, ads, payments.',
+    partner:'A brand you co-market with, run joint ads alongside, or share customer data with.',
     affiliate:'A third party sending marketing on your behalf — you are responsible for their sends under PECR.',
     competitor:'We\'ll pull their regulatory history and recent promo tactics automatically on add.',
   };
