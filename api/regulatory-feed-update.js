@@ -247,6 +247,119 @@ async function scanCompetitorPromos(competitors, claudeKey) {
   return results;
 }
 
+// ── Phase 3: Dossier compliance monitoring ────────────────────
+// Cross-references new enforcement rulings against submitted
+// dossiers' monitored claim types. When a ruling's claim types
+// overlap with a campaign's claim types, annotates the dossier
+// and fires a dossier_compliance_change alert.
+async function crossReferenceDossiers(allItems) {
+  const results = { checked: 0, alertsFired: 0, errors: [] };
+  if (!allItems.length) return results;
+
+  let dossiers = [];
+  try {
+    dossiers = await atGet('Campaign_Dossiers',
+      "AND({Status}='Submitted',{MonitoredClaimTypes}!='')",
+      'sort[0][field]=SubmittedAt&sort[0][direction]=desc', 200
+    );
+  } catch (e) {
+    console.error('Could not load submitted dossiers (non-fatal):', e.message);
+    return results;
+  }
+
+  if (!dossiers.length) return results;
+  results.checked = dossiers.length;
+
+  const newClaimTypes = new Set();
+  const claimToItems = {};
+  for (const item of allItems) {
+    const claims = Array.isArray(item.claimTypes) ? item.claimTypes : [];
+    for (const ct of claims) {
+      newClaimTypes.add(ct);
+      if (!claimToItems[ct]) claimToItems[ct] = [];
+      claimToItems[ct].push({
+        companyName: item.companyName || '',
+        regulator: item.regulator || '',
+        rulingSummary: (item.rulingSummary || '').slice(0, 200),
+        publishedDate: item.publishedDate || '',
+      });
+    }
+  }
+
+  if (!newClaimTypes.size) return results;
+
+  const today = new Date().toISOString().split('T')[0];
+
+  for (const dossier of dossiers) {
+    try {
+      let monitored = [];
+      try { monitored = JSON.parse(dossier.fields.MonitoredClaimTypes || '[]'); } catch {}
+      if (!monitored.length) continue;
+
+      const overlapping = monitored.filter(ct => newClaimTypes.has(ct));
+      if (!overlapping.length) continue;
+
+      const matchingRulings = [];
+      for (const ct of overlapping) {
+        for (const item of (claimToItems[ct] || [])) {
+          matchingRulings.push({ ...item, matchedClaimType: ct });
+        }
+      }
+
+      const seen = new Set();
+      const uniqueRulings = matchingRulings.filter(r => {
+        const key = r.companyName + r.regulator;
+        if (seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+
+      const alert = {
+        detectedAt: new Date().toISOString(),
+        claimTypes: overlapping,
+        rulingCount: uniqueRulings.length,
+        rulings: uniqueRulings.slice(0, 5),
+        summary: overlapping.length + ' claim type' + (overlapping.length !== 1 ? 's' : '') +
+          ' in your campaign match new enforcement activity this week: ' +
+          overlapping.map(ct => ct.replace(/_/g, ' ')).join(', ') + '.',
+      };
+
+      let existingAlerts = [];
+      try { existingAlerts = JSON.parse(dossier.fields.ComplianceAlertsJson || '[]'); } catch {}
+      existingAlerts.push(alert);
+
+      await atPatch('Campaign_Dossiers', dossier.id, {
+        ComplianceAlertsJson: JSON.stringify(existingAlerts),
+        LastComplianceCheck: today,
+      });
+
+      const dossierUserId = dossier.fields.UserID;
+      if (dossierUserId) {
+        try {
+          await fetch(APP_URL + '/api/data?action=send-alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: dossierUserId,
+              alertType: 'dossier_compliance_change',
+              campaignTitle: dossier.fields.CampaignTitle || 'a campaign',
+              claimTypes: overlapping.join(', ').replace(/_/g, ' '),
+              rulingCount: uniqueRulings.length,
+            }),
+          });
+          results.alertsFired++;
+        } catch (ae) {
+          console.error('Dossier alert failed (non-fatal):', ae.message);
+        }
+      }
+    } catch (e) {
+      console.error('Dossier cross-ref error:', e.message);
+      results.errors.push({ dossierId: dossier.id, error: e.message });
+    }
+  }
+
+  return results;
+}
+
 // ── Main handler ──────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -270,7 +383,7 @@ export default async function handler(req, res) {
   const weekNumber = getWeekNumber();
   console.log(`Regulatory feed update starting — week ${weekNumber}`);
 
-  const results = { written: 0, skipped: 0, errors: [], competitorAlerts: 0, promoScan: null };
+  const results = { written: 0, skipped: 0, errors: [], competitorAlerts: 0, promoScan: null, dossierMonitoring: null };
 
   // ── Phase 1: Enforcement scan (ICO, ASA, CMA) ──────────────
   const [icoItems, asaItems, cmaItems] = await Promise.all([
@@ -396,6 +509,15 @@ export default async function handler(req, res) {
     results.promoScan = { scanned: 0, updated: 0, errors: [] };
   }
 
+  // ── Phase 3: Dossier compliance monitoring ──────────────────
+  if (allItems.length > 0) {
+    console.log('Starting dossier compliance cross-reference');
+    results.dossierMonitoring = await crossReferenceDossiers(allItems);
+    console.log(`Dossier monitoring complete — alerts fired: ${results.dossierMonitoring.alertsFired}`);
+  } else {
+    results.dossierMonitoring = { checked: 0, alertsFired: 0, errors: [] };
+  }
+
   console.log(`Feed update complete — enforcement written: ${results.written}, skipped: ${results.skipped}, competitor alerts: ${results.competitorAlerts}, promo re-scans: ${results.promoScan.updated}, errors: ${results.errors.length}`);
 
   return res.status(200).json({
@@ -412,6 +534,11 @@ export default async function handler(req, res) {
       competitorsScanned: results.promoScan.scanned,
       updated:            results.promoScan.updated,
       errors:             results.promoScan.errors.length,
+    },
+    dossierMonitoring: {
+      dossiersChecked: results.dossierMonitoring.checked,
+      alertsFired:     results.dossierMonitoring.alertsFired,
+      errors:          results.dossierMonitoring.errors.length,
     },
     errors: results.errors,
   });
