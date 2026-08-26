@@ -944,6 +944,8 @@ async function handleRelationshipWatch(req, res) {
  
     return alerts;
   }
+}
+
 // ── SUMMARY handler ──────────────────────────────────────────
 async function handleSummary(req, res) {
   const { userId } = req.query;
