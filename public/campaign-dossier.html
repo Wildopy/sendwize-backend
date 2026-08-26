@@ -286,6 +286,25 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 .letter-card{background:var(--w);border:2px solid var(--r);border-radius:var(--rad-lg);overflow:hidden;box-shadow:var(--sh-lg);margin-bottom:20px}.letter-watermark-banner{background:var(--r);color:#fff;text-align:center;padding:10px 20px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.letter-headed{padding:28px 36px 20px;border-bottom:1px solid var(--b)}.letter-from{font-size:12px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.7;margin-bottom:16px}.letter-from-name{font-size:13px;font-weight:700;color:var(--t);margin-bottom:3px}.letter-meta-row{display:flex;gap:28px;margin-bottom:16px;flex-wrap:wrap}.letter-meta-item{font-size:12px}.letter-meta-label{font-weight:700;color:var(--mu);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}.letter-meta-val{color:var(--t);font-family:'DM Mono',monospace}.letter-subject{font-size:14px;font-weight:700;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--b)}.letter-body{font-size:13px;line-height:1.9;color:var(--t);white-space:pre-wrap;padding:24px 36px}.letter-lens-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;margin-bottom:16px;text-transform:uppercase;letter-spacing:.06em}.letter-lens-badge.ico{background:#fef2f2;color:#991b1b}.letter-lens-badge.asa{background:#eff6ff;color:#1d4ed8}.letter-lens-badge.cma{background:#fefce8;color:#78350f}.clearance-banner{background:linear-gradient(135deg,var(--gb),#dcfce7);border:2px solid var(--g);border-radius:var(--rad);padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:14px}.clearance-icon{font-size:34px;flex-shrink:0}.clearance-title{font-size:17px;font-weight:700;color:var(--g);margin-bottom:3px}.clearance-sub{font-size:13px;color:var(--tm)}.clearance-notice-body{font-size:12px;font-family:'DM Mono',monospace;line-height:1.8;color:var(--tm);background:var(--bg);border-radius:var(--rad);padding:16px 20px;white-space:pre-wrap;margin-bottom:20px}
 @media print{.sw-ph-header,.sw-ph-footer,.stepper,.progress-row,.module-card,.submit-card,.cert-actions,.disc,.toast,.health-bar-wrap,.reg-lens,.incomplete-banner{display:none!important}.cert-section{display:block!important}.cert-card{border:none;box-shadow:none;padding:20px}body{background:#fff}}
 @media(max-width:600px){.tf-row,.fields-grid.two-col,.cert-footer,.reg-spotlight-grid{grid-template-columns:1fr}.stepper::before{display:none}.step-label{display:none}.cert-header{flex-direction:column}}
+
+/* Campaign monitoring */
+.monitoring-section{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px 28px;margin-bottom:20px;box-shadow:var(--sh)}
+.monitoring-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.monitoring-sub{font-size:12px;color:var(--mu);margin-bottom:16px}
+.monitoring-clear{background:var(--gb);border:1px solid var(--gbd,var(--gc));border-radius:8px;padding:14px 16px;font-size:13px;color:#166534;display:flex;align-items:center;gap:10px}
+.monitoring-alert{background:var(--yb);border:1px solid var(--ybd,var(--yc));border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.monitoring-alert-date{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--y);margin-bottom:6px}
+.monitoring-alert-summary{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:10px}
+.monitoring-ruling{font-size:12px;color:var(--tm);padding:8px 12px;background:var(--w);border:1px solid var(--b);border-radius:6px;display:flex;gap:10px;align-items:flex-start;margin-bottom:6px}
+.monitoring-ruling-reg{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;flex-shrink:0;margin-top:1px}
+.monitoring-ruling-reg.ICO{background:#fef2f2;color:#dc2626}
+.monitoring-ruling-reg.ASA{background:#eff6ff;color:#1d4ed8}
+.monitoring-ruling-reg.CMA{background:#fefce8;color:#ca8a04}
+.monitoring-claim-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.monitoring-claim-chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--bg);color:var(--tm);border:1px solid var(--b)}
+.monitoring-pulse{width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;animation:monpulse 2s ease-in-out infinite}
+.monitoring-pulse.alert{background:var(--y)}
+@keyframes monpulse{0%,100%{opacity:1}50%{opacity:.4}}
 </style>
 </head>
 <body>
@@ -813,7 +832,7 @@ async function loadDossier() {
     });
     const src = data.DossierSource||'Standalone';
     el('sourceTag').textContent = src==='Brief Checker'?'📋 Brief Checker':'📁 Standalone';
-    if (data.Status==='Submitted') { renderCertificate(data); return; }
+    if (data.Status==='Submitted') { renderCertificate(data); loadCampaignMonitoring(dossierId || data.dossierId || data.recordId); return; }
     if (campaignTitle) { el('campaignTitle').value=campaignTitle; el('headerTitle').textContent=campaignTitle; }
     if (ownerName)     { el('ownerName').value=ownerName;         el('headerOwner').textContent=ownerName; }
     if (campaignTitle&&ownerName) el('titleFields').style.display='none';
@@ -1488,6 +1507,70 @@ document.addEventListener('DOMContentLoaded',()=>{
   el('newCampaignTitle')?.addEventListener('keydown',e=>{if(e.key==='Enter')createDossier();});
 });
 el('newDossierModal')?.addEventListener('click',function(e){if(e.target===this)hideNewDossierModal();});
+
+
+// ── Campaign monitoring section (v7.3) ──────────────────────
+function loadCampaignMonitoring(dossierId) {
+  if (!dossierId || !userId) return;
+
+  var existing = document.getElementById('sw-monitoring');
+  if (existing) existing.remove();
+
+  var certSection = document.getElementById('certSection') || document.getElementById('certArea') || document.querySelector('.cert-wrap') || document.querySelector('.submitted-view');
+  if (!certSection) return;
+
+  var monDiv = document.createElement('div');
+  monDiv.id = 'sw-monitoring';
+  monDiv.className = 'monitoring-section';
+  monDiv.innerHTML = '<div class="monitoring-title"><span class="monitoring-pulse"></span>Campaign Monitoring</div><div class="monitoring-sub">Loading compliance alerts...</div>';
+  certSection.appendChild(monDiv);
+
+  fetch(APP_URL + '/api/submit-check?action=dossier-get&dossierId=' + dossierId + '&userId=' + userId)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var alerts = [];
+      try { alerts = JSON.parse(data.ComplianceAlertsJson || '[]'); } catch(e) {}
+      var monitored = [];
+      try { monitored = JSON.parse(data.MonitoredClaimTypes || '[]'); } catch(e) {}
+      var lastCheck = data.LastComplianceCheck || null;
+
+      if (!alerts.length) {
+        monDiv.innerHTML =
+          '<div class="monitoring-title"><span class="monitoring-pulse"></span>Campaign Monitoring \u2014 Active</div>'
+          + '<div class="monitoring-sub">Your campaign is being monitored weekly against new ICO, ASA, and CMA enforcement activity.'
+          + (lastCheck ? ' Last checked: ' + new Date(lastCheck).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '')
+          + '</div>'
+          + '<div class="monitoring-clear">\u2705 No compliance changes detected since submission. Your evidence file is current.</div>'
+          + (monitored.length ? '<div class="monitoring-claim-chips" style="margin-top:12px">' + monitored.map(function(ct) { return '<span class="monitoring-claim-chip">' + ct.replace(/_/g, ' ') + '</span>'; }).join('') + '</div>' : '');
+      } else {
+        var alertsHtml = alerts.slice().reverse().map(function(a) {
+          var dateStr = a.detectedAt ? new Date(a.detectedAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '';
+          var rulingsHtml = (a.rulings || []).map(function(r) {
+            return '<div class="monitoring-ruling"><span class="monitoring-ruling-reg ' + (r.regulator || '') + '">' + (r.regulator || '') + '</span><div><strong>' + (r.companyName || '') + '</strong> \u2014 ' + (r.rulingSummary || '') + '</div></div>';
+          }).join('');
+          var claimChips = (a.claimTypes || []).map(function(ct) {
+            return '<span class="monitoring-claim-chip">' + ct.replace(/_/g, ' ') + '</span>';
+          }).join('');
+          return '<div class="monitoring-alert">'
+            + '<div class="monitoring-alert-date">' + dateStr + '</div>'
+            + '<div class="monitoring-alert-summary">' + (a.summary || '') + '</div>'
+            + rulingsHtml
+            + '<div class="monitoring-claim-chips" style="margin-top:8px">' + claimChips + '</div>'
+            + '</div>';
+        }).join('');
+
+        monDiv.innerHTML =
+          '<div class="monitoring-title"><span class="monitoring-pulse alert"></span>Campaign Monitoring \u2014 ' + alerts.length + ' alert' + (alerts.length !== 1 ? 's' : '') + '</div>'
+          + '<div class="monitoring-sub">New enforcement activity matches claim types in this campaign. Review the rulings below and check whether your evidence still holds.'
+          + (lastCheck ? ' Last checked: ' + new Date(lastCheck).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '')
+          + '</div>'
+          + alertsHtml;
+      }
+    })
+    .catch(function() {
+      monDiv.innerHTML = '<div class="monitoring-title"><span class="monitoring-pulse"></span>Campaign Monitoring</div><div class="monitoring-sub">Could not load monitoring data.</div>';
+    });
+}
 </script>
 </body>
 </html>
