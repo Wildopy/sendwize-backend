@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Commercial Relationships — Sendwize</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="http//fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <style>
@@ -700,7 +700,7 @@ function isDPAConfirmed(s){return DPA_CONFIRMED.indexOf(s||'')>=0;}
 
 function loadAll() {
   showLoading('Loading relationships\u2026');
-  Promise.all([
+  return Promise.all([
     fetchRel('vendor'), fetchRel('partner'), fetchRel('affiliate'), fetchRel('competitor'),
     fetch(APP_URL+'/api/data?action=vendors').then(function(r){return r.json();}).catch(function(){return{vendors:[]};})
   ]).then(function(res){
@@ -1733,7 +1733,7 @@ function quickAdd(name, typeName) {
   showLoading('Adding '+name+'\u2026');
   fetch(APP_URL+'/api/data?action=register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendor:{ VendorName:name, VendorType:typeName, DPAStatus:known.dpaStatus==='Confirmed'?'Confirmed':'Not yet', PrivacyPolicyUrl:known.dpaLink||'' }})})
     .then(function(r){return r.json();})
-    .then(function(d){ hideLoading(); loadAll(); setTimeout(function(){ showConfirmPanel(name, d); }, 200); showToast(name+' added','ok'); })
+        .then(function(d){ hideLoading(); showToast(name+' added','ok'); setTimeout(function(){ loadAll().then(function(){ showConfirmPanel(name, d); }); }, 400); })
     .catch(function(){ hideLoading(); showToast('Could not add','er'); });
 }
 
