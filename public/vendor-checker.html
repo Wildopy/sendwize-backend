@@ -1647,9 +1647,8 @@ function submitModal() {
     .then(function(r){return r.json();})
     .then(function(d){
       hideLoading();
-      pickType(currentType);
-      showConfirmPanel(name, d);
-      loadAll();
+      showToast(name+' added','ok');
+      setTimeout(function(){ loadAll().then(function(){ showConfirmPanel(name, d); }); }, 400);
     })
     .catch(function(e){ hideLoading(); showToast('Could not add: '+e.message,'er'); });
 }
