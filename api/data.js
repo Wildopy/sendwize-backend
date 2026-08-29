@@ -1,6 +1,14 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.3
+// SENDWIZE — data.js v7.3.1
 // Commercial Relationships & Risk Register
+//
+// v7.3.1 fix:
+//   - handleRelationshipWatch: restored response-building code
+//     after buildAlerts. The v7.3 session lost the code that iterates
+//     vendors/partners/affiliates/competitors, calls buildAlerts,
+//     and returns res.json(). This caused 500s on relationship-watch
+//     and broke the vendor-checker UI.
+//   - Partner/affiliate field blocks: removed duplicate assignments.
 //
 // v7.3 changes (from v7.2):
 //   + Partner register: RelationshipActivity, MarketingChannels,
@@ -89,7 +97,7 @@ async function calculateThirdPartyScore(userId, base) {
     atGet(base, 'Affiliate_Register',`{UserID}='${userId}'`, '', 50).catch(() => []),
     atGet(base, 'User_Profile',      `{UserID}='${userId}'`, '', 1).catch(() => []),
   ]);
- 
+
   function processorCategoryScore(records) {
     if (!records.length) return null;
     const noDPA  = records.filter(r => !isDPAConfirmed(r.fields.DPAStatus || r.fields.AgreementStatus)).length;
@@ -103,8 +111,7 @@ async function calculateThirdPartyScore(userId, base) {
     const staleGap = (stale / records.length)  * 20;
     return Math.max(0, Math.round(100 - dpaGap - riskGap - staleGap));
   }
- 
-  // v7.3: rebalanced to include ad compliance dimension
+
   function partnerCategoryScore(records) {
     if (!records.length) return null;
     const noA26   = records.filter(r => !isDPAConfirmed(r.fields.Article26Status)).length;
@@ -121,8 +128,7 @@ async function calculateThirdPartyScore(userId, base) {
     const adGap     = (noAdReview / records.length)  * 25;
     return Math.max(0, Math.round(100 - a26Gap - chainGap - brandGap - adGap));
   }
- 
-  // v7.3: rebalanced to include marketing materials dimension
+
   function affiliateCategoryScore(records) {
     if (!records.length) return null;
     const noDPA        = records.filter(r => !isDPAConfirmed(r.fields.DPAStatus)).length;
@@ -135,21 +141,21 @@ async function calculateThirdPartyScore(userId, base) {
     const dpaGap       = (noDPA / records.length)        * 20;
     return Math.max(0, Math.round(100 - consentGap - materialsGap - senderGap - dpaGap));
   }
- 
+
   const proc = processorCategoryScore(processors);
   const part = partnerCategoryScore(partners);
   const aff  = affiliateCategoryScore(affiliates);
- 
+
   const applicable = [proc, part, aff].filter(s => s !== null);
   const total = applicable.length
     ? Math.round(applicable.reduce((a,b) => a+b, 0) / applicable.length)
     : null;
- 
+
   const lastReview = profile[0]?.fields?.LastIntelligenceFeedReview || null;
   const daysSinceReview = lastReview
     ? Math.floor((Date.now() - new Date(lastReview)) / 86400000)
     : null;
- 
+
   return {
     total,
     applicableCount: applicable.length,
@@ -165,7 +171,7 @@ async function calculateThirdPartyScore(userId, base) {
     },
   };
 }
- 
+
 // ── Cross-reference violations for a named entity ─────────────
 async function getViolationsForName(base, name) {
   if (!name) return [];
@@ -440,19 +446,19 @@ async function handleCronStatus(req, res) {
 async function handlePartnerRegister(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
- 
+
   if (req.method === 'DELETE') {
     const { recordId } = req.query;
     if (!recordId) return res.status(400).json({ error: 'recordId required' });
     try { await atDelete(base, 'Partner_Register', recordId); return res.json({ deleted: true }); }
     catch (e) { return res.status(500).json({ error: e.message }); }
   }
- 
+
   if (req.method === 'POST') {
     const { recordId, partner } = req.body;
     if (!userId)  return res.status(400).json({ error: 'userId required' });
     if (!partner) return res.status(400).json({ error: 'partner data required' });
- 
+
     let violationCount = 0, lastViolationDate = null, lastViolationSummary = null;
     let reputationScore = 100, brandSafetyFlag = false, brandSafetyReason = null;
     if (!recordId && partner.PartnerName) {
@@ -474,7 +480,7 @@ async function handlePartnerRegister(req, res) {
         brandSafetyReason = `${violationCount} regulatory action${violationCount !== 1 ? 's' : ''} found in Sendwize enforcement database.`;
       }
     }
- 
+
     const fields = {
       UserID: userId, PartnerName: partner.PartnerName, PartnerType: partner.PartnerType,
       RelationshipDescription: partner.RelationshipDescription,
@@ -496,11 +502,6 @@ async function handlePartnerRegister(req, res) {
       A26ClauseResults: partner.A26ClauseResults,
       PrivacyReviewResults: partner.PrivacyReviewResults,
       Notes: partner.Notes,
-      // v7.3 — ASA/CAP/CMA fields
-      RelationshipActivity: partner.RelationshipActivity,
-      MarketingChannels: Array.isArray(partner.MarketingChannels) ? JSON.stringify(partner.MarketingChannels) : partner.MarketingChannels,
-      AdComplianceReviewed: partner.AdComplianceReviewed || false,
-      PricingComplianceReviewed: partner.PricingComplianceReviewed || false,
       AddedDate: recordId ? undefined : new Date().toISOString().split('T')[0],
       LastChecked: recordId ? undefined : new Date().toISOString().split('T')[0],
       // v7.3 — ASA/CAP/CMA fields
@@ -509,14 +510,14 @@ async function handlePartnerRegister(req, res) {
       AdComplianceReviewed: partner.AdComplianceReviewed || false,
       PricingComplianceReviewed: partner.PricingComplianceReviewed || false,
     };
- 
+
     try {
       const record = recordId
         ? await atPatch(base, 'Partner_Register', recordId, fields)
         : await atCreate(base, 'Partner_Register', fields);
- 
+
       const fixesGenerated = [];
- 
+
       if (!recordId && !isDPAConfirmed(partner.Article26Status)) {
         generateFix({
           userId, fixType: 'no_article26_agreement', tool: 'Relationships Register',
@@ -525,7 +526,7 @@ async function handlePartnerRegister(req, res) {
         });
         fixesGenerated.push('no_article26_agreement');
       }
- 
+
       if (!recordId && brandSafetyFlag) {
         generateFix({
           userId, fixType: 'partner_brand_risk', tool: 'Relationships Register',
@@ -534,7 +535,7 @@ async function handlePartnerRegister(req, res) {
         });
         fixesGenerated.push('partner_brand_risk');
       }
- 
+
       // v7.3 — ASA/CAP: joint advertising compliance
       const activity = partner.RelationshipActivity || '';
       const adActivities = ['joint_ads', 'co_branded_content', 'influencer'];
@@ -546,7 +547,7 @@ async function handlePartnerRegister(req, res) {
         });
         fixesGenerated.push('unreviewed_joint_ads');
       }
- 
+
       // v7.3 — CMA/DMCCA: pricing claims in co-branded campaigns
       const pricingActivities = ['joint_ads', 'co_branded_content', 'lead_generation'];
       if (!recordId && pricingActivities.includes(activity) && !partner.PricingComplianceReviewed) {
@@ -557,34 +558,34 @@ async function handlePartnerRegister(req, res) {
         });
         fixesGenerated.push('partner_pricing_claims');
       }
- 
+
       return res.json({ record, reputationScore, brandSafetyFlag, violationCount, fixesGenerated });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
   }
- 
+
   return res.status(405).json({ error: 'Method not allowed' });
 }
- 
+
 
 // ── AFFILIATE-REGISTER handler (v7.3 — ASA/CAP/CMA dimensions) ──
 async function handleAffiliateRegister(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
- 
+
   if (req.method === 'DELETE') {
     const { recordId } = req.query;
     if (!recordId) return res.status(400).json({ error: 'recordId required' });
     try { await atDelete(base, 'Affiliate_Register', recordId); return res.json({ deleted: true }); }
     catch (e) { return res.status(500).json({ error: e.message }); }
   }
- 
+
   if (req.method === 'POST') {
     const { recordId, affiliate } = req.body;
     if (!userId)    return res.status(400).json({ error: 'userId required' });
     if (!affiliate) return res.status(400).json({ error: 'affiliate data required' });
- 
+
     const volume = affiliate.TotalVolumeSent || 0;
     let exposureLow = 0, exposureHigh = 0;
     if (!affiliate.ConsentChainVerified) {
@@ -595,7 +596,7 @@ async function handleAffiliateRegister(req, res) {
       exposureLow  += 5000;
       exposureHigh += 30000;
     }
- 
+
     const fields = {
       UserID: userId, AffiliateName: affiliate.AffiliateName, AffiliateType: affiliate.AffiliateType,
       DPAStatus: affiliate.DPAStatus || 'Not yet',
@@ -621,22 +622,16 @@ async function handleAffiliateRegister(req, res) {
       MarketingMaterialsReviewed: affiliate.MarketingMaterialsReviewed || false,
       AdDisclosureCompliant: affiliate.AdDisclosureCompliant || 'Unverified',
       LandingPageReviewed: affiliate.LandingPageReviewed || false,
-      // v7.3 — ASA/CAP/CMA fields
-      RelationshipActivity: affiliate.RelationshipActivity,
-      MarketingMaterialsReviewed: affiliate.MarketingMaterialsReviewed || false,
-      AdDisclosureCompliant: affiliate.AdDisclosureCompliant || 'Unverified',
-      LandingPageReviewed: affiliate.LandingPageReviewed || false,
     };
- 
+
     try {
       const record = recordId
         ? await atPatch(base, 'Affiliate_Register', recordId, fields)
         : await atCreate(base, 'Affiliate_Register', fields);
- 
+
       const fixesGenerated = [];
- 
+
       if (!recordId) {
-        // Existing PECR fixes
         if (!affiliate.ConsentChainVerified) {
           generateFix({
             userId, fixType: 'affiliate_consent_unverified', tool: 'Relationships Register',
@@ -653,7 +648,7 @@ async function handleAffiliateRegister(req, res) {
           });
           fixesGenerated.push('affiliate_sender_identity_breach');
         }
- 
+
         // v7.3 — ASA/CAP: affiliate marketing materials review
         if (!affiliate.MarketingMaterialsReviewed) {
           generateFix({
@@ -663,7 +658,7 @@ async function handleAffiliateRegister(req, res) {
           });
           fixesGenerated.push('affiliate_misleading_claims');
         }
- 
+
         // v7.3 — ASA: influencer ad disclosure
         const affActivity = (affiliate.RelationshipActivity || affiliate.AffiliateType || '').toLowerCase();
         if (affActivity.includes('influencer') && affiliate.AdDisclosureCompliant !== 'Verified') {
@@ -674,7 +669,7 @@ async function handleAffiliateRegister(req, res) {
           });
           fixesGenerated.push('affiliate_ad_disclosure');
         }
- 
+
         // v7.3 — CMA/PECR: lead gen landing page review
         const isLeadGen = affActivity.includes('lead') || affActivity.includes('comparison') || affActivity.includes('cashback');
         if (isLeadGen && !affiliate.LandingPageReviewed) {
@@ -686,13 +681,13 @@ async function handleAffiliateRegister(req, res) {
           fixesGenerated.push('lead_gen_consent_gap');
         }
       }
- 
+
       return res.json({ record, exposureLow, exposureHigh, fixesGenerated });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
   }
- 
+
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
@@ -843,7 +838,7 @@ async function handleCompetitorIntelligence(req, res) {
   });
 }
 
-// ── RELATIONSHIP-WATCH handler ────────────────────────────────
+// ── RELATIONSHIP-WATCH handler (v7.3.1 — response code restored) ──
 async function handleRelationshipWatch(req, res) {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -884,16 +879,15 @@ async function handleRelationshipWatch(req, res) {
     }));
   }
 
- // v7.3 — replace the buildAlerts function inside handleRelationshipWatch
   function buildAlerts(type, name, record) {
     const alerts = [];
     const f = record.fields;
     const sd = staleDays(record);
     const viols = crossRefViolations(name);
- 
+
     if (viols.length > 0) alerts.push({ type: 'enforcement', severity: 'amber',
       text: `${viols.length} regulatory action${viols.length !== 1 ? 's' : ''} found in enforcement database for ${name}.`, detail: viols });
- 
+
     if (type === 'processor') {
       const dpa = f.DPAStatus || f.AgreementStatus || '';
       if (!isDPAConfirmed(dpa)) alerts.push({ type: 'dpa', severity: 'red', text: 'No confirmed DPA — Article 28 UK GDPR breach until signed.' });
@@ -901,12 +895,11 @@ async function handleRelationshipWatch(req, res) {
       const ann = anniversaryDays(f.AgreementDate);
       if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: ann <= 0 ? 'Agreement anniversary was recent — confirm renewed.' : `Agreement anniversary in ${ann} days — review terms.` });
     }
- 
+
     if (type === 'partner') {
       if (!isDPAConfirmed(f.Article26Status)) alerts.push({ type: 'a26', severity: 'high', text: 'No confirmed Article 26 joint controller agreement.' });
       if (!f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'amber', text: 'Consent chain ownership not verified.' });
       if (f.BrandSafetyFlag) alerts.push({ type: 'brand', severity: 'amber', text: f.BrandSafetyReason || 'Brand safety flag raised.' });
-      // v7.3 — ASA/CAP/CMA alerts for partners
       const partActivity = f.RelationshipActivity || '';
       const needsAdReview = ['joint_ads', 'co_branded_content', 'influencer'].includes(partActivity);
       if (needsAdReview && !f.AdComplianceReviewed) {
@@ -918,13 +911,11 @@ async function handleRelationshipWatch(req, res) {
       const ann = anniversaryDays(f.Article26Date);
       if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: `Article 26 agreement review due in ${ann} days.` });
     }
- 
+
     if (type === 'affiliate') {
       if (!f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'red', text: 'Consent chain unverified — same legal exposure as sending without consent.' });
       if (f.SenderIdentityCompliant === 'Unverified') alerts.push({ type: 'sender', severity: 'amber', text: 'Sender identity not verified — PECR Reg 23 risk.' });
       if (!isDPAConfirmed(f.DPAStatus)) alerts.push({ type: 'dpa', severity: 'amber', text: 'No confirmed DPA for this affiliate.' });
- 
-      // v7.3 — ASA/CAP/CMA alerts for affiliates
       if (!f.MarketingMaterialsReviewed) {
         alerts.push({ type: 'materials', severity: 'amber', text: `Marketing materials for ${name} not reviewed against CAP Code — you are responsible for claims made on your behalf.` });
       }
@@ -936,14 +927,34 @@ async function handleRelationshipWatch(req, res) {
         alerts.push({ type: 'landing_page', severity: 'amber', text: `Landing pages for ${name} not reviewed for consent capture compliance and CMA pricing rules.` });
       }
     }
- 
+
     if (type === 'competitor') {
       if (f.RulingCount > 0) alerts.push({ type: 'ruling', severity: 'amber', text: `${f.RulingCount} regulatory action${f.RulingCount !== 1 ? 's' : ''} on record. Check if any claim types match your own campaigns.` });
       if (sd !== null && sd > 30) alerts.push({ type: 'stale', severity: 'amber', text: `Intelligence last updated ${sd} days ago. Competitor is checked automatically each week.` });
     }
- 
+
     return alerts;
   }
+
+  // v7.3.1 — RESTORED: build watch array and return response
+  const watch = [];
+
+  for (const r of vendors) {
+    watch.push({ name: r.fields.VendorName || '', type: 'processor', alerts: buildAlerts('processor', r.fields.VendorName, r) });
+  }
+  for (const r of partners) {
+    watch.push({ name: r.fields.PartnerName || '', type: 'partner', alerts: buildAlerts('partner', r.fields.PartnerName, r) });
+  }
+  for (const r of affiliates) {
+    watch.push({ name: r.fields.AffiliateName || '', type: 'affiliate', alerts: buildAlerts('affiliate', r.fields.AffiliateName, r) });
+  }
+  for (const r of competitors) {
+    watch.push({ name: r.fields.CompetitorName || '', type: 'competitor', alerts: buildAlerts('competitor', r.fields.CompetitorName, r) });
+  }
+
+  const thirdPartyScore = await calculateThirdPartyScore(userId, base).catch(() => null);
+
+  return res.json({ watch, thirdPartyScore });
 }
 
 // ── SUMMARY handler ──────────────────────────────────────────
@@ -1039,8 +1050,6 @@ async function handleScoreHistory(req, res) {
 }
 
 // ── SEND-ALERT handler ───────────────────────────────────────
-// v7.2: adds segment_state_change template, enhances audience_damaged
-// to show previousState when Audience Read passes it.
 async function handleSendAlert(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId, alertType } = req.body;
@@ -1075,7 +1084,6 @@ async function handleSendAlert(req, res) {
       subject: `📊 Sendwize: audience alert — ${req.body.segmentName || 'a segment'} needs attention`,
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Audience Read alert</h2><p style="color:#555;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved${req.body.previousState ? ` from <strong>${req.body.previousState}</strong>` : ''} to <strong>${req.body.sentimentState || 'a negative state'}</strong>.</p>${req.body.regulatoryNote ? `<p style="background:#fdf4ff;border-left:4px solid #7e22ce;padding:12px 16px;font-size:13px;color:#555">${req.body.regulatoryNote}</p>` : ''}<a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View Audience Read →</a></div></div>`,
     },
-    // v7.2 — new template for mild AR state transitions (Healthy → Cooling etc)
     dossier_compliance_change: {
       subject: `⚠️ Sendwize: compliance change affecting ${req.body.campaignTitle || 'a campaign'}`,
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Campaign compliance alert</h2><p style="color:#555;margin:0 0 16px;font-size:14px">A new regulatory ruling this week affects claim types used in your campaign <strong>${req.body.campaignTitle || 'Untitled'}</strong>.</p><p style="background:#fdf4ff;border-left:4px solid #7e22ce;padding:12px 16px;font-size:13px;color:#555;margin:0 0 16px"><strong>Matching claim types:</strong> ${req.body.claimTypes || 'unknown'}<br><strong>New rulings this week:</strong> ${req.body.rulingCount || 0}</p><p style="color:#555;font-size:14px;margin:0 0 24px">Open your campaign dossier to review the ruling and check whether your evidence still holds.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open campaign dossier →</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>`,
