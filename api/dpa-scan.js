@@ -1,5 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — dpa-scan.js v1.1
+// SENDWIZE — dpa-scan.js v1.2
+//
+// v1.2 fix: anthropic-version reverted to 2023-06-01 (only valid version),
+//   added anthropic-beta: pdfs-2024-09-25 header for PDF document support.
 //
 // v1.1 changes from v1.0:
 //   + PDF support: sourceType 'pdf' with base64 PDF in sourceContent.
@@ -161,7 +164,7 @@ async function scrapePolicy(url) {
   }
 }
 
-// ── v1.1: extractTextFromPdf ──────────────────────────────────
+// ── v1.2: extractTextFromPdf ──────────────────────────────────
 // Sends PDF to Claude asking ONLY for text extraction.
 // AI extracts, regex detects — D2 preserved.
 async function extractTextFromPdf(pdfBase64) {
@@ -173,7 +176,8 @@ async function extractTextFromPdf(pdfBase64) {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2024-10-22',
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'pdfs-2024-09-25',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
@@ -252,7 +256,7 @@ async function extractQuotesWithAI(text, results) {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2024-10-22',
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6', max_tokens: 2000,
