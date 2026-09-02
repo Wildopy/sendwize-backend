@@ -173,7 +173,7 @@ async function extractTextFromPdf(pdfBase64) {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2025-01-01',
+      'anthropic-version': '2024-10-22',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
@@ -252,7 +252,7 @@ async function extractQuotesWithAI(text, results) {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2025-01-01',
+        'anthropic-version': '2024-10-22',
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6', max_tokens: 2000,
