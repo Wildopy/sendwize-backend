@@ -1567,7 +1567,7 @@ function deleteRel(recordId, name) {
   if (!confirm('Remove '+name+' from your register?')) return;
   showLoading('Removing\u2026');
   var action = currentType==='processors'?'register':currentType==='partners'?'partner-register':currentType==='affiliates'?'affiliate-register':'competitor-watch';
-  fetch(APP_URL+'/api/data?action='+action, {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, recordId:recordId})})
+  fetch(APP_URL+'/api/data?action='+action+'&userId='+encodeURIComponent(userId)+'&recordId='+encodeURIComponent(recordId), {method:'DELETE'})
     .then(function(r){return r.json();})
     .then(function(){
       hideLoading();
