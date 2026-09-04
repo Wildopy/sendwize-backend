@@ -25,19 +25,13 @@
 }
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;padding:0 0 80px;-webkit-font-smoothing:antialiased}
 .page-wrap{max-width:960px;margin:0 auto;padding:36px 20px 0}
-
-/* Header + footer */
 .sw-ph-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
 .sw-ph-header a{text-decoration:none}.sw-ph-logo{height:28px;display:block}
 .sw-ph-nav{display:flex;align-items:center;gap:22px}.sw-ph-nav a{color:var(--tm);font-size:14px;font-weight:500;transition:color .15s}.sw-ph-nav a:hover{color:var(--t)}
 .sw-ph-footer{border-top:1px solid var(--b);padding:20px 24px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .sw-ph-footer-logo{height:20px;opacity:.7}.sw-ph-footer-links{display:flex;gap:16px;font-size:12px}.sw-ph-footer-links a{color:var(--mu);text-decoration:none}
-
-/* Icon sizing */
 .ph{display:inline-flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0}
 .ph.icon-16{font-size:16px}.ph.icon-18{font-size:18px}.ph.icon-20{font-size:20px}.ph.icon-24{font-size:24px}.ph.icon-32{font-size:32px}
-
-/* Gate */
 .gate-screen{display:none;min-height:75vh;align-items:center;justify-content:center;padding:40px 20px}
 .gate-screen.show{display:flex}
 .gate-card{background:var(--w);border:1px solid var(--b);border-radius:16px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:var(--shl)}
@@ -46,14 +40,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .gate-title{font-size:22px;font-weight:700;margin-bottom:8px}
 .gate-sub{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:28px}
 .gate-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;background:var(--o);color:#fff;border:none;border-radius:var(--rad);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .2s}.gate-btn:hover{background:var(--od)}
-
-/* Intro */
 .intro{margin-bottom:28px}
 .intro-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--o);margin-bottom:8px}
 .intro-title{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px;line-height:1.15}
 .intro-sub{font-size:14px;color:var(--tm);line-height:1.6;max-width:620px}
-
-/* Score strip — refined: no border, no eyebrow above */
 .score-strip{display:flex;align-items:stretch;background:var(--w);border-radius:var(--rad-sm);box-shadow:var(--sh);margin-bottom:32px;overflow:hidden}
 .ss-tile{flex:1;padding:14px 18px;border-right:1px solid var(--b);display:flex;flex-direction:column;gap:2px;min-width:0}
 .ss-tile:last-child{border-right:none}
@@ -74,12 +64,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   .ss-tile:nth-child(2n){border-right:none}
   .ss-tile:last-child,.ss-tile:nth-last-child(2){border-bottom:none}
 }
-
-/* Section title — simplified, no more eyebrow+rule pattern */
 .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--tm);margin:0 0 14px 2px}
 .section-title.mt{margin-top:32px}
-
-/* Relationship type picker — LIGHTER treatment, reads as navigation */
 .type-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:28px}
 @media(max-width:820px){.type-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:440px){.type-grid{grid-template-columns:1fr}}
@@ -104,8 +90,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .tc-status-risk{background:var(--rb);color:var(--r)}
 .tc-status-empty{background:var(--bg);color:var(--mu)}
 .tc-status-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
-
-/* Working area — WARMER surface, no outer border, more presence */
 .work-area{background:var(--surface);border-radius:var(--rad);box-shadow:var(--sh);margin-bottom:20px;overflow:hidden;border:1px solid var(--b)}
 .work-hdr{padding:20px 24px 18px;border-bottom:1px solid var(--b);display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;background:var(--w)}
 .work-hdr-title{font-size:17px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:10px}
@@ -113,13 +97,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .work-hdr-sub{font-size:12.5px;color:var(--tm);line-height:1.55;max-width:560px}
 .work-hdr-actions{display:flex;gap:7px;flex-shrink:0}
 .work-body{padding:22px 24px 24px}
-
-/* Guided empty state */
 .guided-empty{padding:12px 0 4px}
 .guided-empty-title{font-size:15px;font-weight:700;margin-bottom:6px}
 .guided-empty-sub{font-size:13px;color:var(--tm);line-height:1.65;margin-bottom:18px;max-width:580px}
-
-/* Steps guide — cleaner, no numbered eyebrows */
 .steps-header{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--tm);margin:26px 0 12px}
 .steps-guide{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:22px}
 @media(max-width:640px){.steps-guide{grid-template-columns:repeat(2,1fr)}}
@@ -128,8 +108,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .step-guide-num-dot{width:16px;height:16px;border-radius:50%;background:var(--ol);color:var(--o);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:9px}
 .step-guide-title{font-size:12.5px;font-weight:700;margin-bottom:3px}
 .step-guide-desc{font-size:11px;color:var(--tm);line-height:1.5}
-
-/* Quick add */
 .qa-wrap{padding:18px 0 4px;border-top:1px solid var(--b);margin-top:16px}
 .qa-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--tm);margin-bottom:10px}
 .qa-grid{display:flex;flex-wrap:wrap;gap:6px}
@@ -138,8 +116,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .qa-more-toggle{font-size:11.5px;color:var(--o);font-weight:600;cursor:pointer;background:none;border:none;font-family:inherit;text-decoration:underline;margin-top:9px;display:inline-block;padding:0}
 .qa-more{display:none;margin-top:12px}
 .qa-cat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin:10px 0 6px}
-
-/* Search + filter bar */
 .list-controls{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
 .search-input{flex:1;min-width:180px;padding:9px 12px 9px 34px;border:1px solid var(--b);border-radius:var(--rad-sm);font-size:13px;font-family:inherit;background:var(--w);outline:none;transition:border-color .15s;position:relative}
 .search-input:focus{border-color:var(--o)}
@@ -151,8 +127,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .chip:hover{border-color:var(--bm)}
 .chip.on{background:var(--t);color:#fff;border-color:var(--t)}
 .chip-count{font-family:'DM Mono',monospace;font-size:10px;opacity:.7}
-
-/* Relationship list — cards with clean row summary */
 .rel-list{display:flex;flex-direction:column;gap:8px}
 .rel-item{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
 .rel-item:hover{border-color:var(--bm);box-shadow:var(--sh)}
@@ -162,7 +136,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .rel-item.needs-attn::before{background:var(--y)}
 .rel-item.clear::before{background:var(--g)}
 .rel-item.sel::before{display:none}
-
 .rel-item-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
 .rel-item-main{flex:1;min-width:0}
 .rel-item-name{font-size:14px;font-weight:700;line-height:1.2;margin-bottom:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -172,8 +145,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .rel-item-actions{display:flex;gap:4px;flex-shrink:0}
 .rel-item-delete{background:none;border:none;cursor:pointer;padding:5px 6px;border-radius:5px;color:var(--mu);font-family:inherit;transition:all .15s;display:inline-flex;align-items:center}
 .rel-item-delete:hover{color:var(--r);background:var(--rb)}
-
-/* Per-row progress — DOTS + summary line, no more bar-with-label mess */
 .progress-dots{display:flex;gap:6px;align-items:center;margin-bottom:5px}
 .progress-dot{width:8px;height:8px;border-radius:50%;background:var(--bm);position:relative;flex-shrink:0;transition:background .15s}
 .progress-dot.done{background:var(--g)}
@@ -182,17 +153,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .progress-dot.todo{background:var(--bm)}
 .progress-dot::after{content:'';position:absolute;top:50%;left:100%;width:6px;height:1px;background:var(--b);transform:translateY(-50%)}
 .progress-dot:last-child::after{display:none}
-
 .progress-summary{font-size:11.5px;color:var(--tm);display:flex;align-items:center;gap:8px}
 .progress-summary strong{font-weight:700;color:var(--t)}
 .progress-outstanding{color:var(--r);font-weight:600}
-
-/* Meta badges — smaller, treated as metadata */
 .badge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.03em}
 .badge-verified{background:var(--blueb);color:var(--blue)}
 .badge-stale{background:var(--yb);color:var(--y)}
-
-/* Detail panel */
 .detail-panel{display:none;background:var(--w);border:1.5px solid var(--o);border-radius:var(--rad);margin-bottom:14px;overflow:hidden;box-shadow:var(--shm)}
 .detail-panel.show{display:block}
 .dp-hdr{background:var(--ol);padding:16px 20px;border-bottom:1px solid var(--om);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -204,8 +170,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .dp-tab:hover{color:var(--tm)}
 .dp-tab.on{color:var(--o);border-bottom-color:var(--o)}
 .dp-body{padding:20px}
-
-/* Confirmation panel post-add */
 .confirm-panel{background:var(--gb);border:1px solid var(--gc);border-radius:var(--rad-sm);padding:14px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start;animation:fadeUp .3s ease}
 .confirm-panel.warn{background:var(--yb);border-color:var(--yc)}
 .confirm-panel.risk{background:var(--rb);border-color:var(--rc)}
@@ -221,24 +185,18 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .confirm-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .confirm-close{background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--mu);font-family:inherit;line-height:1;flex-shrink:0}
 .confirm-close:hover{color:var(--t)}
-
-/* Pills */
 .pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
 .pg{background:var(--gb);color:var(--g);border:1px solid var(--gc)}
 .py{background:var(--yb);color:var(--y);border:1px solid var(--yc)}
 .pr{background:var(--rb);color:var(--r);border:1px solid var(--rc)}
 .pmu{background:var(--bg);color:var(--mu);border:1px solid var(--b)}
 .po{background:var(--ol);color:var(--o);border:1px solid var(--om)}
-
-/* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:var(--rad-sm);border:none;cursor:pointer;transition:all .15s;text-decoration:none;line-height:1.2}
 .btn-primary{background:var(--o);color:#fff}.btn-primary:hover{background:var(--od)}
 .btn-ghost{background:var(--w);border:1px solid var(--b);color:var(--t)}.btn-ghost:hover{border-color:var(--o);color:var(--o)}
 .btn-sm{padding:7px 12px;font-size:12px}
 .btn-xs{padding:5px 10px;font-size:11.5px}
 .btn-danger{background:var(--rb);color:var(--r);border:1px solid var(--rc)}.btn-danger:hover{background:var(--rc)}
-
-/* Article 28 / 26 clause review */
 .clause-item{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;margin-bottom:7px;border-left:3px solid var(--bm);transition:border-color .15s}
 .clause-item.pass{border-left-color:var(--g)}.clause-item.fail{border-left-color:var(--r)}.clause-item.warn{border-left-color:var(--y)}
 .clause-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
@@ -250,7 +208,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .cb-pass{background:var(--gb);color:var(--g);border-color:var(--gc)}
 .cb-warn{background:var(--yb);color:var(--y);border-color:var(--yc)}
 .cb-fail{background:var(--rb);color:var(--r);border-color:var(--rc)}
-
+.clause-quote{font-size:11.5px;color:var(--tm);background:var(--bg);border-left:2px solid var(--bm);padding:8px 12px;margin:0 0 8px;line-height:1.55;border-radius:0 4px 4px 0}
+.clause-quote .ph{color:var(--mu);margin-right:4px;vertical-align:-1px}
 .dpa-score-bar{height:6px;background:var(--b);border-radius:3px;overflow:hidden;margin-bottom:14px}
 .dpa-score-fill{height:100%;border-radius:3px;transition:width .5s}
 .scan-controls{background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;margin-bottom:14px}
@@ -272,14 +231,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .scan-spin-wrap{text-align:center;padding:22px;color:var(--mu);font-size:13px}
 .scan-spin{width:22px;height:22px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* Privacy review */
 .pv-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b);flex-wrap:wrap}
 .pv-label{flex:1;font-size:13px;font-weight:500}
 .pv-q{font-size:11px;color:var(--mu);margin-top:2px;font-weight:400}
 .pv-btns{display:flex;gap:4px;flex-shrink:0}
-
-/* Competitor rulings */
 .ruling-item{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border:1px solid var(--b);border-radius:var(--rad-sm);margin-bottom:6px;background:var(--w)}
 .ruling-reg{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
 .ruling-ico{background:var(--blueb);color:var(--blue)}
@@ -289,8 +244,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .promo-type{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--o);margin-bottom:3px}
 .promo-desc{font-size:12px;color:var(--tm);line-height:1.55}
 .promo-note{font-size:11px;color:var(--mu);margin-top:4px;font-style:italic}
-
-/* Monitoring & Intelligence — cleaner collapse */
 .mon-section{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);box-shadow:var(--sh);margin-bottom:14px;overflow:hidden}
 .mon-hdr{padding:16px 22px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;gap:10px;transition:background .15s}
 .mon-hdr:hover{background:var(--surface)}
@@ -306,8 +259,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .intel-review-note{font-size:12px;color:var(--tm);background:var(--ol);border:1px solid var(--om);border-radius:var(--rad-sm);padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:9px}
 .intel-review-note .ph{color:var(--o);flex-shrink:0}
 .intel-review-note strong{color:var(--od)}
-
-/* Watch feed items */
 .watch-item{border:1px solid var(--b);border-radius:var(--rad-sm);padding:12px 15px;display:flex;gap:12px;align-items:flex-start;margin-bottom:7px;background:var(--w)}
 .watch-item.alert{border-color:var(--yc);background:var(--yb)}
 .watch-item.clear{background:var(--gb);border-color:var(--gc)}
@@ -326,8 +277,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .wi-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
 .wi-dot.amber{background:var(--y)}.wi-dot.red{background:var(--r)}
 .wi-clear{font-size:12px;color:var(--g)}
-
-/* Intel feed items */
 .intel-item{border:1px solid var(--b);border-radius:var(--rad-sm);padding:13px 16px;margin-bottom:7px;border-left:4px solid var(--bm);background:var(--w)}
 .intel-item.ICO{border-left-color:var(--blue)}
 .intel-item.ASA{border-left-color:var(--pur)}
@@ -346,16 +295,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .intel-claims{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
 .claim-chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--bg);color:var(--tm);border:1px solid var(--b)}
 .comp-flag{font-size:11px;font-weight:700;color:var(--r);margin-top:6px;display:flex;align-items:center;gap:5px}
-
-/* Info banners */
 .info-banner{font-size:12px;color:#92400e;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad-sm);padding:11px 14px;margin-bottom:14px;line-height:1.55;display:flex;gap:8px;align-items:flex-start}
 .info-banner .ph{color:var(--o);flex-shrink:0;margin-top:1px}
 .info-banner.green{color:#166534;background:var(--gb);border-color:var(--gc)}
 .info-banner.green .ph{color:var(--g)}
 .info-banner.red{color:#7f1d1d;background:var(--rb);border-color:var(--rc)}
 .info-banner.red .ph{color:var(--r)}
-
-/* Form elements */
 .fg{margin-bottom:12px}
 .fg label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;margin-bottom:5px;color:var(--tm)}
 .fg input,.fg select,.fg textarea{width:100%;padding:9px 11px;border:1px solid var(--b);border-radius:var(--rad-sm);font-size:13px;font-family:inherit;background:var(--w);color:var(--t);transition:border-color .15s;outline:none}
@@ -364,16 +309,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
 @media(max-width:540px){.form-grid{grid-template-columns:1fr}}
 .form-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
-
-/* Modal */
 .modal-bg{position:fixed;inset:0;background:rgba(12,11,9,.55);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
 .modal-bg.open{display:flex}
 .modal{background:var(--w);border-radius:var(--rad);padding:26px 28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--shl)}
 .modal h2{font-size:17px;font-weight:700;margin-bottom:4px}
 .modal-sub{font-size:12.5px;color:var(--tm);margin-bottom:16px;line-height:1.55}
 .modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-
-/* Loading / Toast */
 .loading-bg{position:fixed;inset:0;background:rgba(244,243,240,.88);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(2px)}
 .loading-bg.open{display:flex}
 .loading-spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}
@@ -381,9 +322,19 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:var(--rad-sm);font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:340px;line-height:1.4}
 .toast.on{transform:translateY(0);opacity:1}
 .toast.ok{background:var(--g)}.toast.er{background:var(--r)}
-
 .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:24px;line-height:1.6;padding:0 20px}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.scan-guidance{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:16px 18px;margin-top:12px}
+.scan-guidance-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--tm);margin-bottom:10px}
+.scan-guidance-group{margin-bottom:12px}
+.scan-guidance-group-title{font-size:12.5px;font-weight:700;margin-bottom:6px}
+.scan-guidance-group-title.missing{color:var(--r)}
+.scan-guidance-group-title.partial{color:var(--y)}
+.scan-guidance-row{font-size:12px;color:var(--tm);line-height:1.55;padding:6px 0;border-bottom:1px solid var(--b)}
+.scan-guidance-row strong{color:var(--t)}
+.scan-guidance-row .detail{color:var(--mu);display:block;margin-top:2px}
+.scan-guidance-actions{font-size:12px;color:var(--tm);line-height:1.6;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad-sm);padding:10px 12px;margin-top:8px}
+.scan-guidance-actions strong{color:var(--od)}
 </style>
 </head>
 <body>
@@ -398,7 +349,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <div class="loading-bg" id="loadingBg"><div class="loading-spin"></div><div class="loading-msg" id="loadingMsg">Loading&hellip;</div></div>
 
-<!-- Add modal -->
 <div class="modal-bg" id="addModal">
   <div class="modal">
     <h2 id="addModalTitle">Add</h2>
@@ -411,7 +361,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 </div>
 
-<!-- Gate -->
 <div class="gate-screen" id="gateScreen">
   <div class="gate-card">
     <div class="gate-logo">sendwize</div>
@@ -424,14 +373,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <div class="page-wrap" id="mainWrap" style="display:none">
 
-  <!-- Intro -->
   <div class="intro">
     <div class="intro-eyebrow">Commercial Relationships &amp; Risk Register</div>
     <h1 class="intro-title">Every third party in one place</h1>
-    <p class="intro-sub">Processors, partners, affiliates and competitors — tracked with a live risk score that feeds your main dashboard.</p>
+    <p class="intro-sub">Processors, partners, affiliates and competitors &mdash; tracked with a live risk score that feeds your main dashboard.</p>
   </div>
 
-  <!-- Score strip -->
   <div class="score-strip" id="scoreStrip">
     <div class="ss-tile total">
       <div class="ss-label">Third-party risk</div>
@@ -458,7 +405,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
-  <!-- Type picker -->
   <div class="section-title">Choose a relationship type</div>
   <div class="type-grid" id="typeGrid">
     <button class="type-card on" data-type="processors" onclick="pickType('processors')">
@@ -491,7 +437,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <span class="type-card-arrow"><i class="ph ph-arrow-right icon-16"></i></span>
       </div>
       <div class="type-card-name">Affiliates</div>
-      <div class="type-card-desc">Anyone promoting your brand — email senders, influencers, lead generators.</div>
+      <div class="type-card-desc">Anyone promoting your brand &mdash; email senders, influencers, lead generators.</div>
       <div class="type-card-meta">
         <span class="type-card-count"><strong id="tcAffN">0</strong> registered</span>
         <span class="type-card-status tc-status-empty" id="tcAffPill"><span class="tc-status-dot"></span>Not started</span>
@@ -511,12 +457,11 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </button>
   </div>
 
-  <!-- Working area -->
   <div class="work-area" id="workArea">
     <div class="work-hdr">
       <div>
         <div class="work-hdr-title"><i class="ph ph-package icon-20" id="workHdrIcon"></i><span id="workTitle">Platform Vendors</span></div>
-        <p class="work-hdr-sub" id="workSub">Your marketing stack — every platform handling customer data on your behalf.</p>
+        <p class="work-hdr-sub" id="workSub">Your marketing stack &mdash; every platform handling customer data on your behalf.</p>
       </div>
       <div class="work-hdr-actions" id="workActions">
         <button class="btn btn-ghost btn-sm" id="workExport" onclick="exportCSV()"><i class="ph ph-download-simple icon-16"></i>CSV</button>
@@ -530,7 +475,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
-  <!-- Monitoring & Intelligence -->
   <div class="section-title mt">Monitoring &amp; Intelligence</div>
   <div class="mon-section" id="monSection" onclick="toggleMon(event)">
     <div class="mon-hdr">
@@ -545,14 +489,14 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
     <div class="mon-body" onclick="event.stopPropagation()">
       <div class="intel-review-note" id="intelReviewNote"></div>
-      <div class="mon-sub-title">Watch feed — issues to action</div>
+      <div class="mon-sub-title">Watch feed &mdash; issues to action</div>
       <div id="watchFeed"><div style="font-size:12.5px;color:var(--mu)">Loading&hellip;</div></div>
-      <div class="mon-sub-title">Sector intelligence — enforcement decisions this week</div>
+      <div class="mon-sub-title">Sector intelligence &mdash; enforcement decisions this week</div>
       <div id="intelFeed"><div style="font-size:12.5px;color:var(--mu)">Loading&hellip;</div></div>
     </div>
   </div>
 
-  <p class="disc">Information only — not legal advice. Sendwize has not reviewed vendor DPAs or contracts. Always verify directly with each party and seek independent legal advice.</p>
+  <p class="disc">Information only &mdash; not legal advice. Sendwize has not reviewed vendor DPAs or contracts. Always verify directly with each party and seek independent legal advice.</p>
 </div>
 
 <footer class="sw-ph-footer">
@@ -583,9 +527,9 @@ var scanFile = { processors:null, partners:null, affiliates:null };
 var TYPE_CONFIG = {
   processors: {
     title:'Platform Vendors', icon:'package',
-    sub:'Your marketing stack — every platform handling customer data on your behalf.',
+    sub:'Your marketing stack \u2014 every platform handling customer data on your behalf.',
     emptyTitle:'Start with your marketing platform',
-    emptySub:'Add the platforms in your marketing stack — email, CRM, analytics, ads, payments. We check each one against the enforcement database, scan their data agreements, and flag gaps to your dashboard.',
+    emptySub:'Add the platforms in your marketing stack \u2014 email, CRM, analytics, ads, payments. We check each one against the enforcement database, scan their data agreements, and flag gaps to your dashboard.',
     addLabel:'Add platform', modalKey:'processor',
     steps:[
       {title:'Add platform',desc:'Name and type'},
@@ -611,9 +555,9 @@ var TYPE_CONFIG = {
   },
   affiliates: {
     title:'Affiliates & Third-Party Promoters', icon:'link',
-    sub:'Anyone promoting your brand — email senders, influencers, lead generators, comparison sites. You are responsible for their claims and consent under PECR, CAP Code, and CMA/DMCCA.',
+    sub:'Anyone promoting your brand \u2014 email senders, influencers, lead generators, comparison sites. You are responsible for their claims and consent under PECR, CAP Code, and CMA/DMCCA.',
     emptyTitle:'Add an affiliate or third-party promoter',
-    emptySub:'Email affiliates, influencers, cashback sites, comparison sites, lead generators — any third party promoting your brand. We check consent chains, sender identity, marketing materials, ad disclosure, and landing page compliance.',
+    emptySub:'Email affiliates, influencers, cashback sites, comparison sites, lead generators \u2014 any third party promoting your brand. We check consent chains, sender identity, marketing materials, ad disclosure, and landing page compliance.',
     addLabel:'Add affiliate', modalKey:'affiliate',
     steps:[
       {title:'Add affiliate',desc:'Name, type, and activity'},
@@ -633,7 +577,6 @@ var TYPE_CONFIG = {
   },
 };
 
-// Article 28 clauses
 var A28 = [
   {id:'a28-1',  title:'Processing only on instructions',      req:'Processor acts only on documented controller instructions (Art 28(3)(a)).'},
   {id:'a28-2',  title:'Confidentiality obligation',           req:'Authorised persons bound by confidentiality (Art 28(3)(b)).'},
@@ -641,13 +584,33 @@ var A28 = [
   {id:'a28-4',  title:'Sub-processor restrictions',           req:'No sub-processors without prior written controller consent (Art 28(2)/(4)).'},
   {id:'a28-5',  title:'Data subject rights assistance',       req:'Assists with data subject rights requests (Art 28(3)(e)).'},
   {id:'a28-6',  title:'Security and breach assistance',       req:'Assists with breach notification, DPIA, and consultation (Art 28(3)(f)).'},
-  {id:'a28-7',  title:'Deletion or return on termination',   req:'Deletes or returns data after services end (Art 28(3)(g)).'},
+  {id:'a28-7',  title:'Deletion or return on termination',    req:'Deletes or returns data after services end (Art 28(3)(g)).'},
   {id:'a28-8',  title:'Audit rights',                         req:'Allows audits and provides compliance evidence (Art 28(3)(h)).'},
-  {id:'a28-9',  title:'Subject matter and duration specified',req:'DPA specifies subject matter, duration, nature, purpose, data types, data subjects (Art 28(3)).'},
+  {id:'a28-9',  title:'Subject matter and duration specified', req:'DPA specifies subject matter, duration, nature, purpose, data types, data subjects (Art 28(3)).'},
   {id:'a28-10', title:'International transfer safeguards',    req:'Adequate safeguard for UK data transferred outside UK (Art 44-49).'},
   {id:'a28-11', title:'Controller contact identified',        req:'Controller identity and contact clearly stated.'},
   {id:'a28-12', title:'Processor / DPO identified',           req:'Processor identity and DPO (if required) clearly stated.'},
 ];
+
+// ── P1 FIX: Scan ID → A28 ID mapping ──────────────────────────
+// dpa-scan.js returns IDs like 'subject_matter_duration' but clause cards
+// use a28-X IDs. This map bridges them. Multiple scan IDs can map to one
+// a28 ID (e.g. 4 preamble checks → a28-9); worst status wins.
+var SCAN_ID_TO_A28 = {
+  'subject_matter_duration': ['a28-9'],
+  'nature_purpose':          ['a28-9'],
+  'personal_data_types':     ['a28-9'],
+  'data_subjects':           ['a28-9'],
+  'documented_instructions': ['a28-1'],
+  'confidentiality':         ['a28-2'],
+  'security_measures':       ['a28-3'],
+  'sub_processors':          ['a28-4'],
+  'controller_assistance':   ['a28-5','a28-6'],
+  'deletion_or_return':      ['a28-7'],
+  'audit_rights':            ['a28-8'],
+  'transfer_mechanism':      ['a28-10'],
+};
+
 
 var A26 = [
   {id:'a26-1',title:'Joint controller arrangement documented',req:'Transparent arrangement sets out respective responsibilities (Art 26(1)).'},
@@ -798,6 +761,7 @@ function updateTypeCards() {
   });
 }
 
+
 function pickType(type) {
   currentType = type;
   currentFilter = 'all';
@@ -819,12 +783,9 @@ function renderWorkArea() {
   document.getElementById('workAdd').innerHTML = '<i class="ph ph-plus icon-16"></i>'+cfg.addLabel;
   document.getElementById('workAdd').onclick = function(){ openModal(cfg.modalKey); };
   document.getElementById('workExport').style.display = currentType==='competitors' ? 'none' : 'inline-flex';
-
   var records = S[currentType];
   var content = document.getElementById('workContent');
-
   if (!records.length) { content.innerHTML = renderEmpty(); return; }
-
   content.innerHTML = renderListControls() + '<div class="rel-list" id="relList">'+renderList(records)+'</div>';
 }
 
@@ -834,17 +795,12 @@ function renderEmpty() {
   if (cfg.steps) {
     stepsHtml = '<div class="steps-header">How this works</div><div class="steps-guide">'
       + cfg.steps.map(function(s,i){
-        return '<div class="step-guide-item">'
-          +'<div class="step-guide-num"><span class="step-guide-num-dot">'+(i+1)+'</span></div>'
-          +'<div class="step-guide-title">'+s.title+'</div>'
-          +'<div class="step-guide-desc">'+s.desc+'</div>'
-          +'</div>';
-      }).join('')
-      + '</div>';
+        return '<div class="step-guide-item"><div class="step-guide-num"><span class="step-guide-num-dot">'+(i+1)+'</span></div><div class="step-guide-title">'+s.title+'</div><div class="step-guide-desc">'+s.desc+'</div></div>';
+      }).join('') + '</div>';
   }
   var qaHtml = '';
   if (currentType==='processors') {
-    qaHtml = '<div class="qa-wrap"><div class="qa-label">Quick add — common processors</div><div class="qa-grid">'
+    qaHtml = '<div class="qa-wrap"><div class="qa-label">Quick add \u2014 common processors</div><div class="qa-grid">'
       + QA_PROC.map(function(v){return '<button class="qa-btn" onclick="quickAdd(\''+escJ(v)+'\',\'Email Service Provider\')">'+escH(v)+'</button>';}).join('')
       + '</div><button class="qa-more-toggle" onclick="toggleQAMore(this)">Show all categories \u2192</button>'
       + '<div class="qa-more">' + QA_PROC_MORE.map(function(cat){
@@ -862,16 +818,14 @@ function renderEmpty() {
       + '</div></div>';
   }
   var affWarn = currentType==='affiliates'
-    ? '<div class="info-banner red"><i class="ph ph-warning-circle icon-16"></i><div><strong>Saga Group (£225k fine, 2021):</strong> affiliates sent marketing using consent that did not name Saga. You cannot rely on consent an affiliate collected unless it names your organisation specifically.</div></div>'
+    ? '<div class="info-banner red"><i class="ph ph-warning-circle icon-16"></i><div><strong>Saga Group (\u00a3225k fine, 2021):</strong> affiliates sent marketing using consent that did not name Saga. You cannot rely on consent an affiliate collected unless it names your organisation specifically.</div></div>'
     : '';
   return affWarn
     + '<div class="guided-empty">'
     + '<div class="guided-empty-title">'+cfg.emptyTitle+'</div>'
     + '<div class="guided-empty-sub">'+cfg.emptySub+'</div>'
     + '<button class="btn btn-primary" onclick="openModal(\''+cfg.modalKey+'\')"><i class="ph ph-plus icon-16"></i>'+cfg.addLabel+'</button>'
-    + stepsHtml
-    + qaHtml
-    + '</div>';
+    + stepsHtml + qaHtml + '</div>';
 }
 
 function renderListControls() {
@@ -891,8 +845,7 @@ function renderListControls() {
   }).join('');
   return '<div class="list-controls">'
     + '<div class="search-wrap"><input class="search-input" placeholder="Search by name\u2026" value="'+escH(currentSearch)+'" oninput="setSearch(this.value)"></div>'
-    + '<div class="filter-chips">'+chips+'</div>'
-    + '</div>';
+    + '<div class="filter-chips">'+chips+'</div></div>';
 }
 
 function setFilter(k){ currentFilter=k; refreshList(); }
@@ -964,9 +917,7 @@ function getRowProgress(rec) {
       try { clauseResults = JSON.parse(f.DPAClauseResults); } catch(e){}
       var failCount = Object.values(clauseResults).filter(function(v){return v.status==='fail';}).length;
       steps.push(failCount > 0 ? 'partial' : 'done');
-    } else {
-      steps.push('todo');
-    }
+    } else { steps.push('todo'); }
     steps.push(isStale(f.LastChecked||f.LastAutoChecked) ? 'partial' : 'done');
   } else if (currentType==='partners') {
     steps.push('done');
@@ -1015,38 +966,26 @@ function renderList(records) {
     if ((currentType!=='competitors') && isStale(f.LastChecked||f.LastAutoChecked)) badges += '<span class="badge badge-stale">Stale</span>';
     var isSel = selId[currentType]===r.id;
     var typeInfo = getTypeInfo(f);
-
     var progressHtml = '';
     if (cfg.steps) {
       var steps = getRowProgress(r);
       var dots = steps.map(function(s){return '<div class="progress-dot '+s+'"></div>';}).join('');
       var doneCount = steps.filter(function(s){return s==='done';}).length;
       var outstanding = firstOutstandingStep(steps, cfg.stepShort);
-      var summary = '<div class="progress-summary">'
-        + '<strong>'+doneCount+' of '+steps.length+' steps</strong>'
+      var summary = '<div class="progress-summary"><strong>'+doneCount+' of '+steps.length+' steps</strong>'
         + (outstanding ? '<span class="progress-outstanding">'+escH(outstanding)+' outstanding</span>' : '<span style="color:var(--g)">All clear</span>')
         + '</div>';
       progressHtml = '<div class="progress-dots">'+dots+'</div>'+summary;
     } else {
       var rc = f.RulingCount||0;
-      progressHtml = '<div class="progress-summary">'
-        + '<strong>'+rc+' regulatory action'+(rc!==1?'s':'')+'</strong>'
-        + (f.LastRulingDate?'<span>latest '+fmtDate(f.LastRulingDate)+'</span>':'')
-        + '</div>';
+      progressHtml = '<div class="progress-summary"><strong>'+rc+' regulatory action'+(rc!==1?'s':'')+'</strong>'
+        + (f.LastRulingDate?'<span>latest '+fmtDate(f.LastRulingDate)+'</span>':'') + '</div>';
     }
-
     return '<div class="rel-item '+statusClass+(isSel?' sel':'')+'" onclick="showDetail(\''+escJ(r.id)+'\')">'
-      + '<div class="rel-item-top">'
-      + '<div class="rel-item-main">'
-      + '<div class="rel-item-name">'+escH(name)+' '+badges+'</div>'
-      + '<div class="rel-item-meta">'+escH(typeInfo)+'</div>'
-      + '</div>'
-      + '<div class="rel-item-actions">'
-      + '<button class="rel-item-delete" onclick="event.stopPropagation();deleteRel(\''+escJ(r.id)+'\',\''+escJ(name)+'\')" title="Remove"><i class="ph ph-trash icon-16"></i></button>'
-      + '</div>'
-      + '</div>'
-      + progressHtml
-      + '</div>';
+      + '<div class="rel-item-top"><div class="rel-item-main"><div class="rel-item-name">'+escH(name)+' '+badges+'</div>'
+      + '<div class="rel-item-meta">'+escH(typeInfo)+'</div></div>'
+      + '<div class="rel-item-actions"><button class="rel-item-delete" onclick="event.stopPropagation();deleteRel(\''+escJ(r.id)+'\',\''+escJ(name)+'\')" title="Remove"><i class="ph ph-trash icon-16"></i></button></div></div>'
+      + progressHtml + '</div>';
   }).join('');
 }
 
@@ -1056,6 +995,7 @@ function getTypeInfo(f) {
   if (currentType==='affiliates') return f.AffiliateType||'Affiliate';
   return (f.Sector||'')+ ' \u00b7 last checked '+(f.LastAutoChecked?fmtDate(f.LastAutoChecked):'\u2014');
 }
+
 
 // ── Detail panel ──────────────────────────────────────────────
 function showDetail(recordId) {
@@ -1070,16 +1010,12 @@ function showDetail(recordId) {
     : currentType==='partners'
     ? [['Overview','overview'],['Art. 26 Review','a26'],['Privacy Policy','privacy'],['Edit','edit']]
     : [['Overview','overview'],['DPA Review','dpa'],['Privacy Policy','privacy'],['Edit','edit']];
-
   panel.innerHTML =
-    '<div class="dp-hdr">'
-    +'<div><div class="dp-name">'+escH(name)+'</div><div class="dp-meta">'+escH(getTypeInfo(f))+'</div></div>'
+    '<div class="dp-hdr"><div><div class="dp-name">'+escH(name)+'</div><div class="dp-meta">'+escH(getTypeInfo(f))+'</div></div>'
     +'<div class="dp-btns"><button class="btn btn-ghost btn-xs" onclick="closeDetail()"><i class="ph ph-x icon-16"></i>Close</button>'
-    +'<button class="btn btn-danger btn-xs" onclick="deleteRel(\''+escJ(recordId)+'\',\''+escJ(name)+'\')">Remove</button></div>'
-    +'</div>'
+    +'<button class="btn btn-danger btn-xs" onclick="deleteRel(\''+escJ(recordId)+'\',\''+escJ(name)+'\')">Remove</button></div></div>'
     +'<div class="dp-tabs" id="dpTabs">'+tabDefs.map(function(t,i){return'<button class="dp-tab'+(i===0?' on':'')+'" data-tab="'+t[1]+'" onclick="switchDetailTab(\''+t[1]+'\',this)">'+t[0]+'</button>';}).join('')+'</div>'
     +'<div class="dp-body" id="dpBody"></div>';
-
   panel.classList.add('show');
   panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
   renderDetailOverview(rec);
@@ -1174,14 +1110,11 @@ function renderDetailOverview(rec) {
     ];
     if (f.Notes) rows.push(['Notes',escH(f.Notes)]);
   }
-
   var staleWarn = t!=='competitors' && isStale(f.LastChecked||f.LastAutoChecked)
     ? '<div class="info-banner"><i class="ph ph-warning icon-16"></i><div>Last scanned 90+ days ago. Re-scan to confirm current status.</div></div>' : '';
-
   var cta = '';
   if (t==='processors' || t==='affiliates') cta = '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'dpa\')">Scan DPA <i class="ph ph-arrow-right icon-16"></i></button>';
   else if (t==='partners') cta = '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'a26\')">Review Art. 26 <i class="ph ph-arrow-right icon-16"></i></button>';
-
   body.innerHTML = staleWarn
     + '<table style="width:100%;border-collapse:collapse;font-size:13px">'
     + rows.map(function(r){return '<tr><td style="padding:9px 0;color:var(--tm);width:170px;vertical-align:top;border-bottom:1px solid var(--b);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em">'+r[0]+'</td><td style="padding:9px 0 9px 12px;border-bottom:1px solid var(--b)">'+r[1]+'</td></tr>';}).join('')
@@ -1189,6 +1122,8 @@ function renderDetailOverview(rec) {
     + (cta ? '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'+cta+'</div>' : '');
 }
 
+
+// ── P2 FIX: renderDPAReview now shows quotes from clauseCache ──
 function renderDPAReview(rec) {
   var body = document.getElementById('dpBody');
   if (!body) return;
@@ -1208,9 +1143,15 @@ function renderDPAReview(rec) {
     var cls = r.status==='pass'?'pass':r.status==='fail'?'fail':r.status==='warn'?'warn':'';
     var pc = r.status==='pass'?'pg':r.status==='fail'?'pr':r.status==='warn'?'py':'pmu';
     var pl = r.status==='pass'?'Present':r.status==='fail'?'Missing':r.status==='warn'?'Unclear':'Not checked';
+    // P2: Quote display — show extracted quote when available
+    var quoteHtml = '';
+    if (r.note) {
+      quoteHtml = '<div class="clause-quote"><i class="ph ph-quotes icon-16"></i>'+escH(r.note.length > 300 ? r.note.slice(0,300)+'\u2026' : r.note)+'</div>';
+    }
     return '<div class="clause-item '+cls+'">'
       +'<div class="clause-hdr"><span class="clause-num">'+c.id+'</span><span class="clause-title">'+escH(c.title)+'</span><span class="pill '+pc+'">'+pl+'</span></div>'
       +'<div class="clause-req">'+escH(c.req)+'</div>'
+      + quoteHtml
       +'<div class="clause-btns">'
       +'<button class="cb cb-pass" onclick="setClause(\''+rec.id+'\',\''+c.id+'\',\'pass\')">Present</button>'
       +'<button class="cb cb-warn" onclick="setClause(\''+rec.id+'\',\''+c.id+'\',\'warn\')">Unclear</button>'
@@ -1301,16 +1242,48 @@ function runDPAScan(recordId, mode) {
   }
 }
 
+// ── P1 FIX: handleScanResult maps scan IDs → a28 IDs ──────────
+// ── P3 FIX: post-scan guidance panel ───────────────────────────
 function handleScanResult(d, rec, res) {
   if (res) res.innerHTML = '';
   if (d.error) { showToast(d.error, 'er'); return; }
+
   clauseCache[rec.id] = {};
   if (d.results && Array.isArray(d.results)) {
+    // P1: Map scan result IDs (e.g. 'subject_matter_duration') to
+    // A28 clause IDs (e.g. 'a28-9') using SCAN_ID_TO_A28.
+    // Multiple scan checks can map to one a28 clause — worst status wins.
+    var STATUS_RANK = { fail: 0, warn: 1, pass: 2 };
+    var a28Grouped = {};
+
     d.results.forEach(function(r) {
       var uiStatus = r.status === 'found' ? 'pass' : r.status === 'partial' ? 'warn' : 'fail';
-      clauseCache[rec.id][r.id] = { status: uiStatus, note: r.quote || r.missingDetail || '' };
+      var note = r.quote || r.missingDetail || '';
+      var targets = SCAN_ID_TO_A28[r.id];
+      if (targets) {
+        targets.forEach(function(a28Id) {
+          if (!a28Grouped[a28Id]) a28Grouped[a28Id] = [];
+          a28Grouped[a28Id].push({ status: uiStatus, note: note, label: r.label });
+        });
+      }
     });
-  } else if (d.a28Clauses) { clauseCache[rec.id] = d.a28Clauses; }
+
+    // Merge grouped entries: worst status, concatenated notes
+    Object.keys(a28Grouped).forEach(function(a28Id) {
+      var entries = a28Grouped[a28Id];
+      var worst = 'pass';
+      var notes = [];
+      entries.forEach(function(e) {
+        if ((STATUS_RANK[e.status] || 0) < (STATUS_RANK[worst] || 0)) worst = e.status;
+        if (e.note) notes.push(e.note);
+      });
+      clauseCache[rec.id][a28Id] = { status: worst, note: notes.join(' \u2014 ') };
+    });
+  } else if (d.a28Clauses) {
+    clauseCache[rec.id] = d.a28Clauses;
+  }
+
+  // Persist mapped results to Airtable
   var action = currentType==='processors'?'register':currentType==='affiliates'?'affiliate-register':'partner-register';
   var patchKey = currentType==='processors'?'vendor':currentType==='affiliates'?'affiliate':'partner';
   var patchData = { userId: userId, recordId: rec.id };
@@ -1319,15 +1292,70 @@ function handleScanResult(d, rec, res) {
   else if (currentType==='affiliates') patchData[patchKey].AffiliateName = rec.fields.AffiliateName;
   else patchData[patchKey].PartnerName = rec.fields.PartnerName;
   fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patchData)}).catch(function(){});
+
+  // P3: Build post-scan guidance panel
   if (res && d.counts) {
     var scoreColor = (d.score||0) >= 80 ? 'var(--g)' : (d.score||0) >= 50 ? 'var(--y)' : 'var(--r)';
     var bannerCls = (d.score||0) >= 80 ? 'green' : (d.score||0) >= 50 ? '' : 'red';
-    res.innerHTML = '<div class="info-banner '+bannerCls+'"><i class="ph ph-'+((d.score||0) >= 80 ? 'check-circle' : 'warning-circle')+' icon-16"></i><div><strong>DPA scan: '+(d.counts.found||0)+'/'+(d.counts.total||12)+' clauses found</strong>'+(d.counts.missing > 0 ? ' \u00b7 '+d.counts.missing+' missing' : '')+'. Score: <strong style="color:'+scoreColor+'">'+(d.score||0)+'%</strong></div></div>';
+    var bannerIcon = (d.score||0) >= 80 ? 'check-circle' : 'warning-circle';
+    var bannerHtml = '<div class="info-banner '+bannerCls+'">'
+      + '<i class="ph ph-'+bannerIcon+' icon-16"></i><div>'
+      + '<strong>DPA scan: '+(d.counts.found||0)+'/'+(d.counts.total||12)+' clauses found</strong>'
+      + (d.counts.missing > 0 ? ' \u00b7 '+d.counts.missing+' missing' : '')
+      + '. Score: <strong style="color:'+scoreColor+'">'+(d.score||0)+'%</strong>'
+      + '</div></div>';
+
+    // P3: Post-scan guidance — show missing/partial clauses with actions
+    var guidanceHtml = '';
+    if (d.results && d.results.length) {
+      var missing = d.results.filter(function(r){ return r.status === 'missing'; });
+      var partial = d.results.filter(function(r){ return r.status === 'partial'; });
+      var vendorDisplayName = escH(getName(rec.fields));
+
+      if (missing.length || partial.length) {
+        guidanceHtml = '<div class="scan-guidance">';
+        guidanceHtml += '<div class="scan-guidance-hdr">What to do next</div>';
+
+        if (missing.length) {
+          guidanceHtml += '<div class="scan-guidance-group">';
+          guidanceHtml += '<div class="scan-guidance-group-title missing"><i class="ph ph-x-circle icon-16" style="vertical-align:-2px;margin-right:4px"></i>'+missing.length+' clause'+(missing.length!==1?'s':'')+' missing</div>';
+          missing.forEach(function(r) {
+            guidanceHtml += '<div class="scan-guidance-row"><strong>'+escH(r.label)+'</strong> ('+escH(r.articleRef)+')<span class="detail">'+escH(r.missingDetail||'')+'</span></div>';
+          });
+          guidanceHtml += '</div>';
+        }
+
+        if (partial.length) {
+          guidanceHtml += '<div class="scan-guidance-group">';
+          guidanceHtml += '<div class="scan-guidance-group-title partial"><i class="ph ph-warning icon-16" style="vertical-align:-2px;margin-right:4px"></i>'+partial.length+' clause'+(partial.length!==1?'s':'')+' unclear</div>';
+          partial.forEach(function(r) {
+            guidanceHtml += '<div class="scan-guidance-row"><strong>'+escH(r.label)+'</strong> \u2014 may be covered but wording is ambiguous. Self-certify below if your DPA covers this differently.</div>';
+          });
+          guidanceHtml += '</div>';
+        }
+
+        var fixCount = missing.length + partial.length;
+        guidanceHtml += '<div class="scan-guidance-actions">'
+          + '<strong>Suggested actions:</strong><br>'
+          + '\u2022 Contact '+vendorDisplayName+' to request an updated DPA that addresses the missing clauses.<br>'
+          + '\u2022 Self-certify clauses below if your DPA covers them in different wording.<br>'
+          + '\u2022 '+fixCount+' compliance fix'+(fixCount!==1?'es have':' has')+' been added to your dashboard.'
+          + '</div>';
+
+        guidanceHtml += '</div>';
+      } else {
+        guidanceHtml = '<div class="info-banner green" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><div><strong>All Article 28 clauses found.</strong> This DPA appears to cover all required UK GDPR provisions. Re-scan quarterly to stay current.</div></div>';
+      }
+    }
+
+    res.innerHTML = bannerHtml + guidanceHtml;
   }
+
   renderDPAReview(rec);
   showToast('DPA scan complete','ok');
   loadAll();
 }
+
 
 function renderA26Review(rec) {
   var body = document.getElementById('dpBody');
@@ -1340,7 +1368,6 @@ function renderA26Review(rec) {
   var scoreHtml = Object.keys(stored).length
     ? '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Article 26 coverage</span><strong>'+passed+'/'+A26.length+' ('+pct+'%)</strong></div><div class="dpa-score-bar"><div class="dpa-score-fill" style="width:'+pct+'%;background:'+(pct>=80?'var(--g)':pct>=50?'var(--y)':'var(--r)')+'"></div></div></div>'
     : '';
-
   var clauses = A26.map(function(c){
     var r = stored[c.id]||{status:'unknown'};
     var cls = r.status==='pass'?'pass':r.status==='fail'?'fail':r.status==='warn'?'warn':'';
@@ -1355,7 +1382,6 @@ function renderA26Review(rec) {
       +'<button class="cb cb-fail" onclick="setA26Clause(\''+rec.id+'\',\''+c.id+'\',\'fail\')">Missing</button>'
       +'</div></div>';
   }).join('');
-
   body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Check this partner relationship against the 8 Article 26 UK GDPR requirements for joint controllers. Self-certify each clause by reviewing your joint controller arrangement.</p>'
     + scoreHtml + clauses;
 }
@@ -1381,7 +1407,6 @@ function renderPrivacyReview(rec) {
   var scoreHtml = Object.keys(stored).length
     ? '<div style="margin-bottom:14px;padding:12px 14px;background:var(--bg);border-radius:var(--rad-sm);border:1px solid var(--b)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--tm);margin-bottom:4px">UK GDPR transparency check</div><div style="font-size:20px;font-weight:800;font-family:DM Mono,monospace">'+passed+'/'+PRIVACY.length+'</div><div style="font-size:11px;color:var(--mu)">requirements met'+(partial?' \u00b7 '+partial+' partial':'')+'</div></div>'
     : '';
-
   var rows = PRIVACY.map(function(c){
     var r = stored[c.key]||'unknown';
     var pc = r==='yes'?'pg':r==='no'?'pr':r==='partial'?'py':'pmu';
@@ -1395,7 +1420,6 @@ function renderPrivacyReview(rec) {
       +'<button class="cb cb-fail" onclick="setPrivacy(\''+rec.id+'\',\''+c.key+'\',\'no\')">No</button>'
       +'</div></div>';
   }).join('');
-
   body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Review this party\'s public privacy policy against UK GDPR Articles 13/14 transparency requirements.</p>'
     + (url?'<div style="margin-bottom:14px"><a href="'+escH(url)+'" target="_blank" rel="noopener" class="btn btn-ghost btn-xs"><i class="ph ph-arrow-square-out icon-16"></i>Open privacy policy</a></div>':'<div style="font-size:12px;color:var(--mu);margin-bottom:14px">No URL recorded. Add one in the Edit tab.</div>')
     + scoreHtml + rows;
@@ -1441,187 +1465,255 @@ function renderCompPromos(rec) {
     }).join('');
 }
 
+
 function renderDetailEdit(rec) {
   var body = document.getElementById('dpBody');
   if (!body) return;
-  var f = rec.fields; var html = '';
+  var f = rec.fields;
   var t = currentType;
+  var fields = '';
   if (t==='processors') {
-    html = '<div class="form-grid"><div class="fg"><label>DPA Status</label><select id="ef-dpa">'+['Not yet','Requested','In place','Confirmed'].map(function(s){return'<option'+(( f.DPAStatus||f.AgreementStatus)===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div><div class="fg"><label>Agreement date</label><input type="date" id="ef-date" value="'+escH(f.AgreementDate||'')+'"></div></div><div class="fg"><label>Privacy policy / DPA URL</label><input type="url" id="ef-url" value="'+escH(f.PrivacyPolicyUrl||'')+'"></div><div class="form-grid"><div class="fg"><label>Transfer destination</label><select id="ef-transfer">'+['UK only','EU','USA - DPF','USA - SCCs','USA - BCRs','Unknown'].map(function(s){return'<option'+(f.TransferDestination===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div><div class="fg"><label>Use case</label><input type="text" id="ef-usecase" value="'+escH(f.VendorUseCase||'')+'"></div></div>';
+    fields = '<div class="form-grid">'
+      +'<div class="fg"><label>Name</label><input type="text" id="ed-name" value="'+escH(f.VendorName||'')+'"></div>'
+      +'<div class="fg"><label>Type/Category</label><input type="text" id="ed-type" value="'+escH(f.VendorType||f.Category||'')+'"></div>'
+      +'<div class="fg"><label>DPA Status</label><select id="ed-dpa"><option value="Not yet"'+(f.DPAStatus==='Not yet'||(!f.DPAStatus&&!f.AgreementStatus)?' selected':'')+'>Not yet</option><option value="Requested"'+((f.DPAStatus||f.AgreementStatus)==='Requested'?' selected':'')+'>Requested</option><option value="Confirmed"'+(isDPAConfirmed(f.DPAStatus||f.AgreementStatus)?' selected':'')+'>Confirmed</option></select></div>'
+      +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="ed-pp" value="'+escH(f.PrivacyPolicyUrl||'')+'"></div>'
+      +'</div>'
+      +'<div class="fg"><label>Notes</label><textarea id="ed-notes">'+escH(f.Notes||'')+'</textarea></div>';
   } else if (t==='partners') {
-    html = '<div class="form-grid"><div class="fg"><label>Article 26 Status</label><select id="ef-a26">'+['Not yet','Requested','In place','Confirmed and signed'].map(function(s){return'<option'+(f.Article26Status===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div><div class="fg"><label>Agreement date</label><input type="date" id="ef-date" value="'+escH(f.Article26Date||'')+'"></div></div><div class="fg"><label>Privacy policy URL</label><input type="url" id="ef-url" value="'+escH(f.PrivacyPolicyUrl||'')+'"></div><div class="form-grid"><div class="fg"><label>Consent chain owner</label><select id="ef-consent">'+['Unknown','Us','Partner','Joint'].map(function(s){return'<option'+(f.ConsentChainOwner===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div><div class="fg"><label>Consent chain verified</label><select id="ef-cchain"><option value="false"'+(!f.ConsentChainVerified?' selected':'')+'>Not verified</option><option value="true"'+(f.ConsentChainVerified?' selected':'')+'>Verified</option></select></div></div><div class="fg"><label>Data shared</label><input type="text" id="ef-data" value="'+escH(f.DataSharedDescription||'')+'"></div>';
-  } else {
-    html = '<div class="form-grid"><div class="fg"><label>DPA Status</label><select id="ef-dpa">'+['Not yet','Requested','In place','Confirmed and signed'].map(function(s){return'<option'+(f.DPAStatus===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div><div class="fg"><label>Agreement date</label><input type="date" id="ef-date" value="'+escH(f.AgreementDate||'')+'"></div></div><div class="form-grid"><div class="fg"><label>Consent chain verified</label><select id="ef-cchain"><option value="false"'+(!f.ConsentChainVerified?' selected':'')+'>Not verified</option><option value="true"'+(f.ConsentChainVerified?' selected':'')+'>Verified</option></select></div><div class="fg"><label>Sender identity</label><select id="ef-sender">'+['Unverified','Partial','Verified','N/A'].map(function(s){return'<option'+(f.SenderIdentityCompliant===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div></div><div class="fg"><label>From name used</label><input type="text" id="ef-fromname" value="'+escH(f.FromNameUsed||'')+'"></div>';
+    fields = '<div class="form-grid">'
+      +'<div class="fg"><label>Name</label><input type="text" id="ed-name" value="'+escH(f.PartnerName||'')+'"></div>'
+      +'<div class="fg"><label>Partner Type</label><input type="text" id="ed-type" value="'+escH(f.PartnerType||'')+'"></div>'
+      +'<div class="fg"><label>Article 26 Status</label><select id="ed-a26"><option value="Not yet"'+(f.Article26Status==='Not yet'||!f.Article26Status?' selected':'')+'>Not yet</option><option value="Requested"'+(f.Article26Status==='Requested'?' selected':'')+'>Requested</option><option value="Confirmed"'+(isDPAConfirmed(f.Article26Status)?' selected':'')+'>Confirmed</option></select></div>'
+      +'<div class="fg"><label>Consent Chain Verified</label><select id="ed-cc"><option value="0"'+(!f.ConsentChainVerified?' selected':'')+'>No</option><option value="1"'+(f.ConsentChainVerified?' selected':'')+'>Yes</option></select></div>'
+      +'<div class="fg"><label>Ad Compliance Reviewed</label><select id="ed-adcomp"><option value="0"'+(!f.AdComplianceReviewed?' selected':'')+'>No</option><option value="1"'+(f.AdComplianceReviewed?' selected':'')+'>Yes</option></select></div>'
+      +'<div class="fg"><label>Pricing Compliance Reviewed</label><select id="ed-pricecomp"><option value="0"'+(!f.PricingComplianceReviewed?' selected':'')+'>No</option><option value="1"'+(f.PricingComplianceReviewed?' selected':'')+'>Yes</option></select></div>'
+      +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="ed-pp" value="'+escH(f.PrivacyPolicyUrl||'')+'"></div>'
+      +'</div>'
+      +'<div class="fg"><label>Notes</label><textarea id="ed-notes">'+escH(f.Notes||'')+'</textarea></div>';
+  } else if (t==='affiliates') {
+    fields = '<div class="form-grid">'
+      +'<div class="fg"><label>Name</label><input type="text" id="ed-name" value="'+escH(f.AffiliateName||'')+'"></div>'
+      +'<div class="fg"><label>Affiliate Type</label><input type="text" id="ed-type" value="'+escH(f.AffiliateType||'')+'"></div>'
+      +'<div class="fg"><label>DPA Status</label><select id="ed-dpa"><option value="Not yet"'+(f.DPAStatus==='Not yet'||!f.DPAStatus?' selected':'')+'>Not yet</option><option value="Requested"'+(f.DPAStatus==='Requested'?' selected':'')+'>Requested</option><option value="Confirmed"'+(isDPAConfirmed(f.DPAStatus)?' selected':'')+'>Confirmed</option></select></div>'
+      +'<div class="fg"><label>Consent Chain Verified</label><select id="ed-cc"><option value="0"'+(!f.ConsentChainVerified?' selected':'')+'>No</option><option value="1"'+(f.ConsentChainVerified?' selected':'')+'>Yes</option></select></div>'
+      +'<div class="fg"><label>Sender Identity</label><select id="ed-sender"><option value="Unverified"'+(f.SenderIdentityCompliant==='Unverified'||!f.SenderIdentityCompliant?' selected':'')+'>Unverified</option><option value="Partial"'+(f.SenderIdentityCompliant==='Partial'?' selected':'')+'>Partial</option><option value="Verified"'+(f.SenderIdentityCompliant==='Verified'?' selected':'')+'>Verified</option></select></div>'
+      +'<div class="fg"><label>Marketing Materials Reviewed</label><select id="ed-mktmat"><option value="0"'+(!f.MarketingMaterialsReviewed?' selected':'')+'>No</option><option value="1"'+(f.MarketingMaterialsReviewed?' selected':'')+'>Yes</option></select></div>'
+      +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="ed-pp" value="'+escH(f.PrivacyPolicyUrl||'')+'"></div>'
+      +'</div>'
+      +'<div class="fg"><label>Notes</label><textarea id="ed-notes">'+escH(f.Notes||'')+'</textarea></div>';
   }
-  html += '<div class="fg"><label>Notes</label><textarea id="ef-notes">'+escH(f.Notes||'')+'</textarea></div>';
-  body.innerHTML = html + '<div class="form-actions"><button class="btn btn-primary btn-sm" onclick="saveEdit(\''+escJ(rec.id)+'\',\''+escJ(getName(f))+'\')">Save changes</button><button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'overview\')">Cancel</button></div>';
+  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Edit the record fields below. Changes are saved immediately.</p>'
+    + fields
+    + '<div class="form-actions"><button class="btn btn-primary btn-sm" onclick="saveEdit(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save changes</button></div>';
 }
 
-function saveEdit(recordId, entityName) {
-  var d = { Notes: (document.getElementById('ef-notes')||{}).value||'' };
-  var action, pKey; var t = currentType;
+function saveEdit(recordId) {
+  var rec = S[currentType].find(function(r){return r.id===recordId;});
+  if (!rec) return;
+  var t = currentType;
+  var action, pKey, patch = {};
   if (t==='processors') {
-    action='register'; pKey='vendor';
-    d.VendorName = entityName;
-    d.DPAStatus = (document.getElementById('ef-dpa')||{}).value;
-    d.AgreementDate = (document.getElementById('ef-date')||{}).value;
-    d.PrivacyPolicyUrl = (document.getElementById('ef-url')||{}).value;
-    d.TransferDestination = (document.getElementById('ef-transfer')||{}).value;
-    d.VendorUseCase = (document.getElementById('ef-usecase')||{}).value;
+    action = 'register'; pKey = 'vendor';
+    patch = {
+      VendorName: (document.getElementById('ed-name')||{}).value||'',
+      VendorType: (document.getElementById('ed-type')||{}).value||'',
+      DPAStatus:  (document.getElementById('ed-dpa')||{}).value||'Not yet',
+      PrivacyPolicyUrl: (document.getElementById('ed-pp')||{}).value||'',
+      Notes: (document.getElementById('ed-notes')||{}).value||'',
+    };
   } else if (t==='partners') {
-    action='partner-register'; pKey='partner';
-    d.PartnerName = entityName;
-    d.Article26Status = (document.getElementById('ef-a26')||{}).value;
-    d.Article26Date = (document.getElementById('ef-date')||{}).value;
-    d.PrivacyPolicyUrl = (document.getElementById('ef-url')||{}).value;
-    d.ConsentChainOwner = (document.getElementById('ef-consent')||{}).value;
-    d.ConsentChainVerified = (document.getElementById('ef-cchain')||{}).value === 'true';
-    d.DataSharedDescription = (document.getElementById('ef-data')||{}).value;
-    d.RelationshipActivity = (document.getElementById('ef-activity')||{}).value;
-    d.AdComplianceReviewed = (document.getElementById('ef-adcomp')||{}).value === 'true';
-    d.PricingComplianceReviewed = (document.getElementById('ef-pricing')||{}).value === 'true';
+    action = 'partner-register'; pKey = 'partner';
+    patch = {
+      PartnerName: (document.getElementById('ed-name')||{}).value||'',
+      PartnerType: (document.getElementById('ed-type')||{}).value||'',
+      Article26Status: (document.getElementById('ed-a26')||{}).value||'Not yet',
+      ConsentChainVerified: (document.getElementById('ed-cc')||{}).value==='1',
+      AdComplianceReviewed: (document.getElementById('ed-adcomp')||{}).value==='1',
+      PricingComplianceReviewed: (document.getElementById('ed-pricecomp')||{}).value==='1',
+      PrivacyPolicyUrl: (document.getElementById('ed-pp')||{}).value||'',
+      Notes: (document.getElementById('ed-notes')||{}).value||'',
+    };
   } else {
-    action='affiliate-register'; pKey='affiliate';
-    d.AffiliateName = entityName;
-    d.DPAStatus = (document.getElementById('ef-dpa')||{}).value;
-    d.AgreementDate = (document.getElementById('ef-date')||{}).value;
-    d.ConsentChainVerified = (document.getElementById('ef-cchain')||{}).value === 'true';
-    d.SenderIdentityCompliant = (document.getElementById('ef-sender')||{}).value;
-    d.FromNameUsed = (document.getElementById('ef-fromname')||{}).value;
-    d.MarketingMaterialsReviewed = (document.getElementById('ef-materials')||{}).value === 'true';
-    d.AdDisclosureCompliant = (document.getElementById('ef-disclosure')||{}).value;
-    d.LandingPageReviewed = (document.getElementById('ef-landing')||{}).value === 'true';
+    action = 'affiliate-register'; pKey = 'affiliate';
+    patch = {
+      AffiliateName: (document.getElementById('ed-name')||{}).value||'',
+      AffiliateType: (document.getElementById('ed-type')||{}).value||'',
+      DPAStatus: (document.getElementById('ed-dpa')||{}).value||'Not yet',
+      ConsentChainVerified: (document.getElementById('ed-cc')||{}).value==='1',
+      SenderIdentityCompliant: (document.getElementById('ed-sender')||{}).value||'Unverified',
+      MarketingMaterialsReviewed: (document.getElementById('ed-mktmat')||{}).value==='1',
+      PrivacyPolicyUrl: (document.getElementById('ed-pp')||{}).value||'',
+      Notes: (document.getElementById('ed-notes')||{}).value||'',
+    };
   }
-  var body = { userId: userId, recordId: recordId };
-  body[pKey] = d;
   showLoading('Saving\u2026');
-  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
+  var bodyData = { userId:userId, recordId:recordId };
+  bodyData[pKey] = patch;
+  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
     .then(function(r){return r.json();})
-    .then(function(){ hideLoading(); loadAll(); showToast('Saved','ok'); closeDetail(); })
-    .catch(function(){ hideLoading(); showToast('Save failed','er'); });
+    .then(function(){
+      hideLoading();
+      showToast('Saved','ok');
+      loadAll().then(function(){
+        var updated = S[currentType].find(function(r){return r.id===recordId;});
+        if (updated) showDetail(recordId);
+      });
+    })
+    .catch(function(e){ hideLoading(); showToast('Save failed: '+e.message,'er'); });
 }
 
 function deleteRel(recordId, name) {
-  if (!confirm('Remove '+name+'? This cannot be undone.')) return;
-  var actionMap = { processors:'register', partners:'partner-register', affiliates:'affiliate-register', competitors:'competitor-watch' };
-  showLoading('Removing '+name+'\u2026');
-  fetch(APP_URL+'/api/data?action='+actionMap[currentType]+'&recordId='+encodeURIComponent(recordId), {method:'DELETE'})
-    .then(function(r){ if (!r.ok) return r.json().catch(function(){return{};}).then(function(b){throw new Error(b.error||'Server '+r.status);}); return r.json(); })
-    .then(function(){ hideLoading(); if (selId[currentType]===recordId) closeDetail(); loadAll(); showToast(name+' removed','ok'); })
+  if (!confirm('Remove '+name+' from your register?')) return;
+  showLoading('Removing\u2026');
+  var action = currentType==='processors'?'register':currentType==='partners'?'partner-register':currentType==='affiliates'?'affiliate-register':'competitor-register';
+  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, recordId:recordId, delete:true})})
+    .then(function(r){return r.json();})
+    .then(function(){
+      hideLoading();
+      showToast(name+' removed','ok');
+      closeDetail();
+      loadAll();
+    })
     .catch(function(e){ hideLoading(); showToast('Could not remove: '+e.message,'er'); });
 }
 
-function toggleMon(){
-  var s = document.getElementById('monSection');
-  var wasClosed = !s.classList.contains('open');
-  s.classList.toggle('open');
-  if (wasClosed) { loadWatchFeed(); loadIntel(); }
+
+// ── Monitoring ────────────────────────────────────────────────
+function toggleMon(event) {
+  var sec = document.getElementById('monSection');
+  var wasOpen = sec.classList.contains('open');
+  sec.classList.toggle('open');
+  if (!wasOpen) { loadWatchFeed(); loadIntel(); }
 }
 
 function renderMonMeta() {
-  var alerts = 0;
-  (S.watch||[]).forEach(function(v){ alerts += (v.alerts||[]).length; });
-  var meta = document.getElementById('monMeta');
-  var intel = S.score && S.score.intelligence;
-  var intelBit = '';
-  if (intel && intel.daysSinceReview !== null) intelBit = ' \u00b7 intel feed reviewed '+intel.daysSinceReview+'d ago';
-  else if (intel) intelBit = ' \u00b7 intel feed not reviewed yet';
-  if (meta) meta.innerHTML = alerts+' alert'+(alerts!==1?'s':'')+intelBit;
+  var el = document.getElementById('monMeta');
+  if (!el) return;
+  var w = S.watch||[];
+  var alerts = w.filter(function(r){ return r.alertLevel==='amber'||r.alertLevel==='red'; });
+  el.textContent = w.length+' relationships monitored \u00b7 '+alerts.length+' need attention';
 }
 
 function loadWatchFeed() {
-  fetch(APP_URL+'/api/data?action=relationship-watch&userId='+userId)
-    .then(function(r){return r.json();})
-    .then(function(d){ S.watch = d.watch||[]; S.score = d.thirdPartyScore; renderWatchFeed(); renderScoreStrip(); renderMonMeta(); })
-    .catch(function(){ document.getElementById('watchFeed').innerHTML = '<div style="font-size:12.5px;color:var(--mu)">Could not load monitoring feed.</div>'; });
+  renderWatchFeed(S.watch||[]);
 }
 
-function renderWatchFeed() {
+function renderWatchFeed(items) {
   var el = document.getElementById('watchFeed');
-  if (!S.watch.length) { el.innerHTML = '<div style="font-size:12.5px;color:var(--mu);padding:8px 0">No relationships registered yet. Add processors, partners, or affiliates to start monitoring.</div>'; return; }
-  var typeCls = { processor:'wi-proc', partner:'wi-part', affiliate:'wi-aff', competitor:'wi-comp' };
-  var typeLbl = { processor:'Processor', partner:'Partner', affiliate:'Affiliate', competitor:'Competitor' };
-  el.innerHTML = S.watch.map(function(v){
-    var hasAlerts = v.alerts && v.alerts.length>0;
-    var iconCls = hasAlerts ? 'wi-icon alert' : 'wi-icon clear';
-    var iconName = hasAlerts ? 'warning-circle' : 'check-circle';
-    var alertsHtml = hasAlerts
-      ? v.alerts.map(function(a){return '<div class="wi-alert"><div class="wi-dot '+a.severity+'"></div><div>'+escH(a.text)+'</div></div>';}).join('')
-      : '<div class="wi-clear">No alerts \u2014 all clear.</div>';
-    return '<div class="watch-item '+(hasAlerts?'alert':'clear')+'">'
-      + '<div class="'+iconCls+'"><i class="ph ph-'+iconName+' icon-18"></i></div>'
-      + '<div class="wi-body"><div class="wi-name">'+escH(v.name)+' <span class="wi-type '+(typeCls[v.type]||'wi-proc')+'">'+typeLbl[v.type]+'</span></div>'
-      + '<div class="wi-alerts">'+alertsHtml+'</div></div>'
-      + '</div>';
+  if (!el) return;
+  if (!items.length) { el.innerHTML = '<div style="font-size:12.5px;color:var(--mu);padding:10px 0">No relationships to monitor yet. Add platforms, partners, or affiliates to begin.</div>'; return; }
+  el.innerHTML = items.map(function(w){
+    var isClear = w.alertLevel==='clear';
+    var typeCls = w.type==='vendor'?'wi-proc':w.type==='partner'?'wi-part':w.type==='affiliate'?'wi-aff':'wi-comp';
+    var typeLabel = w.type==='vendor'?'Platform':w.type==='partner'?'Partner':w.type==='affiliate'?'Affiliate':'Competitor';
+    var alertsHtml = '';
+    if (isClear) {
+      alertsHtml = '<div class="wi-clear"><i class="ph ph-check-circle icon-16" style="vertical-align:-2px;margin-right:4px"></i>All checks passed</div>';
+    } else {
+      alertsHtml = '<div class="wi-alerts">';
+      (w.alerts||[]).forEach(function(a){
+        var dotCls = a.severity==='red'?'red':'amber';
+        alertsHtml += '<div class="wi-alert"><span class="wi-dot '+dotCls+'"></span>'+escH(a.message)+'</div>';
+      });
+      alertsHtml += '</div>';
+    }
+    return '<div class="watch-item'+(isClear?' clear':w.alertLevel==='amber'||w.alertLevel==='red'?' alert':'')+'">'
+      +'<div class="wi-icon '+(isClear?'clear':'alert')+'"><i class="ph ph-'+(isClear?'check-circle':'warning-circle')+' icon-18"></i></div>'
+      +'<div class="wi-body"><div class="wi-name">'+escH(w.name)+' <span class="wi-type '+typeCls+'">'+typeLabel+'</span></div>'
+      + alertsHtml + '</div></div>';
   }).join('');
 }
 
 function loadIntel() {
-  fetch(APP_URL+'/api/data?action=sector-intelligence&userId='+userId)
+  fetch(APP_URL+'/api/data?action=intel&userId='+userId)
     .then(function(r){return r.json();})
-    .then(function(d){ S.intel = d.feed||[]; renderIntel(d.sector); })
-    .catch(function(){ document.getElementById('intelFeed').innerHTML = '<div style="font-size:12.5px;color:var(--mu)">Could not load intelligence feed.</div>'; });
+    .then(function(d){ S.intel = d.intel||[]; renderIntel(S.intel); renderIntelReviewNote(); })
+    .catch(function(){ document.getElementById('intelFeed').innerHTML='<div style="font-size:12.5px;color:var(--mu)">Could not load intelligence feed.</div>'; });
 }
 
-function renderIntel(sector) {
+function renderIntelReviewNote() {
+  var el = document.getElementById('intelReviewNote');
+  if (!el) return;
+  var items = S.intel||[];
+  if (!items.length) { el.style.display='none'; return; }
+  var count = items.filter(function(i){return i.yourAction;}).length;
+  if (count) {
+    el.style.display = 'flex';
+    el.innerHTML = '<i class="ph ph-lightbulb icon-18"></i><div><strong>'+count+' intelligence item'+(count!==1?'s':'')+' may affect your relationships.</strong> Review the sector intelligence below for suggested actions.</div>';
+  } else { el.style.display='none'; }
+}
+
+function renderIntel(items) {
   var el = document.getElementById('intelFeed');
-  var noteEl = document.getElementById('intelReviewNote');
-  var intel = S.score && S.score.intelligence;
-  if (noteEl) {
-    if (intel && intel.reviewedThisWeek) {
-      noteEl.innerHTML = '<i class="ph ph-check-circle icon-16"></i><div><strong>Intel feed reviewed this week</strong> \u2014 you\'re current on sector enforcement.</div>';
-      noteEl.style.background = 'var(--gb)'; noteEl.style.borderColor = 'var(--gc)'; noteEl.style.color = '#166534';
-    } else if (intel && intel.daysSinceReview !== null) {
-      noteEl.innerHTML = '<i class="ph ph-calendar icon-16"></i><div><strong>Last reviewed '+intel.daysSinceReview+' days ago.</strong> Scroll through this week\'s decisions below to stay current.</div>';
-    } else {
-      noteEl.innerHTML = '<i class="ph ph-calendar-plus icon-16"></i><div><strong>You haven\'t reviewed the intel feed yet.</strong> The feed updates every Monday with ICO/ASA/CMA enforcement decisions in your sector'+(sector?' ('+escH(sector)+')':'')+'.</div>';
-    }
-  }
-  if (!S.intel.length) { el.innerHTML = '<div style="font-size:12.5px;color:var(--mu);padding:8px 0">No items yet this week. The feed updates every Monday from ICO, ASA and CMA publications.</div>'; return; }
-  var watchedNames = S.competitors.map(function(r){return (r.fields.CompetitorName||'').toLowerCase();});
-  el.innerHTML = S.intel.map(function(r){
-    var f = r.fields||r;
-    var reg = f.Regulator||'';
-    var claims = []; try { claims = JSON.parse(f.ClaimTypes||'[]'); } catch(e){}
-    var isWatched = watchedNames.some(function(n){return n && (f.CompanyName||'').toLowerCase().indexOf(n)>=0;});
-    var claimsHtml = claims.length ? '<div class="intel-claims">'+claims.map(function(c){return '<span class="claim-chip">'+escH(c.replace(/_/g,' '))+'</span>';}).join('')+'</div>' : '';
-    return '<div class="intel-item '+reg+'">'
-      + '<div class="intel-hdr"><span class="intel-reg '+reg+'">'+escH(reg)+'</span><span class="intel-co">'+escH(f.CompanyName||'')+'</span><span class="intel-date">'+fmtDate(f.PublishedDate||'')+'</span>'+(f.FineAmount?'<span class="intel-fine">\u00a3'+fmtNum(f.FineAmount)+'</span>':'')+'</div>'
-      + '<div class="intel-summary">'+escH((f.RulingSummary||'').slice(0,300))+'</div>'
-      + (f.ActionableForUsers?'<div class="intel-action"><strong>For your campaigns:</strong> '+escH(f.ActionableForUsers)+'</div>':'')
-      + claimsHtml
-      + (isWatched?'<div class="comp-flag"><i class="ph ph-warning-circle icon-16"></i>Competitor you watch \u2014 check if any claim types appear in your own campaigns</div>':'')
-    + '</div>';
+  if (!el) return;
+  if (!items.length) { el.innerHTML = '<div style="font-size:12.5px;color:var(--mu);padding:10px 0">No recent enforcement intelligence. We check ICO, ASA, and CMA feeds weekly.</div>'; return; }
+  el.innerHTML = items.map(function(i){
+    var reg = i.regulator||'';
+    var claimsHtml = (i.claimTypes||[]).length
+      ? '<div class="intel-claims">'+i.claimTypes.map(function(c){return '<span class="claim-chip">'+escH(c.replace(/_/g,' '))+'</span>';}).join('')+'</div>' : '';
+    var actionHtml = i.yourAction
+      ? '<div class="intel-action"><strong>Suggested action:</strong> '+escH(i.yourAction)+'</div>' : '';
+    var compFlag = i.companyMatchesRelationship
+      ? '<div class="comp-flag"><i class="ph ph-warning icon-16"></i>This company is in your register</div>' : '';
+    return '<div class="intel-item '+escH(reg)+'">'
+      +'<div class="intel-hdr"><span class="intel-reg '+escH(reg)+'">'+escH(reg)+'</span><span class="intel-co">'+escH(i.company)+'</span><span class="intel-date">'+fmtDate(i.date)+'</span>'+(i.fine?'<span class="intel-fine">\u00a3'+fmtNum(i.fine)+'</span>':'')+'</div>'
+      +'<div class="intel-summary">'+escH(i.summary)+'</div>'
+      + claimsHtml + compFlag + actionHtml + '</div>';
   }).join('');
 }
 
+
+// ── Modal + submitModal (P4 already fixed) ────────────────────
 function openModal(type) {
   modalType = type;
-  var titles = { processor:'Add a platform', partner:'Add co-marketing partner', affiliate:'Add affiliate', competitor:'Add competitor' };
-  var subs = {
-    processor:'Any platform in your marketing stack that handles customer data — email, CRM, analytics, ads, payments.',
-    partner:'A brand you co-market with, run joint ads alongside, or share customer data with.',
-    affiliate:'A third party sending marketing on your behalf — you are responsible for their sends under PECR.',
-    competitor:'We\'ll pull their regulatory history and recent promo tactics automatically on add.',
-  };
-  document.getElementById('addModalTitle').textContent = titles[type]||'Add';
-  document.getElementById('addModalSub').textContent = subs[type]||'';
-  var form = '';
+  var m = document.getElementById('addModal');
+  var title = document.getElementById('addModalTitle');
+  var sub = document.getElementById('addModalSub');
+  var form = document.getElementById('addModalForm');
   if (type==='processor') {
-    form = '<div class="form-grid"><div class="fg"><label>Vendor name *</label><input type="text" id="m-name" placeholder="e.g. Mailchimp"></div><div class="fg"><label>Type</label><select id="m-type"><option value="">— select —</option><option>Email Service Provider</option><option>CRM</option><option>Analytics</option><option>Advertising Platform</option><option>Payment Processor</option><option>Cloud Storage</option><option>Customer Support</option><option>Other</option></select></div><div class="fg"><label>DPA Status</label><select id="m-dpa"><option value="Not yet">Not yet</option><option value="Requested">Requested</option><option value="In place">In place</option><option value="Confirmed">Confirmed</option></select></div><div class="fg"><label>Agreement date</label><input type="date" id="m-date"></div></div><div class="fg"><label>Privacy policy / DPA URL</label><input type="url" id="m-url" placeholder="https://vendor.com/privacy"></div><div class="fg"><label>Transfer destination</label><select id="m-transfer"><option value="">UK only</option><option>EU</option><option>USA - DPF</option><option>USA - SCCs</option><option>Unknown</option></select></div><div class="fg"><label>Notes</label><textarea id="m-notes" rows="2"></textarea></div>';
+    title.textContent = 'Add a platform vendor';
+    sub.textContent = 'Register a new marketing platform, CRM, analytics tool or payment processor. We\u2019ll check the enforcement database automatically.';
+    form.innerHTML = '<div class="form-grid">'
+      +'<div class="fg"><label>Platform name</label><input type="text" id="m-name" placeholder="e.g. Mailchimp"></div>'
+      +'<div class="fg"><label>Type</label><input type="text" id="m-type" placeholder="e.g. Email Service Provider"></div>'
+      +'<div class="fg"><label>Sector</label><select id="m-sector">'+SECTORS.map(function(s){return '<option value="'+s+'">'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('')+'</select></div>'
+      +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="m-pp" placeholder="https://..."></div>'
+      +'</div>';
   } else if (type==='partner') {
-    form = '<div class="form-grid"><div class="fg"><label>Partner name *</label><input type="text" id="m-name" placeholder="e.g. Brand X"></div><div class="fg"><label>Type</label><select id="m-type"><option value="Joint Advertising Partner">Joint Advertising Partner</option><option value="Co-branded Content Partner">Co-branded Content Partner</option><option value="Influencer Partner">Influencer Partner</option><option value="Lead Generation Partner">Lead Generation Partner</option><option value="Data Sharing Partner">Data Sharing Partner</option><option value="Agency">Agency</option><option value="Other">Other</option></select></div><div class="fg"><label>Relationship activity *</label><select id="m-activity"><option value="">\u2014 what do you do together? \u2014</option><option value="joint_ads">Joint advertising campaigns</option><option value="co_branded_content">Co-branded content</option><option value="influencer">Influencer partnership</option><option value="lead_generation">Lead generation</option><option value="data_sharing">Data sharing only</option><option value="email_sending">Email sending on your behalf</option></select></div><div class="fg"><label>Article 26 Status</label><select id="m-a26"><option value="Not yet">Not yet</option><option value="Requested">Requested</option><option value="In place">In place</option><option value="Confirmed and signed">Confirmed and signed</option></select></div><div class="fg"><label>Consent chain owner</label><select id="m-consent"><option>Unknown</option><option>Us</option><option>Partner</option><option>Joint</option></select></div></div><div class="fg"><label>Privacy policy URL</label><input type="url" id="m-url" placeholder="https://partner.com/privacy"></div><div class="fg"><label>What data is shared?</label><input type="text" id="m-data" placeholder="e.g. Email addresses, purchase history"></div><div class="fg"><label>Notes</label><textarea id="m-notes" rows="2"></textarea></div>';
+    title.textContent = 'Add a partner';
+    sub.textContent = 'Register a brand you co-market with, run joint campaigns alongside, or share customer data with.';
+    form.innerHTML = '<div class="form-grid">'
+      +'<div class="fg"><label>Partner name</label><input type="text" id="m-name" placeholder="e.g. Acme Co"></div>'
+      +'<div class="fg"><label>Partner type</label><input type="text" id="m-type" placeholder="e.g. Joint Advertising Partner"></div>'
+      +'<div class="fg"><label>Activity</label><select id="m-activity"><option value="joint_ads">Joint advertising</option><option value="co_branded_content">Co-branded content</option><option value="influencer">Influencer partnership</option><option value="lead_generation">Lead generation</option><option value="data_sharing">Data sharing</option></select></div>'
+      +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="m-pp" placeholder="https://..."></div>'
+      +'</div>';
   } else if (type==='affiliate') {
-    form = '<div class="form-grid"><div class="fg"><label>Affiliate name *</label><input type="text" id="m-name" placeholder="e.g. Cashback Site X"></div><div class="fg"><label>Type</label><select id="m-type"><option>Cashback Site</option><option>Comparison Site</option><option>Email Affiliate</option><option>Voucher Site</option><option>Lead Generator</option><option>Publisher Network</option><option>Influencer</option><option>Other</option></select></div><div class="fg"><label>DPA Status</label><select id="m-dpa"><option value="Not yet">Not yet</option><option value="Requested">Requested</option><option value="In place">In place</option><option value="Confirmed and signed">Confirmed and signed</option></select></div><div class="fg"><label>Sender identity</label><select id="m-sender"><option value="Unverified">Unverified</option><option value="Partial">Partial</option><option value="Verified">Verified</option><option value="N/A">N/A (not email)</option></select></div></div><div class="form-grid"><div class="fg"><label>From name they use</label><input type="text" id="m-fromname" placeholder="e.g. Deals from Brand X"></div><div class="fg"><label>Est. volume sent</label><input type="number" id="m-vol" placeholder="e.g. 50000"></div></div><div class="fg"><label>Consent chain notes</label><textarea id="m-notes" rows="2" placeholder="How was consent collected? Does it name your organisation specifically?"></textarea></div>';
-  } else {
-    form = '<div class="form-grid"><div class="fg"><label>Competitor name *</label><input type="text" id="m-name" placeholder="e.g. Brand X"></div><div class="fg"><label>Sector</label><select id="m-sector">'+SECTORS.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('')+'</select></div></div><div class="fg"><label>Website URL (helps intelligence scan)</label><input type="url" id="m-url" placeholder="https://brandx.com"></div><div class="fg"><label>Notes</label><textarea id="m-notes" rows="2"></textarea></div>';
+    title.textContent = 'Add an affiliate';
+    sub.textContent = 'Register anyone promoting your brand \u2014 email senders, influencers, lead generators, comparison sites. You are responsible for their consent and claims.';
+    form.innerHTML = '<div class="form-grid">'
+      +'<div class="fg"><label>Affiliate name</label><input type="text" id="m-name" placeholder="e.g. TopCashback"></div>'
+      +'<div class="fg"><label>Type</label><input type="text" id="m-type" placeholder="e.g. Cashback Site"></div>'
+      +'<div class="fg"><label>Activity</label><select id="m-activity"><option value="email_affiliate">Email affiliate</option><option value="cashback">Cashback</option><option value="comparison">Comparison site</option><option value="lead_generation">Lead generation</option><option value="influencer">Influencer</option><option value="publisher">Publisher network</option><option value="voucher">Voucher site</option></select></div>'
+      +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="m-pp" placeholder="https://..."></div>'
+      +'</div>';
+  } else if (type==='competitor') {
+    title.textContent = 'Add a competitor to watch';
+    sub.textContent = 'We\u2019ll pull their regulatory history and recent promotional tactics automatically.';
+    form.innerHTML = '<div class="form-grid">'
+      +'<div class="fg"><label>Competitor name</label><input type="text" id="m-name" placeholder="e.g. Rival Ltd"></div>'
+      +'<div class="fg"><label>Sector</label><select id="m-sector">'+SECTORS.map(function(s){return '<option value="'+s+'">'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('')+'</select></div>'
+      +'</div>';
   }
-  document.getElementById('addModalForm').innerHTML = form;
-  document.getElementById('addModal').classList.add('open');
+  m.classList.add('open');
 }
 
-function closeModal(){ document.getElementById('addModal').classList.remove('open'); }
+function closeModal() {
+  document.getElementById('addModal').classList.remove('open');
+}
 
+// P4: submitModal — loadAll().then(showConfirmPanel) already chains correctly
 function submitModal() {
   var name = (document.getElementById('m-name')||{}).value||'';
   if (!name.trim()) { showToast('Name is required','er'); return; }
@@ -1630,18 +1722,16 @@ function submitModal() {
   var action, bodyData;
   if (modalType==='processor') {
     action = 'register';
-    bodyData = { userId:userId, vendor:{ VendorName:name, VendorType:(document.getElementById('m-type')||{}).value, DPAStatus:(document.getElementById('m-dpa')||{}).value, AgreementDate:(document.getElementById('m-date')||{}).value, PrivacyPolicyUrl:(document.getElementById('m-url')||{}).value, TransferDestination:(document.getElementById('m-transfer')||{}).value, Notes:(document.getElementById('m-notes')||{}).value } };
+    bodyData = { userId:userId, vendor:{ VendorName:name, VendorType:(document.getElementById('m-type')||{}).value||'', Sector:(document.getElementById('m-sector')||{}).value||'general', PrivacyPolicyUrl:(document.getElementById('m-pp')||{}).value||'' } };
   } else if (modalType==='partner') {
     action = 'partner-register';
-    var partnerActivity = (document.getElementById('m-activity')||{}).value || PARTNER_TYPE_TO_ACTIVITY[(document.getElementById('m-type')||{}).value] || '';
-    bodyData = { userId:userId, partner:{ PartnerName:name, PartnerType:(document.getElementById('m-type')||{}).value, Article26Status:(document.getElementById('m-a26')||{}).value, ConsentChainOwner:(document.getElementById('m-consent')||{}).value, PrivacyPolicyUrl:(document.getElementById('m-url')||{}).value, DataSharedDescription:(document.getElementById('m-data')||{}).value, Notes:(document.getElementById('m-notes')||{}).value, RelationshipActivity:partnerActivity } };
+    bodyData = { userId:userId, partner:{ PartnerName:name, PartnerType:(document.getElementById('m-type')||{}).value||'', RelationshipActivity:(document.getElementById('m-activity')||{}).value||'', PrivacyPolicyUrl:(document.getElementById('m-pp')||{}).value||'' } };
   } else if (modalType==='affiliate') {
     action = 'affiliate-register';
-    var affActivity = AFF_TYPE_TO_ACTIVITY[(document.getElementById('m-type')||{}).value] || '';
-    bodyData = { userId:userId, affiliate:{ AffiliateName:name, AffiliateType:(document.getElementById('m-type')||{}).value, DPAStatus:(document.getElementById('m-dpa')||{}).value, SenderIdentityCompliant:(document.getElementById('m-sender')||{}).value, FromNameUsed:(document.getElementById('m-fromname')||{}).value, TotalVolumeSent:parseInt((document.getElementById('m-vol')||{}).value)||null, ConsentChainNotes:(document.getElementById('m-notes')||{}).value, RelationshipActivity:affActivity } };
+    bodyData = { userId:userId, affiliate:{ AffiliateName:name, AffiliateType:(document.getElementById('m-type')||{}).value||'', RelationshipActivity:(document.getElementById('m-activity')||{}).value||'', PrivacyPolicyUrl:(document.getElementById('m-pp')||{}).value||'' } };
   } else {
-    action = 'competitor-watch';
-    bodyData = { userId:userId, competitor:{ CompetitorName:name, Sector:(document.getElementById('m-sector')||{}).value, WebsiteUrl:(document.getElementById('m-url')||{}).value, Notes:(document.getElementById('m-notes')||{}).value, WatchStatus:true } };
+    action = 'competitor-register';
+    bodyData = { userId:userId, competitor:{ CompetitorName:name, Sector:(document.getElementById('m-sector')||{}).value||'general' } };
   }
   fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
     .then(function(r){return r.json();})
@@ -1653,115 +1743,125 @@ function submitModal() {
     .catch(function(e){ hideLoading(); showToast('Could not add: '+e.message,'er'); });
 }
 
-function showConfirmPanel(name, response) {
+function showConfirmPanel(name, d) {
   var panel = document.getElementById('confirmPanel');
   if (!panel) return;
-  var t = currentType;
-  var fixTexts = [];
-  var severity = 'ok';
-
-  if (t==='processors' && response.fixGenerated) {
-    fixTexts.push('DPA status is unconfirmed. We\'ve created a fix on your dashboard to prompt you to confirm the Article 28 Data Processing Agreement.');
-    severity = 'warn';
+  var violations = d.violations||[];
+  var cls = violations.length >= 2 ? 'risk' : violations.length === 1 ? 'warn' : '';
+  var icon = violations.length ? 'warning-circle' : 'check-circle';
+  var title = violations.length
+    ? escH(name)+' has '+violations.length+' regulatory action'+(violations.length!==1?'s':'')
+    : escH(name)+' added \u2014 no enforcement history found';
+  var sub = violations.length
+    ? 'This organisation has been flagged by regulators. Review the details below and record appropriate mitigations.'
+    : 'We checked ICO, ASA, and CMA/DMCCA enforcement databases. No actions found for this organisation.';
+  var fixHtml = '';
+  if (violations.length) {
+    fixHtml = '<div class="confirm-fix"><strong>Dashboard fix count has been updated.</strong> '+violations.length+' new item'+(violations.length!==1?'s':'')+' added to your compliance tracker.'
+      + violations.map(function(v){return '<div style="margin-top:6px;padding-left:8px;border-left:2px solid var(--rc)">\u2022 <strong>'+escH(v.regulator||'')+'</strong>: '+escH((v.summary||'').slice(0,140))+(v.fine?' (\u00a3'+fmtNum(v.fine)+')':'')+'</div>';}).join('')
+      + '</div>';
   }
-  if (t==='partners') {
-    if (response.brandSafetyFlag) {
-      fixTexts.push('Brand safety flag: '+response.violationCount+' regulatory action'+(response.violationCount!==1?'s':'')+' found for this partner.');
-      severity = 'risk';
-    }
-    fixTexts.push('If Article 26 is not confirmed, a fix has been added to your dashboard.');
-    if (severity==='ok') severity = 'warn';
-  }
-  if (t==='affiliates') {
-    if (response.exposureHigh > 0) {
-      fixTexts.push('Estimated exposure £'+fmtNum(response.exposureLow)+'–£'+fmtNum(response.exposureHigh)+' based on unverified consent chain (Saga/JTT anchored).');
-      severity = 'risk';
-    }
-  }
-  if (t==='competitors' && response.rulingCount > 0) {
-    fixTexts.push(response.rulingCount+' regulatory action'+(response.rulingCount!==1?'s':'')+' found for this competitor. See the Rulings tab.');
-    severity = 'warn';
-  }
-
-  var iconName = severity==='risk'?'warning-circle':severity==='warn'?'push-pin':'check-circle';
-  var title = severity==='ok' ? name+' added' : name+' added with '+fixTexts.length+' item'+(fixTexts.length!==1?'s':'')+' to review';
-  var sub = severity==='ok' ? 'No immediate action needed. You can review the detail panel to confirm agreement status and scan the policy.' : 'Here\'s what needs your attention:';
-
-  var fixesHtml = fixTexts.length ? fixTexts.map(function(t){return '<div class="confirm-fix">'+escH(t)+'</div>';}).join('') : '';
-
-  var records = S[t];
-  var justAdded = records.find(function(r){ return getName(r.fields).toLowerCase() === name.toLowerCase(); });
-
-  var actions = '';
-  if (justAdded) {
-    if (t==='processors' || t==='affiliates') {
-      actions = '<button class="btn btn-primary btn-xs" onclick="showDetail(\''+escJ(justAdded.id)+'\');goToDetailTab(\'dpa\')">Scan DPA now</button>'
-              + '<button class="btn btn-ghost btn-xs" onclick="showDetail(\''+escJ(justAdded.id)+'\');goToDetailTab(\'edit\')">Confirm status</button>';
-    } else if (t==='partners') {
-      actions = '<button class="btn btn-primary btn-xs" onclick="showDetail(\''+escJ(justAdded.id)+'\');goToDetailTab(\'a26\')">Review Art. 26 now</button>'
-              + '<button class="btn btn-ghost btn-xs" onclick="showDetail(\''+escJ(justAdded.id)+'\');goToDetailTab(\'edit\')">Confirm status</button>';
-    } else {
-      actions = '<button class="btn btn-primary btn-xs" onclick="showDetail(\''+escJ(justAdded.id)+'\');goToDetailTab(\'rulings\')">See rulings</button>';
-    }
-  }
-  actions += '<button class="btn btn-ghost btn-xs" onclick="openModal(\''+TYPE_CONFIG[t].modalKey+'\')">Add another</button>';
-
-  panel.innerHTML = '<div class="confirm-panel '+(severity==='ok'?'':severity)+'">'
-    + '<div class="confirm-icon"><i class="ph ph-'+iconName+' icon-20"></i></div>'
-    + '<div class="confirm-body">'
-    + '<div class="confirm-title">'+escH(title)+'</div>'
-    + '<div class="confirm-sub">'+sub+'</div>'
-    + fixesHtml
-    + '<div class="confirm-actions">'+actions+'</div>'
-    + '</div>'
-    + '<button class="confirm-close" onclick="dismissConfirm()"><i class="ph ph-x icon-16"></i></button>'
-    + '</div>';
+  panel.innerHTML = '<div class="confirm-panel '+cls+'">'
+    +'<i class="ph ph-'+icon+' icon-18 confirm-icon"></i>'
+    +'<div class="confirm-body"><div class="confirm-title">'+title+'</div><div class="confirm-sub">'+sub+'</div>'
+    + fixHtml
+    +'<div class="confirm-actions"><button class="btn btn-ghost btn-xs" onclick="showDetail(S[currentType][S[currentType].length-1].id)">View details <i class="ph ph-arrow-right icon-16"></i></button></div></div>'
+    +'<button class="confirm-close" onclick="dismissConfirm()"><i class="ph ph-x icon-16"></i></button></div>';
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
-function dismissConfirm(){ document.getElementById('confirmPanel').innerHTML = ''; }
+function dismissConfirm() { document.getElementById('confirmPanel').innerHTML = ''; }
 
-function toggleQAMore(btn) {
-  var el = btn.nextElementSibling; if (!el) return;
-  var open = el.style.display === 'block';
-  el.style.display = open ? 'none' : 'block';
-  btn.textContent = open ? 'Show all categories \u2192' : 'Show less \u2191';
-}
 
 function quickAdd(name, typeName) {
-  var known = S.knownVendors[name]||{};
-  showLoading('Adding '+name+'\u2026');
-  fetch(APP_URL+'/api/data?action=register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendor:{ VendorName:name, VendorType:typeName, DPAStatus:known.dpaStatus==='Confirmed'?'Confirmed':'Not yet', PrivacyPolicyUrl:known.dpaLink||'' }})})
-    .then(function(r){return r.json();})
-        .then(function(d){ hideLoading(); showToast(name+' added','ok'); setTimeout(function(){ loadAll().then(function(){ showConfirmPanel(name, d); }); }, 400); })
-    .catch(function(){ hideLoading(); showToast('Could not add','er'); });
+  closeModal();
+  showLoading('Adding '+name+' and checking enforcement database\u2026');
+  var action = currentType==='processors'?'register':currentType==='affiliates'?'affiliate-register':'partner-register';
+  var pKey = currentType==='processors'?'vendor':currentType==='affiliates'?'affiliate':'partner';
+  var nameKey = currentType==='processors'?'VendorName':currentType==='affiliates'?'AffiliateName':'PartnerName';
+  var typeKey = currentType==='processors'?'VendorType':currentType==='affiliates'?'AffiliateType':'PartnerType';
+  var bodyData = { userId:userId };
+  bodyData[pKey] = {};
+  bodyData[pKey][nameKey] = name;
+  bodyData[pKey][typeKey] = typeName;
+  if (currentType==='processors') bodyData[pKey].Sector = 'general';
+  if (currentType==='affiliates' && AFF_TYPE_TO_ACTIVITY[typeName]) bodyData[pKey].RelationshipActivity = AFF_TYPE_TO_ACTIVITY[typeName];
+  if (currentType==='partners' && PARTNER_TYPE_TO_ACTIVITY[typeName]) bodyData[pKey].RelationshipActivity = PARTNER_TYPE_TO_ACTIVITY[typeName];
+  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
+    .then(function(d){ return d.json(); })
+    .then(function(d){ hideLoading(); showToast(name+' added','ok'); setTimeout(function(){ loadAll().then(function(){ showConfirmPanel(name, d); }); }, 400); })
+    .catch(function(e){ hideLoading(); showToast('Could not add: '+e.message,'er'); });
 }
 
-function openModalPre(type, name) {
+function openModalPre(type, preset) {
   openModal(type);
-  var el = document.getElementById('m-name'); if (el) el.value = name;
+  var typeInput = document.getElementById('m-type');
+  if (typeInput) typeInput.value = preset;
+  var actInput = document.getElementById('m-activity');
+  if (actInput && type==='affiliate' && AFF_TYPE_TO_ACTIVITY[preset]) actInput.value = AFF_TYPE_TO_ACTIVITY[preset];
+  if (actInput && type==='partner' && PARTNER_TYPE_TO_ACTIVITY[preset]) actInput.value = PARTNER_TYPE_TO_ACTIVITY[preset];
 }
 
 function exportCSV() {
-  var type = currentType;
-  var records = S[type]; if (!records.length) { showToast('Nothing to export',''); return; }
-  var headers, rows;
-  if (type==='processors') { headers=['Vendor','Type','DPA Status','Transfer','URL','Last checked']; rows = records.map(function(r){var f=r.fields;return[f.VendorName,f.VendorType||'',f.DPAStatus||f.AgreementStatus||'',f.TransferDestination||'',f.PrivacyPolicyUrl||'',f.LastChecked||''];}); }
-  else if (type==='partners') { headers=['Partner','Type','Article 26','Consent Chain','Reputation','Notes']; rows = records.map(function(r){var f=r.fields;return[f.PartnerName,f.PartnerType||'',f.Article26Status||'',f.ConsentChainOwner||'',f.ReputationScore||'',f.Notes||''];}); }
-  else if (type==='affiliates') { headers=['Affiliate','Type','DPA','Consent Verified','Sender ID','Volume']; rows = records.map(function(r){var f=r.fields;return[f.AffiliateName,f.AffiliateType||'',f.DPAStatus||'',f.ConsentChainVerified?'Yes':'No',f.SenderIdentityCompliant||'',f.TotalVolumeSent||''];}); }
-  else return;
-  var csv = [headers.join(',')].concat(rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');})).join('\n');
-  var a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download = 'sendwize-'+type+'-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  var records = S[currentType];
+  if (!records.length) { showToast('Nothing to export','er'); return; }
+  var fields = currentType==='processors'
+    ? ['VendorName','VendorType','DPAStatus','PrivacyPolicyUrl','ICORiskLevel','TransferDestination','LastChecked','Notes']
+    : currentType==='partners'
+    ? ['PartnerName','PartnerType','Article26Status','ConsentChainVerified','ReputationScore','ViolationCount','AdComplianceReviewed','PricingComplianceReviewed','Notes']
+    : ['AffiliateName','AffiliateType','DPAStatus','ConsentChainVerified','SenderIdentityCompliant','MarketingMaterialsReviewed','AdDisclosureCompliant','Notes'];
+  var csv = fields.join(',')+'\n';
+  records.forEach(function(r){
+    csv += fields.map(function(k){ var v=r.fields[k]; return v===undefined||v===null?'':'"'+String(v).replace(/"/g,'""')+'"'; }).join(',')+'\n';
+  });
+  var blob = new Blob([csv],{type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = currentType+'-export.csv';
+  a.click();
+  showToast('CSV downloaded','ok');
 }
 
-function showLoading(msg){ document.getElementById('loadingMsg').textContent = msg||'Loading\u2026'; document.getElementById('loadingBg').classList.add('open'); }
-function hideLoading(){ document.getElementById('loadingBg').classList.remove('open'); }
-function showToast(msg,type){ var t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast on'+(type?' '+type:''); setTimeout(function(){t.className = 'toast';}, 4000); }
-function fmtDate(s){ if (!s) return '\u2014'; try { return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); } catch(e){ return s; } }
-function fmtNum(n){ return (parseInt(n)||0).toLocaleString('en-GB'); }
-function isStale(d){ return !!d && Math.floor((Date.now()-new Date(d))/86400000) > 90; }
-function getName(f){ return f.VendorName||f.PartnerName||f.AffiliateName||f.CompetitorName||''; }
-function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function escJ(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function toggleQAMore(btn) {
+  var el = btn.nextElementSibling;
+  if (el.style.display === 'block') { el.style.display = 'none'; btn.textContent = 'Show all categories \u2192'; }
+  else { el.style.display = 'block'; btn.textContent = 'Hide categories \u2190'; }
+}
+
+// ── Utilities ─────────────────────────────────────────────────
+function showLoading(msg) {
+  var el = document.getElementById('loadingBg');
+  document.getElementById('loadingMsg').textContent = msg||'Loading\u2026';
+  el.classList.add('open');
+}
+function hideLoading() { document.getElementById('loadingBg').classList.remove('open'); }
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast on '+(type||'');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(function(){ t.classList.remove('on'); }, 3400);
+}
+
+function fmtDate(d) {
+  if (!d) return '\u2014';
+  try { var dt=new Date(d); return dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); } catch(e){return d;}
+}
+function fmtNum(n) { return Number(n||0).toLocaleString('en-GB'); }
+
+function isStale(dateStr) {
+  if (!dateStr) return false;
+  try { return (Date.now() - new Date(dateStr).getTime()) > 90*24*60*60*1000; } catch(e){return false;}
+}
+
+function getName(f) {
+  return f.VendorName || f.PartnerName || f.AffiliateName || f.CompetitorName || 'Unnamed';
+}
+
+function escH(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function escJ(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
 </script>
 </body>
 </html>
