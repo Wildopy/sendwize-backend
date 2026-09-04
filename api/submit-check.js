@@ -1,5 +1,11 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v4.31
+// SENDWIZE — submit-check.js v4.32
+// v4.32: Campaign monitoring integration.
+//        - MonitoringActive set true on submit
+//        - extractLandingPageUrls() captures URLs for drift detection
+//        - RefPriceAlertStage initialised for reference price expiry
+//        - handleDossierGet returns monitoring fields
+//
 // v4.31: "The Letter" — dossier-submit now returns a letter object.
 //        Clear campaigns get a Clearance Notice (no AI call).
 //        Weak/Adequate campaigns get a Claude-drafted simulated
@@ -127,10 +133,6 @@ function calculateHealthScore(allModuleFields) {
 }
 
 // ── THE LETTER — v4.31 ──────────────────────────────────────────────────────
-// Determine which regulatory lens has the most material weakness.
-// ICO: consent + suppression + list provenance + sender identity
-// ASA: content check (claims, subject line) + sender identity
-// CMA: content check (pricing, urgency)
 function determineWeakestLens(moduleFields) {
   const ico = ['ListProvenance', 'ConsentMechanism', 'Suppression', 'SenderIdentity'];
   const asa = ['ContentCheck', 'SenderIdentity'];
@@ -142,12 +144,9 @@ function determineWeakestLens(moduleFields) {
   }, 0);
 
   const scores = { ico: score(ico), asa: score(asa), cma: score(cma) };
-
-  // Return the lens with the highest weakness score
   return Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
 }
 
-// Build a summary of gaps for the Claude prompt
 function buildGapSummary(moduleFields) {
   const gaps = [];
   for (const key of DOSSIER_MODULES) {
@@ -160,7 +159,6 @@ function buildGapSummary(moduleFields) {
     if (missing.length > 0) {
       gaps.push(`${key}: missing ${missing.join(', ')}`);
     }
-    // Flag specific weak content signals
     if (key === 'ContentCheck') {
       if (fields.pricingCompliant && fields.pricingCompliant.toLowerCase().includes('no')) gaps.push('ContentCheck: pricing compliance not confirmed');
       if (fields.urgencyGenuine && fields.urgencyGenuine === 'Not confirmed') gaps.push('ContentCheck: urgency/scarcity not verified');
@@ -176,7 +174,6 @@ function buildGapSummary(moduleFields) {
   return gaps.join('\n');
 }
 
-// Generate clearance notice text (no Claude call)
 function buildClearanceNotice(campaignTitle, ownerName, dossierId, healthScore) {
   const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   return `CAMPAIGN COMPLIANCE CLEARANCE NOTICE
@@ -209,7 +206,6 @@ INFORMATION ONLY — NOT LEGAL ADVICE
 This certificate documents evidence provided by the campaign owner and does not constitute legal compliance assurance. Regulatory outcomes depend on circumstances at the time of any investigation.`;
 }
 
-// Build regulator letter prompt for Claude
 function buildLetterPrompt(lens, campaignTitle, ownerName, gaps) {
   const lensConfig = {
     ico: {
@@ -261,9 +257,7 @@ Owner: ${ownerName || 'Not specified'}
 Write the letter now. Start with the watermark line, then the letter. No preamble or explanation — just the letter.`;
 }
 
-// Main letter generation function
 async function generateLetter(moduleFields, evidenceStrength, campaignTitle, ownerName, dossierId, healthScore) {
-  // Strong evidence = clearance notice, no Claude call
   if (evidenceStrength === 'Strong') {
     return {
       type:    'clearance',
@@ -273,7 +267,6 @@ async function generateLetter(moduleFields, evidenceStrength, campaignTitle, own
     };
   }
 
-  // Weak or Adequate: draft a regulator letter for the weakest lens
   const lens = determineWeakestLens(moduleFields);
   const gaps = buildGapSummary(moduleFields);
   const prompt = buildLetterPrompt(lens, campaignTitle, ownerName, gaps);
@@ -300,7 +293,6 @@ async function generateLetter(moduleFields, evidenceStrength, campaignTitle, own
     const data = await r.json();
     const content = data.content?.[0]?.text || '';
 
-    // Ensure watermark is present
     const watermarked = content.startsWith('SIMULATION')
       ? content
       : 'SIMULATION — NOT ACTUAL REGULATOR CORRESPONDENCE\n\n' + content;
@@ -313,8 +305,6 @@ async function generateLetter(moduleFields, evidenceStrength, campaignTitle, own
     };
   } catch (e) {
     console.error('generateLetter Claude call failed (non-fatal):', e);
-    // Fallback: return a static placeholder letter
-    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     return {
       type: 'letter',
       lens,
@@ -585,6 +575,9 @@ async function handleDossierGet(req, res) {
     MonitoredClaimTypes: f.MonitoredClaimTypes || '[]',
     ComplianceAlertsJson: f.ComplianceAlertsJson || '[]',
     LastComplianceCheck: f.LastComplianceCheck || '',
+    MonitoringActive: f.MonitoringActive !== false,
+    LandingPageUrls: f.LandingPageUrls || '[]',
+    RefPriceAlertStage: f.RefPriceAlertStage || '',
     moduleFields,
   });
 }
@@ -606,6 +599,44 @@ function extractMonitoredClaimTypes(moduleFields) {
   if (cm.lawfulBasis === 'Legitimate interest (UK GDPR)') types.push('legitimate_interest_abuse');
   if (cm.lawfulBasis === 'Explicit consent (PECR)' || cm.lawfulBasis === 'Soft opt-in (PECR)') types.push('consent_missing');
   return [...new Set(types)];
+}
+
+// v4.32 — Extract landing page URLs from dossier for drift monitoring
+// Pulls URLs from any field that might contain a landing page, checkout
+// page, or terms page. The daily cron hashes these and alerts if content
+// changes after the campaign was approved.
+function extractLandingPageUrls(moduleFields) {
+  const urls = [];
+  const cc = moduleFields?.ContentCheck || {};
+  const lp = moduleFields?.ListProvenance || {};
+  const si = moduleFields?.SenderIdentity || {};
+
+  // Reference price evidence field often contains URLs
+  if (cc.referencePriceEvidence) {
+    const urlMatches = cc.referencePriceEvidence.match(/https?:\/\/[^\s,;)]+/gi);
+    if (urlMatches) urls.push(...urlMatches);
+  }
+
+  // Collection URL from list provenance
+  if (lp.collectionUrl && lp.collectionUrl.startsWith('http')) {
+    urls.push(lp.collectionUrl);
+  }
+
+  // Unsubscribe URL
+  if (si.unsubscribeUrl && si.unsubscribeUrl.startsWith('http')) {
+    urls.push(si.unsubscribeUrl);
+  }
+
+  // Notes fields may contain URLs
+  for (const mod of Object.values(moduleFields || {})) {
+    if (mod?.notes) {
+      const noteUrls = mod.notes.match(/https?:\/\/[^\s,;)]+/gi);
+      if (noteUrls) urls.push(...noteUrls);
+    }
+  }
+
+  // Deduplicate
+  return [...new Set(urls)];
 }
 
 async function handleDossierSubmit(req, res) {
@@ -645,8 +676,9 @@ async function handleDossierSubmit(req, res) {
   const evidenceStrength = calculateOverallStrength(moduleFields);
   const healthScore      = calculateHealthScore(moduleFields);
   const monitoredClaimTypes = extractMonitoredClaimTypes(moduleFields);
+  const landingPageUrls     = extractLandingPageUrls(moduleFields);
+
   // ── Generate The Letter (v4.31) ───────────────────────────────
-  // Run in parallel with fix generation to keep response time reasonable
   const letterPromise = generateLetter(
     moduleFields, evidenceStrength,
     f.CampaignTitle || '', f.OwnerName || '',
@@ -679,14 +711,17 @@ async function handleDossierSubmit(req, res) {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: {
-        Status:           'Submitted',
-        IssuesFound:      issueList.length,
-        SubmittedAt:      now,
-        LastVerified:     now.split('T')[0],
-        VersionHistory:   JSON.stringify(history),
-        EvidenceStrength: evidenceStrength,
-        HealthScore:      healthScore,
+        Status:              'Submitted',
+        IssuesFound:         issueList.length,
+        SubmittedAt:         now,
+        LastVerified:        now.split('T')[0],
+        VersionHistory:      JSON.stringify(history),
+        EvidenceStrength:    evidenceStrength,
+        HealthScore:         healthScore,
         MonitoredClaimTypes: JSON.stringify(monitoredClaimTypes),
+        MonitoringActive:    true,
+        LandingPageUrls:     JSON.stringify(landingPageUrls),
+        RefPriceAlertStage:  '',
         ComplianceAlertsJson: '[]',
       }}),
     });
@@ -701,7 +736,8 @@ async function handleDossierSubmit(req, res) {
     fixResults, evidenceStrength, healthScore,
     snapshotVersion: snapshot.version,
     monitoredClaimTypes,
-    letter,  // v4.31 — { type, lens, content, generatedAt }
+    landingPageUrls,
+    letter,
   });
 }
 
