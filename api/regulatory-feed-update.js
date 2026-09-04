@@ -1,6 +1,15 @@
 // ─────────────────────────────────────────────────────────────
 // SENDWIZE — api/regulatory-feed-update.js
-// Weekly cron endpoint — fires every Monday 07:00 UTC via Vercel Cron.
+// Daily cron endpoint — fires every day at 07:00 UTC via Vercel Cron.
+//
+// v2.0 — September 2026
+//   - Cron changed from weekly to daily
+//   - Phase 3: MonitoringActive filter — only checks dossiers
+//     the user hasn't paused
+//   - Phase 4: Landing page drift detection — hashes URLs from
+//     submitted dossiers and alerts when content changes
+//   - Phase 5: Reference price expiry — alerts at 21d and 28d
+//     when a campaign uses reference pricing claims
 //
 // What it does:
 //   1. Calls Claude with web_search enabled
@@ -13,12 +22,18 @@
 //      and fires competitor_ruling alerts for any matches
 //   5. Re-scans all active competitors' current marketing promotions
 //      and updates RecentPromoClaims on each Competitor_Watch record
+//      (Phase 2 — runs weekly only, skipped on other days)
+//   6. Cross-references rulings against submitted dossiers with
+//      MonitoringActive=true (Phase 3)
+//   7. Checks landing page URLs for content changes (Phase 4)
+//   8. Checks reference pricing campaigns for expiry (Phase 5)
 //
 // Trigger: Vercel Cron (GET with Authorization header) or manual POST
 // with { secret: CRON_SECRET }.
 // ─────────────────────────────────────────────────────────────
 
 import { atFetch } from './_airtable.js';
+import { createHash } from 'crypto';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -47,6 +62,17 @@ function getWeekNumber() {
   const start = new Date(now.getFullYear(), 0, 1);
   const week = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
   return `${now.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+function isMonday() {
+  return new Date().getUTCDay() === 1;
+}
+
+function daysSince(dateStr) {
+  if (!dateStr) return Infinity;
+  try {
+    return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  } catch { return Infinity; }
 }
 
 // ── Airtable helpers (local to this file) ─────────────────────
@@ -93,24 +119,13 @@ async function atPatch(table, recordId, fields) {
 }
 
 // ── Auth verification ─────────────────────────────────────────
-// Accepts either:
-//   - Vercel Cron: GET with x-vercel-cron-auth header matching CRON_SECRET
-//   - Manual trigger: POST with { secret: CRON_SECRET } in body
-//   - Fallback: Authorization: Bearer <CRON_SECRET> header
 function verifyAuth(req) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) return false;
-
-  // Vercel Cron sends this header automatically (Pro/Enterprise)
   if (req.headers?.['x-vercel-cron-auth'] === cronSecret) return true;
-
-  // Authorization header (manual triggers, testing)
   const authHeader = req.headers?.['authorization'] || '';
   if (authHeader === `Bearer ${cronSecret}`) return true;
-
-  // POST body secret (legacy / Airtable automation trigger)
   if (req.method === 'POST' && req.body?.secret === cronSecret) return true;
-
   return false;
 }
 
@@ -173,17 +188,16 @@ Return ONLY the JSON array. No other text.`,
 }
 
 // ── Competitor promo re-scan ──────────────────────────────────
-// Runs the same promo scan as handleCompetitorWatch in data.js,
-// but for all active competitors, updating their records weekly.
+// Runs weekly (Mondays only). Re-scans what each watched
+// competitor is currently promoting.
 async function scanCompetitorPromos(competitors, claudeKey) {
   const results = { scanned: 0, updated: 0, errors: [] };
   const today = new Date().toISOString().split('T')[0];
 
-  // Process in batches of 3 to avoid hammering the API
   for (let i = 0; i < competitors.length; i += 3) {
     const batch = competitors.slice(i, i + 3);
 
-    const batchResults = await Promise.allSettled(
+    await Promise.allSettled(
       batch.map(async (comp) => {
         const name = comp.fields.CompetitorName;
         if (!name) return null;
@@ -217,10 +231,8 @@ async function scanCompetitorPromos(competitors, claudeKey) {
           const promoData = await promoRes.json();
           const text  = promoData.content?.find(b => b.type === 'text')?.text || '';
           const match = text.match(/\[[\s\S]*\]/);
-
           const promoClaims = match ? match[0] : null;
 
-          // Update the Competitor_Watch record with fresh promo data
           await atPatch('Competitor_Watch', comp.id, {
             RecentPromoClaims: promoClaims,
             RecentPromoDate:   today,
@@ -228,7 +240,7 @@ async function scanCompetitorPromos(competitors, claudeKey) {
           });
 
           results.updated++;
-          return { name, claimsFound: promoClaims ? true : false };
+          return { name, claimsFound: !!promoClaims };
 
         } catch (e) {
           console.error(`Promo scan error for ${name}:`, e.message);
@@ -238,7 +250,6 @@ async function scanCompetitorPromos(competitors, claudeKey) {
       })
     );
 
-    // Brief pause between batches to be kind to rate limits
     if (i + 3 < competitors.length) {
       await new Promise(r => setTimeout(r, 1000));
     }
@@ -249,17 +260,17 @@ async function scanCompetitorPromos(competitors, claudeKey) {
 
 // ── Phase 3: Dossier compliance monitoring ────────────────────
 // Cross-references new enforcement rulings against submitted
-// dossiers' monitored claim types. When a ruling's claim types
-// overlap with a campaign's claim types, annotates the dossier
-// and fires a dossier_compliance_change alert.
+// dossiers' monitored claim types. Only checks dossiers where
+// MonitoringActive is true (user hasn't paused monitoring).
 async function crossReferenceDossiers(allItems) {
   const results = { checked: 0, alertsFired: 0, errors: [] };
   if (!allItems.length) return results;
 
   let dossiers = [];
   try {
+    // MonitoringActive filter: only check dossiers the user hasn't paused
     dossiers = await atGet('Campaign_Dossiers',
-      "AND({Status}='Submitted',{MonitoredClaimTypes}!='')",
+      "AND({Status}='Submitted',{MonitoringActive}=1,{MonitoredClaimTypes}!='')",
       'sort[0][field]=SubmittedAt&sort[0][direction]=desc', 200
     );
   } catch (e) {
@@ -314,12 +325,13 @@ async function crossReferenceDossiers(allItems) {
       });
 
       const alert = {
+        type: 'enforcement_match',
         detectedAt: new Date().toISOString(),
         claimTypes: overlapping,
         rulingCount: uniqueRulings.length,
         rulings: uniqueRulings.slice(0, 5),
         summary: overlapping.length + ' claim type' + (overlapping.length !== 1 ? 's' : '') +
-          ' in your campaign match new enforcement activity this week: ' +
+          ' in your campaign match new enforcement activity: ' +
           overlapping.map(ct => ct.replace(/_/g, ' ')).join(', ') + '.',
       };
 
@@ -360,6 +372,272 @@ async function crossReferenceDossiers(allItems) {
   return results;
 }
 
+// ── Phase 4: Landing page drift detection ─────────────────────
+// Fetches landing page URLs from submitted dossiers, hashes the
+// content, and compares to the previous hash stored on the record.
+// If the page content has changed since the campaign was approved,
+// fires a landing_page_drift alert.
+//
+// Not scraping — just checking whether the page changed at all.
+// The user reviews what changed.
+//
+// Airtable fields required on Campaign_Dossiers:
+//   LandingPageUrls (long text — JSON array of URL strings)
+//   PageHashes (long text — JSON object: { url: hash })
+//   MonitoringActive (checkbox)
+async function checkLandingPageDrift() {
+  const results = { checked: 0, drifted: 0, errors: [] };
+  const today = new Date().toISOString().split('T')[0];
+
+  let dossiers = [];
+  try {
+    dossiers = await atGet('Campaign_Dossiers',
+      "AND({Status}='Submitted',{MonitoringActive}=1,{LandingPageUrls}!='')",
+      '', 200
+    );
+  } catch (e) {
+    console.error('Could not load dossiers for drift check (non-fatal):', e.message);
+    return results;
+  }
+
+  if (!dossiers.length) return results;
+
+  for (const dossier of dossiers) {
+    try {
+      let urls = [];
+      try { urls = JSON.parse(dossier.fields.LandingPageUrls || '[]'); } catch {}
+      if (!urls.length) continue;
+
+      // Limit to 5 URLs per dossier to stay within function time limits
+      urls = urls.slice(0, 5);
+
+      let storedHashes = {};
+      try { storedHashes = JSON.parse(dossier.fields.PageHashes || '{}'); } catch {}
+
+      const changedUrls = [];
+      const newHashes = { ...storedHashes };
+
+      for (const url of urls) {
+        try {
+          results.checked++;
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
+
+          const response = await fetch(url, {
+            headers: { 'User-Agent': 'Sendwize-Monitor/2.0 (compliance check)' },
+            signal: controller.signal,
+            redirect: 'follow',
+          });
+          clearTimeout(timeout);
+
+          if (!response.ok) {
+            // Page returned error — flag as potential issue
+            if (storedHashes[url]) {
+              changedUrls.push({ url, reason: `Page returned HTTP ${response.status} — may have been removed or moved` });
+            }
+            continue;
+          }
+
+          const body = await response.text();
+          // Strip volatile elements before hashing: script nonces,
+          // CSRF tokens, timestamps, session IDs, analytics params.
+          // We only care about content changes, not framework noise.
+          const stripped = body
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/nonce="[^"]*"/gi, '')
+            .replace(/csrf[^"]*"[^"]*"/gi, '')
+            .replace(/\d{10,13}/g, '')       // unix timestamps
+            .replace(/data-session[^"]*"[^"]*"/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          const hash = createHash('sha256').update(stripped).digest('hex');
+
+          if (storedHashes[url] && storedHashes[url] !== hash) {
+            changedUrls.push({ url, reason: 'Page content has changed since campaign was approved' });
+          }
+
+          newHashes[url] = hash;
+
+        } catch (fetchErr) {
+          if (fetchErr.name === 'AbortError') {
+            console.warn(`Drift check timeout for ${url}`);
+          } else {
+            console.warn(`Drift check failed for ${url}: ${fetchErr.message}`);
+          }
+          results.errors.push({ url, error: fetchErr.message });
+        }
+      }
+
+      // Always update hashes (even if no drift) so next run has a baseline
+      await atPatch('Campaign_Dossiers', dossier.id, {
+        PageHashes: JSON.stringify(newHashes),
+        LastComplianceCheck: today,
+      });
+
+      // Fire alert if any pages changed
+      if (changedUrls.length) {
+        results.drifted++;
+
+        const alert = {
+          type: 'landing_page_drift',
+          detectedAt: new Date().toISOString(),
+          changedUrls,
+          summary: changedUrls.length + ' landing page' + (changedUrls.length !== 1 ? 's have' : ' has') +
+            ' changed since this campaign was approved. Review to confirm the destination still matches your compliance sign-off.',
+        };
+
+        let existingAlerts = [];
+        try { existingAlerts = JSON.parse(dossier.fields.ComplianceAlertsJson || '[]'); } catch {}
+        existingAlerts.push(alert);
+
+        await atPatch('Campaign_Dossiers', dossier.id, {
+          ComplianceAlertsJson: JSON.stringify(existingAlerts),
+        });
+
+        const dossierUserId = dossier.fields.UserID;
+        if (dossierUserId) {
+          try {
+            await fetch(APP_URL + '/api/data?action=send-alert', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: dossierUserId,
+                alertType: 'landing_page_drift',
+                campaignTitle: dossier.fields.CampaignTitle || 'a campaign',
+                changedCount: changedUrls.length,
+                urls: changedUrls.map(u => u.url).join(', '),
+              }),
+            });
+          } catch (ae) {
+            console.error('Landing page drift alert failed (non-fatal):', ae.message);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Drift check error for dossier:', e.message);
+      results.errors.push({ dossierId: dossier.id, error: e.message });
+    }
+  }
+
+  return results;
+}
+
+// ── Phase 5: Reference price expiry ───────────────────────────
+// The ASA requires "Was £X" claims to be based on a genuine
+// previous price held for a reasonable period. The widely applied
+// threshold is 28 consecutive days. After 28 days the reference
+// price window expires and the claim becomes misleading even
+// though the ad itself hasn't changed.
+//
+// This checks submitted dossiers whose MonitoredClaimTypes
+// include 'reference_pricing'. It fires a warning at 21 days
+// ("expiry approaching") and a critical alert at 28 days
+// ("reference price window has expired").
+//
+// Airtable fields required on Campaign_Dossiers:
+//   SubmittedAt (date)
+//   MonitoredClaimTypes (long text — JSON array)
+//   RefPriceAlertStage (text — '', 'warned', 'expired')
+//   MonitoringActive (checkbox)
+async function checkReferencePriceExpiry() {
+  const results = { checked: 0, warnings: 0, expired: 0, errors: [] };
+  const today = new Date().toISOString().split('T')[0];
+
+  let dossiers = [];
+  try {
+    dossiers = await atGet('Campaign_Dossiers',
+      "AND({Status}='Submitted',{MonitoringActive}=1,{MonitoredClaimTypes}!='')",
+      '', 200
+    );
+  } catch (e) {
+    console.error('Could not load dossiers for ref price check (non-fatal):', e.message);
+    return results;
+  }
+
+  for (const dossier of dossiers) {
+    try {
+      let monitored = [];
+      try { monitored = JSON.parse(dossier.fields.MonitoredClaimTypes || '[]'); } catch {}
+      if (!monitored.includes('reference_pricing')) continue;
+
+      results.checked++;
+
+      const submittedAt = dossier.fields.SubmittedAt;
+      if (!submittedAt) continue;
+
+      const age = daysSince(submittedAt);
+      const currentStage = dossier.fields.RefPriceAlertStage || '';
+
+      // Already alerted at the highest level — skip
+      if (currentStage === 'expired') continue;
+
+      let alertType = null;
+      let alertSummary = '';
+      let newStage = currentStage;
+
+      if (age >= 28 && currentStage !== 'expired') {
+        alertType = 'ref_price_expired';
+        alertSummary = 'Your reference pricing claim is now ' + age + ' days old. ' +
+          'The ASA typically requires the "was" price to have been genuine for 28 consecutive days. ' +
+          'This campaign\'s reference price window has expired — the "was" claim may now be misleading. ' +
+          'Update or withdraw the reference price, or document evidence that the previous price was genuine for a longer period.';
+        newStage = 'expired';
+        results.expired++;
+      } else if (age >= 21 && currentStage === '') {
+        alertType = 'ref_price_warning';
+        alertSummary = 'Your reference pricing claim is ' + age + ' days old. ' +
+          'The ASA\'s 28-day threshold for genuine previous pricing expires in ' + (28 - age) + ' days. ' +
+          'Plan to update or remove the reference price before it becomes potentially misleading.';
+        newStage = 'warned';
+        results.warnings++;
+      }
+
+      if (!alertType) continue;
+
+      const alert = {
+        type: alertType,
+        detectedAt: new Date().toISOString(),
+        campaignAge: age,
+        summary: alertSummary,
+      };
+
+      let existingAlerts = [];
+      try { existingAlerts = JSON.parse(dossier.fields.ComplianceAlertsJson || '[]'); } catch {}
+      existingAlerts.push(alert);
+
+      await atPatch('Campaign_Dossiers', dossier.id, {
+        ComplianceAlertsJson: JSON.stringify(existingAlerts),
+        RefPriceAlertStage: newStage,
+        LastComplianceCheck: today,
+      });
+
+      const dossierUserId = dossier.fields.UserID;
+      if (dossierUserId) {
+        try {
+          await fetch(APP_URL + '/api/data?action=send-alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: dossierUserId,
+              alertType,
+              campaignTitle: dossier.fields.CampaignTitle || 'a campaign',
+              campaignAge: age,
+            }),
+          });
+        } catch (ae) {
+          console.error('Ref price alert failed (non-fatal):', ae.message);
+        }
+      }
+    } catch (e) {
+      console.error('Ref price check error:', e.message);
+      results.errors.push({ dossierId: dossier.id, error: e.message });
+    }
+  }
+
+  return results;
+}
+
 // ── Main handler ──────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -367,12 +645,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Accept GET (Vercel Cron) or POST (manual trigger)
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'GET or POST only' });
   }
 
-  // Verify auth
   if (!verifyAuth(req)) {
     return res.status(401).json({ error: 'Unauthorised' });
   }
@@ -381,11 +657,19 @@ export default async function handler(req, res) {
   if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
 
   const weekNumber = getWeekNumber();
-  console.log(`Regulatory feed update starting — week ${weekNumber}`);
+  const monday = isMonday();
+  const today = new Date().toISOString().split('T')[0];
+  console.log(`Regulatory feed update starting — ${today} (week ${weekNumber}, monday=${monday})`);
 
-  const results = { written: 0, skipped: 0, errors: [], competitorAlerts: 0, promoScan: null, dossierMonitoring: null };
+  const results = {
+    written: 0, skipped: 0, errors: [],
+    competitorAlerts: 0, promoScan: null,
+    dossierMonitoring: null, landingPageDrift: null, refPriceExpiry: null,
+  };
 
   // ── Phase 1: Enforcement scan (ICO, ASA, CMA) ──────────────
+  // Runs daily. Enforcement feeds are idempotent — deduplication
+  // by company name + week number prevents double-writes.
   const [icoItems, asaItems, cmaItems] = await Promise.all([
     scanRegulator('ICO', ANTHROPIC_KEY),
     scanRegulator('ASA', ANTHROPIC_KEY),
@@ -400,7 +684,7 @@ export default async function handler(req, res) {
 
   console.log(`Found ${allItems.length} items (ICO: ${icoItems.length}, ASA: ${asaItems.length}, CMA: ${cmaItems.length})`);
 
-  // Load existing this week to deduplicate
+  // Deduplicate against existing this-week entries
   let existingThisWeek = [];
   try {
     existingThisWeek = await atGet('Sector_Intelligence_Feed', `{WeekNumber}='${weekNumber}'`, '', 200);
@@ -409,7 +693,7 @@ export default async function handler(req, res) {
   }
   const existingNames = new Set(existingThisWeek.map(r => (r.fields.CompanyName || '').toLowerCase()));
 
-  // Load ALL active competitor watch records (used for both phases)
+  // Load ALL active competitor watch records
   let allCompetitors = [];
   try {
     allCompetitors = await atGet('Competitor_Watch', `{WatchStatus}=1`, '', 200);
@@ -429,11 +713,10 @@ export default async function handler(req, res) {
 
       const sector = inferSector(`${item.companyName} ${item.rulingSummary}`);
 
-      // Write to Sector_Intelligence_Feed
       await atCreate('Sector_Intelligence_Feed', {
         Sector:             sector,
         Regulator:          item.regulator,
-        PublishedDate:      item.publishedDate || new Date().toISOString().split('T')[0],
+        PublishedDate:      item.publishedDate || today,
         CompanyName:        item.companyName || '',
         RulingSummary:      (item.rulingSummary || '').slice(0, 500),
         ClaimTypes:         Array.isArray(item.claimTypes) ? JSON.stringify(item.claimTypes) : '',
@@ -445,12 +728,11 @@ export default async function handler(req, res) {
         AddedBy:            'Auto',
       });
 
-      // Also write to Violation_Database
       try {
         await atCreate('Violation_Database', {
           CompanyName:   item.companyName || '',
           Regulator:     item.regulator,
-          DateOfAction:  item.publishedDate || new Date().toISOString().split('T')[0],
+          DateOfAction:  item.publishedDate || today,
           Violation:     (item.rulingSummary || '').slice(0, 500),
           FineAmount:    item.fineAmount || null,
           ViolationType: Array.isArray(item.claimTypes) ? item.claimTypes[0] : 'other',
@@ -498,18 +780,18 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── Phase 2: Competitor promo re-scan ───────────────────────
-  // Re-scan what each watched competitor is currently promoting.
-  // This catches risky marketing activity, not just enforcement.
-  if (allCompetitors.length > 0) {
-    console.log(`Starting promo re-scan for ${allCompetitors.length} active competitors`);
+  // ── Phase 2: Competitor promo re-scan (Mondays only) ────────
+  // Heavy on Claude API calls so kept weekly. Enforcement scan
+  // (Phase 1) runs daily and catches new rulings promptly.
+  if (monday && allCompetitors.length > 0) {
+    console.log(`Monday — starting promo re-scan for ${allCompetitors.length} active competitors`);
     results.promoScan = await scanCompetitorPromos(allCompetitors, ANTHROPIC_KEY);
     console.log(`Promo re-scan complete — scanned: ${results.promoScan.scanned}, updated: ${results.promoScan.updated}`);
   } else {
-    results.promoScan = { scanned: 0, updated: 0, errors: [] };
+    results.promoScan = { scanned: 0, updated: 0, errors: [], skippedReason: monday ? 'no competitors' : 'not Monday' };
   }
 
-  // ── Phase 3: Dossier compliance monitoring ──────────────────
+  // ── Phase 3: Dossier compliance monitoring (daily) ──────────
   if (allItems.length > 0) {
     console.log('Starting dossier compliance cross-reference');
     results.dossierMonitoring = await crossReferenceDossiers(allItems);
@@ -518,11 +800,22 @@ export default async function handler(req, res) {
     results.dossierMonitoring = { checked: 0, alertsFired: 0, errors: [] };
   }
 
-  console.log(`Feed update complete — enforcement written: ${results.written}, skipped: ${results.skipped}, competitor alerts: ${results.competitorAlerts}, promo re-scans: ${results.promoScan.updated}, errors: ${results.errors.length}`);
+  // ── Phase 4: Landing page drift detection (daily) ───────────
+  console.log('Starting landing page drift check');
+  results.landingPageDrift = await checkLandingPageDrift();
+  console.log(`Landing page drift check complete — checked: ${results.landingPageDrift.checked}, drifted: ${results.landingPageDrift.drifted}`);
+
+  // ── Phase 5: Reference price expiry (daily) ─────────────────
+  console.log('Starting reference price expiry check');
+  results.refPriceExpiry = await checkReferencePriceExpiry();
+  console.log(`Ref price check complete — warnings: ${results.refPriceExpiry.warnings}, expired: ${results.refPriceExpiry.expired}`);
+
+  console.log(`Feed update complete — enforcement: ${results.written}, competitor alerts: ${results.competitorAlerts}, drift: ${results.landingPageDrift.drifted}, ref price: ${results.refPriceExpiry.warnings}w/${results.refPriceExpiry.expired}e`);
 
   return res.status(200).json({
-    success:          true,
-    week:             weekNumber,
+    success: true,
+    date:    today,
+    week:    weekNumber,
     enforcement: {
       itemsFound:       allItems.length,
       written:          results.written,
@@ -534,11 +827,23 @@ export default async function handler(req, res) {
       competitorsScanned: results.promoScan.scanned,
       updated:            results.promoScan.updated,
       errors:             results.promoScan.errors.length,
+      skippedReason:      results.promoScan.skippedReason || null,
     },
     dossierMonitoring: {
       dossiersChecked: results.dossierMonitoring.checked,
       alertsFired:     results.dossierMonitoring.alertsFired,
       errors:          results.dossierMonitoring.errors.length,
+    },
+    landingPageDrift: {
+      urlsChecked:    results.landingPageDrift.checked,
+      dossiersAlerted: results.landingPageDrift.drifted,
+      errors:         results.landingPageDrift.errors.length,
+    },
+    refPriceExpiry: {
+      dossiersChecked: results.refPriceExpiry.checked,
+      warnings:        results.refPriceExpiry.warnings,
+      expired:         results.refPriceExpiry.expired,
+      errors:          results.refPriceExpiry.errors.length,
     },
     errors: results.errors,
   });
