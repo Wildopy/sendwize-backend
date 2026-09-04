@@ -1566,8 +1566,8 @@ function saveEdit(recordId) {
 function deleteRel(recordId, name) {
   if (!confirm('Remove '+name+' from your register?')) return;
   showLoading('Removing\u2026');
-  var action = currentType==='processors'?'register':currentType==='partners'?'partner-register':currentType==='affiliates'?'affiliate-register':'competitor-register';
-  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, recordId:recordId, delete:true})})
+  var action = currentType==='processors'?'register':currentType==='partners'?'partner-register':currentType==='affiliates'?'affiliate-register':'competitor-watch';
+  fetch(APP_URL+'/api/data?action='+action, {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, recordId:recordId})})
     .then(function(r){return r.json();})
     .then(function(){
       hideLoading();
@@ -1730,7 +1730,7 @@ function submitModal() {
     action = 'affiliate-register';
     bodyData = { userId:userId, affiliate:{ AffiliateName:name, AffiliateType:(document.getElementById('m-type')||{}).value||'', RelationshipActivity:(document.getElementById('m-activity')||{}).value||'', PrivacyPolicyUrl:(document.getElementById('m-pp')||{}).value||'' } };
   } else {
-    action = 'competitor-register';
+    action = 'competitor-watch';
     bodyData = { userId:userId, competitor:{ CompetitorName:name, Sector:(document.getElementById('m-sector')||{}).value||'general' } };
   }
   fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
