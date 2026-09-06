@@ -13,7 +13,7 @@
 // v7.3 changes (from v7.2):
 //   + Partner register: RelationshipActivity, MarketingChannels,
 //     AdComplianceReviewed, PricingComplianceReviewed fields added.
-//     New fix types: unreviewed_joint_ads, partner_pricing_claims.
+//     New fix types: unreviewed_joint_ads, partner_pricingf_claims.
 //   + Affiliate register: RelationshipActivity, MarketingMaterialsReviewed,
 //     AdDisclosureCompliant, LandingPageReviewed fields added.
 //     New fix types: affiliate_misleading_claims, affiliate_ad_disclosure,
@@ -622,6 +622,15 @@ async function handleAffiliateRegister(req, res) {
       MarketingMaterialsReviewed: affiliate.MarketingMaterialsReviewed || false,
       AdDisclosureCompliant: affiliate.AdDisclosureCompliant || 'Unverified',
       LandingPageReviewed: affiliate.LandingPageReviewed || false,
+      // v8.0 — verification flow fields
+      ConsentWordingPasted: affiliate.ConsentWordingPasted,
+      ConsentNameCheck: affiliate.ConsentNameCheck,
+      ConsentVerifiedDate: affiliate.ConsentChainVerified && !recordId ? new Date().toISOString().split('T')[0] : affiliate.ConsentVerifiedDate,
+      VerificationUrls: affiliate.VerificationUrls,
+      CreativeLastReviewed: affiliate.CreativeLastReviewed,
+      CreativeReviewResult: affiliate.CreativeReviewResult,
+      FromNameUsedVerified: affiliate.FromNameUsedVerified,
+    };
     };
 
     try {
