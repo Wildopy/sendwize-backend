@@ -1298,6 +1298,36 @@ async function handleSimulationRun(req, res) {
   });
 }
 
+// ── DOSSIER-TOGGLE-MONITORING handler (v4.32) ────────────────
+async function handleDossierToggleMonitoring(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const { userId, dossierId, monitoringActive, complianceAlerts } = req.body ?? {};
+  if (!userId)    return res.status(400).json({ error: 'Missing userId' });
+  if (!dossierId) return res.status(400).json({ error: 'Missing dossierId' });
+
+  const base = airtableBase();
+
+  const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, {
+    headers: atHeaders(process.env.AIRTABLE_TOKEN)
+  });
+  if (!dr.ok) return res.status(404).json({ error: 'Dossier not found' });
+  const record = await dr.json();
+  if (record.fields?.UserID !== userId) return res.status(403).json({ error: 'Not authorised' });
+
+  const patch = {};
+  if (monitoringActive !== undefined) patch.MonitoringActive = !!monitoringActive;
+  if (complianceAlerts !== undefined) patch.ComplianceAlertsJson = complianceAlerts;
+
+  if (!Object.keys(patch).length) return res.status(400).json({ error: 'Nothing to update' });
+
+  try {
+    await atPatch(base, 'Campaign_Dossiers', dossierId, patch);
+    return res.json({ success: true, dossierId, updated: Object.keys(patch) });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
+
 // ── Router ────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -1329,6 +1359,7 @@ export default async function handler(req, res) {
     if (action === 'competitor-watch'        && ['POST','DELETE'].includes(req.method))     return await handleCompetitorWatch(req, res);
     if (action === 'backfill-processor-fixes' && req.method === 'POST')                     return await handleBackfillProcessorFixes(req, res);
     if (action === 'cron-status'              && req.method === 'GET')                      return await handleCronStatus(req, res);
+    if (action === 'dossier-toggle-monitoring' && req.method === 'POST')                     return await handleDossierToggleMonitoring(req, res);
 
     return res.status(400).json({ error: 'Unknown action' });
   } catch (error) {
