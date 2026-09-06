@@ -305,6 +305,27 @@ textarea.field-input{min-height:90px;resize:vertical;line-height:1.6}
 .monitoring-pulse{width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;animation:monpulse 2s ease-in-out infinite}
 .monitoring-pulse.alert{background:var(--y)}
 @keyframes monpulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* v4.32 — monitoring toggle, drift alerts, ref price alerts */
+.monitoring-toggle{display:inline-flex}
+.monitoring-toggle-btn{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--b);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--w);color:var(--tm);transition:all .15s}
+.monitoring-toggle-btn:hover{border-color:var(--o)}
+.monitoring-toggle-btn.active{border-color:var(--g);color:var(--g)}
+.monitoring-toggle-btn.paused{border-color:var(--mu);color:var(--mu)}
+.monitoring-toggle-dot{width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;animation:monpulse 2s ease-in-out infinite}
+.monitoring-toggle-dot.off{background:var(--mu);animation:none}
+.monitoring-pulse.off{background:var(--mu);animation:none}
+.monitoring-log-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--b);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--w);color:var(--tm);transition:all .15s}
+.monitoring-log-btn:hover{border-color:var(--o);color:var(--o)}
+.monitoring-alert.critical{background:var(--rb);border-color:var(--rbd,var(--rc))}
+.monitoring-alert.drift{background:#fff7ed;border-color:var(--om)}
+.monitoring-alert.info{background:var(--bg);border-color:var(--b)}
+.monitoring-alert-type{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-left:8px;padding:1px 6px;border-radius:3px;background:rgba(0,0,0,.06);color:var(--tm)}
+.monitoring-drift-url{display:flex;gap:8px;align-items:flex-start;padding:8px 12px;background:var(--w);border:1px solid var(--b);border-radius:6px;margin-bottom:6px}
+.monitoring-drift-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.monitoring-refprice{padding:12px 14px;border-radius:8px;margin-bottom:6px}
+.monitoring-refprice.warning{background:var(--yb);border:1px solid var(--ybd,var(--yc))}
+.monitoring-refprice.expired{background:var(--rb);border:1px solid var(--rbd,var(--rc))}
 </style>
 </head>
 <body>
@@ -1509,67 +1530,84 @@ document.addEventListener('DOMContentLoaded',()=>{
 el('newDossierModal')?.addEventListener('click',function(e){if(e.target===this)hideNewDossierModal();});
 
 
-// ── Campaign monitoring section (v7.3) ──────────────────────
-function loadCampaignMonitoring(dossierId) {
-  if (!dossierId || !userId) return;
-
+// ── Campaign monitoring section (v4.32) ─────────────────────
+function loadCampaignMonitoring(dossierIdParam) {
+  var did = dossierIdParam || dossierId;
+  if (!did || !userId) return;
   var existing = document.getElementById('sw-monitoring');
   if (existing) existing.remove();
-
-  var certSection = document.getElementById('certSection') || document.getElementById('certArea') || document.querySelector('.cert-wrap') || document.querySelector('.submitted-view');
-  if (!certSection) return;
-
+  var certSec = document.getElementById('certSection') || document.getElementById('certArea') || document.querySelector('.cert-wrap') || document.querySelector('.submitted-view');
+  if (!certSec) return;
   var monDiv = document.createElement('div');
   monDiv.id = 'sw-monitoring';
   monDiv.className = 'monitoring-section';
-  monDiv.innerHTML = '<div class="monitoring-title"><span class="monitoring-pulse"></span>Campaign Monitoring</div><div class="monitoring-sub">Loading compliance alerts...</div>';
-  certSection.appendChild(monDiv);
-
-  fetch(APP_URL + '/api/submit-check?action=dossier-get&dossierId=' + dossierId + '&userId=' + userId)
+  monDiv.innerHTML = '<div class="monitoring-title"><span class="monitoring-pulse"></span>Campaign Monitoring</div><div class="monitoring-sub">Loading compliance alerts\u2026</div>';
+  certSec.appendChild(monDiv);
+  fetch(APP_URL + '/api/submit-check?action=dossier-get&dossierId=' + did + '&userId=' + userId)
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      var alerts = [];
-      try { alerts = JSON.parse(data.ComplianceAlertsJson || '[]'); } catch(e) {}
-      var monitored = [];
-      try { monitored = JSON.parse(data.MonitoredClaimTypes || '[]'); } catch(e) {}
+      var alerts = []; try { alerts = JSON.parse(data.ComplianceAlertsJson || '[]'); } catch(e) {}
+      var monitored = []; try { monitored = JSON.parse(data.MonitoredClaimTypes || '[]'); } catch(e) {}
       var lastCheck = data.LastComplianceCheck || null;
-
+      var isActive = data.MonitoringActive !== false;
+      var toggleHtml = '<div class="monitoring-toggle"><button class="monitoring-toggle-btn' + (isActive ? ' active' : ' paused') + '" onclick="toggleMonitoring(\'' + did + '\',' + (isActive ? 'false' : 'true') + ')"><span class="monitoring-toggle-dot' + (isActive ? '' : ' off') + '"></span>' + (isActive ? 'Monitoring active' : 'Monitoring paused') + '</button></div>';
+      var logBtn = '<button class="monitoring-log-btn" onclick="logCampaignChange(\'' + did + '\')">\u270F\uFE0F Log a change</button>';
+      var controlsHtml = '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">' + toggleHtml + logBtn + '</div>';
+      var chipsHtml = monitored.length ? '<div class="monitoring-claim-chips" style="margin-top:12px">' + monitored.map(function(ct) { return '<span class="monitoring-claim-chip">' + ct.replace(/_/g, ' ') + '</span>'; }).join('') + '</div>' : '';
+      var lastCheckStr = lastCheck ? ' Last checked: ' + new Date(lastCheck).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '';
       if (!alerts.length) {
-        monDiv.innerHTML =
-          '<div class="monitoring-title"><span class="monitoring-pulse"></span>Campaign Monitoring \u2014 Active</div>'
-          + '<div class="monitoring-sub">Your campaign is being monitored weekly against new ICO, ASA, and CMA enforcement activity.'
-          + (lastCheck ? ' Last checked: ' + new Date(lastCheck).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '')
-          + '</div>'
-          + '<div class="monitoring-clear">\u2705 No compliance changes detected since submission. Your evidence file is current.</div>'
-          + (monitored.length ? '<div class="monitoring-claim-chips" style="margin-top:12px">' + monitored.map(function(ct) { return '<span class="monitoring-claim-chip">' + ct.replace(/_/g, ' ') + '</span>'; }).join('') + '</div>' : '');
-      } else {
-        var alertsHtml = alerts.slice().reverse().map(function(a) {
-          var dateStr = a.detectedAt ? new Date(a.detectedAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '';
-          var rulingsHtml = (a.rulings || []).map(function(r) {
-            return '<div class="monitoring-ruling"><span class="monitoring-ruling-reg ' + (r.regulator || '') + '">' + (r.regulator || '') + '</span><div><strong>' + (r.companyName || '') + '</strong> \u2014 ' + (r.rulingSummary || '') + '</div></div>';
-          }).join('');
-          var claimChips = (a.claimTypes || []).map(function(ct) {
-            return '<span class="monitoring-claim-chip">' + ct.replace(/_/g, ' ') + '</span>';
-          }).join('');
-          return '<div class="monitoring-alert">'
-            + '<div class="monitoring-alert-date">' + dateStr + '</div>'
-            + '<div class="monitoring-alert-summary">' + (a.summary || '') + '</div>'
-            + rulingsHtml
-            + '<div class="monitoring-claim-chips" style="margin-top:8px">' + claimChips + '</div>'
-            + '</div>';
-        }).join('');
-
-        monDiv.innerHTML =
-          '<div class="monitoring-title"><span class="monitoring-pulse alert"></span>Campaign Monitoring \u2014 ' + alerts.length + ' alert' + (alerts.length !== 1 ? 's' : '') + '</div>'
-          + '<div class="monitoring-sub">New enforcement activity matches claim types in this campaign. Review the rulings below and check whether your evidence still holds.'
-          + (lastCheck ? ' Last checked: ' + new Date(lastCheck).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '')
-          + '</div>'
-          + alertsHtml;
+        monDiv.innerHTML = '<div class="monitoring-title"><span class="monitoring-pulse' + (isActive ? '' : ' off') + '"></span>Campaign Monitoring' + (isActive ? '' : ' \u2014 Paused') + '</div><div class="monitoring-sub">' + (isActive ? 'Your campaign is being monitored daily against new enforcement activity, landing page changes, and reference price expiry.' : 'Monitoring is paused. Toggle to resume daily compliance checks.') + lastCheckStr + '</div>' + controlsHtml + '<div class="monitoring-clear">\u2705 No compliance changes detected since submission. Your evidence file is current.</div>' + chipsHtml;
+        return;
       }
+      var alertsHtml = alerts.slice().reverse().map(function(a) {
+        var dateStr = a.detectedAt ? new Date(a.detectedAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '';
+        var alertType = a.type || 'enforcement_match';
+        var iconMap = {'enforcement_match':'\u26A0\uFE0F','landing_page_drift':'\uD83D\uDD17','ref_price_warning':'\u23F0','ref_price_expired':'\uD83D\uDED1','manual_change':'\u270F\uFE0F'};
+        var sevMap = {'enforcement_match':'','landing_page_drift':'drift','ref_price_warning':'','ref_price_expired':'critical','manual_change':'info'};
+        var icon = iconMap[alertType] || '\u26A0\uFE0F';
+        var sevClass = sevMap[alertType] || '';
+        var bodyHtml = '';
+        if (alertType === 'enforcement_match') {
+          bodyHtml = (a.rulings || []).map(function(r) { return '<div class="monitoring-ruling"><span class="monitoring-ruling-reg ' + (r.regulator||'') + '">' + (r.regulator||'') + '</span><div><strong>' + (r.companyName||'') + '</strong> \u2014 ' + (r.rulingSummary||'') + '</div></div>'; }).join('');
+          var cc = (a.claimTypes||[]).map(function(ct){ return '<span class="monitoring-claim-chip">'+ct.replace(/_/g,' ')+'</span>'; }).join('');
+          if (cc) bodyHtml += '<div class="monitoring-claim-chips" style="margin-top:8px">' + cc + '</div>';
+        } else if (alertType === 'landing_page_drift') {
+          bodyHtml = (a.changedUrls||[]).map(function(u) { return '<div class="monitoring-drift-url"><span class="monitoring-drift-icon">\uD83D\uDD17</span><div><a href="'+(u.url||'')+'" target="_blank" rel="noopener" style="color:var(--o);font-size:12px;word-break:break-all">'+(u.url||'')+'</a><div style="font-size:11px;color:var(--tm);margin-top:2px">'+(u.reason||'')+'</div></div></div>'; }).join('');
+        } else if (alertType === 'ref_price_warning' || alertType === 'ref_price_expired') {
+          var isExp = alertType === 'ref_price_expired';
+          bodyHtml = '<div class="monitoring-refprice '+(isExp?'expired':'warning')+'"><div style="font-size:13px;font-weight:700;margin-bottom:4px">'+(isExp?'\uD83D\uDED1 Reference price window expired':'\u23F0 Reference price expiry approaching')+'</div><div style="font-size:12px;color:var(--tm);line-height:1.6">Campaign age: '+(a.campaignAge||'?')+' days. '+(isExp?'The ASA requires reference prices to have been genuine for 28 consecutive days. Update or withdraw the reference price.':'The 28-day window expires in '+(28-(a.campaignAge||0))+' days. Plan to update the reference price.')+'</div></div>';
+        } else if (alertType === 'manual_change') {
+          bodyHtml = '<div style="font-size:12px;color:var(--tm);background:var(--bg);border-radius:6px;padding:10px 12px;line-height:1.6">'+(a.note||'')+'</div>';
+        }
+        return '<div class="monitoring-alert '+sevClass+'"><div class="monitoring-alert-date">'+icon+' '+dateStr+'<span class="monitoring-alert-type">'+alertType.replace(/_/g,' ')+'</span></div><div class="monitoring-alert-summary">'+(a.summary||'')+'</div>'+bodyHtml+'</div>';
+      }).join('');
+      monDiv.innerHTML = '<div class="monitoring-title"><span class="monitoring-pulse'+(isActive?' alert':' off')+'"></span>Campaign Monitoring \u2014 '+alerts.length+' alert'+(alerts.length!==1?'s':'')+'</div><div class="monitoring-sub">'+(isActive?'New activity detected. Review the alerts below and check whether your evidence still holds.':'Monitoring is paused. Alerts below were detected before pausing.')+lastCheckStr+'</div>'+controlsHtml+alertsHtml+chipsHtml;
     })
-    .catch(function() {
-      monDiv.innerHTML = '<div class="monitoring-title"><span class="monitoring-pulse"></span>Campaign Monitoring</div><div class="monitoring-sub">Could not load monitoring data.</div>';
-    });
+    .catch(function() { monDiv.innerHTML = '<div class="monitoring-title"><span class="monitoring-pulse"></span>Campaign Monitoring</div><div class="monitoring-sub">Could not load monitoring data.</div>'; });
+}
+
+function toggleMonitoring(did, activate) {
+  if (_demoMode) { toast('Demo mode \u2014 monitoring toggle is disabled', 'warn'); return; }
+  fetch(APP_URL + '/api/data?action=dossier-toggle-monitoring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: userId, dossierId: did, monitoringActive: activate }) })
+  .then(function(r) { return r.json(); })
+  .then(function() { toast(activate ? 'Monitoring resumed' : 'Monitoring paused', 'ok'); loadCampaignMonitoring(did); })
+  .catch(function(e) { toast('Could not toggle monitoring: ' + e.message, 'er'); });
+}
+
+function logCampaignChange(did) {
+  var note = prompt('What changed since this campaign was approved?\n\nExamples:\n\u2022 Landing page pricing updated\n\u2022 Affiliate modified subject line\n\u2022 A/B test variant B went live\n\u2022 T&Cs updated mid-campaign');
+  if (!note || !note.trim()) return;
+  if (_demoMode) { toast('Demo mode \u2014 changes not saved', 'warn'); return; }
+  var alert = { type:'manual_change', detectedAt:new Date().toISOString(), summary:'Manual change logged: '+note.trim().slice(0,100), note:note.trim() };
+  fetch(APP_URL + '/api/submit-check?action=dossier-get&dossierId=' + did + '&userId=' + userId)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var existing = []; try { existing = JSON.parse(data.ComplianceAlertsJson || '[]'); } catch(e) {}
+      existing.push(alert);
+      return fetch(APP_URL + '/api/data?action=dossier-toggle-monitoring', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:userId, dossierId:did, complianceAlerts:JSON.stringify(existing) }) });
+    })
+    .then(function() { toast('Change logged', 'ok'); loadCampaignMonitoring(did); })
+    .catch(function(e) { toast('Could not log change: '+e.message, 'er'); });
 }
 </script>
 </body>
