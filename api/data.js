@@ -516,7 +516,6 @@ async function handlePartnerRegister(req, res) {
       PricingLastReviewed: partner.PricingLastReviewed,
       PricingReviewResult: partner.PricingReviewResult,
     };
-    };
 
     try {
       const record = recordId
