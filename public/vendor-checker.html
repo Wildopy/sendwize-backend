@@ -1076,7 +1076,7 @@ function showDetail(recordId) {
   } else if (currentType==='affiliates') {
     tabDefs = [['Overview','overview'],['Agreement','dpa'],['Verification','verification'],['Creative','creative'],['Privacy Policy','privacy']];
   } else {
-    tabDefs = [['Overview','overview'],['DPA Review','dpa'],['Privacy Policy','privacy'],['Edit','edit']];
+    tabDefs = [['Overview','overview'],['Agreement','dpa'],['Privacy Policy','privacy']];
   }
   panel.innerHTML =
     '<div class="dp-hdr"><div><div class="dp-name">'+escH(name)+'</div><div class="dp-meta">'+escH(getTypeInfo(f))+'</div></div>'
