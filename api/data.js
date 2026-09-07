@@ -509,6 +509,13 @@ async function handlePartnerRegister(req, res) {
       MarketingChannels: Array.isArray(partner.MarketingChannels) ? JSON.stringify(partner.MarketingChannels) : partner.MarketingChannels,
       AdComplianceReviewed: partner.AdComplianceReviewed || false,
       PricingComplianceReviewed: partner.PricingComplianceReviewed || false,
+      // v8.1 — verification flow fields
+      ConsentChainNotes: partner.ConsentChainNotes,
+      AdLastReviewed: partner.AdLastReviewed,
+      AdReviewResult: partner.AdReviewResult,
+      PricingLastReviewed: partner.PricingLastReviewed,
+      PricingReviewResult: partner.PricingReviewResult,
+    };
     };
 
     try {
