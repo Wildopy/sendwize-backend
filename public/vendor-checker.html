@@ -1072,7 +1072,7 @@ function showDetail(recordId) {
   if (currentType==='competitors') {
     tabDefs = [['Overview','overview'],['Rulings','rulings'],['Promo Tactics','promos']];
   } else if (currentType==='partners') {
-    tabDefs = [['Overview','overview'],['Joint Agreement','a26'],['Privacy Policy','privacy'],['Edit','edit']];
+    tabDefs = [['Overview','overview'],['Joint Agreement','a26'],['Verification','verification'],['Privacy Policy','privacy']];
   } else if (currentType==='affiliates') {
     tabDefs = [['Overview','overview'],['Agreement','dpa'],['Verification','verification'],['Creative','creative'],['Privacy Policy','privacy']];
   } else {
@@ -1106,7 +1106,7 @@ function switchDetailTab(name, btn) {
   if (name==='a26')      renderA26Review(rec);
   if (name==='privacy')  renderPrivacyReview(rec);
   if (name==='edit')          renderDetailEdit(rec);
-  if (name==='verification')  renderVerification(rec);
+  if (name==='verification') { if (currentType==='partners') renderPartnerVerification(rec); else renderVerification(rec); }
   if (name==='creative')      renderCreative(rec);
   if (name==='rulings')       renderCompRulings(rec);
   if (name==='promos')   renderCompPromos(rec);
@@ -1124,36 +1124,175 @@ function renderDetailOverview(rec) {
   var known = S.knownVendors[f.VendorName||f.PartnerName||f.AffiliateName||'']||{};
   var rows = [];
   var t = currentType;
-  if (t==='processors') {
+    if (t==='processors') {
+    // ── Processor overview: narrative + exposure + investigation preview ──
     var dpa = f.DPAStatus||f.AgreementStatus||'Unknown';
-    var dc = isDPAConfirmed(dpa)?'pg':dpa==='Requested'?'py':'pr';
-    rows = [
-      ['DPA Status','<span class="pill '+dc+'">'+escH(dpa)+'</span>'],
-      ['Agreement date',f.AgreementDate?fmtDate(f.AgreementDate):'<span style="color:var(--mu)">Not recorded</span>'],
-      ['Transfer',escH(f.TransferDestination||'UK only')],
-      ['ICO risk',f.ICORiskLevel?'<span class="pill '+(f.ICORiskLevel==='High'?'pr':f.ICORiskLevel==='Medium'?'py':'pg')+'">'+f.ICORiskLevel+'</span>':'<span style="color:var(--mu)">Not scanned</span>'],
-      ['Privacy policy',f.PrivacyPolicyUrl?'<a href="'+escH(f.PrivacyPolicyUrl)+'" target="_blank" rel="noopener" style="color:var(--o);font-size:12px;text-decoration:none">View <i class="ph ph-arrow-up-right icon-16" style="vertical-align:-2px"></i></a>':'<span style="color:var(--mu)">Not recorded</span>'],
-      ['Last scanned',f.LastChecked?fmtDate(f.LastChecked)+(isStale(f.LastChecked)?' <span class="pill py">90+ days</span>':''):'<span style="color:var(--mu)">Never</span>'],
+    var dpaOk = isDPAConfirmed(dpa);
+    var scanned = false;
+    try { scanned = f.DPAClauseResults && Object.keys(JSON.parse(f.DPAClauseResults)).length > 0; } catch(e){}
+    var stale = isStale(f.LastChecked||f.LastAutoChecked);
+    var procAllClear = dpaOk && scanned && !stale;
+
+    // Exposure estimate (processors)
+    var procExpLow = 0, procExpHigh = 0;
+    if (!dpaOk) {
+      procExpLow += f.ICORiskLevel==='High' ? 20000 : 10000;
+      procExpHigh += f.ICORiskLevel==='High' ? 50000 : 25000;
+    }
+    if (stale) { procExpLow += 5000; procExpHigh += 15000; }
+    var hasExposure = procExpLow > 0 || procExpHigh > 0;
+
+    // Exposure strip
+    var exposureHtml = '<div class="exposure-strip">';
+    exposureHtml += '<div class="exposure-card '+(hasExposure?'risk':'ok')+'">';
+    exposureHtml += '<div class="exposure-label">Estimated exposure</div>';
+    exposureHtml += '<div class="exposure-value '+(hasExposure?'risk':'ok')+'">'+(hasExposure ? '\u00a3'+fmtNum(procExpLow)+'\u2013\u00a3'+fmtNum(procExpHigh) : '\u00a30')+'</div>';
+    exposureHtml += '<div class="exposure-sub">'+(hasExposure ? 'Based on DPA gaps and review status' : 'DPA confirmed and current')+'</div>';
+    exposureHtml += '</div>';
+    var stepsArr = getRowProgress(rec);
+    var stepsDone = stepsArr.filter(function(s){return s==='done';}).length;
+    exposureHtml += '<div class="exposure-card"><div class="exposure-label">Verification progress</div>';
+    exposureHtml += '<div class="exposure-value" style="color:var(--'+(stepsDone===4?'g':stepsDone>=2?'y':'r')+')">'+stepsDone+'/4</div>';
+    exposureHtml += '<div class="exposure-sub">compliance steps complete</div></div>';
+    exposureHtml += '</div>';
+
+    // AI narrative briefing
+    var narrativeHtml = '<div class="narrative-card">';
+    var vendorType = f.VendorType || f.Category || 'processor';
+    var briefLines = [];
+    briefLines.push('<strong>'+escH(name)+'</strong> is registered as a '+escH(vendorType.toLowerCase())+' processing personal data on your behalf.');
+    if (!dpaOk) briefLines.push('No confirmed <strong>Article 28 Data Processing Agreement</strong> is in place \u2014 until this is signed, any data processing by '+escH(name)+' is technically a UK GDPR breach.');
+    if (scanned) {
+      var clauseResults = {}; try { clauseResults = JSON.parse(f.DPAClauseResults); } catch(e){}
+      var failCount = Object.values(clauseResults).filter(function(v){return v.status==='fail';}).length;
+      var warnCount = Object.values(clauseResults).filter(function(v){return v.status==='warn';}).length;
+      if (failCount > 0) briefLines.push('DPA scan found <strong>'+failCount+' missing clause'+(failCount!==1?'s':'')+'</strong>'+(warnCount > 0 ? ' and '+warnCount+' unclear' : '')+'. Contact '+escH(name)+' to request an updated agreement.');
+      else if (warnCount > 0) briefLines.push('DPA scan found '+warnCount+' clause'+(warnCount!==1?'s':'')+' with ambiguous wording. Review and self-certify if covered.');
+      else briefLines.push('DPA scan: all Article 28 clauses found.');
+    } else { briefLines.push('The DPA has not been scanned yet. Scan it against 12 Article 28 requirements on the Agreement tab.'); }
+    if (stale) briefLines.push('Last reviewed <strong>'+fmtDate(f.LastChecked||f.LastAutoChecked)+'</strong> \u2014 over 90 days ago. Quarterly re-scans recommended.');
+    if (f.TransferDestination && f.TransferDestination !== 'UK only' && f.TransferDestination !== 'UK') briefLines.push('Data is transferred to <strong>'+escH(f.TransferDestination)+'</strong> \u2014 ensure adequate transfer safeguards are documented.');
+    if (procAllClear) briefLines.push('All verification steps are complete. Exposure is currently \u00a30.');
+    var actionsNeeded = [];
+    if (!dpaOk) actionsNeeded.push('confirm DPA');
+    if (!scanned) actionsNeeded.push('scan DPA');
+    if (stale) actionsNeeded.push('re-scan (90+ days)');
+    if (actionsNeeded.length) briefLines.push('<strong>'+actionsNeeded.length+' action'+(actionsNeeded.length!==1?'s':'')+' required:</strong> '+actionsNeeded.join(', ')+'.');
+    narrativeHtml += '<div class="narrative-text">'+briefLines.join(' ')+'</div>';
+    narrativeHtml += '</div>';
+
+    // Investigation preview
+    var invQuestions = [
+      { q: 'Provide your Article 28 DPA with '+escH(name)+'.', ok: dpaOk, label: dpaOk ? 'In place' : 'Not in place' },
+      { q: 'Show us the results of your last DPA review for '+escH(name)+'.', ok: scanned, label: scanned ? 'Scanned' : 'Not scanned' },
+      { q: 'Confirm when this agreement was last reviewed.', ok: !stale && !!f.LastChecked, label: f.LastChecked && !stale ? 'Current ('+fmtDate(f.LastChecked)+')' : stale ? 'Stale' : 'No record' },
     ];
-    if (known.knownBreachHistory) rows.push(['Breach history (DB)',escH(known.knownBreachHistory)]);
-    if (f.Notes) rows.push(['Notes',escH(f.Notes)]);
-  } else if (t==='partners') {
+    var invAllOk = invQuestions.every(function(q){return q.ok;});
+    var invHtml = '<div class="inv-preview'+(invAllOk?' clear':'')+'">';
+    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Investigation ready \u2014 all evidence available' : 'If the ICO looked at this relationship, they\'d ask:')+'</div>';
+    invQuestions.forEach(function(q) {
+      var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
+      invHtml += '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
+    });
+    invHtml += '</div>';
+
+    // Compliance passport
+    var passportHtml = '';
+    if (procAllClear) {
+      passportHtml = '<div class="passport-card"><div class="passport-icon">\u2705</div><div><div class="passport-title">'+escH(name)+' \u2014 Verified</div><div class="passport-sub">DPA confirmed, agreement scanned, review current.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
+    }
+
+    body.innerHTML = exposureHtml + narrativeHtml + invHtml + passportHtml
+      + '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'
+      + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'dpa\')"><i class="ph ph-scan icon-16"></i>Scan DPA</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'privacy\')">Review privacy policy</button>'
+      + '</div>';
+    return;
+    } else if (t==='partners') {
+    // ── Partner overview: narrative + exposure + investigation preview ──
     var a26 = f.Article26Status||'Not yet';
-    var ac = isDPAConfirmed(a26)?'pg':a26==='Requested'?'py':'pr';
-    var rep = f.ReputationScore!=null?f.ReputationScore:'\u2014';
-    var rc = f.ReputationScore>=70?'pg':f.ReputationScore>=40?'py':'pr';
-    rows = [
-      ['Article 26 Status','<span class="pill '+ac+'">'+escH(a26)+'</span>'],
-      ['Agreement date',f.Article26Date?fmtDate(f.Article26Date):'<span style="color:var(--mu)">Not recorded</span>'],
-      ['Consent chain owner',escH(f.ConsentChainOwner||'Unknown')],
-      ['Consent verified',f.ConsentChainVerified?'<span class="pill pg">Verified</span>':'<span class="pill pr">Not yet</span>'],
-      ['Reputation score','<span class="pill '+rc+'">'+rep+'/100</span>'+(f.ViolationCount>0?' ('+f.ViolationCount+' enforcement action'+(f.ViolationCount!==1?'s':'')+' found)':'')],
-      ['Brand safety',f.BrandSafetyFlag?'<span class="pill pr">'+escH(f.BrandSafetyReason||'Flagged')+'</span>':'<span class="pill pg">Clear</span>'],
-      ['Ad compliance (CAP)',f.AdComplianceReviewed?'<span class="pill pg">Reviewed</span>':'<span class="pill py">Not reviewed</span>'],
-      ['Pricing compliance (CMA)',f.PricingComplianceReviewed?'<span class="pill pg">Verified</span>':'<span class="pill py">Not verified</span>'],
+    var a26Ok = isDPAConfirmed(a26);
+    var consentOk = !!f.ConsentChainVerified;
+    var activity = f.RelationshipActivity || '';
+    var actLabels = {joint_ads:'Joint advertising',co_branded_content:'Co-branded content',influencer:'Influencer partnership',lead_generation:'Lead generation',data_sharing:'Data sharing',email_sending:'Email sending'};
+    var needsAdReview = ['joint_ads','co_branded_content','influencer'].indexOf(activity) >= 0;
+    var needsPricingReview = ['joint_ads','co_branded_content','lead_generation'].indexOf(activity) >= 0;
+    var adOk = !needsAdReview || !!f.AdComplianceReviewed;
+    var pricingOk = !needsPricingReview || !!f.PricingComplianceReviewed;
+    var partAllClear = a26Ok && consentOk && adOk && pricingOk && !f.BrandSafetyFlag;
+
+    // Exposure estimate (partners)
+    var partExpLow = 0, partExpHigh = 0;
+    if (!a26Ok) { partExpLow += 15000; partExpHigh += 75000; }
+    if (!consentOk) { partExpLow += 10000; partExpHigh += 50000; }
+    if (!adOk) { partExpLow += 5000; partExpHigh += 25000; }
+    if (!pricingOk) { partExpLow += 5000; partExpHigh += 25000; }
+    var hasExposure = partExpLow > 0 || partExpHigh > 0;
+
+    // Exposure strip
+    var exposureHtml = '<div class="exposure-strip">';
+    exposureHtml += '<div class="exposure-card '+(hasExposure?'risk':'ok')+'">';
+    exposureHtml += '<div class="exposure-label">Estimated exposure</div>';
+    exposureHtml += '<div class="exposure-value '+(hasExposure?'risk':'ok')+'">'+(hasExposure ? '\u00a3'+fmtNum(partExpLow)+'\u2013\u00a3'+fmtNum(partExpHigh) : '\u00a30')+'</div>';
+    exposureHtml += '<div class="exposure-sub">'+(hasExposure ? 'Based on agreement gaps and unreviewed compliance' : 'All verification steps complete')+'</div>';
+    exposureHtml += '</div>';
+    var stepsArr = getRowProgress(rec);
+    var stepsDone = stepsArr.filter(function(s){return s==='done';}).length;
+    exposureHtml += '<div class="exposure-card"><div class="exposure-label">Verification progress</div>';
+    exposureHtml += '<div class="exposure-value" style="color:var(--'+(stepsDone===4?'g':stepsDone>=2?'y':'r')+')">'+stepsDone+'/4</div>';
+    exposureHtml += '<div class="exposure-sub">compliance steps complete</div></div>';
+    exposureHtml += '</div>';
+
+    // AI narrative briefing
+    var narrativeHtml = '<div class="narrative-card">';
+    var partType = f.PartnerType || 'partner';
+    var briefLines = [];
+    briefLines.push('<strong>'+escH(name)+'</strong> is registered as a '+escH(partType.toLowerCase())+(activity ? ' ('+escH(actLabels[activity]||activity)+')' : '')+'.');
+    if (!a26Ok) briefLines.push('No confirmed <strong>Article 26 joint controller arrangement</strong> is in place \u2014 both parties are liable for the full scope of processing without a transparent agreement documenting responsibilities.');
+    if (!consentOk) briefLines.push('The <strong>consent chain</strong> has not been verified \u2014 it is unclear which party\'s consent mechanism applies to shared data.');
+    if (needsAdReview && !f.AdComplianceReviewed) briefLines.push('Joint advertising content has <strong>not been reviewed</strong> against the CAP Code \u2014 under sections 3 (misleading) and 8 (pricing), both parties are responsible for claims in joint campaigns.');
+    if (needsPricingReview && !f.PricingComplianceReviewed) briefLines.push('Pricing and promotional claims in co-branded campaigns have <strong>not been verified</strong> against CMA/DMCCA 2024 requirements.');
+    if (f.BrandSafetyFlag) briefLines.push('<strong>Brand safety flag:</strong> '+escH(f.BrandSafetyReason||'regulatory history found')+'.');
+    if (f.ViolationCount > 0) briefLines.push(f.ViolationCount+' regulatory action'+(f.ViolationCount!==1?'s':'')+' found in the enforcement database.');
+    if (partAllClear) briefLines.push('All verification steps are complete. Exposure is currently \u00a30.');
+    var actionsNeeded = [];
+    if (!a26Ok) actionsNeeded.push('confirm Art. 26 agreement');
+    if (!consentOk) actionsNeeded.push('verify consent chain');
+    if (!adOk) actionsNeeded.push('review ad compliance');
+    if (!pricingOk) actionsNeeded.push('review pricing compliance');
+    if (actionsNeeded.length) briefLines.push('<strong>'+actionsNeeded.length+' action'+(actionsNeeded.length!==1?'s':'')+' required:</strong> '+actionsNeeded.join(', ')+'.');
+    narrativeHtml += '<div class="narrative-text">'+briefLines.join(' ')+'</div>';
+    narrativeHtml += '</div>';
+
+    // Investigation preview — regulators pick depends on activity
+    var invQuestions = [
+      { q: 'Provide your Article 26 joint controller arrangement with '+escH(name)+'.', ok: a26Ok, label: a26Ok ? 'In place' : 'Not in place' },
+      { q: 'Show us how consent is managed for data shared between you and '+escH(name)+'.', ok: consentOk, label: consentOk ? 'Verified' : 'Not verified' },
+      { q: 'Provide evidence that joint advertising and pricing claims have been reviewed for compliance.', ok: adOk && pricingOk, label: adOk && pricingOk ? 'Reviewed' : 'Not reviewed' },
     ];
-    if (f.RelationshipActivity) { var actLabels={joint_ads:'Joint advertising',co_branded_content:'Co-branded content',influencer:'Influencer partnership',lead_generation:'Lead generation',data_sharing:'Data sharing',email_sending:'Email sending'}; rows.splice(0,0,['Relationship activity',actLabels[f.RelationshipActivity]||f.RelationshipActivity]); }
-    if (f.Notes) rows.push(['Notes',escH(f.Notes)]);
+    var invAllOk = invQuestions.every(function(q){return q.ok;});
+    var invHtml = '<div class="inv-preview'+(invAllOk?' clear':'')+'">';
+    var invRegulator = needsAdReview ? 'ASA/CMA' : 'ICO';
+    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Investigation ready \u2014 all evidence available' : 'If the '+invRegulator+' looked at this relationship, they\'d ask:')+'</div>';
+    invQuestions.forEach(function(q) {
+      var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
+      invHtml += '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
+    });
+    invHtml += '</div>';
+
+    // Compliance passport
+    var passportHtml = '';
+    if (partAllClear) {
+      passportHtml = '<div class="passport-card"><div class="passport-icon">\u2705</div><div><div class="passport-title">'+escH(name)+' \u2014 Verified</div><div class="passport-sub">Art. 26 confirmed, consent verified'+(needsAdReview ? ', ad compliance reviewed' : '')+(needsPricingReview ? ', pricing verified' : '')+'.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
+    }
+
+    body.innerHTML = exposureHtml + narrativeHtml + invHtml + passportHtml
+      + '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'
+      + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'verification\')"><i class="ph ph-list-checks icon-16"></i>Start verification</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'a26\')">Review Art. 26</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'privacy\')">Review privacy policy</button>'
+      + '</div>';
+    return;
   } else if (t==='affiliates') {
     // ── Affiliate overview: narrative + exposure + investigation preview ──
     var affAllClear = isDPAConfirmed(f.DPAStatus) && f.ConsentChainVerified && (f.SenderIdentityCompliant==='Verified'||f.SenderIdentityCompliant==='N/A') && f.MarketingMaterialsReviewed;
@@ -1589,6 +1728,7 @@ function renderCompPromos(rec) {
 
   // ── VERIFICATION TAB (affiliates) ─────────────────────────────
 var verifStep = 0;
+var partnerVerifStep = 0;
 
 function renderVerification(rec) {
   var body = document.getElementById('dpBody');
@@ -1811,6 +1951,291 @@ function saveLandingPage(recordId) {
     });
   })
   .catch(function(e) { hideLoading(); showToast('Save failed: '+e.message, 'er'); });
+}
+
+// ── VERIFICATION TAB (partners) ─────────────────────────────
+
+function renderPartnerVerification(rec) {
+  var body = document.getElementById('dpBody');
+  if (!body) return;
+  var f = rec.fields;
+  var name = getName(f);
+  var activity = f.RelationshipActivity || '';
+  var needsAdReview = ['joint_ads','co_branded_content','influencer'].indexOf(activity) >= 0;
+  var needsPricingReview = ['joint_ads','co_branded_content','lead_generation'].indexOf(activity) >= 0;
+
+  var steps = [
+    {
+      title: 'Consent chain verification',
+      sub: 'Who collected the data, and whose consent mechanism applies?',
+      done: !!f.ConsentChainVerified,
+      render: function() {
+        var html = '<div style="margin-top:12px">';
+        html += '<div class="fg"><label>Who collected the data?</label><select id="pv-consent-owner">'
+          + '<option value="Unknown"'+(f.ConsentChainOwner==='Unknown'||!f.ConsentChainOwner?' selected':'')+'>Unknown</option>'
+          + '<option value="Us"'+(f.ConsentChainOwner==='Us'?' selected':'')+'>Us (our consent mechanism)</option>'
+          + '<option value="Partner"'+(f.ConsentChainOwner==='Partner'?' selected':'')+'>Partner (their consent mechanism)</option>'
+          + '<option value="Both"'+(f.ConsentChainOwner==='Both'?' selected':'')+'>Both (separate consent for each)</option>'
+          + '</select></div>';
+        html += '<div class="fg"><label>Paste the relevant consent clause from your agreement</label><textarea id="pv-consent-clause" placeholder="Copy the clause from your Art. 26 agreement or data sharing agreement that describes how consent is managed between parties\u2026" rows="3">'+escH(f.ConsentChainNotes||'')+'</textarea></div>';
+        html += '<div class="fg"><label>Does the consent specifically cover both parties\' marketing?</label>';
+        html += '<div style="display:flex;gap:6px;margin-top:4px">';
+        html += '<button class="cb cb-pass" onclick="setPartnerConsentAnswer(\''+escJ(rec.id)+'\',true)" style="'+(f.ConsentChainVerified===true?'box-shadow:inset 0 0 0 2px var(--g)':'')+'">Yes \u2014 both named</button>';
+        html += '<button class="cb cb-fail" onclick="setPartnerConsentAnswer(\''+escJ(rec.id)+'\',false)" style="'+(f.ConsentChainVerified===false&&f.ConsentChainOwner?'box-shadow:inset 0 0 0 2px var(--r)':'')+'">No / Unclear</button>';
+        html += '</div></div>';
+        html += '<button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="savePartnerConsent(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save consent check</button>';
+        if (f.ConsentChainVerified) {
+          html += '<div class="verif-result pass" style="margin-top:12px"><i class="ph ph-check-circle icon-16" style="vertical-align:-2px;margin-right:6px"></i><strong>Consent chain verified.</strong> Both parties\' marketing is covered by the consent mechanism.</div>';
+        }
+        html += '</div>';
+        return html;
+      }
+    },
+  ];
+
+  // Conditionally add ad compliance step
+  if (needsAdReview) {
+    steps.push({
+      title: 'Ad compliance (CAP Code)',
+      sub: 'Paste joint ad or co-branded content for compliance review',
+      done: !!f.AdComplianceReviewed,
+      render: function() {
+        var savedResult = null;
+        try { savedResult = JSON.parse(f.AdReviewResult||'null'); } catch(e){}
+        var resultHtml = '';
+        if (savedResult && savedResult.issues && savedResult.issues.length) {
+          resultHtml = '<div class="creative-result" style="margin-top:12px">';
+          resultHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:8px">Issues found ('+savedResult.issues.length+')</div>';
+          savedResult.issues.forEach(function(iss) {
+            var cls = (iss.severity||iss.level) === 'critical' ? 'critical' : '';
+            resultHtml += '<div class="creative-issue '+cls+'"><div class="creative-issue-type">'+(iss.ruleRef||iss.type||'issue').replace(/_/g,' ')+'</div>'+escH(iss.explanation||iss.description||'')+'</div>';
+          });
+          resultHtml += '</div>';
+        } else if (savedResult && (!savedResult.issues || !savedResult.issues.length)) {
+          resultHtml = '<div class="creative-clear" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><strong>No CAP Code issues found.</strong> Joint advertising content appears compliant.</div>';
+        }
+        var html = '<div style="margin-top:12px">';
+        html += '<p style="font-size:12.5px;color:var(--tm);margin-bottom:12px;line-height:1.55">Paste the joint advertising copy, co-branded email, or marketing content you run with '+escH(name)+'. The AI Copy Checker will scan it against CAP Code sections 3 (misleading) and 8 (pricing).</p>';
+        if (f.AdComplianceReviewed) {
+          html += '<div class="info-banner green"><i class="ph ph-check-circle icon-16"></i><div><strong>Ad compliance reviewed'+(f.AdLastReviewed ? ' on '+fmtDate(f.AdLastReviewed) : '')+'.</strong> Re-submit anytime to check new materials.</div></div>';
+        }
+        html += '<div class="fg"><label>Subject line or headline</label><input type="text" id="pv-ad-subject" placeholder="e.g. Exclusive partner offer \u2014 50% off today only!"></div>';
+        html += '<div class="fg"><label>Ad body / marketing copy</label><div class="creative-paste"><textarea id="pv-ad-body" placeholder="Paste the full ad copy, email body, or marketing content here\u2026" rows="5"></textarea></div></div>';
+        html += '<button class="btn btn-primary btn-sm" onclick="runPartnerAdCheck(\''+escJ(rec.id)+'\')"><i class="ph ph-sparkle icon-16"></i>Run AI Copy Checker</button>';
+        html += '<div id="partnerAdResult">'+resultHtml+'</div>';
+        html += '</div>';
+        return html;
+      }
+    });
+  }
+
+  // Conditionally add pricing compliance step
+  if (needsPricingReview) {
+    steps.push({
+      title: 'Pricing compliance (CMA/DMCCA)',
+      sub: 'Paste pricing claims from co-branded campaigns',
+      done: !!f.PricingComplianceReviewed,
+      render: function() {
+        var savedResult = null;
+        try { savedResult = JSON.parse(f.PricingReviewResult||'null'); } catch(e){}
+        var resultHtml = '';
+        if (savedResult && savedResult.issues && savedResult.issues.length) {
+          resultHtml = '<div class="creative-result" style="margin-top:12px">';
+          resultHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:8px">Issues found ('+savedResult.issues.length+')</div>';
+          savedResult.issues.forEach(function(iss) {
+            var cls = (iss.severity||iss.level) === 'critical' ? 'critical' : '';
+            resultHtml += '<div class="creative-issue '+cls+'"><div class="creative-issue-type">'+(iss.ruleRef||iss.type||'issue').replace(/_/g,' ')+'</div>'+escH(iss.explanation||iss.description||'')+'</div>';
+          });
+          resultHtml += '</div>';
+        } else if (savedResult && (!savedResult.issues || !savedResult.issues.length)) {
+          resultHtml = '<div class="creative-clear" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><strong>No pricing compliance issues found.</strong> Claims appear compliant with CMA/DMCCA 2024.</div>';
+        }
+        var html = '<div style="margin-top:12px">';
+        html += '<p style="font-size:12.5px;color:var(--tm);margin-bottom:12px;line-height:1.55">Paste the pricing claims, promotional offers, or urgency messaging used in campaigns with '+escH(name)+'. The AI Copy Checker will scan against CMA/DMCCA 2024 \u2014 reference pricing, drip pricing, and fake urgency in co-branded campaigns create joint liability under Schedule 1.</p>';
+        if (f.PricingComplianceReviewed) {
+          html += '<div class="info-banner green"><i class="ph ph-check-circle icon-16"></i><div><strong>Pricing compliance reviewed'+(f.PricingLastReviewed ? ' on '+fmtDate(f.PricingLastReviewed) : '')+'.</strong> Re-submit to check new claims.</div></div>';
+        }
+        html += '<div class="fg"><label>Pricing claims or promotional copy</label><div class="creative-paste"><textarea id="pv-pricing-body" placeholder="e.g. Was \u00a399.99, now \u00a349.99 \u2014 save 50%! Offer ends midnight tonight. Only 3 left at this price.\u2026" rows="5"></textarea></div></div>';
+        html += '<button class="btn btn-primary btn-sm" onclick="runPartnerPricingCheck(\''+escJ(rec.id)+'\')"><i class="ph ph-sparkle icon-16"></i>Run pricing compliance check</button>';
+        html += '<div id="partnerPricingResult">'+resultHtml+'</div>';
+        html += '</div>';
+        return html;
+      }
+    });
+  }
+
+  var html = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Walk through each step to verify this partner relationship. Your exposure drops as each step is completed.</p>';
+  html += '<div class="verif-stepper">';
+  steps.forEach(function(s, i) {
+    var cls = s.done ? 'done' : i === partnerVerifStep ? 'active' : '';
+    var statusHtml = s.done ? '<span style="color:var(--g)"><i class="ph ph-check-circle icon-16"></i></span>' : '';
+    html += '<div class="verif-step '+cls+'">';
+    html += '<div class="verif-step-hdr" onclick="setPartnerVerifStep('+i+',\''+escJ(rec.id)+'\')">';
+    html += '<div class="verif-step-num">'+(s.done ? '\u2713' : (i+1))+'</div>';
+    html += '<div class="verif-step-info"><div class="verif-step-title">'+escH(s.title)+'</div><div class="verif-step-sub">'+escH(s.sub)+'</div></div>';
+    html += statusHtml;
+    html += '</div>';
+    html += '<div class="verif-step-body">'+s.render()+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  body.innerHTML = html;
+}
+
+function setPartnerVerifStep(i, recordId) {
+  partnerVerifStep = i;
+  var rec = S.partners.find(function(r){return r.id===recordId;});
+  if (rec) renderPartnerVerification(rec);
+}
+
+function setPartnerConsentAnswer(recordId, answer) {
+  var rec = S.partners.find(function(r){return r.id===recordId;});
+  if (!rec) return;
+  rec.fields._consentAnswer = answer;
+}
+
+function savePartnerConsent(recordId) {
+  var rec = S.partners.find(function(r){return r.id===recordId;});
+  if (!rec) return;
+  var owner = (document.getElementById('pv-consent-owner')||{}).value||'Unknown';
+  var clause = (document.getElementById('pv-consent-clause')||{}).value||'';
+  var answer = rec.fields._consentAnswer;
+  if (answer === undefined) { showToast('Select whether consent covers both parties','er'); return; }
+
+  var patch = {
+    PartnerName: rec.fields.PartnerName,
+    ConsentChainOwner: owner,
+    ConsentChainNotes: clause,
+    ConsentChainVerified: !!answer,
+  };
+
+  showLoading('Saving consent check\u2026');
+  fetch(APP_URL+'/api/data?action=partner-register', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch })
+  }).then(function(r){return r.json();})
+  .then(function() {
+    hideLoading();
+    showToast(answer ? 'Consent chain verified' : 'Consent chain flagged \u2014 review your agreement', answer ? 'ok' : 'er');
+    loadAll().then(function() {
+      var updated = S.partners.find(function(r){return r.id===recordId;});
+      if (updated) { showDetail(recordId); goToDetailTab('verification'); }
+    });
+  })
+  .catch(function(e) { hideLoading(); showToast('Save failed: '+e.message, 'er'); });
+}
+
+function runPartnerAdCheck(recordId) {
+  var rec = S.partners.find(function(r){return r.id===recordId;});
+  if (!rec) return;
+  var subject = (document.getElementById('pv-ad-subject')||{}).value||'';
+  var bodyText = (document.getElementById('pv-ad-body')||{}).value||'';
+  if (!bodyText.trim() && !subject.trim()) { showToast('Paste the ad content first','er'); return; }
+
+  var resEl = document.getElementById('partnerAdResult');
+  if (resEl) resEl.innerHTML = '<div class="scan-spin-wrap"><div class="scan-spin"></div>Running CAP Code compliance check\u2026</div>';
+
+  var content = '';
+  if (subject) content += 'Subject/headline: ' + subject + '\n\n';
+  content += bodyText;
+
+  fetch(APP_URL+'/api/submit-check?action=check', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, copy:content, source:'partner-ad-compliance-review' })
+  })
+  .then(function(r){return r.json();})
+  .then(function(d) {
+    var issues = d.issues || [];
+    var result = { issues: issues, checkedAt: new Date().toISOString(), subject: subject };
+
+    var patch = {
+      PartnerName: rec.fields.PartnerName,
+      AdComplianceReviewed: true,
+      AdLastReviewed: new Date().toISOString().split('T')[0],
+      AdReviewResult: JSON.stringify(result),
+    };
+    fetch(APP_URL+'/api/data?action=partner-register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch })
+    }).catch(function(){});
+
+    if (resEl) {
+      if (issues.length) {
+        var html = '<div class="creative-result" style="margin-top:12px">';
+        html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:8px">'+issues.length+' issue'+(issues.length!==1?'s':'')+' found</div>';
+        issues.forEach(function(iss) {
+          var cls = (iss.severity||iss.level) === 'critical' ? 'critical' : '';
+          html += '<div class="creative-issue '+cls+'"><div class="creative-issue-type">'+(iss.ruleRef||iss.type||'issue').replace(/_/g,' ')+'</div>'+escH(iss.explanation||iss.description||'')+'</div>';
+        });
+        html += '</div>';
+        resEl.innerHTML = html;
+      } else {
+        resEl.innerHTML = '<div class="creative-clear" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><strong>No CAP Code issues found.</strong> Joint ad content appears compliant.</div>';
+      }
+    }
+    showToast(issues.length ? issues.length+' issue'+(issues.length!==1?'s':'')+' found' : 'Ad compliance check passed', issues.length ? 'er' : 'ok');
+    loadAll();
+  })
+  .catch(function(e) {
+    if (resEl) resEl.innerHTML = '';
+    showToast('Review failed: '+e.message, 'er');
+  });
+}
+
+function runPartnerPricingCheck(recordId) {
+  var rec = S.partners.find(function(r){return r.id===recordId;});
+  if (!rec) return;
+  var bodyText = (document.getElementById('pv-pricing-body')||{}).value||'';
+  if (!bodyText.trim()) { showToast('Paste the pricing claims first','er'); return; }
+
+  var resEl = document.getElementById('partnerPricingResult');
+  if (resEl) resEl.innerHTML = '<div class="scan-spin-wrap"><div class="scan-spin"></div>Running CMA/DMCCA pricing compliance check\u2026</div>';
+
+  var content = 'PRICING AND PROMOTIONAL CLAIMS TO CHECK:\n\n' + bodyText
+    + '\n\nFocus on: reference pricing validity, drip pricing, fake urgency, misleading savings claims, and DMCCA 2024 Schedule 1 banned practices.';
+
+  fetch(APP_URL+'/api/submit-check?action=check', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, copy:content, source:'partner-pricing-compliance-review' })
+  })
+  .then(function(r){return r.json();})
+  .then(function(d) {
+    var issues = d.issues || [];
+    var result = { issues: issues, checkedAt: new Date().toISOString() };
+
+    var patch = {
+      PartnerName: rec.fields.PartnerName,
+      PricingComplianceReviewed: true,
+      PricingLastReviewed: new Date().toISOString().split('T')[0],
+      PricingReviewResult: JSON.stringify(result),
+    };
+    fetch(APP_URL+'/api/data?action=partner-register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch })
+    }).catch(function(){});
+
+    if (resEl) {
+      if (issues.length) {
+        var html = '<div class="creative-result" style="margin-top:12px">';
+        html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:8px">'+issues.length+' issue'+(issues.length!==1?'s':'')+' found</div>';
+        issues.forEach(function(iss) {
+          var cls = (iss.severity||iss.level) === 'critical' ? 'critical' : '';
+          html += '<div class="creative-issue '+cls+'"><div class="creative-issue-type">'+(iss.ruleRef||iss.type||'issue').replace(/_/g,' ')+'</div>'+escH(iss.explanation||iss.description||'')+'</div>';
+        });
+        html += '</div>';
+        resEl.innerHTML = html;
+      } else {
+        resEl.innerHTML = '<div class="creative-clear" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><strong>No pricing issues found.</strong> Claims appear compliant with CMA/DMCCA 2024.</div>';
+      }
+    }
+    showToast(issues.length ? issues.length+' pricing issue'+(issues.length!==1?'s':'')+' found' : 'Pricing compliance check passed', issues.length ? 'er' : 'ok');
+    loadAll();
+  })
+  .catch(function(e) {
+    if (resEl) resEl.innerHTML = '';
+    showToast('Review failed: '+e.message, 'er');
+  });
 }
 
 // ── CREATIVE TAB (affiliates) ─────────────────────────────────
