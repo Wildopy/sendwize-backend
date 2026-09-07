@@ -631,7 +631,6 @@ async function handleAffiliateRegister(req, res) {
       CreativeReviewResult: affiliate.CreativeReviewResult,
       FromNameUsedVerified: affiliate.FromNameUsedVerified,
     };
-    };
 
     try {
       const record = recordId
