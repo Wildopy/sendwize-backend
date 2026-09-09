@@ -1029,6 +1029,49 @@ async function generateCert(){
     showToast('Clearance record saved to your dashboard','ok');
   }catch(err){hideLoading();showToast('Certificate failed: '+err.message,'er');}
 }
+// ── AI re-consent email draft ──────────────────────────────
+async function generateReconsentDraft(){
+  var draftEl=el('reconsentDraft');
+  if(!draftEl)return;
+  if(!lastResults){showToast('Run a list analysis first','er');return;}
+  draftEl.className='reconsent-draft';draftEl.innerHTML='';
+  showLoading('Generating re-consent email\u2026');
+  try{
+    var resp=await fetch(API+'?userId='+userId+'&action=draft-reconsent',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        listName:currentListName||'Main list',
+        sector:lastResults.sector||'ecommerce',
+        recoverableCount:lastResults.recoverableCount||0,
+        totalContacts:lastResults.totalContacts||0,
+      })
+    });
+    var json=await resp.json();
+    hideLoading();
+    if(!json.success){showToast(json.error||'Draft generation failed','er');return;}
+    draftEl.className='reconsent-draft show';
+    draftEl.innerHTML='<div class="reconsent-draft-hdr"><div class="reconsent-draft-title">Re-consent email draft</div><span class="reconsent-draft-ai">AI GENERATED</span></div>'
+      +'<div class="reconsent-draft-field"><div class="reconsent-draft-label">Subject line</div><div class="reconsent-draft-content">'+escH(json.subject)+'</div></div>'
+      +'<div class="reconsent-draft-field"><div class="reconsent-draft-label">Email body</div><div class="reconsent-draft-content">'+escH(json.body)+'</div></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"><button class="btn btn-primary btn-sm" onclick="copyDraftToClipboard()">Copy to clipboard</button><button class="btn btn-ghost btn-sm" onclick="generateReconsentDraft()">Regenerate</button></div>'
+      +'<div style="font-size:11px;color:var(--mu);margin-top:10px;line-height:1.5">Review before sending. Adapt the tone and CTA to your brand. This is a starting point, not a final draft. Not legal advice.</div>';
+    draftEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(err){
+    hideLoading();
+    showToast('Could not generate draft: '+err.message,'er');
+  }
+}
+
+function copyDraftToClipboard(){
+  var fields=document.querySelectorAll('.reconsent-draft-content');
+  var text='';
+  fields.forEach(function(f){text+=f.textContent+'\n\n';});
+  navigator.clipboard.writeText(text.trim()).then(function(){
+    showToast('Copied to clipboard','ok');
+  }).catch(function(){
+    showToast('Could not copy \u2014 select and copy manually','er');
+  });
+}
 function certDescription(result,d){
   if(result==='Pass')return fmt(d.contactsChecked)+' contacts checked. No significant consent or deliverability flags. This clearance has been saved to your dashboard as evidence.';
   if(result==='Review')return fmt(d.consentFlags)+' contacts flagged for consent review. Consider suppressing or re-consenting these before sending. Record saved.';
