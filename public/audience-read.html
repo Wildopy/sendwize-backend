@@ -495,13 +495,74 @@ function renderSegmentDiagnoses(data){
     var conf=Math.round((s.confidence||0)*100);var n=fp.campaignCount||0;
     var sw=d.sendWindow||null;
     var sendCap=ft.toleranceRemaining!==undefined?ft.toleranceRemaining+' send'+(ft.toleranceRemaining!==1?'s':'')+' of tolerance left this month':null;
+        // ── Regulatory countdown: project days until ICO damage threshold ──
+    // Uses unsub rate trend as primary signal, open rate decline as accelerator
+    var regCountdown=null;
+    if(avgRate!=null&&benchRate!=null){
+      var damagedThreshold=bench.unsubDamaged||0.010;
+      var gap=damagedThreshold-avgRate;
+      var monthlyDrift=Math.abs(fp.trendDelta||0);
+
+      // Open rate acceleration: if opens are declining, unsubs follow 30-60 days later
+      var openAccel=1.0;
+      if(fp.baselineOpenRate!=null&&bench.openNormal){
+        var openRatio=fp.baselineOpenRate/bench.openNormal;
+        if(openRatio<0.6) openAccel=1.8;       // opens collapsed — unsubs will spike soon
+        else if(openRatio<0.8) openAccel=1.4;   // opens declining — leading indicator
+        else if(openRatio<0.95) openAccel=1.15;  // slight decline
+      }
+
+      var effectiveDrift=monthlyDrift*openAccel;
+
+      if(effectiveDrift>0&&gap>0&&avgRate>benchRate){
+        var monthsToThreshold=gap/effectiveDrift;
+        var daysToThreshold=Math.round(monthsToThreshold*30);
+        if(daysToThreshold>0&&daysToThreshold<365){
+          var targetDate=new Date(+new Date()+daysToThreshold*86400000);
+
+          // Regulatory £ exposure estimate for this countdown
+          // Uses consent_missing ICO range as the base (most common PECR enforcement type)
+          // Simplified: under_1m band, sector-adjusted
+          var sectorMult={'finance':1.5,'health':1.4,'gambling':1.3,'ecommerce':1.1,'media':1.0,'general':1.0,'b2b':0.8,'charity':0.7};
+          var userSector=(data.sector||getSector()||'general').toLowerCase();
+          var sm=sectorMult[userSector]||1.0;
+          var regExpLow=Math.round(8000*sm);
+          var regExpHigh=Math.round(40000*sm);
+
+          regCountdown={
+            days:daysToThreshold,
+            date:targetDate.toISOString().slice(0,10),
+            rate:(damagedThreshold*100).toFixed(2),
+            openAccelerated:openAccel>1.0,
+            openRatio:fp.baselineOpenRate!=null&&bench.openNormal?Math.round((fp.baselineOpenRate/bench.openNormal)*100):null,
+            expLow:regExpLow,
+            expHigh:regExpHigh,
+          };
+        }
+      }
+    }
+    var regCountdownHtml='';
+    if(regCountdown){
+      var urgCls=regCountdown.days<=30?'var(--r)':regCountdown.days<=60?'var(--y)':'var(--tm)';
+      var urgWeight=regCountdown.days<=30?'700':'600';
+      var openNote=regCountdown.openAccelerated
+        ?'<div style="font-size:11px;color:var(--pur);margin-top:6px;display:flex;align-items:center;gap:6px"><span style="font-size:8px;font-weight:800;letter-spacing:.1em;background:var(--purc);color:var(--pur);padding:1px 5px;border-radius:3px">LEADING INDICATOR</span> Open rates are '+(regCountdown.openRatio!=null?regCountdown.openRatio+'% of':'below')+' your sector benchmark \u2014 unsub rate is likely to accelerate faster than the trend alone suggests.</div>'
+        :'';
+      regCountdownHtml='<div style="background:var(--rb);border:1.5px solid var(--rc);border-radius:var(--rad-lg);padding:16px 18px;margin-bottom:14px">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:18px">\u23F0</span><span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--r)">Regulatory countdown</span></div>'
+        +'<div style="font-size:14px;color:'+urgCls+';font-weight:'+urgWeight+';line-height:1.5;margin-bottom:6px">At the current trajectory, this list crosses the ICO damage threshold ('+regCountdown.rate+'%) in <strong>'+regCountdown.days+' days</strong> \u2014 '+fmtDate(regCountdown.date)+'.</div>'
+        +'<div style="font-size:12px;color:var(--tm);line-height:1.5;margin-bottom:8px">When that happens, your estimated ICO exposure for this list is <strong style="color:var(--r)">\u00a3'+regCountdown.expLow.toLocaleString()+'\u2013\u00a3'+regCountdown.expHigh.toLocaleString()+'</strong> based on your sector. The precise figure is on your dashboard.</div>'
+        +'<div style="font-size:11px;color:var(--mu)">Reduce send frequency or run a re-engagement campaign to reverse the trend. Open List Intelligence to check who to suppress now.</div>'
+        +openNote
+        +'</div>';
+    }
     var gwScoreCls=cap>10?'pos':cap<-10?'neg':'neu';
     var gwPct=Math.min(50,Math.abs(cap)/2);
     var gwPlain=gwBehaviouralTranslation(cap);
     var uid='seg-'+segIdx;var hasWhy=s.statementCommercial||s.statementRegulatory||s.regulatoryNote;
     var avgPct=avgRate?(avgRate*100).toFixed(2)+'%':null;var benchPct=benchRate?(benchRate*100).toFixed(2)+'%':null;var dataUid=uid+'-data';
     var dataSection=(avgPct||benchPct||n>0)?'<button class="diag-expand-btn" onclick="toggleExpand(\''+dataUid+'\')" style="margin-top:8px"><span>View exact numbers</span><span class="diag-chev">&#x25BE;</span></button><div class="diag-expand-body" id="'+dataUid+'-expand" style="display:none"><div style="display:flex;gap:20px;flex-wrap:wrap;padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px">'+(avgPct?'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu)">Your avg unsub rate</div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:var(--'+bandCls+')">'+avgPct+'</div></div>':'')+(benchPct?'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu)">UK '+escH(bench.label||'')+' benchmark</div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:var(--mu)">'+benchPct+'</div></div>':'')+'<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu)">Campaigns analysed</div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace">'+n+'</div></div></div>'+(bench.source?'<div style="font-size:10px;color:var(--mu);margin-top:6px">Source: '+escH(bench.source)+'</div>':'')+'</div>':'';
-    return'<div class="diag-card '+cardCls+'" id="'+uid+'"><div class="diag-accent"><div class="diag-top"><div class="diag-seg-name">'+emoji+' '+escH(seg)+'</div><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><span class="diag-state">'+escH(state)+'</span>'+renderStateChangePill(d)+'</div></div><div class="diag-verdict">'+escH(s.verdict||state)+'</div>'+benchHtml+'</div><div class="diag-body"><div class="diag-stmt">'+escH(s.statement||'')+'</div>'+(d.narrative?'<div class="diag-narrative">'+escH(d.narrative)+'</div>':'')+renderExtendedData(d)+lossHtml+(s.action?'<div class="diag-action"><div class="diag-action-lbl">&#x1F449; Do this next</div><div class="diag-action-txt">'+escH(s.action)+'</div></div>':'')+(sw?renderSendWindow(sw,sendCap):(sendCap?'<div class="diag-send-window"><div class="dsw-hdr"><div class="dsw-label">Frequency <span class="tip" data-tip="'+escH(TIP_DEFS.tolerance)+'">?</span></div></div><div class="dsw-reason">'+escH(sendCap)+'</div></div>':''))+(hasWhy?'<button class="diag-expand-btn" onclick="toggleExpand(\''+uid+'\')"><span>Why this matters commercially &amp; for compliance</span><span class="diag-chev">&#x25BE;</span></button><div class="diag-expand-body" id="'+uid+'-expand" style="display:none">'+(s.statementCommercial?'<div class="diag-why-item dwi-commercial"><span class="diag-why-icon">&#x1F4B0;</span><div>'+escH(s.statementCommercial)+'</div></div>':'')+(s.statementRegulatory?'<div class="diag-why-item dwi-regulatory"><span class="diag-why-icon">&#x2696;&#xFE0F;</span><div>'+escH(s.statementRegulatory)+'</div></div>':'')+(s.regulatoryNote?'<div class="diag-why-item dwi-regnote"><span class="diag-why-icon">&#x26A0;&#xFE0F;</span><div>'+escH(s.regulatoryNote)+'</div></div>':'')+'</div>':'')+dataSection+'<div class="gw-section"><div class="gw-row"><div class="gw-row-label">Goodwill you\'ve built with this list <span class="tip" data-tip="'+escH(TIP_DEFS.goodwill)+'">?</span></div><div class="gw-score '+gwScoreCls+'">'+(cap>0?'+':'')+cap.toFixed(0)+'/100</div></div><div class="gw-plain">'+escH(gwPlain)+'</div><button class="gw-detail-btn" onclick="toggleGw(\''+uid+'\')"><span>How we scored this</span><span class="diag-chev">&#x25BE;</span></button><div class="gw-detail" id="'+uid+'-gw-detail"><div class="gw-bar">'+(cap<0?'<div class="gw-bar-neg" style="width:'+gwPct+'%"></div>':'')+(cap>0?'<div class="gw-bar-pos" style="width:'+gwPct+'%"></div>':'')+'</div><div class="gw-detail-note">Goodwill decays over ~8 weeks. Each send adds or removes points based on whether it landed below or above the UK benchmark. Range is -100 to +100. Under -20 means the list has little patience left; over +40 means recent sends have been building trust.</div></div></div><div class="conf-note">'+conf+'% confidence \u00b7 '+n+' campaign'+(n!==1?'s':'')+' analysed</div></div></div>';
+    return'<div class="diag-card '+cardCls+'" id="'+uid+'"><div class="diag-accent"><div class="diag-top"><div class="diag-seg-name">'+emoji+' '+escH(seg)+'</div><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><span class="diag-state">'+escH(state)+'</span>'+renderStateChangePill(d)+'</div></div><div class="diag-verdict">'+escH(s.verdict||state)+'</div>'+benchHtml+'</div><div class="diag-body"><div class="diag-stmt">'+escH(s.statement||'')+'</div>'+(d.narrative?'<div class="diag-narrative">'+escH(d.narrative)+'</div>':'')+regCountdownHtml+renderExtendedData(d)+lossHtml+(s.action?'<div class="diag-action"><div class="diag-action-lbl">&#x1F449; Do this next</div><div class="diag-action-txt">'+escH(s.action)+'</div></div>':'')+(sw?renderSendWindow(sw,sendCap):(sendCap?'<div class="diag-send-window"><div class="dsw-hdr"><div class="dsw-label">Frequency <span class="tip" data-tip="'+escH(TIP_DEFS.tolerance)+'">?</span></div></div><div class="dsw-reason">'+escH(sendCap)+'</div></div>':''))+(hasWhy?'<button class="diag-expand-btn" onclick="toggleExpand(\''+uid+'\')"><span>Why this matters commercially &amp; for compliance</span><span class="diag-chev">&#x25BE;</span></button><div class="diag-expand-body" id="'+uid+'-expand" style="display:none">'+(s.statementCommercial?'<div class="diag-why-item dwi-commercial"><span class="diag-why-icon">&#x1F4B0;</span><div>'+escH(s.statementCommercial)+'</div></div>':'')+(s.statementRegulatory?'<div class="diag-why-item dwi-regulatory"><span class="diag-why-icon">&#x2696;&#xFE0F;</span><div>'+escH(s.statementRegulatory)+'</div></div>':'')+(s.regulatoryNote?'<div class="diag-why-item dwi-regnote"><span class="diag-why-icon">&#x26A0;&#xFE0F;</span><div>'+escH(s.regulatoryNote)+'</div></div>':'')+'</div>':'')+dataSection+'<div class="gw-section"><div class="gw-row"><div class="gw-row-label">Goodwill you\'ve built with this list <span class="tip" data-tip="'+escH(TIP_DEFS.goodwill)+'">?</span></div><div class="gw-score '+gwScoreCls+'">'+(cap>0?'+':'')+cap.toFixed(0)+'/100</div></div><div class="gw-plain">'+escH(gwPlain)+'</div><button class="gw-detail-btn" onclick="toggleGw(\''+uid+'\')"><span>How we scored this</span><span class="diag-chev">&#x25BE;</span></button><div class="gw-detail" id="'+uid+'-gw-detail"><div class="gw-bar">'+(cap<0?'<div class="gw-bar-neg" style="width:'+gwPct+'%"></div>':'')+(cap>0?'<div class="gw-bar-pos" style="width:'+gwPct+'%"></div>':'')+'</div><div class="gw-detail-note">Goodwill decays over ~8 weeks. Each send adds or removes points based on whether it landed below or above the UK benchmark. Range is -100 to +100. Under -20 means the list has little patience left; over +40 means recent sends have been building trust.</div></div></div><div class="conf-note">'+conf+'% confidence \u00b7 '+n+' campaign'+(n!==1?'s':'')+' analysed</div></div></div>';
   }).join('');
   var nl=document.getElementById('nudgeList');var seenFields={},allNudges=[];segNames.forEach(function(seg){(data.segments[seg].missingData||[]).forEach(function(m){if(!seenFields[m.field]){seenFields[m.field]=true;allNudges.push(m);}});});nl.innerHTML=allNudges.map(function(m){return'<div class="nudge"><div style="font-size:14px;flex-shrink:0">&#x1F4A1;</div><div class="nudge-txt"><strong>Unlock: '+escH(m.field)+'</strong>'+escH(m.message)+'</div></div>';}).join('');
 }
