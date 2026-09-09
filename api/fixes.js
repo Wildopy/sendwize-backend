@@ -1,8 +1,20 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — fixes.js v6.7
+// SENDWIZE — fixes.js v6.8
 // GET  /api/fixes?action=get&userId=x[&revenueBand=...]
 // POST /api/fixes?action=complete
 // POST /api/fixes?action=dismiss
+//
+// v6.8 changes:
+//   + Seven missing fix types added to EXPOSURE_CONSTANTS:
+//       · unreviewed_joint_ads — ASA, joint advertising CAP Code
+//       · partner_pricing_claims — CMA, DMCCA co-branded pricing
+//       · affiliate_misleading_claims — ASA, brand liable for affiliate claims
+//       · affiliate_ad_disclosure — ASA, influencer #ad labelling
+//       · lead_gen_consent_gap — ICO, Saga-anchored lead gen consent
+//       · third_party_list — ICO, purchased data, ZMLUK-anchored
+//       · invalid_consent_mechanism — ICO, partner/affiliate consent gaps
+//   These were already being created by data.js and audience-read.js
+//   but had no exposure ranges — dashboard showed them as "unknown".
 //
 // v6.7 changes:
 //   + Four new fix types for the Commercial Relationships Register:
@@ -52,10 +64,6 @@ function normaliseBand(raw) {
 }
 
 // ── SECTOR MULTIPLIERS ────────────────────────────────────────
-// Applied to ICO exposure ranges after revenue band is applied.
-// Derived from published enforcement concentration by sector.
-// Finance and health see the highest ICO enforcement activity;
-// b2b and charity the lowest. General (default) = 1.0.
 const SECTOR_MULTIPLIERS = {
   finance:   1.5,
   health:    1.4,
@@ -93,9 +101,7 @@ const DUAA_WARNING = [
 ].join(' ');
 
 // ── EXPOSURE CONSTANTS ────────────────────────────────────────
-// Bands are pre-sector-multiplier. Sector is applied in buildExposureForFix().
 const EXPOSURE_CONSTANTS = {
-  // ── Existing fix types ─────────────────────────────────────
   consent_missing: {
     category: 'ICO',
     bands: {
@@ -189,14 +195,8 @@ const EXPOSURE_CONSTANTS = {
   segment_cooling:              { category: 'Commercial' },
   segment_declining_engagement: { category: 'Commercial' },
 
-  // ── v6.7 — new relationship fix types ─────────────────────
+  // ── v6.7 — relationship fix types ─────────────────────────
 
-  // Article 26 joint controller breach.
-  // Anchored to ICO enforcement involving joint controller failures —
-  // notably the WhatsApp/Meta joint controller decision (£225M Irish DPC,
-  // scaled for UK SME context) and published ICO guidance on Art 26.
-  // Sector multiplier applies: finance and health carry significantly
-  // higher exposure because data sharing scope is broader and more sensitive.
   no_article26_agreement: {
     category: 'ICO',
     bands: {
@@ -210,14 +210,6 @@ const EXPOSURE_CONSTANTS = {
     sectorNote: 'Finance and health organisations sharing customer data for joint marketing purposes face substantially higher ICO scrutiny — joint controller failures in those sectors have attracted the largest penalties in published decisions.',
   },
 
-  // Affiliate consent chain breach.
-  // Anchored directly to Saga (£225k, 2021) and JTT (£130k, 2021)
-  // — both were PECR Reg 22 cases where affiliate consent did not
-  // specifically name the organisation sending the marketing.
-  // Volume is the primary driver: the Saga fine reflected 3.8M messages.
-  // Sector multiplier applies: health and finance affiliates (insurance
-  // comparison, financial product leads) face higher exposure because
-  // consent specificity requirements are enforced more strictly.
   affiliate_consent_unverified: {
     category: 'ICO',
     bands: {
@@ -227,16 +219,11 @@ const EXPOSURE_CONSTANTS = {
       over_50m:  { low: 100000, high: 225000 },
     },
     lowDriver:  'Small affiliate send volume, affiliate has some consent documentation, prompt investigation and suppression on discovery',
-    highDriver: 'Large affiliate send volume, no consent documentation held, similar to the Saga case pattern (3.8M messages, £225k fine)',
+    highDriver: 'Large affiliate send volume, no consent documentation held, similar to the Saga case pattern (3.8M messages, \u00a3225k fine)',
     sectorNote: 'Finance and health sector affiliate sends are subject to stricter consent specificity requirements. The ICO has prioritised these sectors in PECR affiliate enforcement.',
-    caseAnchor: 'Anchored to Saga Group Ltd (2021, \u00a3225,000) and JTT Marketing Ltd (2021, \u00a3130,000) — both PECR Reg 22 affiliate consent failures.',
+    caseAnchor: 'Anchored to Saga Group Ltd (2021, \u00a3225,000) and JTT Marketing Ltd (2021, \u00a3130,000) \u2014 both PECR Reg 22 affiliate consent failures.',
   },
 
-  // PECR Reg 23 sender identity breach.
-  // Smaller than consent chain but still meaningful — the From name
-  // or domain must not disguise or conceal the sender's identity.
-  // Anchored to standalone Reg 23 decisions which have ranged from
-  // £8k (small volume, first offence) to £80k (deliberate concealment).
   affiliate_sender_identity_breach: {
     category: 'ICO',
     bands: {
@@ -247,21 +234,14 @@ const EXPOSURE_CONSTANTS = {
     },
     lowDriver:  'Sender name ambiguous but not deliberately misleading, small volume, first offence, prompt correction',
     highDriver: 'Deliberately disguised sender identity, large volume, pattern of concealment, consumer complaints received',
-    sectorNote: 'Finance and gambling sector sender identity breaches attract higher ICO attention — sectors where misleading sender identity is more likely to induce financial harm.',
+    sectorNote: 'Finance and gambling sector sender identity breaches attract higher ICO attention \u2014 sectors where misleading sender identity is more likely to induce financial harm.',
   },
 
-  // Partner brand risk — Commercial category, not ICO.
-  // This is reputational and commercial exposure, not a regulatory fine.
-  // Co-marketing with a brand that has active regulatory enforcement
-  // creates brand association risk and potential joint liability.
-  // Figures are estimated business cost, not a penalty.
   partner_brand_risk: {
     category: 'Commercial',
     commercialNote: 'Co-marketing with a brand under active regulatory scrutiny creates brand association risk and potential joint controller liability if the partner\u2019s non-compliance affects shared data. This is an estimated business cost \u2014 not a regulatory fine.',
   },
 
-  // Catch-all for any new relationship fix types that may be added
-  // before the next fixes.js deploy.
   partner_no_data_sharing_agreement: {
     category: 'ICO',
     bands: {
@@ -277,6 +257,71 @@ const EXPOSURE_CONSTANTS = {
   sector_risk_unreviewed: {
     category: 'Commercial',
     commercialNote: 'Failure to monitor sector enforcement intelligence increases the risk of running campaigns that mirror recently-sanctioned practices. This is a business risk estimate \u2014 not a regulatory fine.',
+  },
+
+  // ── v6.8 — missing relationship + audience fix types ──────
+
+  unreviewed_joint_ads: {
+    category:     'ASA',
+    referralRisk: 'medium',
+    referralNote: 'Under CAP Code sections 3 (misleading) and 8 (pricing), both parties in a joint advertising arrangement are responsible for claims. Unreviewed joint ads that contain misleading pricing or unsubstantiated claims can trigger ASA complaints. Repeat breaches are referred to Trading Standards under DMCCA 2024.',
+  },
+
+  partner_pricing_claims: {
+    category:  'CMA',
+    cmaNote:   'Pricing and promotional claims in co-branded campaigns are subject to CMA enforcement under DMCCA 2024. Reference pricing, drip pricing, and fake urgency are Schedule 1 banned practices \u2014 automatically unfair with no defence. Both parties in a co-branded campaign share liability.',
+  },
+
+  affiliate_misleading_claims: {
+    category:     'ASA',
+    referralRisk: 'medium',
+    referralNote: 'Under the CAP Code, you are responsible for marketing claims made on your behalf by affiliates \u2014 including pricing claims, health claims, and comparative claims. The ASA has upheld complaints against brands for affiliate content the brand did not directly create. Repeat or widespread breaches increase referral risk to Trading Standards.',
+  },
+
+  affiliate_ad_disclosure: {
+    category:     'ASA',
+    referralRisk: 'high',
+    referralNote: 'The ASA requires all paid-for influencer content to be clearly identified as advertising (#ad, #sponsored). The ASA has named and shamed both influencers and brands for non-disclosure. Since 2019 the ASA has referred persistent non-disclosers to Trading Standards. The brand is liable alongside the influencer.',
+  },
+
+  lead_gen_consent_gap: {
+    category: 'ICO',
+    bands: {
+      under_1m:  { low: 15000,  high: 80000  },
+      '1m_10m':  { low: 35000,  high: 150000 },
+      '10m_50m': { low: 70000,  high: 225000 },
+      over_50m:  { low: 120000, high: 225000 },
+    },
+    lowDriver:  'Small volume of leads from this affiliate, landing page partially compliant, prompt investigation on discovery',
+    highDriver: 'Large volume of leads, consent wording does not name your organisation, similar to Saga pattern (\u00a3225k), CMA pricing claims also present on landing page',
+    sectorNote: 'Finance and insurance lead generation affiliates face the highest ICO scrutiny \u2014 the Saga and JTT cases both involved financial product affiliates.',
+    caseAnchor: 'Anchored to Saga Group Ltd (2021, \u00a3225,000) and JTT Marketing Ltd (2021, \u00a3130,000).',
+  },
+
+  third_party_list: {
+    category: 'ICO',
+    bands: {
+      under_1m:  { low: 20000,  high: 105000 },
+      '1m_10m':  { low: 50000,  high: 200000 },
+      '10m_50m': { low: 100000, high: 350000 },
+      over_50m:  { low: 180000, high: 500000 },
+    },
+    lowDriver:  'Small volume sent, single purchased list, prompt suppression on discovery, no prior enforcement history',
+    highDriver: 'Large volume sent to purchased data, repeated use, complaints received, no consent documentation held',
+    caseAnchor: 'Anchored to ZMLUK Ltd (Dec 2025, \u00a3105,000) \u2014 marketing sent using purchased contact data without valid PECR consent.',
+  },
+
+  invalid_consent_mechanism: {
+    category: 'ICO',
+    bands: {
+      under_1m:  { low: 10000,  high: 50000  },
+      '1m_10m':  { low: 25000,  high: 100000 },
+      '10m_50m': { low: 50000,  high: 180000 },
+      over_50m:  { low: 90000,  high: 250000 },
+    },
+    lowDriver:  'Consent mechanism partially compliant, small volume, prompt remediation, some documentation held',
+    highDriver: 'Pre-ticked consent boxes, bundled consent with unrelated terms, large volume, complaints from data subjects',
+    sectorNote: 'Finance sector consent mechanisms face higher ICO scrutiny following the 2024 ICO direct marketing guidance update.',
   },
 };
 
@@ -344,7 +389,6 @@ function deriveContextualFactors(fixType, def, ctx, sector) {
     highFactors.push('No documented assessment \u2014 removes a key mitigating argument');
   }
 
-  // Sector note
   const sectorNorm = normaliseSector(sector);
   if (def.sectorNote && ['finance','health','gambling'].includes(sectorNorm)) {
     highFactors.push(def.sectorNote);
@@ -414,7 +458,7 @@ function buildExposureForFix(fixType, revenueBand, processingContext, storedExpo
       hasRange:      false,
       legalMax:      CMA_LEGAL_MAX,
       legalMaxLabel: 'CMA statutory maximum (DMCCA 2024)',
-      cmaNote:       'The CMA can impose fines directly without court proceedings under DMCCA 2024. Prompt co-operation and remediation attract settlement discounts.',
+      cmaNote:       def.cmaNote || 'The CMA can impose fines directly without court proceedings under DMCCA 2024. Prompt co-operation and remediation attract settlement discounts.',
       disclaimer:    NOT_LEGAL_ADVICE,
     };
   }
