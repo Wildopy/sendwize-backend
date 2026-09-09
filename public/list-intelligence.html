@@ -749,6 +749,61 @@ function renderResults(d){
   if(d.aov)metaParts.push('AOV \u00a3'+d.aov);
   if(d.duplicatesRemoved)metaParts.push(d.duplicatesRemoved+' duplicates removed');
   el('resultsMeta').textContent=metaParts.join(' \u00b7 ');
+    // ── Pre-send compliance gate ──────────────────────────────
+  var gateEl=el('presendGate');
+  if(gateEl){
+    var _liab=d.liabilityCount||0;
+    var _liabP=total>0?Math.round(_liab/total*100):0;
+    var _recov=d.recoverableCount||0;
+    var gateCls,gateIcon,gateVerdict,gateSub;
+    if(_liabP>=15||_liab>=50){
+      gateCls='gate-block';gateIcon='\u26D4';
+      gateVerdict='Do not send to this list';
+      gateSub=fmt(_liab)+' contacts ('+_liabP+'%) are below the consent threshold. Sending to them carries ICO enforcement risk under PECR Regulation 22. Suppress these contacts before your next send.';
+    } else if(_liabP>=5||_liab>=10||_recov>total*0.3){
+      gateCls='gate-review';gateIcon='\u26A0\uFE0F';
+      gateVerdict='Review before sending';
+      gateSub=fmt(_liab)+' contacts need suppressing and '+fmt(_recov)+' are approaching the consent threshold. Clean this list before a promotional send.';
+    } else {
+      gateCls='gate-pass';gateIcon='\u2705';
+      gateVerdict='Safe to send';
+      gateSub='Your list is in good standing. '+fmt(d.activeCount||0)+' contacts are above the consent threshold with strong deliverability signals.';
+    }
+    // Exposure estimate — uses consent_expired ICO range (under_1m band, general sector)
+    // Dashboard shows the precise figure with revenue band + sector multiplier
+    var _expLow=_liab>0?Math.max(5000,Math.round(_liab*4.5)):0;
+    var _expHigh=_liab>0?Math.max(10000,Math.round(_liab*9)):0;
+    // Cap at Saga precedent ceiling
+    _expHigh=Math.min(_expHigh,225000);
+    var expHtml=_liab>0
+      ?'<div class="presend-gate-exposure">'
+        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Contacts to suppress</div><div class="presend-gate-exp-val" style="color:var(--r)">'+fmt(_liab)+'</div></div>'
+        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">ICO exposure range</div><div class="presend-gate-exp-val" style="color:var(--r)">\u00a3'+fmt(_expLow)+'\u2013\u00a3'+fmt(_expHigh)+'</div></div>'
+        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Safe send pool</div><div class="presend-gate-exp-val" style="color:var(--g)">'+fmt(total-_liab)+'</div></div>'
+        +'</div>'
+      :'';
+    gateEl.innerHTML='<div class="presend-gate '+gateCls+'"><div class="presend-gate-icon">'+gateIcon+'</div><div class="presend-gate-body"><div class="presend-gate-verdict">'+gateVerdict+'</div><div class="presend-gate-sub">'+gateSub+'</div>'+expHtml+'</div></div>';
+  }
+
+  // ── Action cards ──────────────────────────────────────────
+  var acEl=el('actionCards');
+  if(acEl){
+    var _liab2=d.liabilityCount||0;
+    var _recov2=d.recoverableCount||0;
+    var cards='<div class="action-cards">';
+    if(_liab2>0){
+      cards+='<div class="action-card suppress"><div class="action-card-icon">\uD83D\uDEAB</div><div class="action-card-title">Download suppression file</div><div class="action-card-desc">'+fmt(_liab2)+' contacts below the consent threshold. Upload this file to your ESP suppression list to remove ICO risk immediately.</div><button class="btn btn-primary btn-sm" onclick="downloadTierCSV(\'liability\')"'+(downloadIndices?'':' disabled title="Upload a list first"')+'>Download '+fmt(_liab2)+' contacts \u2193</button></div>';
+    }
+    if(_recov2>0){
+      cards+='<div class="action-card reconsent"><div class="action-card-icon">\u2709\uFE0F</div><div class="action-card-title">Download re-consent segment</div><div class="action-card-desc">'+fmt(_recov2)+' contacts with declining consent. Send them a re-permission email before they cross the threshold.</div><button class="btn btn-primary btn-sm" onclick="downloadTierCSV(\'recoverable\')"'+(downloadIndices?'':' disabled title="Upload a list first"')+'>Download '+fmt(_recov2)+' contacts \u2193</button></div>';
+    }
+    if(_recov2>0){
+      cards+='<div class="action-card email-draft"><div class="action-card-icon">\u2728</div><div class="action-card-title">Draft re-consent email</div><div class="action-card-desc">AI generates a PECR-compliant re-permission email for your sector. Copy it into your ESP.</div><button class="btn btn-ghost btn-sm" onclick="generateReconsentDraft()">Generate draft \u2192</button></div>';
+    }
+    cards+='<div class="action-card evidence"><div class="action-card-icon">\uD83D\uDCCB</div><div class="action-card-title">Create evidence record</div><div class="action-card-desc">Save this pre-send check as dated compliance evidence on your dashboard. Proves you checked before you sent.</div><button class="btn btn-ghost btn-sm" onclick="generateCert()">Generate clearance \u2192</button></div>';
+    cards+='</div>';
+    acEl.innerHTML=cards;
+  }
   var liabCount=d.liabilityCount||0;
   var usableCount=total-liabCount;
   var narrativeHtml=d.narrative?'<div class="li-narrative">'+escH(d.narrative)+'</div>':'';
