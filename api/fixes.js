@@ -4,6 +4,16 @@
 // POST /api/fixes?action=complete
 // POST /api/fixes?action=dismiss
 //
+
+// v6.9 changes:
+//   + DUAA_WARNING rewritten: notes no post-DUAA PECR fines issued yet,
+//     adds specific commencement date (5 Feb 2026), frames ranges as
+//     conservative floor. Previous wording was aspirational ("expected
+//     to use these new powers") — new wording is factual.
+//   + Case anchors added to consent_missing (HelloFresh £140k, Allay £120k),
+//     invalid_consent_mechanism (HelloFresh £140k), and suppression_breach
+//     (HelloFresh). All marked "Verify:" for owner confirmation.
+//   + No range changes. No structural changes. Drop-in safe.
 // v6.8 changes:
 //   + Seven missing fix types added to EXPOSURE_CONSTANTS:
 //       · unreviewed_joint_ads — ASA, joint advertising CAP Code
@@ -94,10 +104,10 @@ const CMA_LEGAL_MAX    = 'Higher of \u00a3300,000 or 10% of global annual turnov
 const NOT_LEGAL_ADVICE = 'Illustrative ranges based on published enforcement data. Not a prediction. Not legal advice.';
 const COMMERCIAL_DISCLAIMER = 'Estimated business cost based on your own inputs \u2014 not a regulatory fine, and not legal advice.';
 const DUAA_WARNING = [
-  'These ranges are based on ICO enforcement decisions issued before the Data Use and Access Act 2025.',
-  'DUAA has significantly increased the ICO\u2019s maximum PECR fine to \u00a317.5M or 4% of global turnover.',
-  'The ICO is expected to use these new powers. Sendwize will update ranges as post-DUAA decisions are published.',
-  'Your actual exposure under DUAA could be substantially higher than these historical ranges suggest.',
+  'These ranges are based on ICO enforcement decisions issued before 5 February 2026, when the PECR maximum fine increased from \u00a3500,000 to \u00a317.5M or 4% of global turnover (Data Use and Access Act 2025, Commencement Order No. 6).',
+  'No PECR fines for email marketing have been issued under the new cap as of September 2026.',
+  'All Sendwize ranges reflect pre-DUAA enforcement outcomes and should be treated as a conservative floor, not a ceiling.',
+  'When the ICO issues its first post-DUAA penalties, Sendwize will recalibrate. Until then, your actual exposure under the new regime could be substantially higher than these ranges suggest.',
 ].join(' ');
 
 // ── EXPOSURE CONSTANTS ────────────────────────────────────────
@@ -112,6 +122,7 @@ const EXPOSURE_CONSTANTS = {
     },
     lowDriver:  'First offence, small contact volume, prompt remediation on discovery, full ICO cooperation',
     highDriver: 'Repeated or deliberate breach, large contact volume, prior ICO enforcement history, complaints received',
+    caseAnchor: 'Anchored to HelloFresh (Jan 2024, \u00a3140,000 \u2014 79M emails with bundled/unclear consent) and Allay Claims (Jan 2026, \u00a3120,000 \u2014 4M SMS classified as direct marketing). Verify: ico.org.uk/action-weve-taken.',
   },
   consent_expired: {
     category: 'ICO',
@@ -134,6 +145,7 @@ const EXPOSURE_CONSTANTS = {
     },
     lowDriver:  'Small post opt-out contact volume, isolated incident, no prior suppression failures',
     highDriver: 'Systematic suppression failure, large volume, deliberate disregard for opt-out requests',
+    caseAnchor: 'Anchored to HelloFresh (Jan 2024 \u2014 continued contact after opt-out, contributing factor to \u00a3140,000 penalty). Verify: ico.org.uk/action-weve-taken.',
   },
   dpa_breach: {
     category: 'ICO',
@@ -322,6 +334,7 @@ const EXPOSURE_CONSTANTS = {
     lowDriver:  'Consent mechanism partially compliant, small volume, prompt remediation, some documentation held',
     highDriver: 'Pre-ticked consent boxes, bundled consent with unrelated terms, large volume, complaints from data subjects',
     sectorNote: 'Finance sector consent mechanisms face higher ICO scrutiny following the 2024 ICO direct marketing guidance update.',
+    caseAnchor: 'Anchored to HelloFresh (Jan 2024, \u00a3140,000 \u2014 consent bundled with age confirmation, no SMS mention, 24-month post-cancellation marketing). Verify: ico.org.uk/action-weve-taken.',
   },
 };
 
