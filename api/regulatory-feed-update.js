@@ -344,6 +344,29 @@ async function crossReferenceDossiers(allItems) {
         LastComplianceCheck: today,
       });
 
+      // Write to both ComplianceAlertsJson (legacy) and CampaignEventsJson (Defence timeline)
+      let existingEvents = [];
+      try { existingEvents = JSON.parse(dossier.fields.CampaignEventsJson || '[]'); } catch {}
+      existingEvents.push({
+        type: 'enforcement_match',
+        date: new Date().toISOString(),
+        title: `${overlapping.length} claim type${overlapping.length !== 1 ? 's' : ''} match new enforcement`,
+        detail: alert.summary,
+        severity: 'warning',
+      });
+      
+      const patchFields = {
+        ComplianceAlertsJson: JSON.stringify(existingAlerts),
+        CampaignEventsJson: JSON.stringify(existingEvents),
+        LastComplianceCheck: today,
+      };
+      // Set DefenceStatus to alert if it's currently live or approved
+      const currentDs = dossier.fields.DefenceStatus || '';
+      if (['live', 'approved'].includes(currentDs)) {
+        patchFields.DefenceStatus = 'alert';
+      }
+      await atPatch('Campaign_Dossiers', dossier.id, patchFields);
+      
       const dossierUserId = dossier.fields.UserID;
       if (dossierUserId) {
         try {
@@ -391,10 +414,17 @@ async function checkLandingPageDrift() {
 
   let dossiers = [];
   try {
+    // Load dossiers that have EITHER LandingPageUrls OR ConnectedUrls
     dossiers = await atGet('Campaign_Dossiers',
-      "AND({Status}='Submitted',{MonitoringActive}=1,{LandingPageUrls}!='')",
+      "AND({Status}='Submitted',{MonitoringActive}=1)",
       '', 200
     );
+    // Filter to only those with URLs to check
+    dossiers = dossiers.filter(d => {
+      const lp = d.fields.LandingPageUrls || '';
+      const cu = d.fields.ConnectedUrls || '';
+      return (lp && lp !== '[]') || (cu && cu !== '[]');
+    });
   } catch (e) {
     console.error('Could not load dossiers for drift check (non-fatal):', e.message);
     return results;
@@ -404,12 +434,31 @@ async function checkLandingPageDrift() {
 
   for (const dossier of dossiers) {
     try {
-      let urls = [];
-      try { urls = JSON.parse(dossier.fields.LandingPageUrls || '[]'); } catch {}
-      if (!urls.length) continue;
+      // Merge LandingPageUrls (strings) and ConnectedUrls (objects) into one list
+      let landingUrls = [];
+      try { landingUrls = JSON.parse(dossier.fields.LandingPageUrls || '[]'); } catch {}
+      let connectedUrls = [];
+      try { connectedUrls = JSON.parse(dossier.fields.ConnectedUrls || '[]'); } catch {}
 
-      // Limit to 5 URLs per dossier to stay within function time limits
-      urls = urls.slice(0, 5);
+      const allUrls = [];
+      const seen = new Set();
+
+      // ConnectedUrls are objects: {url, label, type}
+      for (const cu of connectedUrls) {
+        const u = typeof cu === 'string' ? cu : cu?.url;
+        if (u && !seen.has(u)) { allUrls.push({ url: u, type: cu?.type || 'landing_page' }); seen.add(u); }
+      }
+      // LandingPageUrls are strings
+      for (const u of landingUrls) {
+        if (typeof u === 'string' && u.startsWith('http') && !seen.has(u)) {
+          allUrls.push({ url: u, type: 'auto_detected' }); seen.add(u);
+        }
+      }
+
+      if (!allUrls.length) continue;
+
+      // Limit to 8 URLs per dossier
+      const urlsToCheck = allUrls.slice(0, 8);
 
       let storedHashes = {};
       try { storedHashes = JSON.parse(dossier.fields.PageHashes || '{}'); } catch {}
@@ -417,13 +466,13 @@ async function checkLandingPageDrift() {
       const changedUrls = [];
       const newHashes = { ...storedHashes };
 
-      for (const url of urls) {
+      for (const urlObj of urlsToCheck) {
         try {
           results.checked++;
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 8000);
 
-          const response = await fetch(url, {
+          const response = await fetch(urlObj.url, {
             headers: { 'User-Agent': 'Sendwize-Monitor/2.0 (compliance check)' },
             signal: controller.signal,
             redirect: 'follow',
@@ -431,88 +480,129 @@ async function checkLandingPageDrift() {
           clearTimeout(timeout);
 
           if (!response.ok) {
-            // Page returned error — flag as potential issue
-            if (storedHashes[url]) {
-              changedUrls.push({ url, reason: `Page returned HTTP ${response.status} — may have been removed or moved` });
+            if (storedHashes[urlObj.url]) {
+              changedUrls.push({ url: urlObj.url, type: urlObj.type, reason: `Page returned HTTP ${response.status}` });
             }
             continue;
           }
 
           const body = await response.text();
-          // Strip volatile elements before hashing: script nonces,
-          // CSRF tokens, timestamps, session IDs, analytics params.
-          // We only care about content changes, not framework noise.
           const stripped = body
             .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
             .replace(/nonce="[^"]*"/gi, '')
             .replace(/csrf[^"]*"[^"]*"/gi, '')
-            .replace(/\d{10,13}/g, '')       // unix timestamps
+            .replace(/\d{10,13}/g, '')
             .replace(/data-session[^"]*"[^"]*"/gi, '')
             .replace(/\s+/g, ' ')
             .trim();
 
           const hash = createHash('sha256').update(stripped).digest('hex');
 
-          if (storedHashes[url] && storedHashes[url] !== hash) {
-            changedUrls.push({ url, reason: 'Page content has changed since campaign was approved' });
+          if (storedHashes[urlObj.url] && storedHashes[urlObj.url] !== hash) {
+            // Extract visible text for relevance check
+            const visibleText = body
+              .replace(/<script[\s\S]*?<\/script>/gi, '')
+              .replace(/<style[\s\S]*?<\/style>/gi, '')
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .slice(0, 1500);
+
+            changedUrls.push({
+              url: urlObj.url,
+              type: urlObj.type,
+              reason: 'Page content changed',
+              newSnippet: visibleText.slice(0, 500),
+            });
           }
 
-          newHashes[url] = hash;
+          newHashes[urlObj.url] = hash;
 
         } catch (fetchErr) {
-          if (fetchErr.name === 'AbortError') {
-            console.warn(`Drift check timeout for ${url}`);
-          } else {
-            console.warn(`Drift check failed for ${url}: ${fetchErr.message}`);
+          if (fetchErr.name !== 'AbortError') {
+            console.warn(`Drift check failed for ${urlObj.url}: ${fetchErr.message}`);
           }
-          results.errors.push({ url, error: fetchErr.message });
+          results.errors.push({ url: urlObj.url, error: fetchErr.message });
         }
       }
 
-      // Always update hashes (even if no drift) so next run has a baseline
+      // Update hashes
       await atPatch('Campaign_Dossiers', dossier.id, {
         PageHashes: JSON.stringify(newHashes),
         LastComplianceCheck: today,
       });
 
-      // Fire alert if any pages changed
       if (changedUrls.length) {
         results.drifted++;
 
-        const alert = {
-          type: 'landing_page_drift',
-          detectedAt: new Date().toISOString(),
-          changedUrls,
-          summary: changedUrls.length + ' landing page' + (changedUrls.length !== 1 ? 's have' : ' has') +
-            ' changed since this campaign was approved. Review to confirm the destination still matches your compliance sign-off.',
-        };
+        // Phase 6: Claude relevance filter
+        let materialChanges = changedUrls;
+        let claims = [];
+        try { claims = JSON.parse(dossier.fields.ClaimsExtracted || '[]'); } catch {}
 
-        let existingAlerts = [];
-        try { existingAlerts = JSON.parse(dossier.fields.ComplianceAlertsJson || '[]'); } catch {}
-        existingAlerts.push(alert);
+        if (claims.length && process.env.ANTHROPIC_API_KEY) {
+          materialChanges = await filterMaterialChanges(changedUrls, claims, process.env.ANTHROPIC_API_KEY);
+        }
 
-        await atPatch('Campaign_Dossiers', dossier.id, {
-          ComplianceAlertsJson: JSON.stringify(existingAlerts),
-        });
+        if (materialChanges.length) {
+          const alert = {
+            type: 'landing_page_drift',
+            detectedAt: new Date().toISOString(),
+            changedUrls: materialChanges,
+            totalChanged: changedUrls.length,
+            materialCount: materialChanges.length,
+            summary: materialChanges.length + ' connected page' + (materialChanges.length !== 1 ? 's have' : ' has') +
+              ' changed in a way that may affect your campaign\'s compliance.',
+          };
 
-        const dossierUserId = dossier.fields.UserID;
-        if (dossierUserId) {
-          try {
-            await fetch(APP_URL + '/api/data?action=send-alert', {
+          // Write to ComplianceAlertsJson (legacy)
+          let existingAlerts = [];
+          try { existingAlerts = JSON.parse(dossier.fields.ComplianceAlertsJson || '[]'); } catch {}
+          existingAlerts.push(alert);
+
+          // Write to CampaignEventsJson (Defence timeline)
+          let existingEvents = [];
+          try { existingEvents = JSON.parse(dossier.fields.CampaignEventsJson || '[]'); } catch {}
+          existingEvents.push({
+            type: 'url_change_detected',
+            date: new Date().toISOString(),
+            title: `${materialChanges.length} URL${materialChanges.length !== 1 ? 's' : ''} changed`,
+            detail: materialChanges.map(u => u.url + (u.relevanceNote ? ' — ' + u.relevanceNote : '')).join('; '),
+            severity: 'warning',
+            urlsAffected: materialChanges.map(u => u.url),
+          });
+
+          const patchFields = {
+            ComplianceAlertsJson: JSON.stringify(existingAlerts),
+            CampaignEventsJson: JSON.stringify(existingEvents),
+          };
+
+          // Set DefenceStatus to alert
+          const currentDs = dossier.fields.DefenceStatus || '';
+          if (['live', 'approved'].includes(currentDs)) {
+            patchFields.DefenceStatus = 'alert';
+          }
+
+          await atPatch('Campaign_Dossiers', dossier.id, patchFields);
+
+          // Send email alert
+          const dossierUserId = dossier.fields.UserID;
+          if (dossierUserId) {
+            fetch(APP_URL + '/api/data?action=send-alert', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 userId: dossierUserId,
-                alertType: 'landing_page_drift',
+                alertType: 'dossier_compliance_change',
                 campaignTitle: dossier.fields.CampaignTitle || 'a campaign',
-                changedCount: changedUrls.length,
-                urls: changedUrls.map(u => u.url).join(', '),
+                claimTypes: 'landing page change',
+                rulingCount: materialChanges.length,
               }),
-            });
-          } catch (ae) {
-            console.error('Landing page drift alert failed (non-fatal):', ae.message);
+            }).catch(ae => console.error('Drift alert failed (non-fatal):', ae.message));
           }
         }
+        // If all changes were filtered as non-material, no alert fired — this is the noise filter working
       }
     } catch (e) {
       console.error('Drift check error for dossier:', e.message);
@@ -611,6 +701,31 @@ async function checkReferencePriceExpiry() {
         RefPriceAlertStage: newStage,
         LastComplianceCheck: today,
       });
+
+      // Write to both ComplianceAlertsJson and CampaignEventsJson
+      let existingEvents = [];
+      try { existingEvents = JSON.parse(dossier.fields.CampaignEventsJson || '[]'); } catch {}
+      existingEvents.push({
+        type: alertType,
+        date: new Date().toISOString(),
+        title: alertType === 'ref_price_expired' ? 'Reference price expired' : 'Reference price expiry approaching',
+        detail: alertSummary,
+        severity: alertType === 'ref_price_expired' ? 'alert' : 'warning',
+      });
+      
+      const patchFields = {
+        ComplianceAlertsJson: JSON.stringify(existingAlerts),
+        CampaignEventsJson: JSON.stringify(existingEvents),
+        RefPriceAlertStage: newStage,
+        LastComplianceCheck: today,
+      };
+      if (alertType === 'ref_price_expired') {
+        const currentDs = dossier.fields.DefenceStatus || '';
+        if (['live', 'approved'].includes(currentDs)) {
+          patchFields.DefenceStatus = 'alert';
+        }
+      }
+      await atPatch('Campaign_Dossiers', dossier.id, patchFields);
 
       const dossierUserId = dossier.fields.UserID;
       if (dossierUserId) {
@@ -847,4 +962,83 @@ export default async function handler(req, res) {
     },
     errors: results.errors,
   });
+}
+
+// ── Phase 6: Claude relevance filter ──────────────────────────
+// When a URL change is detected, check whether the change is
+// material to the campaign's specific claims. Filters out footer
+// updates, cookie banner tweaks, and other noise.
+//
+// Only runs if ClaimsExtracted is populated (i.e. Campaign Defence
+// was used). Falls back to treating all changes as material if
+// the Claude call fails.
+async function filterMaterialChanges(changedUrls, claims, claudeKey) {
+  if (!claims.length || !changedUrls.length) return changedUrls;
+
+  const claimSummary = claims.map(c =>
+    `${c.claimType}: "${(c.claim || '').slice(0, 100)}" (${c.ruleRef || 'no rule ref'})`
+  ).join('\n');
+
+  const material = [];
+
+  // Process each changed URL individually to get specific relevance notes
+  for (const changed of changedUrls) {
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': claudeKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 300,
+          messages: [{ role: 'user', content: `A marketing campaign links to ${changed.url}. The page has changed since the campaign was approved.
+
+The campaign makes these specific claims:
+${claimSummary}
+
+Here is a snippet of the page's current content:
+${(changed.newSnippet || '').slice(0, 800)}
+
+Is this change MATERIAL to the campaign's compliance? A material change is one that:
+- Alters pricing, offers, or terms referenced in the campaign
+- Introduces new urgency/scarcity claims not in the original approval
+- Changes product descriptions that the campaign's claims depend on
+- Removes information the campaign relies on (e.g. T&Cs, offer details)
+
+Non-material changes include: cookie banners, footer updates, navigation changes, analytics code, unrelated content on other parts of the page.
+
+Reply with ONLY a JSON object: {"material": true/false, "reason": "one sentence explaining why or why not"}` }],
+        }),
+      });
+
+      if (!r.ok) {
+        // Claude call failed — treat as material (safe default)
+        material.push(changed);
+        continue;
+      }
+
+      const data = await r.json();
+      const text = data.content?.[0]?.text || '';
+      const match = text.match(/\{[\s\S]*\}/);
+
+      if (match) {
+        const result = JSON.parse(match[0]);
+        if (result.material) {
+          material.push({ ...changed, relevanceNote: result.reason || 'Material change detected' });
+        }
+        // Non-material changes are silently dropped — this is the noise filter
+      } else {
+        // Couldn't parse — treat as material
+        material.push(changed);
+      }
+    } catch (e) {
+      console.error(`Relevance filter failed for ${changed.url} (treating as material):`, e.message);
+      material.push(changed);
+    }
+  }
+
+  return material;
 }
