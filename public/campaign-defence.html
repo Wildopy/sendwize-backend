@@ -36,6 +36,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .btn-w{background:var(--w);color:var(--t);border:1px solid var(--bm)}.btn-w:hover{border-color:var(--o);color:var(--o)}
 .btn-sm{padding:7px 14px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.av-step{max-height:0;overflow:hidden;opacity:0;transform:translateY(12px);transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .35s ease,transform .35s ease,margin .35s ease;margin-bottom:0;pointer-events:none}
+.av-step.revealed{max-height:600px;opacity:1;transform:translateY(0);margin-bottom:14px;pointer-events:auto}
+.av-step.revealed-last{margin-bottom:0}
+.av-tick{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--g);opacity:0;transition:opacity .25s}.av-tick.on{opacity:1}
 
 /* ── Gate ── */
 .gate{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}.gate.on{display:flex}
@@ -206,16 +210,16 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 
   <div class="av-card">
-    <div class="av-card-t">Campaign</div>
+    <div class="av-card-t">Campaign <span class="av-tick" id="tickCamp">✓</span></div>
     <div class="av-card-s">Name your campaign and identify yourself as the owner.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="fg"><label>Campaign title</label><input id="aTitle" placeholder="e.g. Summer Sale 2026" maxlength="120"></div>
+      <div class="fg"><label>Campaign title</label><input id="aTitle" placeholder="e.g. Summer Sale 2026" maxlength="120" oninput="checkReveal()"></div>
       <div class="fg"><label>Your name</label><input id="aOwner" placeholder="e.g. Sarah Chen" maxlength="80"></div>
     </div>
   </div>
 
   <div class="av-card">
-    <div class="av-card-t">Channels</div>
+    <div class="av-card-t">Channels <span class="av-tick" id="tickCh">✓</span></div>
     <div class="av-card-s">Which channels is this campaign running on? This determines what evidence Sendwize requires — consent and suppression are only needed for direct channels like email and SMS.</div>
     <div class="ch-grid" id="chGrid">
       <label class="ch-opt on" onclick="togCh(this)"><input type="checkbox" value="email" checked>Email</label>
@@ -229,28 +233,36 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="hint" id="chHint">Email selected — consent, suppression, and sender identity evidence required.</div>
   </div>
 
+  <div class="av-step" id="stepCopy">
   <div class="av-card">
     <div class="av-card-t">Campaign creative</div>
     <div class="av-card-s">Paste your final copy — subject line, body, footer, ad copy. Sendwize extracts every claim that needs evidence and runs the AI compliance check automatically. This becomes an immutable snapshot at approval.</div>
-    <div class="fg"><label>Creative / copy</label><textarea id="aCopy" placeholder="Paste the full text here…"></textarea></div>
+    <div class="fg"><label>Creative / copy</label><textarea id="aCopy" placeholder="Paste the full text here…" oninput="checkReveal()"></textarea></div>
+  </div>
   </div>
 
+  <div class="av-step" id="stepList">
   <div class="av-card" id="listCard">
     <div class="av-card-t">Audience</div>
     <div class="av-card-s">Which list are you sending to? Sendwize links the most recent List Intelligence check for this list name.</div>
     <div class="fg"><label>List name</label><input id="aList" placeholder="e.g. Main Newsletter, Black Friday Segment"><div class="hint">Must match the name used in List Intelligence. Only required for email/SMS channels.</div></div>
   </div>
+  </div>
 
+  <div class="av-step" id="stepUrls">
   <div class="av-card">
     <div class="av-card-t">Connected URLs</div>
     <div class="av-card-s">Landing pages, offer pages, affiliate pages, terms pages. Each URL is snapshotted at approval and monitored daily after launch. If a price changes or a page goes down, you know immediately.</div>
     <div class="url-list" id="urlList"></div>
     <button class="add-url" onclick="addUrl()">+ Add URL</button>
   </div>
+  </div>
 
-  <div style="display:flex;gap:10px;margin-top:20px">
+  <div class="av-step" id="stepSubmit">
+  <div style="display:flex;gap:10px">
     <button class="btn btn-o" id="btnA" onclick="assemble()">Assemble defence →</button>
     <button class="btn btn-w" onclick="showList()">Cancel</button>
+  </div>
   </div>
 </div>
 
@@ -293,13 +305,13 @@ document.readyState==='loading'?document.addEventListener('DOMContentLoaded',ini
 
 function hideAll(){['gate','listView','assemblyView','caseFile'].forEach(v=>$(v).classList.remove('on'));}
 function showList(){hideAll();$('listView').classList.add('on');loadList();}
-function showAssembly(){hideAll();$('assemblyView').classList.add('on');if(!$('urlList').children.length)addUrl();updCh();}
+function showAssembly(){hideAll();$('assemblyView').classList.add('on');if(!$('urlList').children.length)addUrl();updCh();checkReveal();}
 function showCF(){hideAll();$('caseFile').classList.add('on');}
 
 let _t;function toast(m,c=''){const t=$('toast');t.textContent=m;t.className='toast on'+(c?' '+c:'');clearTimeout(_t);_t=setTimeout(()=>t.classList.remove('on'),4000);}
 
 // ── Channels ──
-function togCh(el){const cb=el.querySelector('input');cb.checked=!cb.checked;el.classList.toggle('on',cb.checked);updCh();}
+function togCh(el){const cb=el.querySelector('input');cb.checked=!cb.checked;el.classList.toggle('on',cb.checked);updCh();checkReveal();}
 function getCh(){return Array.from(document.querySelectorAll('#chGrid input:checked')).map(c=>c.value);}
 function updCh(){
   const ch=getCh(),n=[];
@@ -308,7 +320,27 @@ function updCh(){
   if(ch.some(c=>['affiliate','influencer'].includes(c)))n.push('relationship verification');
   n.push('claims evidence','URL monitoring');
   $('chHint').textContent=ch.length?ch.join(', ')+' — '+n.join(', ')+' required.':'Select at least one channel.';
-  const lc=$('listCard');if(lc)lc.style.display=ch.some(c=>['email','sms'].includes(c))?'':'none';
+  // listCard visibility now handled by checkReveal via stepList
+}
+
+// ── Progressive reveal ──
+function reveal(id,delay){const el=$(id);if(el&&!el.classList.contains('revealed'))setTimeout(()=>el.classList.add('revealed'),delay||0);}
+function hide(id){const el=$(id);if(el)el.classList.remove('revealed');}
+function checkReveal(){
+  const title=$('aTitle').value.trim(),ch=getCh(),copy=$('aCopy')?.value?.trim()||'';
+  // Ticks
+  const tc=$('tickCamp'),tch=$('tickCh');
+  if(tc)tc.classList.toggle('on',!!title);
+  if(tch)tch.classList.toggle('on',ch.length>0);
+  // Step 1: creative appears when title filled + channels selected
+  if(title&&ch.length){reveal('stepCopy',80);}else{hide('stepCopy');hide('stepList');hide('stepUrls');hide('stepSubmit');return;}
+  // Step 2: audience + urls appear when creative has content
+  if(copy.length>10){
+    const needsList=ch.some(c=>['email','sms'].includes(c));
+    if(needsList)reveal('stepList',120);else hide('stepList');
+    reveal('stepUrls',needsList?200:120);
+    reveal('stepSubmit',needsList?280:200);
+  }else{hide('stepList');hide('stepUrls');hide('stepSubmit');}
 }
 
 // ── URLs ──
