@@ -3,105 +3,431 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Campaign Defence — Sendwize</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--bg:#F7F6F3;--w:#fff;--b:#ece9e3;--bm:#ddd9d0;--t:#0f0f0d;--tm:#4a4740;--mu:#9a9690;--r:#dc2626;--rb:#fef2f2;--g:#16a34a;--gb:#f0fdf4;--y:#ca8a04;--yb:#fefce8;--blue:#1d4ed8;--blueb:#eff6ff;--rad:10px;--sh:0 1px 4px rgba(0,0,0,.07);--sh-lg:0 8px 24px rgba(0,0,0,.10)}
-body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
-.topbar{background:var(--t);padding:12px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}.topbar-logo{color:var(--o);font-weight:700;font-size:16px;text-decoration:none}.topbar-sep{color:#555;font-size:13px}.topbar-pg{color:#999;font-size:13px}.topbar-r{margin-left:auto}.topbar-r a{color:#999;font-size:13px;text-decoration:none}
-.page{max-width:820px;margin:0 auto;padding:32px 20px 80px}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
+  --bg:#F7F6F3;--w:#fff;--b:#ece9e3;--bm:#ddd9d0;
+  --t:#0f0f0d;--tm:#4a4740;--mu:#9a9690;
+  --r:#dc2626;--rb:#fef2f2;
+  --g:#16a34a;--gb:#f0fdf4;
+  --y:#ca8a04;--yb:#fefce8;
+  --blue:#1d4ed8;--blueb:#eff6ff;
+  --pur:#7c3aed;--purb:#f5f3ff;
+  --rad:10px;--rad-lg:16px;
+  --sh:0 1px 4px rgba(0,0,0,.07);--sh-lg:0 8px 32px rgba(0,0,0,.10);
+}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6}
+/* ── Header/Footer: exact match with campaign-dossier.html ── */
+.sw-ph-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.sw-ph-header a{text-decoration:none}.sw-ph-logo{height:28px;display:block}
+.sw-ph-nav{display:flex;align-items:center;gap:22px}.sw-ph-nav a{color:var(--tm);font-size:14px;font-weight:500;transition:color .15s}.sw-ph-nav a:hover{color:var(--t)}
+.sw-ph-footer{border-top:1px solid var(--b);padding:20px 24px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.sw-ph-footer-logo{height:20px;display:block;opacity:.7}
+.sw-ph-footer-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}.sw-ph-footer-links a{color:var(--mu);text-decoration:none}.sw-ph-footer-links a:hover{color:var(--tm)}
+.page{max-width:820px;margin:0 auto;padding:40px 20px 80px}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:340px}.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
 .ld{padding:60px 24px;text-align:center;color:var(--mu)}.spin{width:24px;height:24px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 12px}@keyframes sp{to{transform:rotate(360deg)}}
-.btn{padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:8px}.btn-o{background:var(--o);color:#fff}.btn-o:hover{background:var(--od)}.btn-g{background:var(--g);color:#fff}.btn-w{background:var(--w);color:var(--t);border:1px solid var(--bm)}.btn-w:hover{border-color:var(--o);color:var(--o)}.btn-sm{padding:7px 14px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
-.gate{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}.gate.on{display:flex}.gate-c{max-width:460px;text-align:center}.gate-badge{display:inline-block;background:var(--ol);color:var(--o);font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:20px}.gate-t{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:10px}.gate-s{font-size:15px;color:var(--tm);line-height:1.7;margin-bottom:28px}.gate-btn{display:block;width:100%;padding:14px;background:var(--o);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}.gate-btn:hover{background:var(--od)}
-.lv{display:none}.lv.on{display:block}.lv-intro{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:22px 24px;margin-bottom:24px;display:flex;align-items:center;gap:18px}.lv-intro-t{font-size:14px;font-weight:700;margin-bottom:2px}.lv-intro-s{font-size:13px;color:var(--tm);line-height:1.6}.lv-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}.lv-title{font-size:22px;font-weight:700;letter-spacing:-.3px}.lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}.lv-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px;cursor:pointer;transition:all .15s}.lv-card:hover{border-color:var(--o);box-shadow:var(--sh-lg)}.lv-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.lv-card-title{font-size:14px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lv-card-owner{font-size:12px;color:var(--mu);margin-bottom:6px}.lv-card-ch{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}.cht{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--bg);color:var(--mu)}.lv-card-date{font-size:11px;color:var(--mu)}.sb{font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}.sb-building{background:var(--ol);color:var(--o)}.sb-approved{background:var(--blueb);color:var(--blue)}.sb-live{background:var(--gb);color:var(--g)}.sb-alert{background:var(--rb);color:var(--r)}.sb-paused{background:var(--yb);color:var(--y)}.sb-archived,.sb-draft{background:#f3f4f6;color:#6b7280}.empty-lv{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:60px 32px;text-align:center}.empty-t{font-size:18px;font-weight:700;margin:16px 0 8px}.empty-s{font-size:14px;color:var(--mu);margin-bottom:24px;max-width:380px;margin-inline:auto;line-height:1.6}
-.av{display:none}.av.on{display:block}.av-hero{text-align:center;margin-bottom:24px}.av-hero-t{font-size:24px;font-weight:700;letter-spacing:-.4px;margin-bottom:6px}.av-hero-s{font-size:14px;color:var(--tm);max-width:520px;margin:0 auto}.av-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:24px;margin-bottom:14px;box-shadow:var(--sh)}.av-card-t{font-size:15px;font-weight:700;margin-bottom:3px}.av-card-s{font-size:12px;color:var(--mu);margin-bottom:14px}.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}.fg label{font-size:12px;font-weight:600;color:var(--tm)}.fg input,.fg textarea,.fg select{font-family:inherit;font-size:14px;padding:10px 14px;border:1px solid var(--bm);border-radius:7px;background:#faf9f7;color:var(--t);outline:none;width:100%}.fg input:focus,.fg textarea:focus{border-color:var(--o);background:var(--w)}.fg textarea{min-height:120px;resize:vertical;line-height:1.6}.hint{font-size:11px;color:var(--mu)}.ch-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}.ch-opt{display:flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--bm);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;user-select:none;background:var(--bg)}.ch-opt:hover{border-color:var(--o)}.ch-opt.on{border-color:var(--o);background:var(--ol);color:var(--od)}.ch-opt input{display:none}.url-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}.url-row{display:flex;gap:8px;align-items:center}.url-row input{flex:1}.url-row select{width:140px;flex-shrink:0}.add-url{font-size:12px;color:var(--o);font-weight:600;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
-.cf{display:none}.cf.on{display:block}.cf-hero{background:var(--w);border:1px solid var(--b);border-radius:12px;padding:28px;margin-bottom:20px;box-shadow:var(--sh)}.cf-sr{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}.pulse{width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;animation:pu 2s ease-in-out infinite}.pulse.off{background:var(--mu);animation:none}@keyframes pu{0%,100%{opacity:1}50%{opacity:.4}}.cf-title{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:3px}.cf-meta{font-size:13px;color:var(--tm);margin-bottom:12px}.cf-summary{font-size:13px;color:var(--tm);line-height:1.6;padding:12px 16px;background:var(--bg);border-radius:7px;margin-bottom:14px}.cf-actions{display:flex;gap:8px;flex-wrap:wrap}
-.cf-tabs{display:flex;border-bottom:1px solid var(--b);margin-bottom:20px;overflow-x:auto}.cf-tab{padding:11px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:500;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}.cf-tab:hover{color:var(--t)}.cf-tab.on{color:var(--t);font-weight:600;border-bottom-color:var(--o)}.cf-panel{display:none}.cf-panel.on{display:block}
-.sec{margin-bottom:24px}.sec-t{font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}.sec-t .cnt{font-size:11px;font-weight:600;background:var(--b);color:var(--mu);padding:1px 7px;border-radius:8px}
-.ev-item{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;background:var(--w);border:1px solid var(--b);border-radius:8px;margin-bottom:6px}.ev-icon{font-size:16px;flex-shrink:0;margin-top:1px}.ev-body{flex:1;min-width:0}.ev-label{font-size:13px;font-weight:600;margin-bottom:1px}.ev-detail{font-size:12px;color:var(--tm);line-height:1.5}.ev-st{flex-shrink:0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px}.ev-ok{background:var(--gb);color:var(--g)}.ev-warn{background:var(--yb);color:var(--y)}.ev-gap{background:var(--rb);color:var(--r)}.ev-na{background:#f3f4f6;color:#6b7280}
-.cl-item{display:flex;gap:10px;padding:11px 14px;background:var(--w);border:1px solid var(--b);border-radius:8px;margin-bottom:5px}.cl-type{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;text-transform:uppercase;letter-spacing:.03em;margin-top:2px}.cl-pricing{background:#fef3c7;color:#92400e}.cl-urgency{background:#fef2f2;color:#991b1b}.cl-health{background:#fce7f3;color:#be185d}.cl-other{background:#f3f4f6;color:#4b5563}.cl-body{flex:1;min-width:0}.cl-text{font-size:13px;font-weight:500;margin-bottom:1px}.cl-rule{font-size:11px;color:var(--mu)}.cl-ev{font-size:11px;color:var(--o);font-weight:500}
-.url-item{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--w);border:1px solid var(--b);border-radius:8px;margin-bottom:5px}.url-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}.url-dot.ok{background:var(--g)}.url-dot.changed{background:var(--r)}.url-dot.pending{background:var(--mu)}.url-info{flex:1;min-width:0}.url-addr{font-size:13px;font-weight:500;color:var(--o);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}.url-meta{font-size:11px;color:var(--mu)}.url-tag{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--bg);color:var(--mu);flex-shrink:0}
-.tl{position:relative;padding-left:22px}.tl::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:1px;background:var(--b)}.tl-item{position:relative;padding:0 0 18px 18px}.tl-item:last-child{padding-bottom:0}.tl-dot{position:absolute;left:-19px;top:4px;width:12px;height:12px;border-radius:50%;border:2px solid var(--b);background:var(--w)}.tl-item.info .tl-dot{background:var(--bg);border-color:var(--bm)}.tl-item.warning .tl-dot{background:var(--yb);border-color:var(--y)}.tl-item.alert .tl-dot{background:var(--rb);border-color:var(--r)}.tl-item.success .tl-dot{background:var(--gb);border-color:var(--g)}.tl-date{font-size:11px;color:var(--mu);font-weight:500}.tl-title{font-size:13px;font-weight:600;margin:2px 0}.tl-detail{font-size:12px;color:var(--tm);line-height:1.5}
-.copy-snap{background:#faf9f7;border:1px solid var(--b);border-radius:8px;padding:16px 20px;font-size:13px;line-height:1.7;color:var(--tm);max-height:200px;overflow-y:auto;white-space:pre-wrap;position:relative}.copy-tag{position:absolute;top:8px;right:10px;font-size:9px;font-weight:700;color:var(--mu);letter-spacing:.06em}
-.rp-card{background:var(--w);border:1px solid var(--b);border-radius:8px;margin-bottom:10px;overflow:hidden}.rp-head{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}.rp-head:hover{background:var(--bg)}.rp-reg{font-size:13px;font-weight:700}.rp-toggle{font-size:14px;color:var(--mu);transition:transform .2s}.rp-body{display:none;padding:16px;border-top:1px solid var(--b);font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--tm)}.rp-card.open .rp-body{display:block}.rp-card.open .rp-toggle{transform:rotate(180deg)}.rp-banner{background:var(--ol);border-left:3px solid var(--o);border-radius:0 7px 7px 0;padding:12px 16px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.5}
-.letter-card{background:var(--w);border:2px solid var(--r);border-radius:10px;overflow:hidden;margin-bottom:16px}.letter-banner{background:var(--r);color:#fff;text-align:center;padding:8px;font-size:10px;font-weight:700;letter-spacing:.1em}.letter-body{padding:20px 24px;font-size:13px;line-height:1.9;white-space:pre-wrap}.clearance-bar{background:linear-gradient(135deg,var(--gb),#dcfce7);border:2px solid var(--g);border-radius:8px;padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:16px}.clearance-t{font-size:16px;font-weight:700;color:var(--g)}.clearance-s{font-size:13px;color:var(--tm)}
-.disc{font-size:10px;color:var(--mu);text-align:center;margin-top:28px;line-height:1.5}
-@media(max-width:640px){.lv-grid{grid-template-columns:1fr}.ch-grid{gap:6px}.url-row{flex-direction:column}.url-row select{width:100%}.lv-intro{flex-direction:column;text-align:center}}
+.btn{padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-o{background:var(--o);color:#fff}.btn-o:hover{background:var(--od)}
+.btn-g{background:var(--g);color:#fff}
+.btn-w{background:var(--w);color:var(--t);border:1px solid var(--bm)}.btn-w:hover{border-color:var(--o);color:var(--o)}
+.btn-sm{padding:7px 14px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Gate ── */
+.gate{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}.gate.on{display:flex}
+.gate-card{background:var(--w);border:1px solid var(--b);border-radius:12px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:var(--sh-lg)}
+.gate-logo{font-size:22px;font-weight:700;color:var(--o);letter-spacing:-.5px;margin-bottom:24px}
+.gate-icon{font-size:40px;margin-bottom:16px}
+.gate-t{font-size:20px;font-weight:700;margin-bottom:8px}
+.gate-s{font-size:14px;color:var(--mu);line-height:1.6;margin-bottom:28px}
+.gate-btn{display:block;width:100%;padding:13px;background:var(--o);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;text-align:center}.gate-btn:hover{background:var(--od)}
+
+/* ── List view ── */
+.lv{display:none}.lv.on{display:block;animation:fadeUp .25s ease}
+.lv-hero{background:var(--w);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:var(--rad-lg);padding:24px 28px;margin-bottom:24px}
+.lv-hero-t{font-size:16px;font-weight:700;margin-bottom:6px}
+.lv-hero-s{font-size:13px;color:var(--tm);line-height:1.7}
+.lv-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.lv-title{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.lv-sub{font-size:14px;color:var(--mu);margin-top:2px}
+.lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.lv-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:22px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative}
+.lv-card:hover{border-color:var(--o);box-shadow:var(--sh-lg)}
+.lv-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.lv-card-title{font-size:15px;font-weight:700;line-height:1.3;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lv-card-owner{font-size:12px;color:var(--mu);margin-bottom:8px}
+.lv-card-ch{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.cht{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--bg);color:var(--mu)}
+.lv-card-date{font-size:11px;color:var(--mu)}
+.sb{font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.sb-building{background:var(--ol);color:var(--o)}.sb-approved{background:var(--blueb);color:var(--blue)}.sb-live{background:var(--gb);color:var(--g)}.sb-alert{background:var(--rb);color:var(--r)}.sb-paused{background:var(--yb);color:var(--y)}.sb-archived,.sb-draft{background:#f3f4f6;color:#6b7280}
+.empty-lv{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:60px 32px;text-align:center}
+.empty-icon{font-size:48px;margin-bottom:16px}.empty-t{font-size:18px;font-weight:700;margin-bottom:8px}
+.empty-s{font-size:14px;color:var(--mu);margin-bottom:24px;max-width:380px;margin-inline:auto;line-height:1.6}
+
+/* ── Assembly ── */
+.av{display:none}.av.on{display:block;animation:fadeUp .25s ease}
+.av-intro{background:linear-gradient(135deg,#fff7ed 0%,var(--w) 100%);border:2px solid var(--o);border-radius:var(--rad-lg);padding:32px;text-align:center;margin-bottom:24px}
+.av-intro-t{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:6px}
+.av-intro-s{font-size:14px;color:var(--tm);max-width:520px;margin:0 auto;line-height:1.7}
+.av-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;margin-bottom:14px;box-shadow:var(--sh)}
+.av-card-t{font-size:15px;font-weight:700;margin-bottom:3px}.av-card-s{font-size:12px;color:var(--mu);margin-bottom:14px;line-height:1.5}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.fg label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--o)}
+.fg input,.fg textarea{font-family:inherit;font-size:14px;padding:10px 14px;border:1px solid var(--bm);border-radius:7px;background:#faf9f7;color:var(--t);outline:none;width:100%;transition:border-color .15s}
+.fg input:focus,.fg textarea:focus{border-color:var(--o);background:var(--w)}
+.fg textarea{min-height:120px;resize:vertical;line-height:1.6}
+.hint{font-size:11px;color:var(--mu)}
+.ch-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.ch-opt{display:flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--bm);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;user-select:none;background:var(--bg)}.ch-opt:hover{border-color:var(--o)}.ch-opt.on{border-color:var(--o);background:var(--ol);color:var(--od)}.ch-opt input{display:none}
+.url-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.url-row{display:flex;gap:8px;align-items:center}.url-row input{flex:1}.url-row select{width:140px;flex-shrink:0;font-family:inherit;font-size:13px;padding:9px 10px;border:1px solid var(--bm);border-radius:7px;background:#faf9f7;color:var(--t)}
+.add-url{font-size:12px;color:var(--o);font-weight:600;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
+
+/* ── Case file ── */
+.cf{display:none}.cf.on{display:block;animation:fadeUp .25s ease}
+.cf-hero{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:28px;margin-bottom:20px;box-shadow:var(--sh)}
+.cf-sr{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;animation:pu 2s ease-in-out infinite}.pulse.off{background:var(--mu);animation:none}@keyframes pu{0%,100%{opacity:1}50%{opacity:.4}}
+.cf-title{font-size:24px;font-weight:700;letter-spacing:-.4px;margin-bottom:3px}
+.cf-meta{font-size:13px;color:var(--tm);margin-bottom:12px}
+.cf-summary{font-size:13px;color:var(--tm);line-height:1.6;padding:12px 16px;background:var(--bg);border-radius:7px;margin-bottom:14px}
+.cf-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Tabs */
+.cf-tabs{display:flex;border-bottom:2px solid var(--b);margin-bottom:20px;overflow-x:auto}
+.cf-tab{padding:11px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:500;color:var(--mu);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .15s}
+.cf-tab:hover{color:var(--t)}.cf-tab.on{color:var(--t);font-weight:600;border-bottom-color:var(--o)}
+.cf-panel{display:none}.cf-panel.on{display:block}
+
+/* Section */
+.sec{margin-bottom:24px}
+.sec-t{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;letter-spacing:-.2px}
+.sec-t .cnt{font-size:11px;font-weight:600;background:var(--b);color:var(--mu);padding:1px 7px;border-radius:8px}
+
+/* Evidence items */
+.ev-item{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:6px;transition:border-color .15s}
+.ev-item:hover{border-color:var(--bm)}
+.ev-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.ev-body{flex:1;min-width:0}.ev-label{font-size:13px;font-weight:600;margin-bottom:1px}.ev-detail{font-size:12px;color:var(--tm);line-height:1.5}
+.ev-st{flex-shrink:0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px}
+.ev-ok{background:var(--gb);color:var(--g)}.ev-warn{background:var(--yb);color:var(--y)}.ev-gap{background:var(--rb);color:var(--r)}.ev-na{background:#f3f4f6;color:#6b7280}
+
+/* Claims */
+.cl-item{display:flex;gap:10px;padding:12px 16px;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:5px}
+.cl-type{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
+.cl-pricing{background:#fef3c7;color:#92400e}.cl-urgency{background:#fef2f2;color:#991b1b}.cl-health{background:#fce7f3;color:#be185d}.cl-other{background:#f3f4f6;color:#4b5563}
+.cl-body{flex:1;min-width:0}.cl-text{font-size:13px;font-weight:500;margin-bottom:1px}.cl-rule{font-size:11px;color:var(--mu)}.cl-ev{font-size:11px;color:var(--o);font-weight:500}
+
+/* URLs */
+.url-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:5px}
+.url-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}.url-dot.ok{background:var(--g)}.url-dot.changed{background:var(--r)}.url-dot.pending{background:var(--mu)}
+.url-info{flex:1;min-width:0}.url-addr{font-size:13px;font-weight:500;color:var(--o);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.url-meta{font-size:11px;color:var(--mu)}
+.url-tag{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--bg);color:var(--mu);flex-shrink:0}
+
+/* Response pack */
+.rp-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:10px;overflow:hidden}
+.rp-head{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}.rp-head:hover{background:var(--bg)}
+.rp-reg{font-size:14px;font-weight:700}.rp-toggle{font-size:14px;color:var(--mu);transition:transform .2s}
+.rp-body{display:none;padding:18px;border-top:1px solid var(--b);font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--tm)}
+.rp-card.open .rp-body{display:block}.rp-card.open .rp-toggle{transform:rotate(180deg)}
+.rp-banner{background:var(--ol);border-left:3px solid var(--o);border-radius:0 7px 7px 0;padding:14px 18px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.6}
+
+/* Timeline */
+.tl{position:relative;padding-left:24px}
+.tl::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:1px;background:var(--b)}
+.tl-item{position:relative;padding:0 0 20px 20px}.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-20px;top:4px;width:14px;height:14px;border-radius:50%;border:2px solid var(--b);background:var(--w)}
+.tl-item.info .tl-dot{background:var(--bg);border-color:var(--bm)}.tl-item.warning .tl-dot{background:var(--yb);border-color:var(--y)}.tl-item.alert .tl-dot{background:var(--rb);border-color:var(--r)}.tl-item.success .tl-dot{background:var(--gb);border-color:var(--g)}
+.tl-date{font-size:11px;color:var(--mu);font-weight:500}.tl-title{font-size:13px;font-weight:600;margin:2px 0}.tl-detail{font-size:12px;color:var(--tm);line-height:1.5}
+
+/* Copy snapshot */
+.copy-snap{background:#faf9f7;border:1px solid var(--b);border-radius:var(--rad);padding:16px 20px;font-size:13px;line-height:1.7;color:var(--tm);max-height:200px;overflow-y:auto;white-space:pre-wrap;position:relative}
+.copy-tag{position:absolute;top:8px;right:10px;font-size:9px;font-weight:700;color:var(--mu);letter-spacing:.06em}
+
+/* Letter */
+.letter-card{background:var(--w);border:2px solid var(--r);border-radius:var(--rad-lg);overflow:hidden;margin-bottom:16px;box-shadow:var(--sh-lg)}
+.letter-banner{background:var(--r);color:#fff;text-align:center;padding:10px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.letter-body{padding:24px 32px;font-size:13px;line-height:1.9;white-space:pre-wrap}
+.clearance-bar{background:linear-gradient(135deg,var(--gb),#dcfce7);border:2px solid var(--g);border-radius:var(--rad);padding:18px 22px;display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.clearance-t{font-size:17px;font-weight:700;color:var(--g)}.clearance-s{font-size:13px;color:var(--tm)}
+
+.disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px;line-height:1.5}
+@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.sw-ph-footer{flex-direction:column;align-items:flex-start}.lv-grid{grid-template-columns:1fr}.ch-grid{gap:6px}.url-row{flex-direction:column}.url-row select{width:100%}}
 </style>
 </head>
 <body>
-<div class="topbar"><a href="https://new-mvp-v2.webflow.io/" class="topbar-logo">sendwize</a><span class="topbar-sep">/</span><span class="topbar-pg">Campaign Defence</span><div class="topbar-r"><a href="#" onclick="swGo('/dashboard');return false">Dashboard</a></div></div>
+
+<header class="sw-ph-header">
+  <a href="https://new-mvp-v2.webflow.io/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <nav class="sw-ph-nav">
+    <a href="https://new-mvp-v2.webflow.io/">Home</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
+  </nav>
+</header>
+
 <div class="page">
-<div class="gate" id="gate"><div class="gate-c"><div class="gate-badge">CAMPAIGN DEFENCE</div><div class="gate-t">Your compliance evidence. Built before launch. Watched after.</div><div class="gate-s">Campaign Defence assembles the evidence file for any marketing campaign — email, paid social, affiliate, influencer, SMS, display. It freezes what you approved, monitors what you linked to, and alerts you if anything changes.</div><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard →</a></div></div>
-<div class="lv" id="listView"><div class="lv-intro"><div style="font-size:28px;flex-shrink:0">🛡️</div><div><div class="lv-intro-t">Build your evidence before launch. Sendwize watches after.</div><div class="lv-intro-s">Paste your creative, select channels, name your audience. Claims are extracted, evidence is linked from your existing checks, and landing pages are monitored daily. If a regulator asks what you did — this is your answer.</div></div></div><div class="lv-head"><div class="lv-title">Your campaigns</div><button class="btn btn-o" onclick="showAssembly()">New defence</button></div><div id="listC"><div class="ld"><div class="spin"></div>Loading…</div></div></div>
-<div class="av" id="assemblyView"><div style="margin-bottom:16px"><button class="btn btn-w btn-sm" onclick="showList()">← Back</button></div><div class="av-hero"><div class="av-hero-t">Assemble your defence</div><div class="av-hero-s">Paste your creative, select channels, name your audience. Sendwize pulls the rest.</div></div><div class="av-card"><div class="av-card-t">Campaign</div><div class="av-card-s">What are you running?</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="fg"><label>Campaign title</label><input id="aTitle" placeholder="e.g. Summer Sale 2026" maxlength="120"></div><div class="fg"><label>Your name</label><input id="aOwner" placeholder="e.g. Sarah Chen" maxlength="80"></div></div></div><div class="av-card"><div class="av-card-t">Channels</div><div class="av-card-s">Which channels? This determines what evidence is required.</div><div class="ch-grid" id="chGrid"><label class="ch-opt on" onclick="togCh(this)"><input type="checkbox" value="email" checked>Email</label><label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="sms">SMS</label><label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="paid_social">Paid Social</label><label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="display">Display</label><label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="affiliate">Affiliate</label><label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="influencer">Influencer</label><label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="landing_page">Landing Page</label></div><div class="hint" id="chHint">Email — consent, suppression, sender identity required.</div></div><div class="av-card"><div class="av-card-t">Campaign creative</div><div class="av-card-s">Paste your final copy. Claims are extracted and the AI compliance check runs automatically.</div><div class="fg"><label>Creative / copy</label><textarea id="aCopy" placeholder="Paste the full text — subject line, body, footer, ad copy…"></textarea><div class="hint">This becomes an immutable snapshot at approval.</div></div></div><div class="av-card" id="listCard"><div class="av-card-t">Audience</div><div class="av-card-s">Which list? Sendwize links your most recent List Intelligence check.</div><div class="fg"><label>List name</label><input id="aList" placeholder="e.g. Main Newsletter"><div class="hint">Must match the name in List Intelligence. Only for email/SMS.</div></div></div><div class="av-card"><div class="av-card-t">Connected URLs</div><div class="av-card-s">Landing pages, offer pages, affiliate pages. Snapshotted at approval, monitored daily.</div><div class="url-list" id="urlList"></div><button class="add-url" onclick="addUrl()">+ Add URL</button></div><div style="display:flex;gap:10px;margin-top:20px"><button class="btn btn-o" id="btnA" onclick="assemble()">Assemble defence →</button><button class="btn btn-w" onclick="showList()">Cancel</button></div></div>
-<div class="cf" id="caseFile"><div style="margin-bottom:16px"><button class="btn btn-w btn-sm" onclick="showList()">← All campaigns</button></div><div class="cf-hero" id="cfH"><div class="ld"><div class="spin"></div>Loading…</div></div><div class="cf-tabs" id="cfT"></div><div id="cfP"></div><p class="disc">Information only — not legal advice. Evidence hashes are tamper-evident timestamps.</p></div>
+
+<!-- GATE -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-logo">sendwize</div>
+    <div class="gate-icon">🛡️</div>
+    <div class="gate-t">Campaign Defence</div>
+    <div class="gate-s">Build your compliance evidence before launch. Monitor it after. Email, paid social, affiliate, influencer, SMS, display — every channel, one defence file. If a regulator asks what you did and why, this is your answer.</div>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard →</a>
+  </div>
 </div>
+
+<!-- LIST VIEW -->
+<div class="lv" id="listView">
+  <div class="lv-hero">
+    <div class="lv-hero-t">Your compliance evidence. Built before launch. Watched after.</div>
+    <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize runs the compliance check, extracts every claim that needs evidence, links your existing data, and freezes the defence at approval. After launch, it monitors your landing pages, offer pages, and affiliate pages daily. If anything changes, you know before a regulator does.</div>
+  </div>
+  <div class="lv-head">
+    <div><h1 class="lv-title">Campaign Defence</h1><p class="lv-sub">Evidence files for your marketing campaigns.</p></div>
+    <button class="btn btn-o" onclick="showAssembly()">+ New defence</button>
+  </div>
+  <div id="listC"><div class="ld"><div class="spin"></div>Loading…</div></div>
+</div>
+
+<!-- ASSEMBLY VIEW -->
+<div class="av" id="assemblyView">
+  <div style="margin-bottom:16px"><button class="btn btn-w btn-sm" onclick="showList()">← Back to campaigns</button></div>
+  <div class="av-intro">
+    <div class="av-intro-t">Assemble your defence</div>
+    <div class="av-intro-s">Paste your creative, tell us the channels and audience. Sendwize pulls your list clearance, relationship data, and sender profile automatically. Claims are extracted and the AI compliance check runs in one step.</div>
+  </div>
+
+  <div class="av-card">
+    <div class="av-card-t">Campaign</div>
+    <div class="av-card-s">Name your campaign and identify yourself as the owner.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="fg"><label>Campaign title</label><input id="aTitle" placeholder="e.g. Summer Sale 2026" maxlength="120"></div>
+      <div class="fg"><label>Your name</label><input id="aOwner" placeholder="e.g. Sarah Chen" maxlength="80"></div>
+    </div>
+  </div>
+
+  <div class="av-card">
+    <div class="av-card-t">Channels</div>
+    <div class="av-card-s">Which channels is this campaign running on? This determines what evidence Sendwize requires — consent and suppression are only needed for direct channels like email and SMS.</div>
+    <div class="ch-grid" id="chGrid">
+      <label class="ch-opt on" onclick="togCh(this)"><input type="checkbox" value="email" checked>Email</label>
+      <label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="sms">SMS</label>
+      <label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="paid_social">Paid Social</label>
+      <label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="display">Display</label>
+      <label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="affiliate">Affiliate</label>
+      <label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="influencer">Influencer</label>
+      <label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="landing_page">Landing Page</label>
+    </div>
+    <div class="hint" id="chHint">Email selected — consent, suppression, and sender identity evidence required.</div>
+  </div>
+
+  <div class="av-card">
+    <div class="av-card-t">Campaign creative</div>
+    <div class="av-card-s">Paste your final copy — subject line, body, footer, ad copy. Sendwize extracts every claim that needs evidence and runs the AI compliance check automatically. This becomes an immutable snapshot at approval.</div>
+    <div class="fg"><label>Creative / copy</label><textarea id="aCopy" placeholder="Paste the full text here…"></textarea></div>
+  </div>
+
+  <div class="av-card" id="listCard">
+    <div class="av-card-t">Audience</div>
+    <div class="av-card-s">Which list are you sending to? Sendwize links the most recent List Intelligence check for this list name.</div>
+    <div class="fg"><label>List name</label><input id="aList" placeholder="e.g. Main Newsletter, Black Friday Segment"><div class="hint">Must match the name used in List Intelligence. Only required for email/SMS channels.</div></div>
+  </div>
+
+  <div class="av-card">
+    <div class="av-card-t">Connected URLs</div>
+    <div class="av-card-s">Landing pages, offer pages, affiliate pages, terms pages. Each URL is snapshotted at approval and monitored daily after launch. If a price changes or a page goes down, you know immediately.</div>
+    <div class="url-list" id="urlList"></div>
+    <button class="add-url" onclick="addUrl()">+ Add URL</button>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:20px">
+    <button class="btn btn-o" id="btnA" onclick="assemble()">Assemble defence →</button>
+    <button class="btn btn-w" onclick="showList()">Cancel</button>
+  </div>
+</div>
+
+<!-- CASE FILE VIEW -->
+<div class="cf" id="caseFile">
+  <div style="margin-bottom:16px"><button class="btn btn-w btn-sm" onclick="showList()">← All campaigns</button></div>
+  <div class="cf-hero" id="cfH"><div class="ld"><div class="spin"></div>Loading defence…</div></div>
+  <div class="cf-tabs" id="cfT"></div>
+  <div id="cfP"></div>
+  <p class="disc">Information only — not legal advice. Evidence hashes provide tamper-evident timestamps but are not a legal guarantee.</p>
+</div>
+
+</div>
+
+<footer class="sw-ph-footer">
+  <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
+  <div class="sw-ph-footer-links">
+    <a href="#">About Us</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/cookie-policy">Cookie Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a>
+  </div>
+</footer>
+
 <div class="toast" id="toast"></div>
+
 <script>
 const A='https://sendwize-backend.vercel.app';let U=null,CID=null,D=null;
 const $=id=>document.getElementById(id),E=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-function swGo(p){if(!U)return;location.href=(p.startsWith('http')?p:A+p)+(/\?/.test(p)?'&':'?')+'userId='+U;}
-function init(){const p=new URLSearchParams(location.search);U=p.get('userId');const d=p.get('dossierId')||p.get('defenceId');if(!U){$('gate').classList.add('on');return;}if(d){CID=d;loadCF(d);}else{showList();loadList();}}
+
+function init(){
+  const p=new URLSearchParams(location.search);
+  U=p.get('userId');
+  const d=p.get('dossierId')||p.get('defenceId');
+  if(!U){$('gate').classList.add('on');return;}
+  if(d){CID=d;loadCF(d);}
+  else{showList();loadList();}
+}
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+
 function hideAll(){['gate','listView','assemblyView','caseFile'].forEach(v=>$(v).classList.remove('on'));}
 function showList(){hideAll();$('listView').classList.add('on');loadList();}
 function showAssembly(){hideAll();$('assemblyView').classList.add('on');if(!$('urlList').children.length)addUrl();updCh();}
 function showCF(){hideAll();$('caseFile').classList.add('on');}
+
 let _t;function toast(m,c=''){const t=$('toast');t.textContent=m;t.className='toast on'+(c?' '+c:'');clearTimeout(_t);_t=setTimeout(()=>t.classList.remove('on'),4000);}
+
+// ── Channels ──
 function togCh(el){const cb=el.querySelector('input');cb.checked=!cb.checked;el.classList.toggle('on',cb.checked);updCh();}
 function getCh(){return Array.from(document.querySelectorAll('#chGrid input:checked')).map(c=>c.value);}
-function updCh(){const ch=getCh(),n=[];if(ch.some(c=>['email','sms'].includes(c)))n.push('consent','suppression');if(ch.includes('email'))n.push('sender identity');if(ch.some(c=>['affiliate','influencer'].includes(c)))n.push('relationship verification');n.push('claims','URL monitoring');$('chHint').textContent=ch.length?ch.join(', ')+' — '+n.join(', ')+' required.':'Select at least one channel.';const lc=$('listCard');if(lc)lc.style.display=ch.some(c=>['email','sms'].includes(c))?'':'none';}
+function updCh(){
+  const ch=getCh(),n=[];
+  if(ch.some(c=>['email','sms'].includes(c)))n.push('consent','suppression');
+  if(ch.includes('email'))n.push('sender identity');
+  if(ch.some(c=>['affiliate','influencer'].includes(c)))n.push('relationship verification');
+  n.push('claims evidence','URL monitoring');
+  $('chHint').textContent=ch.length?ch.join(', ')+' — '+n.join(', ')+' required.':'Select at least one channel.';
+  const lc=$('listCard');if(lc)lc.style.display=ch.some(c=>['email','sms'].includes(c))?'':'none';
+}
+
+// ── URLs ──
 function addUrl(){const ul=$('urlList'),r=document.createElement('div');r.className='url-row';r.innerHTML='<input type="url" placeholder="https://…" class="url-input"><select class="url-type"><option value="landing_page">Landing page</option><option value="offer_page">Offer page</option><option value="affiliate_page">Affiliate page</option><option value="terms_page">Terms page</option></select><button class="btn btn-w btn-sm" onclick="this.parentElement.remove()" style="padding:6px 10px">✕</button>';ul.appendChild(r);}
 function getUrls(){return Array.from(document.querySelectorAll('.url-row')).map(r=>({url:r.querySelector('.url-input')?.value?.trim()||'',type:r.querySelector('.url-type')?.value||'landing_page'})).filter(u=>u.url.startsWith('http'));}
-async function loadList(){$('listC').innerHTML='<div class="ld"><div class="spin"></div>Loading…</div>';try{const r=await fetch(`${A}/api/submit-check?action=dossier-list&userId=${U}&limit=50`);const{dossiers:d}=await r.json();if(!d?.length){$('listC').innerHTML='<div class="empty-lv"><div style="font-size:40px">🛡️</div><div class="empty-t">No campaigns yet</div><div class="empty-s">Assemble evidence for a campaign before launch. Sendwize extracts claims, links data, and monitors after.</div><button class="btn btn-o" onclick="showAssembly()">Create your first defence</button></div>';return;}$('listC').innerHTML='<div class="lv-grid">'+d.map(c=>{const ds=c.defenceStatus||(c.status==='Submitted'?'approved':'draft');let ch=[];try{ch=JSON.parse(c.channels||'[]');}catch{}const dt=c.submittedAt||c.updatedAt||c.createdDate;return`<div class="lv-card" onclick="CID='${c.dossierId}';loadCF('${c.dossierId}')"><div class="lv-card-top"><span class="lv-card-title">${E(c.campaignTitle)}</span><span class="sb sb-${ds}">${ds}</span></div><div class="lv-card-owner">${E(c.ownerName||'')}</div>${ch.length?'<div class="lv-card-ch">'+ch.map(x=>'<span class="cht">'+E(x.replace(/_/g,' '))+'</span>').join('')+'</div>':''}${dt?'<div class="lv-card-date">'+new Date(dt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+'</div>':''}</div>`;}).join('')+'</div>';}catch(e){$('listC').innerHTML='<div style="color:var(--r);padding:20px">Failed — '+E(e.message)+'</div>';}}
-async function assemble(){const title=$('aTitle').value.trim(),owner=$('aOwner').value.trim(),copy=$('aCopy').value.trim(),list=$('aList').value.trim(),urls=getUrls(),ch=getCh();if(!title){toast('Enter a title','er');return;}if(!copy){toast('Paste your creative','er');return;}if(!ch.length){toast('Select a channel','er');return;}const b=$('btnA');b.disabled=true;b.textContent='Assembling…';try{const r=await fetch(`${A}/api/submit-check?action=defence-assemble`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,campaignCopy:copy,listName:list,connectedUrls:urls,campaignTitle:title,ownerName:owner,channels:ch})});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();CID=d.dossierId;toast(`Defence assembled — ${d.claimsExtracted} claims extracted`,'ok');loadCF(CID);}catch(e){toast('Failed — '+e.message,'er');b.disabled=false;b.textContent='Assemble defence →';}}
-async function loadCF(id){showCF();$('cfH').innerHTML='<div class="ld"><div class="spin"></div>Loading…</div>';$('cfT').innerHTML='';$('cfP').innerHTML='';try{const r=await fetch(`${A}/api/submit-check?action=dossier-get&dossierId=${id}&userId=${U}`);if(!r.ok)throw new Error('HTTP '+r.status);D=await r.json();renderCF(D);}catch(e){$('cfH').innerHTML='<div style="color:var(--r);padding:20px">Failed — '+E(e.message)+'</div>';}}
-function renderCF(d){const ds=d.DefenceStatus||(d.Status==='Submitted'?'approved':'building'),isLive=['approved','live','alert'].includes(ds),isBld=ds==='building'||!d.DefenceStatus;
-let claims=[],urls=[],snaps=[],events=[],rels=[],lSum=null,aiChk=null,rp=null,ch=[];
-try{claims=JSON.parse(d.ClaimsExtracted||'[]');}catch{}try{urls=JSON.parse(d.ConnectedUrls||'[]');}catch{}try{snaps=JSON.parse(d.UrlSnapshots||'[]');}catch{}try{events=JSON.parse(d.CampaignEventsJson||'[]');}catch{}try{rels=JSON.parse(d.LinkedRelationships||'[]');}catch{}try{lSum=JSON.parse(d.ListSummarySnapshot||'null');}catch{}try{aiChk=JSON.parse(d.AICheckResultJson||'null');}catch{}try{ch=JSON.parse(d.Channels||'["email"]');}catch{}rp=d.responsePack||null;
-let mAlerts=[];try{mAlerts=JSON.parse(d.ComplianceAlertsJson||'[]');}catch{}
-const allEv=[...events,...mAlerts.map(a=>({type:a.type||'alert',date:a.detectedAt||'',title:a.summary||'Alert',detail:a.note||'',severity:'warning'}))].sort((a,b)=>new Date(b.date)-new Date(a.date));
-const mon=d.MonitoringActive!==false&&isLive;
-$('cfH').innerHTML=`<div class="cf-sr"><span class="sb sb-${ds}">${ds}</span>${isLive?`<span class="pulse${mon?'':' off'}"></span><span style="font-size:12px;color:var(--mu)">${mon?'Monitoring active':'Paused'}</span>`:''}${d.HealthScore?`<span style="font-size:12px;color:var(--mu);margin-left:auto">Health: ${d.HealthScore}/100</span>`:''}</div><div class="cf-title">${E(d.CampaignTitle||'Untitled')}</div><div class="cf-meta">${E(d.OwnerName||'')}${d.ApprovedAt?' · Approved '+fD(d.ApprovedAt):''}${d.LaunchDate?' · Launched '+fD(d.LaunchDate):''}${ch.length?' · '+ch.map(c=>c.replace(/_/g,' ')).join(', '):''}</div>${isLive?`<div class="cf-summary">${bldSum(ds,allEv,urls,snaps,d)}</div>`:''}<div class="cf-actions">${isBld?'<button class="btn btn-g" onclick="approve()">Approve defence →</button>':''}${ds==='approved'?'<button class="btn btn-o btn-sm" onclick="addEv(\'campaign_launched\')">Mark as launched</button>':''}${ds==='live'?'<button class="btn btn-w btn-sm" onclick="addEv(\'campaign_takedown\')">Campaign taken down</button>':''}${isLive?'<button class="btn btn-w btn-sm" onclick="logNote()">Log a change</button>':''}</div>`;
-const tabs=[{id:'evidence',l:'Evidence'},{id:'claims',l:'Claims ('+claims.length+')'},{id:'urls',l:'URLs ('+(urls.length||snaps.length)+')'},{id:'timeline',l:'Timeline'}];
-if(rp)tabs.splice(2,0,{id:'response',l:'Response Pack'});
-if(d.CampaignCopySnapshot)tabs.splice(1,0,{id:'copy',l:'Approved Copy'});
-if(d.letter)tabs.push({id:'letter',l:d.letter.type==='clearance'?'Clearance':'Letter'});
-$('cfT').innerHTML=tabs.map((t,i)=>`<button class="cf-tab${i===0?' on':''}" onclick="sTab('${t.id}')">${t.l}</button>`).join('');
-let P='';
-// Evidence
-const needC=ch.some(c=>['email','sms'].includes(c)),needS=ch.includes('email');let mf={};try{mf=JSON.parse(d.ModuleFieldsJson||'{}');}catch{}
-const ev=[];
-if(aiChk||d.AICheckId){const n=aiChk?.issues?.length||0;ev.push({i:'🔍',l:'AI compliance check',d:n?n+' issue'+(n>1?'s':'')+' flagged':'No issues',s:n?'Issues':'Clear',c:n?'ev-warn':'ev-ok'});}else ev.push({i:'🔍',l:'AI compliance check',d:'Not run',s:'Missing',c:'ev-gap'});
-if(needC){if(lSum)ev.push({i:'📋',l:'List: '+(lSum.listName||'—'),d:(lSum.totalContacts||0).toLocaleString()+' contacts · '+(lSum.gateVerdict||'—'),s:lSum.gateVerdict||'—',c:lSum.gateVerdict==='SAFE'?'ev-ok':'ev-warn'});else ev.push({i:'📋',l:'List clearance',d:'Not linked',s:'Gap',c:'ev-na'});}
-if(needC){const c=mf.ConsentMechanism||{};if(c.lawfulBasis)ev.push({i:'✅',l:'Consent: '+c.lawfulBasis,d:c.consentWording?'Wording documented':'No wording',s:c.consentWording?'Documented':'Incomplete',c:c.consentWording?'ev-ok':'ev-warn'});else ev.push({i:'✅',l:'Consent basis',d:'Not documented',s:'Missing',c:'ev-gap'});}
-if(needC){const s=mf.Suppression||{};const ok=s.suppressionApplied?.includes('Yes');ev.push({i:'🚫',l:'Suppression',d:ok?'Applied '+fD(s.dateApplied):'Not applied',s:ok?'Applied':'Missing',c:ok?'ev-ok':'ev-gap'});}
-if(needS){const si=mf.SenderIdentity||{};if(si.fromName)ev.push({i:'🏢',l:'Sender: '+si.fromName,d:(si.fromEmail||'')+(si.unsubscribePresent?.includes('Yes')?' · Unsubscribe ✓':''),s:si.matchesTradingName==='Yes'?'Verified':'Review',c:si.matchesTradingName==='Yes'?'ev-ok':'ev-warn'});else ev.push({i:'🏢',l:'Sender identity',d:'Not documented',s:'Missing',c:'ev-gap'});}
-for(const r of rels){const ok=r.type==='affiliate'?r.consentVerified:r.article26Confirmed;ev.push({i:r.type==='affiliate'?'🤝':'🏪',l:(r.type==='affiliate'?'Affiliate':'Partner')+': '+r.name,d:r.type==='affiliate'?(r.consentVerified?'Consent verified':'Unverified'):(r.article26Confirmed?'Art 26 confirmed':'No Art 26'),s:ok?'Verified':'Gap',c:ok?'ev-ok':'ev-gap'});}
-P+=`<div class="cf-panel on" id="tab-evidence"><div class="sec"><div class="sec-t">Evidence <span class="cnt">${ev.length}</span></div>${ev.map(e=>`<div class="ev-item"><span class="ev-icon">${e.i}</span><div class="ev-body"><div class="ev-label">${E(e.l)}</div><div class="ev-detail">${E(e.d)}</div></div><span class="ev-st ${e.c}">${E(e.s)}</span></div>`).join('')}</div>${d.EvidenceHash?`<div style="font-size:11px;color:var(--mu);margin-top:8px">Evidence hash: <span style="font-family:DM Mono,monospace">${d.EvidenceHash.slice(0,16)}…</span></div>`:''}</div>`;
-// Copy
-if(d.CampaignCopySnapshot)P+=`<div class="cf-panel" id="tab-copy"><div class="sec"><div class="sec-t">Approved copy</div><div class="copy-snap"><span class="copy-tag">IMMUTABLE${d.ApprovedAt?' · '+fD(d.ApprovedAt):''}</span>${E(d.CampaignCopySnapshot)}</div></div></div>`;
-// Claims
-P+=`<div class="cf-panel" id="tab-claims"><div class="sec"><div class="sec-t">Claims <span class="cnt">${claims.length}</span></div>${claims.length?claims.map(c=>{const tc=c.claimType?.includes('pricing')?'cl-pricing':c.claimType?.includes('urgency')||c.claimType?.includes('scarcity')?'cl-urgency':c.claimType?.includes('health')?'cl-health':'cl-other';return`<div class="cl-item"><span class="cl-type ${tc}">${E((c.claimType||'').replace(/_/g,' '))}</span><div class="cl-body"><div class="cl-text">"${E((c.claim||'').slice(0,120))}"</div><div class="cl-rule">${E(c.ruleRef||'')}</div>${c.evidenceNeeded?`<div class="cl-ev">Evidence: ${E(c.evidenceNeeded)}</div>`:''}</div></div>`;}).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No claims extracted.</div>'}</div></div>`;
-// Response pack
-if(rp){const regs=[['ico','ICO'],['asa','ASA'],['cma','CMA']].filter(([k])=>rp[k]);P+=`<div class="cf-panel" id="tab-response"><div class="sec"><div class="sec-t">Complaint-Ready Response Pack</div><div class="rp-banner"><strong>Draft responses — review with legal counsel before sending.</strong> These cite the specific evidence in your defence file.</div>${regs.map(([k,l])=>`<div class="rp-card" onclick="this.classList.toggle('open')"><div class="rp-head"><span class="rp-reg">${l} Response</span><span class="rp-toggle">▾</span></div><div class="rp-body">${E(rp[k])}</div></div>`).join('')}</div></div>`;}
-// URLs
-const au=mergeU(urls,snaps);P+=`<div class="cf-panel" id="tab-urls"><div class="sec"><div class="sec-t">Connected URLs <span class="cnt">${au.length}</span></div>${au.length?au.map(u=>`<div class="url-item"><span class="url-dot ${u.changed?'changed':u.snap?'ok':'pending'}"></span><div class="url-info"><a href="${E(u.url)}" target="_blank" class="url-addr">${E(u.url)}</a><div class="url-meta">${u.snap?'Snapshotted '+fD(u.at):'Pending'}${u.title?' · '+E(u.title):''}</div></div><span class="url-tag">${E((u.type||'').replace(/_/g,' '))}</span></div>`).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No URLs.</div>'}</div></div>`;
-// Letter
-if(d.letter){if(d.letter.type==='clearance')P+=`<div class="cf-panel" id="tab-letter"><div class="clearance-bar"><div style="font-size:28px">✅</div><div><div class="clearance-t">Campaign cleared</div><div class="clearance-s">Strong evidence across all modules.</div></div></div></div>`;else{const ln=(d.letter.content||'').split('\n');P+=`<div class="cf-panel" id="tab-letter"><div class="letter-card"><div class="letter-banner">${E(ln[0]||'')}</div><div class="letter-body">${E(ln.slice(2).join('\n'))}</div></div></div>`;}}
-// Timeline
-P+=`<div class="cf-panel" id="tab-timeline"><div class="sec"><div class="sec-t">Timeline</div><div class="tl">${allEv.length?allEv.map(e=>{const sv=e.severity==='warning'||e.type?.includes('drift')||e.type?.includes('amended')?'warning':e.severity==='alert'?'alert':e.type?.includes('approved')||e.type?.includes('launched')?'success':'info';return`<div class="tl-item ${sv}"><div class="tl-dot"></div><div class="tl-date">${fDT(e.date)}</div><div class="tl-title">${E(e.title||e.type?.replace(/_/g,' ')||'Event')}</div>${e.detail?`<div class="tl-detail">${E(e.detail)}</div>`:''}</div>`;}).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No events yet.</div>'}</div></div></div>`;
-$('cfP').innerHTML=P;}
-function sTab(id){document.querySelectorAll('.cf-tab').forEach((t,i)=>{const tabs=document.querySelectorAll('.cf-tab');t.classList.toggle('on',t.textContent.toLowerCase().replace(/[^a-z]/g,'').startsWith(id.slice(0,3)));});document.querySelectorAll('.cf-panel').forEach(p=>p.classList.toggle('on',p.id==='tab-'+id));}
+
+// ── List ──
+async function loadList(){
+  $('listC').innerHTML='<div class="ld"><div class="spin"></div>Loading…</div>';
+  try{
+    const r=await fetch(`${A}/api/submit-check?action=dossier-list&userId=${U}&limit=50`);
+    const{dossiers:d}=await r.json();
+    if(!d?.length){$('listC').innerHTML='<div class="empty-lv"><div class="empty-icon">🛡️</div><div class="empty-t">No campaigns yet</div><div class="empty-s">Assemble evidence for a campaign before launch. Sendwize extracts claims, links your existing compliance data, and monitors after launch.</div><button class="btn btn-o" onclick="showAssembly()">Create your first defence</button></div>';return;}
+    $('listC').innerHTML='<div class="lv-grid">'+d.map(c=>{
+      const ds=c.defenceStatus||(c.status==='Submitted'?'approved':'draft');
+      let ch=[];try{ch=JSON.parse(c.channels||'[]');}catch{}
+      const dt=c.submittedAt||c.updatedAt||c.createdDate;
+      const dl=dt?new Date(dt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
+      return`<div class="lv-card" onclick="CID='${c.dossierId}';loadCF('${c.dossierId}')"><div class="lv-card-top"><span class="lv-card-title">${E(c.campaignTitle)}</span><span class="sb sb-${ds}">${ds}</span></div><div class="lv-card-owner">${E(c.ownerName||'')}</div>${ch.length?'<div class="lv-card-ch">'+ch.map(x=>'<span class="cht">'+E(x.replace(/_/g,' '))+'</span>').join('')+'</div>':''}${dl?'<div class="lv-card-date">'+dl+'</div>':''}</div>`;
+    }).join('')+'</div>';
+  }catch(e){$('listC').innerHTML='<div style="color:var(--r);padding:20px">Failed — '+E(e.message)+'</div>';}
+}
+
+// ── Assemble ──
+async function assemble(){
+  const title=$('aTitle').value.trim(),owner=$('aOwner').value.trim(),copy=$('aCopy').value.trim(),list=$('aList').value.trim(),urls=getUrls(),ch=getCh();
+  if(!title){toast('Enter a campaign title','er');return;}
+  if(!copy){toast('Paste your campaign creative','er');return;}
+  if(!ch.length){toast('Select at least one channel','er');return;}
+  const b=$('btnA');b.disabled=true;b.textContent='Assembling…';
+  try{
+    const r=await fetch(`${A}/api/submit-check?action=defence-assemble`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,campaignCopy:copy,listName:list,connectedUrls:urls,campaignTitle:title,ownerName:owner,channels:ch})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();CID=d.dossierId;
+    toast(`Defence assembled — ${d.claimsExtracted} claims extracted`,'ok');
+    loadCF(CID);
+  }catch(e){toast('Failed — '+e.message,'er');b.disabled=false;b.textContent='Assemble defence →';}
+}
+
+// ── Case File ──
+async function loadCF(id){
+  showCF();$('cfH').innerHTML='<div class="ld"><div class="spin"></div>Loading defence…</div>';$('cfT').innerHTML='';$('cfP').innerHTML='';
+  try{const r=await fetch(`${A}/api/submit-check?action=dossier-get&dossierId=${id}&userId=${U}`);if(!r.ok)throw new Error('HTTP '+r.status);D=await r.json();renderCF(D);}
+  catch(e){$('cfH').innerHTML='<div style="color:var(--r);padding:20px">Failed — '+E(e.message)+'</div>';}
+}
+
+function renderCF(d){
+  const ds=d.DefenceStatus||(d.Status==='Submitted'?'approved':'building'),isLive=['approved','live','alert'].includes(ds),isBld=ds==='building'||!d.DefenceStatus;
+  let claims=[],urls=[],snaps=[],events=[],rels=[],lSum=null,aiChk=null,rp=null,ch=[];
+  try{claims=JSON.parse(d.ClaimsExtracted||'[]');}catch{}
+  try{urls=JSON.parse(d.ConnectedUrls||'[]');}catch{}
+  try{snaps=JSON.parse(d.UrlSnapshots||'[]');}catch{}
+  try{events=JSON.parse(d.CampaignEventsJson||'[]');}catch{}
+  try{rels=JSON.parse(d.LinkedRelationships||'[]');}catch{}
+  try{lSum=JSON.parse(d.ListSummarySnapshot||'null');}catch{}
+  try{aiChk=JSON.parse(d.AICheckResultJson||'null');}catch{}
+  try{ch=JSON.parse(d.Channels||'["email"]');}catch{}
+  rp=d.responsePack||null;
+  let mAlerts=[];try{mAlerts=JSON.parse(d.ComplianceAlertsJson||'[]');}catch{}
+  const allEv=[...events,...mAlerts.map(a=>({type:a.type||'alert',date:a.detectedAt||'',title:a.summary||'Alert',detail:a.note||'',severity:'warning'}))].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const mon=d.MonitoringActive!==false&&isLive;
+
+  // Hero
+  $('cfH').innerHTML=`<div class="cf-sr"><span class="sb sb-${ds}">${ds}</span>${isLive?`<span class="pulse${mon?'':' off'}"></span><span style="font-size:12px;color:var(--mu)">${mon?'Monitoring active':'Monitoring paused'}</span>`:''}${d.HealthScore?`<span style="font-size:12px;color:var(--mu);margin-left:auto">Health: ${d.HealthScore}/100</span>`:''}</div><div class="cf-title">${E(d.CampaignTitle||'Untitled')}</div><div class="cf-meta">${E(d.OwnerName||'')}${d.ApprovedAt?' · Approved '+fD(d.ApprovedAt):''}${d.LaunchDate?' · Launched '+fD(d.LaunchDate):''}${ch.length?' · '+ch.map(c=>c.replace(/_/g,' ')).join(', '):''}</div>${isLive?`<div class="cf-summary">${bldSum(ds,allEv,urls,snaps,d)}</div>`:''}<div class="cf-actions">${isBld?'<button class="btn btn-g" onclick="approve()">Approve defence →</button>':''}${ds==='approved'?'<button class="btn btn-o btn-sm" onclick="addEv(\'campaign_launched\')">Mark as launched</button>':''}${ds==='live'?'<button class="btn btn-w btn-sm" onclick="addEv(\'campaign_takedown\')">Campaign taken down</button>':''}${isLive?'<button class="btn btn-w btn-sm" onclick="logNote()">Log a change</button>':''}</div>`;
+
+  // Tabs
+  const tabs=[{id:'evidence',l:'Evidence'},{id:'claims',l:'Claims ('+claims.length+')'},{id:'urls',l:'URLs ('+(urls.length||snaps.length)+')'},{id:'timeline',l:'Timeline'}];
+  if(rp)tabs.splice(2,0,{id:'response',l:'Response Pack'});
+  if(d.CampaignCopySnapshot)tabs.splice(1,0,{id:'copy',l:'Approved Copy'});
+  if(d.letter)tabs.push({id:'letter',l:d.letter.type==='clearance'?'Clearance':'Regulator Letter'});
+  $('cfT').innerHTML=tabs.map((t,i)=>`<button class="cf-tab${i===0?' on':''}" onclick="sTab('${t.id}')">${t.l}</button>`).join('');
+
+  let P='';
+  const needC=ch.some(c=>['email','sms'].includes(c)),needS=ch.includes('email');
+  let mf={};try{mf=JSON.parse(d.ModuleFieldsJson||'{}');}catch{}
+
+  // Evidence panel
+  const ev=[];
+  if(aiChk||d.AICheckId){const n=aiChk?.issues?.length||0;ev.push({i:'🔍',l:'AI compliance check',d:n?n+' issue'+(n>1?'s':'')+' flagged':'No issues found',s:n?'Issues':'Clear',c:n?'ev-warn':'ev-ok'});}else ev.push({i:'🔍',l:'AI compliance check',d:'Not yet run',s:'Missing',c:'ev-gap'});
+  if(needC){if(lSum)ev.push({i:'📋',l:'List: '+(lSum.listName||'—'),d:(lSum.totalContacts||0).toLocaleString()+' contacts · Verdict: '+(lSum.gateVerdict||'—'),s:lSum.gateVerdict||'—',c:lSum.gateVerdict==='SAFE'?'ev-ok':'ev-warn'});else ev.push({i:'📋',l:'List clearance',d:'No list linked',s:'Not linked',c:'ev-na'});}
+  if(needC){const c=mf.ConsentMechanism||{};if(c.lawfulBasis)ev.push({i:'✅',l:'Consent: '+c.lawfulBasis,d:c.consentWording?'Wording documented':'No wording captured',s:c.consentWording?'Documented':'Incomplete',c:c.consentWording?'ev-ok':'ev-warn'});else ev.push({i:'✅',l:'Consent basis',d:'Not documented',s:'Missing',c:'ev-gap'});}
+  if(needC){const s=mf.Suppression||{};const ok=s.suppressionApplied?.includes('Yes');ev.push({i:'🚫',l:'Suppression',d:ok?'Applied '+fD(s.dateApplied):'Not applied',s:ok?'Applied':'Missing',c:ok?'ev-ok':'ev-gap'});}
+  if(needS){const si=mf.SenderIdentity||{};if(si.fromName)ev.push({i:'🏢',l:'Sender: '+si.fromName,d:(si.fromEmail||'')+(si.unsubscribePresent?.includes('Yes')?' · Unsubscribe confirmed':''),s:si.matchesTradingName==='Yes'?'Verified':'Review',c:si.matchesTradingName==='Yes'?'ev-ok':'ev-warn'});else ev.push({i:'🏢',l:'Sender identity',d:'Not documented',s:'Missing',c:'ev-gap'});}
+  for(const r of rels){const ok=r.type==='affiliate'?r.consentVerified:r.article26Confirmed;ev.push({i:r.type==='affiliate'?'🤝':'🏪',l:(r.type==='affiliate'?'Affiliate':'Partner')+': '+r.name,d:r.type==='affiliate'?(r.consentVerified?'Consent chain verified':'Consent unverified'):(r.article26Confirmed?'Art 26 confirmed':'No Art 26 agreement'),s:ok?'Verified':'Gap',c:ok?'ev-ok':'ev-gap'});}
+
+  P+=`<div class="cf-panel on" id="tab-evidence"><div class="sec"><div class="sec-t">Evidence <span class="cnt">${ev.length}</span></div>${ev.map(e=>`<div class="ev-item"><span class="ev-icon">${e.i}</span><div class="ev-body"><div class="ev-label">${E(e.l)}</div><div class="ev-detail">${E(e.d)}</div></div><span class="ev-st ${e.c}">${E(e.s)}</span></div>`).join('')}</div>${d.EvidenceHash?`<div style="font-size:11px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Evidence hash: ${d.EvidenceHash.slice(0,16)}…</div>`:''}</div>`;
+
+  // Copy
+  if(d.CampaignCopySnapshot)P+=`<div class="cf-panel" id="tab-copy"><div class="sec"><div class="sec-t">Approved campaign copy</div><div class="copy-snap"><span class="copy-tag">IMMUTABLE SNAPSHOT${d.ApprovedAt?' · '+fD(d.ApprovedAt):''}</span>${E(d.CampaignCopySnapshot)}</div></div></div>`;
+
+  // Claims
+  P+=`<div class="cf-panel" id="tab-claims"><div class="sec"><div class="sec-t">Claims requiring evidence <span class="cnt">${claims.length}</span></div>${claims.length?claims.map(c=>{const tc=c.claimType?.includes('pricing')?'cl-pricing':c.claimType?.includes('urgency')||c.claimType?.includes('scarcity')?'cl-urgency':c.claimType?.includes('health')?'cl-health':'cl-other';return`<div class="cl-item"><span class="cl-type ${tc}">${E((c.claimType||'').replace(/_/g,' '))}</span><div class="cl-body"><div class="cl-text">"${E((c.claim||'').slice(0,120))}"</div><div class="cl-rule">${E(c.ruleRef||'')}</div>${c.evidenceNeeded?`<div class="cl-ev">Evidence needed: ${E(c.evidenceNeeded)}</div>`:''}</div></div>`;}).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No claims extracted from the campaign copy.</div>'}</div></div>`;
+
+  // Response pack
+  if(rp){const regs=[['ico','ICO — Information Commissioner\'s Office'],['asa','ASA — Advertising Standards Authority'],['cma','CMA — Competition and Markets Authority']].filter(([k])=>rp[k]);P+=`<div class="cf-panel" id="tab-response"><div class="sec"><div class="sec-t">Complaint-Ready Response Pack</div><div class="rp-banner"><strong>Draft responses — not legal advice.</strong> Review with legal counsel before sending to any regulator. Each response cites the specific evidence in your defence file.</div>${regs.map(([k,l])=>`<div class="rp-card" onclick="this.classList.toggle('open')"><div class="rp-head"><span class="rp-reg">${l}</span><span class="rp-toggle">▾</span></div><div class="rp-body">${E(rp[k])}</div></div>`).join('')}</div></div>`;}
+
+  // URLs
+  const au=mergeU(urls,snaps);P+=`<div class="cf-panel" id="tab-urls"><div class="sec"><div class="sec-t">Connected URLs <span class="cnt">${au.length}</span></div>${au.length?au.map(u=>`<div class="url-item"><span class="url-dot ${u.changed?'changed':u.snap?'ok':'pending'}"></span><div class="url-info"><a href="${E(u.url)}" target="_blank" class="url-addr">${E(u.url)}</a><div class="url-meta">${u.snap?'Snapshotted '+fD(u.at):'Not yet snapshotted'}${u.title?' · '+E(u.title):''}</div></div><span class="url-tag">${E((u.type||'').replace(/_/g,' '))}</span></div>`).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No URLs connected to this campaign.</div>'}</div></div>`;
+
+  // Letter
+  if(d.letter){if(d.letter.type==='clearance')P+=`<div class="cf-panel" id="tab-letter"><div class="clearance-bar"><div style="font-size:28px">✅</div><div><div class="clearance-t">Campaign cleared</div><div class="clearance-s">Strong evidence across all modules. Defence approved.</div></div></div></div>`;else{const ln=(d.letter.content||'').split('\n');P+=`<div class="cf-panel" id="tab-letter"><div class="letter-card"><div class="letter-banner">${E(ln[0]||'SIMULATION')}</div><div class="letter-body">${E(ln.slice(2).join('\n'))}</div></div></div>`;}}
+
+  // Timeline
+  P+=`<div class="cf-panel" id="tab-timeline"><div class="sec"><div class="sec-t">Timeline</div><div class="tl">${allEv.length?allEv.map(e=>{const sv=e.severity==='warning'||e.type?.includes('drift')||e.type?.includes('amended')?'warning':e.severity==='alert'?'alert':e.type?.includes('approved')||e.type?.includes('launched')?'success':'info';return`<div class="tl-item ${sv}"><div class="tl-dot"></div><div class="tl-date">${fDT(e.date)}</div><div class="tl-title">${E(e.title||e.type?.replace(/_/g,' ')||'Event')}</div>${e.detail?`<div class="tl-detail">${E(e.detail)}</div>`:''}</div>`;}).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No events recorded yet.</div>'}</div></div></div>`;
+
+  $('cfP').innerHTML=P;
+}
+
+function sTab(id){document.querySelectorAll('.cf-tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.cf-panel').forEach(p=>p.classList.remove('on'));const tab=document.querySelector(`.cf-tab[onclick*="'${id}'"]`);if(tab)tab.classList.add('on');const panel=document.getElementById('tab-'+id);if(panel)panel.classList.add('on');}
+
 function mergeU(u,s){const m={};for(const x of s)if(x.url)m[x.url]=x;const r=u.map(x=>{const sn=m[x.url];return{...x,snap:!!sn,at:sn?.capturedAt,title:sn?.title,changed:false};});for(const x of s)if(!u.some(y=>y.url===x.url))r.push({url:x.url,type:'auto',snap:true,at:x.capturedAt,title:x.title,changed:false});return r;}
-function bldSum(ds,ev,u,s,d){if(ds==='alert'){const n=ev.filter(e=>e.severity==='warning'||e.severity==='alert').length;return n+' change'+(n!==1?'s':'')+' detected. Review the timeline.';}if(ds==='live')return'Campaign is live. '+(u.length||s.length)+' URL'+(u.length!==1?'s':'')+' monitored daily.';if(ds==='approved')return'Defence approved. Mark as launched when the campaign goes out.';if(ds==='archived')return'Taken down'+(d.TakedownDate?' '+fD(d.TakedownDate):'')+'. Defence preserved.';return'Assembling. Review evidence and approve when ready.';}
+function bldSum(ds,ev,u,s,d){if(ds==='alert'){const n=ev.filter(e=>e.severity==='warning'||e.severity==='alert').length;return n+' change'+(n!==1?'s':'')+' detected since approval. Review the timeline.';}if(ds==='live')return'Campaign is live. '+(u.length||s.length)+' URL'+(u.length!==1?'s':'')+' being monitored daily. No changes detected.';if(ds==='approved')return'Defence approved and ready. Mark as launched when the campaign goes out.';if(ds==='archived')return'Campaign taken down'+(d.TakedownDate?' on '+fD(d.TakedownDate):'')+'. Defence preserved as a permanent record.';return'Defence is being assembled. Review the evidence and approve when ready.';}
 function fD(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch{return d;}}
 function fDT(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return d;}}
+
+// ── Actions ──
 async function approve(){if(!CID)return;const b=document.querySelector('.cf-actions .btn-g');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await fetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved — monitoring started','ok');loadCF(CID);}catch(e){toast('Failed — '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve defence →';}}}
 async function addEv(t,d){if(!CID)return;try{await fetch(`${A}/api/submit-check?action=defence-add-event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,eventType:t,detail:d||''})});toast(t.replace(/_/g,' ')+' recorded','ok');loadCF(CID);}catch(e){toast('Failed — '+e.message,'er');}}
-function logNote(){const n=prompt('What changed?');if(n?.trim())addEv('manual_note',n.trim());}
+function logNote(){const n=prompt('What changed?\n\nExamples:\n• Landing page pricing updated\n• Affiliate modified subject line\n• A/B test variant went live');if(n?.trim())addEv('manual_note',n.trim());}
 </script>
 </body>
 </html>
