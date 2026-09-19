@@ -37,7 +37,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .btn-sm{padding:7px 14px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .av-step{max-height:0;overflow:hidden;opacity:0;transform:translateY(12px);transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .35s ease,transform .35s ease,margin .35s ease;margin-bottom:0;pointer-events:none}
-.av-step.revealed{max-height:600px;opacity:1;transform:translateY(0);margin-bottom:14px;pointer-events:auto}
+.av-step.revealed{max-height:2000px;opacity:1;transform:translateY(0);margin-bottom:14px;pointer-events:auto}
 .av-step.revealed-last{margin-bottom:0}
 .av-tick{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--g);opacity:0;transition:opacity .25s}.av-tick.on{opacity:1}
 
@@ -233,12 +233,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="hint" id="chHint">Email selected — consent, suppression, and sender identity evidence required.</div>
   </div>
 
-  <div class="av-step" id="stepCopy">
   <div class="av-card">
-    <div class="av-card-t">Campaign creative</div>
+    <div class="av-card-t">Campaign creative <span class="av-tick" id="tickCopy">✓</span></div>
     <div class="av-card-s">Paste your final copy — subject line, body, footer, ad copy. Sendwize extracts every claim that needs evidence and runs the AI compliance check automatically. This becomes an immutable snapshot at approval.</div>
     <div class="fg"><label>Creative / copy</label><textarea id="aCopy" placeholder="Paste the full text here…" oninput="checkReveal()"></textarea></div>
-  </div>
   </div>
 
   <div class="av-step" id="stepList">
@@ -329,17 +327,16 @@ function hide(id){const el=$(id);if(el)el.classList.remove('revealed');}
 function checkReveal(){
   const title=$('aTitle').value.trim(),ch=getCh(),copy=$('aCopy')?.value?.trim()||'';
   // Ticks
-  const tc=$('tickCamp'),tch=$('tickCh');
+  const tc=$('tickCamp'),tch=$('tickCh'),tco=$('tickCopy');
   if(tc)tc.classList.toggle('on',!!title);
   if(tch)tch.classList.toggle('on',ch.length>0);
-  // Step 1: creative appears when title filled + channels selected
-  if(title&&ch.length){reveal('stepCopy',80);}else{hide('stepCopy');hide('stepList');hide('stepUrls');hide('stepSubmit');return;}
-  // Step 2: audience + urls appear when creative has content
-  if(copy.length>10){
+  if(tco)tco.classList.toggle('on',copy.length>10);
+  // Audience, URLs, submit reveal once creative has real content
+  if(copy.length>10&&ch.length){
     const needsList=ch.some(c=>['email','sms'].includes(c));
-    if(needsList)reveal('stepList',120);else hide('stepList');
-    reveal('stepUrls',needsList?200:120);
-    reveal('stepSubmit',needsList?280:200);
+    if(needsList)reveal('stepList',80);else hide('stepList');
+    reveal('stepUrls',needsList?160:80);
+    reveal('stepSubmit',needsList?240:160);
   }else{hide('stepList');hide('stepUrls');hide('stepSubmit');}
 }
 
