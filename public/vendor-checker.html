@@ -559,7 +559,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
-  <p class="disc">Information only &mdash; not legal advice. Sendwize has not reviewed vendor DPAs or contracts. Always verify directly with each party and seek independent legal advice.</p>
+    <p class="disc">Evidence-based assessment &mdash; not legal advice. Sendwize identifies potential compliance gaps from publicly available and vendor-provided information. Always verify directly with each party. Findings distinguish between verified evidence, vendor documentation, public sources, and AI assessment.</p>
 </div>
 
 <footer class="sw-ph-footer">
@@ -1035,8 +1035,20 @@ function renderList(records) {
       var dots = steps.map(function(s){return '<div class="progress-dot '+s+'"></div>';}).join('');
       var doneCount = steps.filter(function(s){return s==='done';}).length;
       var outstanding = firstOutstandingStep(steps, cfg.stepShort);
-      var summary = '<div class="progress-summary"><strong>'+doneCount+' of '+steps.length+' steps</strong>'
-        + (outstanding ? '<span class="progress-outstanding">'+escH(outstanding)+' outstanding</span>' : '<span style="color:var(--g)">All clear</span>')
+      // Score badge for processors
+      var scoreBadge = '';
+      if (currentType === 'processors' && f.ComplianceScore !== null && f.ComplianceScore !== undefined) {
+        var sc = f.ComplianceScore;
+        var scCls = sc >= 70 ? 'pg' : sc >= 40 ? 'py' : 'pr';
+        scoreBadge = '<span class="pill '+scCls+'" style="margin-right:6px">'+sc+'/100</span>';
+      }
+      var dpaInline = '';
+      if (currentType === 'processors') {
+        var dpaS = f.DPAStatus || f.AgreementStatus || '';
+        dpaInline = isDPAConfirmed(dpaS) ? '<span class="pill pg" style="margin-right:6px">DPA confirmed</span>' : '<span class="pill pr" style="margin-right:6px">No DPA</span>';
+      }
+      var summary = '<div class="progress-summary">' + scoreBadge + dpaInline + '<strong>'+doneCount+' of '+steps.length+' steps</strong>'
+        + (outstanding ? '<span class="progress-outstanding">'+escH(outstanding)+' outstanding</span>' : '<span style="color:var(--g)">All checks passed</span>')
         + '</div>';
       progressHtml = '<div class="progress-dots">'+dots+'</div>'+summary;
     } else {
@@ -1157,29 +1169,77 @@ function renderDetailOverview(rec) {
     exposureHtml += '</div>';
 
     // AI narrative briefing
-    var narrativeHtml = '<div class="narrative-card">';
-    var vendorType = f.VendorType || f.Category || 'processor';
-    var briefLines = [];
-    briefLines.push('<strong>'+escH(name)+'</strong> is registered as a '+escH(vendorType.toLowerCase())+' processing personal data on your behalf.');
-    if (!dpaOk) briefLines.push('No confirmed <strong>Article 28 Data Processing Agreement</strong> is in place \u2014 until this is signed, any data processing by '+escH(name)+' is technically a UK GDPR breach.');
-    if (scanned) {
-      var clauseResults = {}; try { clauseResults = JSON.parse(f.DPAClauseResults); } catch(e){}
-      var failCount = Object.values(clauseResults).filter(function(v){return v.status==='fail';}).length;
-      var warnCount = Object.values(clauseResults).filter(function(v){return v.status==='warn';}).length;
-      if (failCount > 0) briefLines.push('DPA scan found <strong>'+failCount+' missing clause'+(failCount!==1?'s':'')+'</strong>'+(warnCount > 0 ? ' and '+warnCount+' unclear' : '')+'. Contact '+escH(name)+' to request an updated agreement.');
-      else if (warnCount > 0) briefLines.push('DPA scan found '+warnCount+' clause'+(warnCount!==1?'s':'')+' with ambiguous wording. Review and self-certify if covered.');
-      else briefLines.push('DPA scan: all Article 28 clauses found.');
-    } else { briefLines.push('The DPA has not been scanned yet. Scan it against 12 Article 28 requirements on the Agreement tab.'); }
-    if (stale) briefLines.push('Last reviewed <strong>'+fmtDate(f.LastChecked||f.LastAutoChecked)+'</strong> \u2014 over 90 days ago. Quarterly re-scans recommended.');
-    if (f.TransferDestination && f.TransferDestination !== 'UK only' && f.TransferDestination !== 'UK') briefLines.push('Data is transferred to <strong>'+escH(f.TransferDestination)+'</strong> \u2014 ensure adequate transfer safeguards are documented.');
-    if (procAllClear) briefLines.push('All verification steps are complete. Exposure is currently \u00a30.');
-    var actionsNeeded = [];
-    if (!dpaOk) actionsNeeded.push('confirm DPA');
-    if (!scanned) actionsNeeded.push('scan DPA');
-    if (stale) actionsNeeded.push('re-scan (90+ days)');
-    if (actionsNeeded.length) briefLines.push('<strong>'+actionsNeeded.length+' action'+(actionsNeeded.length!==1?'s':'')+' required:</strong> '+actionsNeeded.join(', ')+'.');
-    narrativeHtml += '<div class="narrative-text">'+briefLines.join(' ')+'</div>';
-    narrativeHtml += '</div>';
+    // Evidence-based assessment panel
+    var intel = null;
+    try { intel = JSON.parse(f.IntelligenceJson || 'null'); } catch(e){}
+    var scoreBreakdown = null;
+    try { scoreBreakdown = JSON.parse(f.ScoreBreakdownJson || 'null'); } catch(e){}
+
+    var narrativeHtml = '';
+
+    // Score breakdown card
+    if (f.ComplianceScore !== null && f.ComplianceScore !== undefined && scoreBreakdown) {
+      var sc = f.ComplianceScore;
+      var scCol = sc >= 70 ? 'var(--g)' : sc >= 40 ? 'var(--y)' : 'var(--r)';
+      narrativeHtml += '<div class="narrative-card" style="padding:0;overflow:hidden">';
+      narrativeHtml += '<div style="padding:16px 20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--b)">';
+      narrativeHtml += '<div style="font-size:32px;font-weight:800;font-family:DM Mono,monospace;color:'+scCol+'">'+sc+'</div>';
+      narrativeHtml += '<div><div style="font-size:14px;font-weight:700">Evidence-based assessment</div><div style="font-size:11px;color:var(--mu)">Score calculated from '+(intel ? intel.findings.length : 0)+' verified findings'+(intel && intel.confidence ? ' · Confidence: '+intel.confidence : '')+'</div></div></div>';
+      narrativeHtml += '<div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+      var cats = [['dpa','Agreement'],['icoRegister','ICO Register'],['enforcement','Enforcement'],['transfers','Transfers'],['freshness','Freshness'],['certifications','Certifications']];
+      cats.forEach(function(c) {
+        var item = scoreBreakdown[c[0]];
+        if (!item) return;
+        var pct = item.max ? Math.round(item.score / item.max * 100) : 0;
+        var col = pct >= 80 ? 'var(--g)' : pct >= 50 ? 'var(--y)' : 'var(--r)';
+        narrativeHtml += '<div style="padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--b)">';
+        narrativeHtml += '<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:4px">'+c[1]+'<span style="color:'+col+'">'+item.score+'/'+item.max+'</span></div>';
+        narrativeHtml += '<div style="height:3px;background:var(--b);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:2px"></div></div>';
+        narrativeHtml += '<div style="font-size:10px;color:var(--mu);margin-top:3px">'+escH(item.label)+'</div>';
+        narrativeHtml += '</div>';
+      });
+      narrativeHtml += '</div></div>';
+    }
+
+    // Evidence findings panel
+    if (intel && intel.findings && intel.findings.length) {
+      narrativeHtml += '<div class="narrative-card">';
+      narrativeHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--tm);margin-bottom:12px">Assessment findings</div>';
+      var typeLabels = { verified: 'Verified', vendor_documented: 'Vendor documentation', public_source: 'Public source', ai_assessment: 'AI assessment', not_available: 'Not available' };
+      var statusPills = { passed: 'pg', needs_attention: 'py', not_evidenced: 'pr' };
+      var statusLabels = { passed: 'Passed', needs_attention: 'Needs attention', not_evidenced: 'Not evidenced' };
+      intel.findings.forEach(function(finding) {
+        var pill = statusPills[finding.status] || 'pmu';
+        var label = statusLabels[finding.status] || 'Not checked';
+        var typeLabel = typeLabels[finding.type] || finding.type || '';
+        narrativeHtml += '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--b)">';
+        narrativeHtml += '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+escH(finding.finding)+'</div>';
+        narrativeHtml += '<div style="font-size:11px;color:var(--mu);margin-top:2px">'+escH(finding.evidence)+'</div>';
+        narrativeHtml += '<div style="font-size:10px;color:var(--mu);margin-top:3px;font-style:italic">Source: '+escH(typeLabel)+'</div></div>';
+        narrativeHtml += '<span class="pill '+pill+'" style="flex-shrink:0">'+label+'</span>';
+        narrativeHtml += '</div>';
+      });
+      if (intel.lastChecked) {
+        narrativeHtml += '<div style="font-size:10px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Last assessed: '+fmtDate(intel.lastChecked)+(intel.source === 'sendwize_curated' ? ' · Sendwize curated data' : ' · Automated assessment')+'</div>';
+      }
+      narrativeHtml += '</div>';
+    } else {
+      // Fallback to existing narrative for records without intelligence data
+      narrativeHtml += '<div class="narrative-card">';
+      var vendorType = f.VendorType || f.Category || 'processor';
+      var briefLines = [];
+      briefLines.push('<strong>'+escH(name)+'</strong> is registered as a '+escH(vendorType.toLowerCase())+' processing personal data on your behalf.');
+      if (!dpaOk) briefLines.push('No confirmed <strong>Article 28 Data Processing Agreement</strong> is in place.');
+      if (scanned) {
+        var clauseResults = {}; try { clauseResults = JSON.parse(f.DPAClauseResults); } catch(e){}
+        var failCount = Object.values(clauseResults).filter(function(v){return v.status==='fail';}).length;
+        if (failCount > 0) briefLines.push('DPA review found <strong>'+failCount+' clause'+(failCount!==1?'s':'')+' not evidenced</strong>.');
+        else briefLines.push('DPA review: all Article 28 clauses found.');
+      } else { briefLines.push('The DPA has not been reviewed yet.'); }
+      if (stale) briefLines.push('Last reviewed <strong>'+fmtDate(f.LastChecked||f.LastAutoChecked)+'</strong> — over 90 days ago.');
+      narrativeHtml += '<div class="narrative-text">'+briefLines.join(' ')+'</div>';
+      narrativeHtml += '</div>';
+    }
 
     // Investigation preview
     var invQuestions = [
@@ -1189,7 +1249,7 @@ function renderDetailOverview(rec) {
     ];
     var invAllOk = invQuestions.every(function(q){return q.ok;});
     var invHtml = '<div class="inv-preview'+(invAllOk?' clear':'')+'">';
-    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Investigation ready \u2014 all evidence available' : 'If the ICO looked at this relationship, they\'d ask:')+'</div>';
+    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Evidence-based assessment \u2014 all checks passed' : 'A regulator reviewing this relationship would ask:')+'</div>';
     invQuestions.forEach(function(q) {
       var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
       invHtml += '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
@@ -1199,7 +1259,7 @@ function renderDetailOverview(rec) {
     // Compliance passport
     var passportHtml = '';
     if (procAllClear) {
-      passportHtml = '<div class="passport-card"><div class="passport-icon">\u2705</div><div><div class="passport-title">'+escH(name)+' \u2014 Verified</div><div class="passport-sub">DPA confirmed, agreement scanned, review current.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
+      passportHtml = '<div class="passport-card"><div class="passport-icon" style="font-size:28px;color:var(--g)"><i class="ph ph-shield-check icon-32"></i></div><div><div class="passport-title">'+escH(name)+' \u2014 All checks passed</div><div class="passport-sub">DPA confirmed, agreement scanned, review current.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
     }
 
     body.innerHTML = exposureHtml + narrativeHtml + invHtml + passportHtml
@@ -1252,7 +1312,7 @@ function renderDetailOverview(rec) {
     if (!consentOk) briefLines.push('The <strong>consent chain</strong> has not been verified \u2014 it is unclear which party\'s consent mechanism applies to shared data.');
     if (needsAdReview && !f.AdComplianceReviewed) briefLines.push('Joint advertising content has <strong>not been reviewed</strong> against the CAP Code \u2014 under sections 3 (misleading) and 8 (pricing), both parties are responsible for claims in joint campaigns.');
     if (needsPricingReview && !f.PricingComplianceReviewed) briefLines.push('Pricing and promotional claims in co-branded campaigns have <strong>not been verified</strong> against CMA/DMCCA 2024 requirements.');
-    if (f.BrandSafetyFlag) briefLines.push('<strong>Brand safety flag:</strong> '+escH(f.BrandSafetyReason||'regulatory history found')+'.');
+    if (f.BrandSafetyFlag) briefLines.push('<strong>Potential risk identified:</strong> '+escH(f.BrandSafetyReason||'relevant enforcement history found in sources reviewed')+'.');
     if (f.ViolationCount > 0) briefLines.push(f.ViolationCount+' regulatory action'+(f.ViolationCount!==1?'s':'')+' found in the enforcement database.');
     if (partAllClear) briefLines.push('All verification steps are complete. Exposure is currently \u00a30.');
     var actionsNeeded = [];
@@ -1273,7 +1333,7 @@ function renderDetailOverview(rec) {
     var invAllOk = invQuestions.every(function(q){return q.ok;});
     var invHtml = '<div class="inv-preview'+(invAllOk?' clear':'')+'">';
     var invRegulator = needsAdReview ? 'ASA/CMA' : 'ICO';
-    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Investigation ready \u2014 all evidence available' : 'If the '+invRegulator+' looked at this relationship, they\'d ask:')+'</div>';
+    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Evidence-based assessment \u2014 all checks passed' : 'A regulator reviewing this relationship would ask:')+'</div>';
     invQuestions.forEach(function(q) {
       var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
       invHtml += '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
@@ -1283,7 +1343,7 @@ function renderDetailOverview(rec) {
     // Compliance passport
     var passportHtml = '';
     if (partAllClear) {
-      passportHtml = '<div class="passport-card"><div class="passport-icon">\u2705</div><div><div class="passport-title">'+escH(name)+' \u2014 Verified</div><div class="passport-sub">Art. 26 confirmed, consent verified'+(needsAdReview ? ', ad compliance reviewed' : '')+(needsPricingReview ? ', pricing verified' : '')+'.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
+      passportHtml = '<div class="passport-card"><div class="passport-icon" style="font-size:28px;color:var(--g)"><i class="ph ph-shield-check icon-32"></i></div><div><div class="passport-title">'+escH(name)+' \u2014 All checks passed</div><div class="passport-sub">Art. 26 confirmed, consent verified'+(needsAdReview ? ', ad compliance reviewed' : '')+(needsPricingReview ? ', pricing verified' : '')+'.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
     }
 
     body.innerHTML = exposureHtml + narrativeHtml + invHtml + passportHtml
@@ -1320,7 +1380,7 @@ function renderDetailOverview(rec) {
     var volume = f.TotalVolumeSent ? parseInt(f.TotalVolumeSent).toLocaleString() : null;
     var briefLines = [];
     briefLines.push('<strong>'+escH(name)+'</strong> is registered as a '+escH(affActLabel)+(volume ? ' sending approximately '+volume+' emails on your behalf' : '')+'.');
-    if (!f.ConsentChainVerified) briefLines.push('Their consent chain has <strong>not been verified</strong> \u2014 based on the <strong>Saga Group precedent (\u00a3225k, 2021)</strong>, every email they send creates the same legal exposure as if you sent it without consent.');
+    if (!f.ConsentChainVerified) briefLines.push('Their consent chain has <strong>not been verified</strong>. Based on published enforcement (Saga Group, \u00a3225k, 2021), consent that does not name your organisation specifically cannot be relied upon under PECR.');
     if (f.SenderIdentityCompliant==='Unverified') briefLines.push('The sender identity used by this affiliate has not been verified against your registered trading name \u2014 a PECR Regulation 23 risk.');
     if (!f.MarketingMaterialsReviewed) briefLines.push('Their marketing materials have not been reviewed against the CAP Code. You are responsible for claims made on your behalf by affiliates.');
     if (!isDPAConfirmed(f.DPAStatus)) briefLines.push('No confirmed Article 28 Data Processing Agreement is in place.');
@@ -1342,7 +1402,7 @@ function renderDetailOverview(rec) {
     ];
     var invAllOk = invQuestions.every(function(q){return q.ok;});
     var invHtml = '<div class="inv-preview'+(invAllOk?' clear':'')+'">';
-    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Investigation ready \u2014 all evidence available' : 'If the ICO looked at this relationship, they\'d ask:')+'</div>';
+    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Evidence-based assessment \u2014 all checks passed' : 'A regulator reviewing this relationship would ask:')+'</div>';
     invQuestions.forEach(function(q) {
       var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
       invHtml += '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
@@ -1352,7 +1412,7 @@ function renderDetailOverview(rec) {
     // Compliance passport (only shown when all clear)
     var passportHtml = '';
     if (affAllClear) {
-      passportHtml = '<div class="passport-card"><div class="passport-icon">\u2705</div><div><div class="passport-title">'+escH(name)+' \u2014 Verified</div><div class="passport-sub">DPA confirmed, consent chain verified, creative reviewed, sender identity confirmed.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
+      passportHtml = '<div class="passport-card"><div class="passport-icon" style="font-size:28px;color:var(--g)"><i class="ph ph-shield-check icon-32"></i></div><div><div class="passport-title">'+escH(name)+' \u2014 All checks passed</div><div class="passport-sub">DPA confirmed, consent chain verified, creative reviewed, sender identity confirmed.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
     }
 
     body.innerHTML = exposureHtml + narrativeHtml + invHtml + passportHtml
@@ -1365,9 +1425,10 @@ function renderDetailOverview(rec) {
   } else {
     rows = [
       ['Sector',escH(f.Sector||'')],
-      ['Rulings found',(f.RulingCount||0)+' regulatory action'+(f.RulingCount!==1?'s':'')],
-      ['Latest ruling',f.LastRulingDate?fmtDate(f.LastRulingDate)+' ('+escH(f.LastRulingRegulator||'')+')':'None found'],
+      ['Enforcement','<span style="font-weight:600">'+(f.RulingCount||0)+' relevant action'+(f.RulingCount!==1?'s':'')+' identified in sources reviewed</span>'],
+      ['Latest ruling',f.LastRulingDate?fmtDate(f.LastRulingDate)+' ('+escH(f.LastRulingRegulator||'')+')':'No relevant actions identified'],
       ['Latest summary',f.LastRulingSummary?escH(f.LastRulingSummary.slice(0,200)):'\u2014'],
+      ['Intelligence source','Public website, enforcement databases. No ad platform data (Meta, TikTok, etc) is accessed.'],
     ];
     if (f.Notes) rows.push(['Notes',escH(f.Notes)]);
   }
@@ -1403,7 +1464,7 @@ function renderDPAReview(rec) {
     var r = stored[c.id]||{status:'unknown'};
     var cls = r.status==='pass'?'pass':r.status==='fail'?'fail':r.status==='warn'?'warn':'';
     var pc = r.status==='pass'?'pg':r.status==='fail'?'pr':r.status==='warn'?'py':'pmu';
-    var pl = r.status==='pass'?'Present':r.status==='fail'?'Missing':r.status==='warn'?'Unclear':'Not checked';
+    var pl = r.status==='pass'?'Passed':r.status==='fail'?'Not evidenced':r.status==='warn'?'Needs attention':'Not checked';
     // P2: Quote display — show extracted quote when available
     var quoteHtml = '';
     if (r.note) {
@@ -1414,9 +1475,9 @@ function renderDPAReview(rec) {
       +'<div class="clause-req">'+escH(c.req)+'</div>'
       + quoteHtml
       +'<div class="clause-btns">'
-      +'<button class="cb cb-pass" onclick="setClause(\''+rec.id+'\',\''+c.id+'\',\'pass\')">Present</button>'
-      +'<button class="cb cb-warn" onclick="setClause(\''+rec.id+'\',\''+c.id+'\',\'warn\')">Unclear</button>'
-      +'<button class="cb cb-fail" onclick="setClause(\''+rec.id+'\',\''+c.id+'\',\'fail\')">Missing</button>'
+      +'<button class="cb cb-pass" onclick="setClause(\''+rec.id+'\',\''+c.id+'\',\'pass\')">Passed</button>'
+      +'<button class="cb cb-warn" onclick="setClause(\''+rec.id+'\',\''+c.id+'\',\'warn\')">Needs attention</button>'
+      +'<button class="cb cb-fail" onclick="setClause(\''+rec.id+'\',\''+c.id+'\',\'fail\')">Not evidenced</button>'
       +'</div></div>';
   }).join('');
 
@@ -1427,7 +1488,7 @@ function renderDPAReview(rec) {
     ? '<div class="scan-row"><div class="file-chosen"><i class="ph ph-file-pdf icon-16"></i><span class="file-chosen-name">'+escH(file.name)+'</span><button class="file-clear" onclick="clearScanFile()"><i class="ph ph-x icon-16"></i></button></div><button class="btn btn-primary btn-sm" onclick="runDPAScan(\''+rec.id+'\',\'file\')">Scan <i class="ph ph-arrow-right icon-16"></i></button></div>'
     : '<label class="file-drop" id="fileDrop"><strong>Click to choose a PDF</strong>Or drag and drop the DPA here<input type="file" accept=".pdf,application/pdf" onchange="chooseScanFile(this)"></label>';
 
-  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Check this vendor\'s DPA against 12 Article 28 UK GDPR requirements. Paste a URL, upload the PDF, or self-certify each clause manually.</p>'
+  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Evidence-based DPA review — check this vendor\'s agreement against 12 Article 28 UK GDPR requirements. Paste a URL, upload the PDF, or self-certify each clause.</p>'
     + '<div class="scan-controls">'
     + '<div class="scan-controls-label">Scan the DPA</div>'
     + '<div class="scan-tabs">'
@@ -1561,7 +1622,7 @@ function handleScanResult(d, rec, res) {
     var bannerIcon = (d.score||0) >= 80 ? 'check-circle' : 'warning-circle';
     var bannerHtml = '<div class="info-banner '+bannerCls+'">'
       + '<i class="ph ph-'+bannerIcon+' icon-16"></i><div>'
-      + '<strong>DPA scan: '+(d.counts.found||0)+'/'+(d.counts.total||12)+' clauses found</strong>'
+      + '<strong>DPA review: '+(d.counts.found||0)+'/'+(d.counts.total||12)+' clauses evidenced</strong>'
       + (d.counts.missing > 0 ? ' \u00b7 '+d.counts.missing+' missing' : '')
       + '. Score: <strong style="color:'+scoreColor+'">'+(d.score||0)+'%</strong>'
       + '</div></div>';
@@ -1605,7 +1666,7 @@ function handleScanResult(d, rec, res) {
 
         guidanceHtml += '</div>';
       } else {
-        guidanceHtml = '<div class="info-banner green" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><div><strong>All Article 28 clauses found.</strong> This DPA appears to cover all required UK GDPR provisions. Re-scan quarterly to stay current.</div></div>';
+        guidanceHtml = '<div class="info-banner green" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><div><strong>All Article 28 clauses evidenced.</strong> Sendwize\'s evidence-based review identifies all required UK GDPR provisions. Re-review quarterly to stay current.</div></div>';
       }
     }
 
@@ -1633,14 +1694,14 @@ function renderA26Review(rec) {
     var r = stored[c.id]||{status:'unknown'};
     var cls = r.status==='pass'?'pass':r.status==='fail'?'fail':r.status==='warn'?'warn':'';
     var pc = r.status==='pass'?'pg':r.status==='fail'?'pr':r.status==='warn'?'py':'pmu';
-    var pl = r.status==='pass'?'In place':r.status==='fail'?'Missing':r.status==='warn'?'Unclear':'Not checked';
+    var pl = r.status==='pass'?'Passed':r.status==='fail'?'Not evidenced':r.status==='warn'?'Needs attention':'Not checked';
     return '<div class="clause-item '+cls+'">'
       +'<div class="clause-hdr"><span class="clause-num">'+c.id+'</span><span class="clause-title">'+escH(c.title)+'</span><span class="pill '+pc+'">'+pl+'</span></div>'
       +'<div class="clause-req">'+escH(c.req)+'</div>'
       +'<div class="clause-btns">'
-      +'<button class="cb cb-pass" onclick="setA26Clause(\''+rec.id+'\',\''+c.id+'\',\'pass\')">In place</button>'
-      +'<button class="cb cb-warn" onclick="setA26Clause(\''+rec.id+'\',\''+c.id+'\',\'warn\')">Unclear</button>'
-      +'<button class="cb cb-fail" onclick="setA26Clause(\''+rec.id+'\',\''+c.id+'\',\'fail\')">Missing</button>'
+      +'<button class="cb cb-pass" onclick="setA26Clause(\''+rec.id+'\',\''+c.id+'\',\'pass\')">Passed</button>'
+      +'<button class="cb cb-warn" onclick="setA26Clause(\''+rec.id+'\',\''+c.id+'\',\'warn\')">Needs attention</button>'
+      +'<button class="cb cb-fail" onclick="setA26Clause(\''+rec.id+'\',\''+c.id+'\',\'fail\')">Not evidenced</button>'
       +'</div></div>';
   }).join('');
   body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Check this partner relationship against the 8 Article 26 UK GDPR requirements for joint controllers. Self-certify each clause by reviewing your joint controller arrangement.</p>'
