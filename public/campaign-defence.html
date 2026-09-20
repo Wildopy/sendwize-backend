@@ -190,6 +190,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div class="lv-hero">
     <div class="lv-hero-t">Your compliance evidence. Built before launch. Watched after.</div>
     <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize runs the compliance check, extracts every claim that needs evidence, links your existing data, and freezes the defence at approval. After launch, it monitors your landing pages, offer pages, and affiliate pages daily. If anything changes, you know before a regulator does.</div>
+    <a href="#" onclick="event.preventDefault();loadDemo('true')" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--o);font-weight:600;text-decoration:none">See a demo campaign →</a>
   </div>
   <div class="lv-head">
     <div><h1 class="lv-title">Campaign Defence</h1><p class="lv-sub">Evidence files for your marketing campaigns.</p></div>
@@ -460,7 +461,7 @@ function loadDemo(mode){
 
   if(mode==='list'||mode==='true'){
     hideAll();$('listView').classList.add('on');
-    $('listC').innerHTML='<div class="lv-grid">'+demoCampaigns.map(c=>{
+    $('listC').innerHTML='<div style="margin-bottom:16px"><button class="btn btn-w btn-sm" onclick="showList()">← Back to your campaigns</button></div><div class="lv-grid">'+demoCampaigns.map(c=>{
       const ds=c.defenceStatus;let ch=[];try{ch=JSON.parse(c.channels);}catch{}
       const dt=c.updatedAt;const dl=new Date(dt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
       return`<div class="lv-card" onclick="loadDemo('${c.dossierId}')"><div class="lv-card-top"><span class="lv-card-title">${E(c.campaignTitle)}</span><span class="sb sb-${ds}">${ds}</span></div><div class="lv-card-owner">${E(c.ownerName)}</div><div class="lv-card-ch">${ch.map(x=>'<span class="cht">'+E(x.replace(/_/g,' '))+'</span>').join('')}</div><div class="lv-card-date">${dl}</div></div>`;
