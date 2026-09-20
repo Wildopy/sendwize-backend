@@ -36,10 +36,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .btn-w{background:var(--w);color:var(--t);border:1px solid var(--bm)}.btn-w:hover{border-color:var(--o);color:var(--o)}
 .btn-sm{padding:7px 14px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.av-step{max-height:0;overflow:hidden;opacity:0;transform:translateY(12px);transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .35s ease,transform .35s ease,margin .35s ease;margin-bottom:0;pointer-events:none}
-.av-step.revealed{max-height:2000px;opacity:1;transform:translateY(0);margin-bottom:14px;pointer-events:auto}
-.av-step.revealed-last{margin-bottom:0}
-.av-tick{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--g);opacity:0;transition:opacity .25s}.av-tick.on{opacity:1}
 
 /* ── Gate ── */
 .gate{display:none;min-height:80vh;align-items:center;justify-content:center;padding:40px 20px}.gate.on{display:flex}
@@ -185,6 +181,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="gate-t">Campaign Defence</div>
     <div class="gate-s">Build your compliance evidence before launch. Monitor it after. Email, paid social, affiliate, influencer, SMS, display — every channel, one defence file. If a regulator asks what you did and why, this is your answer.</div>
     <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard →</a>
+    <a href="?demo=true" style="display:block;margin-top:12px;font-size:13px;color:var(--o);text-decoration:none;font-weight:500">View demo →</a>
   </div>
 </div>
 
@@ -210,16 +207,16 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 
   <div class="av-card">
-    <div class="av-card-t">Campaign <span class="av-tick" id="tickCamp">✓</span></div>
+    <div class="av-card-t">Campaign</div>
     <div class="av-card-s">Name your campaign and identify yourself as the owner.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="fg"><label>Campaign title</label><input id="aTitle" placeholder="e.g. Summer Sale 2026" maxlength="120" oninput="checkReveal()"></div>
+      <div class="fg"><label>Campaign title</label><input id="aTitle" placeholder="e.g. Summer Sale 2026" maxlength="120" oninput="updBtn()"></div>
       <div class="fg"><label>Your name</label><input id="aOwner" placeholder="e.g. Sarah Chen" maxlength="80"></div>
     </div>
   </div>
 
   <div class="av-card">
-    <div class="av-card-t">Channels <span class="av-tick" id="tickCh">✓</span></div>
+    <div class="av-card-t">Channels</div>
     <div class="av-card-s">Which channels is this campaign running on? This determines what evidence Sendwize requires — consent and suppression are only needed for direct channels like email and SMS.</div>
     <div class="ch-grid" id="chGrid">
       <label class="ch-opt on" onclick="togCh(this)"><input type="checkbox" value="email" checked>Email</label>
@@ -234,33 +231,30 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 
   <div class="av-card">
-    <div class="av-card-t">Campaign creative <span class="av-tick" id="tickCopy">✓</span></div>
+    <div class="av-card-t">Campaign creative</div>
     <div class="av-card-s">Paste your final copy — subject line, body, footer, ad copy. Sendwize extracts every claim that needs evidence and runs the AI compliance check automatically. This becomes an immutable snapshot at approval.</div>
-    <div class="fg"><label>Creative / copy</label><textarea id="aCopy" placeholder="Paste the full text here…" oninput="checkReveal()"></textarea></div>
+    <div class="fg"><label>Creative / copy</label><textarea id="aCopy" placeholder="Paste the full text here…" oninput="updBtn()"></textarea></div>
   </div>
 
-  <div class="av-step" id="stepList">
   <div class="av-card" id="listCard">
     <div class="av-card-t">Audience</div>
     <div class="av-card-s">Which list are you sending to? Sendwize links the most recent List Intelligence check for this list name.</div>
     <div class="fg"><label>List name</label><input id="aList" placeholder="e.g. Main Newsletter, Black Friday Segment"><div class="hint">Must match the name used in List Intelligence. Only required for email/SMS channels.</div></div>
   </div>
-  </div>
 
-  <div class="av-step" id="stepUrls">
   <div class="av-card">
     <div class="av-card-t">Connected URLs</div>
     <div class="av-card-s">Landing pages, offer pages, affiliate pages, terms pages. Each URL is snapshotted at approval and monitored daily after launch. If a price changes or a page goes down, you know immediately.</div>
     <div class="url-list" id="urlList"></div>
     <button class="add-url" onclick="addUrl()">+ Add URL</button>
   </div>
-  </div>
 
-  <div class="av-step" id="stepSubmit">
-  <div style="display:flex;gap:10px">
-    <button class="btn btn-o" id="btnA" onclick="assemble()">Assemble defence →</button>
-    <button class="btn btn-w" onclick="showList()">Cancel</button>
-  </div>
+  <div style="margin-top:20px">
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-o" id="btnA" onclick="assemble()" disabled>Assemble defence →</button>
+      <button class="btn btn-w" onclick="showList()">Cancel</button>
+    </div>
+    <div class="hint" id="btnHint" style="margin-top:8px">Add a campaign title and paste your creative to continue.</div>
   </div>
 </div>
 
@@ -295,6 +289,8 @@ function init(){
   const p=new URLSearchParams(location.search);
   U=p.get('userId');
   const d=p.get('dossierId')||p.get('defenceId');
+  const demo=p.get('demo');
+  if(demo){U=U||'demo';loadDemo(demo);return;}
   if(!U){$('gate').classList.add('on');return;}
   if(d){CID=d;loadCF(d);}
   else{showList();loadList();}
@@ -303,13 +299,13 @@ document.readyState==='loading'?document.addEventListener('DOMContentLoaded',ini
 
 function hideAll(){['gate','listView','assemblyView','caseFile'].forEach(v=>$(v).classList.remove('on'));}
 function showList(){hideAll();$('listView').classList.add('on');loadList();}
-function showAssembly(){hideAll();$('assemblyView').classList.add('on');if(!$('urlList').children.length)addUrl();updCh();checkReveal();}
+function showAssembly(){hideAll();$('assemblyView').classList.add('on');if(!$('urlList').children.length)addUrl();updCh();updBtn();}
 function showCF(){hideAll();$('caseFile').classList.add('on');}
 
 let _t;function toast(m,c=''){const t=$('toast');t.textContent=m;t.className='toast on'+(c?' '+c:'');clearTimeout(_t);_t=setTimeout(()=>t.classList.remove('on'),4000);}
 
 // ── Channels ──
-function togCh(el){const cb=el.querySelector('input');cb.checked=!cb.checked;el.classList.toggle('on',cb.checked);updCh();checkReveal();}
+function togCh(el){const cb=el.querySelector('input');cb.checked=!cb.checked;el.classList.toggle('on',cb.checked);updCh();updBtn();}
 function getCh(){return Array.from(document.querySelectorAll('#chGrid input:checked')).map(c=>c.value);}
 function updCh(){
   const ch=getCh(),n=[];
@@ -318,26 +314,19 @@ function updCh(){
   if(ch.some(c=>['affiliate','influencer'].includes(c)))n.push('relationship verification');
   n.push('claims evidence','URL monitoring');
   $('chHint').textContent=ch.length?ch.join(', ')+' — '+n.join(', ')+' required.':'Select at least one channel.';
-  // listCard visibility now handled by checkReveal via stepList
+  const lc=$('listCard');if(lc)lc.style.display=ch.some(c=>['email','sms'].includes(c))?'':'none';
 }
 
-// ── Progressive reveal ──
-function reveal(id,delay){const el=$(id);if(el&&!el.classList.contains('revealed'))setTimeout(()=>el.classList.add('revealed'),delay||0);}
-function hide(id){const el=$(id);if(el)el.classList.remove('revealed');}
-function checkReveal(){
-  const title=$('aTitle').value.trim(),ch=getCh(),copy=$('aCopy')?.value?.trim()||'';
-  // Ticks
-  const tc=$('tickCamp'),tch=$('tickCh'),tco=$('tickCopy');
-  if(tc)tc.classList.toggle('on',!!title);
-  if(tch)tch.classList.toggle('on',ch.length>0);
-  if(tco)tco.classList.toggle('on',copy.length>10);
-  // Audience, URLs, submit reveal once creative has real content
-  if(copy.length>10&&ch.length){
-    const needsList=ch.some(c=>['email','sms'].includes(c));
-    if(needsList)reveal('stepList',80);else hide('stepList');
-    reveal('stepUrls',needsList?160:80);
-    reveal('stepSubmit',needsList?240:160);
-  }else{hide('stepList');hide('stepUrls');hide('stepSubmit');}
+// ── Button state ──
+function updBtn(){
+  const b=$('btnA'),h=$('btnHint');if(!b)return;
+  const title=$('aTitle').value.trim(),copy=$('aCopy')?.value?.trim()||'',ch=getCh();
+  const missing=[];
+  if(!title)missing.push('a campaign title');
+  if(!ch.length)missing.push('at least one channel');
+  if(copy.length<10)missing.push('your campaign creative');
+  b.disabled=missing.length>0;
+  if(h)h.textContent=missing.length?'Add '+missing.join(' and ')+' to continue.':'Ready — hit Assemble to run the compliance check and extract claims.';
 }
 
 // ── URLs ──
@@ -448,7 +437,7 @@ function renderCF(d){
 
 function sTab(id){document.querySelectorAll('.cf-tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.cf-panel').forEach(p=>p.classList.remove('on'));const tab=document.querySelector(`.cf-tab[onclick*="'${id}'"]`);if(tab)tab.classList.add('on');const panel=document.getElementById('tab-'+id);if(panel)panel.classList.add('on');}
 
-function mergeU(u,s){const m={};for(const x of s)if(x.url)m[x.url]=x;const r=u.map(x=>{const sn=m[x.url];return{...x,snap:!!sn,at:sn?.capturedAt,title:sn?.title,changed:false};});for(const x of s)if(!u.some(y=>y.url===x.url))r.push({url:x.url,type:'auto',snap:true,at:x.capturedAt,title:x.title,changed:false});return r;}
+function mergeU(u,s){const m={};for(const x of s)if(x.url)m[x.url]=x;const r=u.map(x=>{const sn=m[x.url];return{...x,snap:!!sn,at:sn?.capturedAt,title:sn?.title,changed:sn?.changed||false};});for(const x of s)if(!u.some(y=>y.url===x.url))r.push({url:x.url,type:'auto',snap:true,at:x.capturedAt,title:x.title,changed:x.changed||false});return r;}
 function bldSum(ds,ev,u,s,d){if(ds==='alert'){const n=ev.filter(e=>e.severity==='warning'||e.severity==='alert').length;return n+' change'+(n!==1?'s':'')+' detected since approval. Review the timeline.';}if(ds==='live')return'Campaign is live. '+(u.length||s.length)+' URL'+(u.length!==1?'s':'')+' being monitored daily. No changes detected.';if(ds==='approved')return'Defence approved and ready. Mark as launched when the campaign goes out.';if(ds==='archived')return'Campaign taken down'+(d.TakedownDate?' on '+fD(d.TakedownDate):'')+'. Defence preserved as a permanent record.';return'Defence is being assembled. Review the evidence and approve when ready.';}
 function fD(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch{return d;}}
 function fDT(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return d;}}
@@ -457,6 +446,199 @@ function fDT(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB'
 async function approve(){if(!CID)return;const b=document.querySelector('.cf-actions .btn-g');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await fetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved — monitoring started','ok');loadCF(CID);}catch(e){toast('Failed — '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve defence →';}}}
 async function addEv(t,d){if(!CID)return;try{await fetch(`${A}/api/submit-check?action=defence-add-event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,eventType:t,detail:d||''})});toast(t.replace(/_/g,' ')+' recorded','ok');loadCF(CID);}catch(e){toast('Failed — '+e.message,'er');}}
 function logNote(){const n=prompt('What changed?\n\nExamples:\n• Landing page pricing updated\n• Affiliate modified subject line\n• A/B test variant went live');if(n?.trim())addEv('manual_note',n.trim());}
+
+// ── Demo Mode ──
+function loadDemo(mode){
+  const now=Date.now(),day=864e5;
+  const d=function(offset){return new Date(now+offset).toISOString();}
+  // Demo campaigns for list view
+  const demoCampaigns=[
+    {dossierId:'demo-summer',campaignTitle:'Summer Sale 2026 — 30% Off Everything',ownerName:'Sarah Chen',defenceStatus:'alert',channels:'["email","paid_social","affiliate"]',updatedAt:d(-2*day),createdDate:d(-22*day)},
+    {dossierId:'demo-school',campaignTitle:'Back to School — Free Delivery Over £30',ownerName:'Sarah Chen',defenceStatus:'approved',channels:'["email","sms"]',updatedAt:d(-3*day),createdDate:d(-5*day)},
+    {dossierId:'demo-vip',campaignTitle:'VIP Early Access — Winter Collection',ownerName:'James Okafor',defenceStatus:'building',channels:'["email","influencer"]',updatedAt:d(-1*day),createdDate:d(-1*day)}
+  ];
+
+  if(mode==='list'||mode==='true'){
+    hideAll();$('listView').classList.add('on');
+    $('listC').innerHTML='<div class="lv-grid">'+demoCampaigns.map(c=>{
+      const ds=c.defenceStatus;let ch=[];try{ch=JSON.parse(c.channels);}catch{}
+      const dt=c.updatedAt;const dl=new Date(dt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      return`<div class="lv-card" onclick="loadDemo('${c.dossierId}')"><div class="lv-card-top"><span class="lv-card-title">${E(c.campaignTitle)}</span><span class="sb sb-${ds}">${ds}</span></div><div class="lv-card-owner">${E(c.ownerName)}</div><div class="lv-card-ch">${ch.map(x=>'<span class="cht">'+E(x.replace(/_/g,' '))+'</span>').join('')}</div><div class="lv-card-date">${dl}</div></div>`;
+    }).join('')+'</div>';
+    return;
+  }
+
+  // Full case file: Summer Sale (alert state, 3 weeks in)
+  showCF();
+  const copyText=`Subject: 30% OFF EVERYTHING — Summer Sale ends Sunday ☀️
+
+Hi {{first_name}},
+
+Our biggest summer sale is HERE. 30% off everything — no exclusions, no minimum spend.
+
+⏰ Hurry — this offer ends Sunday at midnight. Once it's gone, it's gone.
+
+Shop the highlights:
+• Linen shirts — were £65, now £45.50
+• Summer dresses — were £89, now £62.30
+• Swimwear sets — were £42, now £29.40
+
+All prices shown include the 30% discount. Original prices based on the price at which these items were offered for sale during the 4 weeks prior to this promotion.
+
+FREE delivery on orders over £30. Try our new AI-powered style quiz for personalised recommendations.
+
+Plus: refer a friend and you both get £10 off your next order.
+
+SHOP NOW → summerstyle.co.uk/sale
+
+You're receiving this because you signed up at summerstyle.co.uk. 
+Unsubscribe | Summer Style Ltd, 14 Camden Passage, London N1 8ED`;
+
+  D={
+    CampaignTitle:'Summer Sale 2026 — 30% Off Everything',
+    OwnerName:'Sarah Chen',
+    DefenceStatus:'alert',
+    HealthScore:62,
+    ApprovedAt:d(-20*day),
+    LaunchDate:d(-19*day),
+    MonitoringActive:true,
+    CampaignCopySnapshot:copyText,
+    Channels:JSON.stringify(['email','paid_social','affiliate']),
+    AICheckId:'chk_demo_001',
+    AICheckResultJson:JSON.stringify({score:64,issues:[
+      {rule:'CAP Code 3.17 — Reference pricing',detail:'Original prices must reflect genuine previous selling price for 28+ consecutive days',severity:'high'},
+      {rule:'PECR Reg 22 — Consent specificity',detail:'Consent wording should name specific campaign types, not just "marketing"',severity:'medium'}
+    ]}),
+    ListSummarySnapshot:JSON.stringify({listName:'Main Newsletter',totalContacts:47820,gateVerdict:'SAFE',consentRate:0.94,avgConsentAge:186}),
+    ModuleFieldsJson:JSON.stringify({
+      ConsentMechanism:{lawfulBasis:'Consent (PECR Reg 22)',consentWording:'I agree to receive marketing emails from Summer Style Ltd about sales, new arrivals and promotions.'},
+      Suppression:{suppressionApplied:'Yes',dateApplied:d(-21*day),source:'TPS + internal'},
+      SenderIdentity:{fromName:'Summer Style',fromEmail:'hello@summerstyle.co.uk',unsubscribePresent:'Yes',matchesTradingName:'Yes'}
+    }),
+    LinkedRelationships:JSON.stringify([
+      {type:'affiliate',name:'StyleRewards Network',consentVerified:false,detail:'No consent pass-through agreement on file'},
+      {type:'partner',name:'AI Quiz Provider (Reko AI)',article26Confirmed:true,detail:'Art 26 signed 12 Mar 2026'}
+    ]),
+    ClaimsExtracted:JSON.stringify([
+      {claim:'30% off everything — no exclusions, no minimum spend',claimType:'pricing_claim',ruleRef:'CAP Code 3.17, 3.18 — Price claims must not mislead',evidenceNeeded:'Proof items were offered at reference price for 28+ consecutive days immediately prior'},
+      {claim:'This offer ends Sunday at midnight. Once it\'s gone, it\'s gone.',claimType:'urgency_claim',ruleRef:'CAP Code 3.1, DMCCA 2024 s.234 — Urgency must be genuine',evidenceNeeded:'Confirmation offer genuinely ends on stated date with no immediate re-run'},
+      {claim:'FREE delivery on orders over £30',claimType:'free_claim',ruleRef:'CAP Code 3.24 — "Free" must impose no new cost or condition',evidenceNeeded:'Confirm delivery is genuinely free with no inflated product pricing to offset'},
+      {claim:'were £65, now £45.50 / were £89, now £62.30 / were £42, now £29.40',claimType:'pricing_claim',ruleRef:'DMCCA 2024 s.231 — Reference pricing transparency',evidenceNeeded:'Transaction data showing each item sold at stated "was" price for 28+ days in preceding 90 days'},
+      {claim:'Refer a friend and you both get £10 off your next order',claimType:'comparative_claim',ruleRef:'CAP Code 3.31 — Promotional offers must state significant terms',evidenceNeeded:'Full terms of referral scheme including any exclusions, expiry, minimum spend'}
+    ]),
+    ConnectedUrls:JSON.stringify([
+      {url:'https://summerstyle.co.uk/sale',type:'landing_page'},
+      {url:'https://summerstyle.co.uk/sale/terms',type:'terms_page'},
+      {url:'https://stylerewards.net/campaign/summer26',type:'affiliate_page'},
+      {url:'https://summerstyle.co.uk/returns',type:'terms_page'}
+    ]),
+    UrlSnapshots:JSON.stringify([
+      {url:'https://summerstyle.co.uk/sale',capturedAt:d(-20*day),title:'Summer Sale — 30% Off Everything',changed:true},
+      {url:'https://summerstyle.co.uk/sale/terms',capturedAt:d(-20*day),title:'Sale Terms & Conditions',changed:false},
+      {url:'https://stylerewards.net/campaign/summer26',capturedAt:d(-20*day),title:'StyleRewards — Summer Style Campaign',changed:false},
+      {url:'https://summerstyle.co.uk/returns',capturedAt:d(-20*day),title:'Returns Policy',changed:false}
+    ]),
+    EvidenceHash:'a3f7c9d2e1b84f6091c3d5a8e7f2b4d6',
+    ApprovalHash:'8b2e4f7a1c3d5e6f9a8b7c4d2e1f3a5b',
+    responsePack:{
+      ico:`Dear Information Commissioner's Office,
+
+Thank you for your correspondence regarding the Summer Sale 2026 campaign sent by Summer Style Ltd.
+
+We take our data protection obligations seriously and maintain a comprehensive compliance defence for every marketing campaign. Please find our response below.
+
+CONSENT BASIS
+All 47,820 recipients provided explicit opt-in consent under PECR Regulation 22 via our website registration form. Consent wording: "I agree to receive marketing emails from Summer Style Ltd about sales, new arrivals and promotions." Consent records are maintained in our List Intelligence system with individual timestamps.
+
+SUPPRESSION
+TPS and internal suppression lists were applied on ${fD(d(-21*day))}, prior to campaign launch. Suppression is documented and hashed in our evidence trail.
+
+SENDER IDENTITY
+The campaign was sent from "Summer Style" (hello@summerstyle.co.uk), matching our registered trading name. A functioning unsubscribe mechanism is present in the email footer. Our registered address is included: Summer Style Ltd, 14 Camden Passage, London N1 8ED.
+
+EVIDENCE INTEGRITY
+All evidence was assembled and hashed (SHA-256) at the point of campaign approval on ${fD(d(-20*day))}. The evidence hash is: a3f7c9d2e1b84f6091c3d5a8e7f2b4d6.
+
+We are happy to provide any additional documentation required.`,
+
+      asa:`Dear Advertising Standards Authority,
+
+Thank you for notifying us of the complaint regarding the Summer Sale 2026 campaign by Summer Style Ltd.
+
+We have reviewed the complaint against our pre-built compliance defence and respond to each point below.
+
+PRICING CLAIMS — "30% off everything" and specific was/now prices
+All reference prices reflect the genuine selling price for the 28 days immediately prior to the promotion commencing. Transaction records are available to verify that each item listed (linen shirts at £65, summer dresses at £89, swimwear sets at £42) was actively sold at the stated price during this period. This complies with CAP Code rules 3.17 and 3.18 and DMCCA 2024 section 231.
+
+NOTE: Our monitoring system detected a price change on the landing page (summerstyle.co.uk/sale) on ${fD(d(-14*day))}. The change involved clearance items being added at different discount levels. We are reviewing whether this affects the "30% off everything — no exclusions" claim.
+
+URGENCY — "Ends Sunday at midnight. Once it's gone, it's gone."
+The offer genuinely ended on the stated date. No identical or substantially similar promotion was run in the 14 days following the stated end date.
+
+"FREE" DELIVERY
+Free delivery on orders over £30 involves no hidden surcharge or inflated product pricing. Delivery pricing is consistent with non-promotional periods.
+
+REFERRAL OFFER
+Full terms of the refer-a-friend scheme are available at summerstyle.co.uk/sale/terms, including exclusions and expiry conditions.
+
+Evidence was assembled and frozen at approval. Evidence hash: a3f7c9d2e1b84f6091c3d5a8e7f2b4d6.`,
+
+      cma:`Dear Competition and Markets Authority,
+
+Thank you for your enquiry regarding the Summer Sale 2026 campaign by Summer Style Ltd.
+
+We understand the CMA's focus on pricing practices under the Digital Markets, Competition and Consumers Act 2024. We respond below with reference to our compliance defence.
+
+REFERENCE PRICING (DMCCA 2024 s.231)
+All "was" prices shown in the campaign reflect genuine previous selling prices maintained for at least 28 consecutive days in the 90 days preceding the promotion. Transaction logs are available for inspection.
+
+We note that the DMCCA 2024 introduced specific transparency requirements for reference pricing. Our monitoring system flagged that the reference pricing basis for some clearance items added to the landing page on ${fD(d(-14*day))} may not meet the 28-day threshold. We are investigating and will update our defence file accordingly.
+
+URGENCY PRACTICES (DMCCA 2024 s.234)
+The stated deadline ("ends Sunday at midnight") was genuine. The promotion was not extended or immediately re-run.
+
+"FREE" CLAIMS
+The free delivery threshold (£30 minimum) is prominently stated and does not involve inflated baseline pricing.
+
+We maintain a tamper-evident evidence trail for this campaign, hashed at approval on ${fD(d(-20*day))}. We are happy to provide transaction records, consent documentation, or any other evidence the CMA requires.`
+    },
+    CampaignEventsJson:JSON.stringify([
+      {type:'defence_assembled',date:d(-21*day),title:'Defence assembled',detail:'AI compliance check completed. 2 issues flagged. 5 claims extracted from campaign copy.',severity:'info'},
+      {type:'defence_approved',date:d(-20*day),title:'Defence approved',detail:'Evidence frozen. SHA-256 hashes generated. Response pack created for ICO, ASA, and CMA. Monitoring started.',severity:'success'},
+      {type:'campaign_launched',date:d(-19*day),title:'Campaign launched',detail:'Email sent to 47,820 recipients. Paid social activated. Affiliate links distributed to StyleRewards Network.',severity:'success'},
+      {type:'url_check_ok',date:d(-17*day),title:'Daily URL check — all clear',detail:'4 URLs checked. No content drift detected.',severity:'info'},
+      {type:'manual_note',date:d(-16*day),title:'Manual note',detail:'A/B test variant B went live — subject line changed to "YOUR 30% OFF CODE IS INSIDE"',severity:'info'},
+      {type:'enforcement_match',date:d(-14*day),title:'Enforcement match — ASA ruling',detail:'ASA published ruling against "FlashFashion Ltd" for misleading reference pricing in summer sale campaign. Ruling references CAP Code 3.17 — matches your pricing_claim evidence type.',severity:'warning'},
+      {type:'url_drift',date:d(-14*day),title:'URL drift detected — landing page',detail:'summerstyle.co.uk/sale content has changed since approval snapshot. SHA-256 mismatch. Claude relevance filter: MATERIAL — page now shows clearance items at 50% off alongside the 30% campaign, which may conflict with the "30% off everything, no exclusions" claim.',severity:'warning'},
+      {type:'manual_note',date:d(-10*day),title:'Manual note',detail:'Legal team reviewing whether clearance items on landing page conflict with "no exclusions" claim. Keeping campaign live pending review.',severity:'info'},
+      {type:'ref_price_warning',date:d(-7*day),title:'Reference price warning — 21 days',detail:'Reference pricing basis approaching 28-day limit. Original prices must remain verifiable. Expires in 7 days.',severity:'warning'},
+      {type:'url_check_ok',date:d(-2*day),title:'Daily URL check',detail:'3 of 4 URLs unchanged. summerstyle.co.uk/sale still flagged from day 5 drift.',severity:'info'}
+    ]),
+    ComplianceAlertsJson:'[]',
+    letter:{type:'letter',content:`SIMULATED — ADVERTISING STANDARDS AUTHORITY
+
+Dear Summer Style Ltd,
+
+COMPLAINT UNDER CAP CODE: SUMMER SALE 2026 CAMPAIGN
+
+The ASA has received a complaint about your Summer Sale 2026 email campaign. The complainant challenges whether:
+
+1. The claim "30% off everything — no exclusions" is misleading, given that the linked landing page now contains clearance items at different discount levels (50% off), which appear to contradict the "no exclusions" messaging.
+
+2. The reference prices ("were £65, now £45.50") can be substantiated as genuine previous selling prices maintained for a sufficient period prior to the promotion.
+
+3. The urgency claim "ends Sunday at midnight — once it's gone, it's gone" is genuine and not a recurring promotional tactic.
+
+Please provide your response within 10 working days, including:
+- Evidence that all reference prices reflect genuine previous selling prices for at least 28 consecutive days
+- Explanation of the relationship between the "30% off everything" claim and the clearance items at different discount levels
+- Confirmation of whether this or a substantially similar offer has been run previously
+
+The complaint has been assessed under CAP Code rules 3.1 (Misleading advertising), 3.17 (Pricing), and 3.18 (Reference pricing).`}
+  };
+
+  renderCF(D);
+}
 </script>
 </body>
 </html>
