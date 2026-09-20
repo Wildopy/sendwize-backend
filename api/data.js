@@ -345,7 +345,47 @@ function buildScoreBreakdown(intel, fields) {
 async function getRelevantEnforcement(base, name, entityType, relationshipContext) {
   if (!name) return { relevant: [], rejected: [], summary: 'No name provided.' };
   const candidates = await getViolationsForName(base, name);
+
+  // If no candidates in Violation_Database AND we have Claude, do a web search
+  if (!candidates.length && process.env.ANTHROPIC_API_KEY) {
+    try {
+      const r = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6', max_tokens: 800,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          messages: [{ role: 'user', content: `Search for any ICO, ASA, or CMA enforcement actions, fines, or regulatory rulings against "${name}" in the UK. Check ico.org.uk/action-weve-taken/enforcement/ and asa.org.uk/codes-and-rulings/rulings.html specifically.\n\nIf you find any relevant enforcement actions, return a JSON array:\n[{"regulator":"ICO|ASA|CMA","date":"YYYY-MM-DD","violation":"brief description","fine":number_or_null,"source":"URL where found","sameEntity":true,"relevanceNote":"why this is relevant"}]\n\nIf you find NO relevant enforcement actions, return exactly:\n[]\n\nNo other text.` }],
+        }),
+      }), 20000);
+      if (r.ok) {
+        const data = await r.json();
+        const text = data.content?.find(b => b.type === 'text')?.text || '';
+        const match = text.match(/\[[\s\S]*?\]/);
+        if (match) {
+          const webResults = JSON.parse(match[0]);
+          if (webResults.length) {
+            const relevant = webResults.map(w => ({
+              CompanyName: name,
+              Regulator: w.regulator || '',
+              DateOfAction: w.date || '',
+              Violation: w.violation || '',
+              FineAmount: w.fine || null,
+              source: w.source || 'Web search',
+              relevanceNote: w.relevanceNote || 'Found via web search',
+              sameEntity: w.sameEntity !== false,
+              webSearchResult: true,
+            }));
+            return { relevant, rejected: [], summary: relevant.length + ' enforcement action' + (relevant.length !== 1 ? 's' : '') + ' identified via web search.', source: 'web_search' };
+          }
+        }
+      }
+    } catch (e) { console.error('Enforcement web search non-fatal:', e); }
+    return { relevant: [], rejected: [], summary: 'No relevant enforcement actions identified in the sources reviewed.', source: 'web_search' };
+  }
+
   if (!candidates.length) return { relevant: [], rejected: [], summary: 'No relevant enforcement actions identified in the sources reviewed.' };
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return { relevant: candidates.map(v => ({ ...v.fields, recordId: v.id, relevanceNote: 'Relevance check unavailable' })), rejected: [], summary: candidates.length + ' candidate match(es) — relevance not verified.' };
   }
@@ -884,23 +924,42 @@ async function handleCompetitorWatch(req, res) {
 
     let rulingCount = 0, lastRulingDate = null, lastRulingSummary = null, lastRulingRegulator = null;
     let allRulingsJson = null, recentPromoClaims = null;
+    let enforcementResult = null;
 
     if (!recordId && competitor.CompetitorName) {
-      const viols = await getViolationsForName(base, competitor.CompetitorName);
-      rulingCount = viols.length;
-      if (viols[0]) {
-        lastRulingDate      = viols[0].fields.DateOfAction || null;
-        lastRulingSummary   = viols[0].fields.Violation    || null;
-        lastRulingRegulator = viols[0].fields.Regulator    || null;
+      // v7.4: Use relevance-filtered enforcement (with web search fallback)
+      try {
+        enforcementResult = await getRelevantEnforcement(base, competitor.CompetitorName, 'competitor', 'competitor being monitored for regulatory activity');
+        rulingCount = enforcementResult.relevant.length;
+        if (enforcementResult.relevant[0]) {
+          lastRulingDate      = enforcementResult.relevant[0].DateOfAction || enforcementResult.relevant[0].date || null;
+          lastRulingSummary   = enforcementResult.relevant[0].Violation || enforcementResult.relevant[0].violation || null;
+          lastRulingRegulator = enforcementResult.relevant[0].Regulator || enforcementResult.relevant[0].regulator || null;
+        }
+        allRulingsJson = JSON.stringify(enforcementResult.relevant.slice(0, 5).map(v => ({
+          date: v.DateOfAction || v.date || '', regulator: v.Regulator || v.regulator || '',
+          summary: (v.Violation || v.violation || '').slice(0, 200), fine: v.FineAmount || v.fine || null,
+        })));
+      } catch (e) {
+        console.error('Competitor enforcement non-fatal:', e);
+        // Fallback to old method
+        const viols = await getViolationsForName(base, competitor.CompetitorName);
+        rulingCount = viols.length;
+        if (viols[0]) {
+          lastRulingDate      = viols[0].fields.DateOfAction || null;
+          lastRulingSummary   = viols[0].fields.Violation    || null;
+          lastRulingRegulator = viols[0].fields.Regulator    || null;
+        }
+        allRulingsJson = JSON.stringify(viols.slice(0, 5).map(v => ({
+          date: v.fields.DateOfAction || '', regulator: v.fields.Regulator || '',
+          summary: (v.fields.Violation || '').slice(0, 200), fine: v.fields.FineAmount || null,
+        })));
       }
-      allRulingsJson = JSON.stringify(viols.slice(0, 5).map(v => ({
-        date: v.fields.DateOfAction || '', regulator: v.fields.Regulator || '',
-        summary: (v.fields.Violation || '').slice(0, 200), fine: v.fields.FineAmount || null,
-      })));
 
+      // Promo tactics scan (public website only, no ad platforms)
       if (process.env.ANTHROPIC_API_KEY) {
         try {
-          const promoRes = await fetch('https://api.anthropic.com/v1/messages', {
+          const promoRes = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -908,7 +967,7 @@ async function handleCompetitorWatch(req, res) {
               tools: [{ type: 'web_search_20250305', name: 'web_search' }],
               messages: [{ role: 'user', content: `Search for current marketing promotions, discount claims, urgency claims, or pricing tactics being used by ${competitor.CompetitorName} on their public website in the UK right now. Do NOT access any advertising platforms such as Meta Ad Library, TikTok, or social media ad archives. Only check their public website and search results. Return ONLY a JSON array of up to 5 objects: [{"claimType":"fake_urgency|reference_pricing|superlative|free_claim|other","description":"brief description","complianceNote":"brief compliance observation"}]. No other text.` }],
             }),
-          });
+          }), 20000);
           if (promoRes.ok) {
             const promoData = await promoRes.json();
             const text = promoData.content?.find(b => b.type === 'text')?.text || '';
@@ -965,7 +1024,7 @@ async function handleCompetitorWatch(req, res) {
       const record = recordId
         ? await atPatch(base, 'Competitor_Watch', recordId, fields)
         : await atCreate(base, 'Competitor_Watch', fields);
-      return res.json({ record, rulingCount, lastRulingSummary, recentPromoClaims, claimCrossRef });
+      return res.json({ record, rulingCount, lastRulingSummary, recentPromoClaims, claimCrossRef, enforcement: enforcementResult || { relevant: [], rejected: [], summary: 'Not checked.' } });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
