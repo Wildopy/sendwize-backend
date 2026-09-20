@@ -71,6 +71,14 @@ function airtableBase() {
   return `https://api.airtable.com/v0/${process.env.BASE_ID}`;
 }
 
+// ── Timeout wrapper for Claude API calls ──────────────────────
+function withTimeout(promise, ms = 15000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout after ' + ms + 'ms')), ms)),
+  ]);
+}
+
 // ── DPA status check helper ───────────────────────────────────
 const DPA_CONFIRMED = ['Confirmed', 'Confirmed and signed', 'In place'];
 function isDPAConfirmed(status) {
@@ -226,7 +234,7 @@ async function prefillFromKnownVendor(base, vendorName, fields) {
 async function assessUnknownVendor(vendorName, fields) {
   if (!process.env.ANTHROPIC_API_KEY) return fields;
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -234,7 +242,7 @@ async function assessUnknownVendor(vendorName, fields) {
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{ role: 'user', content: `Research the company "${vendorName}" as a marketing/data technology vendor used by UK businesses. Find:\n1. Their correct legal entity name\n2. ICO Data Protection Register entry (registration number if found)\n3. Whether they publish a Data Processing Agreement / DPA (find the URL)\n4. Where they store/process data (countries)\n5. Transfer mechanisms (SCCs, BCRs, EU-US DPF)\n6. Any known data breaches or security incidents\n7. Security certifications (SOC 2, ISO 27001, etc)\n8. Any ICO, ASA, or CMA enforcement actions against them\n\nReturn ONLY a JSON object with these exact keys:\n{"vendorLegalName":"","icoRegistered":"Yes|No|Unknown","icoRegistrationNumber":"","dpaUrl":"","transferDestination":"","transferMechanism":"","breachHistory":"None publicly disclosed.|description if found","certifications":"","enforcementHistory":"None identified in sources reviewed.|description if found","confidence":"high|medium|low"}\nNo other text.` }],
       }),
-    });
+    }), 20000);
     if (!r.ok) return fields;
     const data = await r.json();
     const text = data.content?.find(b => b.type === 'text')?.text || '';
@@ -347,14 +355,14 @@ async function getRelevantEnforcement(base, name, entityType, relationshipContex
       date: v.fields.DateOfAction || '', violation: (v.fields.Violation || '').slice(0, 250),
       fine: v.fields.FineAmount || null,
     }));
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6', max_tokens: 800,
         messages: [{ role: 'user', content: `I searched for enforcement actions related to "${name}" (a ${entityType || 'marketing vendor'} used as a ${relationshipContext || 'data processor'}).\n\nThese candidate results came back:\n${JSON.stringify(candidateSummaries)}\n\nFor EACH candidate, determine:\n1. Is this definitely the same organisation (or parent/subsidiary)?\n2. Is the enforcement action relevant to their role as a ${relationshipContext || 'data processor/marketing platform'}?\n3. Is it relevant to a UK marketer using this vendor?\n\nReturn ONLY a JSON array where each element has:\n{"index":0,"relevant":true|false,"sameEntity":true|false,"relevanceNote":"one sentence explaining why included or excluded"}\nNo other text.` }],
       }),
-    });
+    }), 15000);
     if (!r.ok) throw new Error('API ' + r.status);
     const data = await r.json();
     const text = data.content?.find(b => b.type === 'text')?.text || '';
@@ -531,23 +539,27 @@ async function handleRegister(req, res) {
 
     // v7.4: On create — pre-fill from Marketing_Vendors or assess unknown vendor
     if (!recordId && vendor.VendorName) {
-      fields = await prefillFromKnownVendor(base, vendor.VendorName, fields);
-      if (!fields.IntelligenceJson) {
-        fields = await assessUnknownVendor(vendor.VendorName, fields);
-      }
-      const enforcement = await getRelevantEnforcement(base, vendor.VendorName, vendor.VendorType || 'marketing platform', 'data processor');
-      if (enforcement.relevant.length) {
-        fields.ICORiskLevel = enforcement.relevant.length >= 2 ? 'High' : 'Medium';
-        try {
-          const intel = JSON.parse(fields.IntelligenceJson || '{}');
-          intel.enforcementRelevant = enforcement.relevant;
-          intel.enforcementSummary = enforcement.summary;
-          fields.IntelligenceJson = JSON.stringify(intel);
-          fields.ComplianceScore = calculateVendorScore(intel);
-          fields.ScoreBreakdownJson = JSON.stringify(buildScoreBreakdown(intel, fields));
-        } catch (e) {}
-      }
-      fields.EnforcementRelevanceJson = JSON.stringify({ relevant: enforcement.relevant, rejected: enforcement.rejected, summary: enforcement.summary });
+      try {
+        fields = await prefillFromKnownVendor(base, vendor.VendorName, fields);
+        if (!fields.IntelligenceJson) {
+          fields = await assessUnknownVendor(vendor.VendorName, fields);
+        }
+      } catch (e) { console.error('Vendor intelligence non-fatal:', e); }
+      try {
+        const enforcement = await getRelevantEnforcement(base, vendor.VendorName, vendor.VendorType || 'marketing platform', 'data processor');
+        if (enforcement.relevant.length) {
+          fields.ICORiskLevel = enforcement.relevant.length >= 2 ? 'High' : 'Medium';
+          try {
+            const intel = JSON.parse(fields.IntelligenceJson || '{}');
+            intel.enforcementRelevant = enforcement.relevant;
+            intel.enforcementSummary = enforcement.summary;
+            fields.IntelligenceJson = JSON.stringify(intel);
+            fields.ComplianceScore = calculateVendorScore(intel);
+            fields.ScoreBreakdownJson = JSON.stringify(buildScoreBreakdown(intel, fields));
+          } catch (e) {}
+        }
+        fields.EnforcementRelevanceJson = JSON.stringify({ relevant: enforcement.relevant, rejected: enforcement.rejected, summary: enforcement.summary });
+      } catch (e) { console.error('Enforcement check non-fatal:', e); }
     }
 
     try {
@@ -772,6 +784,12 @@ async function handleAffiliateRegister(req, res) {
       exposureHigh += 30000;
     }
 
+    // v7.4: Enforcement relevance check on affiliate create
+    let enforcementResult = null;
+    if (!recordId && affiliate.AffiliateName) {
+      enforcementResult = await getRelevantEnforcement(base, affiliate.AffiliateName, affiliate.AffiliateType || 'affiliate', 'third-party promoter / email affiliate').catch(() => null);
+    }
+
     const fields = {
       UserID: userId, AffiliateName: affiliate.AffiliateName, AffiliateType: affiliate.AffiliateType,
       DPAStatus: affiliate.DPAStatus || 'Not yet',
@@ -803,6 +821,7 @@ async function handleAffiliateRegister(req, res) {
       CreativeLastReviewed: affiliate.CreativeLastReviewed,
       CreativeReviewResult: affiliate.CreativeReviewResult,
       FromNameUsedVerified: affiliate.FromNameUsedVerified,
+      EnforcementRelevanceJson: enforcementResult ? JSON.stringify({ relevant: enforcementResult.relevant, rejected: enforcementResult.rejected, summary: enforcementResult.summary }) : undefined,
     };
 
     try {
@@ -837,7 +856,7 @@ async function handleAffiliateRegister(req, res) {
         }
       }
 
-      return res.json({ record, exposureLow, exposureHigh, fixesGenerated });
+      return res.json({ record, exposureLow, exposureHigh, fixesGenerated, enforcement: enforcementResult || { relevant: [], rejected: [], summary: 'Not checked.' } });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
