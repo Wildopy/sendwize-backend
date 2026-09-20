@@ -177,9 +177,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="gate" id="gate">
   <div class="gate-card">
     <div class="gate-logo">sendwize</div>
-    <div class="gate-icon">🛡️</div>
     <div class="gate-t">Campaign Defence</div>
-    <div class="gate-s">Build your compliance evidence before launch. Monitor it after. Email, paid social, affiliate, influencer, SMS, display — every channel, one defence file. If a regulator asks what you did and why, this is your answer.</div>
+    <div class="gate-s">Build your compliance evidence before launch. Monitor it after. Your creative is frozen at approval. The pages it points to and the regulatory landscape it sits in are watched daily. If a landing page changes or an enforcement ruling matches your claims, you know first.</div>
     <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard →</a>
     <a href="?demo=true" style="display:block;margin-top:12px;font-size:13px;color:var(--o);text-decoration:none;font-weight:500">View demo →</a>
   </div>
@@ -189,7 +188,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="lv" id="listView">
   <div class="lv-hero">
     <div class="lv-hero-t">Your compliance evidence. Built before launch. Watched after.</div>
-    <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize runs the compliance check, extracts every claim that needs evidence, links your existing data, and freezes the defence at approval. After launch, it monitors your landing pages, offer pages, and affiliate pages daily. If anything changes, you know before a regulator does.</div>
+    <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize links your existing compliance data and freezes the defence at approval. After launch, it monitors the pages your campaign points to — landing pages, offer pages, affiliate pages — and watches for regulatory enforcement that matches your claim types. If a price changes or a ruling drops, you know before a regulator asks.</div>
     <a href="#" onclick="event.preventDefault();loadDemo('true')" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--o);font-weight:600;text-decoration:none">See a demo campaign →</a>
   </div>
   <div class="lv-head">
@@ -204,7 +203,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div style="margin-bottom:16px"><button class="btn btn-w btn-sm" onclick="showList()">← Back to campaigns</button></div>
   <div class="av-intro">
     <div class="av-intro-t">Assemble your defence</div>
-    <div class="av-intro-s">Paste your creative, tell us the channels and audience. Sendwize pulls your list clearance, relationship data, and sender profile automatically. Claims are extracted and the AI compliance check runs in one step.</div>
+    <div class="av-intro-s">Paste your creative, tell us the channels and audience. Sendwize links your AI Scanner check, list clearance, relationship data, and sender profile. Claims are extracted and your evidence is assembled in one step.</div>
   </div>
 
   <div class="av-card">
@@ -340,7 +339,7 @@ async function loadList(){
   try{
     const r=await fetch(`${A}/api/submit-check?action=dossier-list&userId=${U}&limit=50`);
     const{dossiers:d}=await r.json();
-    if(!d?.length){$('listC').innerHTML='<div class="empty-lv"><div class="empty-icon">🛡️</div><div class="empty-t">No campaigns yet</div><div class="empty-s">Assemble evidence for a campaign before launch. Sendwize extracts claims, links your existing compliance data, and monitors after launch.</div><button class="btn btn-o" onclick="showAssembly()">Create your first defence</button></div>';return;}
+    if(!d?.length){$('listC').innerHTML='<div class="empty-lv"><div class="empty-t">No campaigns yet</div><div class="empty-s">Assemble your compliance evidence before launch. Sendwize links your existing checks, freezes the defence at approval, and monitors connected URLs and enforcement after launch.</div><button class="btn btn-o" onclick="showAssembly()">Create your first defence</button></div>';return;}
     $('listC').innerHTML='<div class="lv-grid">'+d.map(c=>{
       const ds=c.defenceStatus||(c.status==='Submitted'?'approved':'draft');
       let ch=[];try{ch=JSON.parse(c.channels||'[]');}catch{}
@@ -406,14 +405,14 @@ function renderCF(d){
 
   // Evidence panel
   const ev=[];
-  if(aiChk||d.AICheckId){const n=aiChk?.issues?.length||0;ev.push({i:'🔍',l:'AI compliance check',d:n?n+' issue'+(n>1?'s':'')+' flagged':'No issues found',s:n?'Issues':'Clear',c:n?'ev-warn':'ev-ok'});}else ev.push({i:'🔍',l:'AI compliance check',d:'Not yet run',s:'Missing',c:'ev-gap'});
-  if(needC){if(lSum)ev.push({i:'📋',l:'List: '+(lSum.listName||'—'),d:(lSum.totalContacts||0).toLocaleString()+' contacts · Verdict: '+(lSum.gateVerdict||'—'),s:lSum.gateVerdict||'—',c:lSum.gateVerdict==='SAFE'?'ev-ok':'ev-warn'});else ev.push({i:'📋',l:'List clearance',d:'No list linked',s:'Not linked',c:'ev-na'});}
-  if(needC){const c=mf.ConsentMechanism||{};if(c.lawfulBasis)ev.push({i:'✅',l:'Consent: '+c.lawfulBasis,d:c.consentWording?'Wording documented':'No wording captured',s:c.consentWording?'Documented':'Incomplete',c:c.consentWording?'ev-ok':'ev-warn'});else ev.push({i:'✅',l:'Consent basis',d:'Not documented',s:'Missing',c:'ev-gap'});}
-  if(needC){const s=mf.Suppression||{};const ok=s.suppressionApplied?.includes('Yes');ev.push({i:'🚫',l:'Suppression',d:ok?'Applied '+fD(s.dateApplied):'Not applied',s:ok?'Applied':'Missing',c:ok?'ev-ok':'ev-gap'});}
-  if(needS){const si=mf.SenderIdentity||{};if(si.fromName)ev.push({i:'🏢',l:'Sender: '+si.fromName,d:(si.fromEmail||'')+(si.unsubscribePresent?.includes('Yes')?' · Unsubscribe confirmed':''),s:si.matchesTradingName==='Yes'?'Verified':'Review',c:si.matchesTradingName==='Yes'?'ev-ok':'ev-warn'});else ev.push({i:'🏢',l:'Sender identity',d:'Not documented',s:'Missing',c:'ev-gap'});}
-  for(const r of rels){const ok=r.type==='affiliate'?r.consentVerified:r.article26Confirmed;ev.push({i:r.type==='affiliate'?'🤝':'🏪',l:(r.type==='affiliate'?'Affiliate':'Partner')+': '+r.name,d:r.type==='affiliate'?(r.consentVerified?'Consent chain verified':'Consent unverified'):(r.article26Confirmed?'Art 26 confirmed':'No Art 26 agreement'),s:ok?'Verified':'Gap',c:ok?'ev-ok':'ev-gap'});}
+  if(aiChk||d.AICheckId){const n=aiChk?.issues?.length||0;ev.push({l:'AI Scanner',d:n?n+' issue'+(n>1?'s':''):'Clear',s:n?'Issues':'Clear',c:n?'ev-warn':'ev-ok',link:d.AICheckId?'ai-checker.html?checkId='+d.AICheckId:null});}else ev.push({l:'AI Scanner',d:'Not yet run',s:'Missing',c:'ev-gap',link:'ai-checker.html'});
+  if(needC){if(lSum)ev.push({l:'List Intelligence',d:(lSum.totalContacts||0).toLocaleString()+' contacts · '+lSum.gateVerdict,s:lSum.gateVerdict||'—',c:lSum.gateVerdict==='SAFE'?'ev-ok':'ev-warn',link:d.ListCertificateId?'list-intelligence.html?certId='+d.ListCertificateId:null});else ev.push({l:'List Intelligence',d:'No list linked',s:'Not linked',c:'ev-na',link:'list-intelligence.html'});}
+  if(needC){const c=mf.ConsentMechanism||{};ev.push({l:'Consent basis',d:c.lawfulBasis||'Not documented',s:c.consentWording?'Documented':c.lawfulBasis?'Incomplete':'Missing',c:c.consentWording?'ev-ok':c.lawfulBasis?'ev-warn':'ev-gap'});}
+  if(needC){const s=mf.Suppression||{};const ok=s.suppressionApplied?.includes('Yes');ev.push({l:'Suppression',d:ok?'Applied '+fD(s.dateApplied):'Not applied',s:ok?'Applied':'Missing',c:ok?'ev-ok':'ev-gap'});}
+  if(needS){const si=mf.SenderIdentity||{};ev.push({l:'Sender identity',d:si.fromName?(si.fromName+' <'+si.fromEmail+'>'):'Not documented',s:si.matchesTradingName==='Yes'?'Verified':si.fromName?'Review':'Missing',c:si.matchesTradingName==='Yes'?'ev-ok':si.fromName?'ev-warn':'ev-gap'});}
+  for(const r of rels){const ok=r.type==='affiliate'?r.consentVerified:r.article26Confirmed;ev.push({l:(r.type==='affiliate'?'Affiliate':'Partner')+': '+r.name,d:r.type==='affiliate'?(r.consentVerified?'Consent chain verified':'Consent not verified'):(r.article26Confirmed?'Art 26 confirmed':'No Art 26 agreement'),s:ok?'Verified':'Gap',c:ok?'ev-ok':'ev-gap'});}
 
-  P+=`<div class="cf-panel on" id="tab-evidence"><div class="sec"><div class="sec-t">Evidence <span class="cnt">${ev.length}</span></div>${ev.map(e=>`<div class="ev-item"><span class="ev-icon">${e.i}</span><div class="ev-body"><div class="ev-label">${E(e.l)}</div><div class="ev-detail">${E(e.d)}</div></div><span class="ev-st ${e.c}">${E(e.s)}</span></div>`).join('')}</div>${d.EvidenceHash?`<div style="font-size:11px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Evidence hash: ${d.EvidenceHash.slice(0,16)}…</div>`:''}</div>`;
+  P+=`<div class="cf-panel on" id="tab-evidence"><div class="sec"><div class="sec-t">Evidence <span class="cnt">${ev.length}</span></div>${ev.map(e=>`<div class="ev-item"><div class="ev-body"><div class="ev-label">${E(e.l)}${e.link?` <a href="${e.link}" style="font-size:11px;color:var(--o);font-weight:500;text-decoration:none">Open →</a>`:''}</div><div class="ev-detail">${E(e.d)}</div></div><span class="ev-st ${e.c}">${E(e.s)}</span></div>`).join('')}</div>${d.EvidenceHash?`<div style="font-size:11px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Evidence hash: ${d.EvidenceHash.slice(0,16)}…</div>`:''}</div>`;
 
   // Copy
   if(d.CampaignCopySnapshot)P+=`<div class="cf-panel" id="tab-copy"><div class="sec"><div class="sec-t">Approved campaign copy</div><div class="copy-snap"><span class="copy-tag">IMMUTABLE SNAPSHOT${d.ApprovedAt?' · '+fD(d.ApprovedAt):''}</span>${E(d.CampaignCopySnapshot)}</div></div></div>`;
@@ -439,7 +438,7 @@ function renderCF(d){
 function sTab(id){document.querySelectorAll('.cf-tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.cf-panel').forEach(p=>p.classList.remove('on'));const tab=document.querySelector(`.cf-tab[onclick*="'${id}'"]`);if(tab)tab.classList.add('on');const panel=document.getElementById('tab-'+id);if(panel)panel.classList.add('on');}
 
 function mergeU(u,s){const m={};for(const x of s)if(x.url)m[x.url]=x;const r=u.map(x=>{const sn=m[x.url];return{...x,snap:!!sn,at:sn?.capturedAt,title:sn?.title,changed:sn?.changed||false};});for(const x of s)if(!u.some(y=>y.url===x.url))r.push({url:x.url,type:'auto',snap:true,at:x.capturedAt,title:x.title,changed:x.changed||false});return r;}
-function bldSum(ds,ev,u,s,d){if(ds==='alert'){const n=ev.filter(e=>e.severity==='warning'||e.severity==='alert').length;return n+' change'+(n!==1?'s':'')+' detected since approval. Review the timeline.';}if(ds==='live')return'Campaign is live. '+(u.length||s.length)+' URL'+(u.length!==1?'s':'')+' being monitored daily. No changes detected.';if(ds==='approved')return'Defence approved and ready. Mark as launched when the campaign goes out.';if(ds==='archived')return'Campaign taken down'+(d.TakedownDate?' on '+fD(d.TakedownDate):'')+'. Defence preserved as a permanent record.';return'Defence is being assembled. Review the evidence and approve when ready.';}
+function bldSum(ds,ev,u,s,d){if(ds==='alert'){const n=ev.filter(e=>e.severity==='warning'||e.severity==='alert').length;return n+' change'+(n!==1?'s':'')+' detected since approval. Review the timeline.';}if(ds==='live')return'Campaign is live. '+(u.length||s.length)+' connected URL'+(u.length!==1?'s':'')+' monitored daily. Regulatory enforcement checked against your claim types.';if(ds==='approved')return'Defence approved and evidence frozen. Mark as launched to start URL and enforcement monitoring.';if(ds==='archived')return'Campaign taken down'+(d.TakedownDate?' on '+fD(d.TakedownDate):'')+'. Defence preserved as a permanent record.';return'Defence is being assembled. Review the evidence and approve when ready.';}
 function fD(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch{return d;}}
 function fDT(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return d;}}
 
