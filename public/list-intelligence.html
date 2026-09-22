@@ -776,19 +776,22 @@ function renderResults(d){
       gateVerdict='Safe to send';
       gateSub='Your list is in good standing. '+fmt(d.activeCount||0)+' contacts are above the consent threshold with strong deliverability signals.';
     }
-    // Exposure estimate — uses consent_expired ICO range (under_1m band, general sector)
-    // Dashboard shows the precise figure with revenue band + sector multiplier
-    var _expLow=_liab>0?Math.max(5000,Math.round(_liab*4.5)):0;
-    var _expHigh=_liab>0?Math.max(10000,Math.round(_liab*9)):0;
-    // Cap at Saga precedent ceiling
-    _expHigh=Math.min(_expHigh,225000);
-    var expHtml=_liab>0
-      ?'<div class="presend-gate-exposure">'
+    // v10.1: Use backend exposure data
+    var exp=d.exposure||null;
+    var expHtml='';
+    if(exp&&exp.totalExposure>0){
+      expHtml='<div class="presend-gate-exposure">'
         +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Contacts to suppress</div><div class="presend-gate-exp-val" style="color:var(--r)">'+fmt(_liab)+'</div></div>'
-        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">ICO exposure range</div><div class="presend-gate-exp-val" style="color:var(--r)">\u00a3'+fmt(_expLow)+'\u2013\u00a3'+fmt(_expHigh)+'</div></div>'
+        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Estimated exposure</div><div class="presend-gate-exp-val" style="color:var(--r)">\u00a3'+fmt(Math.round(exp.totalExposure))+'</div></div>'
         +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Safe send pool</div><div class="presend-gate-exp-val" style="color:var(--g)">'+fmt(total-_liab)+'</div></div>'
         +'</div>'
-      :'';
+        +'<div style="font-size:10px;color:var(--mu);margin-top:8px">ICO \u00a3'+fmt(Math.round(exp.ico.estimatedExposure))+' \u00b7 ASA \u00a3'+fmt(Math.round(exp.asa.estimatedExposure))+' \u00b7 CMA \u00a3'+fmt(Math.round(exp.cma.estimatedExposure))+'</div>';
+    } else if(_liab>0){
+      expHtml='<div class="presend-gate-exposure">'
+        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Contacts to suppress</div><div class="presend-gate-exp-val" style="color:var(--r)">'+fmt(_liab)+'</div></div>'
+        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Safe send pool</div><div class="presend-gate-exp-val" style="color:var(--g)">'+fmt(total-_liab)+'</div></div>'
+        +'</div>';
+    }
     gateEl.innerHTML='<div class="presend-gate '+gateCls+'"><div class="presend-gate-icon">'+gateIcon+'</div><div class="presend-gate-body"><div class="presend-gate-verdict">'+gateVerdict+'</div><div class="presend-gate-sub">'+gateSub+'</div>'+expHtml+'</div></div>';
   }
 
@@ -824,6 +827,25 @@ function renderResults(d){
     '<div class="val-stat"><div class="val-stat-num">'+fmt(usableCount)+'</div><div class="val-stat-lbl">Legally usable</div></div>'+
     '<div class="val-stat"><div class="val-stat-num" style="color:'+(liabCount>0?'#ef4444':'#86efac')+'">'+fmt(liabCount)+'</div><div class="val-stat-lbl">ICO risk zone</div></div>'+
     '</div></div>';
+  // v10.1: Exposure and value row
+  if(exp){
+    var expChangeHtml='';
+    if(d.exposureChanges){
+      var ec=d.exposureChanges;
+      var ecColor=ec.direction==='increased'?'var(--r)':ec.direction==='decreased'?'var(--g)':'var(--mu)';
+      var ecArrow=ec.direction==='increased'?'\u25B2':ec.direction==='decreased'?'\u25BC':'';
+      expChangeHtml='<div style="font-size:12px;color:'+ecColor+';margin-top:6px">'+ecArrow+' '+escH(ec.summary)+'</div>';
+    }
+    var expRowHtml='<div style="background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:18px 22px;margin-bottom:16px;box-shadow:var(--sh)">'
+      +'<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">'
+      +'<div style="flex:1;min-width:140px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px">Estimated regulatory exposure</div><div style="font-size:28px;font-weight:800;font-family:DM Mono,monospace;color:var(--r)">\u00a3'+fmt(Math.round(exp.totalExposure))+'</div><div style="font-size:10px;color:var(--mu);margin-top:2px">ICO \u00a3'+fmt(Math.round(exp.ico.estimatedExposure))+' \u00b7 ASA \u00a3'+fmt(Math.round(exp.asa.estimatedExposure))+' \u00b7 CMA \u00a3'+fmt(Math.round(exp.cma.estimatedExposure))+'</div></div>'
+      +'<div style="flex:1;min-width:140px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px">Potentially recoverable value</div><div style="font-size:28px;font-weight:800;font-family:DM Mono,monospace;color:var(--o)">\u00a3'+fmt(Math.round(exp.recoverableValue))+'</div><div style="font-size:10px;color:var(--mu);margin-top:2px">Via re-consent campaigns (est. 30% success rate)</div></div>'
+      +'</div>'
+      +expChangeHtml
+      +'<div style="font-size:10px;color:var(--mu);margin-top:10px;font-style:italic">'+escH(exp.methodology||'')+'</div>'
+      +'</div>';
+    el('valHero').innerHTML+=expRowHtml;
+  }
   renderChangeAndCountdown(d);
   var icoStatus=d.icoStatus||'Good standing';
   var liabPct=pct(liabCount);
@@ -1002,9 +1024,12 @@ function renderChangeAndCountdown(d){
       '<div class="li-change-hdr"><div class="li-change-title">What changed</div><div class="li-change-since">'+escH(sinceTxt)+'</div></div>'+
       '<div class="li-delta-grid">'+
       deltaTile('List value',ch.valueDelta,true,true)+
+      deltaTile('Estimated exposure',ch.exposureDelta,false,true)+
       deltaTile('Liability contacts',ch.liabilityDelta,false,false)+
       deltaTile('Active contacts',ch.activeDelta,true,false)+
-      '</div></div>';
+      '</div>'
+      +(ch.exposureSummary?'<div style="font-size:12px;color:var(--tm);margin-top:10px;padding-top:10px;border-top:1px solid var(--b);line-height:1.5">'+escH(ch.exposureSummary)+'</div>':'')+
+      '</div>';
   }
   host.innerHTML=html;
 }
@@ -1029,8 +1054,18 @@ async function generateCert(){
     if(!json.success)throw new Error(json.error);
     var r=json.result.toLowerCase();
     var ce=el('certResult');ce.className='cert-result '+r;ce.style.display='block';
-    ce.innerHTML='<div class="cert-verdict">'+escH(json.result)+'</div>'+
+    var certStatus=json.certificateStatus||null;
+    var statusBadge='';
+    if(certStatus){
+      var sCls=certStatus.status==='Current'?'background:var(--gb);color:var(--g);border:1px solid var(--gc)':certStatus.status==='Expired'?'background:var(--rb);color:var(--r);border:1px solid var(--rc)':'background:var(--yb);color:var(--y);border:1px solid var(--yc)';
+      statusBadge='<span style="display:inline-flex;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;margin-left:8px;'+sCls+'">'+escH(certStatus.status)+'</span>';
+      if(certStatus.daysUntilExpiry>0&&certStatus.status==='Current'){
+        statusBadge+='<span style="font-size:10px;color:var(--mu);margin-left:6px">Expires in '+certStatus.daysUntilExpiry+' days</span>';
+      }
+    }
+    ce.innerHTML='<div class="cert-verdict">'+escH(json.result)+statusBadge+'</div>'+
       '<div class="cert-detail">'+certDescription(json.result,json)+'</div>'+
+      (certStatus&&certStatus.reason?'<div style="font-size:12px;color:var(--y);margin-top:6px">'+escH(certStatus.reason)+'</div>':'')+
       '<div class="cert-id">Certificate ID: '+escH(json.certificateId||'\u2014')+' \u00b7 List: '+escH(json.listName||currentListName||'\u2014')+' \u00b7 '+fmtDate(json.date)+'</div>';
     ce.scrollIntoView({behavior:'smooth',block:'nearest'});
     showToast('Clearance record saved to your dashboard','ok');
