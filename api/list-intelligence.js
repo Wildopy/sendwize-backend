@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-intelligence.js v1.7
+// SENDWIZE — list-intelligence.js v1.8
 //
 // POST /api/list-intelligence?action=upload       — CSV analysis
 // GET  /api/list-intelligence?action=load         — load latest or specific list
@@ -7,16 +7,17 @@
 // POST /api/list-intelligence?action=certificate  — pre-send clearance
 // POST /api/list-intelligence?action=detect       — column detection (AI + fallback)
 // POST /api/list-intelligence?action=draft-reconsent — AI re-consent email draft
+// GET  /api/list-intelligence?action=list-exposure — per-list exposure for dashboard
 //
-// v1.7 changes from v1.6:
-//   + draft-reconsent action: dedicated Claude endpoint for generating
-//     PECR-compliant re-permission emails. Sector-matched tone.
-//     Replaces the Copy Checker hack from the frontend.
+// v1.8 changes from v1.7:
+//   + Exposure calculation per regulator (ICO/ASA/CMA) on every upload
+//   + Certificate lifecycle: ExpiresAt, Status (Current/Review Required/Expired)
+//   + list-exposure action for dashboard aggregation
+//   + Exposure comparison between uploads (£ delta + summary sentence)
+//   + snapshotList stores exposure data
+//   + buildListComparison includes exposure delta
 //
-// v1.6 changes preserved: AI column mapper, deterministic fallback,
-//   narrative generation.
-// v1.5 changes preserved: listName persistence, per-list snapshots,
-//   per-list fix sourceRecordId, lists action, legacy tolerance.
+// v1.7 preserved: draft-reconsent, AI column mapper, narrative, per-list fixes
 // ─────────────────────────────────────────────────────────────
 
 import crypto from 'crypto';
@@ -91,6 +92,35 @@ async function atPatch(table, id, fields) {
 function hashEmail(email) {
   return crypto.createHash('sha256').update((email || '').toLowerCase().trim()).digest('hex');
 }
+
+// ─────────────────────────────────────────────────────────────
+// EXPOSURE CONSTANTS — v1.8
+// Anchored to published enforcement cases
+// ─────────────────────────────────────────────────────────────
+
+const EXPOSURE_ANCHORS = {
+  ico: {
+    perContactLiability: 0.28,   // HelloFresh £140k / ~500k contacts
+    perContactAtRisk:    0.14,   // 50% — approaching but not yet below threshold
+    label: 'ICO (PECR)',
+    basis: 'Anchored to HelloFresh £140,000 (2024), scaled by contact volume',
+  },
+  asa: {
+    roleBasedPerContact: 0.05,
+    disposablePerContact: 0.02,
+    label: 'ASA (CAP Code)',
+    basis: 'Reputational exposure — ASA publishes rulings naming the brand',
+  },
+  cma: {
+    dataQualityPerContact: 0.10,
+    label: 'CMA (DMCCA 2024)',
+    basis: 'Anchored to DMCCA 2024 enforcement range (£300k–10% turnover)',
+  },
+};
+
+const DEFAULT_REVENUE_PER_CONTACT = 0.50;
+const DEFAULT_RECONSENT_SUCCESS_RATE = 0.30;
+const CERT_EXPIRY_DAYS = 90;
 
 // ─────────────────────────────────────────────────────────────
 // AI COLUMN MAPPER — v1.6 (unchanged)
@@ -353,8 +383,70 @@ function generateOpportunities(analysis) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// EXPOSURE CALCULATION — v1.8
+// ─────────────────────────────────────────────────────────────
+
+function calculateListExposure(analysis) {
+  const { totalContacts, activeCount, recoverableCount, atRiskCount, liabilityCount, asaNote, cmaNote, scored } = analysis;
+
+  // ICO
+  const icoExposure = {
+    liabilityContacts: liabilityCount,
+    atRiskContacts: atRiskCount,
+    expiring30: analysis.expiring30, expiring60: analysis.expiring60, expiring90: analysis.expiring90,
+    estimatedExposure: parseFloat((liabilityCount * EXPOSURE_ANCHORS.ico.perContactLiability + atRiskCount * EXPOSURE_ANCHORS.ico.perContactAtRisk).toFixed(2)),
+    label: EXPOSURE_ANCHORS.ico.label, basis: EXPOSURE_ANCHORS.ico.basis,
+  };
+
+  // ASA
+  const roleBasedCount = (scored || []).filter(c => c.primaryRisk === 'role_based').length;
+  const disposableCount = (scored || []).filter(c => c.primaryRisk === 'disposable_domain').length;
+  const asaExposure = {
+    roleBasedContacts: roleBasedCount, disposableContacts: disposableCount,
+    estimatedExposure: parseFloat((roleBasedCount * EXPOSURE_ANCHORS.asa.roleBasedPerContact + disposableCount * EXPOSURE_ANCHORS.asa.disposablePerContact).toFixed(2)),
+    label: EXPOSURE_ANCHORS.asa.label, basis: EXPOSURE_ANCHORS.asa.basis, signals: asaNote || null,
+  };
+
+  // CMA
+  const spamTrapCount = (scored || []).filter(c => c.primaryRisk === 'spam_trap_indicator').length;
+  const typoCount = (scored || []).filter(c => c.primaryRisk === 'typo_domain').length;
+  const cmaContactCount = spamTrapCount + typoCount;
+  const cmaExposure = {
+    affectedContacts: cmaContactCount,
+    estimatedExposure: parseFloat((cmaContactCount * EXPOSURE_ANCHORS.cma.dataQualityPerContact).toFixed(2)),
+    label: EXPOSURE_ANCHORS.cma.label, basis: EXPOSURE_ANCHORS.cma.basis, signals: cmaNote || null,
+  };
+
+  const estimatedValue = parseFloat(((activeCount + recoverableCount) * DEFAULT_REVENUE_PER_CONTACT).toFixed(2));
+  const recoverableValue = parseFloat((recoverableCount * DEFAULT_REVENUE_PER_CONTACT * DEFAULT_RECONSENT_SUCCESS_RATE).toFixed(2));
+  const totalExposure = parseFloat((icoExposure.estimatedExposure + asaExposure.estimatedExposure + cmaExposure.estimatedExposure).toFixed(2));
+
+  return { totalExposure, estimatedValue, recoverableValue, ico: icoExposure, asa: asaExposure, cma: cmaExposure, methodology: 'Indicative estimates based on published UK enforcement benchmarks. Not a prediction of regulatory outcome.' };
+}
+
+function buildExposureComparison(currentExposure, previousExposure) {
+  if (!previousExposure) return null;
+  const totalDelta = parseFloat((currentExposure.totalExposure - (previousExposure.totalExposure || 0)).toFixed(2));
+  const valueDelta = parseFloat((currentExposure.estimatedValue - (previousExposure.estimatedValue || 0)).toFixed(2));
+  const direction = totalDelta > 5 ? 'increased' : totalDelta < -5 ? 'decreased' : 'stable';
+  const parts = [];
+  if (direction === 'increased') {
+    parts.push(`Estimated exposure increased £${Math.abs(totalDelta).toFixed(0)}`);
+    const newLiability = currentExposure.ico.liabilityContacts - (previousExposure.ico?.liabilityContacts || 0);
+    if (newLiability > 0) parts.push(`${newLiability} additional contact${newLiability !== 1 ? 's' : ''} crossed the consent threshold`);
+  } else if (direction === 'decreased') {
+    parts.push(`Estimated exposure decreased £${Math.abs(totalDelta).toFixed(0)}`);
+  } else {
+    parts.push('Exposure broadly unchanged');
+  }
+  if (valueDelta < -10) parts.push(`Estimated commercial value decreased £${Math.abs(valueDelta).toFixed(0)}`);
+  else if (valueDelta > 10) parts.push(`Estimated commercial value increased £${valueDelta.toFixed(0)}`);
+  return { direction, totalDelta, valueDelta, summary: parts.join('. ') + '.' };
+}
+
+// ─────────────────────────────────────────────────────────────
 // FIX EMISSION + SNAPSHOTS + COMPARISON + LISTS SUMMARY
-// All unchanged from v1.6
+// v1.8: snapshotList and buildListComparison updated
 // ─────────────────────────────────────────────────────────────
 function liabilitySourceId(listName) { return `li-liability:${slugify(listName)}`; }
 function commercialLossSourceId(listName) { return `li-commercial:${slugify(listName)}`; }
@@ -380,18 +472,42 @@ async function emitLIFix(userId, listName, spec) {
   try { const body = { userId, fixType: spec.fixType, description: spec.description, tool: 'List Intelligence', severity: spec.severity, sourceRecordId: spec.sourceRecordId }; if (spec.contactVolume != null) body.contactVolume = spec.contactVolume; if (spec.exposureLow != null) body.exposureLow = spec.exposureLow; if (spec.exposureHigh != null) body.exposureHigh = spec.exposureHigh; await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); } catch (e) { console.error(`emitLIFix create ${spec.fixType} non-fatal:`, e); }
 }
 
-async function snapshotList(userId, listName, analysis) {
-  await atCreate('List_Intelligence_Snapshots', { UserID: userId, ListName: listName, SnapshotDate: new Date().toISOString().slice(0, 10), SnapshotTimestamp: new Date().toISOString(), TotalContacts: analysis.totalContacts, ActiveCount: analysis.activeCount, RecoverableCount: analysis.recoverableCount, AtRiskCount: analysis.atRiskCount, LiabilityCount: analysis.liabilityCount, LiabilityPct: analysis.liabilityPct, AssetValue: analysis.assetValue, Expiring30: analysis.expiring30, Expiring60: analysis.expiring60, Expiring90: analysis.expiring90 });
+// v1.8: accepts optional exposure parameter
+async function snapshotList(userId, listName, analysis, exposure) {
+  await atCreate('List_Intelligence_Snapshots', {
+    UserID: userId, ListName: listName,
+    SnapshotDate: new Date().toISOString().slice(0, 10),
+    SnapshotTimestamp: new Date().toISOString(),
+    TotalContacts: analysis.totalContacts, ActiveCount: analysis.activeCount,
+    RecoverableCount: analysis.recoverableCount, AtRiskCount: analysis.atRiskCount,
+    LiabilityCount: analysis.liabilityCount, LiabilityPct: analysis.liabilityPct,
+    AssetValue: analysis.assetValue,
+    Expiring30: analysis.expiring30, Expiring60: analysis.expiring60, Expiring90: analysis.expiring90,
+    // v1.8 fields
+    EstimatedExposure: exposure?.totalExposure || null,
+    ExposureJson: exposure ? JSON.stringify(exposure) : null,
+  });
 }
 
 async function getListSnapshots(userId, listName, max = 12) {
   const formula = `AND({UserID}='${userId}',${listNameFormulaFragment(listName)})`;
   const records = await atGet('List_Intelligence_Snapshots', formula, 'sort[0][field]=SnapshotTimestamp&sort[0][direction]=desc', max);
-  return records.map(r => ({ date: r.fields.SnapshotDate, timestamp: r.fields.SnapshotTimestamp || r.fields.SnapshotDate, totalContacts: r.fields.TotalContacts || 0, activeCount: r.fields.ActiveCount || 0, recoverableCount: r.fields.RecoverableCount || 0, atRiskCount: r.fields.AtRiskCount || 0, liabilityCount: r.fields.LiabilityCount || 0, liabilityPct: r.fields.LiabilityPct != null ? r.fields.LiabilityPct : 0, assetValue: r.fields.AssetValue != null ? r.fields.AssetValue : 0, expiring30: r.fields.Expiring30 || 0, expiring60: r.fields.Expiring60 || 0, expiring90: r.fields.Expiring90 || 0 }));
+  return records.map(r => ({
+    date: r.fields.SnapshotDate, timestamp: r.fields.SnapshotTimestamp || r.fields.SnapshotDate,
+    totalContacts: r.fields.TotalContacts || 0, activeCount: r.fields.ActiveCount || 0,
+    recoverableCount: r.fields.RecoverableCount || 0, atRiskCount: r.fields.AtRiskCount || 0,
+    liabilityCount: r.fields.LiabilityCount || 0, liabilityPct: r.fields.LiabilityPct != null ? r.fields.LiabilityPct : 0,
+    assetValue: r.fields.AssetValue != null ? r.fields.AssetValue : 0,
+    expiring30: r.fields.Expiring30 || 0, expiring60: r.fields.Expiring60 || 0, expiring90: r.fields.Expiring90 || 0,
+    // v1.8
+    estimatedExposure: r.fields.EstimatedExposure || null,
+    _exposureJson: r.fields.ExposureJson || null,
+  }));
 }
 
 function daysBetween(aIso, bIso) { if (!aIso || !bIso) return null; const a = new Date(aIso), b = new Date(bIso); if (isNaN(a) || isNaN(b)) return null; return Math.abs(Math.round((a - b) / 86400000)); }
 
+// v1.8: includes exposureDelta and exposureSummary
 function buildListComparison(cur, prev) {
   if (!prev) return null;
   const valueDelta = parseFloat((cur.assetValue - prev.assetValue).toFixed(2));
@@ -403,7 +519,26 @@ function buildListComparison(cur, prev) {
   if (valueDelta > 0 || liabilityDelta < 0 || activeDelta > 0) direction = 'improved';
   if (liabilityDelta > 0 || valueDelta < 0) direction = liabilityDelta > Math.abs(activeDelta) ? 'worsened' : direction;
   if (valueDelta < 0 && liabilityDelta > 0) direction = 'worsened';
-  return { direction, daysSincePrevious: daysBetween(new Date().toISOString(), prev.timestamp), valueDelta, liabilityDelta, activeDelta, totalDelta, expiring30Delta, previous: { assetValue: prev.assetValue, liabilityCount: prev.liabilityCount, activeCount: prev.activeCount, totalContacts: prev.totalContacts, expiring30: prev.expiring30, date: prev.date } };
+
+  // v1.8: exposure delta
+  const curExposure = cur.estimatedExposure || 0;
+  const prevExposure = prev.estimatedExposure || 0;
+  const exposureDelta = parseFloat((curExposure - prevExposure).toFixed(2));
+
+  // Build summary sentence
+  const parts = [];
+  if (liabilityDelta > 0) parts.push(`${liabilityDelta} more contact${liabilityDelta !== 1 ? 's' : ''} crossed the consent threshold`);
+  if (liabilityDelta < 0) parts.push(`${Math.abs(liabilityDelta)} contact${Math.abs(liabilityDelta) !== 1 ? 's' : ''} moved back above the consent threshold`);
+  if (exposureDelta > 5) parts.push(`Estimated exposure increased £${Math.abs(exposureDelta).toFixed(0)}`);
+  if (exposureDelta < -5) parts.push(`Estimated exposure decreased £${Math.abs(exposureDelta).toFixed(0)}`);
+  const exposureSummary = parts.length ? parts.join('. ') + '.' : null;
+
+  return {
+    direction, daysSincePrevious: daysBetween(new Date().toISOString(), prev.timestamp),
+    valueDelta, liabilityDelta, activeDelta, totalDelta, expiring30Delta,
+    exposureDelta, exposureSummary,
+    previous: { assetValue: prev.assetValue, liabilityCount: prev.liabilityCount, activeCount: prev.activeCount, totalContacts: prev.totalContacts, expiring30: prev.expiring30, date: prev.date, estimatedExposure: prevExposure }
+  };
 }
 
 async function getListsSummary(userId) {
@@ -411,7 +546,7 @@ async function getListsSummary(userId) {
   const byList = new Map();
   for (const r of records) { const rawName = r.fields.ListName; const listName = rawName && String(rawName).trim() ? String(rawName).trim() : LEGACY_LIST_NAME; if (byList.has(listName)) continue; byList.set(listName, r.fields); }
   const now = new Date().toISOString().slice(0, 10); const out = [];
-  for (const [listName, f] of byList.entries()) { const days = daysBetween(now, f.CheckDate); const liability = f.LiabilityCount || 0; const stale = days != null && days >= 14; out.push({ listName, checkDate: f.CheckDate, daysSinceLastCheck: days, totalContacts: f.TotalContacts || 0, assetValue: f.AssetValue || 0, liabilityCount: liability, icoStatus: f.ICOStatus || 'Good standing', sector: f.Sector || null, needsAttention: liability > 0 || stale, needsAttentionReasons: [...(liability > 0 ? [`${liability} contact${liability !== 1 ? 's' : ''} below consent threshold`] : []), ...(stale ? [`No check in ${days} days`] : [])] }); }
+  for (const [listName, f] of byList.entries()) { const days = daysBetween(now, f.CheckDate); const liability = f.LiabilityCount || 0; const stale = days != null && days >= 14; out.push({ listName, checkDate: f.CheckDate, daysSinceLastCheck: days, totalContacts: f.TotalContacts || 0, assetValue: f.AssetValue || 0, liabilityCount: liability, icoStatus: f.ICOStatus || 'Good standing', sector: f.Sector || null, estimatedExposure: f.EstimatedExposure || null, needsAttention: liability > 0 || stale, needsAttentionReasons: [...(liability > 0 ? [`${liability} contact${liability !== 1 ? 's' : ''} below consent threshold`] : []), ...(stale ? [`No check in ${days} days`] : [])] }); }
   out.sort((a, b) => { if (a.needsAttention !== b.needsAttention) return a.needsAttention ? -1 : 1; return (b.checkDate || '').localeCompare(a.checkDate || ''); });
   return out;
 }
@@ -431,7 +566,7 @@ async function generateListNarrative(listName, analysis, changes) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MAIN HANDLER — v1.7
+// MAIN HANDLER — v1.8
 // ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -449,26 +584,16 @@ export default async function handler(req, res) {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
       const { headers, sampleRows } = req.body;
       if (!headers || !Array.isArray(headers)) return res.status(400).json({ error: 'headers required' });
-
-      let mapping = null;
-      let method  = 'deterministic';
-
+      let mapping = null; let method = 'deterministic';
       if (process.env.ANTHROPIC_API_KEY) {
         const aiResult = await aiMapListColumns(headers, sampleRows || []);
         if (aiResult && aiResult.columns && Array.isArray(aiResult.columns)) {
           mapping = {};
-          for (const col of aiResult.columns) {
-            if (col.header && col.target) mapping[col.header] = col.target;
-          }
+          for (const col of aiResult.columns) { if (col.header && col.target) mapping[col.header] = col.target; }
           method = 'ai';
         }
       }
-
-      if (!mapping) {
-        mapping = detectListColumns(headers, sampleRows || []);
-        method  = 'deterministic';
-      }
-
+      if (!mapping) { mapping = detectListColumns(headers, sampleRows || []); method = 'deterministic'; }
       return res.json({ success: true, mapping, method });
     }
 
@@ -484,58 +609,63 @@ export default async function handler(req, res) {
       if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
       const listName = normaliseListName(req.query.listName || LEGACY_LIST_NAME);
       const formula  = `AND({UserID}='${userId}',${listNameFormulaFragment(listName)})`;
-      const records  = await atGet(
-        'List_Intelligence_Checks', formula,
-        'sort[0][field]=CheckDate&sort[0][direction]=desc', 1
-      );
+      const records  = await atGet('List_Intelligence_Checks', formula, 'sort[0][field]=CheckDate&sort[0][direction]=desc', 1);
       if (!records.length) return res.json({ success: true, found: false, listName });
-
       const r = records[0];
       let results = null;
       try { results = r.fields.Results ? JSON.parse(r.fields.Results) : null; } catch(e) {}
-
       const snapshots = await getListSnapshots(userId, listName, 12);
       const changes   = snapshots.length >= 2 ? buildListComparison(snapshots[0], snapshots[1]) : null;
 
-      return res.json({
-        success:  true,
-        found:    true,
-        listName,
-        checkDate: r.fields.CheckDate,
-        sector:    r.fields.Sector || null,
-        results,
-        snapshots,
-        changes,
-      });
+      // v1.8: parse stored exposure
+      let exposure = null;
+      try { exposure = r.fields.ExposureJson ? JSON.parse(r.fields.ExposureJson) : null; } catch(e) {}
+
+      // v1.8: certificate status
+      let certificateStatus = null;
+      try {
+        const certRecords = await atGet('List_Intelligence_Certificates', `AND({UserID}='${userId}',{ListName}='${listName.replace(/'/g, "\\'")}')`, 'sort[0][field]=IssuedDate&sort[0][direction]=desc', 1);
+        if (certRecords.length) {
+          const cert = certRecords[0].fields;
+          const daysSinceIssue = Math.round((new Date() - new Date(cert.IssuedDate)) / 86400000);
+          if (daysSinceIssue >= CERT_EXPIRY_DAYS) {
+            certificateStatus = { status: 'Expired', reason: `Certificate issued ${daysSinceIssue} days ago. Upload a current list to reassess.`, daysSinceIssue, daysUntilExpiry: 0 };
+          } else if (exposure && cert.ExposureAtIssue != null && (exposure.totalExposure - cert.ExposureAtIssue) >= 50) {
+            certificateStatus = { status: 'Review Required', reason: `Estimated exposure increased £${Math.round(exposure.totalExposure - cert.ExposureAtIssue)} since certificate was issued.`, daysSinceIssue, daysUntilExpiry: CERT_EXPIRY_DAYS - daysSinceIssue };
+          } else {
+            certificateStatus = { status: 'Current', reason: null, daysSinceIssue, daysUntilExpiry: CERT_EXPIRY_DAYS - daysSinceIssue };
+          }
+          certificateStatus.certificateId = cert.CertificateID;
+          certificateStatus.issuedDate = cert.IssuedDate;
+        }
+      } catch (e) { console.error('Cert status check non-fatal:', e); }
+
+      return res.json({ success: true, found: true, listName, checkDate: r.fields.CheckDate, sector: r.fields.Sector || null, results, snapshots, changes, exposure, certificateStatus });
     }
 
     // ── CERTIFICATE — pre-send compliance clearance ─────────
     if (action === 'certificate') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-      const { listName: rawListName, totalContacts, activeCount, liabilityCount, assetValue, icoStatus, sector } = req.body;
+      const { listName: rawListName, totalContacts, activeCount, liabilityCount, assetValue, icoStatus, sector, totalExposure } = req.body;
       const listName = normaliseListName(rawListName);
       const certId   = `CERT-${slugify(listName)}-${Date.now().toString(36).toUpperCase()}`;
       const now      = new Date().toISOString();
 
       await atCreate('List_Intelligence_Certificates', {
-        UserID:        userId,
-        CertificateID: certId,
-        ListName:      listName,
-        IssuedDate:    now,
-        TotalContacts: totalContacts || 0,
-        ActiveCount:   activeCount   || 0,
-        LiabilityCount: liabilityCount || 0,
-        AssetValue:    assetValue     || 0,
-        ICOStatus:     icoStatus      || 'Good standing',
-        Sector:        sector         || null,
+        UserID: userId, CertificateID: certId, ListName: listName, IssuedDate: now,
+        TotalContacts: totalContacts || 0, ActiveCount: activeCount || 0,
+        LiabilityCount: liabilityCount || 0, AssetValue: assetValue || 0,
+        ICOStatus: icoStatus || 'Good standing', Sector: sector || null,
+        // v1.8: lifecycle fields
+        ExpiresAt: new Date(Date.now() + CERT_EXPIRY_DAYS * 86400000).toISOString().slice(0, 10),
+        Status: 'Current',
+        ExposureAtIssue: totalExposure || 0,
       });
 
       return res.json({
-        success:       true,
-        certificateId: certId,
-        issuedDate:    now,
-        listName,
-        message:       'Pre-send compliance clearance issued.',
+        success: true, certificateId: certId, issuedDate: now, listName,
+        message: 'Pre-send compliance clearance issued.',
+        certificateStatus: { status: 'Current', daysUntilExpiry: CERT_EXPIRY_DAYS, daysSinceIssue: 0, reason: null },
       });
     }
 
@@ -546,11 +676,8 @@ export default async function handler(req, res) {
       if (!contacts || !Array.isArray(contacts) || contacts.length === 0) {
         return res.status(400).json({ error: 'contacts array is required' });
       }
-
       const listName = normaliseListName(rawListName);
       const mapping  = columnMapping || {};
-
-      // Map raw rows to normalised contacts
       const mapped = contacts.map((row, idx) => {
         const contact = { originalIndex: idx };
         for (const [header, target] of Object.entries(mapping)) {
@@ -570,200 +697,156 @@ export default async function handler(req, res) {
         }
         return contact;
       }).filter(c => c.email);
-
-      if (mapped.length === 0) {
-        return res.status(400).json({ error: 'No valid email addresses found after column mapping.' });
-      }
+      if (mapped.length === 0) return res.status(400).json({ error: 'No valid email addresses found after column mapping.' });
 
       const analysis = analyseList(mapped, sector || 'other', aov || 50);
       const opportunities = generateOpportunities(analysis);
 
+      // v1.8: exposure calculation
+      const exposure = calculateListExposure(analysis);
+
       // Snapshots + comparison
       const snapshots = await getListSnapshots(userId, listName, 12);
-      const changes   = snapshots.length > 0
-        ? buildListComparison(analysis, snapshots[0])
-        : null;
+      const changes = snapshots.length > 0 ? buildListComparison({ ...analysis, estimatedExposure: exposure.totalExposure }, snapshots[0]) : null;
 
-      await snapshotList(userId, listName, analysis);
+      // v1.8: exposure comparison (richer than list comparison)
+      let previousExposure = null;
+      if (snapshots.length > 0 && snapshots[0]._exposureJson) {
+        try { previousExposure = JSON.parse(snapshots[0]._exposureJson); } catch(e) {}
+      }
+      const exposureChanges = previousExposure ? buildExposureComparison(exposure, previousExposure) : null;
 
-      // Narrative
+      await snapshotList(userId, listName, analysis, exposure);
+
       const narrative = await generateListNarrative(listName, analysis, changes);
 
-      // Persist check record
       const checkFields = {
-        UserID:         userId,
-        ListName:       listName,
-        CheckDate:      new Date().toISOString().split('T')[0],
-        TotalContacts:  analysis.totalContacts,
-        ActiveCount:    analysis.activeCount,
-        RecoverableCount: analysis.recoverableCount,
-        AtRiskCount:    analysis.atRiskCount,
-        LiabilityCount: analysis.liabilityCount,
-        LiabilityPct:   analysis.liabilityPct,
-        AssetValue:     analysis.assetValue,
-        ICOStatus:      analysis.icoStatus,
-        Sector:         sector || null,
-        Expiring30:     analysis.expiring30,
-        Expiring60:     analysis.expiring60,
-        Expiring90:     analysis.expiring90,
-        Results:        JSON.stringify({
-          totalContacts:   analysis.totalContacts,
-          activeCount:     analysis.activeCount,
-          recoverableCount: analysis.recoverableCount,
-          atRiskCount:     analysis.atRiskCount,
-          liabilityCount:  analysis.liabilityCount,
-          liabilityPct:    analysis.liabilityPct,
-          assetValue:      analysis.assetValue,
-          icoStatus:       analysis.icoStatus,
-          asaNote:         analysis.asaNote,
-          cmaNote:         analysis.cmaNote,
-          dataQualityFlags: analysis.dataQualityFlags,
-          expiring30:      analysis.expiring30,
-          expiring60:      analysis.expiring60,
-          expiring90:      analysis.expiring90,
-          valueExpiring90: analysis.valueExpiring90,
-          opportunities,
-          narrative,
-          sector:          sector || null,
-          activeIndices:       analysis.activeIndices,
-          recoverableIndices:  analysis.recoverableIndices,
-          atRiskIndices:       analysis.atRiskIndices,
-          liabilityIndices:    analysis.liabilityIndices,
+        UserID: userId, ListName: listName, CheckDate: new Date().toISOString().split('T')[0],
+        TotalContacts: analysis.totalContacts, ActiveCount: analysis.activeCount,
+        RecoverableCount: analysis.recoverableCount, AtRiskCount: analysis.atRiskCount,
+        LiabilityCount: analysis.liabilityCount, LiabilityPct: analysis.liabilityPct,
+        AssetValue: analysis.assetValue, ICOStatus: analysis.icoStatus, Sector: sector || null,
+        Expiring30: analysis.expiring30, Expiring60: analysis.expiring60, Expiring90: analysis.expiring90,
+        // v1.8
+        EstimatedExposure: exposure.totalExposure,
+        EstimatedValue: exposure.estimatedValue,
+        RecoverableValue: exposure.recoverableValue,
+        ExposureJson: JSON.stringify(exposure),
+        Results: JSON.stringify({
+          totalContacts: analysis.totalContacts, activeCount: analysis.activeCount,
+          recoverableCount: analysis.recoverableCount, atRiskCount: analysis.atRiskCount,
+          liabilityCount: analysis.liabilityCount, liabilityPct: analysis.liabilityPct,
+          assetValue: analysis.assetValue, icoStatus: analysis.icoStatus, asaNote: analysis.asaNote,
+          cmaNote: analysis.cmaNote, dataQualityFlags: analysis.dataQualityFlags,
+          expiring30: analysis.expiring30, expiring60: analysis.expiring60, expiring90: analysis.expiring90,
+          valueExpiring90: analysis.valueExpiring90, opportunities, narrative, sector: sector || null,
+          activeIndices: analysis.activeIndices, recoverableIndices: analysis.recoverableIndices,
+          atRiskIndices: analysis.atRiskIndices, liabilityIndices: analysis.liabilityIndices,
         }),
       };
       await atCreate('List_Intelligence_Checks', checkFields);
 
-      // Emit fixes
+      // Emit fixes (unchanged)
       const liabSrc = liabilitySourceId(listName);
       const comSrc  = commercialLossSourceId(listName);
+      await emitLIFix(userId, listName, { fixType: 'consent_expired', sourceRecordId: liabSrc, presentNow: analysis.liabilityCount > 0, description: `${analysis.liabilityCount.toLocaleString()} contacts in "${listName}" are below the consent threshold. Suppress these before sending.`, severity: analysis.liabilityPct > 0.2 ? 'High' : analysis.liabilityPct > 0.05 ? 'Medium' : 'Low', contactVolume: analysis.liabilityCount, resolvedSummary: `Liability contacts resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).` });
+      const commercialLoss = analysis.liabilityCount > 0 ? parseFloat((analysis.liability.reduce((s, c) => s + c.commercialValue, 0)).toFixed(2)) : 0;
+      await emitLIFix(userId, listName, { fixType: 'commercial_loss', sourceRecordId: comSrc, presentNow: commercialLoss > 50, description: `Estimated £${commercialLoss.toLocaleString()} in commercial value at risk from liability contacts in "${listName}".`, severity: commercialLoss > 500 ? 'High' : commercialLoss > 100 ? 'Medium' : 'Low', exposureLow: Math.round(commercialLoss * 0.5), exposureHigh: Math.round(commercialLoss * 1.5), resolvedSummary: `Commercial loss resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).` });
 
-      await emitLIFix(userId, listName, {
-        fixType:        'consent_expired',
-        sourceRecordId: liabSrc,
-        presentNow:     analysis.liabilityCount > 0,
-        description:    `${analysis.liabilityCount.toLocaleString()} contacts in "${listName}" are below the consent threshold. Suppress these before sending.`,
-        severity:       analysis.liabilityPct > 0.2 ? 'High' : analysis.liabilityPct > 0.05 ? 'Medium' : 'Low',
-        contactVolume:  analysis.liabilityCount,
-        resolvedSummary: `Liability contacts resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).`,
+      return res.json({
+        success: true, listName, totalContacts: analysis.totalContacts, duplicatesRemoved: analysis.duplicatesRemoved,
+        activeCount: analysis.activeCount, recoverableCount: analysis.recoverableCount,
+        atRiskCount: analysis.atRiskCount, liabilityCount: analysis.liabilityCount, liabilityPct: analysis.liabilityPct,
+        assetValue: analysis.assetValue, icoStatus: analysis.icoStatus, asaNote: analysis.asaNote, cmaNote: analysis.cmaNote,
+        dataQualityFlags: analysis.dataQualityFlags, expiring30: analysis.expiring30, expiring60: analysis.expiring60,
+        expiring90: analysis.expiring90, valueExpiring90: analysis.valueExpiring90, opportunities, narrative, sector: sector || null,
+        changes, snapshots: await getListSnapshots(userId, listName, 12),
+        activeIndices: analysis.activeIndices, recoverableIndices: analysis.recoverableIndices,
+        atRiskIndices: analysis.atRiskIndices, liabilityIndices: analysis.liabilityIndices,
+        // v1.8
+        exposure, exposureChanges,
       });
+    }
 
-      const commercialLoss = analysis.liabilityCount > 0
-        ? parseFloat((analysis.liability.reduce((s, c) => s + c.commercialValue, 0)).toFixed(2))
-        : 0;
-      await emitLIFix(userId, listName, {
-        fixType:        'commercial_loss',
-        sourceRecordId: comSrc,
-        presentNow:     commercialLoss > 50,
-        description:    `Estimated £${commercialLoss.toLocaleString()} in commercial value at risk from liability contacts in "${listName}".`,
-        severity:       commercialLoss > 500 ? 'High' : commercialLoss > 100 ? 'Medium' : 'Low',
-        exposureLow:    Math.round(commercialLoss * 0.5),
-        exposureHigh:   Math.round(commercialLoss * 1.5),
-        resolvedSummary: `Commercial loss resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).`,
-      });
+    // ── LIST-EXPOSURE — v1.8: dashboard aggregation ─────────
+    if (action === 'list-exposure') {
+      if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
+      const lists = await getListsSummary(userId);
+      const exposureByList = [];
+      let totalExposure = 0, totalValue = 0, totalRecoverable = 0;
+
+      for (const list of lists) {
+        const snaps = await getListSnapshots(userId, list.listName, 1);
+        const snap = snaps[0];
+        let listExposure = null;
+
+        if (snap && snap._exposureJson) {
+          try { listExposure = JSON.parse(snap._exposureJson); } catch (e) {}
+        }
+
+        // Fallback: estimate from summary data
+        if (!listExposure) {
+          const liab = list.liabilityCount || 0;
+          const total = list.totalContacts || 0;
+          listExposure = {
+            totalExposure: parseFloat((liab * EXPOSURE_ANCHORS.ico.perContactLiability).toFixed(2)),
+            estimatedValue: parseFloat(((total - liab) * DEFAULT_REVENUE_PER_CONTACT).toFixed(2)),
+            recoverableValue: 0,
+            ico: { estimatedExposure: parseFloat((liab * EXPOSURE_ANCHORS.ico.perContactLiability).toFixed(2)), liabilityContacts: liab },
+          };
+        }
+
+        exposureByList.push({
+          listName: list.listName, lastCheckDate: list.checkDate, daysSinceLastCheck: list.daysSinceLastCheck,
+          totalContacts: list.totalContacts, liabilityContacts: listExposure.ico?.liabilityContacts || list.liabilityCount || 0,
+          totalExposure: listExposure.totalExposure || 0, estimatedValue: listExposure.estimatedValue || 0,
+          recoverableValue: listExposure.recoverableValue || 0, state: list.icoStatus, needsAttention: list.needsAttention,
+        });
+        totalExposure += listExposure.totalExposure || 0;
+        totalValue += listExposure.estimatedValue || 0;
+        totalRecoverable += listExposure.recoverableValue || 0;
+      }
 
       return res.json({
         success: true,
-        listName,
-        totalContacts:    analysis.totalContacts,
-        duplicatesRemoved: analysis.duplicatesRemoved,
-        activeCount:      analysis.activeCount,
-        recoverableCount: analysis.recoverableCount,
-        atRiskCount:      analysis.atRiskCount,
-        liabilityCount:   analysis.liabilityCount,
-        liabilityPct:     analysis.liabilityPct,
-        assetValue:       analysis.assetValue,
-        icoStatus:        analysis.icoStatus,
-        asaNote:          analysis.asaNote,
-        cmaNote:          analysis.cmaNote,
-        dataQualityFlags: analysis.dataQualityFlags,
-        expiring30:       analysis.expiring30,
-        expiring60:       analysis.expiring60,
-        expiring90:       analysis.expiring90,
-        valueExpiring90:  analysis.valueExpiring90,
-        opportunities,
-        narrative,
-        sector:           sector || null,
-        changes,
-        snapshots:        await getListSnapshots(userId, listName, 12),
-        activeIndices:       analysis.activeIndices,
-        recoverableIndices:  analysis.recoverableIndices,
-        atRiskIndices:       analysis.atRiskIndices,
-        liabilityIndices:    analysis.liabilityIndices,
+        totalExposure: parseFloat(totalExposure.toFixed(2)),
+        estimatedValue: parseFloat(totalValue.toFixed(2)),
+        recoverableValue: parseFloat(totalRecoverable.toFixed(2)),
+        lists: exposureByList,
       });
     }
 
     // ── DRAFT RE-CONSENT EMAIL — v1.7 ───────────────────────
     if (action === 'draft-reconsent') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-
       const { listName, sector, recoverableCount, totalContacts } = req.body;
       const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
       if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'AI not configured' });
-
-      const sectorLabels = {
-        ecommerce: 'an ecommerce / retail brand',
-        finance: 'a financial services company',
-        healthcare: 'a health and wellness brand',
-        agency: 'a B2B services company',
-        other: 'a UK business',
-      };
+      const sectorLabels = { ecommerce: 'an ecommerce / retail brand', finance: 'a financial services company', healthcare: 'a health and wellness brand', agency: 'a B2B services company', other: 'a UK business' };
       const sectorDesc = sectorLabels[sector] || sectorLabels.other;
-
       const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: {
-          'x-api-key': ANTHROPIC_KEY,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-        },
+        headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 600,
-          system: `You write re-consent / re-permission emails for UK email marketers. The email must:
-- Be PECR compliant — the recipient must be able to clearly opt in or opt out
-- Not use fake urgency, countdown timers, or misleading claims (DMCCA 2024)
-- Not use guilt, pressure, or dark patterns
-- Be honest about why they are receiving the email
-- Include a clear "Yes, keep me subscribed" call to action
-- Include a clear unsubscribe option
-- Be under 120 words in the body
-- Match the tone of ${sectorDesc}
-- Not include HTML tags — plain text only
-
-Return ONLY a JSON object with two fields, no markdown:
-{"subject":"...","body":"..."}`,
-          messages: [{
-            role: 'user',
-            content: `Write a re-consent email for "${listName || 'our list'}". ${recoverableCount || 0} contacts have declining consent and will cross the PECR threshold within 90 days. Total list size: ${totalContacts || 0}. Sector: ${sector || 'ecommerce'}.`,
-          }],
+          model: 'claude-sonnet-4-6', max_tokens: 600,
+          system: `You write re-consent / re-permission emails for UK email marketers. The email must:\n- Be PECR compliant — the recipient must be able to clearly opt in or opt out\n- Not use fake urgency, countdown timers, or misleading claims (DMCCA 2024)\n- Not use guilt, pressure, or dark patterns\n- Be honest about why they are receiving the email\n- Include a clear "Yes, keep me subscribed" call to action\n- Include a clear unsubscribe option\n- Be under 120 words in the body\n- Match the tone of ${sectorDesc}\n- Not include HTML tags — plain text only\n\nReturn ONLY a JSON object with two fields, no markdown:\n{"subject":"...","body":"..."}`,
+          messages: [{ role: 'user', content: `Write a re-consent email for "${listName || 'our list'}". ${recoverableCount || 0} contacts have declining consent and will cross the PECR threshold within 90 days. Total list size: ${totalContacts || 0}. Sector: ${sector || 'ecommerce'}.` }],
         }),
       });
-
-      if (!claudeRes.ok) {
-        return res.status(500).json({ success: false, error: 'AI generation failed' });
-      }
-
+      if (!claudeRes.ok) return res.status(500).json({ success: false, error: 'AI generation failed' });
       const result = await claudeRes.json();
       const text = result.content?.[0]?.text || '';
       const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-
       let parsed;
       try {
         const match = cleaned.match(/\{[\s\S]*\}/);
         parsed = JSON.parse(match ? match[0] : cleaned);
       } catch (e) {
         const subMatch = text.match(/subject[:\s]*(.+?)[\n\r]/i);
-        parsed = {
-          subject: subMatch ? subMatch[1].trim() : 'Quick check \u2014 do you still want to hear from us?',
-          body: text.replace(/^subject[:\s]*.+?[\n\r]/i, '').replace(/^\{[\s\S]*\}$/, '').trim() || 'We noticed it\u2019s been a while since you engaged with our emails. We want to make sure we\u2019re only sending to people who want to hear from us.\n\nIf you\u2019d like to keep receiving our emails, click the link below:\n\n[Yes, keep me subscribed]\n\nIf not, no problem \u2014 you can unsubscribe at any time using the link at the bottom of this email.',
-        };
+        parsed = { subject: subMatch ? subMatch[1].trim() : 'Quick check \u2014 do you still want to hear from us?', body: text.replace(/^subject[:\s]*.+?[\n\r]/i, '').replace(/^\{[\s\S]*\}$/, '').trim() || 'We noticed it\u2019s been a while since you engaged with our emails. We want to make sure we\u2019re only sending to people who want to hear from us.\n\nIf you\u2019d like to keep receiving our emails, click the link below:\n\n[Yes, keep me subscribed]\n\nIf not, no problem \u2014 you can unsubscribe at any time using the link at the bottom of this email.' };
       }
-
-      return res.status(200).json({
-        success: true,
-        subject: parsed.subject || 'Do you still want to hear from us?',
-        body: parsed.body || '',
-      });
+      return res.status(200).json({ success: true, subject: parsed.subject || 'Do you still want to hear from us?', body: parsed.body || '' });
     }
 
     return res.status(400).json({ error: `Unknown action: ${action}` });
