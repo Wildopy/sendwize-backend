@@ -36,6 +36,59 @@ const AT_HEADERS = () => ({
 
 const IMPLAUSIBLE_BASELINE_THRESHOLD = 0.05; // >5% avg unsub = broken mapping
 
+
+const AUDIENCE_EXPOSURE_ANCHORS = {
+  ico: { perContactLiability: 0.28, label: 'ICO (PECR)', basis: 'Anchored to HelloFresh £140,000 (2024), scaled by affected contacts' },
+  asa: { fatiguePerContact: 0.05, label: 'ASA (CAP Code)', basis: 'Reputational exposure — over-frequency is an ASA complaint signal' },
+};
+ 
+const STATE_DAMAGE_RATIOS = {
+  'Complaint risk':            { damaged: 0.40, declining: 0.30, healthy: 0.30 },
+  'Damaged':                   { damaged: 0.30, declining: 0.30, healthy: 0.40 },
+  'Fatigue building':          { damaged: 0.10, declining: 0.35, healthy: 0.55 },
+  'Cooling':                   { damaged: 0.05, declining: 0.25, healthy: 0.70 },
+  'Recovering':                { damaged: 0.05, declining: 0.15, healthy: 0.80 },
+  'Neutral':                   { damaged: 0.02, declining: 0.10, healthy: 0.88 },
+  'Healthy':                   { damaged: 0.00, declining: 0.05, healthy: 0.95 },
+  'Highly receptive post-gap': { damaged: 0.00, declining: 0.03, healthy: 0.97 },
+  'Peak receptiveness':        { damaged: 0.00, declining: 0.02, healthy: 0.98 },
+};
+ 
+const DEFAULT_REVENUE_PER_CONTACT = 0.50;
+const DEFAULT_REENGAGEMENT_SUCCESS_RATE = 0.20;
+ 
+function calculateAudienceExposure(segmentData) {
+  const state = segmentData.sentiment?.state || 'Neutral';
+  const ratios = STATE_DAMAGE_RATIOS[state] || STATE_DAMAGE_RATIOS['Neutral'];
+  const audienceSize = segmentData._latestVolumeSent || 1000;
+  const damagedContacts = Math.round(audienceSize * ratios.damaged);
+  const decliningContacts = Math.round(audienceSize * ratios.declining);
+  const healthyContacts = Math.round(audienceSize * ratios.healthy);
+ 
+  const icoExposure = {
+    affectedContacts: damagedContacts,
+    estimatedExposure: parseFloat((damagedContacts * AUDIENCE_EXPOSURE_ANCHORS.ico.perContactLiability).toFixed(2)),
+    label: AUDIENCE_EXPOSURE_ANCHORS.ico.label, basis: AUDIENCE_EXPOSURE_ANCHORS.ico.basis,
+  };
+  const asaExposure = {
+    affectedContacts: state === 'Fatigue building' ? decliningContacts : 0,
+    estimatedExposure: parseFloat((state === 'Fatigue building' ? decliningContacts * AUDIENCE_EXPOSURE_ANCHORS.asa.fatiguePerContact : 0).toFixed(2)),
+    label: AUDIENCE_EXPOSURE_ANCHORS.asa.label, basis: AUDIENCE_EXPOSURE_ANCHORS.asa.basis,
+  };
+ 
+  const excessUnsubs = segmentData.subscriberLoss?.totalExcessUnsubs || 0;
+  const totalExposure = parseFloat((icoExposure.estimatedExposure + asaExposure.estimatedExposure).toFixed(2));
+  const estimatedValue = parseFloat((healthyContacts * DEFAULT_REVENUE_PER_CONTACT).toFixed(2));
+  const recoverableValue = parseFloat((decliningContacts * DEFAULT_REVENUE_PER_CONTACT * DEFAULT_REENGAGEMENT_SUCCESS_RATE).toFixed(2));
+ 
+  return {
+    totalExposure, estimatedValue, recoverableValue,
+    commercialLoss: parseFloat((excessUnsubs * DEFAULT_REVENUE_PER_CONTACT).toFixed(2)),
+    ico: icoExposure, asa: asaExposure, audienceSize, state, excessUnsubs,
+    methodology: 'Indicative estimates based on published UK enforcement benchmarks and audience behaviour signals. Not a prediction of regulatory outcome.',
+  };
+}
+
 // State ordering used by transition detection and change comparison.
 // Lower rank = worse. Regressions (newRank < priorRank) fire alerts.
 const STATE_RANK = {
@@ -942,6 +995,10 @@ async function upsertSegment(userId, segmentName, data) {
     CampaignCount: data.fingerprint?.campaignCount || 0,
     DataQuality: data.dataQuality,
     Sector: data.sector || 'general',
+    EstimatedExposure: data.exposure?.totalExposure || null,
+    EstimatedValue: data.exposure?.estimatedValue || null,
+    RecoverableValue: data.exposure?.recoverableValue || null,
+    NarrativeJson: data.narrative || null,
   };
 
   let recordId;
@@ -965,7 +1022,7 @@ async function loadCampaigns(userId) {
 }
 
 async function snapshotSegment(userId, segmentName, data) {
-  await atCreate('Audience_Read_Snapshots', { UserID: userId, SegmentName: segmentName, SnapshotDate: new Date().toISOString().slice(0, 10), SnapshotTimestamp: new Date().toISOString(), State: data.sentiment?.state || 'Neutral', Capital: data.capital != null ? data.capital : (data.relationshipCapital || 0), AvgUnsubRate: data.fingerprint?.selfBaseline || null, ExcessUnsubs: data.subscriberLoss?.totalExcessUnsubs || 0, CampaignCount: data.fingerprint?.campaignCount || 0, Sector: data.sector || 'general' });
+  await atCreate('Audience_Read_Snapshots', { UserID: userId, SegmentName: segmentName, SnapshotDate: new Date().toISOString().slice(0, 10), SnapshotTimestamp: new Date().toISOString(), State: data.sentiment?.state || 'Neutral', Capital: data.capital != null ? data.capital : (data.relationshipCapital || 0), AvgUnsubRate: data.fingerprint?.selfBaseline || null, ExcessUnsubs: data.subscriberLoss?.totalExcessUnsubs || 0, CampaignCount: data.fingerprint?.campaignCount || 0, Sector: data.sector || 'general', EstimatedExposure: data.exposure?.totalExposure || null });
 }
 
 async function getSnapshotsBySegment(userId) {
@@ -1233,6 +1290,9 @@ export default async function handler(req, res) {
 
       for (const [segmentName, segCampaigns] of Object.entries(segmentGroups)) {
         const data = runAlgorithms(segCampaigns, sector);
+        const latestVolume = segCampaigns[segCampaigns.length - 1]?.volume_sent || 1000;
+        data._latestVolumeSent = latestVolume;
+        const segExposure = calculateAudienceExposure(data);
         for (const c of segCampaigns) {
           const impact = algorithm3_campaignImpact(c, segCampaigns, data.fingerprint, getBenchmark(sector));
           await saveCampaign(userId, segmentName, c, impact);
@@ -1271,6 +1331,7 @@ export default async function handler(req, res) {
 
         savedSegments[segmentName] = {
           ...data,
+          exposure:      segExposure,
           impacts:       data.impacts.slice(-5),
           previousState: upsert.priorState,
           stateChanged:  !!(upsert.priorState && upsert.priorState !== upsert.newState),
@@ -1394,6 +1455,53 @@ export default async function handler(req, res) {
       }));
       return res.status(200).json({ success: true, benchmarks: table });
     }
+
+    if (action === 'audience-exposure') {
+      if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
+      const segments = await atGet(
+        'Audience_Read_Segments',
+        `{UserID}="${userId}"`,
+        'sort[0][field]=LastUpdated&sort[0][direction]=desc',
+        100
+      );
+
+      const exposureBySegment = [];
+      let totalExposure = 0, totalValue = 0, totalRecoverable = 0;
+
+      for (const seg of segments) {
+        const f = seg.fields;
+        const segExposure = {
+          totalExposure: f.EstimatedExposure || 0,
+          estimatedValue: f.EstimatedValue || 0,
+          recoverableValue: f.RecoverableValue || 0,
+        };
+
+        exposureBySegment.push({
+          segmentName: f.SegmentName,
+          state: f.SentimentState || 'Neutral',
+          previousState: f.PreviousState || null,
+          totalExposure: segExposure.totalExposure,
+          estimatedValue: segExposure.estimatedValue,
+          recoverableValue: segExposure.recoverableValue,
+          lastUpdated: f.LastUpdated,
+          campaignCount: f.CampaignCount || 0,
+        });
+
+        totalExposure += segExposure.totalExposure;
+        totalValue += segExposure.estimatedValue;
+        totalRecoverable += segExposure.recoverableValue;
+      }
+
+      return res.json({
+        success: true,
+        totalExposure: parseFloat(totalExposure.toFixed(2)),
+        estimatedValue: parseFloat(totalValue.toFixed(2)),
+        recoverableValue: parseFloat(totalRecoverable.toFixed(2)),
+        segments: exposureBySegment,
+      });
+    }
+
     return res.status(400).json({ error: `Unknown action: ${action}` });
   } catch (err) {
     console.error('audience-read error:', err);
