@@ -22,6 +22,7 @@
 
 import crypto from 'crypto';
 import { atFetch } from './_airtable.js';
+import { smartDetect, smartValidate } from './_smart-import.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const BASE_ID = process.env.BASE_ID;
@@ -582,19 +583,76 @@ export default async function handler(req, res) {
     // ── DETECT — AI + fallback column detection ─────────────
     if (action === 'detect') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-      const { headers, sampleRows } = req.body;
+      const { headers, sampleRows: bodyRows, rows } = req.body;
       if (!headers || !Array.isArray(headers)) return res.status(400).json({ error: 'headers required' });
-      let mapping = null; let method = 'deterministic';
+
+      const sampleRows = (bodyRows || rows || []).slice(0, 30);
+      let mapping = null;
+      let method = 'deterministic';
+      let detection = null;
+
       if (process.env.ANTHROPIC_API_KEY) {
-        const aiResult = await aiMapListColumns(headers, sampleRows || []);
-        if (aiResult && aiResult.columns && Array.isArray(aiResult.columns)) {
-          mapping = {};
-          for (const col of aiResult.columns) { if (col.header && col.target) mapping[col.header] = col.target; }
-          method = 'ai';
+        try {
+          const aiResult = await aiMapListColumns(headers, sampleRows);
+          if (aiResult?.columns && Array.isArray(aiResult.columns)) {
+            mapping = {};
+            for (const col of aiResult.columns) {
+              if (col.header && col.target) mapping[col.header] = col.target;
+            }
+            method = 'ai';
+
+            const validated = smartValidate(mapping, headers, sampleRows, 'list');
+            mapping = validated.mapping;
+
+            const recognized = [];
+            const ignored = [];
+            for (const h of headers) {
+              if (mapping[h] && mapping[h] !== '' && mapping[h] !== 'ignore') {
+                recognized.push({ header: h, field: mapping[h], friendlyName: mapping[h].replace(/_/g, ' '), confidence: 'high' });
+              } else {
+                ignored.push(h);
+                if (!(h in mapping)) mapping[h] = 'ignore';
+              }
+            }
+            detection = {
+              mapping,
+              recognized,
+              ignored,
+              ambiguous: [],
+              corrections: validated.corrections || [],
+              derivedRates: validated.derivedRates || [],
+              summary: {
+                recognizedCount: recognized.length,
+                ignoredCount: ignored.length,
+                ambiguousCount: 0,
+                canAnalyse: Object.values(mapping).includes('email'),
+                hasEmail: Object.values(mapping).includes('email'),
+                hasDate: Object.values(mapping).includes('date_added') || Object.values(mapping).includes('last_engagement'),
+              },
+            };
+          }
+        } catch (e) {
+          console.error('Smart list detection AI/validation failed:', e.message);
         }
       }
-      if (!mapping) { mapping = detectListColumns(headers, sampleRows || []); method = 'deterministic'; }
-      return res.json({ success: true, mapping, method });
+
+      if (!mapping) {
+        detection = smartDetect(headers, sampleRows, 'list');
+        mapping = detection.mapping;
+        method = 'deterministic';
+      }
+
+      return res.json({
+        success: true,
+        mapping,
+        method,
+        recognized: detection.recognized || [],
+        ignored: detection.ignored || [],
+        ambiguous: detection.ambiguous || [],
+        corrections: detection.corrections || [],
+        derivedRates: detection.derivedRates || [],
+        summary: detection.summary || {},
+      });
     }
 
     // ── LISTS — summary of all named lists ──────────────────
