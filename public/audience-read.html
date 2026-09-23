@@ -141,6 +141,20 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="gate-screen" id="gateScreen" style="max-width:900px;margin:0 auto;padding:0 20px"><div class="gate-card"><div class="gate-logo">sendwize</div><div class="gate-icon">&#128202;</div><div class="gate-title">Audience Read</div><div class="gate-sub">Find out if your email lists are healthy, fatigued, or heading toward ICO risk &mdash; compared to UK industry benchmarks.</div><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a><button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> See an example diagnosis</button></div></div>
 <div class="page" id="upload-screen" style="display:none"><div class="intro"><div class="tool-tag">Audience Read &mdash; List Diagnosis</div><h1>What did your last send do to your audience?</h1><p class="intro-sub">Upload your campaign export. Seven algorithms compare each list against UK email benchmarks and tell you exactly what state it&rsquo;s in, what it&rsquo;s costing you, and what to do next.</p><div class="distinction"><div class="dist-col dist-this">        <div class="dist-label">This tool &mdash; Audience Read</div>
         <div class="dist-desc">Your <strong>post-send diagnostic</strong>. See what your campaigns did to each list, when consent will lapse at this rate, and what to change before your next send.</div></div><div class="dist-divider"></div><div class="dist-col" style="padding-left:14px"><div class="dist-label">Different tool &mdash; List Intelligence</div><div class="dist-desc">Valuates your <strong>contact list as a data asset</strong>.</div></div></div></div><div id="profileStatus" class="profile-status"><div class="ps-loading">Loading your profile&hellip;</div></div><div class="upload-zone" id="zone-main" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this,'main')"><input type="file" accept=".csv" id="file-main" onchange="fileChg(this,'main')"><div class="uz-icon">&#128202;</div><div class="uz-title">Drop your campaign export CSV here</div><div class="uz-sub">Works with any export from Klaviyo, Mailchimp, Dotdigital or any platform.<br>You need: <strong>date, list name, unsubscribes.</strong></div><div class="uz-fname" id="fname-main"></div></div><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px"><button class="btn btn-primary" id="btnContinue" disabled onclick="goMapping()">Diagnose my lists &rarr;</button><button class="btn btn-ghost" onclick="loadDemo()">See an example &rarr;</button></div><div style="padding-top:20px;border-top:1px solid var(--b)"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">Previously uploaded data?</p><button class="btn btn-ghost btn-sm" onclick="loadDash()">Load my last diagnosis &rarr;</button><div id="lastReportLink" style="display:none;margin-top:8px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--g);font-weight:600">&#10003; Previous diagnosis available &mdash; <button onclick="loadDash()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--o);cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">view it</button></span></div></div></div>
+<!-- ─── SMART IMPORT SCREEN ─── -->
+<div class="page" id="smart-import-screen" style="display:none">
+  <div style="margin-bottom:24px">
+    <div class="tool-tag">Reading your file…</div>
+  </div>
+  <div id="smartImportContent">
+    <div style="padding:60px 20px;text-align:center">
+      <div class="spin" style="margin:0 auto 12px"></div>
+      <div style="font-size:13px;color:var(--mu)">Reading your file…</div>
+    </div>
+  </div>
+</div>
+
+
 <div class="page" id="mapping-screen">
   <div class="intro" style="margin-bottom:24px">
     <div class="tool-tag">Step 2 of 2 &mdash; Confirm mapping</div>
@@ -235,7 +249,183 @@ var TIP_DEFS={
 function getSector(){return profileSector||'general';}
 function getCpl(){return profileCpl;}
 function hideGateAndDemo(){document.getElementById('gateScreen').classList.remove('show');document.getElementById('upload-screen').style.display='block';loadDemo();}
-function showScreen(s){['upload','mapping','dashboard'].forEach(function(n){document.getElementById(n+'-screen').style.display=n===s?'block':'none';});if(s==='upload')window.scrollTo(0,0);}
+function showScreen(s){['upload','mapping','dashboard','smart-import'].forEach(function(n){document.getElementById(n+'-screen').style.display=n===s?'block':'none';});if(s==='upload')window.scrollTo(0,0);}
+// ── Smart Import UI functions ─────────────────────────────
+function renderSmartImportSuccess(detection, container, onContinue, onReview) {
+  var rec = detection.recognized || [];
+  var ign = detection.ignored || [];
+  var corrections = detection.corrections || [];
+  var derived = detection.derivedRates || [];
+  var fieldsHtml = rec.map(function(r) {
+    var icon = r.confidence === 'high' ? '\u2713' : r.confidence === 'medium' ? '~' : '?';
+    var iconColor = r.confidence === 'high' ? 'var(--g)' : r.confidence === 'medium' ? 'var(--y)' : 'var(--r)';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">'
+      + '<span style="color:' + iconColor + ';font-weight:700;font-size:15px;width:18px;text-align:center">' + icon + '</span>'
+      + '<span style="font-size:13px;font-weight:500;color:var(--t)">' + escH(r.friendlyName) + '</span>'
+      + '<span style="font-size:11px;color:var(--mu);margin-left:auto;font-family:DM Mono,monospace">' + escH(r.header) + '</span>'
+      + '</div>';
+  }).join('');
+  var correctionHtml = '';
+  if (corrections.length) {
+    correctionHtml = '<div style="background:var(--yb);border:1px solid var(--yc);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#713f12;line-height:1.5">'
+      + '<strong>Auto-corrected:</strong> '
+      + corrections.map(function(c) { return escH(c.header) + ' \u2192 ' + escH(c.to.replace(/_/g, ' ')) + ' (' + escH(c.reason) + ')'; }).join('; ')
+      + '</div>';
+  }
+  var derivedHtml = derived.length
+    ? '<div style="font-size:12px;color:var(--mu);margin-top:8px">\uD83D\uDCCA We\'ll calculate ' + derived.map(function(d) { return d.rate.replace(/_/g, ' '); }).join(', ') + ' from your counts.</div>'
+    : '';
+  var ignoredHtml = ign.length
+    ? '<div style="font-size:12px;color:var(--mu);margin-top:8px">' + ign.length + ' other column' + (ign.length !== 1 ? 's' : '') + ' will be preserved but not used in analysis.</div>'
+    : '';
+  container.innerHTML = '<div style="animation:fadeUp .35s ease">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+    + '<span style="font-size:28px">\u2705</span>'
+    + '<div><div style="font-size:18px;font-weight:700;letter-spacing:-.3px">We understood your file</div>'
+    + '<div style="font-size:13px;color:var(--mu)">Found ' + rec.length + ' field' + (rec.length !== 1 ? 's' : '') + ' we can use.</div></div>'
+    + '</div>'
+    + '<div style="background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:16px 20px;margin-bottom:16px;box-shadow:var(--sh)">'
+    + fieldsHtml + '</div>'
+    + correctionHtml + derivedHtml + ignoredHtml
+    + '<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">'
+    + '<button class="btn btn-primary" id="smartContinueBtn">Continue to diagnosis \u2192</button>'
+    + '<button class="btn btn-ghost btn-sm" id="smartReviewBtn">Review detected fields</button>'
+    + '</div></div>';
+  document.getElementById('smartContinueBtn').onclick = onContinue;
+  document.getElementById('smartReviewBtn').onclick = onReview;
+}
+function renderSmartImportAmbiguity(ambiguousItems, container, onResolved) {
+  var itemsHtml = ambiguousItems.map(function(item, idx) {
+    var optionsHtml = item.options.map(function(opt) {
+      var labels = { 'open_count': 'Opens', 'click_count': 'Clicks', 'engagement_count': 'Engagement count', 'revenue': 'Revenue', 'volume_sent': 'Volume sent' };
+      var label = labels[opt] || opt.replace(/_/g, ' ');
+      return '<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--b);border-radius:8px;cursor:pointer;background:var(--bg)">'
+        + '<input type="radio" name="ambig_' + idx + '" value="' + escH(opt) + '" style="accent-color:var(--o)">'
+        + '<span style="font-size:13px">' + escH(label) + '</span></label>';
+    }).join('');
+    optionsHtml += '<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--b);border-radius:8px;cursor:pointer;background:var(--bg)">'
+      + '<input type="radio" name="ambig_' + idx + '" value="ignore" style="accent-color:var(--mu)">'
+      + '<span style="font-size:13px;color:var(--mu)">Ignore this column</span></label>';
+    return '<div style="margin-bottom:16px">'
+      + '<div style="font-size:14px;font-weight:600;margin-bottom:4px">Column: <span style="font-family:DM Mono,monospace;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--b)">' + escH(item.header) + '</span></div>'
+      + '<div style="font-size:12px;color:var(--mu);margin-bottom:10px">' + escH(item.reason || 'What does it represent?') + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:6px">' + optionsHtml + '</div></div>';
+  }).join('');
+  container.innerHTML = '<div style="animation:fadeUp .35s ease">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+    + '<span style="font-size:28px">\uD83E\uDD14</span>'
+    + '<div><div style="font-size:18px;font-weight:700">' + (ambiguousItems.length === 1 ? 'One thing needs checking' : ambiguousItems.length + ' things need checking') + '</div>'
+    + '<div style="font-size:13px;color:var(--mu)">Everything else was detected automatically.</div></div></div>'
+    + itemsHtml
+    + '<button class="btn btn-primary" id="smartAmbigConfirm" disabled>Confirm \u2192</button></div>';
+  container.querySelectorAll('input[type=radio]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      var allDone = ambiguousItems.every(function(_, i) { return container.querySelector('input[name="ambig_' + i + '"]:checked'); });
+      document.getElementById('smartAmbigConfirm').disabled = !allDone;
+    });
+  });
+  document.getElementById('smartAmbigConfirm').onclick = function() {
+    var resolved = {};
+    ambiguousItems.forEach(function(item, idx) {
+      var checked = container.querySelector('input[name="ambig_' + idx + '"]:checked');
+      if (checked) resolved[item.header] = checked.value;
+    });
+    onResolved(resolved);
+  };
+}
+function renderSmartImportFailure(detection, container, onUploadAnother, onManualReview) {
+  var summary = detection.summary || {};
+  var reasons = [];
+  if (!summary.hasDate) reasons.push('No date column found');
+  if (!summary.hasUnsubData) reasons.push('No unsubscribe data');
+  if (!summary.canAnalyse) reasons.push('Not enough data to produce a diagnosis');
+  container.innerHTML = '<div style="animation:fadeUp .35s ease;text-align:center;padding:40px 20px">'
+    + '<div style="font-size:36px;margin-bottom:12px">\uD83D\uDCCB</div>'
+    + '<div style="font-size:18px;font-weight:700;margin-bottom:8px">We couldn\'t read enough from this file</div>'
+    + '<div style="font-size:13px;color:var(--mu);line-height:1.6;max-width:400px;margin:0 auto 20px">'
+    + 'We need at least campaign dates and engagement data to run the diagnosis.'
+    + (reasons.length ? '<br><br>' + reasons.join('. ') + '.' : '')
+    + '</div>'
+    + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">'
+    + '<button class="btn btn-primary" id="smartFailUpload">Upload another file</button>'
+    + '<button class="btn btn-ghost" id="smartFailReview">Review columns manually</button>'
+    + '</div></div>';
+  document.getElementById('smartFailUpload').onclick = onUploadAnother;
+  document.getElementById('smartFailReview').onclick = onManualReview;
+}
+
+// ── Smart Import flow helpers for Audience Read ──
+function showOldMappingScreenAR(json) {
+  detectedMaps['main'] = json.mapping || {};
+  detectedConfidence['main'] = json.confidence || {};
+  rateColumnsData['main'] = json.rateColumns || [];
+  (json.rateColumns || []).forEach(function(rc) {
+    if (rc.detectedUnit) { rateUnitChoices[rc.column] = rc.detectedUnit; }
+    else {
+      var v = parseFloat(String(rc.firstValue || '').replace('%', ''));
+      if (rc.hasPctSymbol) rateUnitChoices[rc.column] = 'percentage';
+      else if (!isNaN(v) && v <= 1) rateUnitChoices[rc.column] = 'decimal_fraction';
+      else rateUnitChoices[rc.column] = 'percentage';
+    }
+  });
+  if (json.noSegmentDetected || (json.summary && json.summary.noSegmentDetected)) noSegmentDetected = true;
+  var container = document.getElementById('mappingTables');
+  container.innerHTML = '';
+  container.appendChild(buildMapCard('main', uploadedFiles['main'].headers, uploadedFiles['main'].rows, json.mapping || {}, json.confidence || {}));
+  renderNoSegmentBlock();
+  refreshRunBtn();
+  showScreen('mapping');
+}
+
+function submitWithSmartDetectionAR(json) {
+  // Skip mapping screen — go straight to diagnosis
+  showLoading('Running seven algorithms\u2026');
+  var allRows = [];
+  var fd = uploadedFiles['main'];
+  var mapping = {};
+  for (var h in json.mapping) {
+    if (json.mapping[h] && json.mapping[h] !== '') mapping[h] = json.mapping[h];
+  }
+  // Handle no-segment case
+  if (json.summary && json.summary.noSegmentDetected) {
+    var singleName = prompt('Your file has no list/audience column. What should we call this list?', 'Main list');
+    if (!singleName || !singleName.trim()) singleName = 'Main list';
+    fd.rows.forEach(function(row) { var copy = Object.assign({}, row); copy['__sw_segment__'] = singleName.trim(); allRows.push(copy); });
+    mapping['__sw_segment__'] = 'segment';
+  } else {
+    fd.rows.forEach(function(row) { allRows.push(row); });
+  }
+  var sector = getSector();
+  var cplVal = getCpl();
+  var rUnits = json.rateUnits || rateUnitChoices || {};
+  fetch(API + '?userId=' + userId + '&action=upload&sector=' + sector, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rows: allRows, fieldMapping: mapping, rateUnits: rUnits, cpl: cplVal })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+      if (!result.success) {
+        if (result.code === 'IMPLAUSIBLE_BASELINE') {
+          hideLoading();
+          showToast('Rate column mapping looks wrong \u2014 review manually', 'er');
+          showOldMappingScreenAR(json);
+          return;
+        }
+        throw new Error(result.error || 'Upload failed');
+      }
+      currentSector = sector;
+      currentCpl = getCpl();
+      hideLoading();
+      renderDash(result);
+      showScreen('dashboard');
+      showToast(result.campaignsSaved + ' campaign records processed', 'ok');
+      maybeStartWalkthrough();
+    })
+    .catch(function(err) { hideLoading(); showToast('Error: ' + err.message, 'er'); });
+}
+
+
+
 function toggleExpand(uid){var body=document.getElementById(uid+'-expand');var btn=document.querySelector('#'+uid+' .diag-expand-btn');if(!body)return;var open=body.style.display!=='none';body.style.display=open?'none':'flex';body.style.flexDirection='column';if(btn)btn.classList.toggle('open',!open);}
 function toggleGw(uid){var body=document.getElementById(uid+'-gw-detail');if(!body)return;body.classList.toggle('on');}
 function switchSegTab(mode){segTabMode=mode;document.getElementById('segTabExist').className='seg-tab'+(mode==='exist'?' on':'');document.getElementById('segTabNew').className='seg-tab'+(mode==='new'?' on':'');document.getElementById('logSeg').style.display=mode==='exist'?'':'none';document.getElementById('logSegNew').style.display=mode==='new'?'':'none';}
@@ -249,7 +439,7 @@ function parseCSV(text){var lines=text.trim().split('\n').filter(function(l){ret
 function parseLine(line){var res=[],cur='',inQ=false;for(var i=0;i<line.length;i++){var c=line[i];if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){res.push(cur);cur='';}else{cur+=c;}}res.push(cur);return res;}
 var TF=[{v:'',l:'\u2014 ignore \u2014'},{v:'date',l:'Date'},{v:'segment',l:'List / audience name'},{v:'unsubscribe_count',l:'Unsubscribe count'},{v:'unsubscribe_rate',l:'Unsubscribe rate'},{v:'volume_sent',l:'Volume sent'},{v:'delivered_count',l:'Delivered count'},{v:'open_rate',l:'Open rate'},{v:'open_count',l:'Open count'},{v:'click_rate',l:'Click rate'},{v:'click_count',l:'Click count'},{v:'bounce_count',l:'Bounce count'},{v:'complaint_count',l:'Complaint / spam count'},{v:'revenue',l:'Revenue / sales'},{v:'channel',l:'Channel (email/SMS)'},{v:'consent_basis',l:'Consent basis'},{v:'campaign_name',l:'Campaign name'},{v:'campaign_type',l:'Campaign type'}];
 async function goMapping(){
-  showLoading('Detecting columns\u2026');
+  showLoading('Reading your file\u2026');
   try{
     var container=document.getElementById('mappingTables');
     container.innerHTML='';
@@ -257,29 +447,55 @@ async function goMapping(){
     nsBlock.innerHTML='';
     noSegmentDetected=false;useSingleListFallback=false;singleListName='';
     rateUnitChoices={};
-    for(var key in uploadedFiles){
-      var fd=uploadedFiles[key];
-      var resp=await fetch(API+'?userId='+userId+'&action=detect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({headers:fd.headers,rows:fd.rows.slice(0,20)})});
-      var json=await resp.json();
-      detectedMaps[key]=json.mapping||{};
-      detectedConfidence[key]=json.confidence||{};
-      rateColumnsData[key]=json.rateColumns||[];
-      if(json.noSegmentDetected)noSegmentDetected=true;
-      (json.rateColumns||[]).forEach(function(rc){
-        if(rc.detectedUnit){rateUnitChoices[rc.column]=rc.detectedUnit;}
-        else{var v=parseFloat(String(rc.firstValue||'').replace('%',''));
-        if(rc.hasPctSymbol)rateUnitChoices[rc.column]='percentage';
-        else if(!isNaN(v)&&v<=1)rateUnitChoices[rc.column]='decimal_fraction';
-        else rateUnitChoices[rc.column]='percentage';}
-      });
-      container.appendChild(buildMapCard(key,fd.headers,fd.rows,json.mapping||{},json.confidence||{}));
-    }
-    renderNoSegmentBlock();
-    refreshRunBtn();
+
+    var fd=uploadedFiles['main'];
+    var resp=await fetch(API+'?userId='+userId+'&action=detect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({headers:fd.headers,rows:fd.rows.slice(0,20)})});
+    var json=await resp.json();
     hideLoading();
-    showScreen('mapping');
+
+    // Store for fallback
+    detectedMaps['main']=json.mapping||{};
+    detectedConfidence['main']=json.confidence||{};
+    rateColumnsData['main']=json.rateColumns||[];
+    (json.rateColumns||[]).forEach(function(rc){
+      if(rc.detectedUnit){rateUnitChoices[rc.column]=rc.detectedUnit;}
+      else{var v=parseFloat(String(rc.firstValue||'').replace('%',''));
+      if(rc.hasPctSymbol)rateUnitChoices[rc.column]='percentage';
+      else if(!isNaN(v)&&v<=1)rateUnitChoices[rc.column]='decimal_fraction';
+      else rateUnitChoices[rc.column]='percentage';}
+    });
+    if(json.noSegmentDetected||json.summary&&json.summary.noSegmentDetected)noSegmentDetected=true;
+
+    // Route based on smart-import detection quality
+    if(json.summary&&json.summary.canAnalyse){
+      if(json.ambiguous&&json.ambiguous.length>0){
+        showScreen('smart-import');
+        renderSmartImportAmbiguity(json.ambiguous,document.getElementById('smartImportContent'),function(resolved){
+          for(var h in resolved){if(resolved[h]!=='ignore'){json.mapping[h]=resolved[h];}}
+          renderSmartImportSuccess(json,document.getElementById('smartImportContent'),
+            function(){submitWithSmartDetectionAR(json);},
+            function(){showOldMappingScreenAR(json);}
+          );
+        });
+      }else{
+        showScreen('smart-import');
+        renderSmartImportSuccess(json,document.getElementById('smartImportContent'),
+          function(){submitWithSmartDetectionAR(json);},
+          function(){showOldMappingScreenAR(json);}
+        );
+      }
+    }else{
+      showScreen('smart-import');
+      json._mode='audience';
+      renderSmartImportFailure(json,document.getElementById('smartImportContent'),
+        function(){showScreen('upload');},
+        function(){showOldMappingScreenAR(json);}
+      );
+    }
   }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
 }
+
+
 function buildMapCard(key,headers,rows,detected,confidence){
   var samp=rows[0]||{};
   var card=document.createElement('div');
