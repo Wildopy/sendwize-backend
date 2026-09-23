@@ -330,6 +330,20 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 </div>
+<!-- ─── SMART IMPORT SCREEN ─── -->
+<div class="page" id="smart-import-screen" style="display:none">
+  <div style="margin-bottom:24px">
+    <div class="tool-tag">Reading your file…</div>
+  </div>
+  <div id="smartImportContent">
+    <div style="padding:60px 20px;text-align:center">
+      <div class="spin" style="margin:0 auto 12px"></div>
+      <div style="font-size:13px;color:var(--mu)">Reading your file…</div>
+    </div>
+  </div>
+</div>
+
+
 <div class="page" id="mapping-screen">
   <div style="margin-bottom:24px">
     <div class="tool-tag">Step 2 of 3</div>
@@ -461,7 +475,7 @@ function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 function sid(s){return s.replace(/[^a-zA-Z0-9_]/g,'_');}
 function hideGateAndDemo(){el('gateScreen').classList.remove('show');showScreen('upload');loadListDemo();}
 function showScreen(s){
-  ['upload','mapping','results','lists-landing'].forEach(function(n){
+  ['upload','mapping','results','lists-landing','smart-import'].forEach(function(n){
     var elx=el(n+'-screen');if(elx)elx.style.display=n===s?'block':'none';
   });
   window.scrollTo(0,0);
@@ -489,6 +503,174 @@ function filenameToListName(fname){
   name=name.split(' ').filter(Boolean).map(function(w){return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();}).join(' ');
   return name.slice(0,80);
 }
+
+// ── Smart Import UI functions ─────────────────────────────
+function renderSmartImportSuccess(detection, container, onContinue, onReview) {
+  var rec = detection.recognized || [];
+  var ign = detection.ignored || [];
+  var corrections = detection.corrections || [];
+  var derived = detection.derivedRates || [];
+  var fieldsHtml = rec.map(function(r) {
+    var icon = r.confidence === 'high' ? '\u2713' : r.confidence === 'medium' ? '~' : '?';
+    var iconColor = r.confidence === 'high' ? 'var(--g)' : r.confidence === 'medium' ? 'var(--y)' : 'var(--r)';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">'
+      + '<span style="color:' + iconColor + ';font-weight:700;font-size:15px;width:18px;text-align:center">' + icon + '</span>'
+      + '<span style="font-size:13px;font-weight:500;color:var(--t)">' + escH(r.friendlyName) + '</span>'
+      + '<span style="font-size:11px;color:var(--mu);margin-left:auto;font-family:DM Mono,monospace">' + escH(r.header) + '</span>'
+      + '</div>';
+  }).join('');
+  var correctionHtml = '';
+  if (corrections.length) {
+    correctionHtml = '<div style="background:var(--yb);border:1px solid var(--yc);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#713f12;line-height:1.5">'
+      + '<strong>Auto-corrected:</strong> '
+      + corrections.map(function(c) { return escH(c.header) + ' \u2192 ' + escH(c.to.replace(/_/g, ' ')) + ' (' + escH(c.reason) + ')'; }).join('; ')
+      + '</div>';
+  }
+  var derivedHtml = derived.length
+    ? '<div style="font-size:12px;color:var(--mu);margin-top:8px">\uD83D\uDCCA We\'ll calculate ' + derived.map(function(d) { return d.rate.replace(/_/g, ' '); }).join(', ') + ' from your counts.</div>'
+    : '';
+  var ignoredHtml = ign.length
+    ? '<div style="font-size:12px;color:var(--mu);margin-top:8px">' + ign.length + ' other column' + (ign.length !== 1 ? 's' : '') + ' will be preserved but not used in analysis.</div>'
+    : '';
+  container.innerHTML = '<div style="animation:fadeUp .35s ease">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+    + '<span style="font-size:28px">\u2705</span>'
+    + '<div><div style="font-size:18px;font-weight:700;letter-spacing:-.3px">We understood your file</div>'
+    + '<div style="font-size:13px;color:var(--mu)">Found ' + rec.length + ' field' + (rec.length !== 1 ? 's' : '') + ' we can use.</div></div>'
+    + '</div>'
+    + '<div style="background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:16px 20px;margin-bottom:16px;box-shadow:var(--sh)">'
+    + fieldsHtml + '</div>'
+    + correctionHtml + derivedHtml + ignoredHtml
+    + '<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">'
+    + '<button class="btn btn-primary" id="smartContinueBtn">Continue to analysis \u2192</button>'
+    + '<button class="btn btn-ghost btn-sm" id="smartReviewBtn">Review detected fields</button>'
+    + '</div></div>';
+  document.getElementById('smartContinueBtn').onclick = onContinue;
+  document.getElementById('smartReviewBtn').onclick = onReview;
+}
+function renderSmartImportAmbiguity(ambiguousItems, container, onResolved) {
+  var itemsHtml = ambiguousItems.map(function(item, idx) {
+    var optionsHtml = item.options.map(function(opt) {
+      var labels = { 'open_count': 'Opens', 'click_count': 'Clicks', 'engagement_count': 'Engagement count', 'revenue': 'Revenue', 'volume_sent': 'Volume sent' };
+      var label = labels[opt] || opt.replace(/_/g, ' ');
+      return '<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--b);border-radius:8px;cursor:pointer;background:var(--bg)">'
+        + '<input type="radio" name="ambig_' + idx + '" value="' + escH(opt) + '" style="accent-color:var(--o)">'
+        + '<span style="font-size:13px">' + escH(label) + '</span></label>';
+    }).join('');
+    optionsHtml += '<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--b);border-radius:8px;cursor:pointer;background:var(--bg)">'
+      + '<input type="radio" name="ambig_' + idx + '" value="ignore" style="accent-color:var(--mu)">'
+      + '<span style="font-size:13px;color:var(--mu)">Ignore this column</span></label>';
+    return '<div style="margin-bottom:16px">'
+      + '<div style="font-size:14px;font-weight:600;margin-bottom:4px">Column: <span style="font-family:DM Mono,monospace;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--b)">' + escH(item.header) + '</span></div>'
+      + '<div style="font-size:12px;color:var(--mu);margin-bottom:10px">' + escH(item.reason || 'What does it represent?') + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:6px">' + optionsHtml + '</div></div>';
+  }).join('');
+  container.innerHTML = '<div style="animation:fadeUp .35s ease">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+    + '<span style="font-size:28px">\uD83E\uDD14</span>'
+    + '<div><div style="font-size:18px;font-weight:700">' + (ambiguousItems.length === 1 ? 'One thing needs checking' : ambiguousItems.length + ' things need checking') + '</div>'
+    + '<div style="font-size:13px;color:var(--mu)">Everything else was detected automatically.</div></div></div>'
+    + itemsHtml
+    + '<button class="btn btn-primary" id="smartAmbigConfirm" disabled>Confirm \u2192</button></div>';
+  container.querySelectorAll('input[type=radio]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      var allDone = ambiguousItems.every(function(_, i) { return container.querySelector('input[name="ambig_' + i + '"]:checked'); });
+      document.getElementById('smartAmbigConfirm').disabled = !allDone;
+    });
+  });
+  document.getElementById('smartAmbigConfirm').onclick = function() {
+    var resolved = {};
+    ambiguousItems.forEach(function(item, idx) {
+      var checked = container.querySelector('input[name="ambig_' + idx + '"]:checked');
+      if (checked) resolved[item.header] = checked.value;
+    });
+    onResolved(resolved);
+  };
+}
+function renderSmartImportFailure(detection, container, onUploadAnother, onManualReview) {
+  var summary = detection.summary || {};
+  var reasons = [];
+  if (!summary.hasEmail) reasons.push('No email column found');
+  if (!summary.canAnalyse) reasons.push('Not enough data to produce an analysis');
+  container.innerHTML = '<div style="animation:fadeUp .35s ease;text-align:center;padding:40px 20px">'
+    + '<div style="font-size:36px;margin-bottom:12px">\uD83D\uDCCB</div>'
+    + '<div style="font-size:18px;font-weight:700;margin-bottom:8px">We couldn\'t read enough from this file</div>'
+    + '<div style="font-size:13px;color:var(--mu);line-height:1.6;max-width:400px;margin:0 auto 20px">'
+    + 'We need at least an email column to run the analysis.'
+    + (reasons.length ? '<br><br>' + reasons.join('. ') + '.' : '')
+    + '</div>'
+    + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">'
+    + '<button class="btn btn-primary" id="smartFailUpload">Upload another file</button>'
+    + '<button class="btn btn-ghost" id="smartFailReview">Review columns manually</button>'
+    + '</div></div>';
+  document.getElementById('smartFailUpload').onclick = onUploadAnother;
+  document.getElementById('smartFailReview').onclick = onManualReview;
+}
+
+// ── Smart Import flow helpers for List Intelligence ──
+function showOldMappingScreenLI(json) {
+  detectedMapping = json.mapping || {};
+  // Pre-fill list name
+  var suggestedName = filenameToListName(currentFilename) || 'Main list';
+  var existingNames = allLists.map(function(l) { return (l.listName || '').toLowerCase(); });
+  var final = suggestedName; var n = 2;
+  while (existingNames.indexOf(final.toLowerCase()) >= 0) { final = suggestedName + ' (' + n + ')'; n++; }
+  el('listNameInput').value = final;
+  onListNameChange();
+  buildMappingTable();
+  try {
+    fetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId=' + userId)
+      .then(function(r) { return r.json(); })
+      .then(function(pd) {
+        if (pd.sector && pd.averageOrderValue) { el('contextCard').style.display = 'none'; el('ctxSector').value = pd.sector; el('ctxAov').value = pd.averageOrderValue; }
+      }).catch(function() {});
+  } catch (e) {}
+  showScreen('mapping');
+}
+
+function submitWithSmartDetectionLI(json) {
+  // User clicked "Continue to analysis" — skip mapping screen
+  // We still need a list name, so show a quick name prompt then submit
+  var suggestedName = filenameToListName(currentFilename) || 'Main list';
+  var existingNames = allLists.map(function(l) { return (l.listName || '').toLowerCase(); });
+  var final = suggestedName; var n = 2;
+  while (existingNames.indexOf(final.toLowerCase()) >= 0) { final = suggestedName + ' (' + n + ')'; n++; }
+  var listName = prompt('Name this list (so you can track it over time):', final);
+  if (!listName || !listName.trim()) { listName = final; }
+
+  var mapping = {};
+  for (var h in json.mapping) {
+    if (json.mapping[h] && json.mapping[h] !== '') mapping[h] = json.mapping[h];
+  }
+  if (!Object.values(mapping).includes('email')) { showToast('No email column detected \u2014 review columns manually', 'er'); showOldMappingScreenLI(json); return; }
+
+  // Fetch profile for sector/aov defaults
+  var sector = 'ecommerce'; var aov = 50;
+  fetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId=' + userId)
+    .then(function(r) { return r.json(); })
+    .then(function(pd) { sector = pd.sector || 'ecommerce'; aov = pd.averageOrderValue || 50; })
+    .catch(function() {})
+    .finally(function() {
+      showLoading('Analysing across four dimensions\u2026');
+      fetch(API + '?userId=' + userId + '&action=upload', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listName: listName.trim(), rows: parsedCSV.rows, fieldMapping: mapping, sector: sector, aov: aov, uploadVersion: Date.now() })
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(result) {
+          if (!result.success) throw new Error(result.error || 'Upload failed');
+          hideLoading();
+          lastResults = result;
+          currentListName = result.listName || listName.trim();
+          downloadIndices = result.downloadIndices || null;
+          return fetch(API + '?userId=' + userId + '&action=lists').then(function(r) { return r.json(); }).then(function(lj) { allLists = (lj && lj.lists) || []; }).catch(function() {});
+        })
+        .then(function() { renderResults(lastResults); showScreen('results'); showToast('Analysis complete \u2014 ' + fmt(lastResults.totalContacts) + ' contacts processed', 'ok'); })
+        .catch(function(err) { hideLoading(); showToast('Error: ' + err.message, 'er'); });
+    });
+}
+
+
 
 function switchRegTab(tab){
   ['ico','asa','cma'].forEach(function(t){
@@ -548,29 +730,46 @@ function parseLine(line){
 }
 async function goMapping(){
   if(!parsedCSV)return;
-  showLoading('Detecting column types\u2026');
+  showLoading('Reading your file\u2026');
   try{
     var resp=await fetch(API+'?userId='+userId+'&action=detect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({headers:parsedCSV.headers,rows:parsedCSV.rows.slice(0,30)})});
-    var json=await resp.json();detectedMapping=json.mapping||{};hideLoading();
+    var json=await resp.json();
+    hideLoading();
+    detectedMapping=json.mapping||{};
 
-    // Pre-fill list name from filename (user can edit)
-    var suggestedName=filenameToListName(currentFilename)||'Main list';
-    // If the suggestion collides with an existing list, append " (2)" etc.
-    var existingNames=allLists.map(function(l){return(l.listName||'').toLowerCase();});
-    var final=suggestedName;var n=2;
-    while(existingNames.indexOf(final.toLowerCase())>=0){final=suggestedName+' ('+n+')';n++;}
-    el('listNameInput').value=final;
-    onListNameChange();
-
-    buildMappingTable();
-    try{
-      var pr=await fetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId='+userId);
-      var pd=await pr.json();
-      if(pd.sector&&pd.averageOrderValue){el('contextCard').style.display='none';el('ctxSector').value=pd.sector;el('ctxAov').value=pd.averageOrderValue;}
-    }catch(e){}
-    showScreen('mapping');
+    // Route based on smart-import detection quality
+    if(json.summary&&json.summary.canAnalyse){
+      if(json.ambiguous&&json.ambiguous.length>0){
+        // Show ambiguity resolver
+        showScreen('smart-import');
+        renderSmartImportAmbiguity(json.ambiguous,el('smartImportContent'),function(resolved){
+          for(var h in resolved){if(resolved[h]!=='ignore'){json.mapping[h]=resolved[h];}}
+          renderSmartImportSuccess(json,el('smartImportContent'),
+            function(){submitWithSmartDetectionLI(json);},
+            function(){showOldMappingScreenLI(json);}
+          );
+        });
+      }else{
+        // Clean detection — show success screen
+        showScreen('smart-import');
+        renderSmartImportSuccess(json,el('smartImportContent'),
+          function(){submitWithSmartDetectionLI(json);},
+          function(){showOldMappingScreenLI(json);}
+        );
+      }
+    }else{
+      // Can't analyse — show failure
+      showScreen('smart-import');
+      json._mode='list';
+      renderSmartImportFailure(json,el('smartImportContent'),
+        function(){showScreen('upload');},
+        function(){showOldMappingScreenLI(json);}
+      );
+    }
   }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
 }
+
+
 function onListNameChange(){
   var v=(el('listNameInput').value||'').trim();
   var btn=el('btnAnalyse');
