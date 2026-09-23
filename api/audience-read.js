@@ -35,6 +35,7 @@ const AT_HEADERS = () => ({
 });
 
 const IMPLAUSIBLE_BASELINE_THRESHOLD = 0.05; // >5% avg unsub = broken mapping
+import { smartDetect, smartValidate } from './_smart-import.js';
 
 
 const AUDIENCE_EXPOSURE_ANCHORS = {
@@ -1091,14 +1092,16 @@ export default async function handler(req, res) {
     // ─────────────────────────────────────────────────────────
     if (action === 'detect') {
       const { headers, rows } = req.body;
-      if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
+      if (!headers || !Array.isArray(headers)) return res.status(400).json({ error: 'headers required' });
 
-      // Try AI-powered detection first
-      const aiResult = await aiMapColumns(headers, rows);
+      const sampleRows = (rows || []).slice(0, 30);
+      let aiResult = null;
+      try { aiResult = await aiMapColumns(headers, sampleRows); } catch (e) {}
 
       let mapping = {};
       let confidence = {};
-      const units = {};  // header → 'percentage' | 'decimal_fraction'
+      let rateUnits = {};
+      let detection = null;
 
       if (aiResult?.columns) {
         const usedTargets = new Set();
@@ -1113,37 +1116,69 @@ export default async function handler(req, res) {
             mapping[h] = target;
             confidence[h] = col.confidence || 'medium';
             usedTargets.add(target);
-            if (col.unit) units[h] = col.unit;
+            if (col.unit) rateUnits[h] = col.unit;
           }
         }
-        // Fill in any headers the AI didn't mention
         for (const h of headers) {
           if (!(h in mapping)) { mapping[h] = ''; confidence[h] = 'none'; }
         }
+
+        const validated = smartValidate(mapping, headers, sampleRows, 'audience');
+        mapping = validated.mapping;
+
+        const recognized = [];
+        const ignored = [];
+        for (const h of headers) {
+          if (mapping[h] && mapping[h] !== '' && mapping[h] !== 'ignore') {
+            recognized.push({ header: h, field: mapping[h], friendlyName: mapping[h].replace(/_/g, ' '), confidence: confidence[h] || 'medium' });
+          } else {
+            ignored.push(h);
+          }
+        }
+        detection = {
+          mapping, confidence, recognized, ignored,
+          ambiguous: validated.ambiguous || [],
+          corrections: validated.corrections || [],
+          derivedRates: validated.derivedRates || [],
+          summary: {
+            recognizedCount: recognized.length,
+            ignoredCount: ignored.length,
+            ambiguousCount: (validated.ambiguous || []).length,
+            canAnalyse: !!validated.canAnalyse,
+            noSegmentDetected: !Object.values(mapping).includes('segment'),
+            hasDate: !!validated.hasDate,
+            hasUnsubData: !!validated.hasUnsubData,
+          },
+        };
       } else {
-        // Fallback to deterministic scorer
-        const fallback = autoMapColumns(headers, rows);
-        mapping = fallback.mapping;
-        confidence = fallback.confidence;
+        detection = smartDetect(headers, sampleRows, 'audience');
+        mapping = detection.mapping;
+        confidence = detection.confidence || {};
+        rateUnits = detection.rateUnits || {};
       }
 
-      // Build rateColumns for the unit-toggle UI
       const rateColumns = Object.entries(mapping)
         .filter(([, t]) => t === 'unsubscribe_rate' || t === 'open_rate' || t === 'click_rate')
         .map(([h, t]) => {
-          const firstVal = rows.slice(0, 20).map(r => r[h]).find(v => v !== null && v !== undefined && v !== '') || null;
-          const hasPctInData = rows.slice(0, 20).some(r => String(r[h] || '').includes('%'));
-          return {
-            column: h,
-            target: t,
-            firstValue: firstVal == null ? null : String(firstVal),
-            hasPctSymbol: hasPctInData,
-            detectedUnit: units[h] || null,   // v7.6: AI-detected unit
-          };
+          const firstVal = sampleRows.map(r => r[h]).find(v => v !== null && v !== undefined && v !== '') || null;
+          const hasPctInData = sampleRows.some(r => String(r[h] || '').includes('%'));
+          return { column: h, target: t, firstValue: firstVal == null ? null : String(firstVal), hasPctSymbol: hasPctInData, detectedUnit: rateUnits[h] || null };
         });
 
-      const noSegmentDetected = !Object.values(mapping).includes('segment');
-      return res.status(200).json({ success: true, mapping, confidence, rateColumns, noSegmentDetected });
+      return res.status(200).json({
+        success: true,
+        mapping,
+        confidence: detection.confidence || confidence,
+        rateColumns,
+        noSegmentDetected: !!detection.summary?.noSegmentDetected,
+        recognized: detection.recognized || [],
+        ignored: detection.ignored || [],
+        ambiguous: detection.ambiguous || [],
+        corrections: detection.corrections || [],
+        derivedRates: detection.derivedRates || [],
+        rateUnits,
+        summary: detection.summary || {},
+      });
     }
 
     // ─────────────────────────────────────────────────────────
