@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — _smart-import.js v1.0
+// SENDWIZE — _smart-import.js v1.1
 //
 // Shared CSV column normalisation layer.
 // Used by BOTH list-intelligence.js AND audience-read.js.
@@ -481,7 +481,71 @@ function smartDetect(headers, sampleRows, mode = 'audience') {
     }
   }
 
-  // Step 6: Build summary
+  // Step 6: Build capabilities and summary
+  const hasDate = mode === 'audience' ? claimedFields.has('date') : (claimedFields.has('date_added') || claimedFields.has('last_engagement'));
+  const hasVolumeClaimed = claimedFields.has('volume_sent') || claimedFields.has('delivered_count');
+  const hasOpenData = claimedFields.has('open_rate') || claimedFields.has('open_count');
+  const hasClickData = claimedFields.has('click_rate') || claimedFields.has('click_count');
+  const hasUnsubData = claimedFields.has('unsubscribe_count') || claimedFields.has('unsubscribe_rate');
+  const hasBounceData = claimedFields.has('bounce_count');
+  const hasComplaintData = claimedFields.has('complaint_count');
+  const hasRevenueData = claimedFields.has('revenue');
+  const hasDeliveryData = claimedFields.has('delivered_count');
+
+  // Capability-based analysis: what can Sendwize legitimately say?
+  const capabilities = {
+    timeline:      hasDate,
+    volume:        hasVolumeClaimed,
+    delivery:      hasDeliveryData,
+    opens:         hasOpenData,
+    clicks:        hasClickData,
+    unsubscribes:  hasUnsubData,
+    bounces:       hasBounceData,
+    complaints:    hasComplaintData,
+    revenue:       hasRevenueData,
+    segments:      claimedFields.has('segment'),
+  };
+
+  // Available and unavailable labels for the frontend
+  const available = [];
+  const unavailable = [];
+  if (mode === 'audience') {
+    if (capabilities.timeline)     available.push('Campaign dates');     else unavailable.push('Campaign dates');
+    if (capabilities.volume)       available.push('Send volume');        else unavailable.push('Send volume');
+    if (capabilities.delivery)     available.push('Delivery data');      else unavailable.push('Delivery data');
+    if (capabilities.opens)        available.push('Open data');          else unavailable.push('Open data');
+    if (capabilities.clicks)       available.push('Click data');         else unavailable.push('Click data');
+    if (capabilities.unsubscribes) available.push('Unsubscribe data');   else unavailable.push('Unsubscribe data');
+    if (capabilities.bounces)      available.push('Bounce data');        else unavailable.push('Bounce data');
+    if (capabilities.complaints)   available.push('Complaint data');     else unavailable.push('Complaint data');
+    if (capabilities.revenue)      available.push('Revenue data');       else unavailable.push('Revenue data');
+    if (capabilities.segments)     available.push('List/audience names');
+  } else {
+    if (claimedFields.has('email'))            available.push('Email addresses');     else unavailable.push('Email addresses');
+    if (claimedFields.has('date_added'))       available.push('Date added');          else unavailable.push('Date added');
+    if (claimedFields.has('last_engagement'))   available.push('Last engagement');    else unavailable.push('Last engagement');
+    if (claimedFields.has('last_purchase'))     available.push('Last purchase');
+    if (claimedFields.has('engagement_type'))   available.push('Engagement type');
+    if (claimedFields.has('order_value'))       available.push('Order value');
+    if (claimedFields.has('status'))           available.push('Subscription status');
+  }
+
+  // canAnalyse: do we have enough to say ANYTHING useful?
+  // Audience: need at least one meaningful metric (date OR volume OR engagement)
+  // List: need email at minimum
+  let canAnalyse;
+  if (mode === 'audience') {
+    const hasAnyEngagement = hasOpenData || hasClickData || hasUnsubData || hasBounceData || hasComplaintData;
+    const hasAnyMetric = hasDate || hasVolumeClaimed || hasAnyEngagement || hasRevenueData;
+    // Need at least two meaningful signals, OR date + anything, OR volume + anything
+    canAnalyse = (hasDate && (hasVolumeClaimed || hasAnyEngagement))
+              || (hasVolumeClaimed && hasAnyEngagement)
+              || (hasDate && hasRevenueData)
+              || (available.length >= 3); // enough variety to say something
+  } else {
+    canAnalyse = claimedFields.has('email');
+  }
+
   const summary = {
     totalColumns: headers.length,
     recognizedCount: recognized.length,
@@ -492,16 +556,18 @@ function smartDetect(headers, sampleRows, mode = 'audience') {
     lowConfidence: recognized.filter(r => r.confidence === 'low').length,
     derivableRates: derivedRates.length,
     corrections: corrections.length,
-    // Key data availability flags
-    hasDate: mode === 'audience' ? claimedFields.has('date') : (claimedFields.has('date_added') || claimedFields.has('last_engagement')),
+    // Data availability flags (kept for backward compat)
+    hasDate,
     hasSegment: claimedFields.has('segment'),
     hasEmail: claimedFields.has('email'),
-    hasUnsubData: claimedFields.has('unsubscribe_count') || claimedFields.has('unsubscribe_rate'),
-    hasVolumeData: claimedFields.has('volume_sent') || claimedFields.has('delivered_count'),
-    canAnalyse: mode === 'audience'
-      ? (claimedFields.has('date') && (claimedFields.has('unsubscribe_count') || claimedFields.has('unsubscribe_rate')))
-      : claimedFields.has('email'),
+    hasUnsubData,
+    hasVolumeData: hasVolumeClaimed,
+    canAnalyse,
     noSegmentDetected: !claimedFields.has('segment'),
+    // New capability-based fields
+    capabilities,
+    available,
+    unavailable,
   };
 
   return {
