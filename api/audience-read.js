@@ -28,6 +28,8 @@
 const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`;
+import { smartDetect, smartValidate } from './_smart-import.js';
+
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const AT_HEADERS = () => ({
   Authorization: `Bearer ${AT_TOKEN}`,
@@ -35,7 +37,6 @@ const AT_HEADERS = () => ({
 });
 
 const IMPLAUSIBLE_BASELINE_THRESHOLD = 0.05; // >5% avg unsub = broken mapping
-import { smartDetect, smartValidate } from './_smart-import.js';
 
 
 const AUDIENCE_EXPOSURE_ANCHORS = {
@@ -906,6 +907,8 @@ function runAlgorithms(campaigns, sector = 'general') {
   if (hasSendHistory && hasOpenRates) dataQuality = 'Partial';
   if (hasSendHistory && hasOpenRates && hasClickRates && hasComplaints) dataQuality = 'Full';
   const missingData = [];
+  const hasUnsubData = campaigns.some(c => c.unsubscribe_count !== null && c.unsubscribe_count !== undefined);
+  if (!hasUnsubData) missingData.push({ field: 'Unsubscribes', message: 'Unsubscribe data was not included in this export, so unsubscribe-rate and subscriber-loss findings are omitted rather than estimated.' });
   if (!hasSendHistory) missingData.push({ field: 'Volume sent', message: 'Add volume sent per campaign and we can calculate exactly how many subscribers you\'re losing above the UK benchmark.' });
   if (!hasOpenRates) missingData.push({ field: 'Open rates', message: 'Add open rates to build a full engagement decay curve and compare against UK sector benchmarks.' });
   if (!hasComplaints) missingData.push({ field: 'Spam complaints', message: 'Complaints carry 50× the weight of an unsubscribe. Adding them makes the Trust Velocity score significantly more accurate.' });
@@ -1073,6 +1076,50 @@ function buildChangeComparison(currentMap, priorMap) {
   return { summary: { improved, worsened, unchanged, brandNew, daysSinceLast, total: segments.length }, segments };
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// SMART ANALYSIS CAPABILITIES — missing metrics reduce scope;
+// they do not invalidate an otherwise usable campaign export.
+// ─────────────────────────────────────────────────────────────
+function buildAudienceCapabilities(mapping, rows = []) {
+  const fields = new Set(Object.values(mapping || {}).filter(Boolean));
+  const has = (...names) => names.some(n => fields.has(n));
+  const capabilities = {
+    timeline: has('date'),
+    campaignPerformance: has('campaign_name') || has('segment') || has('date'),
+    volume: has('volume_sent') || has('delivered_count'),
+    delivery: has('delivered_count') || has('bounce_count'),
+    opens: has('open_count') || has('open_rate'),
+    clicks: has('click_count') || has('click_rate'),
+    unsubscribes: has('unsubscribe_count') || has('unsubscribe_rate'),
+    bounces: has('bounce_count'),
+    complaints: has('complaint_count'),
+    revenue: has('revenue'),
+    channel: has('channel'),
+    consent: has('consent_basis'),
+  };
+  const available=[]; const unavailable=[];
+  if (capabilities.campaignPerformance) available.push('Campaign performance');
+  if (capabilities.volume) available.push('Send volume'); else unavailable.push('Send volume');
+  if (capabilities.delivery) available.push('Delivery'); else unavailable.push('Delivery');
+  if (capabilities.opens) available.push('Open performance'); else unavailable.push('Open analysis');
+  if (capabilities.clicks) available.push('Click performance'); else unavailable.push('Click analysis');
+  if (capabilities.unsubscribes) available.push('Unsubscribe analysis'); else unavailable.push('Unsubscribe analysis');
+  if (capabilities.bounces) available.push('Bounce analysis'); else unavailable.push('Bounce analysis');
+  if (capabilities.complaints) available.push('Complaint analysis'); else unavailable.push('Complaint analysis');
+  if (capabilities.revenue) available.push('Revenue analysis'); else unavailable.push('Revenue analysis');
+  if (capabilities.timeline) available.push('Trends over time'); else unavailable.push('Trends over time');
+  const core = capabilities.volume || capabilities.delivery || capabilities.opens || capabilities.clicks || capabilities.unsubscribes || capabilities.bounces || capabilities.complaints || capabilities.revenue;
+  return { ...capabilities, available, unavailable, canAnalyse: !!core };
+}
+
+function applyAudienceAnalysisScope(detection, mapping, rows) {
+  const capabilities = buildAudienceCapabilities(mapping, rows);
+  detection.summary = { ...(detection.summary || {}), ...capabilities, hasDate: capabilities.timeline, hasUnsubData: capabilities.unsubscribes, hasVolumeData: capabilities.volume, canAnalyse: capabilities.canAnalyse };
+  detection.analysisCapabilities = capabilities;
+  return detection;
+}
+
 // ─────────────────────────────────────────────────────────────
 // MAIN HANDLER
 // ─────────────────────────────────────────────────────────────
@@ -1092,9 +1139,11 @@ export default async function handler(req, res) {
     // ─────────────────────────────────────────────────────────
     if (action === 'detect') {
       const { headers, rows } = req.body;
-      if (!headers || !Array.isArray(headers)) return res.status(400).json({ error: 'headers required' });
+      if (!headers || !rows) return res.status(400).json({ error: 'headers and rows required' });
 
       const sampleRows = (rows || []).slice(0, 30);
+
+      // Step 1: Try AI-powered detection
       let aiResult = null;
       try { aiResult = await aiMapColumns(headers, sampleRows); } catch (e) {}
 
@@ -1104,6 +1153,7 @@ export default async function handler(req, res) {
       let detection = null;
 
       if (aiResult?.columns) {
+        // AI succeeded — build mapping from AI result
         const usedTargets = new Set();
         for (const col of aiResult.columns) {
           const h = col.header;
@@ -1123,40 +1173,40 @@ export default async function handler(req, res) {
           if (!(h in mapping)) { mapping[h] = ''; confidence[h] = 'none'; }
         }
 
+        // Validate AI result — fix count/rate confusion
         const validated = smartValidate(mapping, headers, sampleRows, 'audience');
         mapping = validated.mapping;
 
+        // Build detection-like response for frontend
         const recognized = [];
         const ignored = [];
         for (const h of headers) {
-          if (mapping[h] && mapping[h] !== '' && mapping[h] !== 'ignore') {
-            recognized.push({ header: h, field: mapping[h], friendlyName: mapping[h].replace(/_/g, ' '), confidence: confidence[h] || 'medium' });
+          if (mapping[h] && mapping[h] !== '') {
+            recognized.push({ header: h, field: mapping[h], friendlyName: mapping[h].replace(/_/g, ' '), confidence: confidence[h] });
           } else {
             ignored.push(h);
           }
         }
         detection = {
-          mapping, confidence, recognized, ignored,
-          ambiguous: validated.ambiguous || [],
-          corrections: validated.corrections || [],
-          derivedRates: validated.derivedRates || [],
+          mapping, confidence, recognized, ignored, ambiguous: [],
+          corrections: validated.corrections, derivedRates: [],
           summary: {
             recognizedCount: recognized.length,
             ignoredCount: ignored.length,
-            ambiguousCount: (validated.ambiguous || []).length,
-            canAnalyse: !!validated.canAnalyse,
+            ambiguousCount: 0,
+            canAnalyse: true,
             noSegmentDetected: !Object.values(mapping).includes('segment'),
-            hasDate: !!validated.hasDate,
-            hasUnsubData: !!validated.hasUnsubData,
           },
         };
       } else {
+        // Fallback: smart deterministic detection
         detection = smartDetect(headers, sampleRows, 'audience');
         mapping = detection.mapping;
-        confidence = detection.confidence || {};
-        rateUnits = detection.rateUnits || {};
+        confidence = detection.confidence;
+        rateUnits = detection.rateUnits;
       }
 
+      // Build rateColumns for backward compat with unit-toggle UI
       const rateColumns = Object.entries(mapping)
         .filter(([, t]) => t === 'unsubscribe_rate' || t === 'open_rate' || t === 'click_rate')
         .map(([h, t]) => {
@@ -1165,19 +1215,22 @@ export default async function handler(req, res) {
           return { column: h, target: t, firstValue: firstVal == null ? null : String(firstVal), hasPctSymbol: hasPctInData, detectedUnit: rateUnits[h] || null };
         });
 
+      // Capability-based readiness: missing unsubscribe/open/revenue fields reduce scope, not validity.
+      detection = applyAudienceAnalysisScope(detection, mapping, sampleRows);
+
       return res.status(200).json({
         success: true,
         mapping,
-        confidence: detection.confidence || confidence,
+        confidence,
         rateColumns,
-        noSegmentDetected: !!detection.summary?.noSegmentDetected,
-        recognized: detection.recognized || [],
-        ignored: detection.ignored || [],
-        ambiguous: detection.ambiguous || [],
+        noSegmentDetected: detection.summary.noSegmentDetected,
+        // Smart-import fields for frontend
+        recognized: detection.recognized,
+        ignored: detection.ignored,
+        ambiguous: detection.ambiguous,
         corrections: detection.corrections || [],
         derivedRates: detection.derivedRates || [],
-        rateUnits,
-        summary: detection.summary || {},
+        summary: detection.summary,
       });
     }
 
@@ -1248,7 +1301,6 @@ export default async function handler(req, res) {
           }
         }
         if (c._unsubRate !== undefined && c.unsubscribe_count === null && c.volume_sent) { c.unsubscribe_count = Math.round(c._unsubRate * c.volume_sent); }
-        else if (c._unsubRate !== undefined && c.unsubscribe_count === null) { c.unsubscribe_count = Math.round(c._unsubRate * 1000); c.volume_sent = 1000; }
         delete c._unsubRate;
         // v7.6: convert counts → rates when volume is available
         if (c._openCount != null && c.open_rate === null && c.volume_sent) {
@@ -1273,10 +1325,10 @@ export default async function handler(req, res) {
       const mergeMap = {};
       for (const row of rawRows) {
         const key = (row.date || '') + '|' + (row.segment || 'Default');
-        if (!mergeMap[key]) { mergeMap[key] = { segment: row.segment || 'Default', date: row.date, unsubscribe_count: 0, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null }; }
+        if (!mergeMap[key]) { mergeMap[key] = { segment: row.segment || 'Default', date: row.date, unsubscribe_count: null, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null }; }
         const m = mergeMap[key];
         if (row.segment) m.segment = row.segment;
-        if (row.unsubscribe_count !== null) m.unsubscribe_count = row.unsubscribe_count;
+        if (row.unsubscribe_count !== null && row.unsubscribe_count !== undefined) m.unsubscribe_count = row.unsubscribe_count;
         if (row.volume_sent !== null) m.volume_sent = row.volume_sent;
         if (row.open_rate !== null) m.open_rate = row.open_rate;
         if (row.click_rate !== null) m.click_rate = row.click_rate;
@@ -1291,9 +1343,9 @@ export default async function handler(req, res) {
       const implausible = [];
       for (const [segName, segCamps] of Object.entries(segmentGroups)) {
         if (!segCamps.length) continue;
-        const rates = segCamps.map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1));
-        const avg = mean_arr(rates);
-        if (avg > IMPLAUSIBLE_BASELINE_THRESHOLD) implausible.push({ segment: segName, avgRate: r4(avg) });
+        const rates = segCamps.filter(c => c.unsubscribe_count != null).map(c => c.unsubscribe_count / Math.max(c.volume_sent || 1000, 1));
+        const avg = rates.length ? mean_arr(rates) : null;
+        if (avg != null && avg > IMPLAUSIBLE_BASELINE_THRESHOLD) implausible.push({ segment: segName, avgRate: r4(avg) });
       }
       if (implausible.length) {
         return res.status(400).json({
