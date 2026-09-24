@@ -510,6 +510,9 @@ function renderSmartImportSuccess(detection, container, onContinue, onReview) {
   var ign = detection.ignored || [];
   var corrections = detection.corrections || [];
   var derived = detection.derivedRates || [];
+  var summary = detection.summary || {};
+  var avail = summary.available || [];
+  var unavail = summary.unavailable || [];
   var fieldsHtml = rec.map(function(r) {
     var icon = r.confidence === 'high' ? '\u2713' : r.confidence === 'medium' ? '~' : '?';
     var iconColor = r.confidence === 'high' ? 'var(--g)' : r.confidence === 'medium' ? 'var(--y)' : 'var(--r)';
@@ -529,6 +532,25 @@ function renderSmartImportSuccess(detection, container, onContinue, onReview) {
   var derivedHtml = derived.length
     ? '<div style="font-size:12px;color:var(--mu);margin-top:8px">\uD83D\uDCCA We\'ll calculate ' + derived.map(function(d) { return d.rate.replace(/_/g, ' '); }).join(', ') + ' from your counts.</div>'
     : '';
+  // Available / unavailable capability display
+  var capHtml = '';
+  if (avail.length || unavail.length) {
+    capHtml = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">';
+    if (avail.length) {
+      capHtml += '<div style="flex:1;min-width:180px;background:var(--gb);border:1px solid var(--gc);border-radius:8px;padding:10px 14px">'
+        + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--g);margin-bottom:6px">Available</div>'
+        + avail.map(function(a) { return '<div style="font-size:12px;color:#166534;padding:2px 0">\u2713 ' + escH(a) + '</div>'; }).join('')
+        + '</div>';
+    }
+    if (unavail.length) {
+      capHtml += '<div style="flex:1;min-width:180px;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px">'
+        + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px">Not available</div>'
+        + unavail.map(function(u) { return '<div style="font-size:12px;color:var(--mu);padding:2px 0">\u2014 ' + escH(u) + '</div>'; }).join('')
+        + '<div style="font-size:11px;color:var(--mu);margin-top:6px;font-style:italic">These findings will be omitted, not estimated.</div>'
+        + '</div>';
+    }
+    capHtml += '</div>';
+  }
   var ignoredHtml = ign.length
     ? '<div style="font-size:12px;color:var(--mu);margin-top:8px">' + ign.length + ' other column' + (ign.length !== 1 ? 's' : '') + ' will be preserved but not used in analysis.</div>'
     : '';
@@ -536,11 +558,11 @@ function renderSmartImportSuccess(detection, container, onContinue, onReview) {
     + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
     + '<span style="font-size:28px">\u2705</span>'
     + '<div><div style="font-size:18px;font-weight:700;letter-spacing:-.3px">We understood your file</div>'
-    + '<div style="font-size:13px;color:var(--mu)">Found ' + rec.length + ' field' + (rec.length !== 1 ? 's' : '') + ' we can use.</div></div>'
+    + '<div style="font-size:13px;color:var(--mu)">We\'ll analyse what your file contains.' + (unavail.length ? ' Missing data will be omitted rather than estimated.' : '') + '</div></div>'
     + '</div>'
     + '<div style="background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:16px 20px;margin-bottom:16px;box-shadow:var(--sh)">'
     + fieldsHtml + '</div>'
-    + correctionHtml + derivedHtml + ignoredHtml
+    + correctionHtml + derivedHtml + capHtml + ignoredHtml
     + '<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">'
     + '<button class="btn btn-primary" id="smartContinueBtn">Continue to analysis \u2192</button>'
     + '<button class="btn btn-ghost btn-sm" id="smartReviewBtn">Review detected fields</button>'
@@ -596,7 +618,7 @@ function renderSmartImportFailure(detection, container, onUploadAnother, onManua
     + '<div style="font-size:36px;margin-bottom:12px">\uD83D\uDCCB</div>'
     + '<div style="font-size:18px;font-weight:700;margin-bottom:8px">We couldn\'t read enough from this file</div>'
     + '<div style="font-size:13px;color:var(--mu);line-height:1.6;max-width:400px;margin:0 auto 20px">'
-    + 'We need at least an email column to run the analysis.'
+    + 'We need at least one usable contact field (for example an email address) to run the analysis.'
     + (reasons.length ? '<br><br>' + reasons.join('. ') + '.' : '')
     + '</div>'
     + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">'
@@ -768,8 +790,6 @@ async function goMapping(){
     }
   }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
 }
-
-
 function onListNameChange(){
   var v=(el('listNameInput').value||'').trim();
   var btn=el('btnAnalyse');
