@@ -583,14 +583,15 @@ export default async function handler(req, res) {
     // ── DETECT — AI + fallback column detection ─────────────
     if (action === 'detect') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-      const { headers, sampleRows: bodyRows, rows } = req.body;
+      const { headers, rows } = req.body;
       if (!headers || !Array.isArray(headers)) return res.status(400).json({ error: 'headers required' });
 
-      const sampleRows = (bodyRows || rows || []).slice(0, 30);
+      const sampleRows = (rows || []).slice(0, 30);
       let mapping = null;
       let method = 'deterministic';
       let detection = null;
 
+      // Try AI first
       if (process.env.ANTHROPIC_API_KEY) {
         try {
           const aiResult = await aiMapListColumns(headers, sampleRows);
@@ -601,9 +602,11 @@ export default async function handler(req, res) {
             }
             method = 'ai';
 
+            // Validate AI result — fix count/rate confusion
             const validated = smartValidate(mapping, headers, sampleRows, 'list');
             mapping = validated.mapping;
 
+            // Build detection-like structure from AI result
             const recognized = [];
             const ignored = [];
             for (const h of headers) {
@@ -615,27 +618,20 @@ export default async function handler(req, res) {
               }
             }
             detection = {
-              mapping,
-              recognized,
-              ignored,
-              ambiguous: [],
-              corrections: validated.corrections || [],
-              derivedRates: validated.derivedRates || [],
+              recognized, ignored, ambiguous: [], corrections: validated.corrections || [],
               summary: {
                 recognizedCount: recognized.length,
                 ignoredCount: ignored.length,
-                ambiguousCount: 0,
                 canAnalyse: Object.values(mapping).includes('email'),
                 hasEmail: Object.values(mapping).includes('email'),
                 hasDate: Object.values(mapping).includes('date_added') || Object.values(mapping).includes('last_engagement'),
               },
             };
           }
-        } catch (e) {
-          console.error('Smart list detection AI/validation failed:', e.message);
-        }
+        } catch (e) { /* AI failed — fall through to deterministic */ }
       }
 
+      // Fallback: smart deterministic detection
       if (!mapping) {
         detection = smartDetect(headers, sampleRows, 'list');
         mapping = detection.mapping;
@@ -646,12 +642,11 @@ export default async function handler(req, res) {
         success: true,
         mapping,
         method,
-        recognized: detection.recognized || [],
-        ignored: detection.ignored || [],
+        recognized: detection.recognized,
+        ignored: detection.ignored,
         ambiguous: detection.ambiguous || [],
         corrections: detection.corrections || [],
-        derivedRates: detection.derivedRates || [],
-        summary: detection.summary || {},
+        summary: detection.summary,
       });
     }
 
