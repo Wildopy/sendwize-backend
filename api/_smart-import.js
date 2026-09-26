@@ -45,6 +45,8 @@ const FIELD_DEFS = {
   bounce_count:      { type: 'count',  modes: ['audience'],       friendlyName: 'Bounces' },
   complaint_count:   { type: 'count',  modes: ['audience'],       friendlyName: 'Complaints' },
   revenue:           { type: 'money',  modes: ['audience'],       friendlyName: 'Revenue' },
+  conversions:       { type: 'count',  modes: ['audience'],       friendlyName: 'Conversions' },
+  cost:              { type: 'money',  modes: ['audience'],       friendlyName: 'Cost / spend' },
 
   // ── List Intelligence fields ──────────────────────────────
   email:             { type: 'email',  modes: ['list'],           friendlyName: 'Email' },
@@ -124,6 +126,15 @@ const ALIASES = {
   'total sales': 'revenue', 'conversion value': 'revenue',
   'revenue generated': 'revenue', 'order value': 'order_value',
   'total revenue': 'revenue', 'campaign revenue': 'revenue',
+
+  // Conversions
+  'conversions': 'conversions', 'total conversions': 'conversions',
+  'conversion count': 'conversions', 'orders': 'conversions',
+  'purchases': 'conversions', 'transactions': 'conversions',
+
+  // Cost
+  'cost': 'cost', 'campaign cost': 'cost', 'total cost': 'cost',
+  'ad spend': 'cost', 'send cost': 'cost',
 
   // Audience / segment
   'audience': 'segment', 'audience name': 'segment', 'list': 'segment',
@@ -493,6 +504,9 @@ function smartDetect(headers, sampleRows, mode = 'audience') {
   const hasDeliveryData = claimedFields.has('delivered_count');
 
   // Capability-based analysis: what can Sendwize legitimately say?
+  const hasConversionData = claimedFields.has('conversions');
+  const hasCostData = claimedFields.has('cost');
+
   const capabilities = {
     timeline:      hasDate,
     volume:        hasVolumeClaimed,
@@ -503,6 +517,8 @@ function smartDetect(headers, sampleRows, mode = 'audience') {
     bounces:       hasBounceData,
     complaints:    hasComplaintData,
     revenue:       hasRevenueData,
+    conversions:   hasConversionData,
+    cost:          hasCostData,
     segments:      claimedFields.has('segment'),
   };
 
@@ -519,6 +535,8 @@ function smartDetect(headers, sampleRows, mode = 'audience') {
     if (capabilities.bounces)      available.push('Bounce data');        else unavailable.push('Bounce data');
     if (capabilities.complaints)   available.push('Complaint data');     else unavailable.push('Complaint data');
     if (capabilities.revenue)      available.push('Revenue data');       else unavailable.push('Revenue data');
+    if (capabilities.conversions)  available.push('Conversion data');    else unavailable.push('Conversion data');
+    if (capabilities.cost)         available.push('Cost / spend data');  else unavailable.push('Cost / spend data');
     if (capabilities.segments)     available.push('List/audience names');
   } else {
     if (claimedFields.has('email'))            available.push('Email addresses');     else unavailable.push('Email addresses');
@@ -536,11 +554,12 @@ function smartDetect(headers, sampleRows, mode = 'audience') {
   let canAnalyse;
   if (mode === 'audience') {
     const hasAnyEngagement = hasOpenData || hasClickData || hasUnsubData || hasBounceData || hasComplaintData;
-    const hasAnyMetric = hasDate || hasVolumeClaimed || hasAnyEngagement || hasRevenueData;
+    const hasAnyCommercial = hasRevenueData || hasConversionData || hasCostData;
     // Need at least two meaningful signals, OR date + anything, OR volume + anything
     canAnalyse = (hasDate && (hasVolumeClaimed || hasAnyEngagement))
               || (hasVolumeClaimed && hasAnyEngagement)
-              || (hasDate && hasRevenueData)
+              || (hasDate && hasAnyCommercial)
+              || (hasVolumeClaimed && hasAnyCommercial)
               || (available.length >= 3); // enough variety to say something
   } else {
     canAnalyse = claimedFields.has('email');
