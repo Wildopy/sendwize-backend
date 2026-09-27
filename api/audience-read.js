@@ -214,6 +214,8 @@ TARGET FIELDS (use these exact strings):
 - delivered_count   — emails/messages successfully delivered (not bounced)
 - bounce_count      — hard or soft bounces
 - revenue           — revenue, sales, or order value from this campaign (any currency)
+- conversions       — conversion, order, purchase, or transaction count
+- cost              — campaign cost, spend, or send cost (any currency)
 - channel           — send channel: email, sms, push, direct_mail
 - consent_basis     — legal basis: direct_opt_in, soft_opt_in, legitimate_interest, purchased, partner, mixed, unknown
 - ignore            — internal IDs, URLs, timestamps, or anything else
@@ -553,6 +555,42 @@ function normaliseConsentBasis(raw) {
   return 'unknown';
 }
 
+
+
+// ── Performance layer: engagement benchmarks ─────────────────
+const ENGAGEMENT_BENCHMARKS = {
+  ecommerce: { openGood:0.25, openNormal:0.18, openConcern:0.12, openDamaged:0.08, clickGood:0.035, clickNormal:0.025, clickConcern:0.015, clickDamaged:0.008, ctoGood:0.18, ctoNormal:0.12, ctoConcern:0.08, ctoDamaged:0.05, openSource:'Klaviyo 400k campaigns 2024', clickSource:'Klaviyo 400k campaigns 2024' },
+  b2b: { openGood:0.30, openNormal:0.22, openConcern:0.15, openDamaged:0.10, clickGood:0.04, clickNormal:0.03, clickConcern:0.018, clickDamaged:0.01, ctoGood:0.16, ctoNormal:0.11, ctoConcern:0.07, ctoDamaged:0.04, openSource:'GDMA 2024 + MailerLite 2025', clickSource:'GDMA 2024 + MailerLite 2025' },
+  saas: { openGood:0.28, openNormal:0.20, openConcern:0.14, openDamaged:0.09, clickGood:0.035, clickNormal:0.025, clickConcern:0.015, clickDamaged:0.008, ctoGood:0.16, ctoNormal:0.11, ctoConcern:0.07, ctoDamaged:0.04, openSource:'GetResponse 2024 + GDMA 2024', clickSource:'GetResponse 2024 + GDMA 2024' },
+  media: { openGood:0.32, openNormal:0.24, openConcern:0.16, openDamaged:0.10, clickGood:0.05, clickNormal:0.035, clickConcern:0.02, clickDamaged:0.01, ctoGood:0.18, ctoNormal:0.13, ctoConcern:0.08, ctoDamaged:0.05, openSource:'MailerLite 2025 + GDMA 2024', clickSource:'MailerLite 2025 + GDMA 2024' },
+  finance: { openGood:0.33, openNormal:0.25, openConcern:0.18, openDamaged:0.12, clickGood:0.04, clickNormal:0.028, clickConcern:0.018, clickDamaged:0.01, ctoGood:0.15, ctoNormal:0.10, ctoConcern:0.06, ctoDamaged:0.04, openSource:'GDMA 2024', clickSource:'GDMA 2024' },
+  health: { openGood:0.30, openNormal:0.22, openConcern:0.15, openDamaged:0.10, clickGood:0.035, clickNormal:0.025, clickConcern:0.015, clickDamaged:0.008, ctoGood:0.16, ctoNormal:0.11, ctoConcern:0.07, ctoDamaged:0.04, openSource:'GDMA 2024 + GetResponse 2024', clickSource:'GDMA 2024 + GetResponse 2024' },
+  charity: { openGood:0.33, openNormal:0.25, openConcern:0.17, openDamaged:0.11, clickGood:0.045, clickNormal:0.032, clickConcern:0.02, clickDamaged:0.012, ctoGood:0.17, ctoNormal:0.12, ctoConcern:0.08, ctoDamaged:0.05, openSource:'DMA UK 2025', clickSource:'DMA UK 2025' },
+  general: { openGood:0.28, openNormal:0.21, openConcern:0.14, openDamaged:0.09, clickGood:0.038, clickNormal:0.028, clickConcern:0.017, clickDamaged:0.009, ctoGood:0.16, ctoNormal:0.11, ctoConcern:0.07, ctoDamaged:0.04, openSource:'MailerLite 2025 + GDMA 2024', clickSource:'MailerLite 2025 + GDMA 2024' },
+};
+const DELIVERY_BENCHMARKS = { deliveryGood:0.98, deliveryNormal:0.95, deliveryConcern:0.90, bounceGood:0.005, bounceNormal:0.02, bounceConcern:0.05 };
+function getEngagementBench(sector) { return ENGAGEMENT_BENCHMARKS[sector] || ENGAGEMENT_BENCHMARKS.general; }
+
+function scoreEngagement(campaigns, sector) {
+  const bench = getEngagementBench(sector);
+  const result = { openRate:null, clickRate:null, ctoRate:null, deliveryRate:null, bounceRate:null, openBand:null, clickBand:null, ctoBand:null, deliveryBand:null, bounceBand:null, openTrend:null, clickTrend:null, deliveryTrend:null, openVsBenchmark:null, clickVsBenchmark:null, commercial:null, campaignPerformance:[] };
+  if (!campaigns || !campaigns.length) return result;
+  const withOpen=campaigns.filter(c=>c.open_rate!=null||c.open_count!=null), withClick=campaigns.filter(c=>c.click_rate!=null||c.click_count!=null), withDelivery=campaigns.filter(c=>c.delivered_count!=null||c.delivery_rate!=null), withBounce=campaigns.filter(c=>c.bounce_count!=null||c.bounce_rate!=null), withRevenue=campaigns.filter(c=>c.revenue!=null&&c.revenue>0), withCost=campaigns.filter(c=>c.cost!=null&&c.cost>0), withConversions=campaigns.filter(c=>c.conversions!=null);
+  const getOpenRate=c=>c.open_rate!=null?c.open_rate:(c.open_count!=null&&c.volume_sent?c.open_count/c.volume_sent:null);
+  const getClickRate=c=>c.click_rate!=null?c.click_rate:(c.click_count!=null&&c.volume_sent?c.click_count/c.volume_sent:null);
+  const getDeliveryRate=c=>c.delivery_rate!=null?c.delivery_rate:(c.delivered_count!=null&&c.volume_sent?c.delivered_count/c.volume_sent:null);
+  const getBounceRate=c=>c.bounce_rate!=null?c.bounce_rate:(c.bounce_count!=null&&c.volume_sent?c.bounce_count/c.volume_sent:null);
+  if(withOpen.length){const rates=withOpen.map(getOpenRate).filter(r=>r!=null);if(rates.length){result.openRate=mean_arr(rates);result.openBand=result.openRate>=bench.openGood?'good':result.openRate>=bench.openNormal?'normal':result.openRate>=bench.openConcern?'concern':'damaged';result.openVsBenchmark=Math.round(((result.openRate-bench.openNormal)/bench.openNormal)*100);if(rates.length>=4){const recent=mean_arr(rates.slice(-3)),older=mean_arr(rates.slice(0,3)),delta=recent-older;result.openTrend=delta>0.02?'improving':delta<-0.02?'declining':'stable';}}}
+  if(withClick.length){const rates=withClick.map(getClickRate).filter(r=>r!=null);if(rates.length){result.clickRate=mean_arr(rates);result.clickBand=result.clickRate>=bench.clickGood?'good':result.clickRate>=bench.clickNormal?'normal':result.clickRate>=bench.clickConcern?'concern':'damaged';result.clickVsBenchmark=Math.round(((result.clickRate-bench.clickNormal)/bench.clickNormal)*100);if(rates.length>=4){const recent=mean_arr(rates.slice(-3)),older=mean_arr(rates.slice(0,3)),delta=recent-older;result.clickTrend=delta>0.005?'improving':delta<-0.005?'declining':'stable';}}}
+  if(result.openRate&&result.clickRate){result.ctoRate=result.clickRate/result.openRate;result.ctoBand=result.ctoRate>=bench.ctoGood?'good':result.ctoRate>=bench.ctoNormal?'normal':result.ctoRate>=bench.ctoConcern?'concern':'damaged';}
+  if(withDelivery.length){const rates=withDelivery.map(getDeliveryRate).filter(r=>r!=null);if(rates.length){result.deliveryRate=mean_arr(rates);result.deliveryBand=result.deliveryRate>=DELIVERY_BENCHMARKS.deliveryGood?'good':result.deliveryRate>=DELIVERY_BENCHMARKS.deliveryNormal?'normal':result.deliveryRate>=DELIVERY_BENCHMARKS.deliveryConcern?'concern':'damaged';if(rates.length>=3){const delta=mean_arr(rates.slice(-2))-mean_arr(rates.slice(0,2));result.deliveryTrend=delta>0.005?'improving':delta<-0.005?'declining':'stable';}}}
+  if(withBounce.length){const rates=withBounce.map(getBounceRate).filter(r=>r!=null);if(rates.length){result.bounceRate=mean_arr(rates);result.bounceBand=result.bounceRate<=DELIVERY_BENCHMARKS.bounceGood?'good':result.bounceRate<=DELIVERY_BENCHMARKS.bounceNormal?'normal':result.bounceRate<=DELIVERY_BENCHMARKS.bounceConcern?'concern':'damaged';}}
+  if(withRevenue.length||withConversions.length){const c={},totalSent=campaigns.reduce((s,x)=>s+(x.volume_sent||0),0);if(withRevenue.length){const totalRevenue=withRevenue.reduce((s,x)=>s+(x.revenue||0),0);c.totalRevenue=totalRevenue;c.revenuePerRecipient=totalSent>0?totalRevenue/totalSent:0;c.revenuePerCampaign=totalRevenue/withRevenue.length;const totalOpens=campaigns.reduce((s,x)=>s+(x.open_count||0),0),totalClicks=campaigns.reduce((s,x)=>s+(x.click_count||0),0);if(totalOpens>0)c.revenuePerOpen=totalRevenue/totalOpens;if(totalClicks>0)c.revenuePerClick=totalRevenue/totalClicks;if(withRevenue.length>=3){const recent=mean_arr(withRevenue.slice(-2).map(x=>x.revenue||0)),older=mean_arr(withRevenue.slice(0,2).map(x=>x.revenue||0));c.revenueTrend=recent>older*1.1?'growing':recent<older*0.9?'declining':'stable';}}if(withCost.length&&withRevenue.length){const totalCost=withCost.reduce((s,x)=>s+(x.cost||0),0),totalRev=withRevenue.reduce((s,x)=>s+(x.revenue||0),0);c.totalCost=totalCost;c.roi=totalCost>0?totalRev/totalCost:null;c.costPerRecipient=totalSent>0?totalCost/totalSent:0;}if(withConversions.length){const totalConversions=withConversions.reduce((s,x)=>s+(x.conversions||0),0);c.totalConversions=totalConversions;c.conversionRate=totalSent>0?totalConversions/totalSent:0;}result.commercial=c;}
+  result.campaignPerformance=campaigns.slice(-8).map(c=>({date:c.date,name:c.campaign_name||c.date,...(getOpenRate(c)!=null?{openRate:getOpenRate(c)}:{}),...(getClickRate(c)!=null?{clickRate:getClickRate(c)}:{}),...(getDeliveryRate(c)!=null?{deliveryRate:getDeliveryRate(c)}:{}),...(c.revenue!=null?{revenue:c.revenue}:{}),...(c.conversions!=null?{conversions:c.conversions}:{}),...(c.volume_sent?{volumeSent:c.volume_sent}:{})}));
+  const bands=[result.openBand,result.clickBand,result.ctoBand].filter(Boolean),hasDamaged=bands.includes('damaged'),hasConcern=bands.includes('concern'),allGood=bands.length>0&&bands.every(b=>b==='good');
+  if(hasDamaged){result.engagementVerdict='Engagement is significantly below UK benchmarks';result.engagementState='damaged';}else if(hasConcern){result.engagementVerdict='Engagement is below average for your sector';result.engagementState='concern';}else if(allGood){result.engagementVerdict='Engagement is strong — above UK benchmarks';result.engagementState='good';}else if(bands.length){result.engagementVerdict='Engagement is in line with UK benchmarks';result.engagementState='normal';}
+  return result;
+}
 
 function benchmarkVerdict(unsubRate, bench) {
   if (unsubRate <= bench.unsubGood) return { label: 'Excellent', tier: 'good', pctVsBenchmark: null };
@@ -899,6 +937,7 @@ function runAlgorithms(campaigns, sector = 'general') {
   const sentiment = algorithm5_sentimentInference(fingerprint, trustVelocity, freqTolerance, impacts, capital, bench, sector);
   const subscriberLoss = calcSubscriberLoss(campaigns, bench);
   const sendWindow = computeSendWindow(campaigns, fingerprint, freqTolerance, sentiment, capital, bench);
+  const engagement = scoreEngagement(campaigns, sector);
   const hasOpenRates = campaigns.some(c => c.open_rate !== null);
   const hasClickRates = campaigns.some(c => c.click_rate !== null);
   const hasComplaints = campaigns.some(c => c.complaint_count !== null && c.complaint_count > 0);
@@ -912,7 +951,7 @@ function runAlgorithms(campaigns, sector = 'general') {
   if (!hasSendHistory) missingData.push({ field: 'Volume sent', message: 'Add volume sent per campaign and we can calculate exactly how many subscribers you\'re losing above the UK benchmark.' });
   if (!hasOpenRates) missingData.push({ field: 'Open rates', message: 'Add open rates to build a full engagement decay curve and compare against UK sector benchmarks.' });
   if (!hasComplaints) missingData.push({ field: 'Spam complaints', message: 'Complaints carry 50× the weight of an unsubscribe. Adding them makes the Trust Velocity score significantly more accurate.' });
-  return { fingerprint, trustVelocity, freqTolerance, sentiment, capital, sendWindow, impacts: impacts.slice(-10), dataQuality, missingData, subscriberLoss, bench: { label: bench.label, unsubNormal: bench.unsubNormal, unsubGood: bench.unsubGood, unsubConcern: bench.unsubConcern, unsubDamaged: bench.unsubDamaged, source: bench.source }, sector };
+  return { fingerprint, trustVelocity, freqTolerance, sentiment, capital, sendWindow, impacts: impacts.slice(-10), dataQuality, missingData, subscriberLoss, engagement, bench: { label: bench.label, unsubNormal: bench.unsubNormal, unsubGood: bench.unsubGood, unsubConcern: bench.unsubConcern, unsubDamaged: bench.unsubDamaged, openNormal: bench.openNormal, clickNormal: bench.clickNormal, source: bench.source }, sector };
 }
 
 function buildSegmentData(campaigns) {
@@ -1022,7 +1061,7 @@ async function saveCampaign(userId, segmentName, campaign, impact) {
 
 async function loadCampaigns(userId) {
   const records = await atGet('Audience_Read_Campaigns', `{UserID}="${userId}"`, 'sort[0][field]=SendDate&sort[0][direction]=asc', 500);
-  return records.map(r => ({ segment: r.fields.SegmentName, campaign_name: r.fields.CampaignName, campaign_type: r.fields.CampaignType, date: r.fields.SendDate, volume_sent: r.fields.VolumeSent || null, unsubscribe_count: r.fields.UnsubscribeCount || 0, open_rate: r.fields.OpenRate || null, click_rate: r.fields.ClickRate || null, complaint_count: r.fields.ComplaintCount || null, revenue: r.fields.Revenue || null, channel: r.fields.Channel || null, consent_basis: r.fields.ConsentBasis || null, delivery_rate: r.fields.DeliveryRate || null, bounce_rate: r.fields.BounceRate || null }));
+  return records.map(r => ({ segment: r.fields.SegmentName, campaign_name: r.fields.CampaignName, campaign_type: r.fields.CampaignType, date: r.fields.SendDate, volume_sent: r.fields.VolumeSent || null, unsubscribe_count: r.fields.UnsubscribeCount || 0, open_rate: r.fields.OpenRate || null, click_rate: r.fields.ClickRate || null, complaint_count: r.fields.ComplaintCount || null, revenue: r.fields.Revenue || null, cost: r.fields.Cost || null, conversions: r.fields.Conversions || null, open_count: r.fields.OpenCount || null, click_count: r.fields.ClickCount || null, delivered_count: r.fields.DeliveredCount || null, bounce_count: r.fields.BounceCount || null, channel: r.fields.Channel || null, consent_basis: r.fields.ConsentBasis || null, delivery_rate: r.fields.DeliveryRate || null, bounce_rate: r.fields.BounceRate || null }));
 }
 
 async function snapshotSegment(userId, segmentName, data) {
@@ -1259,7 +1298,7 @@ export default async function handler(req, res) {
       const cplVal = (cpl != null && Number.isFinite(Number(cpl)) && Number(cpl) > 0) ? Number(cpl) : null;
       const units = rateUnits || {};
       const rawRows = rows.map(row => {
-        const c = { segment: null, date: null, unsubscribe_count: null, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null, revenue: null, channel: null, consent_basis: null, delivery_rate: null, bounce_rate: null };
+        const c = { segment: null, date: null, unsubscribe_count: null, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null, revenue: null, cost: null, conversions: null, open_count: null, click_count: null, delivered_count: null, bounce_count: null, channel: null, consent_basis: null, delivery_rate: null, bounce_rate: null };
         for (const [header, targetField] of Object.entries(fieldMapping || {})) {
           const val = row[header];
           if (targetField === 'date') c.date = normaliseDate(val);
@@ -1293,6 +1332,13 @@ export default async function handler(req, res) {
             c.revenue = val !== '' && val != null
               ? (parseFloat(String(val).replace(/[£$€,]/g, '')) || null) : null;
           }
+          else if (targetField === 'cost') {
+            c.cost = val !== '' && val != null
+              ? (parseFloat(String(val).replace(/[£$€,]/g, '')) || null) : null;
+          }
+          else if (targetField === 'conversions') {
+            c.conversions = val !== '' && val != null ? (parseInt(String(val).replace(/,/g, ''), 10) || null) : null;
+          }
           else if (targetField === 'channel') {
             c.channel = String(val || '').trim().toLowerCase() || null;
           }
@@ -1316,6 +1362,10 @@ export default async function handler(req, res) {
         if (c._bounceCount != null && c.volume_sent) {
           c.bounce_rate = c._bounceCount / c.volume_sent;
         }
+        c.open_count = c._openCount;
+        c.click_count = c._clickCount;
+        c.delivered_count = c._deliveredCount;
+        c.bounce_count = c._bounceCount;
         delete c._openCount;
         delete c._clickCount;
         delete c._deliveredCount;
@@ -1325,7 +1375,7 @@ export default async function handler(req, res) {
       const mergeMap = {};
       for (const row of rawRows) {
         const key = (row.date || '') + '|' + (row.segment || 'Default');
-        if (!mergeMap[key]) { mergeMap[key] = { segment: row.segment || 'Default', date: row.date, unsubscribe_count: null, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null }; }
+        if (!mergeMap[key]) { mergeMap[key] = { segment: row.segment || 'Default', date: row.date, unsubscribe_count: null, volume_sent: null, open_rate: null, click_rate: null, complaint_count: null, campaign_name: null, campaign_type: null, revenue: null, cost: null, conversions: null, open_count: null, click_count: null, delivered_count: null, bounce_count: null, delivery_rate: null, bounce_rate: null, channel: null, consent_basis: null }; }
         const m = mergeMap[key];
         if (row.segment) m.segment = row.segment;
         if (row.unsubscribe_count !== null && row.unsubscribe_count !== undefined) m.unsubscribe_count = row.unsubscribe_count;
@@ -1335,6 +1385,17 @@ export default async function handler(req, res) {
         if (row.complaint_count !== null) m.complaint_count = row.complaint_count;
         if (row.campaign_name) m.campaign_name = row.campaign_name;
         if (row.campaign_type) m.campaign_type = row.campaign_type;
+        if (row.revenue !== null) m.revenue = row.revenue;
+        if (row.cost !== null) m.cost = row.cost;
+        if (row.conversions !== null) m.conversions = row.conversions;
+        if (row.open_count !== null) m.open_count = row.open_count;
+        if (row.click_count !== null) m.click_count = row.click_count;
+        if (row.delivered_count !== null) m.delivered_count = row.delivered_count;
+        if (row.bounce_count !== null) m.bounce_count = row.bounce_count;
+        if (row.delivery_rate !== null) m.delivery_rate = row.delivery_rate;
+        if (row.bounce_rate !== null) m.bounce_rate = row.bounce_rate;
+        if (row.channel) m.channel = row.channel;
+        if (row.consent_basis) m.consent_basis = row.consent_basis;
       }
       const campaigns = Object.values(mergeMap);
       if (!campaigns.length) return res.status(400).json({ error: 'No valid rows found. Check that a date column is present and correctly mapped.' });
@@ -1532,6 +1593,37 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ success: true, prediction, narrative });
+    }
+
+    // ── AI Strategy Brief ──
+    if (action === 'strategy') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+      const { segments, sector: strategySector } = req.body;
+      if (!segments || !Object.keys(segments).length) return res.status(400).json({ error: 'No segment data' });
+      const segSummaries = Object.entries(segments).map(([name, seg]) => {
+        const parts = [`List: ${name}`, `State: ${seg.sentiment?.state || 'Unknown'}`];
+        if (seg.sentiment?.verdict) parts.push(`Verdict: ${seg.sentiment.verdict}`);
+        if (seg.capital != null) parts.push(`Goodwill: ${seg.capital}/100`);
+        if (seg.engagement) {
+          const e=seg.engagement;
+          if(e.openRate!=null) parts.push(`Open rate: ${(e.openRate*100).toFixed(1)}% (${e.openBand||'?'} vs benchmark)`);
+          if(e.clickRate!=null) parts.push(`Click rate: ${(e.clickRate*100).toFixed(1)}% (${e.clickBand||'?'} vs benchmark)`);
+          if(e.ctoRate!=null) parts.push(`Click-to-open: ${(e.ctoRate*100).toFixed(1)}%`);
+          if(e.deliveryRate!=null) parts.push(`Delivery: ${(e.deliveryRate*100).toFixed(1)}%`);
+          if(e.openTrend) parts.push(`Open trend: ${e.openTrend}`);
+          if(e.clickTrend) parts.push(`Click trend: ${e.clickTrend}`);
+          if(e.commercial){const c=e.commercial;if(c.revenuePerRecipient)parts.push(`Revenue/recipient: £${c.revenuePerRecipient.toFixed(2)}`);if(c.roi)parts.push(`ROI: ${c.roi.toFixed(1)}x`);if(c.conversionRate)parts.push(`Conversion rate: ${(c.conversionRate*100).toFixed(2)}%`);}
+        }
+        if(seg.freqTolerance?.toleranceRemaining!=null) parts.push(`Send tolerance remaining: ${seg.freqTolerance.toleranceRemaining}`);
+        return parts.join('\n');
+      });
+      const prompt=`You are a UK email marketing strategist. Based on this campaign performance data, write a strategy brief in three short paragraphs:\n\n1. WHAT'S WORKING — highlight the strongest metrics and why they matter commercially.\n2. WHAT NEEDS ATTENTION — flag any declining trends, below-benchmark metrics, or risks. If everything looks good, say so honestly.\n3. NEXT 30 DAYS — give 2-3 specific, actionable recommendations. Be concrete ("send a re-engagement sequence to your declining segment" not "consider improving engagement").\n\nSector: ${strategySector||'general'}\n\n${segSummaries.join('\n\n---\n\n')}\n\nWrite for a marketing manager, not a compliance officer. Use £ figures where available. Be direct — no hedging language, no "consider", no "you might want to". Three paragraphs, 150 words maximum total. No headers or bullet points.`;
+      try {
+        const aiRes=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:prompt}]})});
+        if(!aiRes.ok) return res.status(500).json({success:false,error:'Strategy generation failed'});
+        const msg=await aiRes.json();
+        return res.json({success:true,brief:msg.content?.[0]?.text||''});
+      } catch(e){ return res.status(500).json({success:false,error:'Strategy generation failed'}); }
     }
 
     if (action === 'methodology') {
