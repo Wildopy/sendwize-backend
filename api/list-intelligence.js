@@ -569,6 +569,33 @@ async function generateListNarrative(listName, analysis, changes) {
 // ─────────────────────────────────────────────────────────────
 // MAIN HANDLER — v1.8
 // ─────────────────────────────────────────────────────────────
+
+// ── Performance layer: list composition, freshness, engagement gaps ──
+function analyseDomainComposition(emails) {
+  const FREE_DOMAINS=new Set(['gmail.com','googlemail.com','yahoo.com','yahoo.co.uk','hotmail.com','hotmail.co.uk','outlook.com','live.com','live.co.uk','msn.com','aol.com','aol.co.uk','icloud.com','me.com','mac.com','protonmail.com','proton.me','zoho.com','mail.com','gmx.com','gmx.co.uk','ymail.com','rocketmail.com']);
+  const ISP_DOMAINS=new Set(['btinternet.com','bt.com','sky.com','virginmedia.com','virgin.net','talktalk.net','plusnet.com','zen.co.uk','ee.co.uk','o2.co.uk']);
+  const EDU_PATTERNS=['.ac.uk','.edu','.edu.uk','.sch.uk'], GOV_PATTERNS=['.gov.uk','.gov','.nhs.uk','.nhs.net','.police.uk'];
+  const counts={free:0,corporate:0,isp:0,educational:0,government:0,other:0},domainCounts={},total=emails.length;
+  for(const email of emails){const domain=(email.split('@')[1]||'').toLowerCase().trim();if(!domain)continue;domainCounts[domain]=(domainCounts[domain]||0)+1;if(FREE_DOMAINS.has(domain))counts.free++;else if(ISP_DOMAINS.has(domain))counts.isp++;else if(EDU_PATTERNS.some(p=>domain.endsWith(p)))counts.educational++;else if(GOV_PATTERNS.some(p=>domain.endsWith(p)))counts.government++;else counts.corporate++;}
+  const topDomains=Object.entries(domainCounts).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([domain,count])=>({domain,count,pct:Math.round(count/total*100)}));
+  const composition={};for(const [cat,count] of Object.entries(counts))if(count>0)composition[cat]={count,pct:Math.round(count/total*100)};
+  const corpPct=composition.corporate?.pct||0,freePct=composition.free?.pct||0;let insight='';if(corpPct>=60)insight='Strong corporate domain mix — suggests a B2B or professional audience with higher conversion potential.';else if(corpPct>=30)insight='Mixed audience — '+corpPct+'% corporate, '+freePct+'% free email. Typical for ecommerce with a B2B segment.';else if(freePct>=70)insight='Consumer-dominant list — '+freePct+'% free email providers. Typical for B2C ecommerce and newsletter audiences.';else insight='Varied domain mix across free, corporate, and ISP addresses.';
+  return {composition,topDomains,insight,totalAnalysed:total};
+}
+function analyseListFreshness(contacts){
+  const now=new Date(),buckets={under30:{label:'Last 30 days',count:0},under90:{label:'1-3 months',count:0},under180:{label:'3-6 months',count:0},under365:{label:'6-12 months',count:0},under730:{label:'1-2 years',count:0},over730:{label:'2+ years',count:0}};let total=0,totalDays=0,oldest=null,newest=null;
+  for(const c of contacts){const d=c.dateAdded?new Date(c.dateAdded):null;if(!d||isNaN(d.getTime()))continue;const days=Math.floor((now-d)/86400000);total++;totalDays+=days;if(!oldest||d<oldest)oldest=d;if(!newest||d>newest)newest=d;if(days<=30)buckets.under30.count++;else if(days<=90)buckets.under90.count++;else if(days<=180)buckets.under180.count++;else if(days<=365)buckets.under365.count++;else if(days<=730)buckets.under730.count++;else buckets.over730.count++;}
+  if(!total)return null;const avgAgeDays=Math.round(totalDays/total),distribution={};for(const [key,b] of Object.entries(buckets))if(b.count>0)distribution[key]={label:b.label,count:b.count,pct:Math.round(b.count/total*100)};const stale=(buckets.under730.count+buckets.over730.count)/total;let verdict,freshState;if(stale>=0.6){verdict='Your list is aging — '+Math.round(stale*100)+'% of contacts were added over a year ago. Consent strength decays with time.';freshState='stale';}else if(stale>=0.3){verdict='Mixed freshness — you have recent additions alongside older contacts. The older segment needs monitoring.';freshState='mixed';}else{verdict='Healthy list freshness — most contacts were added within the last year.';freshState='fresh';}
+  return {distribution,avgAgeDays,oldest:oldest?.toISOString().slice(0,10),newest:newest?.toISOString().slice(0,10),verdict,freshState,totalAnalysed:total};
+}
+function analyseEngagementGaps(contacts){
+  const now=new Date(),gaps=[];let neverEngaged=0,total=0;for(const c of contacts){const added=c.dateAdded?new Date(c.dateAdded):null,engaged=c.lastEngagement?new Date(c.lastEngagement):null;if(!added||isNaN(added.getTime()))continue;total++;if(!engaged||isNaN(engaged.getTime())){neverEngaged++;continue;}const gapDays=Math.floor((now-engaged)/86400000),ageDays=Math.floor((now-added)/86400000);gaps.push({gapDays,ageDays,ratio:ageDays>0?gapDays/ageDays:0});}
+  if(!total)return null;const segments={gold:{label:'Gold — recent engagement',count:0,desc:'Added 6+ months ago, engaged in last 30 days'},active:{label:'Active — regular engagement',count:0,desc:'Engaged in last 90 days'},cooling:{label:'Cooling — engagement declining',count:0,desc:'Engaged 90-180 days ago'},dormant:{label:'Dormant — long gap',count:0,desc:'Last engagement over 180 days ago'},neverEngaged:{label:'Never engaged',count:neverEngaged,desc:'No engagement recorded since signup'}};
+  for(const g of gaps){if(g.ageDays>=180&&g.gapDays<=30)segments.gold.count++;else if(g.gapDays<=90)segments.active.count++;else if(g.gapDays<=180)segments.cooling.count++;else segments.dormant.count++;}
+  const result={};for(const [key,seg] of Object.entries(segments))if(seg.count>0)result[key]={label:seg.label,desc:seg.desc,count:seg.count,pct:Math.round(seg.count/total*100)};const goldPct=segments.gold.count/total,dormantPct=(segments.dormant.count+neverEngaged)/total;let insight;if(goldPct>=0.2)insight='Strong engagement — '+Math.round(goldPct*100)+'% of your list are long-term contacts who engaged recently. These are your most valuable contacts.';else if(dormantPct>=0.4)insight='Engagement gap risk — '+Math.round(dormantPct*100)+'% of your list is dormant or has never engaged. This segment dilutes your metrics and increases deliverability risk.';else insight='Mixed engagement patterns across your list. Focus re-engagement efforts on the cooling and dormant segments.';
+  return {segments:result,neverEngagedPct:Math.round(neverEngaged/total*100),insight,totalAnalysed:total};
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -755,6 +782,12 @@ export default async function handler(req, res) {
       const analysis = analyseList(mapped, sector || 'other', aov || 50);
       const opportunities = generateOpportunities(analysis);
 
+      // ── Performance layer: domain composition, freshness, engagement gaps ──
+      const allEmails = mapped.map(c=>c.email).filter(Boolean);
+      const domainAnalysis = analyseDomainComposition(allEmails);
+      const freshnessData = mapped.some(c=>c.dateAdded) ? analyseListFreshness(mapped) : null;
+      const gapData = (mapped.some(c=>c.dateAdded) && mapped.some(c=>c.lastEngagement)) ? analyseEngagementGaps(mapped) : null;
+
       // v1.8: exposure calculation
       const exposure = calculateListExposure(analysis);
 
@@ -792,7 +825,7 @@ export default async function handler(req, res) {
           assetValue: analysis.assetValue, icoStatus: analysis.icoStatus, asaNote: analysis.asaNote,
           cmaNote: analysis.cmaNote, dataQualityFlags: analysis.dataQualityFlags,
           expiring30: analysis.expiring30, expiring60: analysis.expiring60, expiring90: analysis.expiring90,
-          valueExpiring90: analysis.valueExpiring90, opportunities, narrative, sector: sector || null,
+          valueExpiring90: analysis.valueExpiring90, opportunities, narrative, sector: sector || null, domainAnalysis, freshness: freshnessData, engagementGaps: gapData,
           activeIndices: analysis.activeIndices, recoverableIndices: analysis.recoverableIndices,
           atRiskIndices: analysis.atRiskIndices, liabilityIndices: analysis.liabilityIndices,
         }),
@@ -812,7 +845,7 @@ export default async function handler(req, res) {
         atRiskCount: analysis.atRiskCount, liabilityCount: analysis.liabilityCount, liabilityPct: analysis.liabilityPct,
         assetValue: analysis.assetValue, icoStatus: analysis.icoStatus, asaNote: analysis.asaNote, cmaNote: analysis.cmaNote,
         dataQualityFlags: analysis.dataQualityFlags, expiring30: analysis.expiring30, expiring60: analysis.expiring60,
-        expiring90: analysis.expiring90, valueExpiring90: analysis.valueExpiring90, opportunities, narrative, sector: sector || null,
+        expiring90: analysis.expiring90, valueExpiring90: analysis.valueExpiring90, opportunities, narrative, sector: sector || null, domainAnalysis, freshness: freshnessData, engagementGaps: gapData,
         changes, snapshots: await getListSnapshots(userId, listName, 12),
         activeIndices: analysis.activeIndices, recoverableIndices: analysis.recoverableIndices,
         atRiskIndices: analysis.atRiskIndices, liabilityIndices: analysis.liabilityIndices,
@@ -868,6 +901,20 @@ export default async function handler(req, res) {
         recoverableValue: parseFloat(totalRecoverable.toFixed(2)),
         lists: exposureByList,
       });
+    }
+
+    // ── AI List Health Brief ──
+    if (action === 'health-brief') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+      const { listName, totalContacts, activeCount, recoverableCount, liabilityCount, atRiskCount, assetValue, exposure, domainAnalysis, freshness, engagementGaps, sector } = req.body;
+      const parts=[];
+      parts.push(`List: ${listName||'Unknown'}, ${totalContacts||0} contacts, sector: ${sector||'ecommerce'}`);
+      parts.push(`Tiers: ${activeCount||0} active, ${recoverableCount||0} recoverable, ${atRiskCount||0} at-risk, ${liabilityCount||0} liability`);
+      if(assetValue)parts.push(`Estimated value: £${Math.round(assetValue).toLocaleString()}`);
+      if(exposure?.totalExposure)parts.push(`Regulatory exposure: £${Math.round(exposure.totalExposure).toLocaleString()} (ICO £${Math.round(exposure.ico?.estimatedExposure||0)}, ASA £${Math.round(exposure.asa?.estimatedExposure||0)}, CMA £${Math.round(exposure.cma?.estimatedExposure||0)})`);
+      if(domainAnalysis?.insight)parts.push(`Domains: ${domainAnalysis.insight}`);if(freshness?.verdict)parts.push(`Freshness: ${freshness.verdict}`);if(engagementGaps?.insight)parts.push(`Engagement gaps: ${engagementGaps.insight}`);
+      const prompt=`You are a UK email marketing data strategist. Based on this contact list analysis, write a health brief in three short paragraphs:\n\n1. LIST QUALITY — assess the overall quality based on tier distribution, domain composition, and freshness. Be specific with numbers.\n2. RISKS — flag consent decay, engagement gaps, domain issues, or exposure. If the list is clean, say so.\n3. ACTIONS — give 2-3 specific next steps. Be concrete and use £ figures where available.\n\n${parts.join('\n')}\n\nWrite for a marketing manager. Be direct. Three paragraphs, 150 words maximum. No headers or bullet points.`;
+      try{const aiRes=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:prompt}]})});if(!aiRes.ok)return res.status(500).json({success:false,error:'Brief generation failed'});const msg=await aiRes.json();return res.json({success:true,brief:msg.content?.[0]?.text||''});}catch(e){return res.status(500).json({success:false,error:'Brief generation failed'});}
     }
 
     // ── DRAFT RE-CONSENT EMAIL — v1.7 ───────────────────────
