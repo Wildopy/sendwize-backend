@@ -390,6 +390,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <div id="listPickerHost"></div>
       <button class="btn btn-ghost btn-sm" onclick="startNewList()">+ New list</button>
+      <button class="btn btn-primary btn-sm" onclick="generateHealthBrief()">AI Health Brief ✨</button>
     </div>
   </div>
   <div id="presendGate"></div>
@@ -404,6 +405,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sec-hdr">Contact breakdown by tier</div>
     <div class="tiers-card" id="tiersCard"></div>
   </div>
+  <div style="margin-bottom:28px" id="domainSection"></div>
+  <div style="margin-bottom:28px" id="freshnessSection"></div>
+  <div style="margin-bottom:28px" id="engagementGapSection"></div>
   <div style="margin-bottom:28px">
     <div class="sec-hdr">Regulatory compliance picture</div>
     <div class="reg-tabs">
@@ -865,6 +869,12 @@ async function submitUpload(){
     showToast('Analysis complete \u2014 '+fmt(json.totalContacts)+' contacts processed','ok');
   }catch(err){hideLoading();showToast('Error: '+err.message,'er');}
 }
+async function generateHealthBrief(){
+  if(!lastResults){showToast('Run an analysis first','er');return;}
+  showLoading('Generating health brief…');
+  try{var resp=await fetch(API+'?userId='+userId+'&action=health-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:currentListName||'Main list',totalContacts:lastResults.totalContacts,activeCount:lastResults.activeCount,recoverableCount:lastResults.recoverableCount,liabilityCount:lastResults.liabilityCount,atRiskCount:lastResults.atRiskCount,assetValue:lastResults.assetValue,exposure:lastResults.exposure,domainAnalysis:lastResults.domainAnalysis,freshness:lastResults.freshness,engagementGaps:lastResults.engagementGaps,sector:lastResults.sector})});var json=await resp.json();hideLoading();if(!json.success)throw new Error(json.error||'Brief generation failed');var host=document.getElementById('healthBrief');if(!host){host=document.createElement('div');host.id='healthBrief';el('valHero').after(host);}host.innerHTML='<div style="background:var(--purl);border:1px solid var(--purc);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:20px;position:relative;animation:fadeUp .35s ease"><span style="position:absolute;top:10px;right:12px;font-size:8px;font-weight:800;letter-spacing:.1em;color:var(--pur);background:var(--purc);padding:2px 6px;border-radius:3px">AI HEALTH BRIEF</span><div style="font-size:15px;font-weight:700;margin-bottom:10px;color:#581c87">✨ List health assessment</div><div style="font-size:13px;color:#581c87;line-height:1.7;white-space:pre-wrap">'+escH(json.brief)+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-ghost btn-sm" onclick="copyHealthBrief()">Copy to clipboard</button><button class="btn btn-ghost btn-sm" onclick="generateHealthBrief()">Regenerate</button></div></div>';host.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(err){hideLoading();showToast('Health brief failed: '+err.message,'er');}
+}
+function copyHealthBrief(){var elb=document.getElementById('healthBrief');if(!elb)return;var text=elb.querySelector('div[style*="white-space"]');if(text)navigator.clipboard.writeText(text.textContent).then(function(){showToast('Copied','ok');});}
 async function loadResults(listName){
   // Optional listName arg for switching between named lists
   if(lastResults&&!listName){renderResults(lastResults);showScreen('results');return;}
@@ -960,6 +970,11 @@ document.addEventListener('click',function(ev){
   var lpm=document.querySelector('.list-picker-menu.open');if(lpm)lpm.classList.remove('open');
   var lpb=document.querySelector('.list-picker-btn.open');if(lpb)lpb.classList.remove('open');
 });
+function renderPerformanceLayer(d){
+  var domainEl=document.getElementById('domainSection');if(domainEl&&d.domainAnalysis){var da=d.domainAnalysis,labels={free:'Free email',corporate:'Corporate',isp:'UK ISP',educational:'Educational',government:'Government',other:'Other'},colors={free:'var(--blue)',corporate:'var(--g)',isp:'var(--o)',educational:'var(--pur)',government:'var(--y)',other:'var(--mu)'};var compHtml=Object.entries(da.composition||{}).map(function(entry){var cat=entry[0],info=entry[1];return'<div class="tier-row"><div class="tier-dot" style="background:'+(colors[cat]||'var(--mu)')+'"></div><div class="tier-label">'+(labels[cat]||cat)+'</div><div class="tier-bar-wrap"><div class="tier-bar-fill" style="width:'+info.pct+'%;background:'+(colors[cat]||'var(--mu)')+'"></div></div><div class="tier-count">'+fmt(info.count)+'</div><div class="tier-pct">'+info.pct+'%</div></div>';}).join('');var topHtml=(da.topDomains||[]).slice(0,5).map(function(td){return'<span style="font-size:11px;color:var(--tm);font-family:DM Mono,monospace">'+escH(td.domain)+' ('+td.pct+'%)</span>';}).join(' · ');domainEl.innerHTML='<div class="tiers-card"><div class="tiers-title">Email domain composition</div>'+compHtml+'<div style="font-size:12px;color:var(--tm);margin-top:10px;padding-top:10px;border-top:1px solid var(--b);line-height:1.5">'+escH(da.insight)+'</div>'+(topHtml?'<div style="font-size:10px;color:var(--mu);margin-top:6px">Top domains: '+topHtml+'</div>':'')+'</div>';}
+  var freshEl=document.getElementById('freshnessSection');if(freshEl&&d.freshness){var fr=d.freshness,freshColor=fr.freshState==='fresh'?'var(--g)':fr.freshState==='stale'?'var(--r)':'var(--y)',distHtml=Object.values(fr.distribution||{}).map(function(b){return'<div class="tier-row"><div class="tier-label" style="width:120px">'+escH(b.label)+'</div><div class="tier-bar-wrap"><div class="tier-bar-fill" style="width:'+b.pct+'%;background:'+freshColor+'"></div></div><div class="tier-count">'+fmt(b.count)+'</div><div class="tier-pct">'+b.pct+'%</div></div>';}).join('');freshEl.innerHTML='<div class="tiers-card"><div class="tiers-title">List freshness</div>'+distHtml+'<div style="font-size:12px;color:var(--tm);margin-top:10px;padding-top:10px;border-top:1px solid var(--b);line-height:1.5">'+escH(fr.verdict)+'</div><div style="font-size:10px;color:var(--mu);margin-top:4px">Average contact age: '+fr.avgAgeDays+' days · Oldest: '+fmtDate(fr.oldest)+' · Newest: '+fmtDate(fr.newest)+'</div></div>';}
+  var gapEl=document.getElementById('engagementGapSection');if(gapEl&&d.engagementGaps){var eg=d.engagementGaps,gapColors={gold:'var(--g)',active:'var(--blue)',cooling:'var(--y)',dormant:'var(--r)',neverEngaged:'var(--mu)'},gapHtml=Object.entries(eg.segments||{}).map(function(entry){var key=entry[0],seg=entry[1];return'<div class="tier-row"><div class="tier-dot" style="background:'+(gapColors[key]||'var(--mu)')+'"></div><div class="tier-label" style="width:140px">'+escH(seg.label.split(' — ')[0])+'</div><div class="tier-bar-wrap"><div class="tier-bar-fill" style="width:'+seg.pct+'%;background:'+(gapColors[key]||'var(--mu)')+'"></div></div><div class="tier-count">'+fmt(seg.count)+'</div><div class="tier-pct">'+seg.pct+'%</div><div class="tier-desc">'+escH(seg.desc)+'</div></div>';}).join('');gapEl.innerHTML='<div class="tiers-card"><div class="tiers-title">Engagement quality</div>'+gapHtml+'<div style="font-size:12px;color:var(--tm);margin-top:10px;padding-top:10px;border-top:1px solid var(--b);line-height:1.5">'+escH(eg.insight)+'</div></div>';}
+}
 function renderResults(d){
   var total=d.totalContacts||0;
   var pct=function(n){return total>0?Math.round(n/total*100):0;};
@@ -1101,6 +1116,7 @@ function renderResults(d){
         '<div class="tier-desc">'+t.desc+'</div>'+
         '</div>';
     }).join('');
+  renderPerformanceLayer(d);
   var pecrRows=[
     {icon:'\uD83D\uDD52',label:'Consent threshold contacts',detail:liabCount>0?fmt(liabCount)+' contacts ('+liabPct+'%) are below the consent strength threshold. You cannot lawfully send marketing to these contacts without re-consent.':'All contacts are above the consent threshold. Continue monitoring.', isRisk:liabCount>0, fixLabel:liabCount>0?'Create consent_expired fix record':''},
     {icon:'\uD83D\uDCC5',label:'Contacts expiring in next 90 days',detail:fmt(d.recoverableCount||0)+' contacts are in the recoverable tier and will cross the consent threshold within 90 days without engagement. Run a re-consent campaign now.', isRisk:(d.recoverableCount||0)>0, fixLabel:''},
