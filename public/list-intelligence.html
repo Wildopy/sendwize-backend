@@ -239,6 +239,30 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .reconsent-draft-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:4px}
 .reconsent-draft-content{font-size:13px;color:var(--t);line-height:1.65;background:var(--bg);border:1px solid var(--b);border-radius:var(--rad);padding:14px 16px;white-space:pre-wrap}
   
+/* ── v1.9 design polish ────────────────────────── */
+.val-hero { border-radius: 16px; }
+.presend-gate { border-radius: 16px; }
+.action-cards { margin-top: 4px; }
+.action-card { transition: transform .12s, box-shadow .12s; }
+.action-card:hover { transform: translateY(-1px); box-shadow: var(--shm); }
+.sec-hdr { font-size: 12px; letter-spacing: .08em; margin-bottom: 16px; }
+.tier-row { padding: 11px 0; }
+.opp-card { transition: transform .12s; }
+.opp-card:hover { transform: translateY(-1px); }
+.pecr-section { border-radius: 14px; }
+.compliance-banner { border-radius: 14px; }
+.tiers-card { border-radius: 14px; }
+.dl-section { border-radius: 14px; }
+.clearance-box { border-radius: 14px; }
+.dq-card { border-radius: 14px; }
+.results-hdr { padding-bottom: 20px; border-bottom: 1px solid var(--b); }
+.results-hdr h1 { font-size: 20px; }
+@media (max-width: 640px) {
+  .val-amount { font-size: 36px; }
+  .presend-gate-verdict { font-size: 18px; }
+  .action-cards { grid-template-columns: 1fr; }
+  .val-stats { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -274,9 +298,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <div class="page" id="upload-screen">
   <div style="margin-bottom:32px;animation:fadeUp .4s ease">
-    <div class="tool-tag">List Intelligence &mdash; List Valuation &amp; Compliance Audit</div>
-    <h1>Can you legally send to this list?</h1>
-        <p style="font-size:14px;color:var(--tm);line-height:1.7;max-width:540px;margin-bottom:18px">Upload your contact list before you press send. We check every contact against the consent threshold, tell you exactly who you can and can&rsquo;t email, and give you the suppression file and re-consent segment ready to upload to your ESP.</p>
+    <div class="tool-tag">List Intelligence</div>
+    <h1 style="font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.2;margin-bottom:10px">Check your list before you send</h1>
+    <p style="font-size:15px;color:var(--tm);line-height:1.6;max-width:520px;margin-bottom:18px">Upload your contact list. We'll tell you who you can legally email, who needs re-consenting, and who to suppress — with the files ready to drop into your ESP.</p>
     <div class="intro-distinction">
       <div class="dist-col dist-this">
         <div class="dist-label">This tool &mdash; List Intelligence</div>
@@ -293,7 +317,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <input type="file" accept=".csv" id="fileInput" onchange="fileChg(this)">
     <div class="uz-icon">&#128203;</div>
     <div class="uz-title">Drop your contact list CSV here, or click to upload</div>
-    <div class="uz-sub">For a full valuation, include <strong>email + date added + last engagement</strong>.<br>Email-only will process, but produces a limited result &mdash; see what each column unlocks below.</div>
+    <div class="uz-sub">For the full picture, include <strong>email + date added + last engagement</strong>.<br>Email-only works, but you'll get a thinner result.</div>
     <div class="uz-fname" id="uzFname"></div>
   </div>
   <div class="col-unlock">
@@ -687,6 +711,10 @@ function submitWithSmartDetectionLI(json) {
           if (!result.success) throw new Error(result.error || 'Upload failed');
           hideLoading();
           lastResults = result;
+          // Map flat expiring fields to consentExpiring structure for countdown render
+          if(lastResults.expiring30 != null || lastResults.expiring60 != null || lastResults.expiring90 != null){
+            lastResults.consentExpiring = { in30: lastResults.expiring30||0, in60: lastResults.expiring60||0, in90: lastResults.expiring90||0, valueAtRisk: lastResults.valueExpiring90||0 };
+          }
           currentListName = result.listName || listName.trim();
           downloadIndices = result.downloadIndices || null;
           return fetch(API + '?userId=' + userId + '&action=lists').then(function(r) { return r.json(); }).then(function(lj) { allLists = (lj && lj.lists) || []; }).catch(function() {});
@@ -858,6 +886,10 @@ async function submitUpload(){
     var json=await resp.json();if(!json.success)throw new Error(json.error||'Upload failed');
     hideLoading();
     lastResults=json;
+    // Map flat expiring fields to consentExpiring structure for countdown render
+    if(lastResults.expiring30 != null || lastResults.expiring60 != null || lastResults.expiring90 != null){
+      lastResults.consentExpiring = { in30: lastResults.expiring30||0, in60: lastResults.expiring60||0, in90: lastResults.expiring90||0, valueAtRisk: lastResults.valueExpiring90||0 };
+    }
     currentListName=json.listName||listName;
     downloadIndices=json.downloadIndices||null;
     // Refresh lists summary so the picker reflects the new/updated entry
@@ -885,12 +917,20 @@ async function loadResults(listName){
     if(listName)qs+='&listName='+encodeURIComponent(listName);
     var resp=await fetch(API+qs);
     var json=await resp.json();hideLoading();
-    if(!json.hasData){showToast('No previous analysis found \u2014 upload a list to get started','');return;}
-    lastResults=json;
-    currentListName=json.listName||listName||null;
-    allLists=(json.lists)||allLists;
-    downloadIndices=null;
-    renderResults(json);showScreen('results');
+    if(!json.found){showToast('No previous analysis found — upload a list to get started','');return;}
+    // Backend returns analysis nested inside json.results — merge it up
+    var merged = Object.assign({}, json);
+    if(json.results && typeof json.results === 'object'){
+      for(var k in json.results){ if(!(k in merged) || merged[k]==null) merged[k] = json.results[k]; }
+    }
+    // Map flat expiring fields to consentExpiring structure
+    if(merged.expiring30 != null || merged.expiring60 != null || merged.expiring90 != null){
+      merged.consentExpiring = { in30: merged.expiring30||0, in60: merged.expiring60||0, in90: merged.expiring90||0, valueAtRisk: merged.valueExpiring90||0 };
+    }
+    lastResults = merged;
+    currentListName = merged.listName || listName || null;
+    downloadIndices = null;
+    renderResults(merged); showScreen('results');
   }catch(err){hideLoading();showToast('Could not load \u2014 please try again','er');}
 }
 async function switchList(listName){
@@ -978,6 +1018,7 @@ function renderPerformanceLayer(d){
 function renderResults(d){
   var total=d.totalContacts||0;
   var pct=function(n){return total>0?Math.round(n/total*100):0;};
+  var exp=d.exposure||null;
   // Title reflects the named list
   var titleName=d.listName||currentListName||'';
   el('resultsTitle').innerHTML=titleName
@@ -1011,7 +1052,7 @@ function renderResults(d){
       gateSub='Your list is in good standing. '+fmt(d.activeCount||0)+' contacts are above the consent threshold with strong deliverability signals.';
     }
     // v10.1: Use backend exposure data
-    var exp=d.exposure||null;
+    
     var expHtml='';
     if(exp&&exp.totalExposure>0){
       expHtml='<div class="presend-gate-exposure">'
@@ -1279,31 +1320,64 @@ function generateFixRecord(){
   }).then(function(){showToast('Fix record created on your dashboard','ok');}).catch(function(){showToast('Could not create fix record \u2014 try again','er');});
 }
 async function generateCert(){
-  var seg=el('certSeg').value||'Full list';var type=el('certType').value;
-  showLoading('Generating clearance record\u2026');
+  if(!lastResults){showToast('Run an analysis first','er');return;}
+  var seg=el('certSeg').value||'Full list';
+  var type=el('certType').value;
+  showLoading('Generating clearance record…');
   try{
-    var body={segmentName:seg,campaignType:type};
-    if(currentListName)body.listName=currentListName;
-    var resp=await fetch(API+'?userId='+userId+'&action=certificate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    var json=await resp.json();hideLoading();
-    if(!json.success)throw new Error(json.error);
-    var r=json.result.toLowerCase();
-    var ce=el('certResult');ce.className='cert-result '+r;ce.style.display='block';
-    var certStatus=json.certificateStatus||null;
-    var statusBadge='';
-    if(certStatus){
-      var sCls=certStatus.status==='Current'?'background:var(--gb);color:var(--g);border:1px solid var(--gc)':certStatus.status==='Expired'?'background:var(--rb);color:var(--r);border:1px solid var(--rc)':'background:var(--yb);color:var(--y);border:1px solid var(--yc)';
-      statusBadge='<span style="display:inline-flex;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;margin-left:8px;'+sCls+'">'+escH(certStatus.status)+'</span>';
-      if(certStatus.daysUntilExpiry>0&&certStatus.status==='Current'){
-        statusBadge+='<span style="font-size:10px;color:var(--mu);margin-left:6px">Expires in '+certStatus.daysUntilExpiry+' days</span>';
+    var resp=await fetch(API+'?userId='+userId+'&action=certificate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        listName: currentListName || 'Main list',
+        totalContacts: lastResults.totalContacts || 0,
+        activeCount: lastResults.activeCount || 0,
+        liabilityCount: lastResults.liabilityCount || 0,
+        assetValue: lastResults.assetValue || 0,
+        icoStatus: lastResults.icoStatus || 'Good standing',
+        sector: lastResults.sector || 'ecommerce',
+        totalExposure: lastResults.exposure ? lastResults.exposure.totalExposure : 0,
+      })
+    });
+    var json=await resp.json();
+    hideLoading();
+    if(!json.success) throw new Error(json.error||'Certificate failed');
+
+    var ce=el('certResult');
+    var liabCount = lastResults.liabilityCount||0;
+    var totalCount = lastResults.totalContacts||0;
+    var resultClass, verdict;
+    if(liabCount === 0){
+      resultClass = 'pass'; verdict = 'PASS — Safe to send';
+    } else if(liabCount / Math.max(totalCount,1) > 0.15){
+      resultClass = 'fail'; verdict = 'FAIL — Do not send';
+    } else {
+      resultClass = 'review'; verdict = 'REVIEW — Check before sending';
+    }
+
+    ce.className='cert-result '+resultClass;
+    ce.style.display='block';
+
+    var statusBadge = '';
+    var cs = json.certificateStatus;
+    if(cs){
+      var sCls = cs.status==='Current' ? 'background:var(--gb);color:var(--g);border:1px solid var(--gc)' : cs.status==='Expired' ? 'background:var(--rb);color:var(--r);border:1px solid var(--rc)' : 'background:var(--yb);color:var(--y);border:1px solid var(--yc)';
+      statusBadge = '<span style="display:inline-flex;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;margin-left:8px;'+sCls+'">'+escH(cs.status)+'</span>';
+      if(cs.daysUntilExpiry > 0 && cs.status === 'Current'){
+        statusBadge += '<span style="font-size:10px;color:var(--mu);margin-left:6px">Expires in '+cs.daysUntilExpiry+' days</span>';
       }
     }
-    ce.innerHTML='<div class="cert-verdict">'+escH(json.result)+statusBadge+'</div>'+
-      '<div class="cert-detail">'+certDescription(json.result,json)+'</div>'+
-      (certStatus&&certStatus.reason?'<div style="font-size:12px;color:var(--y);margin-top:6px">'+escH(certStatus.reason)+'</div>':'')+
-      '<div class="cert-id">Certificate ID: '+escH(json.certificateId||'\u2014')+' \u00b7 List: '+escH(json.listName||currentListName||'\u2014')+' \u00b7 '+fmtDate(json.date)+'</div>';
+
+    var detail;
+    if(resultClass === 'pass') detail = fmt(totalCount)+' contacts checked. No significant consent or deliverability flags. Clearance saved as evidence.';
+    else if(resultClass === 'review') detail = fmt(liabCount)+' contacts flagged for consent review. Consider suppressing or re-consenting before sending.';
+    else detail = fmt(liabCount)+' contacts below the consent threshold. Do not send until resolved.';
+
+    ce.innerHTML = '<div class="cert-verdict">'+escH(verdict)+statusBadge+'</div>'
+      +'<div class="cert-detail">'+escH(detail)+'</div>'
+      +'<div class="cert-id">Certificate ID: '+escH(json.certificateId||'—')+' · List: '+escH(json.listName||currentListName||'—')+' · '+fmtDate(json.issuedDate)+'</div>';
     ce.scrollIntoView({behavior:'smooth',block:'nearest'});
-    showToast('Clearance record saved to your dashboard','ok');
+    showToast('Clearance record saved','ok');
   }catch(err){hideLoading();showToast('Certificate failed: '+err.message,'er');}
 }
 // ── AI re-consent email draft ──────────────────────────────
