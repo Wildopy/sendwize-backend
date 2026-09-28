@@ -29,6 +29,7 @@ const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`;
 import { smartDetect, smartValidate } from './_smart-import.js';
+import { validateAudienceUpload } from './_normalise.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const AT_HEADERS = () => ({
@@ -1293,8 +1294,11 @@ export default async function handler(req, res) {
     // UPLOAD — v7.6: count fields + narrative generation
     // ─────────────────────────────────────────────────────────
     if (action === 'upload') {
-      const { rows, fieldMapping, cpl, rateUnits } = req.body;
-      if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows required' });
+      const validation = validateAudienceUpload(req.body);
+      if (!validation.valid) return res.status(validation.status).json({ error: validation.error });
+      const { rows, mapping: fieldMapping } = validation;
+      const cpl = req.body.cpl;
+      const rateUnits = req.body.rateUnits;
       const cplVal = (cpl != null && Number.isFinite(Number(cpl)) && Number(cpl) > 0) ? Number(cpl) : null;
       const units = rateUnits || {};
       const rawRows = rows.map(row => {
