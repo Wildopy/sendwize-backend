@@ -291,7 +291,9 @@ function dimension2_deliverability(contact, domainCounts, totalContacts) {
 
 function dimension3_commercial(contact, sector, aov) {
   const benchmark = SECTOR_BENCHMARKS[sector] || SECTOR_BENCHMARKS.other;
-  const baseValue = benchmark.conversionRate * (aov || 50) * benchmark.avgOrderMultiplier;
+  // v1.9: Use actual per-contact order value when available, fall back to user-provided AOV
+  const contactAov = (contact.orderValue && contact.orderValue > 0) ? contact.orderValue : (aov || 50);
+  const baseValue = benchmark.conversionRate * contactAov * benchmark.avgOrderMultiplier;
   let engMultiplier = 0.5;
   if (contact.lastEngagement) {
     const daysSinceEng = (new Date() - new Date(contact.lastEngagement)) / 86400000;
@@ -908,7 +910,7 @@ export default async function handler(req, res) {
       if(exposure?.totalExposure)parts.push(`Regulatory exposure: £${Math.round(exposure.totalExposure).toLocaleString()} (ICO £${Math.round(exposure.ico?.estimatedExposure||0)}, ASA £${Math.round(exposure.asa?.estimatedExposure||0)}, CMA £${Math.round(exposure.cma?.estimatedExposure||0)})`);
       if(domainAnalysis?.insight)parts.push(`Domains: ${domainAnalysis.insight}`);if(freshness?.verdict)parts.push(`Freshness: ${freshness.verdict}`);if(engagementGaps?.insight)parts.push(`Engagement gaps: ${engagementGaps.insight}`);
       const prompt=`You are a UK email marketing data strategist. Based on this contact list analysis, write a health brief in three short paragraphs:\n\n1. LIST QUALITY — assess the overall quality based on tier distribution, domain composition, and freshness. Be specific with numbers.\n2. RISKS — flag consent decay, engagement gaps, domain issues, or exposure. If the list is clean, say so.\n3. ACTIONS — give 2-3 specific next steps. Be concrete and use £ figures where available.\n\n${parts.join('\n')}\n\nWrite for a marketing manager. Be direct. Three paragraphs, 150 words maximum. No headers or bullet points.`;
-      try{const aiRes=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:prompt}]})});if(!aiRes.ok)return res.status(500).json({success:false,error:'Brief generation failed'});const msg=await aiRes.json();return res.json({success:true,brief:msg.content?.[0]?.text||''});}catch(e){return res.status(500).json({success:false,error:'Brief generation failed'});}
+      try{const aiRes=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:prompt}]})});if(!aiRes.ok)return res.status(500).json({success:false,error:'Brief generation failed'});const msg=await aiRes.json();return res.json({success:true,brief:msg.content?.[0]?.text||''});}catch(e){return res.status(500).json({success:false,error:'Brief generation failed'});}
     }
 
     // ── DRAFT RE-CONSENT EMAIL — v1.7 ───────────────────────
