@@ -1314,7 +1314,7 @@ export default async function handler(req, res) {
           else if (targetField === 'click_rate') c.click_rate = normaliseRate(val, units[header]);
           else if (targetField === 'complaint_count') c.complaint_count = val !== '' && val != null ? (parseInt(val) || null) : null;
           else if (targetField === 'campaign_name') c.campaign_name = String(val || '').trim() || null;
-          else if (targetField === 'campaign_type') c.campaign_type = String(val || '').trim() || null;
+          else if (targetField === 'campaign_type') c.campaign_type = String(val || '').trim().replace(/^"+|"+$/g, '') || null;
           // v7.6: count columns — AI mapper can now detect these
           else if (targetField === 'open_count') {
             c._openCount = val !== '' && val != null
