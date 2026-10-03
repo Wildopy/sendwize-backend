@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.4
+// SENDWIZE — data.js v7.5
 // Commercial Relationships & Risk Register
 //
-// v7.4 changes (from v7.3.1):
+// v7.5 changes (from v7.3.1):
 //   + Vendor intelligence: prefillFromKnownVendor auto-fills from
 //     Marketing_Vendors on create. assessUnknownVendor runs Claude
 //     + web search for vendors not in curated list.
@@ -83,6 +83,12 @@ function withTimeout(promise, ms = 15000) {
 const DPA_CONFIRMED = ['Confirmed', 'Confirmed and signed', 'In place'];
 function isDPAConfirmed(status) {
   return DPA_CONFIRMED.includes(status || '');
+}
+
+// Apply a default only when creating. On update, a missing value means "leave untouched".
+function withDefaults(isCreate) {
+  return (value, fallback) =>
+    (value !== undefined && value !== null && value !== '') ? value : (isCreate ? fallback : undefined);
 }
 
 // ── Third-party risk score (v7.3 — ad compliance dimensions) ──
@@ -187,7 +193,7 @@ async function prefillFromKnownVendor(base, vendorName, fields) {
   const k = known[0].fields;
   if (!fields.DPAStatus && k.DPAStatus) fields.DPAStatus = k.DPAStatus;
   if (!fields.PrivacyPolicyUrl && k.PrivacyPolicyUrl) fields.PrivacyPolicyUrl = k.PrivacyPolicyUrl;
-  if (!fields.TransferDestination && k.TransferMechanismConfirmed) fields.TransferDestination = k.TransferMechanismConfirmed;
+  if (!fields.TransferDestination && k.TransferDestination) fields.TransferDestination = k.TransferDestination;
   if (!fields.ICORiskLevel) fields.ICORiskLevel = k.ICORiskLevel || 'Low';
   const intel = {
     source: 'sendwize_curated',
@@ -225,7 +231,7 @@ async function prefillFromKnownVendor(base, vendorName, fields) {
     intel.findings.push({ finding: 'Security certifications held', evidence: k.Certifications, type: 'vendor_documented', status: 'passed' });
   }
   fields.IntelligenceJson = JSON.stringify(intel);
-  fields.ComplianceScore = calculateVendorScore(intel);
+  fields.ComplianceScore = calculateVendorScore(intel, fields);
   fields.ScoreBreakdownJson = JSON.stringify(buildScoreBreakdown(intel, fields));
   return fields;
 }
@@ -295,7 +301,7 @@ async function assessUnknownVendor(vendorName, fields) {
       fields.ICORiskLevel = 'Medium';
     }
     fields.IntelligenceJson = JSON.stringify(intel);
-    fields.ComplianceScore = calculateVendorScore(intel);
+    fields.ComplianceScore = calculateVendorScore(intel, fields);
     fields.ScoreBreakdownJson = JSON.stringify(buildScoreBreakdown(intel, fields));
     fields.LastAutoChecked = new Date().toISOString().split('T')[0];
     return fields;
@@ -306,40 +312,142 @@ async function assessUnknownVendor(vendorName, fields) {
 }
 
 // ── Deterministic vendor score ────────────────────────────────
-function calculateVendorScore(intel) {
-  let score = 0;
-  if (intel.dpaStatus === 'Confirmed') score += 30;
-  else if (intel.dpaStatus === 'Available') score += 20;
-  if (intel.icoRegistered === 'Yes' || (intel.icoRegistered || '').startsWith('Yes')) score += 15;
-  const hasEnforcement = intel.enforcementHistory && intel.enforcementHistory !== 'None identified in sources reviewed.' && intel.enforcementHistory !== 'None publicly disclosed.';
-  score += hasEnforcement ? 5 : 20;
-  if (intel.transferMechanism) {
-    const isUKOnly = (intel.transferDestination || '').toLowerCase().includes('uk') && !(intel.transferDestination || '').toLowerCase().includes('us');
-    score += isUKOnly ? 15 : 12;
-  }
-  if (intel.lastChecked) {
-    const daysSince = Math.floor((Date.now() - new Date(intel.lastChecked)) / 86400000);
-    score += daysSince <= 90 ? 10 : daysSince <= 180 ? 6 : 2;
-  }
-  if (intel.certifications) score += 10;
-  return Math.min(100, Math.max(0, score));
+function calculateVendorScore(intel, fields = {}) {
+  return Object.values(buildScoreBreakdown(intel, fields)).reduce((s, c) => s + c.score, 0);
+}) {
+  return Object.values(buildScoreBreakdown(intel, fields)).reduce((s, c) => s + c.score, 0);
 }
 
-function buildScoreBreakdown(intel, fields) {
+function buildScoreBreakdown(intel, fields = {}
+
+// ── Marketing checks: how the USER uses each platform ─────────
+// Self-assessed by the user. Each check names the rule it maps to.
+const MARKETING_CATEGORY_LABELS = {
+  esp: 'Email platform', sms: 'SMS platform', crm: 'CRM', analytics: 'Analytics & tracking',
+  advertising: 'Advertising platform', payments: 'Payments', support: 'Customer support',
+  forms: 'Forms & surveys', agency: 'Agency', other: 'Other',
+};
+
+const MARKETING_CHECKS = {
+  esp: [
+    { id: 'esp_consent_source', label: 'Only consented contacts imported', question: 'Do you only upload contacts with a recorded consent or valid soft opt-in to this platform?', rule: 'PECR Reg 22(2)–(3)', regulator: 'ICO', severity: 'critical', fixType: 'consent_record_missing' },
+    { id: 'esp_suppression', label: 'Suppression synced from all sources', question: 'Are unsubscribes and objections from every other tool and channel synced to this platform before each send?', rule: 'PECR Reg 22 · UK GDPR Art 21(3)', regulator: 'ICO', severity: 'critical', fixType: 'suppression_not_synced' },
+    { id: 'esp_unsubscribe', label: 'Opt-out in every message', question: 'Does every marketing email include a simple, free way to opt out that is honoured promptly?', rule: 'PECR Reg 22(3)(c), Reg 23', regulator: 'ICO', severity: 'high', fixType: 'missing_unsubscribe' },
+    { id: 'esp_sender', label: 'Sender identity clear', question: 'Do the From name and address clearly identify your organisation, with a valid reply address?', rule: 'PECR Reg 23', regulator: 'ICO', severity: 'high', fixType: 'sender_identity_unclear' },
+  ],
+  sms: [
+    { id: 'sms_consent_source', label: 'Only consented numbers imported', question: 'Do you only send SMS to numbers with recorded consent or valid soft opt-in?', rule: 'PECR Reg 22(2)–(3)', regulator: 'ICO', severity: 'critical', fixType: 'consent_record_missing' },
+    { id: 'sms_stop', label: 'STOP works and syncs', question: 'Does every SMS include a free opt-out (e.g. reply STOP), with opt-outs synced to all channels?', rule: 'PECR Reg 22(3)(c), Reg 23', regulator: 'ICO', severity: 'high', fixType: 'missing_unsubscribe' },
+    { id: 'sms_sender', label: 'Sender ID identifies you', question: 'Does the sender ID make clear the message is from your organisation?', rule: 'PECR Reg 23', regulator: 'ICO', severity: 'high', fixType: 'sender_identity_unclear' },
+  ],
+  crm: [
+    { id: 'crm_provenance', label: 'Consent provenance stored', question: 'For each contact, does the CRM store when and how consent was given and the wording shown?', rule: 'UK GDPR Art 7(1)', regulator: 'ICO', severity: 'critical', fixType: 'consent_provenance_missing' },
+    { id: 'crm_objection', label: 'Opt-outs reach sending tools', question: 'When someone opts out or objects in the CRM, does that reach every platform you send from?', rule: 'UK GDPR Art 21(3)', regulator: 'ICO', severity: 'critical', fixType: 'objection_not_synced' },
+    { id: 'crm_retention', label: 'Old consent reviewed', question: 'Do you review or remove contacts whose consent is old or who have not engaged for a long time?', rule: 'UK GDPR Art 5(1)(e)', regulator: 'ICO', severity: 'medium', fixType: 'stale_consent_data' },
+  ],
+  analytics: [
+    { id: 'an_prior_consent', label: 'Tags load only after consent', question: 'Do this tool\'s cookies or tags load only after the visitor opts in, not on page load?', rule: 'PECR Reg 6', regulator: 'ICO', severity: 'critical', fixType: 'tracking_without_consent' },
+    { id: 'an_reject', label: 'Reject as easy as accept', question: 'Can visitors refuse non-essential cookies as easily as accepting them, on the first screen?', rule: 'PECR Reg 6 · ICO cookie guidance', regulator: 'ICO', severity: 'high', fixType: 'reject_not_equal' },
+    { id: 'an_disclosed', label: 'Named in cookie notice', question: 'Is this tool named in your cookie or privacy notice, with its purpose?', rule: 'PECR Reg 6(2) · UK GDPR Art 13', regulator: 'ICO', severity: 'medium', fixType: 'cookie_not_disclosed' },
+  ],
+  advertising: [
+    { id: 'ad_audience', label: 'List uploads have a lawful basis', question: 'If you upload customer lists (custom or matched audiences), is that covered by your lawful basis and disclosed in your privacy notice?', rule: 'UK GDPR Art 6, Art 13', regulator: 'ICO', severity: 'critical', fixType: 'custom_audience_no_basis' },
+    { id: 'ad_pixel', label: 'Pixel loads only after consent', question: 'Does this platform\'s pixel or tag load only after cookie consent?', rule: 'PECR Reg 6', regulator: 'ICO', severity: 'critical', fixType: 'pixel_without_consent' },
+    { id: 'ad_claims', label: 'Ads reviewed before launch', question: 'Is ad copy checked against the CAP Code and pricing rules before it goes live on this platform?', rule: 'CAP Code · DMCCA 2024', regulator: 'ASA', severity: 'high', fixType: 'ad_copy_unreviewed' },
+  ],
+  payments: [
+    { id: 'pay_reuse', label: 'Payment data kept out of marketing', question: 'Is customer data from this provider kept out of marketing lists unless you have a separate basis (e.g. soft opt-in at checkout)?', rule: 'UK GDPR Art 5(1)(b) · PECR Reg 22(3)', regulator: 'ICO', severity: 'medium', fixType: 'purpose_creep' },
+    { id: 'pay_checkout_optout', label: 'Opt-out offered at checkout', question: 'If you rely on soft opt-in from purchases, is a clear opt-out offered at the point of sale?', rule: 'PECR Reg 22(3)(c)', regulator: 'ICO', severity: 'high', fixType: 'soft_optin_no_optout' },
+  ],
+  support: [
+    { id: 'sup_separate', label: 'Marketing opt-in kept separate', question: 'Is any marketing sign-up in chat or help flows a separate, unticked choice?', rule: 'UK GDPR Art 7(2) · PECR Reg 22', regulator: 'ICO', severity: 'medium', fixType: 'bundled_consent' },
+    { id: 'sup_suppression', label: 'No marketing to opted-out customers', question: 'Are customers who opted out kept out of promotional messages sent through this tool?', rule: 'PECR Reg 22', regulator: 'ICO', severity: 'high', fixType: 'suppression_not_synced' },
+  ],
+  forms: [
+    { id: 'form_specific', label: 'Consent wording is specific', question: 'Does the form name your organisation and the channels (email, SMS) people are signing up to?', rule: 'PECR Reg 22 · UK GDPR Art 4(11)', regulator: 'ICO', severity: 'critical', fixType: 'form_consent_not_specific' },
+    { id: 'form_unticked', label: 'No pre-ticked or bundled boxes', question: 'Are marketing boxes unticked by default and separate from terms and conditions?', rule: 'UK GDPR Art 7(2)', regulator: 'ICO', severity: 'critical', fixType: 'bundled_consent' },
+    { id: 'form_record', label: 'Each submission recorded', question: 'Is each consent saved with a timestamp and the version of the form shown?', rule: 'UK GDPR Art 7(1)', regulator: 'ICO', severity: 'high', fixType: 'consent_provenance_missing' },
+  ],
+  agency: [
+    { id: 'ag_approval', label: 'You approve creative before launch', question: 'Does the agency get your sign-off on copy and claims before campaigns go live?', rule: 'CAP Code · DMCCA 2024', regulator: 'ASA', severity: 'high', fixType: 'ad_copy_unreviewed' },
+    { id: 'ag_lists', label: 'Agency sends only to suppressed lists', question: 'Does the agency send only to lists you supply, with your suppression applied?', rule: 'PECR Reg 22', regulator: 'ICO', severity: 'critical', fixType: 'suppression_not_synced' },
+    { id: 'ag_tracking', label: 'Agency tags respect consent', question: 'Do pixels or tags the agency adds go through your consent tool?', rule: 'PECR Reg 6', regulator: 'ICO', severity: 'high', fixType: 'tracking_without_consent' },
+  ],
+  other: [
+    { id: 'oth_sends', label: 'Marketing sent only with consent', question: 'If this platform sends marketing, does it go only to consented contacts, with an opt-out?', rule: 'PECR Reg 22', regulator: 'ICO', severity: 'high', fixType: 'consent_record_missing' },
+    { id: 'oth_tracks', label: 'Tracking only after consent', question: 'If it sets cookies or tags, do they load only after consent?', rule: 'PECR Reg 6', regulator: 'ICO', severity: 'high', fixType: 'tracking_without_consent' },
+  ],
+};
+
+const SEVERITY_WEIGHT = { critical: 3, high: 2, medium: 1 };
+
+function normaliseCategory(type, name) {
+  const t = `${type || ''} ${name || ''}`.toLowerCase();
+  if (/\b(sms|text messag|twilio|textlocal|esendex)/.test(t)) return 'sms';
+  if (/(email|\besp\b|newsletter|mailchimp|klaviyo|brevo|dotdigital|activecampaign|omnisend|campaign monitor|constant contact|marketing cloud)/.test(t)) return 'esp';
+  if (/(\bcrm\b|salesforce|pipedrive|zoho|hubspot)/.test(t)) return 'crm';
+  if (/(analytic|hotjar|mixpanel|amplitude|tag manager|heatmap)/.test(t)) return 'analytics';
+  if (/(advertis|\bads\b|google ads|meta ads|tiktok|linkedin)/.test(t)) return 'advertising';
+  if (/(payment|stripe|paypal|adyen|worldpay|checkout)/.test(t)) return 'payments';
+  if (/(support|helpdesk|intercom|zendesk|freshdesk|live chat)/.test(t)) return 'support';
+  if (/(form|survey|typeform|jotform)/.test(t)) return 'forms';
+  if (/(agenc|ogilvy|vccp|merkle|jellyfish|mediacom|mindshare)/.test(t)) return 'agency';
+  return 'other';
+}
+
+function calculateMarketingScore(category, checks = {}) {
+  const defs = MARKETING_CHECKS[category] || MARKETING_CHECKS.other;
+  let total = 0, earned = 0;
+  for (const d of defs) {
+    const s = checks[d.id]?.status;
+    if (s === 'not_applicable') continue;
+    const w = SEVERITY_WEIGHT[d.severity] || 1;
+    total += w;
+    if (s === 'passed') earned += w;
+    else if (s === 'needs_attention') earned += w * 0.5;
+  }
+  return total ? Math.round((earned / total) * 100) : 100;
+}
+
+function marketingGaps(mc) {
+  if (!mc) return { gaps: [], unanswered: 0 };
+  const defs = MARKETING_CHECKS[mc.category] || [];
+  const gaps = defs.filter(d => ['not_evidenced', 'needs_attention'].includes(mc.checks?.[d.id]?.status));
+  const unanswered = defs.filter(d => !mc.checks?.[d.id]?.status).length;
+  return { gaps, unanswered };
+}
+) {
   const dpaStatus = fields.DPAStatus || fields.AgreementStatus || intel.dpaStatus || 'Unknown';
-  const dpaConfirmed = DPA_CONFIRMED.includes(dpaStatus);
-  const hasEnforcement = intel.enforcementHistory && intel.enforcementHistory !== 'None identified in sources reviewed.' && intel.enforcementHistory !== 'None publicly disclosed.';
-  const isUKOnly = (intel.transferDestination || '').toLowerCase().includes('uk') && !(intel.transferDestination || '').toLowerCase().includes('us');
-  const daysSinceCheck = intel.lastChecked ? Math.floor((Date.now() - new Date(intel.lastChecked)) / 86400000) : 999;
+  const dpaConfirmed = DPA_CONFIRMED.includes(dpaStatus) || intel.dpaStatus === 'Confirmed';
+  const enforcement = hasRelevantEnforcement(intel);
+  const ukOnly = isUKOnly(intel.transferDestination);
+  const icoYes = intel.icoRegistered === 'Yes' || (intel.icoRegistered || '').startsWith('Yes');
+  const days = intel.lastChecked ? Math.floor((Date.now() - new Date(intel.lastChecked)) / 86400000) : 999;
   return {
-    dpa:           { max: 30, score: dpaConfirmed ? 30 : intel.dpaUrl ? 20 : 0, label: dpaConfirmed ? 'Confirmed' : intel.dpaUrl ? 'Available but not confirmed' : 'Not found' },
-    icoRegister:   { max: 15, score: (intel.icoRegistered === 'Yes' || (intel.icoRegistered || '').startsWith('Yes')) ? 15 : 0, label: intel.icoRegistered || 'Unknown' },
-    enforcement:   { max: 20, score: hasEnforcement ? 5 : 20, label: hasEnforcement ? 'Relevant history found' : 'No relevant actions identified' },
-    transfers:     { max: 15, score: isUKOnly ? 15 : intel.transferMechanism ? 12 : 0, label: isUKOnly ? 'UK-based — no transfer' : intel.transferMechanism || 'Not documented' },
-    freshness:     { max: 10, score: daysSinceCheck <= 90 ? 10 : daysSinceCheck <= 180 ? 6 : 2, label: daysSinceCheck <= 90 ? 'Current' : daysSinceCheck <= 180 ? 'Review recommended' : 'Stale' },
-    certifications:{ max: 10, score: intel.certifications ? 10 : 0, label: intel.certifications || 'None identified' },
+    dpa:            { max: 30, score: dpaConfirmed ? 30 : intel.dpaUrl ? 20 : 0, label: dpaConfirmed ? 'Confirmed' : intel.dpaUrl ? 'Available but not confirmed' : 'Not found' },
+    icoRegister:    { max: 15, score: icoYes ? 15 : 0, label: intel.icoRegistered || 'Unknown' },
+    enforcement:    { max: 20, score: enforcement ? 5 : 20, label: enforcement ? 'Relevant history found' : 'No relevant actions identified' },
+    transfers:      { max: 15, score: ukOnly ? 15 : intel.transferMechanism ? 12 : 0, label: ukOnly ? 'UK-based — no transfer' : intel.transferMechanism || 'Not documented' },
+    freshness:      { max: 10, score: days <= 90 ? 10 : days <= 180 ? 6 : 2, label: days <= 90 ? 'Current' : days <= 180 ? 'Review recommended' : 'Stale' },
+    certifications: { max: 10, score: intel.certifications ? 10 : 0, label: intel.certifications || 'None identified' },
   };
 }
+
+function safeJSON(s, fallback) { try { return s ? JSON.parse(s) : fallback; } catch { return fallback; } }
+
+function isUKOnly(dest) {
+  const d = (dest || '').toLowerCase();
+  const uk = /\b(uk|united kingdom|great britain|england|scotland|wales)\b/.test(d);
+  const elsewhere = /\b(us|usa|united states|eu|eea|europe|ireland|germany|france|netherlands|india|australia|canada|global|worldwide|international)\b/.test(d);
+  return uk && !elsewhere;
+}
+
+function hasRelevantEnforcement(intel) {
+  if ((intel.enforcementRelevant || []).length) return true;
+  const h = intel.enforcementHistory;
+  return !!h && h !== 'None identified in sources reviewed.' && h !== 'None publicly disclosed.';
+}
+
 
 // ── Enforcement relevance filter ──────────────────────────────
 async function getRelevantEnforcement(base, name, entityType, relationshipContext) {
@@ -355,13 +463,13 @@ async function getRelevantEnforcement(base, name, entityType, relationshipContex
         body: JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 800,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          messages: [{ role: 'user', content: `Search for any ICO, ASA, or CMA enforcement actions, fines, or regulatory rulings against "${name}" in the UK. Check ico.org.uk/action-weve-taken/enforcement/ and asa.org.uk/codes-and-rulings/rulings.html specifically.\n\nIf you find any relevant enforcement actions, return a JSON array:\n[{"regulator":"ICO|ASA|CMA","date":"YYYY-MM-DD","violation":"brief description","fine":number_or_null,"source":"URL where found","sameEntity":true,"relevanceNote":"why this is relevant"}]\n\nIf you find NO relevant enforcement actions, return exactly:\n[]\n\nNo other text.` }],
+          messages: [{ role: 'user', content: `Search for any ICO, ASA, or CMA enforcement actions, fines, or regulatory rulings against "${name}" in the UK. Check ico.org.uk/action-weve-taken/enforcement/ and asa.org.uk/codes-and-rulings/rulings.html specifically.\n\nIf you find any relevant enforcement actions, return a JSON array:\n[{"regulator":"ICO|ASA|CMA","date":"YYYY-MM-DD","violation":"brief description","fine":number_or_null,"source":"URL where found","sameEntity":true,"relevanceNote":"why this is relevant","claimTypes":["pricing_claim|urgency_claim|scarcity_claim|free_claim|health_claim|comparative_claim|guarantee_claim|environmental_claim|consent|other"]}]\n\nIf you find NO relevant enforcement actions, return exactly:\n[]\n\nNo other text.` }],
         }),
       }), 20000);
       if (r.ok) {
         const data = await r.json();
         const text = data.content?.find(b => b.type === 'text')?.text || '';
-        const match = text.match(/\[[\s\S]*?\]/);
+        const match = text.match(/\[[\s\S]*\]/);
         if (match) {
           const webResults = JSON.parse(match[0]);
           if (webResults.length) {
@@ -374,6 +482,7 @@ async function getRelevantEnforcement(base, name, entityType, relationshipContex
               source: w.source || 'Web search',
               relevanceNote: w.relevanceNote || 'Found via web search',
               sameEntity: w.sameEntity !== false,
+              claimTypes: Array.isArray(w.claimTypes) ? w.claimTypes : [],
               webSearchResult: true,
             }));
             return { relevant, rejected: [], summary: relevant.length + ' enforcement action' + (relevant.length !== 1 ? 's' : '') + ' identified via web search.', source: 'web_search' };
@@ -413,7 +522,7 @@ async function getRelevantEnforcement(base, name, entityType, relationshipContex
     assessments.forEach(a => {
       const candidate = candidates[a.index];
       if (!candidate) return;
-      const record = { ...candidate.fields, recordId: candidate.id, relevanceNote: a.relevanceNote || '', sameEntity: a.sameEntity };
+      const record = { ...candidate.fields, recordId: candidate.id, relevanceNote: a.relevanceNote || '', sameEntity: a.sameEntity, claimTypes: Array.isArray(a.claimTypes) ? a.claimTypes : [] };
       if (a.relevant && a.sameEntity) relevant.push(record);
       else rejected.push(record);
     });
@@ -539,7 +648,7 @@ async function handleHistory(req, res) {
   }
 }
 
-// ── REGISTER handler (Vendor_Register — processors) — v7.4 ──
+// ── REGISTER handler (Vendor_Register — processors) — v7.5 ──
 async function handleRegister(req, res) {
   const base = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -577,7 +686,7 @@ async function handleRegister(req, res) {
       LastAutoChecked: vendor.LastAutoChecked,
     };
 
-    // v7.4: On create — pre-fill from Marketing_Vendors or assess unknown vendor
+    // v7.5: On create — pre-fill from Marketing_Vendors or assess unknown vendor
     if (!recordId && vendor.VendorName) {
       try {
         fields = await prefillFromKnownVendor(base, vendor.VendorName, fields);
@@ -594,7 +703,7 @@ async function handleRegister(req, res) {
             intel.enforcementRelevant = enforcement.relevant;
             intel.enforcementSummary = enforcement.summary;
             fields.IntelligenceJson = JSON.stringify(intel);
-            fields.ComplianceScore = calculateVendorScore(intel);
+            fields.ComplianceScore = calculateVendorScore(intel, fields);
             fields.ScoreBreakdownJson = JSON.stringify(buildScoreBreakdown(intel, fields));
           } catch (e) {}
         }
@@ -609,7 +718,8 @@ async function handleRegister(req, res) {
 
       const dpaStatus = vendor.DPAStatus || vendor.AgreementStatus || fields.DPAStatus || fields.AgreementStatus;
       let fixGenerated = false;
-      if (!isDPAConfirmed(dpaStatus)) {
+      const dpaTouched = !recordId || vendor.DPAStatus !== undefined || vendor.AgreementStatus !== undefined;
+      if (dpaTouched && !isDPAConfirmed(dpaStatus)) {
         const sourceId = record?.id || recordId;
         const already  = await fixExistsFor(base, userId, sourceId, 'dpa_breach');
         if (!already) {
@@ -686,7 +796,161 @@ async function handleCronStatus(req, res) {
   });
 }
 
-// ── PARTNER-REGISTER handler (v7.4 — relevance filter) ───────
+// ── MARKETING-CHECK handler (v7.5) ────────────────────────────
+async function handleMarketingCheck(req, res) {
+  if (req.method === 'GET') return res.json({ categories: MARKETING_CHECKS, labels: MARKETING_CATEGORY_LABELS });
+
+  const { userId, recordId, checkId, status, note, category } = req.body || {};
+  if (!userId || !recordId) return res.status(400).json({ error: 'userId and recordId required' });
+  const VALID = ['passed', 'needs_attention', 'not_evidenced', 'not_applicable', null];
+  if (checkId && !VALID.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+
+  const base = airtableBase();
+  const rec = (await atGet(base, 'Vendor_Register', `RECORD_ID()='${recordId}'`, '', 1))[0];
+  if (!rec) return res.status(404).json({ error: 'Record not found' });
+  if (rec.fields.UserID !== userId) return res.status(403).json({ error: 'Not authorised' });
+
+  const mc = safeJSON(rec.fields.MarketingChecksJson, null)
+    || { category: rec.fields.Category || normaliseCategory(rec.fields.VendorType, rec.fields.VendorName), checks: {} };
+  if (!MARKETING_CHECKS[mc.category]) mc.category = 'other';
+  if (category) {
+    if (!MARKETING_CHECKS[category]) return res.status(400).json({ error: 'Unknown category' });
+    mc.category = category;
+  }
+
+  let fixGenerated = false;
+  if (checkId) {
+    const def = MARKETING_CHECKS[mc.category].find(d => d.id === checkId);
+    if (!def) return res.status(400).json({ error: 'Check does not belong to this category' });
+    if (status === null) delete mc.checks[checkId];
+    else mc.checks[checkId] = { status, note: note || '', updatedAt: new Date().toISOString().split('T')[0] };
+
+    if ((status === 'not_evidenced' || status === 'needs_attention') && def.severity !== 'medium') {
+      const already = await fixExistsFor(base, userId, recordId, def.fixType);
+      if (!already) {
+        generateFix({
+          userId, fixType: def.fixType, tool: 'Relationships Register',
+          description: `${rec.fields.VendorName}: ${def.label} — ${status === 'not_evidenced' ? 'not evidenced' : 'needs attention'}. ${def.question} (${def.rule})`,
+          severity: def.severity === 'critical' ? 'critical' : 'high', sourceRecordId: recordId,
+        });
+        fixGenerated = true;
+      }
+    }
+  }
+
+  const marketingScore = calculateMarketingScore(mc.category, mc.checks);
+  await atPatch(base, 'Vendor_Register', recordId, { MarketingChecksJson: JSON.stringify(mc), MarketingScore: marketingScore, Category: mc.category });
+  return res.json({ checks: mc, marketingScore, fixGenerated });
+}
+
+
+const AD_ACTIVITIES      = ['joint_ads', 'co_branded_content', 'influencer'];
+const PRICING_ACTIVITIES = ['joint_ads', 'co_branded_content', 'lead_generation'];
+
+// Which agreement a partner needs depends on how data is shared.
+function partnerAgreementRequirement(f) {
+  const rel = f.DataRelationship || 'unknown';
+  if (rel === 'none')                    return { rel, required: null, ok: true };
+  if (rel === 'joint_controller')        return { rel, required: 'Article 26 joint controller arrangement', ok: isDPAConfirmed(f.Article26Status), fixType: 'no_article26_agreement' };
+  if (rel === 'independent_controllers') return { rel, required: 'data sharing agreement', ok: isDPAConfirmed(f.DataAgreementStatus), fixType: 'no_data_sharing_agreement' };
+  if (rel === 'processor')               return { rel, required: 'Article 28 DPA', ok: isDPAConfirmed(f.DataAgreementStatus), fixType: 'dpa_breach' };
+  return { rel: 'unknown', required: 'undetermined', ok: false, fixType: 'partner_relationship_undetermined' };
+}
+
+// Which checks apply to an affiliate depends on what it does with data.
+function affiliateRequirements(f) {
+  const role = f.AffiliateDataRole || 'unknown';
+  const act  = (f.RelationshipActivity || f.AffiliateType || '').toLowerCase();
+  return {
+    role,
+    agreement: role === 'our_list' ? 'Article 28 DPA'
+             : (role === 'own_list' || role === 'lead_capture') ? 'marketing / data sharing agreement'
+             : role === 'no_mailing' ? null : 'unknown',
+    consentNaming:  ['own_list', 'lead_capture', 'unknown'].includes(role) && role !== 'no_mailing',
+    senderIdentity: ['own_list', 'our_list'].includes(role) || (role === 'unknown' && act.includes('email')),
+    landingPage:    role === 'lead_capture' || /lead|comparison|cashback/.test(act),
+    adDisclosure:   act.includes('influencer'),
+  };
+}
+
+function weightedScore(items) {
+  const applicable = items.filter(i => i[0]);
+  const total = applicable.reduce((s, i) => s + i[2], 0);
+  const got   = applicable.filter(i => i[1]).reduce((s, i) => s + i[2], 0);
+  return total ? (got / total) * 100 : 100;
+}
+const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+
+
+// ── Consent wording analysis (v7.5) ───────────────────────────
+const GENERIC_CONSENT_PATTERNS = [
+  /selected (third[- ])?partners/i, /carefully (chosen|selected)/i, /trusted partners/i,
+  /third[- ]part(y|ies)/i, /group companies/i, /other (companies|organisations|organizations|brands)/i,
+];
+
+function analyseConsentWording(wording, tradingName) {
+  if (!wording || !tradingName) return { result: 'unchecked', reasons: ['Consent wording and trading name are both needed.'] };
+  const w = wording.toLowerCase();
+  const base = tradingName.toLowerCase().replace(/\b(ltd|limited|plc|llp|inc)\b\.?/g, '').replace(/\s+/g, ' ').trim();
+  const named = !!base && w.includes(base);
+  const channels = ['email', 'sms', 'text', 'phone', 'call', 'post'].filter(c => new RegExp(`\\b${c}`).test(w));
+  const generic = GENERIC_CONSENT_PATTERNS.filter(rx => rx.test(wording)).map(rx => wording.match(rx)[0]);
+  const reasons = [];
+
+  if (!named) {
+    reasons.push(`"${tradingName}" does not appear in the wording.`);
+    if (generic.length) reasons.push(`It relies on generic wording ("${generic[0]}"), which does not cover your marketing.`);
+    return { result: 'fail', named, channels, generic, reasons };
+  }
+  if (!channels.length) {
+    reasons.push('Your organisation is named, but the wording does not say which channels (e.g. email, SMS) the consent covers.');
+    return { result: 'warn', named, channels, generic, reasons };
+  }
+  if (generic.length) reasons.push(`Generic wording also present ("${generic[0]}"). Fine if your name is listed specifically alongside it.`);
+  return { result: 'pass', named, channels, generic, reasons };
+}
+
+async function handleConsentCheck(req, res) {
+  const { userId, recordId, type, wording, tradingName, sourceUrl } = req.body || {};
+  if (!userId || !recordId) return res.status(400).json({ error: 'userId and recordId required' });
+  const table = type === 'partner' ? 'Partner_Register' : 'Affiliate_Register';
+  const base = airtableBase();
+  const rec = (await atGet(base, table, `RECORD_ID()='${recordId}'`, '', 1))[0];
+  if (!rec) return res.status(404).json({ error: 'Record not found' });
+  if (rec.fields.UserID !== userId) return res.status(403).json({ error: 'Not authorised' });
+
+  const analysis = analyseConsentWording(wording, tradingName);
+  const today = new Date().toISOString().split('T')[0];
+  const patch = {
+    ConsentCheckResultJson: JSON.stringify({ ...analysis, checkedAt: today, sourceUrl: sourceUrl || null }),
+    ConsentChainVerified: analysis.result === 'pass',
+  };
+  if (type === 'partner') {
+    patch.PartnerConsentWording = wording;
+  } else {
+    patch.ConsentWordingPasted = wording;
+    patch.ConsentNameCheck = analysis.result;
+    if (analysis.result === 'pass') patch.ConsentVerifiedDate = today;
+    if (sourceUrl) {
+      const urls = safeJSON(rec.fields.VerificationUrls, {});
+      urls.signupPage = sourceUrl;
+      patch.VerificationUrls = JSON.stringify(urls);
+    }
+  }
+  await atPatch(base, table, recordId, patch);
+
+  // Remember the trading name for next time
+  if (tradingName) {
+    const profile = (await atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []))[0];
+    if (profile && profile.fields.TradingName !== tradingName) {
+      atPatch(base, 'User_Profile', profile.id, { TradingName: tradingName }).catch(e => console.error('trading name save non-fatal:', e));
+    }
+  }
+  return res.json({ analysis });
+}
+
+
+// ── PARTNER-REGISTER handler (v7.5 — relevance filter) ───────
 async function handlePartnerRegister(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -725,20 +989,22 @@ async function handlePartnerRegister(req, res) {
       }
     }
 
+    const d = withDefaults(!recordId);
+
     const fields = {
       UserID: userId, PartnerName: partner.PartnerName, PartnerType: partner.PartnerType,
       RelationshipDescription: partner.RelationshipDescription,
-      Article26Status: partner.Article26Status || 'Not yet',
+      Article26Status: d(partner.Article26Status, 'Not yet'),
       Article26Date: partner.Article26Date,
-      ConsentChainOwner: partner.ConsentChainOwner || 'Unknown',
-      ConsentChainVerified: partner.ConsentChainVerified || false,
+      ConsentChainOwner: d(partner.ConsentChainOwner, 'Unknown'),
+      ConsentChainVerified: d(partner.ConsentChainVerified, false),
       PrivacyPolicyUrl: partner.PrivacyPolicyUrl,
-      ReputationScore: partner.ReputationScore ?? reputationScore,
-      BrandSafetyFlag: partner.BrandSafetyFlag ?? brandSafetyFlag,
-      BrandSafetyReason: partner.BrandSafetyReason || brandSafetyReason,
-      ViolationCount: partner.ViolationCount ?? violationCount,
-      LastViolationDate: partner.LastViolationDate || lastViolationDate,
-      LastViolationSummary: partner.LastViolationSummary || lastViolationSummary,
+      ReputationScore: partner.ReputationScore ?? (recordId ? undefined : reputationScore),
+      BrandSafetyFlag: partner.BrandSafetyFlag ?? (recordId ? undefined : brandSafetyFlag),
+      BrandSafetyReason: partner.BrandSafetyReason || (recordId ? undefined : brandSafetyReason),
+      ViolationCount: partner.ViolationCount ?? (recordId ? undefined : violationCount),
+      LastViolationDate: partner.LastViolationDate || (recordId ? undefined : lastViolationDate),
+      LastViolationSummary: partner.LastViolationSummary || (recordId ? undefined : lastViolationSummary),
       CampaignLog: partner.CampaignLog,
       CommercialTermsNotes: partner.CommercialTermsNotes,
       DataSharedDescription: partner.DataSharedDescription,
@@ -749,10 +1015,17 @@ async function handlePartnerRegister(req, res) {
       AddedDate: recordId ? undefined : new Date().toISOString().split('T')[0],
       LastChecked: recordId ? undefined : new Date().toISOString().split('T')[0],
       EnforcementRelevanceJson: enforcementResult ? JSON.stringify({ relevant: enforcementResult.relevant, rejected: enforcementResult.rejected, summary: enforcementResult.summary }) : undefined,
+      // v7.5 new
+      AffiliateDataRole: d(affiliate.AffiliateDataRole, 'unknown'),
+      LandingPageChecksJson: affiliate.LandingPageChecksJson,
       RelationshipActivity: partner.RelationshipActivity,
       MarketingChannels: Array.isArray(partner.MarketingChannels) ? JSON.stringify(partner.MarketingChannels) : partner.MarketingChannels,
-      AdComplianceReviewed: partner.AdComplianceReviewed || false,
-      PricingComplianceReviewed: partner.PricingComplianceReviewed || false,
+      AdComplianceReviewed: d(partner.AdComplianceReviewed, false),
+      PricingComplianceReviewed: d(partner.PricingComplianceReviewed, false),
+      // v7.5 new
+      DataRelationship: d(partner.DataRelationship, 'unknown'),
+      DataAgreementStatus: partner.DataAgreementStatus,
+      PartnerConsentWording: partner.PartnerConsentWording,
       ConsentChainNotes: partner.ConsentChainNotes,
       AdLastReviewed: partner.AdLastReviewed,
       AdReviewResult: partner.AdReviewResult,
@@ -767,26 +1040,16 @@ async function handlePartnerRegister(req, res) {
 
       const fixesGenerated = [];
 
-      if (!recordId && !isDPAConfirmed(partner.Article26Status)) {
-        generateFix({ userId, fixType: 'no_article26_agreement', tool: 'Relationships Register', description: `Partner '${partner.PartnerName}' added without a confirmed Article 26 joint controller agreement.`, severity: 'high', sourceRecordId: record?.id || null });
-        fixesGenerated.push('no_article26_agreement');
+if (!recordId) {
+        const agr = partnerAgreementRequirement(fields);
+        if (agr.rel === 'unknown') {
+          generateFix({ userId, fixType: 'partner_relationship_undetermined', tool: 'Relationships Register', description: `Confirm whether personal data is shared with '${partner.PartnerName}' and on what basis (joint controllers, independent controllers, processor, or none). This decides which agreement you need.`, severity: 'medium', sourceRecordId: record?.id || null });
+          fixesGenerated.push('partner_relationship_undetermined');
+        } else if (agr.required && !agr.ok) {
+          generateFix({ userId, fixType: agr.fixType, tool: 'Relationships Register', description: `Partner '${partner.PartnerName}' — ${agr.required} not confirmed.`, severity: 'high', sourceRecordId: record?.id || null });
+          fixesGenerated.push(agr.fixType);
+        }
       }
-      if (!recordId && brandSafetyFlag) {
-        generateFix({ userId, fixType: 'partner_brand_risk', tool: 'Relationships Register', description: `Partner '${partner.PartnerName}' has ${violationCount} relevant enforcement action${violationCount !== 1 ? 's' : ''} identified in sources reviewed.`, severity: violationCount >= 3 ? 'critical' : 'high', sourceRecordId: record?.id || null });
-        fixesGenerated.push('partner_brand_risk');
-      }
-      const activity = partner.RelationshipActivity || '';
-      const adActivities = ['joint_ads', 'co_branded_content', 'influencer'];
-      if (!recordId && adActivities.includes(activity) && !partner.AdComplianceReviewed) {
-        generateFix({ userId, fixType: 'unreviewed_joint_ads', tool: 'Relationships Register', description: `Partner '${partner.PartnerName}' is involved in ${activity.replace(/_/g, ' ')} but joint advertising content has not been reviewed against the CAP Code.`, severity: 'high', sourceRecordId: record?.id || null });
-        fixesGenerated.push('unreviewed_joint_ads');
-      }
-      const pricingActivities = ['joint_ads', 'co_branded_content', 'lead_generation'];
-      if (!recordId && pricingActivities.includes(activity) && !partner.PricingComplianceReviewed) {
-        generateFix({ userId, fixType: 'partner_pricing_claims', tool: 'Relationships Register', description: `Partner '${partner.PartnerName}' runs ${activity.replace(/_/g, ' ')} but pricing claims have not been verified against CMA/DMCCA 2024 requirements.`, severity: 'medium', sourceRecordId: record?.id || null });
-        fixesGenerated.push('partner_pricing_claims');
-      }
-
       return res.json({ record, reputationScore, brandSafetyFlag, violationCount, fixesGenerated });
     } catch (e) {
       return res.status(500).json({ error: e.message });
@@ -813,30 +1076,35 @@ async function handleAffiliateRegister(req, res) {
     if (!userId)    return res.status(400).json({ error: 'userId required' });
     if (!affiliate) return res.status(400).json({ error: 'affiliate data required' });
 
-    const volume = affiliate.TotalVolumeSent || 0;
     let exposureLow = 0, exposureHigh = 0;
-    if (!affiliate.ConsentChainVerified) {
-      exposureLow  = Math.min(Math.round(volume * 0.02), 50000);
-      exposureHigh = Math.min(Math.round(volume * 0.08), 225000);
-    }
-    if (affiliate.SenderIdentityCompliant === 'Unverified') {
-      exposureLow  += 5000;
-      exposureHigh += 30000;
+    if (!recordId || affiliate.TotalVolumeSent !== undefined) {
+      const volume = affiliate.TotalVolumeSent || 0;
+      if (!affiliate.ConsentChainVerified) {
+        exposureLow  = Math.min(Math.round(volume * 0.02), 50000);
+        exposureHigh = Math.min(Math.round(volume * 0.08), 225000);
+      }
+      if (affiliate.SenderIdentityCompliant === 'Unverified') {
+        exposureLow  += 5000;
+        exposureHigh += 30000;
+      }
     }
 
-    // v7.4: Enforcement relevance check on affiliate create
+    // v7.5: Enforcement relevance check on affiliate create
     let enforcementResult = null;
     if (!recordId && affiliate.AffiliateName) {
       enforcementResult = await getRelevantEnforcement(base, affiliate.AffiliateName, affiliate.AffiliateType || 'affiliate', 'third-party promoter / email affiliate').catch(() => null);
     }
 
+    const d = withDefaults(!recordId);
+
     const fields = {
       UserID: userId, AffiliateName: affiliate.AffiliateName, AffiliateType: affiliate.AffiliateType,
-      DPAStatus: affiliate.DPAStatus || 'Not yet',
+      DPAStatus: d(affiliate.DPAStatus, 'Not yet'),
       AgreementDate: affiliate.AgreementDate,
-      ConsentChainVerified: affiliate.ConsentChainVerified || false,
+      // ConsentChainVerified can only be set TRUE by the consent-check action (2.6).
+      ConsentChainVerified: recordId ? (affiliate.ConsentChainVerified === false ? false : undefined) : false,
       ConsentChainNotes: affiliate.ConsentChainNotes,
-      SenderIdentityCompliant: affiliate.SenderIdentityCompliant || 'Unverified',
+      SenderIdentityCompliant: d(affiliate.SenderIdentityCompliant, 'Unverified'),
       SenderIdentityNotes: affiliate.SenderIdentityNotes,
       FromNameUsed: affiliate.FromNameUsed,
       PrivacyPolicyUrl: affiliate.PrivacyPolicyUrl,
@@ -851,12 +1119,12 @@ async function handleAffiliateRegister(req, res) {
       Notes: affiliate.Notes,
       LastChecked: recordId ? undefined : new Date().toISOString().split('T')[0],
       RelationshipActivity: affiliate.RelationshipActivity,
-      MarketingMaterialsReviewed: affiliate.MarketingMaterialsReviewed || false,
-      AdDisclosureCompliant: affiliate.AdDisclosureCompliant || 'Unverified',
-      LandingPageReviewed: affiliate.LandingPageReviewed || false,
+      MarketingMaterialsReviewed: d(affiliate.MarketingMaterialsReviewed, false),
+      AdDisclosureCompliant: d(affiliate.AdDisclosureCompliant, 'Unverified'),
+      LandingPageReviewed: d(affiliate.LandingPageReviewed, false),
       ConsentWordingPasted: affiliate.ConsentWordingPasted,
       ConsentNameCheck: affiliate.ConsentNameCheck,
-      ConsentVerifiedDate: affiliate.ConsentChainVerified && !recordId ? new Date().toISOString().split('T')[0] : affiliate.ConsentVerifiedDate,
+      ConsentVerifiedDate: affiliate.ConsentVerifiedDate,
       VerificationUrls: affiliate.VerificationUrls,
       CreativeLastReviewed: affiliate.CreativeLastReviewed,
       CreativeReviewResult: affiliate.CreativeReviewResult,
@@ -871,31 +1139,26 @@ async function handleAffiliateRegister(req, res) {
 
       const fixesGenerated = [];
 
-      if (!recordId) {
-        if (!affiliate.ConsentChainVerified) {
-          generateFix({ userId, fixType: 'affiliate_consent_unverified', tool: 'Relationships Register', description: `Affiliate '${affiliate.AffiliateName}' added with unverified consent chain. PECR Reg 22 requires valid consent for each marketing message.`, severity: 'critical', exposureLow, exposureHigh, sourceRecordId: record?.id || null });
-          fixesGenerated.push('affiliate_consent_unverified');
-        }
-        if (affiliate.SenderIdentityCompliant === 'Unverified') {
-          generateFix({ userId, fixType: 'affiliate_sender_identity_breach', tool: 'Relationships Register', description: `Affiliate '${affiliate.AffiliateName}' sender identity not verified. PECR Reg 23 requires the sender not be disguised or concealed.`, severity: 'high', sourceRecordId: record?.id || null });
-          fixesGenerated.push('affiliate_sender_identity_breach');
-        }
-        if (!affiliate.MarketingMaterialsReviewed) {
-          generateFix({ userId, fixType: 'affiliate_misleading_claims', tool: 'Relationships Register', description: `Affiliate '${affiliate.AffiliateName}' marketing materials have not been reviewed against the CAP Code. You are responsible for claims made on your behalf.`, severity: 'high', sourceRecordId: record?.id || null });
-          fixesGenerated.push('affiliate_misleading_claims');
-        }
-        const affActivity = (affiliate.RelationshipActivity || affiliate.AffiliateType || '').toLowerCase();
-        if (affActivity.includes('influencer') && affiliate.AdDisclosureCompliant !== 'Verified') {
-          generateFix({ userId, fixType: 'affiliate_ad_disclosure', tool: 'Relationships Register', description: `Influencer affiliate '${affiliate.AffiliateName}' ad disclosure not verified. ASA requires all paid content to be clearly identified as advertising.`, severity: 'high', sourceRecordId: record?.id || null });
-          fixesGenerated.push('affiliate_ad_disclosure');
-        }
-        const isLeadGen = affActivity.includes('lead') || affActivity.includes('comparison') || affActivity.includes('cashback');
-        if (isLeadGen && !affiliate.LandingPageReviewed) {
-          generateFix({ userId, fixType: 'lead_gen_consent_gap', tool: 'Relationships Register', description: `Lead generation affiliate '${affiliate.AffiliateName}' landing pages have not been reviewed. Consent must specifically name your organisation.`, severity: 'critical', sourceRecordId: record?.id || null });
-          fixesGenerated.push('lead_gen_consent_gap');
-        }
+if (!recordId) {
+        const r = affiliateRequirements(fields);
+        const name = affiliate.AffiliateName;
+        const add = (fixType, description, severity, extra = {}) => {
+          generateFix({ userId, fixType, tool: 'Relationships Register', description, severity, sourceRecordId: record?.id || null, ...extra });
+          fixesGenerated.push(fixType);
+        };
+        if (r.consentNaming && !fields.ConsentChainVerified)
+          add('affiliate_consent_unverified', `Affiliate '${name}': consent wording not checked. Consent an affiliate collected only covers your marketing if it names your organisation (PECR Reg 22; Saga Group 2021).`, 'critical', { exposureLow, exposureHigh });
+        if (r.senderIdentity && fields.SenderIdentityCompliant === 'Unverified')
+          add('affiliate_sender_identity_breach', `Affiliate '${name}' sender identity not verified. PECR Reg 23 requires the sender not be disguised or concealed.`, 'high');
+        if (!fields.MarketingMaterialsReviewed)
+          add('affiliate_misleading_claims', `Affiliate '${name}' marketing materials not reviewed against the CAP Code. You are responsible for claims made on your behalf.`, 'high');
+        if (r.adDisclosure && fields.AdDisclosureCompliant !== 'Verified')
+          add('affiliate_ad_disclosure', `Influencer '${name}' ad disclosure not verified. Paid content must be clearly identified as advertising (CAP Code 2.1).`, 'high');
+        if (r.landingPage && !fields.LandingPageReviewed)
+          add('lead_gen_consent_gap', `Affiliate '${name}' landing pages not reviewed. Consent captured there must name your organisation.`, 'critical');
+        if (r.agreement && r.agreement !== 'unknown' && !isDPAConfirmed(fields.DPAStatus))
+          add(r.role === 'our_list' ? 'dpa_breach' : 'affiliate_agreement_missing', `Affiliate '${name}' — no confirmed ${r.agreement}.`, 'high');
       }
-
       return res.json({ record, exposureLow, exposureHigh, fixesGenerated, enforcement: enforcementResult || { relevant: [], rejected: [], summary: 'Not checked.' } });
     } catch (e) {
       return res.status(500).json({ error: e.message });
@@ -905,7 +1168,7 @@ async function handleAffiliateRegister(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-// ── COMPETITOR-WATCH handler (v7.4 — claim cross-ref) ────────
+// ── COMPETITOR-WATCH handler (v7.5 — claim cross-ref) ────────
 async function handleCompetitorWatch(req, res) {
   const base   = airtableBase();
   const userId = req.body?.userId || req.query?.userId;
@@ -927,7 +1190,7 @@ async function handleCompetitorWatch(req, res) {
     let enforcementResult = null;
 
     if (!recordId && competitor.CompetitorName) {
-      // v7.4: Use relevance-filtered enforcement (with web search fallback)
+      // v7.5: Use relevance-filtered enforcement (with web search fallback)
       try {
         enforcementResult = await getRelevantEnforcement(base, competitor.CompetitorName, 'competitor', 'competitor being monitored for regulatory activity');
         rulingCount = enforcementResult.relevant.length;
@@ -939,6 +1202,7 @@ async function handleCompetitorWatch(req, res) {
         allRulingsJson = JSON.stringify(enforcementResult.relevant.slice(0, 5).map(v => ({
           date: v.DateOfAction || v.date || '', regulator: v.Regulator || v.regulator || '',
           summary: (v.Violation || v.violation || '').slice(0, 200), fine: v.FineAmount || v.fine || null,
+          claimTypes: v.claimTypes || [],
         })));
       } catch (e) {
         console.error('Competitor enforcement non-fatal:', e);
@@ -995,7 +1259,7 @@ async function handleCompetitorWatch(req, res) {
       LastAutoChecked: new Date().toISOString().split('T')[0],
     };
 
-    // v7.4: Cross-reference competitor claim types against user's active campaigns
+    // v7.5: Cross-reference competitor claim types against user's active campaigns
     let claimCrossRef = null;
     if (!recordId && rulingCount > 0) {
       try {
@@ -1071,18 +1335,18 @@ async function handleCompetitorIntelligence(req, res) {
   });
 }
 
-// ── RELATIONSHIP-WATCH handler (v7.4 — score-based alerts) ───
+// ── RELATIONSHIP-WATCH handler (v7.5 — score-based alerts) ───
 async function handleRelationshipWatch(req, res) {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
   const base  = airtableBase();
   const today = new Date();
-  const [vendors, partners, affiliates, competitors, violations] = await Promise.all([
+  const [vendors, partners, affiliates, competitors, profileRows] = await Promise.all([
     atGet(base, 'Vendor_Register',    `{UserID}='${userId}'`, '', 50).catch(() => []),
     atGet(base, 'Partner_Register',   `{UserID}='${userId}'`, '', 50).catch(() => []),
     atGet(base, 'Affiliate_Register', `{UserID}='${userId}'`, '', 50).catch(() => []),
     atGet(base, 'Competitor_Watch',   `AND({UserID}='${userId}',{WatchStatus}=1)`, '', 50).catch(() => []),
-    atGet(base, 'Violation_Database', '', 'sort[0][field]=DateOfAction&sort[0][direction]=desc', 200).catch(() => []),
+    atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []),
   ]);
 
   function staleDays(record) {
@@ -1096,56 +1360,58 @@ async function handleRelationshipWatch(req, res) {
     if (next < today) next.setFullYear(today.getFullYear() + 1);
     return Math.floor((next - today) / 86400000);
   }
-  function crossRefViolations(name) {
-    if (!name) return [];
-    const words = name.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-    return violations.filter(v => { const co = (v.fields.CompanyName || '').toLowerCase(); return words.some(w => co.includes(w)); }).slice(0, 3).map(v => ({ source: v.fields.Regulator || '', date: v.fields.DateOfAction || '', summary: (v.fields.Violation || '').slice(0, 150), fine: v.fields.FineAmount || null }));
-  }
-
   function buildAlerts(type, name, record) {
     const alerts = [];
     const f = record.fields;
     const sd = staleDays(record);
-    const viols = crossRefViolations(name);
-    if (viols.length > 0) alerts.push({ type: 'enforcement', severity: 'amber', text: `${viols.length} enforcement action${viols.length !== 1 ? 's' : ''} found in database for ${name}. Relevance not yet verified.`, detail: viols });
+
+    if (type !== 'competitor') {
+      const enf = storedEnforcement(f);
+      if (enf.length) alerts.push({ type: 'enforcement', severity: 'amber', text: `${enf.length} relevant enforcement action${enf.length !== 1 ? 's' : ''} identified in sources reviewed for ${name}.`, detail: enf.slice(0, 3) });
+    }
 
     if (type === 'processor') {
       const dpa = f.DPAStatus || f.AgreementStatus || '';
       if (!isDPAConfirmed(dpa)) alerts.push({ type: 'dpa', severity: 'red', text: 'No confirmed DPA — Article 28 UK GDPR requirement not met.' });
+      const { gaps, unanswered } = marketingGaps(safeJSON(f.MarketingChecksJson, null));
+      if (gaps.length) alerts.push({ type: 'marketing', severity: gaps.some(g => g.severity === 'critical') ? 'red' : 'amber', text: `${gaps.length} marketing check${gaps.length !== 1 ? 's' : ''} need attention: ${gaps.map(g => g.label).join(', ')}.` });
+      else if (unanswered) alerts.push({ type: 'marketing', severity: 'amber', text: `${unanswered} marketing check${unanswered !== 1 ? 's' : ''} not yet answered for how you use ${name}.` });
       if (sd !== null && sd > 90) alerts.push({ type: 'stale', severity: 'amber', text: `Evidence last reviewed ${sd} days ago. Quarterly re-review recommended.` });
       const ann = anniversaryDays(f.AgreementDate);
       if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: ann <= 0 ? 'Agreement anniversary was recent — confirm renewed.' : `Agreement anniversary in ${ann} days — review terms.` });
-      if (f.ComplianceScore !== null && f.ComplianceScore !== undefined && f.ComplianceScore < 50) {
-        alerts.push({ type: 'score', severity: 'amber', text: `Compliance assessment score is ${f.ComplianceScore}/100 — review evidence and address gaps.` });
-      }
+      if (typeof f.ComplianceScore === 'number' && f.ComplianceScore < 50) alerts.push({ type: 'assurance', severity: 'amber', text: `Vendor assurance score is ${f.ComplianceScore}/100 — review the evidence on the vendor.` });
     }
 
     if (type === 'partner') {
-      if (!isDPAConfirmed(f.Article26Status)) alerts.push({ type: 'a26', severity: 'high', text: 'No confirmed Article 26 joint controller agreement.' });
-      if (!f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'amber', text: 'Consent chain ownership not verified.' });
-      if (f.BrandSafetyFlag) alerts.push({ type: 'brand', severity: 'amber', text: f.BrandSafetyReason || 'Potential risk identified — enforcement history found.' });
-      const partActivity = f.RelationshipActivity || '';
-      if (['joint_ads', 'co_branded_content', 'influencer'].includes(partActivity) && !f.AdComplianceReviewed) alerts.push({ type: 'ad_compliance', severity: 'amber', text: `Joint advertising content with ${name} not reviewed against CAP Code.` });
-      if (['joint_ads', 'co_branded_content', 'lead_generation'].includes(partActivity) && !f.PricingComplianceReviewed) alerts.push({ type: 'pricing', severity: 'amber', text: `Pricing claims in campaigns with ${name} not verified against CMA/DMCCA 2024.` });
-      const ann = anniversaryDays(f.Article26Date);
-      if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: `Article 26 agreement review due in ${ann} days.` });
+      const agr = partnerAgreementRequirement(f);
+      if (agr.rel === 'unknown') alerts.push({ type: 'relationship', severity: 'amber', text: `Data relationship with ${name} not recorded — needed to know which agreement applies.` });
+      else if (agr.required && !agr.ok) alerts.push({ type: 'agreement', severity: 'red', text: `No confirmed ${agr.required}.` });
+      if (agr.rel !== 'none' && !f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'amber', text: `Consent for data shared with ${name} not checked.` });
+      if (f.BrandSafetyFlag) alerts.push({ type: 'brand', severity: 'amber', text: f.BrandSafetyReason || 'Relevant enforcement history found.' });
+      const act = f.RelationshipActivity || '';
+      if (AD_ACTIVITIES.includes(act) && !f.AdComplianceReviewed) alerts.push({ type: 'ad_compliance', severity: 'amber', text: `Joint advertising content with ${name} not reviewed against CAP Code.` });
+      if (PRICING_ACTIVITIES.includes(act) && !f.PricingComplianceReviewed) alerts.push({ type: 'pricing', severity: 'amber', text: `Pricing claims in campaigns with ${name} not verified against CMA/DMCCA 2024.` });
+      if (agr.rel === 'joint_controller') {
+        const ann = anniversaryDays(f.Article26Date);
+        if (ann !== null && ann <= 60) alerts.push({ type: 'anniversary', severity: ann <= 14 ? 'red' : 'amber', text: `Article 26 arrangement review due in ${ann} days.` });
+      }
     }
 
     if (type === 'affiliate') {
-      if (!f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'red', text: 'Consent chain unverified — same exposure as sending without consent.' });
-      if (f.SenderIdentityCompliant === 'Unverified') alerts.push({ type: 'sender', severity: 'amber', text: 'Sender identity not verified — PECR Reg 23 risk.' });
-      if (!isDPAConfirmed(f.DPAStatus)) alerts.push({ type: 'dpa', severity: 'amber', text: 'No confirmed DPA for this affiliate.' });
+      const q = affiliateRequirements(f);
+      if (q.role === 'unknown') alerts.push({ type: 'role', severity: 'amber', text: `How ${name} handles data is not recorded — this decides which checks apply.` });
+      if (q.consentNaming && !f.ConsentChainVerified) alerts.push({ type: 'consent', severity: 'red', text: 'Consent wording not confirmed to name you — same exposure as sending without consent.' });
+      if (q.senderIdentity && f.SenderIdentityCompliant === 'Unverified') alerts.push({ type: 'sender', severity: 'amber', text: 'Sender identity not verified — PECR Reg 23 risk.' });
+      if (q.agreement && q.agreement !== 'unknown' && !isDPAConfirmed(f.DPAStatus)) alerts.push({ type: 'agreement', severity: 'amber', text: `No confirmed ${q.agreement}.` });
       if (!f.MarketingMaterialsReviewed) alerts.push({ type: 'materials', severity: 'amber', text: `Marketing materials for ${name} not reviewed against CAP Code.` });
-      const affActivity = (f.RelationshipActivity || f.AffiliateType || '').toLowerCase();
-      if (affActivity.includes('influencer') && f.AdDisclosureCompliant !== 'Verified') alerts.push({ type: 'disclosure', severity: 'red', text: `Influencer ${name} ad disclosure not verified — ASA requires clear #ad labelling.` });
-      if ((affActivity.includes('lead') || affActivity.includes('comparison') || affActivity.includes('cashback')) && !f.LandingPageReviewed) alerts.push({ type: 'landing_page', severity: 'amber', text: `Landing pages for ${name} not reviewed for consent capture compliance.` });
+      if (q.adDisclosure && f.AdDisclosureCompliant !== 'Verified') alerts.push({ type: 'disclosure', severity: 'red', text: `Influencer ${name} ad disclosure not verified — paid content must be clearly labelled.` });
+      if (q.landingPage && !f.LandingPageReviewed) alerts.push({ type: 'landing_page', severity: 'amber', text: `Landing pages for ${name} not reviewed for consent capture.` });
     }
 
     if (type === 'competitor') {
-      if (f.RulingCount > 0) alerts.push({ type: 'ruling', severity: 'amber', text: `${f.RulingCount} enforcement action${f.RulingCount !== 1 ? 's' : ''} on record.` });
-      if (sd !== null && sd > 30) alerts.push({ type: 'stale', severity: 'amber', text: `Intelligence last updated ${sd} days ago. Checked automatically each week.` });
+      if (f.RulingCount > 0) alerts.push({ type: 'ruling', severity: 'amber', text: `${f.RulingCount} relevant enforcement action${f.RulingCount !== 1 ? 's' : ''} identified in sources reviewed.` });
+      if (sd !== null && sd > 30) alerts.push({ type: 'stale', severity: 'amber', text: `Intelligence last updated ${sd} days ago.` });
     }
-
     return alerts;
   }
 
@@ -1156,7 +1422,7 @@ async function handleRelationshipWatch(req, res) {
   for (const r of competitors) watch.push({ name: r.fields.CompetitorName || '', type: 'competitor', alerts: buildAlerts('competitor', r.fields.CompetitorName, r) });
 
   const thirdPartyScore = await calculateThirdPartyScore(userId, base).catch(() => null);
-  return res.json({ watch, thirdPartyScore });
+  return res.json({ watch, thirdPartyScore, tradingName: profileRows[0]?.fields?.TradingName || '' });
 }
 
 // ── SUMMARY handler ──────────────────────────────────────────
@@ -1256,24 +1522,36 @@ async function handleBriefing(req, res) {
   const profiles = await atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []);
   const profile = profiles[0];
   if (profile?.fields?.LastBriefingSent === today) return res.json({ briefing: profile?.fields?.LastBriefingText || null, cached: true });
-  const [fixesRes, vendors, partners, affiliates, competitors, violations] = await Promise.all([
+  const [fixesRes, vendors, partners, affiliates, competitors] = await Promise.all([
     fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`),
     atGet(base, 'Vendor_Register', `{UserID}='${userId}'`, '', 20).catch(() => []),
     atGet(base, 'Partner_Register', `{UserID}='${userId}'`, '', 20).catch(() => []),
     atGet(base, 'Affiliate_Register', `{UserID}='${userId}'`, '', 20).catch(() => []),
     atGet(base, 'Competitor_Watch', `AND({UserID}='${userId}',{WatchStatus}=1)`, '', 20).catch(() => []),
-    atGet(base, 'Violation_Database', '', 'sort[0][field]=DateOfAction&sort[0][direction]=desc', 100).catch(() => []),
   ]);
   const fixesData = fixesRes.ok ? await fixesRes.json() : null;
   const pending = fixesData?.fixes?.pending || [];
   const score = fixesData?.score || 0;
   const thirdParty = await calculateThirdPartyScore(userId, base).catch(() => null);
-  function crossRef(name) { if (!name) return []; const words = name.toLowerCase().split(/\s+/).filter(w => w.length > 3); return violations.filter(v => words.some(w => (v.fields.CompanyName||'').toLowerCase().includes(w))).slice(0,2); }
-  const intelLines = [];
-  for (const r of vendors.slice(0,5)) { const viols = crossRef(r.fields.VendorName); if (viols.length) intelLines.push(`- Processor ${r.fields.VendorName}: ${viols.length} enforcement action(s) in database.`); const d = r.fields.LastChecked || r.fields.LastAutoChecked; if (d && Math.floor((Date.now()-new Date(d))/86400000) > 90) intelLines.push(`- Processor ${r.fields.VendorName}: not re-checked in 90+ days.`); }
-  for (const r of partners.slice(0,5)) { if (!isDPAConfirmed(r.fields.Article26Status)) intelLines.push(`- Partner ${r.fields.PartnerName}: no Article 26 agreement confirmed.`); if (r.fields.BrandSafetyFlag) intelLines.push(`- Partner ${r.fields.PartnerName}: potential risk — ${r.fields.BrandSafetyReason||'enforcement history'}.`); }
-  for (const r of affiliates.slice(0,5)) { if (!r.fields.ConsentChainVerified) intelLines.push(`- Affiliate ${r.fields.AffiliateName}: consent chain unverified.`); }
-  for (const r of competitors.slice(0,5)) { const viols = crossRef(r.fields.CompetitorName); if (viols.length) intelLines.push(`- Competitor ${r.fields.CompetitorName} appears in enforcement database.`); }
+for (const r of vendors.slice(0,5)) {
+    const enf = safeJSON(r.fields.EnforcementRelevanceJson, {})?.relevant || [];
+    if (enf.length) intelLines.push(`- Processor ${r.fields.VendorName}: ${enf.length} relevant enforcement action(s) identified.`);
+    const { gaps } = marketingGaps(safeJSON(r.fields.MarketingChecksJson, null));
+    if (gaps.length) intelLines.push(`- Processor ${r.fields.VendorName}: ${gaps.length} marketing check(s) need attention (${gaps.map(g => g.label).join(', ')}).`);
+    const d = r.fields.LastChecked || r.fields.LastAutoChecked;
+    if (d && Math.floor((Date.now()-new Date(d))/86400000) > 90) intelLines.push(`- Processor ${r.fields.VendorName}: not re-checked in 90+ days.`);
+  }
+  for (const r of partners.slice(0,5)) {
+    const agr = partnerAgreementRequirement(r.fields);
+    if (agr.rel === 'unknown') intelLines.push(`- Partner ${r.fields.PartnerName}: data relationship not recorded.`);
+    else if (agr.required && !agr.ok) intelLines.push(`- Partner ${r.fields.PartnerName}: no confirmed ${agr.required}.`);
+  }
+  for (const r of affiliates.slice(0,5)) {
+    if (affiliateRequirements(r.fields).consentNaming && !r.fields.ConsentChainVerified) intelLines.push(`- Affiliate ${r.fields.AffiliateName}: consent wording not confirmed to name you.`);
+  }
+  for (const r of competitors.slice(0,5)) {
+    if ((r.fields.RulingCount || 0) > 0) intelLines.push(`- Competitor ${r.fields.CompetitorName}: ${r.fields.RulingCount} relevant enforcement action(s) on record.`);
+  }
   const promptContext = [`Compliance score: ${score}/100`, `Third-party risk score: ${thirdParty?.total ?? 'not calculated'}/100`, `Processors: ${vendors.length}, Partners: ${partners.length}, Affiliates: ${affiliates.length}, Competitors watched: ${competitors.length}`, `Pending fixes: ${pending.length}`, intelLines.length ? `\nRelationship intelligence:\n${intelLines.join('\n')}` : '\nNo relationship alerts this week.'].join('\n');
   const claudeRes = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 600, system: `You are a compliance advisor for UK email marketers. Write a concise weekly briefing of 180-220 words. Never say "compliant" or "in breach". Never give legal advice. Plain English.`, messages: [{ role: 'user', content: `Status:\n${promptContext}\n\nWrite the weekly briefing.` }] }) });
   if (!claudeRes.ok) return res.status(claudeRes.status).json({ error: 'Failed to generate briefing' });
@@ -1370,6 +1648,10 @@ export default async function handler(req, res) {
     if (action === 'load'                    && req.method === 'POST')                      return await handleLoad(req, res);
     if (action === 'history'                 && req.method === 'GET')                       return await handleHistory(req, res);
     if (action === 'summary'                 && req.method === 'GET')                       return await handleSummary(req, res);
+    if (action === 'marketing-checks'         && req.method === 'GET')                      return await handleMarketingCheck(req, res);
+    if (action === 'marketing-check'          && req.method === 'POST')                     return await handleMarketingCheck(req, res);
+    if (action === 'consent-check'            && req.method === 'POST')                     return await handleConsentCheck(req, res);
+
     if (action === 'register'                && ['POST','DELETE'].includes(req.method))     return await handleRegister(req, res);
     if (action === 'score-history'           && ['GET','POST'].includes(req.method))        return await handleScoreHistory(req, res);
     if (action === 'send-alert'              && req.method === 'POST')                      return await handleSendAlert(req, res);
