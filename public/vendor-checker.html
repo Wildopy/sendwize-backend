@@ -718,6 +718,131 @@ var SECTORS = ['ecommerce','b2b','finance','health','media','charity','gambling'
 var DPA_CONFIRMED = ['Confirmed','Confirmed and signed','In place'];
 function isDPAConfirmed(s){return DPA_CONFIRMED.indexOf(s||'')>=0;}
 
+var MKT_CATEGORIES = { esp:'Email platform', sms:'SMS platform', crm:'CRM', analytics:'Analytics & tracking', advertising:'Advertising platform', payments:'Payments', support:'Customer support', forms:'Forms & surveys', agency:'Agency', other:'Other' };
+var CATEGORY_FROM_LABEL = { 'Email Service Provider':'esp', 'CRM':'crm', 'Analytics':'analytics', 'Advertising':'advertising', 'Payments':'payments', 'Support':'support', 'Forms':'forms', 'Agencies':'agency' };
+var AD_ACTIVITIES = ['joint_ads','co_branded_content','influencer'];
+var PRICING_ACTIVITIES = ['joint_ads','co_branded_content','lead_generation'];
+
+var PARTNER_RELS = [
+  ['unknown','Not sure yet'],
+  ['none','No personal data shared (e.g. joint ad, no lead exchange)'],
+  ['joint_controller','We jointly decide how the data is used (joint controllers)'],
+  ['independent_controllers','We each use shared data for our own purposes'],
+  ['processor','Partner handles data only on our instructions'],
+];
+var AFF_ROLES = [
+  ['unknown','Not sure yet'],
+  ['own_list','Mails its own subscribers about us'],
+  ['our_list','Sends to our customer list on our behalf'],
+  ['lead_capture','Collects leads or sign-ups and passes them to us'],
+  ['no_mailing','Promotes us without sending messages or passing us data'],
+];
+
+function parseJSON(s, fb) { try { return s ? JSON.parse(s) : fb; } catch(e) { return fb; } }
+function scoreColour(n) { return n>=70 ? 'var(--g)' : n>=40 ? 'var(--y)' : 'var(--r)'; }
+function hasDPAScan(f) { return Object.keys(parseJSON(f.DPAClauseResults, {})).length > 0; }
+function dpaFailCount(f) { return Object.values(parseJSON(f.DPAClauseResults, {})).filter(function(v){return v.status==='fail';}).length; }
+function optionsHtml(list, selected) { return list.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===selected?' selected':'')+'>'+escH(o[1])+'</option>'; }).join(''); }
+
+function marketingStatus(f) {
+  var mc = parseJSON(f.MarketingChecksJson, null) || { category: f.Category || 'other', checks: {} };
+  var cat = MKT_CATEGORIES[mc.category] ? mc.category : 'other';
+  var defs = (S.marketingDefs || {})[cat] || [];
+  var checks = mc.checks || {};
+  var answered = defs.filter(function(d){ return !!(checks[d.id]||{}).status; }).length;
+  var gaps = defs.filter(function(d){ var s=(checks[d.id]||{}).status; return s==='not_evidenced' || s==='needs_attention'; });
+  return {
+    category: cat, defs: defs, checks: checks, total: defs.length, answered: answered, gaps: gaps,
+    criticalGap: gaps.some(function(d){ return d.severity==='critical'; }),
+    complete: defs.length > 0 && answered === defs.length,
+    score: typeof f.MarketingScore === 'number' ? f.MarketingScore : 0,
+  };
+}
+
+function partnerAgreement(f) {
+  var rel = f.DataRelationship || 'unknown';
+  if (rel==='none') return { rel:rel, required:null, ok:true, statusField:null, label:'No personal data shared — no agreement needed' };
+  if (rel==='joint_controller') return { rel:rel, required:'Article 26 arrangement', ok:isDPAConfirmed(f.Article26Status), statusField:'Article26Status' };
+  if (rel==='independent_controllers') return { rel:rel, required:'Data sharing agreement', ok:isDPAConfirmed(f.DataAgreementStatus), statusField:'DataAgreementStatus' };
+  if (rel==='processor') return { rel:rel, required:'Article 28 DPA', ok:isDPAConfirmed(f.DataAgreementStatus), statusField:'DataAgreementStatus' };
+  return { rel:'unknown', required:null, ok:false, statusField:null, label:'Data relationship not recorded' };
+}
+
+function affiliateRequirements(f) {
+  var role = f.AffiliateDataRole || 'unknown';
+  var act = (f.RelationshipActivity || f.AffiliateType || '').toLowerCase();
+  return {
+    role: role,
+    agreement: role==='our_list' ? 'Article 28 DPA' : (role==='own_list'||role==='lead_capture') ? 'Marketing / data sharing agreement' : role==='no_mailing' ? null : 'unknown',
+    consentNaming: role==='own_list' || role==='lead_capture' || role==='unknown',
+    senderIdentity: role==='own_list' || role==='our_list' || (role==='unknown' && act.indexOf('email')>=0),
+    landingPage: role==='lead_capture' || /lead|comparison|cashback/.test(act),
+    adDisclosure: act.indexOf('influencer')>=0,
+  };
+}
+
+function reopenTab(recordId, tab) {
+  return loadAll().then(function(){
+    if (S[currentType].some(function(r){ return r.id===recordId; })) { showDetail(recordId); goToDetailTab(tab); }
+  });
+}
+
+function exposureStripHtml(low, high, riskSub, okSub, rec) {
+  var has = low>0 || high>0;
+  var steps = getRowProgress(rec);
+  var done = steps.filter(function(s){ return s==='done'; }).length;
+  return '<div class="exposure-strip">'
+    + '<div class="exposure-card '+(has?'risk':'ok')+'"><div class="exposure-label">Estimated exposure</div>'
+    + '<div class="exposure-value '+(has?'risk':'ok')+'">'+(has ? '\u00a3'+fmtNum(low)+'\u2013\u00a3'+fmtNum(high) : '\u00a30')+'</div>'
+    + '<div class="exposure-sub">'+(has?riskSub:okSub)+'</div></div>'
+    + '<div class="exposure-card"><div class="exposure-label">Verification progress</div>'
+    + '<div class="exposure-value" style="color:var(--'+(done===steps.length?'g':done>=steps.length/2?'y':'r')+')">'+done+'/'+steps.length+'</div>'
+    + '<div class="exposure-sub">compliance steps complete</div></div></div>';
+}
+
+function invPreviewHtml(questions) {
+  var allOk = questions.every(function(q){ return q.ok; });
+  return '<div class="inv-preview'+(allOk?' clear':'')+'">'
+    + '<div class="inv-preview-title"><i class="ph ph-'+(allOk?'shield-check':'warning-circle')+' icon-16"></i>'+(allOk ? 'Evidence-based assessment \u2014 all checks passed' : 'A regulator reviewing this relationship would ask:')+'</div>'
+    + questions.map(function(q){
+        var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
+        return '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
+      }).join('')
+    + '</div>';
+}
+
+function passportHtml(name, sub, f) {
+  return '<div class="passport-card"><div class="passport-icon" style="color:var(--g)"><i class="ph ph-shield-check icon-32"></i></div><div>'
+    + '<div class="passport-title">'+escH(name)+' \u2014 All checks passed</div><div class="passport-sub">'+sub+'</div>'
+    + '<div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
+}
+
+function narrativeHtml(lines, actions) {
+  if (actions.length) lines.push('<strong>'+actions.length+' action'+(actions.length!==1?'s':'')+' required:</strong> '+actions.join(', ')+'.');
+  return '<div class="narrative-card"><div class="narrative-text">'+lines.join(' ')+'</div></div>';
+}
+
+function renderConsentResult(c, name) {
+  if (!c || !c.result || c.result==='unchecked') return '';
+  var cls = c.result==='pass' ? 'pass' : c.result==='warn' ? 'warn' : 'fail';
+  var head = c.result==='pass' ? 'Your organisation is named and the channel is stated.'
+           : c.result==='warn' ? 'Your organisation is named, but the wording needs a closer look.'
+           : 'Your organisation is not named.';
+  var reasons = (c.reasons||[]).map(function(r){ return '<li>'+escH(r)+'</li>'; }).join('');
+  return '<div class="verif-result '+cls+'"><strong>'+head+'</strong>'
+    + (reasons ? '<ul style="margin:6px 0 0 18px">'+reasons+'</ul>' : '')
+    + (c.result==='fail' ? '<div style="margin-top:6px">Ask '+escH(name)+' to update their wording before relying on this consent.</div>' : '')
+    + (c.checkedAt ? '<div style="margin-top:6px;font-size:11px;opacity:.75">Checked '+fmtDate(c.checkedAt)+'</div>' : '')
+    + '</div>';
+}
+
+function watchLevel(w) {
+  var a = w.alerts || [];
+  if (!a.length) return 'clear';
+  return a.some(function(x){ return x.severity==='red' || x.severity==='high'; }) ? 'red' : 'amber';
+}
+
+
 (function(){
   if (!userId) { document.getElementById('gateScreen').classList.add('show'); return; }
   document.getElementById('mainWrap').style.display = 'block';
@@ -728,13 +853,18 @@ function loadAll() {
   showLoading('Loading relationships\u2026');
   return Promise.all([
     fetchRel('vendor'), fetchRel('partner'), fetchRel('affiliate'), fetchRel('competitor'),
-    fetch(APP_URL+'/api/data?action=vendors').then(function(r){return r.json();}).catch(function(){return{vendors:[]};})
+    fetch(APP_URL+'/api/data?action=vendors').then(function(r){return r.json();}).catch(function(){return{vendors:[]};}),
+    fetch(APP_URL+'/api/data?action=marketing-checks').then(function(r){return r.json();}).catch(function(){return{categories:{}};}),
+    fetch(APP_URL+'/api/data?action=relationship-watch&userId='+userId).then(function(r){return r.json();}).catch(function(){return{};})
   ]).then(function(res){
     S.processors  = res[0];
     S.partners    = res[1];
     S.affiliates  = res[2];
     S.competitors = res[3];
     (res[4].vendors||[]).forEach(function(v){ S.knownVendors[v.name]=v; });
+    S.marketingDefs = res[5].categories || {};
+    if (res[6].tradingName) S.tradingName = res[6].tradingName;
+    S.watch = res[6].watch || S.watch || [];
     hideLoading();
     updateTypeCards();
     renderWorkArea();
@@ -934,32 +1064,37 @@ function refreshList() {
   if (controlsWrap) controlsWrap.outerHTML = renderListControls();
 }
 
-function getRowStatus(rec) {
+function getRowStatus(rec, type) {
+  type = type || currentType;
   var f = rec.fields;
-  if (currentType==='processors') {
-    if (!isDPAConfirmed(f.DPAStatus||f.AgreementStatus)) return 'risk';
-    if (isStale(f.LastChecked||f.LastAutoChecked)) return 'attn';
+  if (type==='processors') {
+    var m = marketingStatus(f);
+    if (!isDPAConfirmed(f.DPAStatus||f.AgreementStatus) || m.criticalGap) return 'risk';
+    if (isStale(f.LastChecked||f.LastAutoChecked) || !m.complete || m.gaps.length) return 'attn';
     return 'clear';
   }
-  if (currentType==='partners') {
-    if (!isDPAConfirmed(f.Article26Status) || f.BrandSafetyFlag) return 'risk';
-    var activity = f.RelationshipActivity || '';
-    var needsAdReview = ['joint_ads','co_branded_content','influencer'].indexOf(activity) >= 0;
-    if (needsAdReview && !f.AdComplianceReviewed) return 'attn';
-    if (['joint_ads','co_branded_content','lead_generation'].indexOf(activity) >= 0 && !f.PricingComplianceReviewed) return 'attn';
-    if (!f.ConsentChainVerified) return 'attn';
+  if (type==='partners') {
+    var agr = partnerAgreement(f);
+    var act = f.RelationshipActivity || '';
+    if (agr.rel!=='unknown' && !agr.ok) return 'risk';
+    if (agr.rel==='unknown') return 'attn';
+    if (agr.rel!=='none' && !f.ConsentChainVerified) return 'attn';
+    if (AD_ACTIVITIES.indexOf(act)>=0 && !f.AdComplianceReviewed) return 'attn';
+    if (PRICING_ACTIVITIES.indexOf(act)>=0 && !f.PricingComplianceReviewed) return 'attn';
+    if (f.BrandSafetyFlag) return 'attn';
     return 'clear';
   }
-  if (currentType==='affiliates') {
-    if (!f.ConsentChainVerified || f.SenderIdentityCompliant==='Unverified') return 'risk';
-    if (!f.MarketingMaterialsReviewed) return 'attn';
-    var affAct = (f.RelationshipActivity || f.AffiliateType || '').toLowerCase();
-    if (affAct.indexOf('influencer') >= 0 && f.AdDisclosureCompliant !== 'Verified') return 'attn';
-    if ((affAct.indexOf('lead') >= 0 || affAct.indexOf('comparison') >= 0 || affAct.indexOf('cashback') >= 0) && !f.LandingPageReviewed) return 'attn';
-    if (!isDPAConfirmed(f.DPAStatus)) return 'attn';
+  if (type==='affiliates') {
+    var q = affiliateRequirements(f);
+    if (q.consentNaming && !f.ConsentChainVerified) return 'risk';
+    if (q.senderIdentity && f.SenderIdentityCompliant==='Unverified') return 'risk';
+    if (q.role==='unknown' || !f.MarketingMaterialsReviewed) return 'attn';
+    if (q.adDisclosure && f.AdDisclosureCompliant!=='Verified') return 'attn';
+    if (q.landingPage && !f.LandingPageReviewed) return 'attn';
+    if (q.agreement && q.agreement!=='unknown' && !isDPAConfirmed(f.DPAStatus)) return 'attn';
     return 'clear';
   }
-  if (currentType==='competitors') {
+  if (type==='competitors') {
     if ((f.RulingCount||0) >= 2) return 'risk';
     if ((f.RulingCount||0) > 0) return 'attn';
     return 'clear';
@@ -969,39 +1104,30 @@ function getRowStatus(rec) {
 
 function getRowProgress(rec) {
   var f = rec.fields;
-  var steps = [];
+  var steps = ['done'];
   if (currentType==='processors') {
-    steps.push('done');
-    steps.push(isDPAConfirmed(f.DPAStatus||f.AgreementStatus) ? 'done' : 'risk');
-    var scanned = false;
-    try { scanned = f.DPAClauseResults && Object.keys(JSON.parse(f.DPAClauseResults)).length > 0; } catch(e){}
-    if (scanned) {
-      var clauseResults = {};
-      try { clauseResults = JSON.parse(f.DPAClauseResults); } catch(e){}
-      var failCount = Object.values(clauseResults).filter(function(v){return v.status==='fail';}).length;
-      steps.push(failCount > 0 ? 'partial' : 'done');
-    } else { steps.push('todo'); }
+    var dpaOk = isDPAConfirmed(f.DPAStatus||f.AgreementStatus);
+    steps.push(!dpaOk ? 'risk' : (hasDPAScan(f) && !dpaFailCount(f)) ? 'done' : 'partial');
+    var m = marketingStatus(f);
+    steps.push(m.criticalGap ? 'risk' : (m.complete && !m.gaps.length) ? 'done' : m.answered ? 'partial' : 'todo');
     steps.push(isStale(f.LastChecked||f.LastAutoChecked) ? 'partial' : 'done');
   } else if (currentType==='partners') {
-    steps.push('done');
-    steps.push(isDPAConfirmed(f.Article26Status) ? 'done' : 'risk');
-    steps.push(f.ConsentChainVerified ? 'done' : 'todo');
-    var compOk = !f.BrandSafetyFlag;
-    var activity = f.RelationshipActivity || '';
-    if (['joint_ads','co_branded_content','influencer'].indexOf(activity) >= 0 && !f.AdComplianceReviewed) compOk = false;
-    if (['joint_ads','co_branded_content','lead_generation'].indexOf(activity) >= 0 && !f.PricingComplianceReviewed) compOk = false;
-    steps.push(f.BrandSafetyFlag ? 'risk' : compOk ? 'done' : 'partial');
+    var agr = partnerAgreement(f);
+    var act = f.RelationshipActivity || '';
+    steps.push(agr.ok ? 'done' : agr.rel==='unknown' ? 'todo' : 'risk');
+    steps.push(agr.rel==='none' || f.ConsentChainVerified ? 'done' : 'todo');
+    var adOk = AD_ACTIVITIES.indexOf(act)<0 || !!f.AdComplianceReviewed;
+    var prOk = PRICING_ACTIVITIES.indexOf(act)<0 || !!f.PricingComplianceReviewed;
+    steps.push(adOk && prOk ? (f.BrandSafetyFlag ? 'partial' : 'done') : 'partial');
   } else if (currentType==='affiliates') {
-    steps.push('done');
-    steps.push(isDPAConfirmed(f.DPAStatus) ? 'done' : 'partial');
-    var chainOk = !!f.ConsentChainVerified;
-    var affAct = (f.RelationshipActivity || f.AffiliateType || '').toLowerCase();
-    if ((affAct.indexOf('lead') >= 0 || affAct.indexOf('comparison') >= 0 || affAct.indexOf('cashback') >= 0) && !f.LandingPageReviewed) chainOk = false;
-    steps.push(f.ConsentChainVerified ? (chainOk ? 'done' : 'partial') : 'risk');
-    var mktOk = f.SenderIdentityCompliant === 'Verified' || f.SenderIdentityCompliant === 'N/A';
-    if (!f.MarketingMaterialsReviewed) mktOk = false;
-    if (affAct.indexOf('influencer') >= 0 && f.AdDisclosureCompliant !== 'Verified') mktOk = false;
-    steps.push(mktOk ? 'done' : f.SenderIdentityCompliant === 'Unverified' ? 'risk' : 'partial');
+    var q = affiliateRequirements(f);
+    steps.push(!q.agreement ? 'done' : q.agreement==='unknown' ? 'todo' : isDPAConfirmed(f.DPAStatus) ? 'done' : 'partial');
+    var cOk = !q.consentNaming || !!f.ConsentChainVerified;
+    var lpOk = !q.landingPage || !!f.LandingPageReviewed;
+    steps.push(!cOk ? 'risk' : lpOk ? 'done' : 'partial');
+    var sOk = !q.senderIdentity || f.SenderIdentityCompliant==='Verified' || f.SenderIdentityCompliant==='N/A';
+    var dOk = !q.adDisclosure || f.AdDisclosureCompliant==='Verified';
+    steps.push(q.senderIdentity && f.SenderIdentityCompliant==='Unverified' ? 'risk' : (sOk && dOk && f.MarketingMaterialsReviewed) ? 'done' : 'partial');
   }
   return steps;
 }
@@ -1037,11 +1163,12 @@ function renderList(records) {
       var outstanding = firstOutstandingStep(steps, cfg.stepShort);
       // Score badge for processors
       var scoreBadge = '';
-      if (currentType === 'processors' && f.ComplianceScore !== null && f.ComplianceScore !== undefined) {
-        var sc = f.ComplianceScore;
-        var scCls = sc >= 70 ? 'pg' : sc >= 40 ? 'py' : 'pr';
-        scoreBadge = '<span class="pill '+scCls+'" style="margin-right:6px">'+sc+'/100</span>';
+      if (currentType === 'processors') {
+        var ms = marketingStatus(f);
+        var msCls = !ms.answered ? 'pmu' : ms.score>=70 ? 'pg' : ms.score>=40 ? 'py' : 'pr';
+        scoreBadge = '<span class="pill '+msCls+'" style="margin-right:6px">'+(ms.answered ? 'Marketing '+ms.score+'/100' : 'Marketing not assessed')+'</span>';
       }
+
       var dpaInline = '';
       if (currentType === 'processors') {
         var dpaS = f.DPAStatus || f.AgreementStatus || '';
@@ -1081,14 +1208,16 @@ function showDetail(recordId) {
   var f = rec.fields;
   var name = getName(f);
   var tabDefs;
-  if (currentType==='competitors') {
+if (currentType==='competitors') {
     tabDefs = [['Overview','overview'],['Rulings','rulings'],['Promo Tactics','promos']];
   } else if (currentType==='partners') {
-    tabDefs = [['Overview','overview'],['Joint Agreement','a26'],['Verification','verification'],['Privacy Policy','privacy']];
+    tabDefs = [['Overview','overview'],['Verification','verification']];
+    if (partnerAgreement(f).rel==='joint_controller') tabDefs.push(['Article 26','a26']);
+    tabDefs.push(['Privacy Policy','privacy']);
   } else if (currentType==='affiliates') {
-    tabDefs = [['Overview','overview'],['Agreement','dpa'],['Verification','verification'],['Creative','creative'],['Privacy Policy','privacy']];
+    tabDefs = [['Overview','overview'],['Verification','verification'],['Creative','creative'],['Agreement','dpa'],['Privacy Policy','privacy']];
   } else {
-    tabDefs = [['Overview','overview'],['Agreement','dpa'],['Privacy Policy','privacy']];
+    tabDefs = [['Overview','overview'],['Marketing checks','marketing'],['Agreement','dpa'],['Privacy Policy','privacy']];
   }
   panel.innerHTML =
     '<div class="dp-hdr"><div><div class="dp-name">'+escH(name)+'</div><div class="dp-meta">'+escH(getTypeInfo(f))+'</div></div>'
@@ -1114,6 +1243,7 @@ function switchDetailTab(name, btn) {
   var rec = S[currentType].find(function(r){return r.id===selId[currentType];});
   if (!rec) return;
   if (name==='overview') renderDetailOverview(rec);
+if (name==='marketing') renderMarketingChecks(rec);
   if (name==='dpa')      renderDPAReview(rec);
   if (name==='a26')      renderA26Review(rec);
   if (name==='privacy')  renderPrivacyReview(rec);
@@ -1136,293 +1266,119 @@ function renderDetailOverview(rec) {
   var known = S.knownVendors[f.VendorName||f.PartnerName||f.AffiliateName||'']||{};
   var rows = [];
   var t = currentType;
-    if (t==='processors') {
-    // ── Processor overview: narrative + exposure + investigation preview ──
-    var dpa = f.DPAStatus||f.AgreementStatus||'Unknown';
-    var dpaOk = isDPAConfirmed(dpa);
-    var scanned = false;
-    try { scanned = f.DPAClauseResults && Object.keys(JSON.parse(f.DPAClauseResults)).length > 0; } catch(e){}
+  if (t==='processors') {
+    var dpaOk = isDPAConfirmed(f.DPAStatus||f.AgreementStatus);
+    var scanned = hasDPAScan(f);
     var stale = isStale(f.LastChecked||f.LastAutoChecked);
-    var procAllClear = dpaOk && scanned && !stale;
+    var m = marketingStatus(f);
+    var expLo = 0, expHi = 0;
+    if (!dpaOk) { expLo += f.ICORiskLevel==='High'?20000:10000; expHi += f.ICORiskLevel==='High'?50000:25000; }
+    if (stale) { expLo += 5000; expHi += 15000; }
+    var allClear = dpaOk && scanned && !stale && m.complete && !m.gaps.length;
 
-    // Exposure estimate (processors)
-    var procExpLow = 0, procExpHigh = 0;
-    if (!dpaOk) {
-      procExpLow += f.ICORiskLevel==='High' ? 20000 : 10000;
-      procExpHigh += f.ICORiskLevel==='High' ? 50000 : 25000;
-    }
-    if (stale) { procExpLow += 5000; procExpHigh += 15000; }
-    var hasExposure = procExpLow > 0 || procExpHigh > 0;
+    var mHtml = '<div class="narrative-card"><div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
+      + '<div style="font-size:32px;font-weight:800;font-family:DM Mono,monospace;color:'+(m.answered?scoreColour(m.score):'var(--mu)')+'">'+(m.answered?m.score:'\u2014')+'</div>'
+      + '<div style="flex:1;min-width:180px"><div style="font-size:14px;font-weight:700">How you use it \u2014 '+escH(MKT_CATEGORIES[m.category])+'</div>'
+      + '<div style="font-size:11px;color:var(--mu)">'+m.answered+' of '+m.total+' checks answered'+(m.gaps.length?' \u00b7 '+m.gaps.length+' need attention':'')+' \u00b7 self-assessed</div></div>'
+      + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'marketing\')">'+(m.answered?'Review':'Start')+' checks</button></div>';
+    if (m.gaps.length) mHtml += '<div style="margin-top:12px">'+m.gaps.map(function(d){ return '<div class="creative-issue'+(d.severity==='critical'?' critical':'')+'"><div class="creative-issue-type">'+escH(d.rule)+'</div>'+escH(d.label)+'</div>'; }).join('')+'</div>';
+    mHtml += '</div>';
 
-    // Exposure strip
-    var exposureHtml = '<div class="exposure-strip">';
-    exposureHtml += '<div class="exposure-card '+(hasExposure?'risk':'ok')+'">';
-    exposureHtml += '<div class="exposure-label">Estimated exposure</div>';
-    exposureHtml += '<div class="exposure-value '+(hasExposure?'risk':'ok')+'">'+(hasExposure ? '\u00a3'+fmtNum(procExpLow)+'\u2013\u00a3'+fmtNum(procExpHigh) : '\u00a30')+'</div>';
-    exposureHtml += '<div class="exposure-sub">'+(hasExposure ? 'Based on DPA gaps and review status' : 'DPA confirmed and current')+'</div>';
-    exposureHtml += '</div>';
-    var stepsArr = getRowProgress(rec);
-    var stepsDone = stepsArr.filter(function(s){return s==='done';}).length;
-    exposureHtml += '<div class="exposure-card"><div class="exposure-label">Verification progress</div>';
-    exposureHtml += '<div class="exposure-value" style="color:var(--'+(stepsDone===4?'g':stepsDone>=2?'y':'r')+')">'+stepsDone+'/4</div>';
-    exposureHtml += '<div class="exposure-sub">compliance steps complete</div></div>';
-    exposureHtml += '</div>';
-
-    // AI narrative briefing
-    // Evidence-based assessment panel
-    var intel = null;
-    try { intel = JSON.parse(f.IntelligenceJson || 'null'); } catch(e){}
-    var scoreBreakdown = null;
-    try { scoreBreakdown = JSON.parse(f.ScoreBreakdownJson || 'null'); } catch(e){}
-
-    var narrativeHtml = '';
-
-    // Score breakdown card
-    if (f.ComplianceScore !== null && f.ComplianceScore !== undefined && scoreBreakdown) {
-      var sc = f.ComplianceScore;
-      var scCol = sc >= 70 ? 'var(--g)' : sc >= 40 ? 'var(--y)' : 'var(--r)';
-      narrativeHtml += '<div class="narrative-card" style="padding:0;overflow:hidden">';
-      narrativeHtml += '<div style="padding:16px 20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--b)">';
-      narrativeHtml += '<div style="font-size:32px;font-weight:800;font-family:DM Mono,monospace;color:'+scCol+'">'+sc+'</div>';
-      narrativeHtml += '<div><div style="font-size:14px;font-weight:700">Evidence-based assessment</div><div style="font-size:11px;color:var(--mu)">Score calculated from '+(intel ? intel.findings.length : 0)+' verified findings'+(intel && intel.confidence ? ' · Confidence: '+intel.confidence : '')+'</div></div></div>';
-      narrativeHtml += '<div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px">';
-      var cats = [['dpa','Agreement'],['icoRegister','ICO Register'],['enforcement','Enforcement'],['transfers','Transfers'],['freshness','Freshness'],['certifications','Certifications']];
-      cats.forEach(function(c) {
-        var item = scoreBreakdown[c[0]];
-        if (!item) return;
-        var pct = item.max ? Math.round(item.score / item.max * 100) : 0;
-        var col = pct >= 80 ? 'var(--g)' : pct >= 50 ? 'var(--y)' : 'var(--r)';
-        narrativeHtml += '<div style="padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--b)">';
-        narrativeHtml += '<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:4px">'+c[1]+'<span style="color:'+col+'">'+item.score+'/'+item.max+'</span></div>';
-        narrativeHtml += '<div style="height:3px;background:var(--b);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:2px"></div></div>';
-        narrativeHtml += '<div style="font-size:10px;color:var(--mu);margin-top:3px">'+escH(item.label)+'</div>';
-        narrativeHtml += '</div>';
-      });
-      narrativeHtml += '</div></div>';
-    }
-
-    // Evidence findings panel
-    if (intel && intel.findings && intel.findings.length) {
-      narrativeHtml += '<div class="narrative-card">';
-      narrativeHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--tm);margin-bottom:12px">Assessment findings</div>';
-      var typeLabels = { verified: 'Verified', vendor_documented: 'Vendor documentation', public_source: 'Public source', ai_assessment: 'AI assessment', not_available: 'Not available' };
-      var statusPills = { passed: 'pg', needs_attention: 'py', not_evidenced: 'pr' };
-      var statusLabels = { passed: 'Passed', needs_attention: 'Needs attention', not_evidenced: 'Not evidenced' };
-      intel.findings.forEach(function(finding) {
-        var pill = statusPills[finding.status] || 'pmu';
-        var label = statusLabels[finding.status] || 'Not checked';
-        var typeLabel = typeLabels[finding.type] || finding.type || '';
-        narrativeHtml += '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--b)">';
-        narrativeHtml += '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+escH(finding.finding)+'</div>';
-        narrativeHtml += '<div style="font-size:11px;color:var(--mu);margin-top:2px">'+escH(finding.evidence)+'</div>';
-        narrativeHtml += '<div style="font-size:10px;color:var(--mu);margin-top:3px;font-style:italic">Source: '+escH(typeLabel)+'</div></div>';
-        narrativeHtml += '<span class="pill '+pill+'" style="flex-shrink:0">'+label+'</span>';
-        narrativeHtml += '</div>';
-      });
-      if (intel.lastChecked) {
-        narrativeHtml += '<div style="font-size:10px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Last assessed: '+fmtDate(intel.lastChecked)+(intel.source === 'sendwize_curated' ? ' · Sendwize curated data' : ' · Automated assessment')+'</div>';
-      }
-      narrativeHtml += '</div>';
-    } else {
-      // Fallback to existing narrative for records without intelligence data
-      narrativeHtml += '<div class="narrative-card">';
-      var vendorType = f.VendorType || f.Category || 'processor';
-      var briefLines = [];
-      briefLines.push('<strong>'+escH(name)+'</strong> is registered as a '+escH(vendorType.toLowerCase())+' processing personal data on your behalf.');
-      if (!dpaOk) briefLines.push('No confirmed <strong>Article 28 Data Processing Agreement</strong> is in place.');
-      if (scanned) {
-        var clauseResults = {}; try { clauseResults = JSON.parse(f.DPAClauseResults); } catch(e){}
-        var failCount = Object.values(clauseResults).filter(function(v){return v.status==='fail';}).length;
-        if (failCount > 0) briefLines.push('DPA review found <strong>'+failCount+' clause'+(failCount!==1?'s':'')+' not evidenced</strong>.');
-        else briefLines.push('DPA review: all Article 28 clauses found.');
-      } else { briefLines.push('The DPA has not been reviewed yet.'); }
-      if (stale) briefLines.push('Last reviewed <strong>'+fmtDate(f.LastChecked||f.LastAutoChecked)+'</strong> — over 90 days ago.');
-      narrativeHtml += '<div class="narrative-text">'+briefLines.join(' ')+'</div>';
-      narrativeHtml += '</div>';
-    }
-
-    // Investigation preview
-    var invQuestions = [
-      { q: 'Provide your Article 28 DPA with '+escH(name)+'.', ok: dpaOk, label: dpaOk ? 'In place' : 'Not in place' },
-      { q: 'Show us the results of your last DPA review for '+escH(name)+'.', ok: scanned, label: scanned ? 'Scanned' : 'Not scanned' },
-      { q: 'Confirm when this agreement was last reviewed.', ok: !stale && !!f.LastChecked, label: f.LastChecked && !stale ? 'Current ('+fmtDate(f.LastChecked)+')' : stale ? 'Stale' : 'No record' },
-    ];
-    var invAllOk = invQuestions.every(function(q){return q.ok;});
-    var invHtml = '<div class="inv-preview'+(invAllOk?' clear':'')+'">';
-    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Evidence-based assessment \u2014 all checks passed' : 'A regulator reviewing this relationship would ask:')+'</div>';
-    invQuestions.forEach(function(q) {
-      var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
-      invHtml += '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
-    });
-    invHtml += '</div>';
-
-    // Compliance passport
-    var passportHtml = '';
-    if (procAllClear) {
-      passportHtml = '<div class="passport-card"><div class="passport-icon" style="font-size:28px;color:var(--g)"><i class="ph ph-shield-check icon-32"></i></div><div><div class="passport-title">'+escH(name)+' \u2014 All checks passed</div><div class="passport-sub">DPA confirmed, agreement scanned, review current.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
-    }
-
-    body.innerHTML = exposureHtml + narrativeHtml + invHtml + passportHtml
+    var mLabel = !m.answered ? 'Not assessed' : m.gaps.length ? m.gaps.length+' gap'+(m.gaps.length!==1?'s':'') : m.complete ? 'Evidenced' : 'Partly assessed';
+    body.innerHTML = exposureStripHtml(expLo, expHi, 'Based on agreement gaps and review status', 'DPA confirmed and current', rec)
+      + mHtml
+      + vendorAssuranceHtml(f, name)
+      + invPreviewHtml([
+          { q:'Provide your Article 28 DPA with '+escH(name)+'.', ok:dpaOk, label:dpaOk?'In place':'Not in place' },
+          { q:'Show how your use of '+escH(name)+' meets PECR and advertising rules.', ok:m.complete && !m.gaps.length, label:mLabel },
+          { q:'Confirm when this relationship was last reviewed.', ok:!stale && !!f.LastChecked, label:f.LastChecked && !stale ? 'Current ('+fmtDate(f.LastChecked)+')' : stale ? 'Stale' : 'No record' },
+        ])
+      + (allClear ? passportHtml(name, 'DPA confirmed and scanned, marketing checks evidenced, review current.', f) : '')
       + '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'
-      + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'dpa\')"><i class="ph ph-scan icon-16"></i>Scan DPA</button>'
-      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'privacy\')">Review privacy policy</button>'
-      + '</div>';
+      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'dpa\')"><i class="ph ph-scan icon-16"></i>Scan DPA</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'privacy\')">Review privacy policy</button></div>';
     return;
-    } else if (t==='partners') {
-    // ── Partner overview: narrative + exposure + investigation preview ──
-    var a26 = f.Article26Status||'Not yet';
-    var a26Ok = isDPAConfirmed(a26);
-    var consentOk = !!f.ConsentChainVerified;
-    var activity = f.RelationshipActivity || '';
-    var actLabels = {joint_ads:'Joint advertising',co_branded_content:'Co-branded content',influencer:'Influencer partnership',lead_generation:'Lead generation',data_sharing:'Data sharing',email_sending:'Email sending'};
-    var needsAdReview = ['joint_ads','co_branded_content','influencer'].indexOf(activity) >= 0;
-    var needsPricingReview = ['joint_ads','co_branded_content','lead_generation'].indexOf(activity) >= 0;
-    var adOk = !needsAdReview || !!f.AdComplianceReviewed;
-    var pricingOk = !needsPricingReview || !!f.PricingComplianceReviewed;
-    var partAllClear = a26Ok && consentOk && adOk && pricingOk && !f.BrandSafetyFlag;
+  }
 
-    // Exposure estimate (partners)
-    var partExpLow = 0, partExpHigh = 0;
-    if (!a26Ok) { partExpLow += 15000; partExpHigh += 75000; }
-    if (!consentOk) { partExpLow += 10000; partExpHigh += 50000; }
-    if (!adOk) { partExpLow += 5000; partExpHigh += 25000; }
-    if (!pricingOk) { partExpLow += 5000; partExpHigh += 25000; }
-    var hasExposure = partExpLow > 0 || partExpHigh > 0;
+  if (t==='partners') {
+    var agr = partnerAgreement(f);
+    var act = f.RelationshipActivity || '';
+    var actLabels = {joint_ads:'Joint advertising',co_branded_content:'Co-branded content',influencer:'Influencer partnership',lead_generation:'Lead generation',data_sharing:'Data sharing'};
+    var consentApplies = agr.rel!=='none';
+    var consentOk = !consentApplies || !!f.ConsentChainVerified;
+    var needsAd = AD_ACTIVITIES.indexOf(act)>=0, needsPr = PRICING_ACTIVITIES.indexOf(act)>=0;
+    var adOk = !needsAd || !!f.AdComplianceReviewed, prOk = !needsPr || !!f.PricingComplianceReviewed;
+    var allClear = agr.ok && consentOk && adOk && prOk;
 
-    // Exposure strip
-    var exposureHtml = '<div class="exposure-strip">';
-    exposureHtml += '<div class="exposure-card '+(hasExposure?'risk':'ok')+'">';
-    exposureHtml += '<div class="exposure-label">Estimated exposure</div>';
-    exposureHtml += '<div class="exposure-value '+(hasExposure?'risk':'ok')+'">'+(hasExposure ? '\u00a3'+fmtNum(partExpLow)+'\u2013\u00a3'+fmtNum(partExpHigh) : '\u00a30')+'</div>';
-    exposureHtml += '<div class="exposure-sub">'+(hasExposure ? 'Based on agreement gaps and unreviewed compliance' : 'All verification steps complete')+'</div>';
-    exposureHtml += '</div>';
-    var stepsArr = getRowProgress(rec);
-    var stepsDone = stepsArr.filter(function(s){return s==='done';}).length;
-    exposureHtml += '<div class="exposure-card"><div class="exposure-label">Verification progress</div>';
-    exposureHtml += '<div class="exposure-value" style="color:var(--'+(stepsDone===4?'g':stepsDone>=2?'y':'r')+')">'+stepsDone+'/4</div>';
-    exposureHtml += '<div class="exposure-sub">compliance steps complete</div></div>';
-    exposureHtml += '</div>';
+    var lo = 0, hi = 0;
+    if (!agr.ok && agr.rel!=='unknown') { lo += 15000; hi += 75000; }
+    if (!consentOk) { lo += 10000; hi += 50000; }
+    if (!adOk) { lo += 5000; hi += 25000; }
+    if (!prOk) { lo += 5000; hi += 25000; }
 
-    // AI narrative briefing
-    var narrativeHtml = '<div class="narrative-card">';
-    var partType = f.PartnerType || 'partner';
-    var briefLines = [];
-    briefLines.push('<strong>'+escH(name)+'</strong> is registered as a '+escH(partType.toLowerCase())+(activity ? ' ('+escH(actLabels[activity]||activity)+')' : '')+'.');
-    if (!a26Ok) briefLines.push('No confirmed <strong>Article 26 joint controller arrangement</strong> is in place \u2014 both parties are liable for the full scope of processing without a transparent agreement documenting responsibilities.');
-    if (!consentOk) briefLines.push('The <strong>consent chain</strong> has not been verified \u2014 it is unclear which party\'s consent mechanism applies to shared data.');
-    if (needsAdReview && !f.AdComplianceReviewed) briefLines.push('Joint advertising content has <strong>not been reviewed</strong> against the CAP Code \u2014 under sections 3 (misleading) and 8 (pricing), both parties are responsible for claims in joint campaigns.');
-    if (needsPricingReview && !f.PricingComplianceReviewed) briefLines.push('Pricing and promotional claims in co-branded campaigns have <strong>not been verified</strong> against CMA/DMCCA 2024 requirements.');
-    if (f.BrandSafetyFlag) briefLines.push('<strong>Potential risk identified:</strong> '+escH(f.BrandSafetyReason||'relevant enforcement history found in sources reviewed')+'.');
-    if (f.ViolationCount > 0) briefLines.push(f.ViolationCount+' regulatory action'+(f.ViolationCount!==1?'s':'')+' found in the enforcement database.');
-    if (partAllClear) briefLines.push('All verification steps are complete. Exposure is currently \u00a30.');
-    var actionsNeeded = [];
-    if (!a26Ok) actionsNeeded.push('confirm Art. 26 agreement');
-    if (!consentOk) actionsNeeded.push('verify consent chain');
-    if (!adOk) actionsNeeded.push('review ad compliance');
-    if (!pricingOk) actionsNeeded.push('review pricing compliance');
-    if (actionsNeeded.length) briefLines.push('<strong>'+actionsNeeded.length+' action'+(actionsNeeded.length!==1?'s':'')+' required:</strong> '+actionsNeeded.join(', ')+'.');
-    narrativeHtml += '<div class="narrative-text">'+briefLines.join(' ')+'</div>';
-    narrativeHtml += '</div>';
+    var lines = ['<strong>'+escH(name)+'</strong> is registered as a '+escH((f.PartnerType||'partner').toLowerCase())+(act?' ('+escH(actLabels[act]||act)+')':'')+'.'];
+    var actions = [];
+    if (agr.rel==='unknown') { lines.push('You haven\'t recorded whether personal data is shared with them. That decides whether you need an Article 26 arrangement, a data sharing agreement, a DPA, or nothing.'); actions.push('record the data relationship'); }
+    else if (agr.required && !agr.ok) { lines.push('Based on how data is shared, you need a confirmed <strong>'+escH(agr.required)+'</strong>.'); actions.push('confirm '+agr.required); }
+    if (consentApplies && !f.ConsentChainVerified) { lines.push('Consent for data shared between you has not been checked \u2014 it must name the organisation that uses it for marketing.'); actions.push('check consent wording'); }
+    if (!adOk) { lines.push('Joint advertising content has <strong>not been reviewed</strong> against the CAP Code. Both parties are responsible for claims in joint campaigns.'); actions.push('review ad compliance'); }
+    if (!prOk) { lines.push('Pricing and promotional claims have <strong>not been verified</strong> against CMA/DMCCA 2024.'); actions.push('review pricing claims'); }
+    if (f.BrandSafetyFlag) lines.push('<strong>Reputation note:</strong> '+escH(f.BrandSafetyReason||'relevant enforcement history found in sources reviewed')+'. This doesn\'t create a compliance gap for you on its own, but worth knowing.');
+    if (allClear) lines.push('All verification steps are complete.');
 
-    // Investigation preview — regulators pick depends on activity
-    var invQuestions = [
-      { q: 'Provide your Article 26 joint controller arrangement with '+escH(name)+'.', ok: a26Ok, label: a26Ok ? 'In place' : 'Not in place' },
-      { q: 'Show us how consent is managed for data shared between you and '+escH(name)+'.', ok: consentOk, label: consentOk ? 'Verified' : 'Not verified' },
-      { q: 'Provide evidence that joint advertising and pricing claims have been reviewed for compliance.', ok: adOk && pricingOk, label: adOk && pricingOk ? 'Reviewed' : 'Not reviewed' },
-    ];
-    var invAllOk = invQuestions.every(function(q){return q.ok;});
-    var invHtml = '<div class="inv-preview'+(invAllOk?' clear':'')+'">';
-    var invRegulator = needsAdReview ? 'ASA/CMA' : 'ICO';
-    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Evidence-based assessment \u2014 all checks passed' : 'A regulator reviewing this relationship would ask:')+'</div>';
-    invQuestions.forEach(function(q) {
-      var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
-      invHtml += '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
-    });
-    invHtml += '</div>';
+    var qs = [{ q:agr.required ? 'Provide your '+escH(agr.required)+' with '+escH(name)+'.' : 'Explain how data is (or is not) shared with '+escH(name)+'.', ok:agr.ok, label:agr.rel==='unknown' ? 'Not recorded' : agr.ok ? (agr.required ? 'In place' : 'No data shared') : 'Not in place' }];
+    if (consentApplies) qs.push({ q:'Show us the consent covering data shared with '+escH(name)+'.', ok:consentOk, label:consentOk?'Checked':'Not checked' });
+    if (needsAd || needsPr) qs.push({ q:'Provide evidence joint advertising and pricing claims were reviewed.', ok:adOk && prOk, label:adOk && prOk ? 'Reviewed' : 'Not reviewed' });
 
-    // Compliance passport
-    var passportHtml = '';
-    if (partAllClear) {
-      passportHtml = '<div class="passport-card"><div class="passport-icon" style="font-size:28px;color:var(--g)"><i class="ph ph-shield-check icon-32"></i></div><div><div class="passport-title">'+escH(name)+' \u2014 All checks passed</div><div class="passport-sub">Art. 26 confirmed, consent verified'+(needsAdReview ? ', ad compliance reviewed' : '')+(needsPricingReview ? ', pricing verified' : '')+'.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
-    }
-
-    body.innerHTML = exposureHtml + narrativeHtml + invHtml + passportHtml
+    body.innerHTML = exposureStripHtml(lo, hi, 'Based on agreement and review gaps', 'All verification steps complete', rec)
+      + narrativeHtml(lines, actions) + invPreviewHtml(qs)
+      + (allClear ? passportHtml(name, 'Right agreement in place'+(consentApplies?', consent checked':'')+(needsAd?', ads reviewed':'')+(needsPr?', pricing verified':'')+'.', f) : '')
       + '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'
       + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'verification\')"><i class="ph ph-list-checks icon-16"></i>Start verification</button>'
-      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'a26\')">Review Art. 26</button>'
-      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'privacy\')">Review privacy policy</button>'
-      + '</div>';
+      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'privacy\')">Review privacy policy</button></div>';
     return;
-  } else if (t==='affiliates') {
-    // ── Affiliate overview: narrative + exposure + investigation preview ──
-    var affAllClear = isDPAConfirmed(f.DPAStatus) && f.ConsentChainVerified && (f.SenderIdentityCompliant==='Verified'||f.SenderIdentityCompliant==='N/A') && f.MarketingMaterialsReviewed;
-    var expLow = f.ExposureEstimateLow||0, expHigh = f.ExposureEstimateHigh||0;
-    var hasExposure = expLow > 0 || expHigh > 0;
+  }
 
-    // Exposure strip
-    var exposureHtml = '<div class="exposure-strip">';
-    exposureHtml += '<div class="exposure-card '+(hasExposure?'risk':'ok')+'">';
-    exposureHtml += '<div class="exposure-label">Estimated exposure</div>';
-    exposureHtml += '<div class="exposure-value '+(hasExposure?'risk':'ok')+'">'+(hasExposure ? '\u00a3'+fmtNum(expLow)+'\u2013\u00a3'+fmtNum(expHigh) : '\u00a30')+'</div>';
-    exposureHtml += '<div class="exposure-sub">'+(hasExposure ? 'Based on unverified consent and volume' : 'All verification steps complete')+'</div>';
-    exposureHtml += '</div>';
-    var stepsArr = getRowProgress(rec);
-    var stepsDone = stepsArr.filter(function(s){return s==='done';}).length;
-    exposureHtml += '<div class="exposure-card"><div class="exposure-label">Verification progress</div>';
-    exposureHtml += '<div class="exposure-value" style="color:var(--'+(stepsDone===4?'g':stepsDone>=2?'y':'r')+')">'+stepsDone+'/4</div>';
-    exposureHtml += '<div class="exposure-sub">compliance steps complete</div></div>';
-    exposureHtml += '</div>';
+  if (t==='affiliates') {
+    var q = affiliateRequirements(f);
+    var roleLabel = (AFF_ROLES.filter(function(r){ return r[0]===q.role; })[0]||['',''])[1];
+    var agreeOk = !q.agreement || (q.agreement!=='unknown' && isDPAConfirmed(f.DPAStatus));
+    var consentOk = !q.consentNaming || !!f.ConsentChainVerified;
+    var senderOk = !q.senderIdentity || f.SenderIdentityCompliant==='Verified' || f.SenderIdentityCompliant==='N/A';
+    var lpOk = !q.landingPage || !!f.LandingPageReviewed;
+    var discOk = !q.adDisclosure || f.AdDisclosureCompliant==='Verified';
+    var matOk = !!f.MarketingMaterialsReviewed;
+    var allClear = q.role!=='unknown' && agreeOk && consentOk && senderOk && lpOk && discOk && matOk;
 
-    // AI narrative briefing (client-side for now, cached later)
-    var narrativeHtml = '<div class="narrative-card">';
-    var affActivity = f.RelationshipActivity || f.AffiliateType || '';
-    var affActLabel = {email_affiliate:'email affiliate',cashback:'cashback site',comparison:'comparison site',lead_generation:'lead generator',influencer:'influencer',publisher:'publisher network',voucher:'voucher site'}[affActivity] || affActivity || 'affiliate';
     var volume = f.TotalVolumeSent ? parseInt(f.TotalVolumeSent).toLocaleString() : null;
-    var briefLines = [];
-    briefLines.push('<strong>'+escH(name)+'</strong> is registered as a '+escH(affActLabel)+(volume ? ' sending approximately '+volume+' emails on your behalf' : '')+'.');
-    if (!f.ConsentChainVerified) briefLines.push('Their consent chain has <strong>not been verified</strong>. Based on published enforcement (Saga Group, \u00a3225k, 2021), consent that does not name your organisation specifically cannot be relied upon under PECR.');
-    if (f.SenderIdentityCompliant==='Unverified') briefLines.push('The sender identity used by this affiliate has not been verified against your registered trading name \u2014 a PECR Regulation 23 risk.');
-    if (!f.MarketingMaterialsReviewed) briefLines.push('Their marketing materials have not been reviewed against the CAP Code. You are responsible for claims made on your behalf by affiliates.');
-    if (!isDPAConfirmed(f.DPAStatus)) briefLines.push('No confirmed Article 28 Data Processing Agreement is in place.');
-    if (affAllClear) briefLines.push('All verification steps are complete. Exposure is currently \u00a30.');
-    var actionsNeeded = [];
-    if (!f.ConsentChainVerified) actionsNeeded.push('verify consent chain');
-    if (f.SenderIdentityCompliant==='Unverified') actionsNeeded.push('check sender identity');
-    if (!f.MarketingMaterialsReviewed) actionsNeeded.push('review marketing materials');
-    if (!isDPAConfirmed(f.DPAStatus)) actionsNeeded.push('confirm DPA');
-    if (actionsNeeded.length) briefLines.push('<strong>'+actionsNeeded.length+' action'+(actionsNeeded.length!==1?'s':'')+' required:</strong> '+actionsNeeded.join(', ')+'.');
-    narrativeHtml += '<div class="narrative-text">'+briefLines.join(' ')+'</div>';
-    narrativeHtml += '</div>';
+    var lines = ['<strong>'+escH(name)+'</strong> is registered as '+escH((f.AffiliateType||'an affiliate').toLowerCase())+(q.role!=='unknown' ? ' \u2014 '+escH(roleLabel.toLowerCase()) : '')+(volume?' (approx. '+volume+' messages)':'')+'.'];
+    var actions = [];
+    if (q.role==='unknown') { lines.push('You haven\'t recorded how they handle data. That decides whether you need a DPA, a marketing agreement, or neither, and which checks apply.'); actions.push('record data role'); }
+    if (!consentOk) { lines.push('Their consent wording hasn\'t been confirmed to name you. Consent that doesn\'t name your organisation can\'t be relied on for your marketing (Saga Group, \u00a3225k, 2021).'); actions.push('check consent wording'); }
+    if (!senderOk) { lines.push('The From name used on your behalf hasn\'t been verified (PECR Reg 23).'); actions.push('check sender identity'); }
+    if (!matOk) { lines.push('Their marketing materials haven\'t been reviewed against the CAP Code. You are responsible for claims made on your behalf.'); actions.push('review creative'); }
+    if (!discOk) { lines.push('Influencer content must be clearly identified as advertising.'); actions.push('verify ad disclosure'); }
+    if (!lpOk) { lines.push('Their landing pages haven\'t been checked for how consent is captured.'); actions.push('review landing page'); }
+    if (q.agreement && q.agreement!=='unknown' && !agreeOk) { lines.push('No confirmed <strong>'+escH(q.agreement)+'</strong>.'); actions.push('confirm agreement'); }
+    if (q.role==='no_mailing') lines.push('As they don\'t send messages or pass you data, no data agreement or consent check is needed.');
+    if (allClear) lines.push('All verification steps are complete.');
 
-    // Compact investigation preview
-    var invQuestions = [
-      { q: 'Show us the consent wording '+escH(name)+' uses that names your organisation.', ok: !!f.ConsentChainVerified, label: f.ConsentChainVerified ? 'Verified' : 'You don\'t have this' },
-      { q: 'Confirm the sender identity used in emails sent on your behalf by '+escH(name)+'.', ok: f.SenderIdentityCompliant==='Verified', label: f.SenderIdentityCompliant==='Verified' ? 'Verified' : 'Unverified' },
-      { q: 'Provide your Article 28 DPA with this affiliate.', ok: isDPAConfirmed(f.DPAStatus), label: isDPAConfirmed(f.DPAStatus) ? 'In place' : 'Not in place' },
-    ];
-    var invAllOk = invQuestions.every(function(q){return q.ok;});
-    var invHtml = '<div class="inv-preview'+(invAllOk?' clear':'')+'">';
-    invHtml += '<div class="inv-preview-title"><i class="ph ph-'+(invAllOk?'shield-check':'warning-circle')+' icon-16"></i>'+(invAllOk ? 'Evidence-based assessment \u2014 all checks passed' : 'A regulator reviewing this relationship would ask:')+'</div>';
-    invQuestions.forEach(function(q) {
-      var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
-      invHtml += '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
-    });
-    invHtml += '</div>';
+    var qs = [];
+    if (q.consentNaming) qs.push({ q:'Show us the consent wording '+escH(name)+' uses that names your organisation.', ok:consentOk, label:consentOk?'Checked':'Not checked' });
+    if (q.senderIdentity) qs.push({ q:'Confirm the sender identity used in messages sent on your behalf.', ok:senderOk, label:senderOk?'Verified':'Unverified' });
+    if (q.agreement) qs.push({ q:q.agreement==='unknown' ? 'Explain what data '+escH(name)+' handles for you.' : 'Provide your '+escH(q.agreement)+' with '+escH(name)+'.', ok:agreeOk, label:q.agreement==='unknown'?'Not recorded':agreeOk?'In place':'Not in place' });
+    qs.push({ q:'Show that their marketing about you was reviewed.', ok:matOk, label:matOk?'Reviewed':'Not reviewed' });
 
-    // Compliance passport (only shown when all clear)
-    var passportHtml = '';
-    if (affAllClear) {
-      passportHtml = '<div class="passport-card"><div class="passport-icon" style="font-size:28px;color:var(--g)"><i class="ph ph-shield-check icon-32"></i></div><div><div class="passport-title">'+escH(name)+' \u2014 All checks passed</div><div class="passport-sub">DPA confirmed, consent chain verified, creative reviewed, sender identity confirmed.</div><div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
-    }
-
-    body.innerHTML = exposureHtml + narrativeHtml + invHtml + passportHtml
+    body.innerHTML = exposureStripHtml(f.ExposureEstimateLow||0, f.ExposureEstimateHigh||0, 'Based on unverified consent and volume', 'No exposure estimated', rec)
+      + narrativeHtml(lines, actions) + invPreviewHtml(qs)
+      + (allClear ? passportHtml(name, 'All checks that apply to this affiliate are complete.', f) : '')
       + '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'
       + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'verification\')"><i class="ph ph-list-checks icon-16"></i>Start verification</button>'
-      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'dpa\')">Scan DPA</button>'
-      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'creative\')">Review creative</button>'
-      + '</div>';
+      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'creative\')">Review creative</button></div>';
     return;
-  } else {
+  }
+
+  if (t==='competitors') {
     rows = [
       ['Sector',escH(f.Sector||'')],
       ['Enforcement','<span style="font-weight:600">'+(f.RulingCount||0)+' relevant action'+(f.RulingCount!==1?'s':'')+' identified in sources reviewed</span>'],
@@ -1446,6 +1402,61 @@ function renderDetailOverview(rec) {
 
 
 // ── P2 FIX: renderDPAReview now shows quotes from clauseCache ──
+function renderMarketingChecks(rec) {
+  var body = document.getElementById('dpBody');
+  if (!body) return;
+  var f = rec.fields;
+  var m = marketingStatus(f);
+  var catOpts = Object.keys(MKT_CATEGORIES).map(function(k){ return [k, MKT_CATEGORIES[k]]; });
+  var STATUS = {
+    passed:          ['pass','pg','Passed'],
+    needs_attention: ['warn','py','Needs attention'],
+    not_evidenced:   ['fail','pr','Not evidenced'],
+    not_applicable:  ['','pmu','Not applicable'],
+  };
+
+  var html = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">These checks cover how <strong>you</strong> use '+escH(getName(f))+' \u2014 the part regulators hold you responsible for. They change with the platform type. Answers are self-assessed; anything marked "Not evidenced" or "Needs attention" is added to your fixes.</p>';
+  html += '<div class="fg" style="max-width:300px"><label>Platform type</label><select onchange="changeMarketingCategory(\''+escJ(rec.id)+'\',this.value)">'+optionsHtml(catOpts, m.category)+'</select></div>';
+  if (!m.defs.length) html += '<div class="info-banner"><i class="ph ph-warning icon-16"></i><div>Check definitions couldn\'t be loaded. Refresh the page.</div></div>';
+
+  m.defs.forEach(function(d){
+    var a = m.checks[d.id] || {};
+    var st = STATUS[a.status] || ['','pmu','Not answered'];
+    html += '<div class="clause-item '+st[0]+'">'
+      + '<div class="clause-hdr"><span class="clause-num">'+escH(d.regulator)+'</span><span class="clause-title">'+escH(d.label)+'</span><span class="pill '+st[1]+'">'+st[2]+'</span></div>'
+      + '<div class="clause-req">'+escH(d.question)+'<br><span style="color:var(--mu)">'+escH(d.rule)+(d.severity==='critical'?' \u00b7 high impact':'')+'</span></div>'
+      + '<div class="clause-btns">'
+      + '<button class="cb cb-pass" onclick="setMarketingCheck(\''+escJ(rec.id)+'\',\''+d.id+'\',\'passed\')">Passed</button>'
+      + '<button class="cb cb-warn" onclick="setMarketingCheck(\''+escJ(rec.id)+'\',\''+d.id+'\',\'needs_attention\')">Needs attention</button>'
+      + '<button class="cb cb-fail" onclick="setMarketingCheck(\''+escJ(rec.id)+'\',\''+d.id+'\',\'not_evidenced\')">Not evidenced</button>'
+      + '<button class="cb" style="border-color:var(--b);color:var(--mu);background:var(--w)" onclick="setMarketingCheck(\''+escJ(rec.id)+'\',\''+d.id+'\',\'not_applicable\')">N/A</button>'
+      + '</div></div>';
+  });
+  body.innerHTML = html;
+}
+
+function postMarketingCheck(recordId, payload) {
+  var rec = S.processors.find(function(r){ return r.id===recordId; });
+  if (!rec) return;
+  payload.userId = userId; payload.recordId = recordId;
+  fetch(APP_URL+'/api/data?action=marketing-check', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) { showToast(d.error,'er'); return; }
+      rec.fields.MarketingChecksJson = JSON.stringify(d.checks);
+      rec.fields.MarketingScore = d.marketingScore;
+      rec.fields.Category = d.checks.category;
+      renderMarketingChecks(rec);
+      updateTypeCards();
+      refreshList();
+      loadScore();
+      if (d.fixGenerated) showToast('Added to your fixes','er');
+    })
+    .catch(function(e){ showToast('Could not save: '+e.message,'er'); });
+}
+function setMarketingCheck(recordId, checkId, status) { postMarketingCheck(recordId, { checkId:checkId, status:status }); }
+function changeMarketingCategory(recordId, category) { postMarketingCheck(recordId, { category:category }); }
+
 function renderDPAReview(rec) {
   var body = document.getElementById('dpBody');
   if (!body) return;
@@ -1796,94 +1807,102 @@ function renderVerification(rec) {
   if (!body) return;
   var f = rec.fields;
   var name = getName(f);
+  var q = affiliateRequirements(f);
+  var urls = parseJSON(f.VerificationUrls, {});
+  if (!f._landingChecks) f._landingChecks = parseJSON(f.LandingPageChecksJson, {});
+  var lp = f._landingChecks;
+  var steps = [];
 
-  var steps = [
-    {
-      title: 'Consent chain check',
-      sub: 'Does this affiliate\'s sign-up form name your organisation?',
-      done: !!f.ConsentChainVerified,
-      render: function() {
-        var consentWording = f.ConsentWordingPasted || '';
-        var consentResult = f.ConsentNameCheck || 'unchecked';
-        var html = '<div style="margin-top:12px">';
-        html += '<div class="fg"><label>Sign-up page URL</label><input type="url" id="verif-signup-url" placeholder="https://affiliate.com/signup" value="'+escH((f.VerificationUrls && JSON.parse(f.VerificationUrls||'{}').signupPage) || '')+'"></div>';
-        html += '<div class="fg"><label>Paste the exact consent wording from their sign-up form</label><textarea id="verif-consent-wording" placeholder="Copy the consent text exactly as it appears on the affiliate\'s sign-up page\u2026" rows="3">'+escH(consentWording)+'</textarea></div>';
-        html += '<div class="fg" style="margin-bottom:4px"><label>Your registered trading name</label><input type="text" id="verif-trading-name" placeholder="e.g. Bright Basket Ltd" value="'+escH(f.TradingName||'')+'"></div>';
-        html += '<button class="btn btn-primary btn-sm" onclick="runConsentCheck(\''+escJ(rec.id)+'\')"><i class="ph ph-magnifying-glass icon-16"></i>Check if your company is named</button>';
-        if (consentResult === 'pass') {
-          html += '<div class="verif-result pass"><i class="ph ph-check-circle icon-16" style="vertical-align:-2px;margin-right:6px"></i><strong>Your organisation is named</strong> in the consent wording. This consent can be relied upon under PECR.</div>';
-        } else if (consentResult === 'fail') {
-          html += '<div class="verif-result fail"><i class="ph ph-x-circle icon-16" style="vertical-align:-2px;margin-right:6px"></i><strong>Your organisation is NOT named.</strong> Based on the Saga precedent, this consent cannot be relied upon. Contact '+escH(name)+' to update their consent wording.</div>';
-        }
-        html += '</div>';
-        return html;
-      }
-    },
-    {
-      title: 'Sender identity check',
-      sub: 'What From name does this affiliate use when sending on your behalf?',
-      done: f.SenderIdentityCompliant === 'Verified' || f.SenderIdentityCompliant === 'N/A',
-      render: function() {
-        var fromName = f.FromNameUsed || '';
-        var senderStatus = f.SenderIdentityCompliant || 'Unverified';
-        var html = '<div style="margin-top:12px">';
-        html += '<div class="fg"><label>From name used by this affiliate</label><input type="text" id="verif-from-name" placeholder="e.g. Bright Basket via TopCashback" value="'+escH(fromName)+'"></div>';
-        html += '<div class="fg" style="margin-bottom:4px"><label>Your registered trading name</label><input type="text" id="verif-trading-name-2" placeholder="e.g. Bright Basket Ltd" value="'+escH(f.TradingName||'')+'"></div>';
-        html += '<button class="btn btn-primary btn-sm" onclick="runSenderCheck(\''+escJ(rec.id)+'\')"><i class="ph ph-check icon-16"></i>Verify sender identity</button>';
-        if (senderStatus === 'Verified') {
-          html += '<div class="verif-result pass"><i class="ph ph-check-circle icon-16" style="vertical-align:-2px;margin-right:6px"></i><strong>Sender identity verified.</strong> The From name identifies your organisation as required by PECR Reg 23.</div>';
-        } else if (senderStatus === 'Partial') {
-          html += '<div class="verif-result warn"><i class="ph ph-warning icon-16" style="vertical-align:-2px;margin-right:6px"></i><strong>Partial match.</strong> The From name contains your company name but may not be immediately clear to recipients. Consider asking '+escH(name)+' to make it more explicit.</div>';
-        }
-        html += '</div>';
-        return html;
-      }
-    },
-    {
-      title: 'Landing page check',
-      sub: 'For lead gen, cashback, and comparison affiliates — does their landing page capture consent correctly?',
-      done: !!f.LandingPageReviewed,
-      render: function() {
-        var html = '<div style="margin-top:12px">';
-        html += '<div class="fg"><label>Landing page URL</label><input type="url" id="verif-landing-url" placeholder="https://affiliate.com/your-brand" value="'+escH((f.VerificationUrls && JSON.parse(f.VerificationUrls||'{}').landingPage) || '')+'"></div>';
-        html += '<p style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.55">Visit the landing page and answer these three questions:</p>';
-        var checks = [
-          { key: 'lp_consent', label: 'Does the landing page show a consent checkbox?', val: f.LP_ConsentCheckbox },
-          { key: 'lp_named', label: 'Does the consent text name your organisation specifically?', val: f.LP_OrgNamed },
-          { key: 'lp_tandc', label: 'Does the page link to terms and conditions?', val: f.LP_TandC },
-        ];
-        checks.forEach(function(c) {
-          html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b)">';
-          html += '<span style="flex:1;font-size:12.5px">'+escH(c.label)+'</span>';
-          html += '<button class="cb cb-pass" onclick="setLandingCheck(\''+escJ(rec.id)+'\',\''+c.key+'\',true)" style="'+(c.val===true?'box-shadow:inset 0 0 0 2px var(--g)':'')+'">Yes</button>';
-          html += '<button class="cb cb-fail" onclick="setLandingCheck(\''+escJ(rec.id)+'\',\''+c.key+'\',false)" style="'+(c.val===false?'box-shadow:inset 0 0 0 2px var(--r)':'')+'">No</button>';
-          html += '</div>';
-        });
-        html += '<button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="saveLandingPage(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save landing page review</button>';
-        html += '</div>';
-        return html;
-      }
-    },
-  ];
-
-  var html = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Walk through each step to verify this affiliate relationship. Your exposure drops as each step is completed.</p>';
-  html += '<div class="verif-stepper">';
-  steps.forEach(function(s, i) {
-    var cls = s.done ? 'done' : i === verifStep ? 'active' : '';
-    var statusHtml = s.done ? '<span style="color:var(--g)"><i class="ph ph-check-circle icon-16"></i></span>' : '';
-    html += '<div class="verif-step '+cls+'">';
-    html += '<div class="verif-step-hdr" onclick="setVerifStep('+i+',\''+escJ(rec.id)+'\')">';
-    html += '<div class="verif-step-num">'+(s.done ? '\u2713' : (i+1))+'</div>';
-    html += '<div class="verif-step-info"><div class="verif-step-title">'+escH(s.title)+'</div><div class="verif-step-sub">'+escH(s.sub)+'</div></div>';
-    html += statusHtml;
-    html += '</div>';
-    html += '<div class="verif-step-body">'+s.render()+'</div>';
-    html += '</div>';
+  steps.push({
+    title:'How this affiliate handles data', sub:'Decides which agreement and checks apply.',
+    done: q.role!=='unknown',
+    render: function(){
+      var note = q.role==='unknown' ? '' :
+        q.agreement ? '<div class="verif-result warn">Agreement needed: <strong>'+escH(q.agreement)+'</strong>. Record its status in the Agreement tab.</div>' :
+        '<div class="verif-result pass">No data agreement or consent check needed for this set-up.</div>';
+      return '<div style="margin-top:12px"><div class="fg"><label>Data role</label><select id="verif-role">'+optionsHtml(AFF_ROLES, q.role)+'</select></div>'
+        + '<button class="btn btn-primary btn-sm" onclick="saveAffiliateRole(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save</button>'+note+'</div>';
+    }
   });
-  html += '</div>';
 
-  body.innerHTML = html;
+  if (q.consentNaming) steps.push({
+    title:'Consent names your organisation', sub:'Paste the consent wording from their sign-up form.',
+    done: !!f.ConsentChainVerified,
+    render: function(){
+      return '<div style="margin-top:12px">'
+        + '<div class="fg"><label>Sign-up page URL</label><input type="url" id="verif-signup-url" placeholder="https://affiliate.com/signup" value="'+escH(urls.signupPage||'')+'"></div>'
+        + '<div class="fg"><label>Exact consent wording</label><textarea id="verif-consent-wording" rows="3" placeholder="Copy the consent text exactly as it appears\u2026">'+escH(f.ConsentWordingPasted||'')+'</textarea></div>'
+        + '<div class="fg"><label>Your registered trading name</label><input type="text" id="verif-trading-name" placeholder="e.g. Bright Basket Ltd" value="'+escH(S.tradingName||'')+'"></div>'
+        + '<button class="btn btn-primary btn-sm" onclick="runConsentCheck(\'affiliate\',\''+escJ(rec.id)+'\')"><i class="ph ph-magnifying-glass icon-16"></i>Check wording</button>'
+        + renderConsentResult(parseJSON(f.ConsentCheckResultJson, null), name) + '</div>';
+    }
+  });
+
+  if (q.senderIdentity) steps.push({
+    title:'Sender identity', sub:'What From name do they use when sending about you?',
+    done: f.SenderIdentityCompliant==='Verified' || f.SenderIdentityCompliant==='N/A',
+    render: function(){
+      var s = f.SenderIdentityCompliant || 'Unverified';
+      return '<div style="margin-top:12px">'
+        + '<div class="fg"><label>From name used</label><input type="text" id="verif-from-name" placeholder="e.g. Bright Basket via TopCashback" value="'+escH(f.FromNameUsed||'')+'"></div>'
+        + '<div class="fg"><label>Your registered trading name</label><input type="text" id="verif-trading-name-2" value="'+escH(S.tradingName||'')+'"></div>'
+        + '<button class="btn btn-primary btn-sm" onclick="runSenderCheck(\''+escJ(rec.id)+'\')"><i class="ph ph-check icon-16"></i>Verify sender identity</button>'
+        + (s==='Verified' ? '<div class="verif-result pass"><strong>Sender identity verified.</strong> The From name identifies your organisation (PECR Reg 23).</div>' : '')
+        + (s==='Partial' ? '<div class="verif-result warn"><strong>Partial match.</strong> Consider asking '+escH(name)+' to make your name clearer.</div>' : '')
+        + '</div>';
+    }
+  });
+
+  if (q.landingPage) steps.push({
+    title:'Landing page', sub:'Does their landing page capture consent correctly?',
+    done: !!f.LandingPageReviewed,
+    render: function(){
+      var checks = [
+        ['lp_consent','Is there a separate, unticked consent checkbox?'],
+        ['lp_named','Does the consent text name your organisation specifically?'],
+        ['lp_tandc','Is consent kept separate from terms and conditions?'],
+      ];
+      var html = '<div style="margin-top:12px"><div class="fg"><label>Landing page URL</label><input type="url" id="verif-landing-url" placeholder="https://affiliate.com/your-brand" value="'+escH(urls.landingPage||'')+'"></div>';
+      checks.forEach(function(c){
+        var v = lp[c[0]];
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b)"><span style="flex:1;font-size:12.5px">'+escH(c[1])+'</span>'
+          + '<button class="cb cb-pass" onclick="setLandingCheck(\''+escJ(rec.id)+'\',\''+c[0]+'\',true)" style="'+(v===true?'box-shadow:inset 0 0 0 2px var(--g)':'')+'">Yes</button>'
+          + '<button class="cb cb-fail" onclick="setLandingCheck(\''+escJ(rec.id)+'\',\''+c[0]+'\',false)" style="'+(v===false?'box-shadow:inset 0 0 0 2px var(--r)':'')+'">No</button></div>';
+      });
+      return html + '<button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="saveLandingPage(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save landing page review</button></div>';
+    }
+  });
+
+  if (verifStep >= steps.length) verifStep = 0;
+  var html = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Only the checks that apply to how this affiliate works are shown.</p><div class="verif-stepper">';
+  steps.forEach(function(s, i){
+    var cls = s.done ? 'done' : i===verifStep ? 'active' : '';
+    html += '<div class="verif-step '+cls+(s.done && i===verifStep ? ' active' : '')+'">'
+      + '<div class="verif-step-hdr" onclick="setVerifStep('+i+',\''+escJ(rec.id)+'\')"><div class="verif-step-num">'+(s.done?'\u2713':(i+1))+'</div>'
+      + '<div class="verif-step-info"><div class="verif-step-title">'+escH(s.title)+'</div><div class="verif-step-sub">'+escH(s.sub)+'</div></div>'
+      + (s.done ? '<span style="color:var(--g)"><i class="ph ph-check-circle icon-16"></i></span>' : '') + '</div>'
+      + '<div class="verif-step-body">'+s.render()+'</div></div>';
+  });
+  body.innerHTML = html + '</div>';
 }
+
+function saveAffiliateRole(recordId) {
+  var rec = S.affiliates.find(function(r){ return r.id===recordId; });
+  if (!rec) return;
+  var role = (document.getElementById('verif-role')||{}).value || 'unknown';
+  showLoading('Saving\u2026');
+  fetch(APP_URL+'/api/data?action=affiliate-register', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, affiliate:{ AffiliateName:rec.fields.AffiliateName, AffiliateDataRole:role } }) })
+    .then(function(r){ return r.json(); })
+    .then(function(){ hideLoading(); showToast('Data role saved','ok'); verifStep = 1; reopenTab(recordId,'verification'); })
+    .catch(function(e){ hideLoading(); showToast('Save failed: '+e.message,'er'); });
+}
+
+
+
+
+
+
 
 function setVerifStep(i, recordId) {
   verifStep = i;
@@ -1891,50 +1910,26 @@ function setVerifStep(i, recordId) {
   if (rec) renderVerification(rec);
 }
 
-function runConsentCheck(recordId) {
-  var rec = S.affiliates.find(function(r){return r.id===recordId;});
-  if (!rec) return;
-  var wording = (document.getElementById('verif-consent-wording')||{}).value||'';
-  var tradingName = (document.getElementById('verif-trading-name')||{}).value||'';
-  var signupUrl = (document.getElementById('verif-signup-url')||{}).value||'';
+function runConsentCheck(type, recordId) {
+  var p = type==='partner' ? 'pv' : 'verif';
+  var wording = (document.getElementById(p+'-consent-wording')||{}).value || '';
+  var tradingName = (document.getElementById(p+'-trading-name')||{}).value || '';
+  var sourceUrl = (document.getElementById(p+'-signup-url')||{}).value || '';
   if (!wording.trim()) { showToast('Paste the consent wording first','er'); return; }
   if (!tradingName.trim()) { showToast('Enter your trading name','er'); return; }
-
   showLoading('Checking consent wording\u2026');
-
-  // Simple client-side check: does the wording contain the trading name?
-  var wordingLower = wording.toLowerCase();
-  var nameLower = tradingName.toLowerCase().trim();
-  // Also check without "ltd", "limited" etc
-  var nameClean = nameLower.replace(/\s*(ltd|limited|plc|llp|inc)\s*\.?$/i, '').trim();
-  var found = wordingLower.indexOf(nameLower) >= 0 || wordingLower.indexOf(nameClean) >= 0;
-
-  var result = found ? 'pass' : 'fail';
-  var urls = {};
-  try { urls = JSON.parse(rec.fields.VerificationUrls || '{}'); } catch(e) {}
-  if (signupUrl) urls.signupPage = signupUrl;
-
-  var patch = {
-    AffiliateName: rec.fields.AffiliateName,
-    ConsentWordingPasted: wording,
-    ConsentNameCheck: result,
-    ConsentChainVerified: found,
-    VerificationUrls: JSON.stringify(urls),
-  };
-
-  fetch(APP_URL+'/api/data?action=affiliate-register', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ userId:userId, recordId:recordId, affiliate:patch })
-  }).then(function(r){return r.json();})
-  .then(function() {
-    hideLoading();
-    showToast(found ? 'Your company IS named in the consent wording' : 'Your company is NOT named \u2014 consent cannot be relied upon', found ? 'ok' : 'er');
-    loadAll().then(function() {
-      var updated = S.affiliates.find(function(r){return r.id===recordId;});
-      if (updated) { showDetail(recordId); goToDetailTab('verification'); }
-    });
-  })
-  .catch(function(e) { hideLoading(); showToast('Check failed: '+e.message, 'er'); });
+  fetch(APP_URL+'/api/data?action=consent-check', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, type:type, wording:wording, tradingName:tradingName, sourceUrl:sourceUrl }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      hideLoading();
+      if (d.error) { showToast(d.error,'er'); return; }
+      S.tradingName = tradingName;
+      var r = d.analysis.result;
+      showToast(r==='pass' ? 'Consent wording names you' : r==='warn' ? 'Named \u2014 review recommended' : 'Your organisation is not named', r==='pass' ? 'ok' : 'er');
+      reopenTab(recordId, 'verification');
+    })
+    .catch(function(e){ hideLoading(); showToast('Check failed: '+e.message,'er'); });
 }
 
 function runSenderCheck(recordId) {
@@ -1973,46 +1968,45 @@ function runSenderCheck(recordId) {
 }
 
 function setLandingCheck(recordId, key, value) {
-  var rec = S.affiliates.find(function(r){return r.id===recordId;});
+  var rec = S.affiliates.find(function(r){ return r.id===recordId; });
   if (!rec) return;
   if (!rec.fields._landingChecks) rec.fields._landingChecks = {};
   rec.fields._landingChecks[key] = value;
-  // Update the button visuals inline
   renderVerification(rec);
 }
 
 function saveLandingPage(recordId) {
-  var rec = S.affiliates.find(function(r){return r.id===recordId;});
+  var rec = S.affiliates.find(function(r){ return r.id===recordId; });
   if (!rec) return;
-  var landingUrl = (document.getElementById('verif-landing-url')||{}).value||'';
   var checks = rec.fields._landingChecks || {};
-  var allOk = checks.lp_consent === true && checks.lp_named === true && checks.lp_tandc === true;
-
-  var urls = {};
-  try { urls = JSON.parse(rec.fields.VerificationUrls || '{}'); } catch(e) {}
-  if (landingUrl) urls.landingPage = landingUrl;
-
-  var patch = {
-    AffiliateName: rec.fields.AffiliateName,
-    LandingPageReviewed: allOk,
-    VerificationUrls: JSON.stringify(urls),
-  };
-
+  var allOk = checks.lp_consent===true && checks.lp_named===true && checks.lp_tandc===true;
+  var urls = parseJSON(rec.fields.VerificationUrls, {});
+  var lpUrl = (document.getElementById('verif-landing-url')||{}).value || '';
+  if (lpUrl) urls.landingPage = lpUrl;
   showLoading('Saving landing page review\u2026');
-  fetch(APP_URL+'/api/data?action=affiliate-register', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ userId:userId, recordId:recordId, affiliate:patch })
-  }).then(function(r){return r.json();})
-  .then(function() {
-    hideLoading();
-    showToast(allOk ? 'Landing page review saved \u2014 all checks passed' : 'Landing page review saved \u2014 some checks failed', allOk ? 'ok' : 'er');
-    loadAll().then(function() {
-      var updated = S.affiliates.find(function(r){return r.id===recordId;});
-      if (updated) { showDetail(recordId); goToDetailTab('verification'); }
-    });
-  })
-  .catch(function(e) { hideLoading(); showToast('Save failed: '+e.message, 'er'); });
+  fetch(APP_URL+'/api/data?action=affiliate-register', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, affiliate:{ AffiliateName:rec.fields.AffiliateName, LandingPageReviewed:allOk, LandingPageChecksJson:JSON.stringify(checks), VerificationUrls:JSON.stringify(urls) } }) })
+    .then(function(r){ return r.json(); })
+    .then(function(){ hideLoading(); showToast(allOk ? 'Landing page review saved \u2014 all checks passed' : 'Saved \u2014 some checks failed', allOk ? 'ok' : 'er'); reopenTab(recordId,'verification'); })
+    .catch(function(e){ hideLoading(); showToast('Save failed: '+e.message,'er'); });
 }
+
+function savePartnerRelationship(recordId) {
+  var rec = S.partners.find(function(r){ return r.id===recordId; });
+  if (!rec) return;
+  var rel = (document.getElementById('pv-rel')||{}).value || 'unknown';
+  var status = (document.getElementById('pv-agr-status')||{}).value || 'Not yet';
+  var patch = { PartnerName: rec.fields.PartnerName, DataRelationship: rel };
+  if (rel==='joint_controller') patch.Article26Status = status;
+  else if (rel==='independent_controllers' || rel==='processor') patch.DataAgreementStatus = status;
+  showLoading('Saving\u2026');
+  fetch(APP_URL+'/api/data?action=partner-register', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch }) })
+    .then(function(r){ return r.json(); })
+    .then(function(){ hideLoading(); showToast('Data relationship saved','ok'); reopenTab(recordId,'verification'); })
+    .catch(function(e){ hideLoading(); showToast('Save failed: '+e.message,'er'); });
+}
+
 
 // ── VERIFICATION TAB (partners) ─────────────────────────────
 
@@ -2021,127 +2015,35 @@ function renderPartnerVerification(rec) {
   if (!body) return;
   var f = rec.fields;
   var name = getName(f);
-  var activity = f.RelationshipActivity || '';
-  var needsAdReview = ['joint_ads','co_branded_content','influencer'].indexOf(activity) >= 0;
-  var needsPricingReview = ['joint_ads','co_branded_content','lead_generation'].indexOf(activity) >= 0;
+var agr = partnerAgreement(f);
+  var steps = [{
+    title:'Data relationship', sub:'Is personal data shared, and who decides how it is used?',
+    done: agr.rel!=='unknown' && agr.ok,
+    render: function(){
+      var statusVal = agr.statusField ? (f[agr.statusField] || 'Not yet') : 'Not yet';
+      var statusOpts = [['Not yet','Not yet'],['Requested','Requested'],['Confirmed','Confirmed']];
+      var html = '<div style="margin-top:12px">'
+        + '<div class="fg"><label>Data relationship</label><select id="pv-rel">'+optionsHtml(PARTNER_RELS, agr.rel)+'</select></div>'
+        + '<div class="fg"><label>Status of the required agreement</label><select id="pv-agr-status">'+optionsHtml(statusOpts, isDPAConfirmed(statusVal)?'Confirmed':statusVal)+'</select></div>'
+        + '<p style="font-size:11.5px;color:var(--mu);margin-bottom:10px;line-height:1.55">Joint controllers \u2192 Article 26 arrangement. Each using data for your own purposes \u2192 data sharing agreement. Partner acts on your instructions \u2192 Article 28 DPA. No personal data shared \u2192 no agreement needed.</p>'
+        + '<button class="btn btn-primary btn-sm" onclick="savePartnerRelationship(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save</button>';
+      if (agr.rel!=='unknown') html += '<div class="verif-result '+(agr.ok?'pass':'warn')+'">'+(agr.required ? 'Required: <strong>'+escH(agr.required)+'</strong> \u2014 '+(agr.ok?'confirmed':'not yet confirmed') : escH(agr.label))+'</div>';
+      return html + '</div>';
+    }
+  }];
 
-  var steps = [
-    {
-      title: 'Consent chain verification',
-      sub: 'Who collected the data, and whose consent mechanism applies?',
-      done: !!f.ConsentChainVerified,
-      render: function() {
-        var html = '<div style="margin-top:12px">';
-        html += '<div class="fg"><label>Who collected the data?</label><select id="pv-consent-owner">'
-          + '<option value="Unknown"'+(f.ConsentChainOwner==='Unknown'||!f.ConsentChainOwner?' selected':'')+'>Unknown</option>'
-          + '<option value="Us"'+(f.ConsentChainOwner==='Us'?' selected':'')+'>Us (our consent mechanism)</option>'
-          + '<option value="Partner"'+(f.ConsentChainOwner==='Partner'?' selected':'')+'>Partner (their consent mechanism)</option>'
-          + '<option value="Both"'+(f.ConsentChainOwner==='Both'?' selected':'')+'>Both (separate consent for each)</option>'
-          + '</select></div>';
-        html += '<div class="fg"><label>Paste the relevant consent clause from your agreement</label><textarea id="pv-consent-clause" placeholder="Copy the clause from your Art. 26 agreement or data sharing agreement that describes how consent is managed between parties\u2026" rows="3">'+escH(f.ConsentChainNotes||'')+'</textarea></div>';
-        html += '<div class="fg"><label>Does the consent specifically cover both parties\' marketing?</label>';
-        html += '<div style="display:flex;gap:6px;margin-top:4px">';
-        html += '<button class="cb cb-pass" onclick="setPartnerConsentAnswer(\''+escJ(rec.id)+'\',true)" style="'+(f.ConsentChainVerified===true?'box-shadow:inset 0 0 0 2px var(--g)':'')+'">Yes \u2014 both named</button>';
-        html += '<button class="cb cb-fail" onclick="setPartnerConsentAnswer(\''+escJ(rec.id)+'\',false)" style="'+(f.ConsentChainVerified===false&&f.ConsentChainOwner?'box-shadow:inset 0 0 0 2px var(--r)':'')+'">No / Unclear</button>';
-        html += '</div></div>';
-        html += '<button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="savePartnerConsent(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save consent check</button>';
-        if (f.ConsentChainVerified) {
-          html += '<div class="verif-result pass" style="margin-top:12px"><i class="ph ph-check-circle icon-16" style="vertical-align:-2px;margin-right:6px"></i><strong>Consent chain verified.</strong> Both parties\' marketing is covered by the consent mechanism.</div>';
-        }
-        html += '</div>';
-        return html;
-      }
-    },
-  ];
-
-  // Conditionally add ad compliance step
-  if (needsAdReview) {
-    steps.push({
-      title: 'Ad compliance (CAP Code)',
-      sub: 'Paste joint ad or co-branded content for compliance review',
-      done: !!f.AdComplianceReviewed,
-      render: function() {
-        var savedResult = null;
-        try { savedResult = JSON.parse(f.AdReviewResult||'null'); } catch(e){}
-        var resultHtml = '';
-        if (savedResult && savedResult.issues && savedResult.issues.length) {
-          resultHtml = '<div class="creative-result" style="margin-top:12px">';
-          resultHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:8px">Issues found ('+savedResult.issues.length+')</div>';
-          savedResult.issues.forEach(function(iss) {
-            var cls = (iss.severity||iss.level) === 'critical' ? 'critical' : '';
-            resultHtml += '<div class="creative-issue '+cls+'"><div class="creative-issue-type">'+(iss.ruleRef||iss.type||'issue').replace(/_/g,' ')+'</div>'+escH(iss.explanation||iss.description||'')+'</div>';
-          });
-          resultHtml += '</div>';
-        } else if (savedResult && (!savedResult.issues || !savedResult.issues.length)) {
-          resultHtml = '<div class="creative-clear" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><strong>No CAP Code issues found.</strong> Joint advertising content appears compliant.</div>';
-        }
-        var html = '<div style="margin-top:12px">';
-        html += '<p style="font-size:12.5px;color:var(--tm);margin-bottom:12px;line-height:1.55">Paste the joint advertising copy, co-branded email, or marketing content you run with '+escH(name)+'. The AI Copy Checker will scan it against CAP Code sections 3 (misleading) and 8 (pricing).</p>';
-        if (f.AdComplianceReviewed) {
-          html += '<div class="info-banner green"><i class="ph ph-check-circle icon-16"></i><div><strong>Ad compliance reviewed'+(f.AdLastReviewed ? ' on '+fmtDate(f.AdLastReviewed) : '')+'.</strong> Re-submit anytime to check new materials.</div></div>';
-        }
-        html += '<div class="fg"><label>Subject line or headline</label><input type="text" id="pv-ad-subject" placeholder="e.g. Exclusive partner offer \u2014 50% off today only!"></div>';
-        html += '<div class="fg"><label>Ad body / marketing copy</label><div class="creative-paste"><textarea id="pv-ad-body" placeholder="Paste the full ad copy, email body, or marketing content here\u2026" rows="5"></textarea></div></div>';
-        html += '<button class="btn btn-primary btn-sm" onclick="runPartnerAdCheck(\''+escJ(rec.id)+'\')"><i class="ph ph-sparkle icon-16"></i>Run AI Copy Checker</button>';
-        html += '<div id="partnerAdResult">'+resultHtml+'</div>';
-        html += '</div>';
-        return html;
-      }
-    });
-  }
-
-  // Conditionally add pricing compliance step
-  if (needsPricingReview) {
-    steps.push({
-      title: 'Pricing compliance (CMA/DMCCA)',
-      sub: 'Paste pricing claims from co-branded campaigns',
-      done: !!f.PricingComplianceReviewed,
-      render: function() {
-        var savedResult = null;
-        try { savedResult = JSON.parse(f.PricingReviewResult||'null'); } catch(e){}
-        var resultHtml = '';
-        if (savedResult && savedResult.issues && savedResult.issues.length) {
-          resultHtml = '<div class="creative-result" style="margin-top:12px">';
-          resultHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:8px">Issues found ('+savedResult.issues.length+')</div>';
-          savedResult.issues.forEach(function(iss) {
-            var cls = (iss.severity||iss.level) === 'critical' ? 'critical' : '';
-            resultHtml += '<div class="creative-issue '+cls+'"><div class="creative-issue-type">'+(iss.ruleRef||iss.type||'issue').replace(/_/g,' ')+'</div>'+escH(iss.explanation||iss.description||'')+'</div>';
-          });
-          resultHtml += '</div>';
-        } else if (savedResult && (!savedResult.issues || !savedResult.issues.length)) {
-          resultHtml = '<div class="creative-clear" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><strong>No pricing compliance issues found.</strong> Claims appear compliant with CMA/DMCCA 2024.</div>';
-        }
-        var html = '<div style="margin-top:12px">';
-        html += '<p style="font-size:12.5px;color:var(--tm);margin-bottom:12px;line-height:1.55">Paste the pricing claims, promotional offers, or urgency messaging used in campaigns with '+escH(name)+'. The AI Copy Checker will scan against CMA/DMCCA 2024 \u2014 reference pricing, drip pricing, and fake urgency in co-branded campaigns create joint liability under Schedule 1.</p>';
-        if (f.PricingComplianceReviewed) {
-          html += '<div class="info-banner green"><i class="ph ph-check-circle icon-16"></i><div><strong>Pricing compliance reviewed'+(f.PricingLastReviewed ? ' on '+fmtDate(f.PricingLastReviewed) : '')+'.</strong> Re-submit to check new claims.</div></div>';
-        }
-        html += '<div class="fg"><label>Pricing claims or promotional copy</label><div class="creative-paste"><textarea id="pv-pricing-body" placeholder="e.g. Was \u00a399.99, now \u00a349.99 \u2014 save 50%! Offer ends midnight tonight. Only 3 left at this price.\u2026" rows="5"></textarea></div></div>';
-        html += '<button class="btn btn-primary btn-sm" onclick="runPartnerPricingCheck(\''+escJ(rec.id)+'\')"><i class="ph ph-sparkle icon-16"></i>Run pricing compliance check</button>';
-        html += '<div id="partnerPricingResult">'+resultHtml+'</div>';
-        html += '</div>';
-        return html;
-      }
-    });
-  }
-
-  var html = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Walk through each step to verify this partner relationship. Your exposure drops as each step is completed.</p>';
-  html += '<div class="verif-stepper">';
-  steps.forEach(function(s, i) {
-    var cls = s.done ? 'done' : i === partnerVerifStep ? 'active' : '';
-    var statusHtml = s.done ? '<span style="color:var(--g)"><i class="ph ph-check-circle icon-16"></i></span>' : '';
-    html += '<div class="verif-step '+cls+'">';
-    html += '<div class="verif-step-hdr" onclick="setPartnerVerifStep('+i+',\''+escJ(rec.id)+'\')">';
-    html += '<div class="verif-step-num">'+(s.done ? '\u2713' : (i+1))+'</div>';
-    html += '<div class="verif-step-info"><div class="verif-step-title">'+escH(s.title)+'</div><div class="verif-step-sub">'+escH(s.sub)+'</div></div>';
-    html += statusHtml;
-    html += '</div>';
-    html += '<div class="verif-step-body">'+s.render()+'</div>';
-    html += '</div>';
+  if (agr.rel!=='none') steps.push({
+    title:'Consent for shared data', sub:'Does the consent people gave name the organisation using it?',
+    done: !!f.ConsentChainVerified,
+    render: function(){
+      return '<div style="margin-top:12px">'
+        + '<div class="fg"><label>Where the data was collected (URL)</label><input type="url" id="pv-signup-url" placeholder="https://partner.com/signup"></div>'
+        + '<div class="fg"><label>Consent wording people saw</label><textarea id="pv-consent-wording" rows="3" placeholder="Paste the consent text shown when the data was collected\u2026">'+escH(f.PartnerConsentWording||'')+'</textarea></div>'
+        + '<div class="fg"><label>Your registered trading name</label><input type="text" id="pv-trading-name" value="'+escH(S.tradingName||'')+'"></div>'
+        + '<button class="btn btn-primary btn-sm" onclick="runConsentCheck(\'partner\',\''+escJ(rec.id)+'\')"><i class="ph ph-magnifying-glass icon-16"></i>Check wording</button>'
+        + renderConsentResult(parseJSON(f.ConsentCheckResultJson, null), name) + '</div>';
+    }
   });
-  html += '</div>';
-
-  body.innerHTML = html;
 }
 
 function setPartnerVerifStep(i, recordId) {
@@ -2517,9 +2419,9 @@ function toggleMon(event) {
 function renderMonMeta() {
   var el = document.getElementById('monMeta');
   if (!el) return;
-  var w = S.watch||[];
-  var alerts = w.filter(function(r){ return r.alertLevel==='amber'||r.alertLevel==='red'; });
-  el.textContent = w.length+' relationships monitored \u00b7 '+alerts.length+' need attention';
+  var w = S.watch || [];
+  var n = w.filter(function(x){ return watchLevel(x)!=='clear'; }).length;
+  el.textContent = w.length+' relationships monitored \u00b7 '+n+' need attention';
 }
 
 function loadWatchFeed() {
@@ -2530,33 +2432,38 @@ function renderWatchFeed(items) {
   var el = document.getElementById('watchFeed');
   if (!el) return;
   if (!items.length) { el.innerHTML = '<div style="font-size:12.5px;color:var(--mu);padding:10px 0">No relationships to monitor yet. Add platforms, partners, or affiliates to begin.</div>'; return; }
-  el.innerHTML = items.map(function(w){
-    var isClear = w.alertLevel==='clear';
-    var typeCls = w.type==='vendor'?'wi-proc':w.type==='partner'?'wi-part':w.type==='affiliate'?'wi-aff':'wi-comp';
-    var typeLabel = w.type==='vendor'?'Platform':w.type==='partner'?'Partner':w.type==='affiliate'?'Affiliate':'Competitor';
-    var alertsHtml = '';
-    if (isClear) {
-      alertsHtml = '<div class="wi-clear"><i class="ph ph-check-circle icon-16" style="vertical-align:-2px;margin-right:4px"></i>All checks passed</div>';
-    } else {
-      alertsHtml = '<div class="wi-alerts">';
-      (w.alerts||[]).forEach(function(a){
-        var dotCls = a.severity==='red'?'red':'amber';
-        alertsHtml += '<div class="wi-alert"><span class="wi-dot '+dotCls+'"></span>'+escH(a.message)+'</div>';
-      });
-      alertsHtml += '</div>';
-    }
-    return '<div class="watch-item'+(isClear?' clear':w.alertLevel==='amber'||w.alertLevel==='red'?' alert':'')+'">'
-      +'<div class="wi-icon '+(isClear?'clear':'alert')+'"><i class="ph ph-'+(isClear?'check-circle':'warning-circle')+' icon-18"></i></div>'
-      +'<div class="wi-body"><div class="wi-name">'+escH(w.name)+' <span class="wi-type '+typeCls+'">'+typeLabel+'</span></div>'
-      + alertsHtml + '</div></div>';
+  var TYPE = { processor:['wi-proc','Platform'], partner:['wi-part','Partner'], affiliate:['wi-aff','Affiliate'], competitor:['wi-comp','Competitor'] };
+  var rank = { red:0, amber:1, clear:2 };
+  el.innerHTML = items.slice().sort(function(a,b){ return rank[watchLevel(a)] - rank[watchLevel(b)]; }).map(function(w){
+    var level = watchLevel(w), isClear = level==='clear';
+    var tp = TYPE[w.type] || ['wi-comp', w.type||''];
+    var alertsHtml = isClear
+      ? '<div class="wi-clear"><i class="ph ph-check-circle icon-16" style="vertical-align:-2px;margin-right:4px"></i>No open items</div>'
+      : '<div class="wi-alerts">'+(w.alerts||[]).map(function(a){ return '<div class="wi-alert"><span class="wi-dot '+(a.severity==='red'||a.severity==='high'?'red':'amber')+'"></span>'+escH(a.text||'')+'</div>'; }).join('')+'</div>';
+    return '<div class="watch-item '+(isClear?'clear':'alert')+'">'
+      + '<div class="wi-icon '+(isClear?'clear':'alert')+'"><i class="ph ph-'+(isClear?'check-circle':'warning-circle')+' icon-18"></i></div>'
+      + '<div class="wi-body"><div class="wi-name">'+escH(w.name)+' <span class="wi-type '+tp[0]+'">'+tp[1]+'</span></div>'+alertsHtml+'</div></div>';
   }).join('');
 }
 
 function loadIntel() {
-  fetch(APP_URL+'/api/data?action=intel&userId='+userId)
-    .then(function(r){return r.json();})
-    .then(function(d){ S.intel = d.intel||[]; renderIntel(S.intel); renderIntelReviewNote(); })
-    .catch(function(){ document.getElementById('intelFeed').innerHTML='<div style="font-size:12.5px;color:var(--mu)">Could not load intelligence feed.</div>'; });
+  fetch(APP_URL+'/api/data?action=sector-intelligence&userId='+encodeURIComponent(userId))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var names = [].concat(S.processors, S.partners, S.affiliates, S.competitors).map(function(r){ return getName(r.fields).toLowerCase(); });
+      S.intel = (d.feed||[]).map(function(r){
+        var f = r.fields || {}, co = f.CompanyName || '';
+        return {
+          regulator: f.Regulator || '', company: co, date: f.PublishedDate || '',
+          fine: f.FineAmount || null, summary: f.Summary || f.Violation || '',
+          claimTypes: parseJSON(f.ClaimTypes, []), yourAction: f.SuggestedAction || '',
+          companyMatchesRelationship: !!co && names.indexOf(co.toLowerCase()) >= 0,
+        };
+      });
+      renderIntel(S.intel);
+      renderIntelReviewNote();
+    })
+    .catch(function(){ document.getElementById('intelFeed').innerHTML = '<div style="font-size:12.5px;color:var(--mu)">Could not load intelligence feed.</div>'; });
 }
 
 function renderIntelReviewNote() {
@@ -2604,7 +2511,7 @@ function openModal(type) {
     form.innerHTML = '<div class="form-grid">'
       +'<div class="fg"><label>Platform name</label><input type="text" id="m-name" placeholder="e.g. Mailchimp"></div>'
       +'<div class="fg"><label>Type</label><input type="text" id="m-type" placeholder="e.g. Email Service Provider"></div>'
-      +'<div class="fg"><label>Sector</label><select id="m-sector">'+SECTORS.map(function(s){return '<option value="'+s+'">'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('')+'</select></div>'
+      +'<div class="fg"><label>Platform category</label><select id="m-category"><option value="">Detect from name/type</option>'+Object.keys(MKT_CATEGORIES).map(function(k){ return '<option value="'+k+'">'+MKT_CATEGORIES[k]+'</option>'; }).join('')+'</select></div>'
       +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="m-pp" placeholder="https://..."></div>'
       +'</div>';
   } else if (type==='partner') {
@@ -2613,6 +2520,7 @@ function openModal(type) {
     form.innerHTML = '<div class="form-grid">'
       +'<div class="fg"><label>Partner name</label><input type="text" id="m-name" placeholder="e.g. Acme Co"></div>'
       +'<div class="fg"><label>Partner type</label><input type="text" id="m-type" placeholder="e.g. Joint Advertising Partner"></div>'
+      +'<div class="fg"><label>Is personal data shared?</label><select id="m-rel">'+optionsHtml(PARTNER_RELS,'unknown')+'</select></div>'
       +'<div class="fg"><label>Activity</label><select id="m-activity"><option value="joint_ads">Joint advertising</option><option value="co_branded_content">Co-branded content</option><option value="influencer">Influencer partnership</option><option value="lead_generation">Lead generation</option><option value="data_sharing">Data sharing</option></select></div>'
       +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="m-pp" placeholder="https://..."></div>'
       +'</div>';
@@ -2622,6 +2530,7 @@ function openModal(type) {
     form.innerHTML = '<div class="form-grid">'
       +'<div class="fg"><label>Affiliate name</label><input type="text" id="m-name" placeholder="e.g. TopCashback"></div>'
       +'<div class="fg"><label>Type</label><input type="text" id="m-type" placeholder="e.g. Cashback Site"></div>'
+      +'<div class="fg"><label>How they handle data</label><select id="m-role">'+optionsHtml(AFF_ROLES,'unknown')+'</select></div>'
       +'<div class="fg"><label>Activity</label><select id="m-activity"><option value="email_affiliate">Email affiliate</option><option value="cashback">Cashback</option><option value="comparison">Comparison site</option><option value="lead_generation">Lead generation</option><option value="influencer">Influencer</option><option value="publisher">Publisher network</option><option value="voucher">Voucher site</option></select></div>'
       +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="m-pp" placeholder="https://..."></div>'
       +'</div>';
@@ -2652,10 +2561,10 @@ function submitModal() {
     bodyData = { userId:userId, vendor:{ VendorName:name, VendorType:(document.getElementById('m-type')||{}).value||'', Sector:(document.getElementById('m-sector')||{}).value||'general', PrivacyPolicyUrl:(document.getElementById('m-pp')||{}).value||'' } };
   } else if (modalType==='partner') {
     action = 'partner-register';
-    bodyData = { userId:userId, partner:{ PartnerName:name, PartnerType:(document.getElementById('m-type')||{}).value||'', RelationshipActivity:(document.getElementById('m-activity')||{}).value||'', PrivacyPolicyUrl:(document.getElementById('m-pp')||{}).value||'' } };
+    bodyData = { userId:userId, partner:{ PartnerName:name, PartnerType:(document.getElementById('m-type')||{}).value||'', RelationshipActivity:(document.getElementById('m-activity')||{}).value||'', DataRelationship:(document.getElementById('m-rel')||{}).value||'unknown', PrivacyPolicyUrl:(document.getElementById('m-pp')||{}).value||'' } };
   } else if (modalType==='affiliate') {
     action = 'affiliate-register';
-    bodyData = { userId:userId, affiliate:{ AffiliateName:name, AffiliateType:(document.getElementById('m-type')||{}).value||'', RelationshipActivity:(document.getElementById('m-activity')||{}).value||'', PrivacyPolicyUrl:(document.getElementById('m-pp')||{}).value||'' } };
+    bodyData = { userId:userId, affiliate:{ AffiliateName:name, AffiliateType:(document.getElementById('m-type')||{}).value||'', RelationshipActivity:(document.getElementById('m-activity')||{}).value||'', AffiliateDataRole:(document.getElementById('m-role')||{}).value||'unknown', PrivacyPolicyUrl:(document.getElementById('m-pp')||{}).value||'' } };
   } else {
     action = 'competitor-watch';
     bodyData = { userId:userId, competitor:{ CompetitorName:name, Sector:(document.getElementById('m-sector')||{}).value||'general' } };
@@ -2673,27 +2582,30 @@ function submitModal() {
 function showConfirmPanel(name, d) {
   var panel = document.getElementById('confirmPanel');
   if (!panel) return;
-  var violations = d.violations||[];
-  var cls = violations.length >= 2 ? 'risk' : violations.length === 1 ? 'warn' : '';
-  var icon = violations.length ? 'warning-circle' : 'check-circle';
-  var title = violations.length
-    ? escH(name)+' has '+violations.length+' regulatory action'+(violations.length!==1?'s':'')
-    : escH(name)+' added \u2014 no enforcement history found';
-  var sub = violations.length
-    ? 'This organisation has been flagged by regulators. Review the details below and record appropriate mitigations.'
-    : 'We checked ICO, ASA, and CMA/DMCCA enforcement databases. No actions found for this organisation.';
-  var fixHtml = '';
-  if (violations.length) {
-    fixHtml = '<div class="confirm-fix"><strong>Dashboard fix count has been updated.</strong> '+violations.length+' new item'+(violations.length!==1?'s':'')+' added to your compliance tracker.'
-      + violations.map(function(v){return '<div style="margin-top:6px;padding-left:8px;border-left:2px solid var(--rc)">\u2022 <strong>'+escH(v.regulator||'')+'</strong>: '+escH((v.summary||'').slice(0,140))+(v.fine?' (\u00a3'+fmtNum(v.fine)+')':'')+'</div>';}).join('')
-      + '</div>';
-  }
+  var hits = (d.enforcement && d.enforcement.relevant) || [];
+  var cls = hits.length >= 2 ? 'risk' : hits.length ? 'warn' : '';
+  var title = hits.length
+    ? escH(name)+': '+hits.length+' relevant enforcement action'+(hits.length!==1?'s':'')+' identified'
+    : escH(name)+' added';
+  var sub = hits.length
+    ? 'Identified in the sources reviewed. Check these relate to the same organisation before acting.'
+    : 'No relevant enforcement actions identified in the sources reviewed.';
+  var list = hits.length ? '<div class="confirm-fix">'+hits.slice(0,3).map(function(v){
+      return '<div style="margin-top:4px;padding-left:8px;border-left:2px solid var(--rc)">\u2022 <strong>'+escH(v.Regulator||'')+'</strong>: '+escH((v.Violation||'').slice(0,140))+(v.FineAmount?' (\u00a3'+fmtNum(v.FineAmount)+')':'')+'</div>';
+    }).join('')+'</div>' : '';
+  var NEXT = {
+    processors:['marketing','Next: answer the marketing checks \u2014 they cover how you use this platform, which is what regulators look at.'],
+    partners:['verification','Next: record whether personal data is shared \u2014 that decides which agreement you need.'],
+    affiliates:['verification','Next: record how this affiliate handles data, then check their consent wording names you.'],
+    competitors:['overview',''],
+  }[currentType];
+  var recId = d.record && d.record.id;
+  var go = recId ? 'showDetail(\''+escJ(recId)+'\');goToDetailTab(\''+NEXT[0]+'\')' : '';
   panel.innerHTML = '<div class="confirm-panel '+cls+'">'
-    +'<i class="ph ph-'+icon+' icon-18 confirm-icon"></i>'
-    +'<div class="confirm-body"><div class="confirm-title">'+title+'</div><div class="confirm-sub">'+sub+'</div>'
-    + fixHtml
-    +'<div class="confirm-actions"><button class="btn btn-ghost btn-xs" onclick="showDetail(S[currentType][S[currentType].length-1].id)">View details <i class="ph ph-arrow-right icon-16"></i></button></div></div>'
-    +'<button class="confirm-close" onclick="dismissConfirm()"><i class="ph ph-x icon-16"></i></button></div>';
+    + '<i class="ph ph-'+(hits.length?'warning-circle':'check-circle')+' icon-18 confirm-icon"></i>'
+    + '<div class="confirm-body"><div class="confirm-title">'+title+'</div><div class="confirm-sub">'+sub+(NEXT[1]?'<br>'+NEXT[1]:'')+'</div>'+list
+    + (go ? '<div class="confirm-actions"><button class="btn btn-primary btn-xs" onclick="'+go+'">Continue <i class="ph ph-arrow-right icon-16"></i></button></div>' : '')
+    + '</div><button class="confirm-close" onclick="dismissConfirm()"><i class="ph ph-x icon-16"></i></button></div>';
   panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
@@ -2711,7 +2623,7 @@ function quickAdd(name, typeName) {
   bodyData[pKey] = {};
   bodyData[pKey][nameKey] = name;
   bodyData[pKey][typeKey] = typeName;
-  if (currentType==='processors') bodyData[pKey].Sector = 'general';
+  if (currentType==='processors') bodyData[pKey].Category = CATEGORY_FROM_LABEL[typeName] || '';
   if (currentType==='affiliates' && AFF_TYPE_TO_ACTIVITY[typeName]) bodyData[pKey].RelationshipActivity = AFF_TYPE_TO_ACTIVITY[typeName];
   if (currentType==='partners' && PARTNER_TYPE_TO_ACTIVITY[typeName]) bodyData[pKey].RelationshipActivity = PARTNER_TYPE_TO_ACTIVITY[typeName];
   fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
@@ -2792,3 +2704,44 @@ function escJ(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 </script>
 </body>
 </html>
+function vendorAssuranceHtml(f, name) {
+  var intel = parseJSON(f.IntelligenceJson, null);
+  var bd = parseJSON(f.ScoreBreakdownJson, null);
+  if ((f.ComplianceScore === null || f.ComplianceScore === undefined) && !intel) {
+    return '<div class="narrative-card"><div style="font-size:13px;font-weight:700;margin-bottom:4px">Vendor assurance</div><div class="narrative-text">No automated due diligence on '+escH(name)+' yet.</div></div>';
+  }
+  var html = '<div class="narrative-card" style="padding:0;overflow:hidden">';
+  html += '<div style="padding:16px 20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--b)">';
+  html += '<div style="font-size:26px;font-weight:800;font-family:DM Mono,monospace;color:'+scoreColour(f.ComplianceScore||0)+'">'+(f.ComplianceScore||0)+'</div>';
+  html += '<div><div style="font-size:14px;font-weight:700">Vendor assurance</div><div style="font-size:11px;color:var(--mu)">Due diligence on the company itself \u2014 separate from how you use it'+(intel && intel.confidence ? ' \u00b7 confidence: '+escH(intel.confidence) : '')+'</div></div></div>';
+  if (bd) {
+    html += '<div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    [['dpa','Agreement'],['icoRegister','ICO Register'],['enforcement','Enforcement'],['transfers','Transfers'],['freshness','Freshness'],['certifications','Certifications']].forEach(function(c){
+      var it = bd[c[0]]; if (!it) return;
+      var pct = it.max ? Math.round(it.score/it.max*100) : 0;
+      var col = pct>=80 ? 'var(--g)' : pct>=50 ? 'var(--y)' : 'var(--r)';
+      html += '<div style="padding:8px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--b)">'
+        + '<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:4px">'+c[1]+'<span style="color:'+col+'">'+it.score+'/'+it.max+'</span></div>'
+        + '<div style="height:3px;background:var(--b);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+'"></div></div>'
+        + '<div style="font-size:10px;color:var(--mu);margin-top:3px">'+escH(it.label)+'</div></div>';
+    });
+    html += '</div>';
+  }
+  if (intel && intel.findings && intel.findings.length) {
+    var typeLabels = { verified:'Verified', vendor_documented:'Vendor documentation', public_source:'Public source', ai_assessment:'AI assessment', not_available:'Not available' };
+    var pills = { passed:['pg','Passed'], needs_attention:['py','Needs attention'], not_evidenced:['pr','Not evidenced'] };
+    html += '<div style="padding:4px 20px 14px">';
+    intel.findings.forEach(function(fd){
+      var p = pills[fd.status] || ['pmu','Not checked'];
+      html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--b)">'
+        + '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+escH(fd.finding)+'</div>'
+        + '<div style="font-size:11px;color:var(--mu);margin-top:2px">'+escH(fd.evidence)+'</div>'
+        + '<div style="font-size:10px;color:var(--mu);margin-top:3px;font-style:italic">Source: '+escH(typeLabels[fd.type]||fd.type||'')+'</div></div>'
+        + '<span class="pill '+p[0]+'" style="flex-shrink:0">'+p[1]+'</span></div>';
+    });
+    if (intel.lastChecked) html += '<div style="font-size:10px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Last assessed: '+fmtDate(intel.lastChecked)+(intel.source==='sendwize_curated' ? ' \u00b7 Sendwize curated data' : ' \u00b7 Automated assessment')+'</div>';
+    html += '</div>';
+  }
+  return html + '</div>';
+}
+
