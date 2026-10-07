@@ -58,8 +58,9 @@ const META_NAME     = 'sendwize-verification';
 const DNS_PREFIX    = 'sendwize-verification=';
 const FILE_PATH     = '/.well-known/sendwize-verification.txt';
 
-// Fix types this tool emits. The six marked NEW need exposure ranges
-// adding to EXPOSURE_CONSTANTS in fixes.js / generate-fix.js.
+// Fix types this tool emits. The six marked NEW are mapped by
+// generate-fix.js v7.4 onto existing ICO ranges (consent_missing /
+// data_quality). Give them their own ranges later if you want.
 export const SITE_FIX_MAP = {
   cookies_trackers_before_consent: 'cookie_trackers_before_consent', // NEW
   cookies_no_consent_banner:       'cookie_banner_missing',          // NEW
