@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Site Sweep — Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
+  --bg:#F7F6F3;--w:#fff;--b:#ece9e3;--bm:#ddd9d0;
+  --t:#0f0f0d;--tm:#4a4740;--mu:#9a9690;
+  --r:#dc2626;--rb:#fef2f2;--g:#16a34a;--gb:#f0fdf4;--y:#ca8a04;--yb:#fefce8;
+  --blue:#1d4ed8;--blueb:#eff6ff;
+  --rad:10px;--rad-lg:16px;--sh:0 1px 4px rgba(0,0,0,.07);--sh-lg:0 8px 32px rgba(0,0,0,.10);
+}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6}
+.sw-ph-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.sw-ph-header a{text-decoration:none}.sw-ph-logo{height:28px;display:block}
+.sw-ph-nav{display:flex;align-items:center;gap:22px}.sw-ph-nav a{color:var(--tm);font-size:14px;font-weight:500}.sw-ph-nav a:hover{color:var(--t)}
+.sw-ph-footer{border-top:1px solid var(--b);padding:20px 24px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.sw-ph-footer-logo{height:20px;display:block;opacity:.7}
+.sw-ph-footer-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}.sw-ph-footer-links a{color:var(--mu);text-decoration:none}
+.page{max-width:820px;margin:0 auto;padding:40px 20px 80px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:340px}.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+.ld{padding:60px 24px;text-align:center;color:var(--mu)}.spin{width:24px;height:24px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 12px}@keyframes sp{to{transform:rotate(360deg)}}
+.btn{padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn-o{background:var(--o);color:#fff}.btn-o:hover{background:var(--od)}
+.btn-w{background:var(--w);color:var(--t);border:1px solid var(--bm)}.btn-w:hover{border-color:var(--o);color:var(--o)}
+.btn-sm{padding:7px 14px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
+.link{background:none;border:none;color:var(--o);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.view{animation:fadeUp .25s ease}
+.head{margin-bottom:22px}.head h1{font-size:26px;font-weight:700;letter-spacing:-.5px}.head p{font-size:14px;color:var(--mu);margin-top:2px}
+.card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:24px;margin-bottom:14px;box-shadow:var(--sh)}
+.card-t{font-size:15px;font-weight:700;margin-bottom:3px}.card-s{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:14px}
+.hero{border-left:3px solid var(--o)}
+.fg{display:flex;gap:10px;flex-wrap:wrap}
+.fg input{flex:1;min-width:220px;font-family:inherit;font-size:15px;padding:11px 14px;border:1px solid var(--bm);border-radius:8px;background:#faf9f7;outline:none}
+.fg input:focus{border-color:var(--o);background:var(--w)}
+.hint{font-size:12px;color:var(--mu);margin-top:8px}
+.checks{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px}
+.chk{background:var(--bg);border-radius:8px;padding:12px 14px}.chk b{display:block;font-size:13px}.chk span{font-size:12px;color:var(--tm)}
+.methods{display:flex;flex-direction:column;gap:10px}
+.method{border:1px solid var(--b);border-radius:var(--rad);padding:16px 18px}
+.method-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}.method-h b{font-size:14px}
+.tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--gb);color:var(--g);text-transform:uppercase;letter-spacing:.04em}
+.method p{font-size:12px;color:var(--tm);margin-bottom:8px}
+.code{display:flex;align-items:center;gap:8px;background:#faf9f7;border:1px solid var(--b);border-radius:7px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:12px;overflow-x:auto}
+.code span{flex:1;white-space:nowrap}
+.code button{flex-shrink:0;font-family:inherit;font-size:11px;font-weight:600;background:var(--w);border:1px solid var(--bm);border-radius:5px;padding:3px 9px;cursor:pointer}
+.fail{background:var(--yb);border-radius:8px;padding:12px 14px;font-size:12px;color:#854d0e;margin-top:12px;line-height:1.6}
+.score-wrap{display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+.score{font-size:56px;font-weight:700;letter-spacing:-2px;line-height:1}.score small{font-size:18px;color:var(--mu);font-weight:500;letter-spacing:0}
+.score-meta{font-size:13px;color:var(--tm)}
+.bars{flex:1;min-width:260px;display:flex;flex-direction:column;gap:10px}
+.bar-row{font-size:12px}.bar-top{display:flex;justify-content:space-between;margin-bottom:3px}.bar-top b{font-weight:600}
+.bar{height:6px;background:var(--b);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;border-radius:3px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px}
+.c-high{background:var(--rb);color:var(--r)}.c-medium{background:var(--yb);color:var(--y)}.c-low{background:#f3f4f6;color:#6b7280}.c-ok{background:var(--gb);color:var(--g)}
+.changes{background:var(--blueb);border-radius:var(--rad);padding:14px 18px;font-size:13px;color:#1e3a8a;margin-bottom:14px;line-height:1.6}
+.sec-t{font-size:15px;font-weight:700;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+.cnt{font-size:11px;font-weight:600;background:var(--b);color:var(--mu);padding:1px 7px;border-radius:8px}
+.f{background:var(--w);border:1px solid var(--b);border-left:3px solid var(--bm);border-radius:var(--rad);padding:14px 16px;margin-bottom:8px}
+.f.high{border-left-color:var(--r)}.f.medium{border-left-color:var(--y)}.f.low{border-left-color:var(--mu)}
+.f-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px}
+.f-sev{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 6px;border-radius:4px;background:var(--bg)}
+.f.high .f-sev{color:var(--r)}.f.medium .f-sev{color:var(--y)}.f.low .f-sev{color:var(--mu)}
+.f-reg{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--blueb);color:var(--blue)}
+.f-new{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--od)}
+.f-t{font-size:14px;font-weight:600}
+.f-d{font-size:13px;color:var(--tm);line-height:1.55}
+.f-ex{font-size:12px;font-style:italic;margin-top:5px;padding-left:8px;border-left:2px solid var(--bm)}
+.f-meta{font-size:11px;color:var(--mu);margin-top:5px}
+.list{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:6px 16px}
+.li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--b);font-size:13px}.li:last-child{border-bottom:none}
+.li a{color:var(--o);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muted{color:var(--mu);font-size:12px}
+.note{font-size:12px;color:var(--tm);padding:6px 0}
+.disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px;line-height:1.5}
+@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.checks{grid-template-columns:1fr}.score{font-size:44px}}
+</style>
+</head>
+<body>
+
+<header class="sw-ph-header">
+  <a href="https://new-mvp-v2.webflow.io/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <nav class="sw-ph-nav">
+    <a href="https://new-mvp-v2.webflow.io/">Home</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
+  </nav>
+</header>
+
+<div class="page"><div id="app"><div class="ld"><div class="spin"></div>Loading…</div></div></div>
+
+<footer class="sw-ph-footer">
+  <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
+  <div class="sw-ph-footer-links">
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a>
+  </div>
+</footer>
+<div class="toast" id="toast"></div>
+
+<script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+<script>
+const swFetch=window.swFetch||((u,o)=>fetch(u,o)); // sends the sign-in token (sw-auth.js)
+const API='https://sendwize-backend.vercel.app/api/site-sweep';
+let U=null,S=null,BUSY=false,VERIFY_FAIL=null;
+const $=id=>document.getElementById(id);
+const E=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+let _t;function toast(m,c=''){const t=$('toast');t.textContent=m;t.className='toast on'+(c?' '+c:'');clearTimeout(_t);_t=setTimeout(()=>t.classList.remove('on'),4000);}
+function fDT(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return d;}}
+async function post(action,body){const r=await swFetch(`${API}?action=${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,...body})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;}
+
+async function init(){
+  const p=new URLSearchParams(location.search);U=p.get('userId');
+  if(!U){$('app').innerHTML=`<div class="card view" style="text-align:center;padding:48px 32px"><div class="card-t" style="font-size:20px">Site Sweep</div><p class="card-s" style="margin:8px auto 20px;max-width:420px">A one-off review of your whole website for the gaps regulators look for first: cookies, privacy notice, sign-up consent and business details.</p><a class="btn btn-o" href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Go to Dashboard →</a></div>`;return;}
+  try{
+    const want=p.get('domain');
+    const r=await swFetch(`${API}?action=get&userId=${encodeURIComponent(U)}${want?'&domain='+encodeURIComponent(want):''}`);
+    const j=await r.json();
+    S=want?j.sweep:(j.sweeps||[])[0]||null;
+  }catch(e){S=null;}
+  render();
+}
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+
+function render(){
+  if(BUSY==='run')return renderRunning();
+  if(!S)return renderSetup();
+  if(!S.verified)return renderVerify();
+  if(!S.sweep)return renderReady();
+  renderResults();
+}
+
+const CHECKS=`<div class="checks">
+ <div class="chk"><b>Cookies &amp; tracking</b><span>Does tracking start before consent? Is there a real reject option?</span></div>
+ <div class="chk"><b>Privacy notice</b><span>Can people find it, and does it cover what the law requires?</span></div>
+ <div class="chk"><b>Data capture</b><span>Pre-ticked boxes and missing privacy links on sign-up forms.</span></div>
+ <div class="chk"><b>Business identity</b><span>Company number, registered office and a geographic address.</span></div></div>`;
+
+function renderSetup(){
+  $('app').innerHTML=`<div class="view"><div class="head"><h1>Site Sweep</h1><p>One review of your whole website. Major gaps go straight to your dashboard.</p></div>
+  <div class="card hero"><div class="card-t">Which website should we review?</div><div class="card-s">We'll ask you to confirm you own it first, so reports only ever describe your own site.</div>
+  <div class="fg"><input id="dom" placeholder="yourbrand.co.uk" autocomplete="off" onkeydown="if(event.key==='Enter')start()"><button class="btn btn-o" id="bStart" onclick="start()">Continue →</button></div></div>
+  <div class="card"><div class="card-t">What the sweep checks</div>${CHECKS}<p class="hint">Offer and pricing claims are checked per campaign in Campaign Defence, so nothing is checked twice.</p></div></div>`;
+  setTimeout(()=>$('dom')?.focus(),50);
+}
+
+async function start(){
+  const v=$('dom').value.trim();if(!v){toast('Enter your website','er');return;}
+  const b=$('bStart');b.disabled=true;b.textContent='Setting up…';
+  try{S=await post('start',{domain:v});VERIFY_FAIL=null;render();}
+  catch(e){toast(e.message,'er');b.disabled=false;b.textContent='Continue →';}
+}
+
+function codeRow(text){return`<div class="code"><span>${E(text)}</span><button onclick="copyText(this,'${encodeURIComponent(text)}')">Copy</button></div>`;}
+function copyText(btn,enc){navigator.clipboard?.writeText(decodeURIComponent(enc)).then(()=>{btn.textContent='Copied';setTimeout(()=>btn.textContent='Copy',1500);}).catch(()=>toast('Copy failed — select the text instead','er'));}
+
+function renderVerify(){
+  const v=S.verification||{};
+  $('app').innerHTML=`<div class="view"><div class="head"><h1>Confirm you own ${E(S.domain)}</h1><p>Use any one of these. It takes a couple of minutes and you only do it once.</p></div>
+  <div class="card"><div class="methods">
+   <div class="method"><div class="method-h"><b>Add a meta tag</b><span class="tag">Easiest</span></div><p>Paste this into the &lt;head&gt; of your homepage. In Webflow: Site settings → Custom code → Head code. In Shopify: theme.liquid. Then publish.</p>${codeRow(v.meta?.tag||'')}</div>
+   <div class="method"><div class="method-h"><b>Add a DNS record</b></div><p>Ask whoever manages your domain to add a TXT record on <b>${E(v.dns?.host||S.domain)}</b> with this value. It can take up to an hour to appear.</p>${codeRow(v.dns?.value||'')}</div>
+   <div class="method"><div class="method-h"><b>Upload a file</b></div><p>Create a file at <b>${E(v.file?.url||'')}</b> containing only this code.</p>${codeRow(v.file?.contents||'')}</div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap"><button class="btn btn-o" id="bVer" onclick="verify()">Check verification</button><button class="link" onclick="S=null;render()">Use a different domain</button></div>
+  ${VERIFY_FAIL?`<div class="fail"><b>Not verified yet.</b><br>Meta tag: ${E(VERIFY_FAIL.meta)}<br>File: ${E(VERIFY_FAIL.file)}<br>DNS: ${E(VERIFY_FAIL.dns)}</div>`:''}
+  </div></div>`;
+}
+
+async function verify(){
+  const b=$('bVer');b.disabled=true;b.textContent='Checking…';
+  try{const j=await post('verify',{domain:S.domain});
+    if(j.verified){S=j;VERIFY_FAIL=null;toast('Domain verified','ok');}else{VERIFY_FAIL=j.checks||{};}
+    render();
+  }catch(e){toast(e.message,'er');b.disabled=false;b.textContent='Check verification';}
+}
+
+function renderReady(){
+  $('app').innerHTML=`<div class="view"><div class="head"><h1>Site Sweep</h1><p>${E(S.domain)} · verified</p></div>
+  <div class="card hero"><div class="card-t">Ready to review ${E(S.domain)}</div><div class="card-s">We'll read your homepage and key pages (privacy, cookies, terms, sign-up, contact) and load your homepage the way a first-time visitor would. It takes about a minute.</div>
+  <button class="btn btn-o" onclick="run()">Run site sweep →</button></div>
+  <div class="card"><div class="card-t">What the sweep checks</div>${CHECKS}</div></div>`;
+}
+
+function renderRunning(){
+  $('app').innerHTML=`<div class="card view" style="text-align:center;padding:56px 32px"><div class="spin"></div><div class="card-t">Reviewing ${E(S?.domain||'your site')}</div><p class="card-s" style="margin:6px auto 0;max-width:420px">Reading your key pages and checking what loads before anyone accepts cookies. Keep this page open — it takes about a minute.</p></div>`;
+}
+
+async function run(){
+  if(BUSY)return;BUSY='run';render();
+  try{S=await post('run',{domain:S.domain});const n=S.sweep?.fixesAdded||0;toast(n?`${n} issue${n!==1?'s':''} added to your dashboard`:'Sweep complete','ok');}
+  catch(e){toast(e.message,'er');}
+  finally{BUSY=false;render();}
+}
+
+const CATS=[['cookies','Cookies & tracking'],['privacy','Privacy notice'],['capture','Data capture'],['identity','Business identity'],['reviews','Reviews']];
+const RANK={high:0,medium:1,low:2};
+function renderResults(){
+  const w=S.sweep,t=w.totals||{},ch=w.changes||{},newSet=new Set(ch.newKeys||[]);
+  const col=s=>s>=75?'var(--g)':s>=50?'var(--y)':'var(--r)';
+  const bars=(w.breakdown||[]).map(b=>`<div class="bar-row"><div class="bar-top"><b>${E(b.label)}</b><span>${b.score}/${b.max} · ${E(b.status)}${b.note?` <span class="muted">(${E(b.note)})</span>`:''}</span></div><div class="bar"><i style="width:${Math.round(100*b.score/b.max)}%;background:${col(100*b.score/b.max)}"></i></div></div>`).join('');
+  const changes=ch.isFirstRun||ch.isFirstRun===undefined?'':`<div class="changes"><b>Updated report.</b> Compared with ${fDT(ch.previousSweptAt)}: ${ch.newKeys.length} new issue${ch.newKeys.length!==1?'s':''}, ${ch.resolved.length} resolved.${ch.resolved.length?' Resolved: '+ch.resolved.map(r=>E(r.title)).join('; ')+'.':''} Issues already on your dashboard were not added again.</div>`;
+  const groups=CATS.map(([id,label])=>{
+    const fs=(w.findings||[]).filter(f=>f.category===id).sort((a,b)=>RANK[a.severity]-RANK[b.severity]);
+    if(!fs.length)return'';
+    return`<div class="sec-t">${label} <span class="cnt">${fs.length}</span></div>`+fs.map(f=>`<div class="f ${E(f.severity)}"><div class="f-top"><span class="f-sev">${E(f.severity)}</span>${f.regulator?`<span class="f-reg">${E(f.regulator)}</span>`:''}${newSet.has(f.key)?'<span class="f-new">New</span>':''}<span class="f-t">${E(f.title)}</span></div><div class="f-d">${E(f.detail)}</div>${f.excerpt?`<div class="f-ex">"${E(f.excerpt)}"</div>`:''}<div class="f-meta">${[f.ruleRef,f.page?'Page: '+f.page:'',f.confidence==='low'?'Low confidence — not added to dashboard':''].filter(Boolean).map(E).join(' · ')}</div></div>`).join('');
+  }).join('');
+  const pages=(w.pages||[]).map(p=>`<div class="li"><a href="${E(p.url)}" target="_blank" rel="noopener">${E(p.url)}</a><span class="muted">${E(p.role)}${p.ok?'':' · could not load'}</span></div>`).join('');
+  const third=(w.thirdParties||[]).length?`<div class="sec-t">Third parties detected <span class="cnt">${w.thirdParties.length}</span></div><div class="list">${w.thirdParties.map(n=>`<div class="li"><span>${E(n)}</span><a href="vendor-checker.html?userId=${encodeURIComponent(U)}">Add to Vendor Register →</a></div>`).join('')}</div>`:'';
+  const notes=(w.notes||[]).length?`<div class="sec-t">Notes</div><div class="list">${w.notes.map(n=>`<div class="note">${E(n)}</div>`).join('')}</div>`:'';
+
+  $('app').innerHTML=`<div class="view"><div class="head"><h1>Site Sweep</h1><p>${E(S.domain)} · reviewed ${fDT(w.completedAt)}</p></div>
+  ${changes}
+  <div class="card"><div class="score-wrap"><div><div class="score" style="color:${col(w.score)}">${w.score}<small>/100</small></div><div class="score-meta">Site score</div></div><div class="bars">${bars}</div></div>
+  <div class="chips">${t.high?`<span class="chip c-high">${t.high} high</span>`:''}${t.medium?`<span class="chip c-medium">${t.medium} medium</span>`:''}${t.low?`<span class="chip c-low">${t.low} low</span>`:''}${!t.findings?'<span class="chip c-ok">No potential areas requiring review identified</span>':''}</div>
+  <p class="hint">High and medium issues are on your dashboard as fixes${w.fixesAdded?` (${w.fixesAdded} added this run)`:''}.</p></div>
+  ${groups||'<div class="card"><div class="card-t">No potential areas requiring review identified</div><div class="card-s" style="margin:0">Based on the pages reviewed and the checks listed below.</div></div>'}
+  ${third}${notes}
+  <div class="sec-t">Pages reviewed <span class="cnt">${(w.pages||[]).length}</span></div><div class="list">${pages}</div>
+  <div style="display:flex;gap:14px;align-items:center;margin-top:22px;flex-wrap:wrap"><button class="btn btn-w btn-sm" onclick="run()">Run again</button><span class="muted">Re-running updates this report. Issues already on your dashboard are never added twice.</span></div>
+  <p class="disc">Evidence-based assessment of the pages reviewed, not legal advice. The sweep covers site-wide practices; offer and pricing claims are checked per campaign in Campaign Defence.</p></div>`;
+}
+</script>
+</body>
+</html>
