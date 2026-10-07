@@ -1,5 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-recommendations.js v1.1
+// SENDWIZE — list-recommendations.js v1.2
+// v1.2 (security): request authenticated via _auth.js; the verified member
+//   id replaces any userId from the browser.
 // GET /api/list-recommendations?userId=x
 //
 // Returns decayed List_Opportunities for dashboard headline number 3.
@@ -20,6 +22,7 @@
 //     behaviour, just routed through atFetch now.
 // ─────────────────────────────────────────────────────────────
 import { atFetch } from './_airtable.js';
+import { requireAuth, CORS_HEADERS } from './_auth.js';
 
 const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -64,9 +67,12 @@ async function atPatch(table, id, fields) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+  // Identity: the verified member id replaces any userId sent by the browser
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
 
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
