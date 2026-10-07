@@ -2,7 +2,8 @@
 // SENDWIZE — generate-fix.js v7.4
 // v7.4 (security): every request authenticated via _auth.js. Other
 //   Sendwize endpoints call this with the internal secret; a signed-in
-//   member can only create fixes for themselves.
+//   member can only create fixes for themselves. Site Sweep fix types
+//   (cookies, privacy notice) mapped onto existing ICO exposure ranges.
 //
 // v7.3 changes from v6.5:
 //   + Five new canonical fix types for ASA/CAP/CMA relationship
@@ -52,6 +53,13 @@ const LEGACY_TYPE_MAP = {
   affiliate_misleading_claims:        'affiliate_misleading_claims',
   affiliate_ad_disclosure:            'affiliate_ad_disclosure',
   lead_gen_consent_gap:               'lead_gen_consent_gap',
+  // v7.4 — Site Sweep fix types, mapped onto existing exposure ranges
+  cookie_trackers_before_consent:     'consent_missing',
+  cookie_banner_missing:              'consent_missing',
+  cookie_reject_missing:              'consent_missing',
+  cookie_policy_missing:              'data_quality',
+  privacy_notice_incomplete:          'data_quality',
+  privacy_notice_at_capture:          'data_quality',
 };
 
 const EXPOSURE_CONSTANTS = {
