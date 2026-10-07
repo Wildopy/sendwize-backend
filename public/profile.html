@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Profile Settings — Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -173,7 +175,7 @@ function estimateCpl(){
 async function loadProfile(){
   if(!userId){document.getElementById('loadingState').innerHTML='<div class="ld">No user ID found. <a href="https://new-mvp-v2.webflow.io/" style="color:var(--o)">Go to dashboard</a></div>';return;}
   try{
-    var r=await fetch(AU+'/api/profile?action=get&userId='+userId);
+    var r=await swFetch(AU+'/api/profile?action=get&userId='+userId);
     if(!r.ok)throw r;
     var p=await r.json();
     if(p.sector)document.getElementById('sector').value=p.sector;
@@ -207,7 +209,7 @@ async function saveProfile(){
     var body={userId:userId,sector:sector};
     if(cplVal)body.cpl=cplVal;
     if(selRevBand)body.revenueBand=selRevBand;
-    var r=await fetch(AU+'/api/profile?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var r=await swFetch(AU+'/api/profile?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok)throw r;
     msg.textContent='\u2713 Settings saved';
     msg.style.color='var(--g)';
