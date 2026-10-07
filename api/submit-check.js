@@ -1,5 +1,22 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v5.1
+// SENDWIZE — submit-check.js v5.3
+// v5.3 changes (security):
+//   + Every request authenticated via _auth.js; the verified member id
+//     replaces any userId sent by the browser. Internal calls carry the
+//     internal secret. CORS allows the Authorization header.
+//
+// v5.2 changes:
+//   + Page scan: defence-scan-pages scans every connected URL for
+//     compliance signals (pricing, urgency, fees, terms, consent
+//     boxes, ad disclosure) and checks each page against the
+//     campaign's extracted claims. Logic lives in _page-scan.js.
+//     Results stored in PageScanJson / PageScanStatus / PageScanAt.
+//   + defence-approve: page scan included in approval hash, response
+//     pack evidence and the fix pipeline (feeds £ exposure)
+//   + defence-approve now saves the letter (LetterJson) so the
+//     Letter/Clearance tab survives a reload
+//   + dossier-get returns page scan fields + letter
+//
 // v5.1 changes:
 //   + Campaign Defence: defence-assemble, defence-approve,
 //     defence-add-event endpoints added (clearly marked below)
@@ -30,6 +47,8 @@
 // v4.29: Dossier re-verification (stickiness). LastVerified stamp.
 // ─────────────────────────────────────────────────────────────
 import { atFetch } from './_airtable.js';
+import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
+import { scanCampaignPages, serialiseScan, describeScan, activePageFindings } from './_page-scan.js';
 
 const APP_URL      = 'https://sendwize-backend.vercel.app';
 const REVERIFY_DAYS = 90;
@@ -443,6 +462,19 @@ const CLAIM_FIX_MAP = {
   environmental_claim:{ fixType: 'misleading_claim',           severity: 'medium' },
 };
 
+// ── v5.2: Page-scan finding → fix mapping (feeds dashboard £ exposure) ──
+// Low-severity and low-confidence findings are shown but never emitted as fixes.
+const PAGE_FINDING_FIX_MAP = {
+// Site-wide issues (cookies, privacy notice, sign-up consent) are emitted by site-sweep.js only.
+  claim_conflict:         { fixType: 'misleading_claim',           severity: 'high' },
+  drip_pricing:           { fixType: 'misleading_pricing',         severity: 'high' },
+  reference_pricing:      { fixType: 'misleading_reference_price', severity: 'medium' },
+  urgency:                { fixType: 'fake_urgency',               severity: 'medium' },
+  stock_urgency:          { fixType: 'fake_urgency',               severity: 'medium' },
+  ad_disclosure:          { fixType: 'misleading_claim',           severity: 'medium' },
+  ai_finding:             { fixType: 'misleading_claim',           severity: 'medium' },
+};
+
 // ── Channel evidence requirements ─────────────────────────────
 const CHANNEL_EVIDENCE = {
   email:       { needsConsent: true,  needsSuppression: true,  needsSender: true  },
@@ -666,7 +698,7 @@ async function handleDefenceAssemble(req, res) {
   if (campaignCopy?.trim()) {
     try {
       const checkRes = await fetch(`${APP_URL}/api/submit-check?action=check`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: internalHeaders(),
         body: JSON.stringify({ userId, copy: campaignCopy, source: 'Campaign Defence' }),
       });
       if (checkRes.ok) { aiCheckResult = await checkRes.json(); aiCheckId = aiCheckResult.checkId || null; }
@@ -773,13 +805,87 @@ async function handleDefenceAssemble(req, res) {
     await atFetch(`${base}/Campaign_Dossiers/${recordId}`, { method: 'PATCH', headers: authH, body: JSON.stringify({ fields: patchFields }) });
   } catch (e) { return res.status(500).json({ error: 'Failed to save defence record', detail: e.message }); }
 
-  fetch(`${APP_URL}/api/profile?action=streak`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) }).catch(() => {});
+  fetch(`${APP_URL}/api/profile?action=streak`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId }) }).catch(() => {});
 
   return res.json({
     success: true, dossierId: recordId, defenceStatus: 'building',
     claimsExtracted: claims.length, channels: selectedChannels, evidenceRequirements: evidenceReqs,
     aiCheckResult: aiCheckResult ? { issueCount: aiCheckResult.issues?.length || 0, score: aiCheckResult.score || null } : null,
     listSummary, linkedRelationships: linkedRelationships.length, connectedUrls: urls.length, evidenceHash, events,
+  });
+}
+
+// ── DEFENCE-SCAN-PAGES (v5.2) ─────────────────────────────────
+// Scans every connected URL and checks it against the campaign's claims.
+// Called by the frontend straight after assembly (kept separate so
+// assembly stays fast) and from the "Re-scan pages" button.
+async function handleDefenceScanPages(req, res) {
+  const { userId, dossierId } = req.body ?? {};
+  if (!userId || !dossierId) return res.status(400).json({ error: 'Missing userId or dossierId' });
+
+  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+  const BASE_ID = process.env.BASE_ID;
+  const base = `https://api.airtable.com/v0/${BASE_ID}`;
+  const authH = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
+  const now = new Date().toISOString();
+
+  const dr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+  if (!dr.ok) return res.status(404).json({ error: 'Defence record not found' });
+  const record = await dr.json();
+  if (record.fields?.UserID !== userId) return res.status(403).json({ error: 'Not authorised' });
+  const f = record.fields;
+
+  let connectedUrls = []; try { connectedUrls = JSON.parse(f.ConnectedUrls || '[]'); } catch {}
+  let claims = []; try { claims = JSON.parse(f.ClaimsExtracted || '[]'); } catch {}
+  const entries = connectedUrls
+    .map(u => (typeof u === 'string' ? { url: u, type: 'landing_page' } : u))
+    .filter(u => u?.url?.startsWith('http'));
+
+  if (!entries.length) {
+    atFetch(`${base}/Campaign_Dossiers/${dossierId}`, { method: 'PATCH', headers: authH, body: JSON.stringify({ fields: { PageScanStatus: 'none', UpdatedAt: now } }) }).catch(() => {});
+    return res.json({ success: true, dossierId, pageScanStatus: 'none', totals: null, message: 'No connected URLs to scan' });
+  }
+
+  let scan;
+  try {
+    scan = await scanCampaignPages(entries, { campaignCopy: f.CampaignCopySnapshot || '', claims });
+  } catch (e) {
+    console.error('Page scan failed:', e);
+    return res.status(500).json({ error: 'Page scan failed', detail: e.message });
+  }
+
+  const t = scan.totals;
+  const currentStatus = f.DefenceStatus || 'building';
+  const isRescan = !!f.PageScanJson;
+  let events = []; try { events = JSON.parse(f.CampaignEventsJson || '[]'); } catch {}
+  events.push({
+    type: 'page_scan_completed', date: now,
+    title: isRescan ? 'Pages re-scanned' : 'Pages scanned',
+    detail: describeScan(scan),
+    severity: t.high ? 'warning' : 'info',
+  });
+
+  const patchFields = {
+    PageScanJson: serialiseScan(scan),
+    PageScanStatus: scan.status,
+    PageScanAt: now,
+    CampaignEventsJson: JSON.stringify(events),
+    UpdatedAt: now,
+  };
+  // After approval, a high-severity page finding moves the defence into alert
+  if (['approved', 'live'].includes(currentStatus) && t.high > 0) patchFields.DefenceStatus = 'alert';
+
+  const pr = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, { method: 'PATCH', headers: authH, body: JSON.stringify({ fields: patchFields }) });
+  if (!pr.ok) {
+    const detail = await pr.text().catch(() => '');
+    return res.status(pr.status).json({ error: 'Failed to save page scan (check PageScanJson, PageScanStatus, PageScanAt fields exist in Campaign_Dossiers)', detail });
+  }
+
+  return res.json({
+    success: true, dossierId,
+    pageScanStatus: scan.status, totals: t,
+    defenceStatus: patchFields.DefenceStatus || currentStatus,
+    summary: describeScan(scan),
   });
 }
 
@@ -827,6 +933,10 @@ async function handleDefenceApprove(req, res) {
   // Letter
   const letter = await generateLetter(moduleFields, evidenceStrength, f.CampaignTitle || '', f.OwnerName || approvedBy || '', dossierId, healthScore);
 
+  // v5.2 — Page scan (frozen into the approval)
+  let pageScan = null; try { pageScan = JSON.parse(f.PageScanJson || 'null'); } catch {}
+  const pageFindings = activePageFindings(pageScan);
+
   // Response pack
   let claims = []; try { claims = JSON.parse(f.ClaimsExtracted || '[]'); } catch {}
   let listSummary = null; try { listSummary = JSON.parse(f.ListSummarySnapshot || 'null'); } catch {}
@@ -836,17 +946,23 @@ async function handleDefenceApprove(req, res) {
     suppressionApplied: moduleFields.Suppression?.suppressionApplied || '',
     senderVerified: moduleFields.SenderIdentity?.fromName || '',
     claimCount: claims.length, urlsMonitored: allUrlsToSnapshot.length,
+    pageScan: pageScan ? `${describeScan(pageScan)} Scanned ${pageScan.scannedAt}.` : 'Connected pages were not scanned before approval.',
+    pageScanOpenItems: pageFindings.length ? pageFindings.slice(0, 8).map(x => `${x.title} (${x.url})`) : '',
   };
   const responsePack = await generateResponsePack(evidence, claims, f.CampaignTitle || '', f.OwnerName || approvedBy || '');
 
   // Approval hash
-  const approvalHash = await hashEvidence({ aiCheck: aiCheckFrozen, snapshots, moduleFields, evidenceStrength, claims, timestamp: now });
+  const pageScanFingerprint = pageScan ? {
+    scannedAt: pageScan.scannedAt,
+    pages: (pageScan.pages || []).map(p => ({ url: p.url, contentHash: p.contentHash || null, verdict: p.verdict, findings: (p.findings || []).map(x => x.id) })),
+  } : null;
+  const approvalHash = await hashEvidence({ aiCheck: aiCheckFrozen, snapshots, moduleFields, evidenceStrength, claims, pageScan: pageScanFingerprint, timestamp: now });
 
   // Timeline event
   let events = []; try { events = JSON.parse(f.CampaignEventsJson || '[]'); } catch {}
   events.push({
     type: 'defence_approved', date: now, title: 'Defence approved',
-    detail: `Approved by ${approvedBy || f.OwnerName || 'Campaign owner'}. ${snapshots.filter(s => s.status === 'ok').length} URL${snapshots.length !== 1 ? 's' : ''} snapshotted. Evidence strength: ${evidenceStrength}. Hash: ${approvalHash.slice(0, 12)}…`,
+    detail: `Approved by ${approvedBy || f.OwnerName || 'Campaign owner'}. ${snapshots.filter(s => s.status === 'ok').length} URL${snapshots.length !== 1 ? 's' : ''} snapshotted. ${pageScan ? `Page scan: ${pageScan.totals?.pages || 0} pages, ${pageScan.totals?.findings || 0} potential areas requiring review.` : 'Pages not scanned.'} Evidence strength: ${evidenceStrength}. Hash: ${approvalHash.slice(0, 12)}…`,
     severity: 'info',
   });
 
@@ -862,6 +978,7 @@ async function handleDefenceApprove(req, res) {
     RefPriceAlertStage: '', ComplianceAlertsJson: f.ComplianceAlertsJson || '[]',
     ResponsePackJson: responsePack ? JSON.stringify(responsePack) : '',
     ApprovalHash: approvalHash,
+    LetterJson: letter ? JSON.stringify(letter) : '',
   };
 
   try {
@@ -873,7 +990,7 @@ async function handleDefenceApprove(req, res) {
     const mapping = CLAIM_FIX_MAP[claim.claimType];
     if (mapping) {
       fetch(`${APP_URL}/api/generate-fix`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: internalHeaders(),
         body: JSON.stringify({
           userId, fixType: mapping.fixType,
           description: `Campaign Defence: "${(claim.claim || '').slice(0, 120)}" — ${claim.ruleRef || 'evidence required'}`,
@@ -883,7 +1000,21 @@ async function handleDefenceApprove(req, res) {
     }
   }
 
-  fetch(`${APP_URL}/api/profile?action=streak`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) }).catch(() => {});
+  // v5.2 — Emit fixes from page-scan findings (medium/high, not low-confidence)
+  for (const pf of pageFindings) {
+    const mapping = PAGE_FINDING_FIX_MAP[pf.category];
+    if (!mapping || pf.severity === 'low' || pf.confidence === 'low') continue;
+    fetch(`${APP_URL}/api/generate-fix`, {
+      method: 'POST', headers: internalHeaders(),
+      body: JSON.stringify({
+        userId, fixType: mapping.fixType,
+        description: `Campaign Defence page scan: ${pf.title} — ${pf.url}`.slice(0, 250),
+        tool: 'Campaign Defence', severity: mapping.severity, sourceRecordId: dossierId,
+      }),
+    }).catch(e => console.error('Page fix generation non-fatal:', e));
+  }
+
+  fetch(`${APP_URL}/api/profile?action=streak`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId }) }).catch(() => {});
 
   return res.json({
     success: true, dossierId, defenceStatus: 'approved',
@@ -981,7 +1112,7 @@ async function handleDossierCreate(req, res) {
   const record    = (await r.json()).records?.[0];
   const dossierId = record?.id;
   fetch(`${APP_URL}/api/profile?action=streak`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
+    method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId })
   }).catch(() => {});
   return res.json({ success: true, dossierId, campaignTitle, status: 'Draft' });
 }
@@ -1120,6 +1251,8 @@ async function handleDossierGet(req, res) {
   try { moduleFields = JSON.parse(f.ModuleFieldsJson || '{}'); } catch {}
   let responsePack = null;
   try { responsePack = JSON.parse(f.ResponsePackJson || 'null'); } catch {}
+  let letter = null;
+  try { letter = JSON.parse(f.LetterJson || 'null'); } catch {}
   return res.json({
     dossierId: record.id, recordId: record.id,
     CampaignTitle: f.CampaignTitle || '', OwnerName: f.OwnerName || '',
@@ -1158,6 +1291,11 @@ async function handleDossierGet(req, res) {
     Channels: f.Channels || '["email"]',
     EvidenceHash: f.EvidenceHash || '',
     ApprovalHash: f.ApprovalHash || '',
+    // v5.2 — Page scan + letter
+    PageScanJson: f.PageScanJson || '',
+    PageScanStatus: f.PageScanStatus || '',
+    PageScanAt: f.PageScanAt || '',
+    letter,
     moduleFields,
     responsePack,
   });
@@ -1216,7 +1354,7 @@ async function handleDossierSubmit(req, res) {
     const finalSeverity = refineSeverity(mapping.fixType, emailVolume) || mapping.severity;
     try {
       const fixRes = await fetch(`${APP_URL}/api/generate-fix`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: internalHeaders(),
         body: JSON.stringify({ userId, fixType: mapping.fixType, description: mapping.description, tool: 'Campaign Dossier', severity: finalSeverity, volume: null, sourceRecordId: actualRecordId }),
       });
       const fixData = await fixRes.json();
@@ -1248,7 +1386,7 @@ async function handleDossierSubmit(req, res) {
     });
   } catch(e) { console.error('Dossier status update failed (non-fatal):', e); }
   fetch(`${APP_URL}/api/profile?action=streak`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
+    method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId })
   }).catch(() => {});
   return res.json({
     success: true, dossierId: actualRecordId,
@@ -1306,7 +1444,7 @@ async function handleBriefCheck(req, res) {
     const finalSeverity = refineSeverity(issue.fixType, emailVolume) || (issue.severity === 'red' ? 'high' : 'medium');
     try {
       const fr = await fetch(`${APP_URL}/api/generate-fix`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: internalHeaders(),
         body: JSON.stringify({ userId, fixType: issue.fixType, description: `Brief Checker: ${issue.issue}. ${issue.description || ''}`.trim(), tool: 'Campaign Brief Checker', severity: finalSeverity, volume: null, sourceRecordId: briefCheckId }),
       });
       const fd = await fr.json();
@@ -1321,7 +1459,7 @@ async function handleBriefCheck(req, res) {
     }).catch(() => {});
   }
   fetch(`${APP_URL}/api/profile?action=streak`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId })
+    method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId })
   }).catch(() => {});
   return res.json({ briefCheckId, redCount, amberCount, greenCount, totalExposureEstimate, resultStatus, dossierPrefill: dossierPrefill || null, campaignName: campaignName || '' });
 }
@@ -1330,14 +1468,18 @@ async function handleBriefCheck(req, res) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   const { action } = req.query;
   try {
-    // Campaign Defence (v5.1)
-    if (req.method === 'POST' && action === 'defence-assemble')  return await handleDefenceAssemble(req, res);
-    if (req.method === 'POST' && action === 'defence-approve')   return await handleDefenceApprove(req, res);
-    if (req.method === 'POST' && action === 'defence-add-event') return await handleDefenceAddEvent(req, res);
+    // Identity: the verified member id replaces any userId sent by the browser
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+    // Campaign Defence (v5.1 / v5.2)
+    if (req.method === 'POST' && action === 'defence-assemble')   return await handleDefenceAssemble(req, res);
+    if (req.method === 'POST' && action === 'defence-scan-pages') return await handleDefenceScanPages(req, res);
+    if (req.method === 'POST' && action === 'defence-approve')    return await handleDefenceApprove(req, res);
+    if (req.method === 'POST' && action === 'defence-add-event')  return await handleDefenceAddEvent(req, res);
     // Existing dossier (v4.32)
     if (req.method === 'POST' && action === 'dossier-create') return await handleDossierCreate(req, res);
     if (req.method === 'GET'  && action === 'dossier-list')   return await handleDossierList(req, res);
@@ -1345,7 +1487,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET'  && action === 'dossier-get')    return await handleDossierGet(req, res);
     if (req.method === 'POST' && action === 'dossier-submit') return await handleDossierSubmit(req, res);
     if (req.method === 'POST' && action === 'brief-check')    return await handleBriefCheck(req, res);
-    return res.status(400).json({ error: 'Unknown action. Use ?action=get|complete|dismiss' });
+    return res.status(400).json({ error: 'Unknown action' });
   } catch (error) {
     console.error('submit-check.js error:', error);
     return res.status(500).json({ error: 'Internal server error' });
