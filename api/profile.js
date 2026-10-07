@@ -1,17 +1,23 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — profile.js v6.3
+// SENDWIZE — profile.js v6.4
+// v6.4 (security): every request authenticated via _auth.js; the
+//       verified member id replaces any userId from the browser.
 // v6.3: Added CPL (Number) field — cost per lead/subscriber.
 //       Returned in fmt(), accepted in handleSave().
 //       All other code identical to v6.2.
 // ─────────────────────────────────────────────────────────────
 import { atFetch } from './_airtable.js';
+import { requireAuth, CORS_HEADERS } from './_auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   const { action } = req.query;
+  // Identity: the verified member id replaces any userId sent by the browser
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
   if (req.method === 'GET'  && action === 'get')    return handleGet(req, res);
   if (req.method === 'POST' && action === 'save')   return handleSave(req, res);
   if (req.method === 'POST' && action === 'streak') return handleStreak(req, res);
