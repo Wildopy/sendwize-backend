@@ -102,6 +102,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .cf-tabs{display:flex;border-bottom:2px solid var(--b);margin-bottom:20px;overflow-x:auto}
 .cf-tab{padding:11px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:500;color:var(--mu);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .15s}
 .cf-tab:hover{color:var(--t)}.cf-tab.on{color:var(--t);font-weight:600;border-bottom-color:var(--o)}
+.tab-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--y);margin-left:5px;vertical-align:middle}
 .cf-panel{display:none}.cf-panel.on{display:block}
 
 /* Section */
@@ -129,6 +130,31 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .url-info{flex:1;min-width:0}.url-addr{font-size:13px;font-weight:500;color:var(--o);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
 .url-meta{font-size:11px;color:var(--mu)}
 .url-tag{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--bg);color:var(--mu);flex-shrink:0}
+
+/* Page scan (v11) */
+.ps-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:8px}
+.ps-head-t{font-size:13px;font-weight:600}.ps-head-s{font-size:12px;color:var(--mu)}
+.ps-running{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--ol);border:1px solid var(--om);border-radius:var(--rad);margin-bottom:8px;font-size:13px;color:var(--od);line-height:1.5}
+.ps-running .spin{margin:0;width:18px;height:18px;flex-shrink:0}
+.ps-scope{font-size:11px;color:var(--mu);line-height:1.5;margin:0 0 14px}
+.pg-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:8px;overflow:hidden}
+.pg-head{display:flex;align-items:center;gap:12px;padding:12px 16px}
+.pg-body{padding:0 16px 14px 36px}
+.pg-sum{font-size:12px;color:var(--tm);line-height:1.5;margin-bottom:8px}
+.pf{border-left:3px solid var(--bm);background:var(--bg);border-radius:0 7px 7px 0;padding:10px 12px;margin-bottom:6px}
+.pf-high{border-left-color:var(--r)}.pf-medium{border-left-color:var(--y)}.pf-low{border-left-color:var(--mu)}
+.pf-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px}
+.pf-sev{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 6px;border-radius:4px;background:var(--w);color:var(--tm)}
+.pf-high .pf-sev{color:var(--r)}.pf-medium .pf-sev{color:var(--y)}
+.pf-reg{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--blueb);color:var(--blue)}
+.pf-t{font-size:13px;font-weight:600}
+.pf-d{font-size:12px;color:var(--tm);line-height:1.5}
+.pf-ex{font-size:12px;font-style:italic;color:var(--t);margin-top:4px;padding-left:8px;border-left:2px solid var(--bm)}
+.pf-meta{font-size:10px;color:var(--mu);margin-top:4px}
+.cc{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:6px 0;border-top:1px solid var(--b)}
+.cc-st{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:2px}
+.cc-consistent{background:var(--gb);color:var(--g)}.cc-conflicts{background:var(--rb);color:var(--r)}
+.pg-dis{font-size:11px;color:var(--mu);margin-top:6px}
 
 /* Response pack */
 .rp-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);margin-bottom:10px;overflow:hidden}
@@ -158,7 +184,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .clearance-t{font-size:17px;font-weight:700;color:var(--g)}.clearance-s{font-size:13px;color:var(--tm)}
 
 .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px;line-height:1.5}
-@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.sw-ph-footer{flex-direction:column;align-items:flex-start}.lv-grid{grid-template-columns:1fr}.ch-grid{gap:6px}.url-row{flex-direction:column}.url-row select{width:100%}}
+@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.sw-ph-footer{flex-direction:column;align-items:flex-start}.lv-grid{grid-template-columns:1fr}.ch-grid{gap:6px}.url-row{flex-direction:column}.url-row select{width:100%}.pg-body{padding-left:16px}.pg-head{flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -178,7 +204,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div class="gate-card">
     <div class="gate-logo">sendwize</div>
     <div class="gate-t">Campaign Defence</div>
-    <div class="gate-s">Build your compliance evidence before launch. Monitor it after. Your creative is frozen at approval. The pages it points to and the regulatory landscape it sits in are watched daily. If a landing page changes or an enforcement ruling matches your claims, you know first.</div>
+    <div class="gate-s">Build your compliance evidence before launch. Monitor it after. Your creative is frozen at approval. The pages it points to are scanned against your claims, and they and the regulatory landscape are watched daily. If a landing page changes or an enforcement ruling matches your claims, you know first.</div>
     <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard →</a>
     <a href="?demo=true" style="display:block;margin-top:12px;font-size:13px;color:var(--o);text-decoration:none;font-weight:500">View demo →</a>
   </div>
@@ -188,7 +214,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="lv" id="listView">
   <div class="lv-hero">
     <div class="lv-hero-t">Your compliance evidence. Built before launch. Watched after.</div>
-    <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize links your existing compliance data and freezes the defence at approval. After launch, it monitors the pages your campaign points to — landing pages, offer pages, affiliate pages — and watches for regulatory enforcement that matches your claim types. If a price changes or a ruling drops, you know before a regulator asks.</div>
+    <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize links your existing compliance data, scans every page your campaign points to against your claims, and freezes the defence at approval. After launch, it monitors those pages — landing pages, offer pages, affiliate pages — and watches for regulatory enforcement that matches your claim types. If a price changes or a ruling drops, you know before a regulator asks.</div>
     <a href="#" onclick="event.preventDefault();loadDemo('true')" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--o);font-weight:600;text-decoration:none">See a demo campaign →</a>
   </div>
   <div class="lv-head">
@@ -203,7 +229,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div style="margin-bottom:16px"><button class="btn btn-w btn-sm" onclick="showList()">← Back to campaigns</button></div>
   <div class="av-intro">
     <div class="av-intro-t">Assemble your defence</div>
-    <div class="av-intro-s">Paste your creative, tell us the channels and audience. Sendwize links your AI Scanner check, list clearance, relationship data, and sender profile. Claims are extracted and your evidence is assembled in one step.</div>
+    <div class="av-intro-s">Paste your creative, tell us the channels and audience. Sendwize links your AI Scanner check, list clearance, relationship data, and sender profile. Claims are extracted, connected pages are scanned against them, and your evidence is assembled in one step.</div>
   </div>
 
   <div class="av-card">
@@ -244,7 +270,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <div class="av-card">
     <div class="av-card-t">Connected URLs</div>
-    <div class="av-card-s">Landing pages, offer pages, affiliate pages, terms pages. Each URL is snapshotted at approval and monitored daily after launch. If a price changes or a page goes down, you know immediately.</div>
+    <div class="av-card-s">Landing pages, offer pages, affiliate pages, terms pages. Each page is scanned when you assemble — pricing, urgency, fees, offer terms and ad disclosure — and checked against the claims in your creative. Site-wide issues such as cookies and privacy notices are covered by Site Sweep. Pages are then snapshotted at approval and monitored daily after launch.</div>
     <div class="url-list" id="urlList"></div>
     <button class="add-url" onclick="addUrl()">+ Add URL</button>
   </div>
@@ -281,8 +307,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <div class="toast" id="toast"></div>
 
+<script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
 <script>
-const A='https://sendwize-backend.vercel.app';let U=null,CID=null,D=null;
+const swFetch=window.swFetch||((u,o)=>fetch(u,o)); // sends the sign-in token (sw-auth.js)
+const A='https://sendwize-backend.vercel.app';let U=null,CID=null,D=null,SCAN=false,SCANID=null,CT='evidence';
 const $=id=>document.getElementById(id),E=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 function init(){
@@ -326,7 +354,7 @@ function updBtn(){
   if(!ch.length)missing.push('at least one channel');
   if(copy.length<10)missing.push('your campaign creative');
   b.disabled=missing.length>0;
-  if(h)h.textContent=missing.length?'Add '+missing.join(' and ')+' to continue.':'Ready — hit Assemble to run the compliance check and extract claims.';
+  if(h)h.textContent=missing.length?'Add '+missing.join(' and ')+' to continue.':'Ready — hit Assemble to run the compliance check, extract claims and scan your pages.';
 }
 
 // ── URLs ──
@@ -337,9 +365,9 @@ function getUrls(){return Array.from(document.querySelectorAll('.url-row')).map(
 async function loadList(){
   $('listC').innerHTML='<div class="ld"><div class="spin"></div>Loading…</div>';
   try{
-    const r=await fetch(`${A}/api/submit-check?action=dossier-list&userId=${U}&limit=50`);
+    const r=await swFetch(`${A}/api/submit-check?action=dossier-list&userId=${U}&limit=50`);
     const{dossiers:d}=await r.json();
-    if(!d?.length){$('listC').innerHTML='<div class="empty-lv"><div class="empty-t">No campaigns yet</div><div class="empty-s">Assemble your compliance evidence before launch. Sendwize links your existing checks, freezes the defence at approval, and monitors connected URLs and enforcement after launch.</div><button class="btn btn-o" onclick="showAssembly()">Create your first defence</button></div>';return;}
+    if(!d?.length){$('listC').innerHTML='<div class="empty-lv"><div class="empty-t">No campaigns yet</div><div class="empty-s">Assemble your compliance evidence before launch. Sendwize links your existing checks, scans your pages against your claims, freezes the defence at approval, and monitors connected URLs and enforcement after launch.</div><button class="btn btn-o" onclick="showAssembly()">Create your first defence</button></div>';return;}
     $('listC').innerHTML='<div class="lv-grid">'+d.map(c=>{
       const ds=c.defenceStatus||(c.status==='Submitted'?'approved':'draft');
       let ch=[];try{ch=JSON.parse(c.channels||'[]');}catch{}
@@ -358,24 +386,46 @@ async function assemble(){
   if(!ch.length){toast('Select at least one channel','er');return;}
   const b=$('btnA');b.disabled=true;b.textContent='Assembling…';
   try{
-    const r=await fetch(`${A}/api/submit-check?action=defence-assemble`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,campaignCopy:copy,listName:list,connectedUrls:urls,campaignTitle:title,ownerName:owner,channels:ch})});
+    const r=await swFetch(`${A}/api/submit-check?action=defence-assemble`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,campaignCopy:copy,listName:list,connectedUrls:urls,campaignTitle:title,ownerName:owner,channels:ch})});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();CID=d.dossierId;
     toast(`Defence assembled — ${d.claimsExtracted} claims extracted`,'ok');
+    if(urls.length)runScan(CID); // sets SCAN before the case file renders
     loadCF(CID);
+    b.disabled=false;b.textContent='Assemble defence →';
   }catch(e){toast('Failed — '+e.message,'er');b.disabled=false;b.textContent='Assemble defence →';}
 }
 
+// ── Page scan (v11) ──
+async function runScan(id){
+  if(D?._demo){toast('Page scanning is disabled on the demo campaign');return;}
+  if(!id)return;
+  if(SCAN){toast('A page scan is already running');return;}
+  SCAN=true;SCANID=id;
+  if(D&&D.dossierId===id)renderCF(D);
+  try{
+    const r=await swFetch(`${A}/api/submit-check?action=defence-scan-pages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:id})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+    const t=j.totals;
+    if(!t)toast('No connected URLs to scan');
+    else toast(`${t.pages} page${t.pages!==1?'s':''} scanned — ${t.findings} potential area${t.findings!==1?'s':''} requiring review`,t.findings?'':'ok');
+  }catch(e){toast('Page scan failed — '+e.message,'er');}
+  finally{SCAN=false;SCANID=null;if(CID===id)loadCF(id,true);}
+}
+
 // ── Case File ──
-async function loadCF(id){
-  showCF();$('cfH').innerHTML='<div class="ld"><div class="spin"></div>Loading defence…</div>';$('cfT').innerHTML='';$('cfP').innerHTML='';
-  try{const r=await fetch(`${A}/api/submit-check?action=dossier-get&dossierId=${id}&userId=${U}`);if(!r.ok)throw new Error('HTTP '+r.status);D=await r.json();renderCF(D);}
+async function loadCF(id,keepTab){
+  if(!keepTab)CT='evidence';
+  showCF();
+  if(!keepTab){$('cfH').innerHTML='<div class="ld"><div class="spin"></div>Loading defence…</div>';$('cfT').innerHTML='';$('cfP').innerHTML='';}
+  try{const r=await swFetch(`${A}/api/submit-check?action=dossier-get&dossierId=${id}&userId=${U}`);if(!r.ok)throw new Error('HTTP '+r.status);D=await r.json();renderCF(D);}
   catch(e){$('cfH').innerHTML='<div style="color:var(--r);padding:20px">Failed — '+E(e.message)+'</div>';}
 }
 
 function renderCF(d){
   const ds=d.DefenceStatus||(d.Status==='Submitted'?'approved':'building'),isLive=['approved','live','alert'].includes(ds),isBld=ds==='building'||!d.DefenceStatus;
-  let claims=[],urls=[],snaps=[],events=[],rels=[],lSum=null,aiChk=null,rp=null,ch=[];
+  let claims=[],urls=[],snaps=[],events=[],rels=[],lSum=null,aiChk=null,rp=null,ch=[],ps=null;
   try{claims=JSON.parse(d.ClaimsExtracted||'[]');}catch{}
   try{urls=JSON.parse(d.ConnectedUrls||'[]');}catch{}
   try{snaps=JSON.parse(d.UrlSnapshots||'[]');}catch{}
@@ -384,6 +434,8 @@ function renderCF(d){
   try{lSum=JSON.parse(d.ListSummarySnapshot||'null');}catch{}
   try{aiChk=JSON.parse(d.AICheckResultJson||'null');}catch{}
   try{ch=JSON.parse(d.Channels||'["email"]');}catch{}
+  try{ps=JSON.parse(d.PageScanJson||'null');}catch{}
+  const scanning=SCAN&&!!SCANID&&SCANID===d.dossierId;
   rp=d.responsePack||null;
   let mAlerts=[];try{mAlerts=JSON.parse(d.ComplianceAlertsJson||'[]');}catch{}
   const allEv=[...events,...mAlerts.map(a=>({type:a.type||'alert',date:a.detectedAt||'',title:a.summary||'Alert',detail:a.note||'',severity:'warning'}))].sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -393,7 +445,7 @@ function renderCF(d){
   $('cfH').innerHTML=`<div class="cf-sr"><span class="sb sb-${ds}">${ds}</span>${isLive?`<span class="pulse${mon?'':' off'}"></span><span style="font-size:12px;color:var(--mu)">${mon?'Monitoring active':'Monitoring paused'}</span>`:''}${d.HealthScore?`<span style="font-size:12px;color:var(--mu);margin-left:auto">Health: ${d.HealthScore}/100</span>`:''}</div><div class="cf-title">${E(d.CampaignTitle||'Untitled')}</div><div class="cf-meta">${E(d.OwnerName||'')}${d.ApprovedAt?' · Approved '+fD(d.ApprovedAt):''}${d.LaunchDate?' · Launched '+fD(d.LaunchDate):''}${ch.length?' · '+ch.map(c=>c.replace(/_/g,' ')).join(', '):''}</div>${isLive?`<div class="cf-summary">${bldSum(ds,allEv,urls,snaps,d)}</div>`:''}<div class="cf-actions">${isBld?'<button class="btn btn-g" onclick="approve()">Approve defence →</button>':''}${ds==='approved'?'<button class="btn btn-o btn-sm" onclick="addEv(\'campaign_launched\')">Mark as launched</button>':''}${ds==='live'?'<button class="btn btn-w btn-sm" onclick="addEv(\'campaign_takedown\')">Campaign taken down</button>':''}${isLive?'<button class="btn btn-w btn-sm" onclick="logNote()">Log a change</button>':''}</div>`;
 
   // Tabs
-  const tabs=[{id:'evidence',l:'Evidence'},{id:'claims',l:'Claims ('+claims.length+')'},{id:'urls',l:'URLs ('+(urls.length||snaps.length)+')'},{id:'timeline',l:'Timeline'}];
+  const tabs=[{id:'evidence',l:'Evidence'},{id:'claims',l:'Claims ('+claims.length+')'},{id:'urls',l:'URLs ('+(urls.length||snaps.length)+')'+(ps?.totals?.needsAttention?'<span class="tab-dot"></span>':'')},{id:'timeline',l:'Timeline'}];
   if(rp)tabs.splice(2,0,{id:'response',l:'Response Pack'});
   if(d.CampaignCopySnapshot)tabs.splice(1,0,{id:'copy',l:'Approved Copy'});
   if(d.letter)tabs.push({id:'letter',l:d.letter.type==='clearance'?'Clearance':'Regulator Letter'});
@@ -401,18 +453,24 @@ function renderCF(d){
 
   let P='';
   const needC=ch.some(c=>['email','sms'].includes(c)),needS=ch.includes('email');
-  let mf={};try{mf=JSON.parse(d.ModuleFieldsJson||'{}');}catch{}
+  let mf=d.moduleFields&&Object.keys(d.moduleFields).length?d.moduleFields:{};
+  if(!Object.keys(mf).length){try{mf=JSON.parse(d.ModuleFieldsJson||'{}');}catch{}}
 
   // Evidence panel
   const ev=[];
-  if(aiChk||d.AICheckId){const n=aiChk?.issues?.length||0;ev.push({l:'AI Scanner',d:n?n+' issue'+(n>1?'s':''):'Clear',s:n?'Issues':'Clear',c:n?'ev-warn':'ev-ok',link:d.AICheckId?'ai-checker.html?checkId='+d.AICheckId:null});}else ev.push({l:'AI Scanner',d:'Not yet run',s:'Missing',c:'ev-gap',link:'ai-checker.html'});
+  if(aiChk||d.AICheckId){const n=aiChk?.issues?.length||0;ev.push({l:'AI Scanner',d:n?n+' issue'+(n>1?'s':''):'Clear',s:n?'Issues':'Clear',c:n?'ev-warn':'ev-ok',link:d.AICheckId?'ai-checker.html?checkId='+d.AICheckId:null});}else ev.push({l:'AI Scanner',d:'Not yet run',s:'Not evidenced',c:'ev-gap',link:'ai-checker.html'});
+  if(urls.length||ps){
+    if(scanning)ev.push({l:'Page scan',d:'Scanning connected pages…',s:'Running',c:'ev-na',tab:'urls'});
+    else if(ps){const t=ps.totals||{},n=t.needsAttention||0;ev.push({l:'Page scan',d:t.pages+' page'+(t.pages!==1?'s':'')+' scanned · '+(t.findings||0)+' potential area'+(t.findings!==1?'s':'')+' requiring review'+(t.conflicts?' · '+t.conflicts+' conflict'+(t.conflicts!==1?'s':'')+' with campaign claims':''),s:n?'Needs attention':t.errors?'Partial':'Passed',c:n?'ev-warn':t.errors?'ev-na':'ev-ok',tab:'urls'});}
+    else ev.push({l:'Page scan',d:'Connected pages not yet scanned',s:'Not evidenced',c:'ev-gap',tab:'urls'});
+  }
   if(needC){if(lSum)ev.push({l:'List Intelligence',d:(lSum.totalContacts||0).toLocaleString()+' contacts · '+lSum.gateVerdict,s:lSum.gateVerdict||'—',c:lSum.gateVerdict==='SAFE'?'ev-ok':'ev-warn',link:d.ListCertificateId?'list-intelligence.html?certId='+d.ListCertificateId:null});else ev.push({l:'List Intelligence',d:'No list linked',s:'Not linked',c:'ev-na',link:'list-intelligence.html'});}
-  if(needC){const c=mf.ConsentMechanism||{};ev.push({l:'Consent basis',d:c.lawfulBasis||'Not documented',s:c.consentWording?'Documented':c.lawfulBasis?'Incomplete':'Missing',c:c.consentWording?'ev-ok':c.lawfulBasis?'ev-warn':'ev-gap'});}
-  if(needC){const s=mf.Suppression||{};const ok=s.suppressionApplied?.includes('Yes');ev.push({l:'Suppression',d:ok?'Applied '+fD(s.dateApplied):'Not applied',s:ok?'Applied':'Missing',c:ok?'ev-ok':'ev-gap'});}
-  if(needS){const si=mf.SenderIdentity||{};ev.push({l:'Sender identity',d:si.fromName?(si.fromName+' <'+si.fromEmail+'>'):'Not documented',s:si.matchesTradingName==='Yes'?'Verified':si.fromName?'Review':'Missing',c:si.matchesTradingName==='Yes'?'ev-ok':si.fromName?'ev-warn':'ev-gap'});}
+  if(needC){const c=mf.ConsentMechanism||{};ev.push({l:'Consent basis',d:c.lawfulBasis||'Not documented',s:c.consentWording?'Documented':c.lawfulBasis?'Incomplete':'Not evidenced',c:c.consentWording?'ev-ok':c.lawfulBasis?'ev-warn':'ev-gap'});}
+  if(needC){const s=mf.Suppression||{};const ok=s.suppressionApplied?.includes('Yes');ev.push({l:'Suppression',d:ok?'Applied '+fD(s.dateApplied):'Not applied',s:ok?'Applied':'Not evidenced',c:ok?'ev-ok':'ev-gap'});}
+  if(needS){const si=mf.SenderIdentity||{};ev.push({l:'Sender identity',d:si.fromName?(si.fromName+' <'+si.fromEmail+'>'):'Not documented',s:si.matchesTradingName==='Yes'?'Verified':si.fromName?'Review':'Not evidenced',c:si.matchesTradingName==='Yes'?'ev-ok':si.fromName?'ev-warn':'ev-gap'});}
   for(const r of rels){const ok=r.type==='affiliate'?r.consentVerified:r.article26Confirmed;ev.push({l:(r.type==='affiliate'?'Affiliate':'Partner')+': '+r.name,d:r.type==='affiliate'?(r.consentVerified?'Consent chain verified':'Consent not verified'):(r.article26Confirmed?'Art 26 confirmed':'No Art 26 agreement'),s:ok?'Verified':'Gap',c:ok?'ev-ok':'ev-gap'});}
 
-  P+=`<div class="cf-panel on" id="tab-evidence"><div class="sec"><div class="sec-t">Evidence <span class="cnt">${ev.length}</span></div>${ev.map(e=>`<div class="ev-item"><div class="ev-body"><div class="ev-label">${E(e.l)}${e.link?` <a href="${e.link}" style="font-size:11px;color:var(--o);font-weight:500;text-decoration:none">Open →</a>`:''}</div><div class="ev-detail">${E(e.d)}</div></div><span class="ev-st ${e.c}">${E(e.s)}</span></div>`).join('')}</div>${d.EvidenceHash?`<div style="font-size:11px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Evidence hash: ${d.EvidenceHash.slice(0,16)}…</div>`:''}</div>`;
+  P+=`<div class="cf-panel on" id="tab-evidence"><div class="sec"><div class="sec-t">Evidence <span class="cnt">${ev.length}</span></div>${ev.map(e=>`<div class="ev-item"><div class="ev-body"><div class="ev-label">${E(e.l)}${e.link?` <a href="${e.link}" style="font-size:11px;color:var(--o);font-weight:500;text-decoration:none">Open →</a>`:''}${e.tab?` <a href="#" onclick="event.preventDefault();sTab('${e.tab}')" style="font-size:11px;color:var(--o);font-weight:500;text-decoration:none">View →</a>`:''}</div><div class="ev-detail">${E(e.d)}</div></div><span class="ev-st ${e.c}">${E(e.s)}</span></div>`).join('')}</div>${d.EvidenceHash?`<div style="font-size:11px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Evidence hash: ${d.EvidenceHash.slice(0,16)}…</div>`:''}</div>`;
 
   // Copy
   if(d.CampaignCopySnapshot)P+=`<div class="cf-panel" id="tab-copy"><div class="sec"><div class="sec-t">Approved campaign copy</div><div class="copy-snap"><span class="copy-tag">IMMUTABLE SNAPSHOT${d.ApprovedAt?' · '+fD(d.ApprovedAt):''}</span>${E(d.CampaignCopySnapshot)}</div></div></div>`;
@@ -423,8 +481,16 @@ function renderCF(d){
   // Response pack
   if(rp){const regs=[['ico','ICO — Information Commissioner\'s Office'],['asa','ASA — Advertising Standards Authority'],['cma','CMA — Competition and Markets Authority']].filter(([k])=>rp[k]);P+=`<div class="cf-panel" id="tab-response"><div class="sec"><div class="sec-t">Complaint-Ready Response Pack</div><div class="rp-banner"><strong>Draft responses — not legal advice.</strong> Review with legal counsel before sending to any regulator. Each response cites the specific evidence in your defence file.</div>${regs.map(([k,l])=>`<div class="rp-card" onclick="this.classList.toggle('open')"><div class="rp-head"><span class="rp-reg">${l}</span><span class="rp-toggle">▾</span></div><div class="rp-body">${E(rp[k])}</div></div>`).join('')}</div></div>`;}
 
-  // URLs
-  const au=mergeU(urls,snaps);P+=`<div class="cf-panel" id="tab-urls"><div class="sec"><div class="sec-t">Connected URLs <span class="cnt">${au.length}</span></div>${au.length?au.map(u=>`<div class="url-item"><span class="url-dot ${u.changed?'changed':u.snap?'ok':'pending'}"></span><div class="url-info"><a href="${E(u.url)}" target="_blank" class="url-addr">${E(u.url)}</a><div class="url-meta">${u.snap?'Snapshotted '+fD(u.at):'Not yet snapshotted'}${u.title?' · '+E(u.title):''}</div></div><span class="url-tag">${E((u.type||'').replace(/_/g,' '))}</span></div>`).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No URLs connected to this campaign.</div>'}</div></div>`;
+  // URLs + page scan
+  const au=mergeU(urls,snaps);
+  const psMap={};if(ps?.pages)for(const p of ps.pages){psMap[p.url]=p;if(p.finalUrl&&!psMap[p.finalUrl])psMap[p.finalUrl]=p;}
+  let up='';
+  if(scanning)up+=`<div class="ps-running"><div class="spin"></div><div>Scanning ${au.length} page${au.length!==1?'s':''} — checking pricing, urgency, fees, offer terms and ad disclosure against your campaign claims. This can take up to a minute.</div></div>`;
+  else if(ps){const t=ps.totals||{};up+=`<div class="ps-head"><div><div class="ps-head-t">${t.findings?t.findings+' potential area'+(t.findings!==1?'s':'')+' requiring review':'No potential areas requiring review identified'}</div><div class="ps-head-s">Page scan ${fDT(ps.scannedAt)} · ${t.pages} page${t.pages!==1?'s':''} · ${t.passed||0} passed${t.needsAttention?' · '+t.needsAttention+' need attention':''}${t.errors?' · '+t.errors+' could not be scanned':''}</div></div><button class="btn btn-w btn-sm" onclick="runScan(CID)">Re-scan pages</button></div>`;}
+  else if(au.length)up+=`<div class="ps-head"><div><div class="ps-head-t">Pages not yet scanned</div><div class="ps-head-s">Check each page against your campaign claims before you approve.</div></div><button class="btn btn-o btn-sm" onclick="runScan(CID)">Scan pages</button></div>`;
+  if(au.length)up+=`<p class="ps-scope">The scan reads each page as it is served and checks it against the claims in your creative. Content added by JavaScript after the page loads may not be captured. Site-wide checks (cookies, privacy notice, sign-up consent) are covered once by <a href="site-sweep.html?userId=${encodeURIComponent(U||'')}" style="color:var(--o)">Site Sweep</a>, not repeated per campaign. Evidence-based assessment, not legal advice.</p>`;
+  up+=au.length?au.map(u=>pgCard(u,psMap[u.url])).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No URLs connected to this campaign.</div>';
+  P+=`<div class="cf-panel" id="tab-urls"><div class="sec"><div class="sec-t">Connected URLs <span class="cnt">${au.length}</span></div>${up}</div></div>`;
 
   // Letter
   if(d.letter){if(d.letter.type==='clearance')P+=`<div class="cf-panel" id="tab-letter"><div class="clearance-bar"><div style="font-size:28px">✅</div><div><div class="clearance-t">Campaign cleared</div><div class="clearance-s">Strong evidence across all modules. Defence approved.</div></div></div></div>`;else{const ln=(d.letter.content||'').split('\n');P+=`<div class="cf-panel" id="tab-letter"><div class="letter-card"><div class="letter-banner">${E(ln[0]||'SIMULATION')}</div><div class="letter-body">${E(ln.slice(2).join('\n'))}</div></div></div>`;}}
@@ -433,9 +499,25 @@ function renderCF(d){
   P+=`<div class="cf-panel" id="tab-timeline"><div class="sec"><div class="sec-t">Timeline</div><div class="tl">${allEv.length?allEv.map(e=>{const sv=e.severity==='warning'||e.type?.includes('drift')||e.type?.includes('amended')?'warning':e.severity==='alert'?'alert':e.type?.includes('approved')||e.type?.includes('launched')?'success':'info';return`<div class="tl-item ${sv}"><div class="tl-dot"></div><div class="tl-date">${fDT(e.date)}</div><div class="tl-title">${E(e.title||e.type?.replace(/_/g,' ')||'Event')}</div>${e.detail?`<div class="tl-detail">${E(e.detail)}</div>`:''}</div>`;}).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No events recorded yet.</div>'}</div></div></div>`;
 
   $('cfP').innerHTML=P;
+  sTab(CT);
 }
 
-function sTab(id){document.querySelectorAll('.cf-tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.cf-panel').forEach(p=>p.classList.remove('on'));const tab=document.querySelector(`.cf-tab[onclick*="'${id}'"]`);if(tab)tab.classList.add('on');const panel=document.getElementById('tab-'+id);if(panel)panel.classList.add('on');}
+// ── Page scan rendering ──
+const VL={passed:['Passed','ev-ok'],needs_attention:['Needs attention','ev-warn'],not_evidenced:['Not evidenced','ev-na'],error:['Could not scan','ev-gap']};
+const EVL={page_observed:'Observed on page',ai_assessment:'AI assessment',verified:'Verified',vendor_documented:'Vendor documentation',public_source:'Public source',not_available:'Not available'};
+const SR={high:0,medium:1,low:2};
+function pfHtml(x){return`<div class="pf pf-${E(x.severity)}"><div class="pf-top"><span class="pf-sev">${E(x.severity)}</span>${x.regulator?`<span class="pf-reg">${E(x.regulator)}</span>`:''}<span class="pf-t">${E(x.title)}</span></div><div class="pf-d">${E(x.detail)}</div>${x.excerpt?`<div class="pf-ex">"${E(x.excerpt)}"</div>`:''}<div class="pf-meta">${[x.ruleRef,EVL[x.evidenceType]||x.evidenceType,x.confidence?x.confidence+' confidence':''].filter(Boolean).map(E).join(' · ')}</div></div>`;}
+function pgCard(u,p){
+  const v=p?(VL[p.verdict]||VL.error):null;
+  const head=`<div class="pg-head"><span class="url-dot ${u.changed?'changed':u.snap?'ok':'pending'}"></span><div class="url-info"><a href="${E(u.url)}" target="_blank" rel="noopener" class="url-addr">${E(u.url)}</a><div class="url-meta">${u.snap?'Snapshotted '+fD(u.at):'Not yet snapshotted'}${u.title?' · '+E(u.title):''}${u.changed?' · Changed since approval':''}</div></div>${v?`<span class="ev-st ${v[1]}">${v[0]}</span>`:''}<span class="url-tag">${E((u.type||'').replace(/_/g,' '))}</span></div>`;
+  if(!p)return`<div class="pg-card">${head}</div>`;
+  const fs=(p.findings||[]).slice().sort((a,b)=>(SR[a.severity]??3)-(SR[b.severity]??3));
+  const cc=(p.claimChecks||[]).filter(c=>c.status==='consistent'||c.status==='conflicts');
+  const dis=(p.dismissed||[]).length;
+  return`<div class="pg-card">${head}<div class="pg-body">${p.summary?`<div class="pg-sum">${E(p.summary)}</div>`:''}${fs.map(pfHtml).join('')}${cc.length?'<div style="margin-top:8px">'+cc.map(c=>`<div class="cc"><span class="cc-st cc-${c.status}">${c.status==='conflicts'?'Conflicts':'Consistent'}</span><div><div>Claim: "${E(c.claim)}"</div>${c.excerpt?`<div class="pf-ex">Page: "${E(c.excerpt)}"</div>`:''}</div></div>`).join('')+'</div>':''}${dis?`<div class="pg-dis">${dis} automated detection${dis!==1?'s':''} reviewed and set aside as not relevant.</div>`:''}</div></div>`;
+}
+
+function sTab(id){if(!document.getElementById('tab-'+id))id='evidence';CT=id;document.querySelectorAll('.cf-tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.cf-panel').forEach(p=>p.classList.remove('on'));const tab=document.querySelector(`.cf-tab[onclick*="'${id}'"]`);if(tab)tab.classList.add('on');const panel=document.getElementById('tab-'+id);if(panel)panel.classList.add('on');}
 
 function mergeU(u,s){const m={};for(const x of s)if(x.url)m[x.url]=x;const r=u.map(x=>{const sn=m[x.url];return{...x,snap:!!sn,at:sn?.capturedAt,title:sn?.title,changed:sn?.changed||false};});for(const x of s)if(!u.some(y=>y.url===x.url))r.push({url:x.url,type:'auto',snap:true,at:x.capturedAt,title:x.title,changed:x.changed||false});return r;}
 function bldSum(ds,ev,u,s,d){if(ds==='alert'){const n=ev.filter(e=>e.severity==='warning'||e.severity==='alert').length;return n+' change'+(n!==1?'s':'')+' detected since approval. Review the timeline.';}if(ds==='live')return'Campaign is live. '+(u.length||s.length)+' connected URL'+(u.length!==1?'s':'')+' monitored daily. Regulatory enforcement checked against your claim types.';if(ds==='approved')return'Defence approved and evidence frozen. Mark as launched to start URL and enforcement monitoring.';if(ds==='archived')return'Campaign taken down'+(d.TakedownDate?' on '+fD(d.TakedownDate):'')+'. Defence preserved as a permanent record.';return'Defence is being assembled. Review the evidence and approve when ready.';}
@@ -443,13 +525,13 @@ function fD(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',
 function fDT(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return d;}}
 
 // ── Actions ──
-async function approve(){if(!CID)return;const b=document.querySelector('.cf-actions .btn-g');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await fetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved — monitoring started','ok');loadCF(CID);}catch(e){toast('Failed — '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve defence →';}}}
-async function addEv(t,d){if(!CID)return;try{await fetch(`${A}/api/submit-check?action=defence-add-event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,eventType:t,detail:d||''})});toast(t.replace(/_/g,' ')+' recorded','ok');loadCF(CID);}catch(e){toast('Failed — '+e.message,'er');}}
+async function approve(){if(!CID)return;if(SCAN){toast('Wait for the page scan to finish before approving','er');return;}const b=document.querySelector('.cf-actions .btn-g');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await swFetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved — monitoring started','ok');loadCF(CID);}catch(e){toast('Failed — '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve defence →';}}}
+async function addEv(t,d){if(!CID)return;try{await swFetch(`${A}/api/submit-check?action=defence-add-event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,eventType:t,detail:d||''})});toast(t.replace(/_/g,' ')+' recorded','ok');loadCF(CID,true);}catch(e){toast('Failed — '+e.message,'er');}}
 function logNote(){const n=prompt('What changed?\n\nExamples:\n• Landing page pricing updated\n• Affiliate modified subject line\n• A/B test variant went live');if(n?.trim())addEv('manual_note',n.trim());}
 
 // ── Demo Mode ──
 function loadDemo(mode){
-  const now=Date.now(),day=864e5;
+  const now=Date.now(),day=864e5,hr=36e5;
   const d=function(offset){return new Date(now+offset).toISOString();}
   // Demo campaigns for list view
   const demoCampaigns=[
@@ -469,7 +551,7 @@ function loadDemo(mode){
   }
 
   // Full case file: Summer Sale (alert state, 3 weeks in)
-  showCF();
+  showCF();CT='evidence';
   const copyText=`Subject: 30% OFF EVERYTHING — Summer Sale ends Sunday ☀️
 
 Hi {{first_name}},
@@ -494,7 +576,43 @@ SHOP NOW → summerstyle.co.uk/sale
 You're receiving this because you signed up at summerstyle.co.uk. 
 Unsubscribe | Summer Style Ltd, 14 Camden Passage, London N1 8ED`;
 
+  const demoPageScan={
+    version:'1.0',scannedAt:d(-14*day+2*hr),status:'complete',skipped:[],
+    totals:{pages:4,passed:2,needsAttention:2,notEvidenced:0,errors:0,findings:4,high:1,medium:3,low:0,conflicts:1},
+    pages:[
+      {url:'https://summerstyle.co.uk/sale',type:'landing_page',status:'ok',verdict:'needs_attention',title:'Summer Sale — 30% Off Everything',scannedAt:d(-14*day+2*hr),
+        summary:'Re-scanned after drift. The page now promotes clearance lines at an extra 50% off, which undermines the "no exclusions" claim in the email. The was/now prices still match the email.',
+        findings:[
+          {id:'claim_conflict_0',category:'claim_conflict',severity:'high',regulator:'CMA',title:'Page conflicts with campaign claim',detail:'The campaign says "30% off everything — no exclusions, no minimum spend". The landing page now promotes clearance lines at a different discount level, so "everything" at 30% and "no exclusions" may no longer be accurate.',ruleRef:'CAP Code 3.1; DMCCA 2024 Part 4',excerpt:'Clearance: extra 50% off selected lines — limited sizes',evidenceType:'ai_assessment',confidence:'medium'},
+          {id:'urgency',category:'urgency',severity:'medium',regulator:'CMA',title:'Time-limited offer claims on page',detail:'A countdown timer element was detected in the page source. Evidence is needed that the deadline is genuine and the offer will not be extended or re-run.',ruleRef:'DMCCA 2024 Sch 20; CAP Code 3.1',excerpt:'Sale ends Sunday at midnight',evidenceType:'page_observed',confidence:'medium'},
+          {id:'reference_pricing',category:'reference_pricing',severity:'medium',regulator:'CMA',title:'Reference ("was") prices displayed',detail:'Was/now prices were detected. Records are needed showing each reference price was a genuine previous selling price.',ruleRef:'DMCCA 2024 Part 4; CAP Code s.3 (price comparisons)',excerpt:'Linen shirt was £65.00 now £45.50',evidenceType:'page_observed',confidence:'medium'}
+        ],
+        claimChecks:[
+          {claimIndex:0,claim:'30% off everything — no exclusions, no minimum spend',claimType:'pricing_claim',status:'conflicts',excerpt:'Clearance: extra 50% off selected lines — limited sizes'},
+          {claimIndex:3,claim:'were £65, now £45.50 / were £89, now £62.30 / were £42, now £29.40',claimType:'pricing_claim',status:'consistent',excerpt:'Linen shirt was £65.00 now £45.50'}
+        ],
+        dismissed:[{id:'drip_pricing',title:'Additional fees mentioned alongside prices',dismissReason:'The fee shown is for optional next-day delivery, not a mandatory charge.'}]},
+      {url:'https://summerstyle.co.uk/sale/terms',type:'terms_page',status:'ok',verdict:'passed',title:'Sale Terms & Conditions',scannedAt:d(-14*day+2*hr),
+        summary:'Sale terms cover the offer dates, the free delivery threshold and the referral scheme.',
+        findings:[],
+        claimChecks:[
+          {claimIndex:2,claim:'FREE delivery on orders over £30',claimType:'free_claim',status:'consistent',excerpt:'Free standard UK delivery on orders over £30'},
+          {claimIndex:4,claim:'Refer a friend and you both get £10 off your next order',claimType:'comparative_claim',status:'consistent',excerpt:'Referral credit of £10 applies to orders over £40 and expires 30 days after issue'}
+        ],dismissed:[]},
+      {url:'https://stylerewards.net/campaign/summer26',type:'affiliate_page',status:'ok',verdict:'needs_attention',title:'StyleRewards — Summer Style Campaign',scannedAt:d(-14*day+2*hr),
+        summary:'The affiliate page repeats the campaign offer accurately but carries no ad or affiliate disclosure.',
+        findings:[
+          {id:'ad_disclosure',category:'ad_disclosure',severity:'medium',regulator:'ASA',title:'No ad or affiliate disclosure identified',detail:'This is marked as an affiliate page but no "ad", "sponsored" or affiliate disclosure was identified. Marketing must be obviously identifiable as such.',ruleRef:'CAP Code 2.1',excerpt:'',evidenceType:'page_observed',confidence:'medium'}
+        ],
+        claimChecks:[{claimIndex:0,claim:'30% off everything — no exclusions, no minimum spend',claimType:'pricing_claim',status:'consistent',excerpt:'Summer Style: 30% off everything this week'}],
+        dismissed:[]},
+      {url:'https://summerstyle.co.uk/returns',type:'terms_page',status:'ok',verdict:'passed',title:'Returns Policy',scannedAt:d(-14*day+2*hr),
+        summary:'Returns policy page. No promotional claims identified.',findings:[],claimChecks:[],dismissed:[]}
+    ]
+  };
+
   D={
+    _demo:true,
     CampaignTitle:'Summer Sale 2026 — 30% Off Everything',
     OwnerName:'Sarah Chen',
     DefenceStatus:'alert',
@@ -538,6 +656,9 @@ Unsubscribe | Summer Style Ltd, 14 Camden Passage, London N1 8ED`;
       {url:'https://stylerewards.net/campaign/summer26',capturedAt:d(-20*day),title:'StyleRewards — Summer Style Campaign',changed:false},
       {url:'https://summerstyle.co.uk/returns',capturedAt:d(-20*day),title:'Returns Policy',changed:false}
     ]),
+    PageScanJson:JSON.stringify(demoPageScan),
+    PageScanStatus:'complete',
+    PageScanAt:d(-14*day+2*hr),
     EvidenceHash:'a3f7c9d2e1b84f6091c3d5a8e7f2b4d6',
     ApprovalHash:'8b2e4f7a1c3d5e6f9a8b7c4d2e1f3a5b',
     responsePack:{
@@ -604,12 +725,14 @@ We maintain a tamper-evident evidence trail for this campaign, hashed at approva
     },
     CampaignEventsJson:JSON.stringify([
       {type:'defence_assembled',date:d(-21*day),title:'Defence assembled',detail:'AI compliance check completed. 2 issues flagged. 5 claims extracted from campaign copy.',severity:'info'},
-      {type:'defence_approved',date:d(-20*day),title:'Defence approved',detail:'Evidence frozen. SHA-256 hashes generated. Response pack created for ICO, ASA, and CMA. Monitoring started.',severity:'success'},
+      {type:'page_scan_completed',date:d(-21*day+hr),title:'Pages scanned',detail:'4 pages scanned: 2 passed, 2 need attention. 3 potential areas requiring review: countdown timer and was/now prices on the landing page need evidence on file; no ad disclosure on the StyleRewards affiliate page.',severity:'info'},
+      {type:'defence_approved',date:d(-20*day),title:'Defence approved',detail:'Evidence frozen. SHA-256 hashes generated. Page scan included in approval hash. Response pack created for ICO, ASA, and CMA. Monitoring started.',severity:'success'},
       {type:'campaign_launched',date:d(-19*day),title:'Campaign launched',detail:'Email sent to 47,820 recipients. Paid social activated. Affiliate links distributed to StyleRewards Network.',severity:'success'},
       {type:'url_check_ok',date:d(-17*day),title:'Daily URL check — all clear',detail:'4 URLs checked. No content drift detected.',severity:'info'},
       {type:'manual_note',date:d(-16*day),title:'Manual note',detail:'A/B test variant B went live — subject line changed to "YOUR 30% OFF CODE IS INSIDE"',severity:'info'},
       {type:'enforcement_match',date:d(-14*day),title:'Enforcement match — ASA ruling',detail:'ASA published ruling against "FlashFashion Ltd" for misleading reference pricing in summer sale campaign. Ruling references CAP Code 3.17 — matches your pricing_claim evidence type.',severity:'warning'},
       {type:'url_drift',date:d(-14*day),title:'URL drift detected — landing page',detail:'summerstyle.co.uk/sale content has changed since approval snapshot. SHA-256 mismatch. Claude relevance filter: MATERIAL — page now shows clearance items at 50% off alongside the 30% campaign, which may conflict with the "30% off everything, no exclusions" claim.',severity:'warning'},
+      {type:'page_scan_completed',date:d(-14*day+2*hr),title:'Pages re-scanned after drift',detail:'Landing page now conflicts with "30% off everything — no exclusions": clearance lines are shown at an extra 50% off. 4 potential areas requiring review in total, including 1 conflict with campaign claims.',severity:'warning'},
       {type:'manual_note',date:d(-10*day),title:'Manual note',detail:'Legal team reviewing whether clearance items on landing page conflict with "no exclusions" claim. Keeping campaign live pending review.',severity:'info'},
       {type:'ref_price_warning',date:d(-7*day),title:'Reference price warning — 21 days',detail:'Reference pricing basis approaching 28-day limit. Original prices must remain verifiable. Expires in 7 days.',severity:'warning'},
       {type:'url_check_ok',date:d(-2*day),title:'Daily URL check',detail:'3 of 4 URLs unchanged. summerstyle.co.uk/sale still flagged from day 5 drift.',severity:'info'}
