@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
   <link rel="icon" type="image/svg+xml" href="https://sendwize-backend.vercel.app/favicon.svg">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -601,7 +603,7 @@
       var payload = { userId: userId, contentType: currentContentType, content: copy, autoFix: true };
       if (sendingContext) payload.sendingContext = sendingContext;
       if (uploadedImages.length > 0) payload.images = uploadedImages.map(function(i) { return { data: i.data, mediaType: i.mediaType }; });
-      var res = await fetch(APP_URL + '/api/analyze-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      var res = await swFetch(APP_URL + '/api/analyze-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) { var err = await res.json().catch(function() { return {}; }); throw new Error(err.error || 'Server error ' + res.status); }
       var data = await res.json();
       renderResults(data);
@@ -764,7 +766,7 @@
     if (btn) { btn.disabled = true; btn.textContent = 'Saving\u2026'; }
     try {
       if (lastCheckSourceRecordId && evidenceCertifications.length > 0) {
-        var res = await fetch(APP_URL + '/api/certify-evidence', {
+        var res = await swFetch(APP_URL + '/api/certify-evidence', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
