@@ -1,5 +1,9 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-intelligence.js v1.8
+// SENDWIZE — list-intelligence.js v1.9
+//
+// v1.9 (security): every request authenticated via _auth.js; the verified
+//   member id replaces any userId from the browser. Calls to generate-fix
+//   carry the internal secret. CORS allows the Authorization header.
 //
 // POST /api/list-intelligence?action=upload       — CSV analysis
 // GET  /api/list-intelligence?action=load         — load latest or specific list
@@ -22,6 +26,7 @@
 
 import crypto from 'crypto';
 import { atFetch } from './_airtable.js';
+import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { smartDetect, smartValidate } from './_smart-import.js';
 import { validateListUpload, normaliseListRow } from './_normalise.js';
 
@@ -474,7 +479,7 @@ async function emitLIFix(userId, listName, spec) {
   if (!spec.presentNow) { if (existing) { await markLIFixImproved(existing.id, existing.fields?.Description || '', spec.resolvedSummary || `Finding resolved on rerun for "${listName}" (${new Date().toISOString().split('T')[0]}).`); } return; }
   if (existing) { await refreshLIFix(existing.id, spec.description, spec.exposureLow ?? null, spec.exposureHigh ?? null); return; }
   try { const broadFormula = `AND({UserID}="${userId}",{FixType}="${spec.fixType}",{Tool}="List Intelligence",{Status}="Pending",FIND("${slugify(listName)}",{SourceRecordID}))`; const others = await atGet('Compliance_Fixes', broadFormula, '', 3); if (others.length > 0) { console.warn(`[list-intelligence] SUSPECTED DEDUPE MISS for ${spec.fixType} list="${listName}"`); } } catch (e) { console.error('emitLIFix dedupe-miss check failed (non-fatal):', e); }
-  try { const body = { userId, fixType: spec.fixType, description: spec.description, tool: 'List Intelligence', severity: spec.severity, sourceRecordId: spec.sourceRecordId }; if (spec.contactVolume != null) body.contactVolume = spec.contactVolume; if (spec.exposureLow != null) body.exposureLow = spec.exposureLow; if (spec.exposureHigh != null) body.exposureHigh = spec.exposureHigh; await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); } catch (e) { console.error(`emitLIFix create ${spec.fixType} non-fatal:`, e); }
+  try { const body = { userId, fixType: spec.fixType, description: spec.description, tool: 'List Intelligence', severity: spec.severity, sourceRecordId: spec.sourceRecordId }; if (spec.contactVolume != null) body.contactVolume = spec.contactVolume; if (spec.exposureLow != null) body.exposureLow = spec.exposureLow; if (spec.exposureHigh != null) body.exposureHigh = spec.exposureHigh; await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify(body) }); } catch (e) { console.error(`emitLIFix create ${spec.fixType} non-fatal:`, e); }
 }
 
 // v1.8: accepts optional exposure parameter
@@ -599,8 +604,12 @@ function analyseEngagementGaps(contacts){
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Identity: the verified member id replaces any userId sent by the browser
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
 
   const { action, userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId is required' });
