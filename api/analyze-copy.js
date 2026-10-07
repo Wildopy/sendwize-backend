@@ -1,4 +1,7 @@
-// api/analyze-copy.js  v5.5
+// api/analyze-copy.js  v5.6
+// v5.6 (security): every request authenticated via _auth.js; the verified
+//   member id replaces any userId from the browser. Calls to generate-fix
+//   and profile carry the internal secret.
 // AI Copy Scanner
 //
 // v5.5 changes from v5.4:
@@ -17,6 +20,7 @@
 //     recommendation or fixedVersion text (belt and braces).
 
 import crypto from 'crypto';
+import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -515,7 +519,7 @@ async function generateFixes(userId, allViolations, emailChecks, sourceRecordId)
     try {
       const r = await fetch(`${APP_URL}/api/generate-fix`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: internalHeaders(),
         body: JSON.stringify({
           userId,
           fixType: job.fixType,
@@ -537,11 +541,14 @@ async function generateFixes(userId, allViolations, emailChecks, sourceRecordId)
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    // Identity: the verified member id replaces any userId sent by the browser
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
     const { contentType, content, subject, userId, autoFix, sendingContext, images } = req.body ?? {};
     if (!userId)      return res.status(400).json({ error: 'Missing userId' });
     if (!contentType) return res.status(400).json({ error: 'Missing contentType' });
@@ -670,7 +677,7 @@ export default async function handler(req, res) {
 
     fetch(`${APP_URL}/api/profile?action=streak`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: internalHeaders(),
       body: JSON.stringify({ userId })
     }).catch(e => console.error('Streak update failed:', e));
 
