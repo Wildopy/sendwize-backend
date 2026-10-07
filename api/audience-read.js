@@ -1,4 +1,8 @@
-// api/audience-read.js — Sendwize Audience Read v7.7
+// api/audience-read.js — Sendwize Audience Read v7.8
+// v7.8 (security): every request (except the public methodology text)
+//   authenticated via _auth.js; the verified member id replaces any userId
+//   from the browser. Calls to generate-fix and send-alert carry the
+//   internal secret. CORS allows the Authorization header.
 // Seven deterministic algorithms + derived send-window projection.
 // Zero AI in scoring. Zero external data.
 //
@@ -29,6 +33,7 @@ const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`;
 import { smartDetect, smartValidate } from './_smart-import.js';
+import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { validateAudienceUpload } from './_normalise.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -974,7 +979,7 @@ async function generateFixes(userId, segmentName, sentiment, sourceRecordId) {
   if (state === 'Damaged' && confidence >= 0.7) fixes.push({ fixType: 'data_quality', description: `Audience Read — ${segmentName}: Campaign damage detected. Unsubscribe rate significantly above UK benchmark.`.trim(), severity: 'medium' });
   for (const fix of fixes) {
     try {
-      await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, fixType: fix.fixType, description: fix.description, tool: 'Audience Read', severity: fix.severity, sourceRecordId: sourceRecordId || null }) });
+      await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId, fixType: fix.fixType, description: fix.description, tool: 'Audience Read', severity: fix.severity, sourceRecordId: sourceRecordId || null }) });
     } catch (err) { console.error(`generate-fix failed for ${fix.fixType} (${segmentName}):`, err); }
   }
 }
@@ -995,7 +1000,7 @@ async function maybeFireTransitionAlert(userId, segmentName, priorState, newStat
   try {
     await fetch(`${APP_URL}/api/data?action=send-alert`, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: internalHeaders(),
       body: JSON.stringify({
         userId,
         alertType,
@@ -1166,8 +1171,11 @@ function applyAudienceAnalysisScope(detection, mapping, rows) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
+  // Identity: the verified member id replaces any userId sent by the browser
+  const auth = await requireAuth(req, res, { publicActions: ['methodology'] });
+  if (!auth) return;
   const userId = req.query.userId || req.body?.userId;
   if (!userId) return res.status(400).json({ error: 'userId required' });
   const action = req.query.action || req.body?.action || 'load';
@@ -1429,7 +1437,7 @@ export default async function handler(req, res) {
         if (bases.partner) consentIssues.push({ segment: segName, basis: 'partner', severity: 'critical', message: `${segName}: ${bases.partner} campaign(s) via partner consent. Saga fined £225,000 2021.` });
         if (bases.unknown || bases.mixed) consentIssues.push({ segment: segName, basis: bases.unknown ? 'unknown' : 'mixed', severity: 'high', message: `${segName}: Consent basis ${bases.unknown ? 'unknown' : 'mixed'} for ${(bases.unknown || 0) + (bases.mixed || 0)} campaign(s). Verify consent records.` });
       }
-      for (const ci of consentIssues) { try { await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, fixType: ci.basis === 'purchased' ? 'third_party_list' : ci.basis === 'partner' ? 'invalid_consent_mechanism' : 'consent_missing', description: `Audience Read — ${ci.message}`, tool: 'Audience Read', severity: ci.severity, sourceRecordId: `ar-consent:${ci.segment}` }) }); } catch (e) { /* non-fatal */ } }
+      for (const ci of consentIssues) { try { await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId, fixType: ci.basis === 'purchased' ? 'third_party_list' : ci.basis === 'partner' ? 'invalid_consent_mechanism' : 'consent_missing', description: `Audience Read — ${ci.message}`, tool: 'Audience Read', severity: ci.severity, sourceRecordId: `ar-consent:${ci.segment}` }) }); } catch (e) { /* non-fatal */ } }
 
       const priorSnapsBySeg = await getSnapshotsBySegment(userId);
       const priorMap = {};
@@ -1517,7 +1525,7 @@ export default async function handler(req, res) {
           const lossValue = Math.round(totalExcess * cplVal);
           if (lossValue >= 50) {
             try {
-              await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, fixType: 'commercial_loss', description: `Audience Read: ${totalExcess.toLocaleString()} unsubscribes above the UK benchmark across your lists. At your stated \u00a3${cplVal.toFixed(2)} cost-per-subscriber, that is approximately \u00a3${lossValue.toLocaleString('en-GB')} in acquisition cost lost to avoidable fatigue. Estimated business cost — not a regulatory fine.`, tool: 'Audience Read', severity: 'medium', contactVolume: totalExcess, sourceRecordId: 'ar-commercial', exposureLow: lossValue, exposureHigh: lossValue }) });
+              await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId, fixType: 'commercial_loss', description: `Audience Read: ${totalExcess.toLocaleString()} unsubscribes above the UK benchmark across your lists. At your stated \u00a3${cplVal.toFixed(2)} cost-per-subscriber, that is approximately \u00a3${lossValue.toLocaleString('en-GB')} in acquisition cost lost to avoidable fatigue. Estimated business cost — not a regulatory fine.`, tool: 'Audience Read', severity: 'medium', contactVolume: totalExcess, sourceRecordId: 'ar-commercial', exposureLow: lossValue, exposureHigh: lossValue }) });
             } catch(e) { console.error('Commercial fix non-fatal:', e); }
           }
         }
