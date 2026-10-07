@@ -1,5 +1,9 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — dpa-scan.js v1.2
+// SENDWIZE — dpa-scan.js v1.3
+//
+// v1.3 (security): request authenticated via _auth.js; the verified member
+//   id replaces any userId from the browser. vendorRegisterId must belong
+//   to the caller. Calls to generate-fix carry the internal secret.
 //
 // v1.2 fix: anthropic-version reverted to 2023-06-01 (only valid version),
 //   added anthropic-beta: pdfs-2024-09-25 header for PDF document support.
@@ -14,6 +18,8 @@
 //   sourceType:    'url' | 'text' | 'pdf'
 //   sourceContent: URL to scrape, pasted text, or base64-encoded PDF
 // ─────────────────────────────────────────────────────────────
+
+import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const SCRAPE_TIMEOUT_MS = 10000;
@@ -303,7 +309,7 @@ async function emitFixesForMissing(userId, vendorName, results) {
     try {
       await fetch(APP_URL + '/api/generate-fix', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: internalHeaders(),
         body: JSON.stringify({
           userId, fixType: 'dpa_breach', description,
           tool: 'DPA Scanner \u2014 ' + vendorName,
@@ -401,16 +407,27 @@ async function persistScan(userId, vendorName, vendorRegisterId, sourceType, sou
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    // Identity: the verified member id replaces any userId sent by the browser
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
     const { userId, vendorName, vendorRegisterId, sourceType, sourceContent } = req.body ?? {};
     if (!userId) return res.status(400).json({ error: 'userId is required' });
     if (!vendorName) return res.status(400).json({ error: 'vendorName is required' });
     if (!['url', 'text', 'pdf'].includes(sourceType)) return res.status(400).json({ error: 'sourceType must be url, text, or pdf' });
     if (!sourceContent) return res.status(400).json({ error: 'sourceContent is required' });
+
+    // v1.3: a vendor record can only be updated by its owner
+    if (vendorRegisterId) {
+      if (!isRecordId(vendorRegisterId)) return res.status(400).json({ error: 'Invalid vendorRegisterId' });
+      const vr = await fetch(`https://api.airtable.com/v0/${process.env.BASE_ID}/Vendor_Register/${vendorRegisterId}`, { headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` } });
+      const v = vr.ok ? await vr.json() : null;
+      if (!v || v.fields?.UserID !== userId) return res.status(404).json({ error: 'Vendor not found' });
+    }
 
     // 1. Get text
     let text = null;
