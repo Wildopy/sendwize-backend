@@ -1,6 +1,20 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.5
+// SENDWIZE — data.js v7.6
 // Commercial Relationships & Risk Register
+//
+// v7.6 changes (security):
+//   + Every request is authenticated via _auth.js (Memberstack token,
+//     internal secret or cron secret). The verified member id replaces
+//     any userId sent by the browser.
+//   + Ownership check before any record is read, updated or deleted by
+//     id (report, and register / partner / affiliate / competitor
+//     update + delete). Previously any record id could be read or
+//     deleted by anyone.
+//   + Record ids validated (also closes formula injection in report).
+//   + Calls to other Sendwize endpoints carry the internal secret.
+//   + CORS allows the Authorization header.
+//   + Repaired a paste error that split buildScoreBreakdown() in two
+//     (the file as supplied did not parse).
 //
 // v7.5 changes (from v7.3.1):
 //   + Vendor intelligence: prefillFromKnownVendor auto-fills from
@@ -22,6 +36,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { atFetch } from './_airtable.js';
+import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
 const RESEND_FROM = 'alerts@sendwize.co.uk';
@@ -314,11 +329,7 @@ async function assessUnknownVendor(vendorName, fields) {
 // ── Deterministic vendor score ────────────────────────────────
 function calculateVendorScore(intel, fields = {}) {
   return Object.values(buildScoreBreakdown(intel, fields)).reduce((s, c) => s + c.score, 0);
-}) {
-  return Object.values(buildScoreBreakdown(intel, fields)).reduce((s, c) => s + c.score, 0);
 }
-
-function buildScoreBreakdown(intel, fields = {}
 
 // ── Marketing checks: how the USER uses each platform ─────────
 // Self-assessed by the user. Each check names the rule it maps to.
@@ -416,7 +427,9 @@ function marketingGaps(mc) {
   const unanswered = defs.filter(d => !mc.checks?.[d.id]?.status).length;
   return { gaps, unanswered };
 }
-) {
+
+// (v7.6: repaired — this function's opening line had been split from its body by a paste)
+function buildScoreBreakdown(intel, fields = {}) {
   const dpaStatus = fields.DPAStatus || fields.AgreementStatus || intel.dpaStatus || 'Unknown';
   const dpaConfirmed = DPA_CONFIRMED.includes(dpaStatus) || intel.dpaStatus === 'Confirmed';
   const enforcement = hasRelevantEnforcement(intel);
@@ -541,7 +554,7 @@ async function getRelevantEnforcement(base, name, entityType, relationshipContex
 function generateFix(payload) {
   return fetch(`${APP_URL}/api/generate-fix`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: internalHeaders(),
     body: JSON.stringify(payload),
   }).catch(e => console.error('generate-fix non-fatal:', e));
 }
@@ -554,17 +567,18 @@ async function fixExistsFor(base, userId, sourceRecordId, fixType) {
 }
 
 // ── REPORT handler ────────────────────────────────────────────
+const REPORT_TABLES = {
+  ai: 'AI_Compliance_Checks', email: 'Email_Scans', audit: 'Database_Audits',
+  vendor: 'Vendor_Register', suppression: 'Suppression_Checks',
+  dossier: 'Campaign_Dossiers', pecr: 'Suppression_Checks',
+  audience: 'Audience_Read_Campaigns', partner: 'Partner_Register',
+  affiliate: 'Affiliate_Register', competitor: 'Competitor_Watch',
+};
 async function handleReport(req, res) {
   const { recordId, type } = req.query;
   if (!recordId || !type) return res.status(400).json({ error: 'Missing recordId or type' });
-  const tables = {
-    ai: 'AI_Compliance_Checks', email: 'Email_Scans', audit: 'Database_Audits',
-    vendor: 'Vendor_Register', suppression: 'Suppression_Checks',
-    dossier: 'Campaign_Dossiers', pecr: 'Suppression_Checks',
-    audience: 'Audience_Read_Campaigns', partner: 'Partner_Register',
-    affiliate: 'Affiliate_Register', competitor: 'Competitor_Watch',
-  };
-  const tableName = tables[type];
+  if (!isRecordId(recordId)) return res.status(400).json({ error: 'Invalid recordId' });
+  const tableName = REPORT_TABLES[type];
   if (!tableName) return res.status(400).json({ error: 'Invalid report type' });
   const base = airtableBase();
   try {
@@ -619,7 +633,7 @@ async function handleViolations(req, res) {
 async function handleLoad(req, res) {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
-  const fixesRes = await fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`);
+  const fixesRes = await fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`, { headers: internalHeaders() });
   if (!fixesRes.ok) return res.status(fixesRes.status).json({ error: 'Failed to load compliance data' });
   return res.status(200).json(await fixesRes.json());
 }
@@ -1430,8 +1444,8 @@ async function handleSummary(req, res) {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
   const [fixesRes, profileRes] = await Promise.all([
-    fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`),
-    fetch(`${APP_URL}/api/profile?action=get&userId=${userId}`),
+    fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`, { headers: internalHeaders() }),
+    fetch(`${APP_URL}/api/profile?action=get&userId=${userId}`, { headers: internalHeaders() }),
   ]);
   const fixesData   = fixesRes.ok   ? await fixesRes.json()   : null;
   const profileData = profileRes.ok ? await profileRes.json() : null;
@@ -1472,7 +1486,7 @@ async function handleScoreHistory(req, res) {
       const profile = profiles[0];
       if (profile?.fields?.LastAlertSent !== today) {
         try {
-          const alertRes = await fetch(`${APP_URL}/api/data?action=send-alert`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, alertType: 'score_drop', score, scoreChange }) });
+          const alertRes = await fetch(`${APP_URL}/api/data?action=send-alert`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId, alertType: 'score_drop', score, scoreChange }) });
           if (alertRes.ok) { alertFired = true; const patches = []; if (snap?.id) patches.push(atPatch(base, 'Score_History', snap.id, { AlertSent: true })); if (profile?.id) patches.push(atPatch(base, 'User_Profile', profile.id, { LastAlertSent: today })); await Promise.all(patches).catch(e => console.error('alert patch non-fatal:', e)); }
         } catch (e) { console.error('score-drop alert non-fatal:', e); }
       }
@@ -1523,7 +1537,7 @@ async function handleBriefing(req, res) {
   const profile = profiles[0];
   if (profile?.fields?.LastBriefingSent === today) return res.json({ briefing: profile?.fields?.LastBriefingText || null, cached: true });
   const [fixesRes, vendors, partners, affiliates, competitors] = await Promise.all([
-    fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`),
+    fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`, { headers: internalHeaders() }),
     atGet(base, 'Vendor_Register', `{UserID}='${userId}'`, '', 20).catch(() => []),
     atGet(base, 'Partner_Register', `{UserID}='${userId}'`, '', 20).catch(() => []),
     atGet(base, 'Affiliate_Register', `{UserID}='${userId}'`, '', 20).catch(() => []),
@@ -1579,7 +1593,7 @@ async function handleConsentExpiryCheck(req, res) {
   const profile = profiles[0];
   const lastAlert = profile?.fields?.LastAlertSent || '';
   if (lastAlert && Math.floor((new Date(today)-new Date(lastAlert))/86400000) < 7) return res.json({ checked: true, alertFired: false, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90 });
-  const alertRes = await fetch(`${APP_URL}/api/data?action=send-alert`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, alertType: 'consent_expiry' }) }).catch(() => ({ ok: false }));
+  const alertRes = await fetch(`${APP_URL}/api/data?action=send-alert`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId, alertType: 'consent_expiry' }) }).catch(() => ({ ok: false }));
   if (profile?.id) atPatch(base, 'User_Profile', profile.id, { LastAlertSent: today }).catch(() => {});
   return res.json({ checked: true, alertFired: alertRes.ok, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90 });
 }
@@ -1594,7 +1608,7 @@ async function handleSimulationRun(req, res) {
   if (!userId || !regulator) return res.status(400).json({ error: 'userId and regulator required' });
   if (!['ICO','CMA','ASA'].includes(regulator)) return res.status(400).json({ error: 'regulator must be ICO | CMA | ASA' });
   const base = airtableBase();
-  const fixesRes = await fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`);
+  const fixesRes = await fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`, { headers: internalHeaders() });
   const fixesData = fixesRes.ok ? await fixesRes.json() : null;
   const pendingFixes = fixesData?.fixes?.pending || [];
   const score = fixesData?.score || 0;
@@ -1634,14 +1648,53 @@ async function handleDossierToggleMonitoring(req, res) {
   catch (e) { return res.status(500).json({ error: e.message }); }
 }
 
+// ── v7.6: Access control ─────────────────────────────────────
+// Reference data with no customer information
+const PUBLIC_ACTIONS = ['vendors', 'violations', 'cron-status'];
+
+// Actions that read, update or delete one customer record by id
+const OWNED_RECORD_TABLES = {
+  'register':           'Vendor_Register',
+  'partner-register':   'Partner_Register',
+  'affiliate-register': 'Affiliate_Register',
+  'competitor-watch':   'Competitor_Watch',
+};
+
+async function assertRecordOwnership(req, res, auth) {
+  if (auth.kind !== 'member') return true; // internal / cron callers are trusted
+  const { action } = req.query;
+  let table = null, recordId = null;
+  if (action === 'report') {
+    table = REPORT_TABLES[req.query.type];
+    recordId = req.query.recordId;
+  } else if (OWNED_RECORD_TABLES[action]) {
+    table = OWNED_RECORD_TABLES[action];
+    recordId = req.method === 'DELETE' ? req.query.recordId : req.body?.recordId;
+  }
+  if (!table || !recordId) return true; // creating a new record, or nothing to check
+  if (!isRecordId(recordId)) { res.status(400).json({ error: 'Invalid recordId' }); return false; }
+  const r = await atFetch(`${airtableBase()}/${encodeURIComponent(table)}/${recordId}`, { headers: atHeaders(process.env.AIRTABLE_TOKEN) });
+  if (r.status === 404) { res.status(404).json({ error: 'Record not found' }); return false; }
+  if (!r.ok) throw new Error(`Ownership check failed: Airtable ${r.status}`);
+  const rec = await r.json();
+  // Same response as "not found", so record ids can't be probed
+  if (rec.fields?.UserID !== auth.userId) { res.status(404).json({ error: 'Record not found' }); return false; }
+  return true;
+}
+
 // ── Router ────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   const { action } = req.query;
   try {
+    // v7.6 — identity, then ownership of any record touched by id
+    const auth = await requireAuth(req, res, { publicActions: PUBLIC_ACTIONS });
+    if (!auth) return;
+    if (!(await assertRecordOwnership(req, res, auth))) return;
+
     if (action === 'report'                  && req.method === 'GET')                       return await handleReport(req, res);
     if (action === 'vendors'                 && req.method === 'GET')                       return await handleVendors(req, res);
     if (action === 'violations'              && req.method === 'GET')                       return await handleViolations(req, res);
