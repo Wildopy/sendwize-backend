@@ -1,5 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — fixes.js v6.8
+// SENDWIZE — fixes.js v6.10
+// v6.10 (security): every request authenticated via _auth.js; the
+//   verified member id replaces any userId from the browser. fixId
+//   validated before use. CORS allows the Authorization header.
 // GET  /api/fixes?action=get&userId=x[&revenueBand=...]
 // POST /api/fixes?action=complete
 // POST /api/fixes?action=dismiss
@@ -57,6 +60,7 @@
 //   inputs, explicitly not a regulatory fine. Nothing here is legal advice.
 // ─────────────────────────────────────────────────────────────
 import { atFetch } from './_airtable.js';
+import { requireAuth, isRecordId, CORS_HEADERS } from './_auth.js';
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
 const REVENUE_BAND_MAP = {
@@ -683,6 +687,7 @@ async function handleGet(req, res) {
 async function handleComplete(req, res) {
   const { userId, fixId, completionSource } = req.body ?? {};
   if (!userId || !fixId) return res.status(400).json({ error: 'userId and fixId are required' });
+  if (!isRecordId(fixId)) return res.status(400).json({ error: 'Invalid fixId' });
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
@@ -737,6 +742,7 @@ async function handleComplete(req, res) {
 async function handleDismiss(req, res) {
   const { userId, fixId } = req.body ?? {};
   if (!userId || !fixId) return res.status(400).json({ error: 'userId and fixId are required' });
+  if (!isRecordId(fixId)) return res.status(400).json({ error: 'Invalid fixId' });
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
@@ -761,10 +767,13 @@ async function handleDismiss(req, res) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   const { action } = req.query;
   try {
+    // Identity: the verified member id replaces any userId sent by the browser
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
     if (req.method === 'GET'  && action === 'get')      return await handleGet(req, res);
     if (req.method === 'POST' && action === 'complete')  return await handleComplete(req, res);
     if (req.method === 'POST' && action === 'dismiss')   return await handleDismiss(req, res);
