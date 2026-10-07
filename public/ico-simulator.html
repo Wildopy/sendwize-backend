@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Regulator Simulator &mdash; Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -606,7 +608,7 @@ function startSimulation() {
   if (!userId) { showErr('Please sign in to run a simulation with your data.'); return; }
   var btn = document.getElementById('btnStart');
   btn.disabled = true; btn.textContent = 'Running simulation\u2026';
-  fetch(APP_URL+'/api/data?action=simulation-run', {
+  swFetch(APP_URL+'/api/data?action=simulation-run', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, regulator:selectedReg })
   }).then(function(r){
@@ -804,7 +806,7 @@ function renderStage3() {
 function regenLetter() {
   if (!userId || !simData) return;
   document.getElementById('letterCard').innerHTML = '<div class="letter-body" style="text-align:center;padding:40px;color:var(--mu)">Regenerating letter\u2026</div>';
-  fetch(APP_URL+'/api/data?action=simulation-run', {
+  swFetch(APP_URL+'/api/data?action=simulation-run', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, regulator:selectedReg })
   }).then(function(r){ return r.json(); }).then(function(d){
