@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Commercial Relationships — Sendwize</title>
 <link rel="preconnect" href="http//fonts.googleapis.com">
@@ -853,9 +855,9 @@ function loadAll() {
   showLoading('Loading relationships\u2026');
   return Promise.all([
     fetchRel('vendor'), fetchRel('partner'), fetchRel('affiliate'), fetchRel('competitor'),
-    fetch(APP_URL+'/api/data?action=vendors').then(function(r){return r.json();}).catch(function(){return{vendors:[]};}),
-    fetch(APP_URL+'/api/data?action=marketing-checks').then(function(r){return r.json();}).catch(function(){return{categories:{}};}),
-    fetch(APP_URL+'/api/data?action=relationship-watch&userId='+userId).then(function(r){return r.json();}).catch(function(){return{};})
+    swFetch(APP_URL+'/api/data?action=vendors').then(function(r){return r.json();}).catch(function(){return{vendors:[]};}),
+    swFetch(APP_URL+'/api/data?action=marketing-checks').then(function(r){return r.json();}).catch(function(){return{categories:{}};}),
+    swFetch(APP_URL+'/api/data?action=relationship-watch&userId='+userId).then(function(r){return r.json();}).catch(function(){return{};})
   ]).then(function(res){
     S.processors  = res[0];
     S.partners    = res[1];
@@ -873,12 +875,12 @@ function loadAll() {
 }
 
 function fetchRel(type) {
-  return fetch(APP_URL+'/api/data?action=history&type='+type+'&userId='+userId)
+  return swFetch(APP_URL+'/api/data?action=history&type='+type+'&userId='+userId)
     .then(function(r){return r.json();}).then(function(d){return d.records||[];}).catch(function(){return[];});
 }
 
 function loadScore() {
-  fetch(APP_URL+'/api/data?action=relationship-watch&userId='+userId)
+  swFetch(APP_URL+'/api/data?action=relationship-watch&userId='+userId)
     .then(function(r){return r.json();})
     .then(function(d){
       S.watch = d.watch||[];
@@ -1439,7 +1441,7 @@ function postMarketingCheck(recordId, payload) {
   var rec = S.processors.find(function(r){ return r.id===recordId; });
   if (!rec) return;
   payload.userId = userId; payload.recordId = recordId;
-  fetch(APP_URL+'/api/data?action=marketing-check', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })
+  swFetch(APP_URL+'/api/data?action=marketing-check', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (d.error) { showToast(d.error,'er'); return; }
@@ -1543,7 +1545,7 @@ function setClause(recordId, clauseId, status) {
   if (currentType==='processors') patchData[patchKey].VendorName = rec.fields.VendorName;
   else if (currentType==='affiliates') patchData[patchKey].AffiliateName = rec.fields.AffiliateName;
   else patchData[patchKey].PartnerName = rec.fields.PartnerName;
-  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patchData)}).catch(function(){});
+  swFetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patchData)}).catch(function(){});
   renderDPAReview(rec);
 }
 
@@ -1555,7 +1557,7 @@ function runDPAScan(recordId, mode) {
     var url = (document.getElementById('dpa-url')||{}).value||'';
     if (!url) { showToast('Enter a URL first','er'); return; }
     if (res) res.innerHTML = '<div class="scan-spin-wrap"><div class="scan-spin"></div>Scanning '+escH(getName(rec.fields))+' policy\u2026</div>';
-    fetch(APP_URL+'/api/dpa-scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), vendorRegisterId:recordId, sourceType:'url', sourceContent:url})})
+    swFetch(APP_URL+'/api/dpa-scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), vendorRegisterId:recordId, sourceType:'url', sourceContent:url})})
       .then(function(r){return r.json();})
       .then(function(d){ handleScanResult(d, rec, res); })
       .catch(function(){ if (res) res.innerHTML=''; showToast('Scan failed \u2014 self-certify manually','er'); });
@@ -1566,7 +1568,7 @@ function runDPAScan(recordId, mode) {
     var reader = new FileReader();
     reader.onload = function(){
       var base64 = (reader.result||'').split(',')[1]||'';
-      fetch(APP_URL+'/api/dpa-scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), vendorRegisterId:recordId, sourceType:'pdf', sourceContent:base64})})
+      swFetch(APP_URL+'/api/dpa-scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), vendorRegisterId:recordId, sourceType:'pdf', sourceContent:base64})})
         .then(function(r){return r.json();})
         .then(function(d){ handleScanResult(d, rec, res); scanFile[currentType]=null; })
         .catch(function(){ if (res) res.innerHTML=''; showToast('Scan failed \u2014 self-certify manually','er'); });
@@ -1624,7 +1626,7 @@ function handleScanResult(d, rec, res) {
   if (currentType==='processors') patchData[patchKey].VendorName = rec.fields.VendorName;
   else if (currentType==='affiliates') patchData[patchKey].AffiliateName = rec.fields.AffiliateName;
   else patchData[patchKey].PartnerName = rec.fields.PartnerName;
-  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patchData)}).catch(function(){});
+  swFetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patchData)}).catch(function(){});
 
   // P3: Build post-scan guidance panel
   if (res && d.counts) {
@@ -1724,7 +1726,7 @@ function setA26Clause(recordId, clauseId, status) {
   clauseCache[recordId][clauseId] = { status: status };
   var rec = S.partners.find(function(r){return r.id===recordId;});
   if (!rec) return;
-  fetch(APP_URL+'/api/data?action=partner-register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, recordId:recordId, partner:{PartnerName:rec.fields.PartnerName, A26ClauseResults:JSON.stringify(clauseCache[recordId])}})}).catch(function(){});
+  swFetch(APP_URL+'/api/data?action=partner-register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, recordId:recordId, partner:{PartnerName:rec.fields.PartnerName, A26ClauseResults:JSON.stringify(clauseCache[recordId])}})}).catch(function(){});
   renderA26Review(rec);
 }
 
@@ -1770,7 +1772,7 @@ function setPrivacy(recordId, key, value) {
   if (currentType==='processors') body[pKey].VendorName = rec.fields.VendorName;
   else if (currentType==='affiliates') body[pKey].AffiliateName = rec.fields.AffiliateName;
   else body[pKey].PartnerName = rec.fields.PartnerName;
-  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).catch(function(){});
+  swFetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).catch(function(){});
   renderPrivacyReview(rec);
 }
 
@@ -1891,7 +1893,7 @@ function saveAffiliateRole(recordId) {
   if (!rec) return;
   var role = (document.getElementById('verif-role')||{}).value || 'unknown';
   showLoading('Saving\u2026');
-  fetch(APP_URL+'/api/data?action=affiliate-register', { method:'POST', headers:{'Content-Type':'application/json'},
+  swFetch(APP_URL+'/api/data?action=affiliate-register', { method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, recordId:recordId, affiliate:{ AffiliateName:rec.fields.AffiliateName, AffiliateDataRole:role } }) })
     .then(function(r){ return r.json(); })
     .then(function(){ hideLoading(); showToast('Data role saved','ok'); verifStep = 1; reopenTab(recordId,'verification'); })
@@ -1918,7 +1920,7 @@ function runConsentCheck(type, recordId) {
   if (!wording.trim()) { showToast('Paste the consent wording first','er'); return; }
   if (!tradingName.trim()) { showToast('Enter your trading name','er'); return; }
   showLoading('Checking consent wording\u2026');
-  fetch(APP_URL+'/api/data?action=consent-check', { method:'POST', headers:{'Content-Type':'application/json'},
+  swFetch(APP_URL+'/api/data?action=consent-check', { method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, recordId:recordId, type:type, wording:wording, tradingName:tradingName, sourceUrl:sourceUrl }) })
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -1952,7 +1954,7 @@ function runSenderCheck(recordId) {
   var patch = { AffiliateName: rec.fields.AffiliateName, FromNameUsed: fromName, SenderIdentityCompliant: status };
 
   showLoading('Checking sender identity\u2026');
-  fetch(APP_URL+'/api/data?action=affiliate-register', {
+  swFetch(APP_URL+'/api/data?action=affiliate-register', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, recordId:recordId, affiliate:patch })
   }).then(function(r){return r.json();})
@@ -1984,7 +1986,7 @@ function saveLandingPage(recordId) {
   var lpUrl = (document.getElementById('verif-landing-url')||{}).value || '';
   if (lpUrl) urls.landingPage = lpUrl;
   showLoading('Saving landing page review\u2026');
-  fetch(APP_URL+'/api/data?action=affiliate-register', { method:'POST', headers:{'Content-Type':'application/json'},
+  swFetch(APP_URL+'/api/data?action=affiliate-register', { method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, recordId:recordId, affiliate:{ AffiliateName:rec.fields.AffiliateName, LandingPageReviewed:allOk, LandingPageChecksJson:JSON.stringify(checks), VerificationUrls:JSON.stringify(urls) } }) })
     .then(function(r){ return r.json(); })
     .then(function(){ hideLoading(); showToast(allOk ? 'Landing page review saved \u2014 all checks passed' : 'Saved \u2014 some checks failed', allOk ? 'ok' : 'er'); reopenTab(recordId,'verification'); })
@@ -2000,7 +2002,7 @@ function savePartnerRelationship(recordId) {
   if (rel==='joint_controller') patch.Article26Status = status;
   else if (rel==='independent_controllers' || rel==='processor') patch.DataAgreementStatus = status;
   showLoading('Saving\u2026');
-  fetch(APP_URL+'/api/data?action=partner-register', { method:'POST', headers:{'Content-Type':'application/json'},
+  swFetch(APP_URL+'/api/data?action=partner-register', { method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch }) })
     .then(function(r){ return r.json(); })
     .then(function(){ hideLoading(); showToast('Data relationship saved','ok'); reopenTab(recordId,'verification'); })
@@ -2074,7 +2076,7 @@ function savePartnerConsent(recordId) {
   };
 
   showLoading('Saving consent check\u2026');
-  fetch(APP_URL+'/api/data?action=partner-register', {
+  swFetch(APP_URL+'/api/data?action=partner-register', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch })
   }).then(function(r){return r.json();})
@@ -2103,7 +2105,7 @@ function runPartnerAdCheck(recordId) {
   if (subject) content += 'Subject/headline: ' + subject + '\n\n';
   content += bodyText;
 
-  fetch(APP_URL+'/api/submit-check?action=check', {
+  swFetch(APP_URL+'/api/submit-check?action=check', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, copy:content, source:'partner-ad-compliance-review' })
   })
@@ -2118,7 +2120,7 @@ function runPartnerAdCheck(recordId) {
       AdLastReviewed: new Date().toISOString().split('T')[0],
       AdReviewResult: JSON.stringify(result),
     };
-    fetch(APP_URL+'/api/data?action=partner-register', {
+    swFetch(APP_URL+'/api/data?action=partner-register', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch })
     }).catch(function(){});
@@ -2158,7 +2160,7 @@ function runPartnerPricingCheck(recordId) {
   var content = 'PRICING AND PROMOTIONAL CLAIMS TO CHECK:\n\n' + bodyText
     + '\n\nFocus on: reference pricing validity, drip pricing, fake urgency, misleading savings claims, and DMCCA 2024 Schedule 1 banned practices.';
 
-  fetch(APP_URL+'/api/submit-check?action=check', {
+  swFetch(APP_URL+'/api/submit-check?action=check', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, copy:content, source:'partner-pricing-compliance-review' })
   })
@@ -2173,7 +2175,7 @@ function runPartnerPricingCheck(recordId) {
       PricingLastReviewed: new Date().toISOString().split('T')[0],
       PricingReviewResult: JSON.stringify(result),
     };
-    fetch(APP_URL+'/api/data?action=partner-register', {
+    swFetch(APP_URL+'/api/data?action=partner-register', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch })
     }).catch(function(){});
@@ -2250,7 +2252,7 @@ function runCreativeReview(recordId) {
   content += bodyText;
   if (claims) content += '\n\nClaims: ' + claims;
 
-  fetch(APP_URL+'/api/submit-check?action=check', {
+  swFetch(APP_URL+'/api/submit-check?action=check', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, copy:content, source:'affiliate-creative-review' })
   })
@@ -2266,7 +2268,7 @@ function runCreativeReview(recordId) {
       CreativeLastReviewed: new Date().toISOString().split('T')[0],
       CreativeReviewResult: JSON.stringify(result),
     };
-    fetch(APP_URL+'/api/data?action=affiliate-register', {
+    swFetch(APP_URL+'/api/data?action=affiliate-register', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ userId:userId, recordId:recordId, affiliate:patch })
     }).catch(function(){});
@@ -2379,7 +2381,7 @@ function saveEdit(recordId) {
   showLoading('Saving\u2026');
   var bodyData = { userId:userId, recordId:recordId };
   bodyData[pKey] = patch;
-  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
+  swFetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
     .then(function(r){return r.json();})
     .then(function(){
       hideLoading();
@@ -2396,7 +2398,7 @@ function deleteRel(recordId, name) {
   if (!confirm('Remove '+name+' from your register?')) return;
   showLoading('Removing\u2026');
   var action = currentType==='processors'?'register':currentType==='partners'?'partner-register':currentType==='affiliates'?'affiliate-register':'competitor-watch';
-  fetch(APP_URL+'/api/data?action='+action+'&userId='+encodeURIComponent(userId)+'&recordId='+encodeURIComponent(recordId), {method:'DELETE'})
+  swFetch(APP_URL+'/api/data?action='+action+'&userId='+encodeURIComponent(userId)+'&recordId='+encodeURIComponent(recordId), {method:'DELETE'})
     .then(function(r){return r.json();})
     .then(function(){
       hideLoading();
@@ -2447,7 +2449,7 @@ function renderWatchFeed(items) {
 }
 
 function loadIntel() {
-  fetch(APP_URL+'/api/data?action=sector-intelligence&userId='+encodeURIComponent(userId))
+  swFetch(APP_URL+'/api/data?action=sector-intelligence&userId='+encodeURIComponent(userId))
     .then(function(r){ return r.json(); })
     .then(function(d){
       var names = [].concat(S.processors, S.partners, S.affiliates, S.competitors).map(function(r){ return getName(r.fields).toLowerCase(); });
@@ -2569,7 +2571,7 @@ function submitModal() {
     action = 'competitor-watch';
     bodyData = { userId:userId, competitor:{ CompetitorName:name, Sector:(document.getElementById('m-sector')||{}).value||'general' } };
   }
-  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
+  swFetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
     .then(function(r){return r.json();})
     .then(function(d){
       hideLoading();
@@ -2626,7 +2628,7 @@ function quickAdd(name, typeName) {
   if (currentType==='processors') bodyData[pKey].Category = CATEGORY_FROM_LABEL[typeName] || '';
   if (currentType==='affiliates' && AFF_TYPE_TO_ACTIVITY[typeName]) bodyData[pKey].RelationshipActivity = AFF_TYPE_TO_ACTIVITY[typeName];
   if (currentType==='partners' && PARTNER_TYPE_TO_ACTIVITY[typeName]) bodyData[pKey].RelationshipActivity = PARTNER_TYPE_TO_ACTIVITY[typeName];
-  fetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
+  swFetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
     .then(function(d){ return d.json(); })
     .then(function(d){ hideLoading(); showToast(name+' added','ok'); setTimeout(function(){ loadAll().then(function(){ showConfirmPanel(name, d); }); }, 400); })
     .catch(function(e){ hideLoading(); showToast('Could not add: '+e.message,'er'); });
@@ -2744,4 +2746,3 @@ function vendorAssuranceHtml(f, name) {
   }
   return html + '</div>';
 }
-
