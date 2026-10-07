@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>How your list value is calculated — Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -375,7 +377,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       return;
     }
     try {
-      const r = await fetch(AU + '/api/list-intelligence?action=load&userId=' + userId);
+      const r = await swFetch(AU + '/api/list-intelligence?action=load&userId=' + userId);
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const d = await r.json();
       if (!d.hasData) {
