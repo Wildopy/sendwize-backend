@@ -2,6 +2,9 @@
 // SENDWIZE — api/regulatory-feed-update.js
 // Daily cron endpoint — fires every day at 07:00 UTC via Vercel Cron.
 //
+// v2.1 — October 2026 (security): calls to send-alert carry the internal
+//   secret so they keep working once endpoints require a login.
+//
 // v2.0 — September 2026
 //   - Cron changed from weekly to daily
 //   - Phase 3: MonitoringActive filter — only checks dossiers
@@ -33,6 +36,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { atFetch } from './_airtable.js';
+import { internalHeaders } from './_auth.js';
 import { createHash } from 'crypto';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -372,7 +376,7 @@ async function crossReferenceDossiers(allItems) {
         try {
           await fetch(APP_URL + '/api/data?action=send-alert', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: internalHeaders(),
             body: JSON.stringify({
               userId: dossierUserId,
               alertType: 'dossier_compliance_change',
@@ -591,7 +595,7 @@ async function checkLandingPageDrift() {
           if (dossierUserId) {
             fetch(APP_URL + '/api/data?action=send-alert', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: internalHeaders(),
               body: JSON.stringify({
                 userId: dossierUserId,
                 alertType: 'dossier_compliance_change',
@@ -732,7 +736,7 @@ async function checkReferencePriceExpiry() {
         try {
           await fetch(APP_URL + '/api/data?action=send-alert', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: internalHeaders(),
             body: JSON.stringify({
               userId: dossierUserId,
               alertType,
@@ -874,7 +878,7 @@ export default async function handler(req, res) {
         try {
           await fetch(`${APP_URL}/api/data?action=send-alert`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: internalHeaders(),
             body: JSON.stringify({
               userId:         compUserId,
               alertType:      'competitor_ruling',
