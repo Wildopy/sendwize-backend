@@ -8,7 +8,7 @@
         <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
       then use swFetch(...) instead of fetch(...) for /api calls.
 
-   2. On Webflow pages (where Memberstack runs) include the same script.
+   2. On Webflow, paste the same script tag ONCE in Site settings → Custom code → HEAD code (not footer, so it loads before the dashboard embed).
       Links to the tools on sendwize-backend.vercel.app automatically
       carry the token in the URL #fragment (never sent to servers or
       logs). The tool page stores it for that tab and removes it from
@@ -60,7 +60,10 @@
   async function swFetch(url, opts) {
     opts = opts || {};
     var headers = new Headers(opts.headers || {});
-    var t = await getToken();
+    // Only ever send the login to Sendwize's own API, never to other sites
+    var target = new URL(typeof url === 'string' ? url : url.url, location.href);
+    var ours = target.origin === 'https://sendwize-backend.vercel.app' || target.origin === location.origin && /^\/api\//.test(target.pathname);
+    var t = ours ? await getToken() : null;
     if (t && !headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + t);
     var res = await fetch(url, Object.assign({}, opts, { headers: headers }));
     if (res.status === 401) showExpired();
@@ -69,7 +72,17 @@
 
   // Webflow side: add the token to links into the tools
   function decorateLinks() {
-    getToken(); // warm the cache so the click handler can stay synchronous
+    // Keep the cache warm so the click handler can stay synchronous.
+    // Memberstack may load after this script, so retry quickly at first,
+    // then refresh every minute (tokens expire).
+    var tries = 0;
+    (function warm() {
+      getToken().then(function (t) {
+        tries++;
+        setTimeout(warm, t ? 60000 : (tries < 40 ? 250 : 5000));
+      });
+    })();
+    document.addEventListener('pointerdown', function () { getToken(); }, true);
     document.addEventListener('click', function (e) {
       var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
       if (!a || !BACKEND.test(a.href) || !cached) return;
@@ -80,7 +93,19 @@
   }
 
   window.swFetch = swFetch;
-  window.SW = { getToken: getToken, fetch: swFetch, decorateLinks: decorateLinks };
+  // For code that navigates with location.href instead of a link
+  // (e.g. the dashboard's tool buttons): adds the login to a tool URL.
+  function withToken(u) {
+    var abs;
+    try { abs = new URL(u, location.href).href; } catch (e) { return u; }
+    if (!cached || !BACKEND.test(abs)) return u;
+    var hashAt = abs.indexOf('#');
+    var base = hashAt === -1 ? abs : abs.slice(0, hashAt);
+    var hash = hashAt === -1 ? '' : abs.slice(hashAt + 1) + '&';
+    return base + '#' + hash + 'swt=' + encodeURIComponent(cached);
+  }
+
+  window.SW = { getToken: getToken, fetch: swFetch, decorateLinks: decorateLinks, withToken: withToken };
 
   // Auto-enable link decoration on pages that are not the backend itself
   if (!BACKEND.test(location.href)) {
