@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>List Intelligence &mdash; Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -669,7 +671,7 @@ function showOldMappingScreenLI(json) {
   onListNameChange();
   buildMappingTable();
   try {
-    fetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId=' + userId)
+    swFetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId=' + userId)
       .then(function(r) { return r.json(); })
       .then(function(pd) {
         if (pd.sector && pd.averageOrderValue) { el('contextCard').style.display = 'none'; el('ctxSector').value = pd.sector; el('ctxAov').value = pd.averageOrderValue; }
@@ -696,13 +698,13 @@ function submitWithSmartDetectionLI(json) {
 
   // Fetch profile for sector/aov defaults
   var sector = 'ecommerce'; var aov = 50;
-  fetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId=' + userId)
+  swFetch('https://sendwize-backend.vercel.app/api/profile?action=get&userId=' + userId)
     .then(function(r) { return r.json(); })
     .then(function(pd) { sector = pd.sector || 'ecommerce'; aov = pd.averageOrderValue || 50; })
     .catch(function() {})
     .finally(function() {
       showLoading('Analysing across four dimensions\u2026');
-      fetch(API + '?userId=' + userId + '&action=upload', {
+      swFetch(API + '?userId=' + userId + '&action=upload', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listName: listName.trim(), rows: parsedCSV.rows, fieldMapping: mapping, sector: sector, aov: aov, uploadVersion: Date.now() })
       })
@@ -717,7 +719,7 @@ function submitWithSmartDetectionLI(json) {
           }
           currentListName = result.listName || listName.trim();
           downloadIndices = result.downloadIndices || null;
-          return fetch(API + '?userId=' + userId + '&action=lists').then(function(r) { return r.json(); }).then(function(lj) { allLists = (lj && lj.lists) || []; }).catch(function() {});
+          return swFetch(API + '?userId=' + userId + '&action=lists').then(function(r) { return r.json(); }).then(function(lj) { allLists = (lj && lj.lists) || []; }).catch(function() {});
         })
         .then(function() { renderResults(lastResults); showScreen('results'); showToast('Analysis complete \u2014 ' + fmt(lastResults.totalContacts) + ' contacts processed', 'ok'); })
         .catch(function(err) { hideLoading(); showToast('Error: ' + err.message, 'er'); });
@@ -786,7 +788,7 @@ async function goMapping(){
   if(!parsedCSV)return;
   showLoading('Reading your file\u2026');
   try{
-    var resp=await fetch(API+'?userId='+userId+'&action=detect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({headers:parsedCSV.headers,rows:parsedCSV.rows.slice(0,30)})});
+    var resp=await swFetch(API+'?userId='+userId+'&action=detect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({headers:parsedCSV.headers,rows:parsedCSV.rows.slice(0,30)})});
     var json=await resp.json();
     hideLoading();
     detectedMapping=json.mapping||{};
@@ -882,7 +884,7 @@ async function submitUpload(){
   var sector=el('ctxSector').value||'ecommerce';var aov=parseFloat(el('ctxAov').value)||50;
   showLoading('Analysing across four dimensions\u2026');
   try{
-    var resp=await fetch(API+'?userId='+userId+'&action=upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:listName,rows:parsedCSV.rows,fieldMapping:mapping,sector:sector,aov:aov,uploadVersion:Date.now()})});
+    var resp=await swFetch(API+'?userId='+userId+'&action=upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:listName,rows:parsedCSV.rows,fieldMapping:mapping,sector:sector,aov:aov,uploadVersion:Date.now()})});
     var json=await resp.json();if(!json.success)throw new Error(json.error||'Upload failed');
     hideLoading();
     lastResults=json;
@@ -894,7 +896,7 @@ async function submitUpload(){
     downloadIndices=json.downloadIndices||null;
     // Refresh lists summary so the picker reflects the new/updated entry
     try{
-      var lr=await fetch(API+'?userId='+userId+'&action=lists');
+      var lr=await swFetch(API+'?userId='+userId+'&action=lists');
       var lj=await lr.json();allLists=(lj&&lj.lists)||[];
     }catch(e){}
     renderResults(json);showScreen('results');
@@ -904,7 +906,7 @@ async function submitUpload(){
 async function generateHealthBrief(){
   if(!lastResults){showToast('Run an analysis first','er');return;}
   showLoading('Generating health brief…');
-  try{var resp=await fetch(API+'?userId='+userId+'&action=health-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:currentListName||'Main list',totalContacts:lastResults.totalContacts,activeCount:lastResults.activeCount,recoverableCount:lastResults.recoverableCount,liabilityCount:lastResults.liabilityCount,atRiskCount:lastResults.atRiskCount,assetValue:lastResults.assetValue,exposure:lastResults.exposure,domainAnalysis:lastResults.domainAnalysis,freshness:lastResults.freshness,engagementGaps:lastResults.engagementGaps,sector:lastResults.sector})});var json=await resp.json();hideLoading();if(!json.success)throw new Error(json.error||'Brief generation failed');var host=document.getElementById('healthBrief');if(!host){host=document.createElement('div');host.id='healthBrief';el('valHero').after(host);}host.innerHTML='<div style="background:var(--purl);border:1px solid var(--purc);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:20px;position:relative;animation:fadeUp .35s ease"><span style="position:absolute;top:10px;right:12px;font-size:8px;font-weight:800;letter-spacing:.1em;color:var(--pur);background:var(--purc);padding:2px 6px;border-radius:3px">AI HEALTH BRIEF</span><div style="font-size:15px;font-weight:700;margin-bottom:10px;color:#581c87">✨ List health assessment</div><div style="font-size:13px;color:#581c87;line-height:1.7;white-space:pre-wrap">'+escH(json.brief)+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-ghost btn-sm" onclick="copyHealthBrief()">Copy to clipboard</button><button class="btn btn-ghost btn-sm" onclick="generateHealthBrief()">Regenerate</button></div></div>';host.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(err){hideLoading();showToast('Health brief failed: '+err.message,'er');}
+  try{var resp=await swFetch(API+'?userId='+userId+'&action=health-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:currentListName||'Main list',totalContacts:lastResults.totalContacts,activeCount:lastResults.activeCount,recoverableCount:lastResults.recoverableCount,liabilityCount:lastResults.liabilityCount,atRiskCount:lastResults.atRiskCount,assetValue:lastResults.assetValue,exposure:lastResults.exposure,domainAnalysis:lastResults.domainAnalysis,freshness:lastResults.freshness,engagementGaps:lastResults.engagementGaps,sector:lastResults.sector})});var json=await resp.json();hideLoading();if(!json.success)throw new Error(json.error||'Brief generation failed');var host=document.getElementById('healthBrief');if(!host){host=document.createElement('div');host.id='healthBrief';el('valHero').after(host);}host.innerHTML='<div style="background:var(--purl);border:1px solid var(--purc);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:20px;position:relative;animation:fadeUp .35s ease"><span style="position:absolute;top:10px;right:12px;font-size:8px;font-weight:800;letter-spacing:.1em;color:var(--pur);background:var(--purc);padding:2px 6px;border-radius:3px">AI HEALTH BRIEF</span><div style="font-size:15px;font-weight:700;margin-bottom:10px;color:#581c87">✨ List health assessment</div><div style="font-size:13px;color:#581c87;line-height:1.7;white-space:pre-wrap">'+escH(json.brief)+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-ghost btn-sm" onclick="copyHealthBrief()">Copy to clipboard</button><button class="btn btn-ghost btn-sm" onclick="generateHealthBrief()">Regenerate</button></div></div>';host.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(err){hideLoading();showToast('Health brief failed: '+err.message,'er');}
 }
 function copyHealthBrief(){var elb=document.getElementById('healthBrief');if(!elb)return;var text=elb.querySelector('div[style*="white-space"]');if(text)navigator.clipboard.writeText(text.textContent).then(function(){showToast('Copied','ok');});}
 async function loadResults(listName){
@@ -915,7 +917,7 @@ async function loadResults(listName){
   try{
     var qs='?userId='+userId+'&action=load';
     if(listName)qs+='&listName='+encodeURIComponent(listName);
-    var resp=await fetch(API+qs);
+    var resp=await swFetch(API+qs);
     var json=await resp.json();hideLoading();
     if(!json.found){showToast('No previous analysis found — upload a list to get started','');return;}
     // Backend returns analysis nested inside json.results — merge it up
@@ -1314,7 +1316,7 @@ function generateFixRecord(){
   var liabCount=lastResults.liabilityCount||0;
   if(!liabCount){showToast('No liability contacts \u2014 no fix record needed','ok');return;}
   var listLabel=lastResults.listName||currentListName||'this list';
-  fetch('https://sendwize-backend.vercel.app/api/generate-fix',{
+  swFetch('https://sendwize-backend.vercel.app/api/generate-fix',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({userId:userId,fixType:'consent_expired',description:'List Intelligence \u2014 "'+listLabel+'": '+fmt(liabCount)+' contacts are below the consent strength threshold and represent ICO enforcement risk under PECR Regulation 22. Suppress or re-consent before any marketing send.',tool:'List Intelligence',severity:liabCount>(lastResults.totalContacts||0)*0.2?'critical':'high',contactVolume:liabCount,sourceRecordId:'li-liability:'+(listLabel.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))})
   }).then(function(){showToast('Fix record created on your dashboard','ok');}).catch(function(){showToast('Could not create fix record \u2014 try again','er');});
@@ -1325,7 +1327,7 @@ async function generateCert(){
   var type=el('certType').value;
   showLoading('Generating clearance record…');
   try{
-    var resp=await fetch(API+'?userId='+userId+'&action=certificate',{
+    var resp=await swFetch(API+'?userId='+userId+'&action=certificate',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
@@ -1388,7 +1390,7 @@ async function generateReconsentDraft(){
   draftEl.className='reconsent-draft';draftEl.innerHTML='';
   showLoading('Generating re-consent email\u2026');
   try{
-    var resp=await fetch(API+'?userId='+userId+'&action=draft-reconsent',{
+    var resp=await swFetch(API+'?userId='+userId+'&action=draft-reconsent',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         listName:currentListName||'Main list',
@@ -1470,7 +1472,7 @@ function loadListDemo(){
 if(!userId){el('gateScreen').classList.add('show');}
 else{
   // Fetch lists summary first — decide which screen to show
-  fetch(API+'?userId='+userId+'&action=lists')
+  swFetch(API+'?userId='+userId+'&action=lists')
     .then(function(r){return r.json();})
     .then(function(json){
       allLists=(json&&json.lists)||[];
