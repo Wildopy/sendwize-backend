@@ -1,5 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — generate-fix.js v7.3
+// SENDWIZE — generate-fix.js v7.4
+// v7.4 (security): every request authenticated via _auth.js. Other
+//   Sendwize endpoints call this with the internal secret; a signed-in
+//   member can only create fixes for themselves.
 //
 // v7.3 changes from v6.5:
 //   + Five new canonical fix types for ASA/CAP/CMA relationship
@@ -12,6 +15,8 @@
 //
 // v6.5 changes preserved: dedup formula includes OriginalFixType.
 // ─────────────────────────────────────────────────────────────
+
+import { requireAuth, CORS_HEADERS } from './_auth.js';
 
 const LEGACY_TYPE_MAP = {
   expired_consent:                    'consent_expired',
@@ -111,10 +116,13 @@ function buildExposureFields(def, opts) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
   try {
+    // Identity: the verified member id replaces any userId sent by the browser
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
     const {
       userId, fixType, description, tool, severity,
       volume, contactVolume, sourceRecordId,
