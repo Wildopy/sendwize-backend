@@ -1,4 +1,6 @@
-// /api/exposure-summary.js v1.2
+// /api/exposure-summary.js v1.3
+// v1.3 (security): request authenticated via _auth.js; the verified member
+//   id replaces any userId from the browser.
 // Financial Hero Block: Lost / At Risk / Cleared
 // Read-only. Fetch to Airtable REST only. No writes.
 //
@@ -17,6 +19,8 @@
 //   Sub-lines: ASA count cleared, CMA count cleared. No £ for ASA/CMA ever.
 //   ICO figures: comparable published cases. Commercial figures: user's own data at time of fix.
 // - Commercial NEVER summed with regulatory. ASA/CMA NEVER get a £ figure.
+
+import { requireAuth, CORS_HEADERS } from './_auth.js';
 
 const AIRTABLE_BASE = process.env.AIRTABLE_BASE_ID;
 const AIRTABLE_KEY  = process.env.AIRTABLE_API_KEY;
@@ -148,10 +152,13 @@ function buildHeroHtml(data) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    // Identity: the verified member id replaces any userId sent by the browser
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
     var input = req.method === 'POST' ? (req.body || {}) : (req.query || {});
     var userId = input.userId;
     if (!userId) return res.status(400).json({ error: 'userId required' });
