@@ -7,16 +7,46 @@
     {
       "path": "/api/digest",
       "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/exposure?action=assess-pending",
+      "schedule": "30 2 * * *"
     }
   ],
   "functions": {
-    "api/site-sweep.js": { "maxDuration": 60, "memory": 1769 },
-    "api/submit-check.js": { "maxDuration": 60 },
-    "api/dpa-scan.js": { "maxDuration": 60 },
-    "api/check-vendors.js": { "maxDuration": 60 },
-    "api/analyze-copy.js": { "maxDuration": 60 },
-    "api/regulatory-feed-update.js": { "maxDuration": 60 },
-    "api/vendor-monitor.js": { "maxDuration": 60 },
-    "api/list-intelligence.js": { "maxDuration": 60 }
+    "api/site-sweep.js": {
+      "maxDuration": 60,
+      "memory": 1769
+    },
+    "api/submit-check.js": {
+      "maxDuration": 60
+    },
+    "api/dpa-scan.js": {
+      "maxDuration": 60
+    },
+    "api/check-vendors.js": {
+      "maxDuration": 60
+    },
+    "api/analyze-copy.js": {
+      "maxDuration": 60
+    },
+    "api/regulatory-feed-update.js": {
+      "maxDuration": 60
+    },
+    "api/vendor-monitor.js": {
+      "maxDuration": 60
+    },
+    "api/list-intelligence.js": {
+      "maxDuration": 60
+    },
+    "api/exposure.js": {
+      "maxDuration": 60
+    },
+    "api/dashboard.js": {
+      "maxDuration": 30
+    },
+    "api/verdict.js": {
+      "maxDuration": 60
+    }
   }
 }
