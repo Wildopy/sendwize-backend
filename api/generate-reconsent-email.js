@@ -4,7 +4,7 @@
 // Does NOT send anything. Returns draft text for the user to copy into their own ESP.
 // No streak call — this is not a user-facing tool completion.
 // v1.1 (security): authenticated via _auth.js — internal callers
-//   (audit-database-v2) or a signed-in member (reconsent-builder.html).
+//   (audit-database-v2) or a signed-in member.
 //   Previously anyone could call it and spend Claude credit.
 
 import { requireAuth, CORS_HEADERS } from './_auth.js';

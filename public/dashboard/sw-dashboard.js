@@ -231,7 +231,7 @@
     var body = c && (c.in30 || c.in60 || c.in90) ? '<div class="sw-bkts">' +
       [['b30', c.in30, '30 days'], ['b60', c.in60, '60 days'], ['b90', c.in90, '90 days']].map(function (b) {
         return '<div class="sw-bkt ' + b[0] + '"><div class="sw-bkn">' + (b[1] || 0).toLocaleString('en-GB') + '</div><div class="sw-bkl">' + b[2] + '</div></div>';
-      }).join('') + '</div><a class="sw-link" href="' + esc(link('/reconsent-builder.html')) + '">Write a re-consent email</a>'
+      }).join('') + '</div><a class="sw-link" href="' + esc(link('/list-intelligence.html')) + '">Draft a re-consent email in List health</a>'
       : '<div class="sw-empty">No consents expiring in the next 90 days' + (c ? '.' : ' on record. Upload a list in List health.') + '</div>';
     return '<div class="sw-card sw-pad"><div class="sw-lbl">Consent expiring</div>' + body + '</div>';
   }
