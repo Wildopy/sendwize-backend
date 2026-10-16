@@ -1,5 +1,12 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — generate-fix.js v7.4
+// SENDWIZE — generate-fix.js v7.5
+// v7.5: exposure constants come from _exposure.js (shared with fixes.js),
+//   so a fix stored here and the same fix shown on the dashboard use the
+//   same range. Types that have their own published-case range (e.g.
+//   third_party_list, invalid_consent_mechanism, no_article26_agreement)
+//   keep their own type instead of being folded into a broader one.
+//   Stored ExposureLow/High use the customer's revenue band and sector.
+//   sourceRecordId escaped in the dedupe formula.
 // v7.4 (security): every request authenticated via _auth.js. Other
 //   Sendwize endpoints call this with the internal secret; a signed-in
 //   member can only create fixes for themselves. Site Sweep fix types
@@ -18,6 +25,8 @@
 // ─────────────────────────────────────────────────────────────
 
 import { requireAuth, CORS_HEADERS } from './_auth.js';
+import { fq } from './_airtable.js';
+import { EXPOSURE_CONSTANTS, getICORange, normaliseSector, ICO_LEGAL_MAX, CMA_LEGAL_MAX, NOT_LEGAL_ADVICE, COMMERCIAL_DISCLAIMER } from './_exposure.js';
 
 const LEGACY_TYPE_MAP = {
   expired_consent:                    'consent_expired',
@@ -62,39 +71,10 @@ const LEGACY_TYPE_MAP = {
   privacy_notice_at_capture:          'data_quality',
 };
 
-const EXPOSURE_CONSTANTS = {
-  consent_expired:           { category: 'ICO', realisticLow: 5000,   realisticHigh: 80000  },
-  consent_missing:           { category: 'ICO', realisticLow: 8000,   realisticHigh: 140000 },
-  suppression_breach:        { category: 'ICO', realisticLow: 12000,  realisticHigh: 200000 },
-  dpa_breach:                { category: 'ICO', realisticLow: 20000,  realisticHigh: 500000 },
-  legitimate_interest_abuse: { category: 'ICO', realisticLow: 5000,   realisticHigh: 100000 },
-  data_quality:              { category: 'ICO', realisticLow: 2000,   realisticHigh: 30000  },
-  fake_urgency:              { category: 'ASA' },
-  misleading_claim:          { category: 'ASA' },
-  misleading_reference_price:{ category: 'ASA' },
-  undisclosed_ad:            { category: 'ASA' },
-  asa_liability:             { category: 'ASA' },
-  drip_pricing:              { category: 'CMA' },
-  fake_reviews:              { category: 'CMA' },
-  commercial_loss:           { category: 'Commercial' },
-  segment_damaged:               { category: 'Commercial' },
-  segment_cooling:               { category: 'Commercial' },
-  segment_declining_engagement:  { category: 'Commercial' },
-  // v7.3 — ASA/CAP/CMA relationship register fix types
-  unreviewed_joint_ads:          { category: 'ASA' },
-  partner_pricing_claims:        { category: 'CMA' },
-  affiliate_misleading_claims:   { category: 'ASA' },
-  affiliate_ad_disclosure:       { category: 'ASA' },
-  lead_gen_consent_gap:          { category: 'ICO', realisticLow: 10000, realisticHigh: 225000 },
-};
-
-const ICO_LEGAL_MAX    = '\u00a317.5M or 4% of global annual turnover \u2014 whichever is higher (DUAA 2025)';
-const CMA_LEGAL_MAX    = 'Higher of \u00a3300,000 or 10% of global annual turnover (DMCCA 2024)';
-const NOT_LEGAL_ADVICE = 'Illustrative ranges based on published enforcement data. Not a prediction. Not legal advice.';
-const COMMERCIAL_DISCLAIMER = 'Estimated business cost based on your own inputs \u2014 not a regulatory fine, and not legal advice.';
-
 function resolveFixType(rawType) {
   const type = (rawType || '').toLowerCase().trim();
+  // v7.5: a type with its own range keeps it
+  if (EXPOSURE_CONSTANTS[type]) return { canonical: type, original: type, def: EXPOSURE_CONSTANTS[type] };
   if (Object.prototype.hasOwnProperty.call(LEGACY_TYPE_MAP, type)) {
     const mapped = LEGACY_TYPE_MAP[type];
     if (mapped === null) return { skip: true, reason: `${type} is a positive action` };
@@ -109,7 +89,10 @@ function resolveFixType(rawType) {
 
 function buildExposureFields(def, opts) {
   opts = opts || {};
-  if (def.category === 'ICO') return { ExposureLow: def.realisticLow, ExposureHigh: def.realisticHigh, ExposureBasis: 'regulatory', ExposureCategory: 'ICO', LegalMax: ICO_LEGAL_MAX };
+  if (def.category === 'ICO') {
+    const range = getICORange(def, opts.revenueBand, opts.sector);
+    return { ExposureLow: range.low, ExposureHigh: range.high, ExposureBasis: 'regulatory', ExposureCategory: 'ICO', LegalMax: ICO_LEGAL_MAX };
+  }
   if (def.category === 'ASA') return { ExposureLow: 0, ExposureHigh: 0, ExposureBasis: 'reputational', ExposureCategory: 'ASA', LegalMax: null };
   if (def.category === 'CMA') return { ExposureLow: 0, ExposureHigh: 0, ExposureBasis: 'regulatory', ExposureCategory: 'CMA', LegalMax: CMA_LEGAL_MAX };
   if (def.category === 'Commercial') {
@@ -151,16 +134,16 @@ export default async function handler(req, res) {
     const BASE_ID        = process.env.BASE_ID;
     const base           = `https://api.airtable.com/v0/${BASE_ID}`;
     const authH          = { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
-    let revenueBand = null;
+    let revenueBand = null, sector = 'general';
     try {
-      const pr = await fetch(`${base}/User_Profile?filterByFormula={UserID}='${userId}'&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
-      if (pr.ok) { const pd = await pr.json(); revenueBand = pd.records?.[0]?.fields?.RevenueBand || null; }
+      const pr = await fetch(`${base}/User_Profile?filterByFormula=${encodeURIComponent(`{UserID}=${fq(userId)}`)}&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+      if (pr.ok) { const pd = await pr.json(); const pf = pd.records?.[0]?.fields || {}; revenueBand = pf.RevenueBand || null; sector = normaliseSector(pf.Sector); }
     } catch(e) { console.error('Profile load failed (non-fatal):', e); }
 
     // ── v6.5: dedup on canonical + ORIGINAL fixType ─────────
     if (sourceRecordId) {
       try {
-        const formula = `AND({UserID}='${userId}',{FixType}='${canonical}',{OriginalFixType}='${original}',{SourceRecordID}='${sourceRecordId}',{Status}='pending')`;
+        const formula = `AND({UserID}=${fq(userId)},{FixType}=${fq(canonical)},{OriginalFixType}=${fq(original)},{SourceRecordID}=${fq(sourceRecordId)},{Status}='pending')`;
         const dr = await fetch(`${base}/Compliance_Fixes?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
         if (dr.ok) {
           const dd = await dr.json();
@@ -172,7 +155,7 @@ export default async function handler(req, res) {
       } catch(e) { console.error('Dupe check failed, continuing:', e); }
     }
 
-    const exposureFields = buildExposureFields(def, { exposureLow, exposureHigh });
+    const exposureFields = buildExposureFields(def, { exposureLow, exposureHigh, revenueBand, sector });
     const cvRaw = contactVolume ?? volume ?? null;
     const cv = cvRaw !== null ? parseInt(cvRaw, 10) || null : null;
     const disclaimer = isCommercial ? COMMERCIAL_DISCLAIMER : NOT_LEGAL_ADVICE;

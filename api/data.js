@@ -1599,8 +1599,8 @@ async function handleBriefing(req, res) {
   for (const r of competitors.slice(0,5)) {
     if ((r.fields.RulingCount || 0) > 0) intelLines.push(`- Competitor ${r.fields.CompetitorName}: ${r.fields.RulingCount} relevant enforcement action(s) on record.`);
   }
-  const promptContext = [`Compliance score: ${score}/100`, `Third-party risk score: ${thirdParty?.total ?? 'not calculated'}/100`, `Processors: ${vendors.length}, Partners: ${partners.length}, Affiliates: ${affiliates.length}, Competitors watched: ${competitors.length}`, `Pending fixes: ${pending.length}`, intelLines.length ? `\nRelationship intelligence:\n${intelLines.join('\n')}` : '\nNo relationship alerts this week.'].join('\n');
-  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 600, system: `You are a compliance advisor for UK email marketers. Write a concise weekly briefing of 180-220 words. Never say "compliant" or "in breach". Never give legal advice. Plain English.`, messages: [{ role: 'user', content: `Status:\n${promptContext}\n\nWrite the weekly briefing.` }] }) });
+  const promptContext = [`Compliance score: ${score}/100`, `Third-party risk score: ${thirdParty?.total ?? 'not calculated'}/100`, `Processors: ${vendors.length}, Partners: ${partners.length}, Affiliates: ${affiliates.length}, Competitors watched: ${competitors.length}`, `Pending fixes: ${pending.length}`, fixesData?.exposure ? `Open regulatory exposure (comparable published cases): £${(fixesData.exposure.totalLow||0).toLocaleString('en-GB')}–£${(fixesData.exposure.totalHigh||0).toLocaleString('en-GB')}; regulator attention likelihood ${fixesData.exposure.likelihood?.level || 'unknown'}` : '', fixesData?.exposure?.clusters?.length ? `Biggest areas: ${fixesData.exposure.clusters.slice(0,3).map(c => `${c.label} (${c.count} finding${c.count>1?'s':''})`).join('; ')}` : '', fixesData?.riskAddressed ? `Exposure addressed this month: £${(fixesData.riskAddressed.monthTotal||0).toLocaleString('en-GB')}` : '', `Top open findings: ${pending.slice(0,3).map(p => (p.description||'').slice(0,90)).join(' | ') || 'none'}`, intelLines.length ? `\nRelationship intelligence:\n${intelLines.join('\n')}` : '\nNo relationship alerts this week.'].filter(Boolean).join('\n');
+  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 600, system: `You are a compliance advisor for UK email marketers. Write a concise weekly briefing of 180-220 words. Use only the figures given; never invent numbers. Lead with the single most valuable action this week. Never say "compliant", "illegal" or "in breach". Never give legal advice. Plain English.`, messages: [{ role: 'user', content: `Status:\n${promptContext}\n\nWrite the weekly briefing.` }] }) });
   if (!claudeRes.ok) return res.status(claudeRes.status).json({ error: 'Failed to generate briefing' });
   const briefing = (await claudeRes.json()).content?.[0]?.text || '';
   if (profile?.id) atPatch(base, 'User_Profile', profile.id, { LastBriefingSent: today, LastBriefingText: briefing }).catch(e => console.error('briefing save non-fatal:', e));
@@ -1614,21 +1614,40 @@ async function handleConsentExpiryCheck(req, res) {
   if (!userId) return res.status(400).json({ error: 'userId required' });
   const base = airtableBase();
   const today = new Date().toISOString().split('T')[0];
-  const audits = await atGet(base, 'Database_Audits', `{UserID}='${userId}'`, 'sort[0][field]=AuditDate&sort[0][direction]=desc', 1).catch(() => []);
-  const audit = audits[0];
-  if (!audit) return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0 });
-  let expiryTimeline = []; try { expiryTimeline = JSON.parse(audit.fields.ExpiryTimeline || '[]'); } catch {}
-  const d30 = new Date(); d30.setDate(d30.getDate()+30); const d60 = new Date(); d60.setDate(d60.getDate()+60); const d90 = new Date(); d90.setDate(d90.getDate()+90);
-  let e30=0, e60=0, e90=0;
-  expiryTimeline.forEach(s => { if (!s.expiryDate) return; const exp = new Date(s.expiryDate); const count = s.count||1; if (exp<=d30) e30+=count; else if (exp<=d60) e60+=count; else if (exp<=d90) e90+=count; });
-  if (!e30) return res.json({ checked: true, alertFired: false, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90 });
+  // v7.7: List Intelligence (latest check per list) is the main source;
+  // the older Database Auditor is still read when there is no list check.
+  let e30=0, e60=0, e90=0, source = 'none';
+  const liChecks = await atGet(base, 'List_Intelligence_Checks', `{UserID}='${userId}'`, 'sort[0][field]=CheckDate&sort[0][direction]=desc', 30).catch(() => []);
+  const seenLists = new Set();
+  for (const c of liChecks) {
+    const name = c.fields.ListName || 'List';
+    if (seenLists.has(name)) continue;
+    seenLists.add(name);
+    // Counts were measured on CheckDate; shift the buckets by the days since
+    const days = c.fields.CheckDate ? Math.floor((Date.now() - new Date(c.fields.CheckDate)) / 86400000) : 0;
+    const b30 = c.fields.Expiring30 || 0, b60 = c.fields.Expiring60 || 0, b90 = c.fields.Expiring90 || 0;
+    if (days < 30) { e30 += b30; e60 += b60; e90 += b90; }
+    else if (days < 60) { e30 += b30 + b60; e60 += b90; }
+    else { e30 += b30 + b60 + b90; }
+    source = 'list_intelligence';
+  }
+  if (source === 'none') {
+    const audits = await atGet(base, 'Database_Audits', `{UserID}='${userId}'`, 'sort[0][field]=AuditDate&sort[0][direction]=desc', 1).catch(() => []);
+    const audit = audits[0];
+    if (!audit) return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0, source });
+    let expiryTimeline = []; try { expiryTimeline = JSON.parse(audit.fields.ExpiryTimeline || '[]'); } catch {}
+    const d30 = new Date(); d30.setDate(d30.getDate()+30); const d60 = new Date(); d60.setDate(d60.getDate()+60); const d90 = new Date(); d90.setDate(d90.getDate()+90);
+    expiryTimeline.forEach(s => { if (!s.expiryDate) return; const exp = new Date(s.expiryDate); const count = s.count||1; if (exp<=d30) e30+=count; else if (exp<=d60) e60+=count; else if (exp<=d90) e90+=count; });
+    source = 'database_audit';
+  }
+  if (!e30) return res.json({ checked: true, alertFired: false, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90, source });
   const profiles = await atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []);
   const profile = profiles[0];
   const lastAlert = profile?.fields?.LastAlertSent || '';
-  if (lastAlert && Math.floor((new Date(today)-new Date(lastAlert))/86400000) < 7) return res.json({ checked: true, alertFired: false, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90 });
+  if (lastAlert && Math.floor((new Date(today)-new Date(lastAlert))/86400000) < 7) return res.json({ checked: true, alertFired: false, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90, source });
   const alertRes = await fetch(`${APP_URL}/api/data?action=send-alert`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId, alertType: 'consent_expiry' }) }).catch(() => ({ ok: false }));
   if (profile?.id) atPatch(base, 'User_Profile', profile.id, { LastAlertSent: today }).catch(() => {});
-  return res.json({ checked: true, alertFired: alertRes.ok, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90 });
+  return res.json({ checked: true, alertFired: alertRes.ok, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90, source });
 }
 
 // ── VENDOR-WATCH (legacy compat) ─────────────────────────────

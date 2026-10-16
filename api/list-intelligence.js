@@ -414,7 +414,8 @@ function calculateListExposure(analysis) {
   const disposableCount = (scored || []).filter(c => c.primaryRisk === 'disposable_domain').length;
   const asaExposure = {
     roleBasedContacts: roleBasedCount, disposableContacts: disposableCount,
-    estimatedExposure: parseFloat((roleBasedCount * EXPOSURE_ANCHORS.asa.roleBasedPerContact + disposableCount * EXPOSURE_ANCHORS.asa.disposablePerContact).toFixed(2)),
+    // Spec: ASA risk is reputational, never a £ figure
+    estimatedExposure: 0, reputationalOnly: true, flaggedContacts: roleBasedCount + disposableCount,
     label: EXPOSURE_ANCHORS.asa.label, basis: EXPOSURE_ANCHORS.asa.basis, signals: asaNote || null,
   };
 
@@ -424,13 +425,15 @@ function calculateListExposure(analysis) {
   const cmaContactCount = spamTrapCount + typoCount;
   const cmaExposure = {
     affectedContacts: cmaContactCount,
-    estimatedExposure: parseFloat((cmaContactCount * EXPOSURE_ANCHORS.cma.dataQualityPerContact).toFixed(2)),
+    // Spec: CMA shown as statutory maximum only, never a per-contact £ figure
+    estimatedExposure: 0, statutoryMaxOnly: true, flaggedContacts: cmaContactCount,
     label: EXPOSURE_ANCHORS.cma.label, basis: EXPOSURE_ANCHORS.cma.basis, signals: cmaNote || null,
   };
 
   const estimatedValue = parseFloat(((activeCount + recoverableCount) * DEFAULT_REVENUE_PER_CONTACT).toFixed(2));
   const recoverableValue = parseFloat((recoverableCount * DEFAULT_REVENUE_PER_CONTACT * DEFAULT_RECONSENT_SUCCESS_RATE).toFixed(2));
-  const totalExposure = parseFloat((icoExposure.estimatedExposure + asaExposure.estimatedExposure + cmaExposure.estimatedExposure).toFixed(2));
+  // ICO only: ASA and CMA never carry a £ figure, and are never added in
+  const totalExposure = parseFloat(icoExposure.estimatedExposure.toFixed(2));
 
   return { totalExposure, estimatedValue, recoverableValue, ico: icoExposure, asa: asaExposure, cma: cmaExposure, methodology: 'Indicative estimates based on published UK enforcement benchmarks. Not a prediction of regulatory outcome.' };
 }
