@@ -27,6 +27,8 @@
 //   CRON_SECRET              (optional)  Vercel sends it to cron jobs automatically
 //   SENDWIZE_AUTH_ENFORCE    (optional)  'false' during rollout only
 //   SENDWIZE_ALLOW_USERID_BYPASS (optional) 'true' on preview/dev only
+//   SENDWIZE_REQUIRE_PLAN    (optional)  'true' = members need an active paid plan (402 otherwise)
+//   SENDWIZE_PLAN_IDS        (optional)  only these Memberstack plan ids count, comma separated
 //
 // npm i @memberstack/admin
 // ─────────────────────────────────────────────────────────────
@@ -96,6 +98,33 @@ export async function authenticate(req) {
   return null;
 }
 
+// ── Paid plan check ──
+// On when SENDWIZE_REQUIRE_PLAN=true. A member passes if they hold an
+// ACTIVE or TRIALING plan connection in Memberstack (any plan, or only
+// the ids in SENDWIZE_PLAN_IDS, comma separated). Results are cached for
+// 5 minutes per warm function. If Memberstack can't be reached the
+// member is let through (logged), so an outage never locks out payers.
+const PLAN_OK_STATUS = ['ACTIVE', 'TRIALING'];
+const PLAN_CACHE_MS = 5 * 60 * 1000;
+const planCache = new Map();
+export async function hasPaidPlan(memberId) {
+  if (process.env.SENDWIZE_REQUIRE_PLAN !== 'true') return true;
+  const hit = planCache.get(memberId);
+  if (hit && Date.now() - hit.at < PLAN_CACHE_MS) return hit.ok;
+  try {
+    const { data } = await memberstack().members.retrieve({ id: memberId });
+    const allowed = (process.env.SENDWIZE_PLAN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
+    const ok = (data?.planConnections || []).some(pc =>
+      PLAN_OK_STATUS.includes(String(pc.status || '').toUpperCase()) &&
+      (!allowed.length || allowed.includes(pc.planId)));
+    planCache.set(memberId, { ok, at: Date.now() });
+    return ok;
+  } catch (e) {
+    console.warn('[auth] plan check failed, allowing member:', e.message);
+    return true;
+  }
+}
+
 // Pins the verified member id onto the request so existing handlers,
 // which read userId from query/body, automatically use the real one.
 function pinUserId(req, userId) {
@@ -110,11 +139,17 @@ function pinUserId(req, userId) {
 // Use at the top of each router, after the OPTIONS check:
 //   const auth = await requireAuth(req, res, { publicActions: ['vendors'] });
 //   if (!auth) return;
-export async function requireAuth(req, res, { publicActions = [] } = {}) {
+export async function requireAuth(req, res, { publicActions = [], allowUnpaid = false } = {}) {
   if (publicActions.includes(req.query?.action)) return { kind: 'public' };
   const auth = await authenticate(req);
   if (auth) {
-    if (auth.kind === 'member') pinUserId(req, auth.userId);
+    if (auth.kind === 'member') {
+      pinUserId(req, auth.userId);
+      if (!allowUnpaid && !auth.bypass && !(await hasPaidPlan(auth.userId))) {
+        res.status(402).json({ error: 'Your Sendwize plan is not active. Choose a plan to keep using the tools.', code: 'plan_required' });
+        return null;
+      }
+    }
     return auth;
   }
   if (process.env.SENDWIZE_AUTH_ENFORCE === 'false') {
