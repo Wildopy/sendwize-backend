@@ -93,3 +93,14 @@ async function atFetch(url, options = {}) {
 }
 
 export { atFetch, isRetryable };
+
+/**
+ * Quote a value for use inside an Airtable filterByFormula string.
+ * Escapes backslashes and both quote characters so user-supplied text
+ * (vendor names, list names, ids) can never change the formula.
+ *   `AND({UserID}=${fq(userId)},{VendorName}=${fq(name)})`
+ */
+export function fq(value) {
+  const s = String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+  return `'${s}'`;
+}

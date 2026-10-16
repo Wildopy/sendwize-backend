@@ -3,13 +3,26 @@
 // Generates a PECR-compliant re-consent draft (email or SMS) via Claude.
 // Does NOT send anything. Returns draft text for the user to copy into their own ESP.
 // No streak call — this is not a user-facing tool completion.
+// v1.1 (security): authenticated via _auth.js — internal callers
+//   (audit-database-v2) or a signed-in member (reconsent-builder.html).
+//   Previously anyone could call it and spend Claude credit.
+
+import { requireAuth, CORS_HEADERS } from './_auth.js';
+import { checkLimit } from './_limits.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin',  '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+  if (!(await checkLimit(req, res, auth, 'reconsent'))) return;
 
   // ── Parameter validation ────────────────────────────────────────────────────
   const {

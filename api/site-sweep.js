@@ -47,7 +47,8 @@ import { promises as dns } from 'node:dns';
 import { randomBytes } from 'node:crypto';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
-import { fetchPage, extractSignals, extractLinks, isSafePublicUrl } from './_page-scan.js';
+import { checkLimit } from './_limits.js';
+import { fetchPage, extractSignals, extractLinks, isSafePublicUrl, resolvesPublic } from './_page-scan.js';
 
 const APP_URL       = 'https://sendwize-backend.vercel.app';
 const TABLE         = 'Site_Sweeps';
@@ -160,6 +161,8 @@ async function fetchSmallText(rawUrl) {
   for (let hop = 0; hop < 4; hop++) {
     const safe = isSafePublicUrl(current);
     if (!safe.ok) return { ok: false, error: safe.reason };
+    const dnsOk = await resolvesPublic(new URL(safe.url).hostname);
+    if (!dnsOk.ok) return { ok: false, error: dnsOk.reason };
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
     try {
@@ -657,6 +660,7 @@ export default async function handler(req, res) {
     // Identity: the verified member id replaces any userId sent by the browser
     const auth = await requireAuth(req, res);
     if (!auth) return;
+    if (req.method === 'POST' && action === 'run' && !(await checkLimit(req, res, auth, 'site_sweep'))) return;
     if (req.method === 'POST' && action === 'start')  return await handleStart(req, res);
     if (req.method === 'POST' && action === 'verify') return await handleVerify(req, res);
     if (req.method === 'POST' && action === 'run')    return await handleRun(req, res);

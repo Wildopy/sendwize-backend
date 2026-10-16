@@ -3,6 +3,20 @@
     {
       "path": "/api/regulatory-feed-update",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/digest",
+      "schedule": "0 8 * * 1"
     }
-  ]
+  ],
+  "functions": {
+    "api/site-sweep.js": { "maxDuration": 60, "memory": 1769 },
+    "api/submit-check.js": { "maxDuration": 60 },
+    "api/dpa-scan.js": { "maxDuration": 60 },
+    "api/check-vendors.js": { "maxDuration": 60 },
+    "api/analyze-copy.js": { "maxDuration": 60 },
+    "api/regulatory-feed-update.js": { "maxDuration": 60 },
+    "api/vendor-monitor.js": { "maxDuration": 60 },
+    "api/list-intelligence.js": { "maxDuration": 60 }
+  }
 }

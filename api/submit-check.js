@@ -1,5 +1,12 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v5.3
+// SENDWIZE — submit-check.js v5.4
+// v5.4 changes:
+//   + New action=check: runs the AI Scanner (analyze-copy) on a piece of
+//     copy and returns { issues, score, verdict, checkId }. Campaign
+//     Defence assembly and the Vendor Register partner/affiliate ad
+//     reviews already called this action, which did not exist, so their
+//     copy checks silently never ran.
+//   + URL snapshots go through _page-scan.js fetchPage() (SSRF-safe).
 // v5.3 changes (security):
 //   + Every request authenticated via _auth.js; the verified member id
 //     replaces any userId sent by the browser. Internal calls carry the
@@ -48,7 +55,8 @@
 // ─────────────────────────────────────────────────────────────
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
-import { scanCampaignPages, serialiseScan, describeScan, activePageFindings } from './_page-scan.js';
+import { checkLimit } from './_limits.js';
+import { scanCampaignPages, serialiseScan, describeScan, activePageFindings, fetchPage } from './_page-scan.js';
 
 const APP_URL      = 'https://sendwize-backend.vercel.app';
 const REVERIFY_DAYS = 90;
@@ -547,17 +555,10 @@ ${copyText.slice(0, 4000)}` }],
 // ── URL snapshot ──────────────────────────────────────────────
 async function snapshotUrl(url) {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    const r = await fetch(url, {
-      headers: { 'User-Agent': 'Sendwize-ComplianceMonitor/1.0' },
-      signal: controller.signal,
-      redirect: 'follow',
-    });
-    clearTimeout(timeout);
-    if (!r.ok) return { url, status: 'error', error: `HTTP ${r.status}`, capturedAt: new Date().toISOString() };
+    const page = await fetchPage(url);
+    if (!page.ok) return { url, status: 'error', error: page.error || 'Could not fetch page', capturedAt: new Date().toISOString() };
 
-    const html = await r.text();
+    const html = page.html;
     const visibleText = html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<style[\s\S]*?<\/style>/gi, '')
@@ -1400,6 +1401,25 @@ async function handleDossierSubmit(req, res) {
   });
 }
 
+// ── v5.4: copy check (AI Scanner) ────────────────────────────
+async function handleCopyCheck(req, res) {
+  const { userId, copy, subject, contentType } = req.body ?? {};
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+  if (!copy || !String(copy).trim()) return res.status(400).json({ error: 'copy required' });
+  const ct = ['email','sms','push','social','directmail'].includes(contentType) ? contentType : 'email';
+  const r = await fetch(`${APP_URL}/api/analyze-copy`, {
+    method: 'POST', headers: internalHeaders(),
+    body: JSON.stringify({ userId, contentType: ct, content: String(copy), subject: subject || undefined }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) return res.status(r.status).json({ error: data.error || 'Copy check failed' });
+  const issues = (data.violations || []).map(v => ({
+    regulation: v.regulation || '', severity: v.severity || 'medium', issue: v.issue || '',
+    location: v.location || '', recommendation: v.recommendation || '', requiresEvidence: !!v.requiresEvidence,
+  }));
+  return res.json({ success: true, issues, score: data.score ?? null, verdict: data.verdict || null, checkId: data.sourceRecordId || null, checkHash: data.checkHash || null });
+}
+
 async function handleBriefCheck(req, res) {
   const {
     userId, campaignName, channel, audience, lawfulBasis, listSource,
@@ -1475,6 +1495,7 @@ export default async function handler(req, res) {
     // Identity: the verified member id replaces any userId sent by the browser
     const auth = await requireAuth(req, res);
     if (!auth) return;
+    if (['defence-assemble','defence-scan-pages','check'].includes(action) && !(await checkLimit(req, res, auth, action === 'check' ? 'copy_scan' : 'campaign_build'))) return;
     // Campaign Defence (v5.1 / v5.2)
     if (req.method === 'POST' && action === 'defence-assemble')   return await handleDefenceAssemble(req, res);
     if (req.method === 'POST' && action === 'defence-scan-pages') return await handleDefenceScanPages(req, res);
@@ -1487,6 +1508,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET'  && action === 'dossier-get')    return await handleDossierGet(req, res);
     if (req.method === 'POST' && action === 'dossier-submit') return await handleDossierSubmit(req, res);
     if (req.method === 'POST' && action === 'brief-check')    return await handleBriefCheck(req, res);
+    if (req.method === 'POST' && action === 'check')          return await handleCopyCheck(req, res);
     return res.status(400).json({ error: 'Unknown action' });
   } catch (error) {
     console.error('submit-check.js error:', error);

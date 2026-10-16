@@ -34,6 +34,7 @@ const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`;
 import { smartDetect, smartValidate } from './_smart-import.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
+import { checkLimit } from './_limits.js';
 import { validateAudienceUpload } from './_normalise.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -1176,6 +1177,7 @@ export default async function handler(req, res) {
   // Identity: the verified member id replaces any userId sent by the browser
   const auth = await requireAuth(req, res, { publicActions: ['methodology'] });
   if (!auth) return;
+  if (req.query?.action === 'upload' && !(await checkLimit(req, res, auth, 'list_upload'))) return;
   const userId = req.query.userId || req.body?.userId;
   if (!userId) return res.status(400).json({ error: 'userId required' });
   const action = req.query.action || req.body?.action || 'load';

@@ -20,6 +20,8 @@
 // ─────────────────────────────────────────────────────────────
 
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
+import { checkLimit } from './_limits.js';
+import { fetchPage } from './_page-scan.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const SCRAPE_TIMEOUT_MS = 10000;
@@ -141,18 +143,11 @@ const CHECKS = [
 // ── scrapePolicy ──────────────────────────────────────────────
 async function scrapePolicy(url) {
   if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url)) return null;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), SCRAPE_TIMEOUT_MS);
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': SCRAPE_UA, 'Accept': 'text/html,application/xhtml+xml' },
-      signal: controller.signal, redirect: 'follow',
-    });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const ct = res.headers.get('content-type') || '';
-    if (!/text\/html|xhtml|text\/plain/i.test(ct)) return null;
-    const raw = await res.text();
+    // SSRF-safe fetch (blocks internal hosts on every redirect hop)
+    const page = await fetchPage(url, { allowText: true });
+    if (!page.ok) return null;
+    const raw = page.html;
     const text = raw
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -164,7 +159,6 @@ async function scrapePolicy(url) {
     if (text.length < 500) return null;
     return text.slice(0, SCRAPE_MAX_CHARS);
   } catch (e) {
-    clearTimeout(timer);
     console.error('scrapePolicy failed:', e.message);
     return null;
   }
@@ -415,6 +409,7 @@ export default async function handler(req, res) {
     // Identity: the verified member id replaces any userId sent by the browser
     const auth = await requireAuth(req, res);
     if (!auth) return;
+    if (!(await checkLimit(req, res, auth, 'dpa_scan'))) return;
     const { userId, vendorName, vendorRegisterId, sourceType, sourceContent } = req.body ?? {};
     if (!userId) return res.status(400).json({ error: 'userId is required' });
     if (!vendorName) return res.status(400).json({ error: 'vendorName is required' });

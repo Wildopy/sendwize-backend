@@ -25,7 +25,12 @@
 // Cron setup (cron-job.org):
 //   URL:      https://sendwize-backend.vercel.app/api/vendor-monitor?action=run
 //   Schedule: Daily 03:00 UTC
-//   Header:   X-Monitor-Key: [MONITOR_KEY env var]
+//   Header:   Authorization: Bearer [CRON_SECRET]
+//             (X-Monitor-Key: [MONITOR_KEY] still accepted when set)
+// v1.x (security): every action requires the cron secret, the internal
+//   header or a valid MONITOR_KEY. Previously the endpoint was open when
+//   MONITOR_KEY was unset. Internal calls to generate-fix and
+//   vendor-dpa-reader are now signed, so fixes are actually created.
 //
 // Architecture rules:
 //   - No npm packages — fetch + crypto only
@@ -36,6 +41,8 @@
 // ─────────────────────────────────────────────────────────────
 
 import crypto from 'crypto';
+import { authenticate, internalHeaders, isRecordId } from './_auth.js';
+import { fetchPage } from './_page-scan.js';
 
 const BASE_ID       = process.env.BASE_ID;
 const AT_TOKEN      = process.env.AIRTABLE_TOKEN;
@@ -91,15 +98,9 @@ async function atCreate(table, fields) {
 // re-read unnecessarily.
 async function hashUrl(url) {
   try {
-    const r = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Sendwize-Compliance-Monitor/1.0; +https://sendwize.co.uk)',
-        'Accept':     'text/html,application/xhtml+xml,text/plain',
-      },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT),
-    });
-    if (!r.ok) return { hash: null, error: `HTTP ${r.status}` };
-    const body    = await r.text();
+    const page = await fetchPage(url, { allowText: true });
+    if (!page.ok) return { hash: null, error: page.error || 'fetch failed' };
+    const body    = page.html;
     const stripped = body
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<style[\s\S]*?<\/style>/gi, '')
@@ -229,7 +230,7 @@ async function generateFixesForAffectedUsers(vendorName, degradation) {
       try {
         await fetch(`${APP_URL}/api/generate-fix`, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: internalHeaders(),
           body:    JSON.stringify({
             userId,
             fixType:       'dpa_breach',
@@ -306,7 +307,7 @@ async function processVendor(record) {
     try {
       const readerRes = await fetch(`${APP_URL}/api/vendor-dpa-reader`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: internalHeaders(),
         body:    JSON.stringify({ vendorRecordId: record.id, vendorName, url }),
       });
       const readerData = readerRes.ok ? await readerRes.json() : { success: false };
@@ -346,20 +347,18 @@ async function processVendor(record) {
 
 // ── Handler ───────────────────────────────────────────────────
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin',  '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Monitor-Key');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET')    return res.status(405).json({ error: 'GET only' });
 
   const { action, vendorId } = req.query;
 
-  // Auth
-  if (action === 'run' || action === 'run-single') {
-    const key = req.headers['x-monitor-key'];
-    if (MONITOR_KEY && key !== MONITOR_KEY) {
-      return res.status(401).json({ error: 'Unauthorised' });
-    }
+  // Auth: cron secret / internal header, or the legacy monitor key if set
+  const auth = await authenticate(req);
+  const key  = req.headers['x-monitor-key'];
+  const keyOk = !!(MONITOR_KEY && key && key.length === MONITOR_KEY.length &&
+    crypto.timingSafeEqual(Buffer.from(key), Buffer.from(MONITOR_KEY)));
+  if (!(auth && auth.kind === 'internal') && !keyOk) {
+    return res.status(401).json({ error: 'Unauthorised' });
   }
 
   // ── Status ────────────────────────────────────────────────
@@ -374,7 +373,7 @@ export default async function handler(req, res) {
 
   // ── Run single ────────────────────────────────────────────
   if (action === 'run-single') {
-    if (!vendorId) return res.status(400).json({ error: 'vendorId required' });
+    if (!isRecordId(vendorId)) return res.status(400).json({ error: 'Valid vendorId required' });
     try {
       const r = await fetch(`${AT_BASE}/Marketing_Vendors/${vendorId}`, { headers: atH() });
       if (!r.ok) return res.status(404).json({ error: 'Vendor not found' });

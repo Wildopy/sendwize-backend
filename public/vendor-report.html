@@ -123,6 +123,7 @@
     <div id="report" style="display:none;"></div>
   </div>
 
+<script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
 <script>
   const p        = new URLSearchParams(window.location.search);
   const recordId = p.get('id') || p.get('recordId');
@@ -133,8 +134,8 @@
     if (!recordId) { return showError('No report ID provided.'); }
     try {
       const [rr, fr] = await Promise.all([
-        fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=vendor`),
-        userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
+        swFetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=vendor`),
+        userId ? swFetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
       ]);
       if (!rr.ok) throw new Error('Report not found');
       const rd = await rr.json();

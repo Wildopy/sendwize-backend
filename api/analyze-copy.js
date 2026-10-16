@@ -21,6 +21,7 @@
 
 import crypto from 'crypto';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
+import { checkLimit } from './_limits.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -549,6 +550,7 @@ export default async function handler(req, res) {
     // Identity: the verified member id replaces any userId sent by the browser
     const auth = await requireAuth(req, res);
     if (!auth) return;
+    if (!(await checkLimit(req, res, auth, 'copy_scan'))) return;
     const { contentType, content, subject, userId, autoFix, sendingContext, images } = req.body ?? {};
     if (!userId)      return res.status(400).json({ error: 'Missing userId' });
     if (!contentType) return res.status(400).json({ error: 'Missing contentType' });

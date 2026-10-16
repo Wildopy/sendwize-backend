@@ -6,16 +6,26 @@
 //
 // Returns: matches, duplicates, invalid emails, role-based emails,
 //          PECR risk score, financial exposure, warnings, clean list.
+//
+// v1.1 (security): request authenticated via _auth.js (verified member id
+//   replaces any browser userId); generate-fix call signed with the
+//   internal secret (silently rejected before). Wording aligned with the
+//   legal language rules ("potential area requiring review", never
+//   "violation").
+
+import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
     const { sendList, suppressionList, userId, suppressionListAge } = req.body;
     // suppressionListAge: 'current' | '6months' | '1year' | '2years+' | 'unknown'
 
@@ -116,7 +126,7 @@ export default async function handler(req, res) {
       warnings.push({
         severity: 'critical',
         regulation: 'PECR Regulation 22',
-        message: `${matches.length} contact${matches.length !== 1 ? 's' : ''} on your send list ${matches.length !== 1 ? 'have' : 'has'} previously opted out. Sending to ${matches.length !== 1 ? 'these contacts' : 'this contact'} is a direct PECR violation. The ICO can issue fines up to £500,000 and enforcement notices for repeated breaches.`,
+        message: `${matches.length} contact${matches.length !== 1 ? 's' : ''} on your send list ${matches.length !== 1 ? 'have' : 'has'} previously opted out. Sending to ${matches.length !== 1 ? 'these contacts' : 'this contact'} is a high-risk area under PECR Regulation 22. The ICO statutory maximum is £17.5M or 4% of global annual turnover, whichever is higher (DUAA 2025).`,
         action: 'Remove all suppressed contacts before sending. Do not send.'
       });
     }
@@ -210,7 +220,7 @@ export default async function handler(req, res) {
     const recommendation = isClean && !suppressionTooSmall && !suppressionListStale
       ? 'Your send list is clean and your suppression list looks healthy. Safe to proceed.'
       : matches.length > 0
-        ? `Do not send. Remove ${matches.length} suppressed contact${matches.length !== 1 ? 's' : ''} immediately — sending to ${matches.length !== 1 ? 'them' : 'this contact'} is a PECR violation.`
+        ? `Do not send. Remove ${matches.length} suppressed contact${matches.length !== 1 ? 's' : ''} before sending — contacting people who have opted out is a high-risk area under PECR Regulation 22.`
         : `Clean your list before sending. Remove ${analysis.removedCount} problematic email${analysis.removedCount !== 1 ? 's' : ''} and review suppression list health warnings above.`;
 
     // ── Save to Airtable ──────────────────────────────────────────────
@@ -253,11 +263,11 @@ export default async function handler(req, res) {
       try {
         await fetch(`${VERCEL_URL}/api/generate-fix`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: internalHeaders(),
           body: JSON.stringify({
             userId,
             fixType:     'suppressed_contact',
-            description: `Suppression Check: ${matches.length} contact${matches.length !== 1 ? 's' : ''} found on send list who have previously opted out. Sending to ${matches.length !== 1 ? 'these contacts' : 'this contact'} violates PECR Regulation 22.`,
+            description: `Suppression Check: ${matches.length} contact${matches.length !== 1 ? 's' : ''} found on send list who have previously opted out. Sending to ${matches.length !== 1 ? 'these contacts' : 'this contact'} is a potential area requiring review under PECR Regulation 22.`,
             tool:        'Suppression Checker',
             severity:    'critical',
             volume:      matches.length,

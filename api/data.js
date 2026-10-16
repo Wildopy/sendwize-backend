@@ -1,6 +1,17 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.6
+// SENDWIZE — data.js v7.7
 // Commercial Relationships & Risk Register
+//
+// v7.7 changes:
+//   + send-alert and backfill-processor-fixes are internal-only. A
+//     signed-in member could previously trigger Sendwize-branded alert
+//     emails with their own text in them.
+//   + score-history POST no longer trusts a score sent by the browser.
+//     The score is recalculated from fixes.js, and there is at most one
+//     snapshot per user per day (later loads update today's row), so
+//     the sparkline is one point per day and score-drop alerts compare
+//     against the previous day.
+//   + Weekly briefing no longer crashes (intelLines was never declared).
 //
 // v7.6 changes (security):
 //   + Every request is authenticated via _auth.js (Memberstack token,
@@ -40,6 +51,8 @@ import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
 const RESEND_FROM = 'alerts@sendwize.co.uk';
+// Where alert emails send people. Set DASHBOARD_URL in Vercel to the live dashboard.
+const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 
 // ── Airtable helpers ──────────────────────────────────────────
 function atHeaders(token) {
@@ -1470,16 +1483,35 @@ async function handleScoreHistory(req, res) {
     return res.json({ snapshots: records.map(r => ({ id: r.id, date: r.fields.Date || '', score: r.fields.Score || 0, pending: r.fields.Pending || 0, completed: r.fields.Completed || 0, scoreChange: r.fields.ScoreChange || 0, triggerEvent: r.fields.TriggerEvent || '', thirdPartyRiskScore: r.fields.ThirdPartyRiskScore ?? null, processorScore: r.fields.ProcessorScore ?? null, partnerScore: r.fields.PartnerScore ?? null, affiliateScore: r.fields.AffiliateScore ?? null })) });
   }
   if (req.method === 'POST') {
-    const { userId, score, pending = 0, completed = 0, triggerEvent = 'Dashboard Load' } = req.body;
+    const { userId } = req.body || {};
+    const triggerEvent = String(req.body?.triggerEvent || 'Dashboard Load').slice(0, 60);
     if (!userId) return res.status(400).json({ error: 'userId required' });
-    if (score === undefined) return res.status(400).json({ error: 'score required' });
-    const prevRecords = await atGet(base, 'Score_History', `{UserID}='${userId}'`, 'sort[0][field]=Date&sort[0][direction]=desc', 1);
-    const prevScore = prevRecords[0]?.fields?.Score ?? score;
+    // Score is always recalculated on the server — never taken from the browser
+    const fr = await fetch(`${APP_URL}/api/fixes?action=get&userId=${encodeURIComponent(userId)}`, { headers: internalHeaders() });
+    if (!fr.ok) return res.status(502).json({ error: 'Could not calculate score' });
+    const fd = await fr.json();
+    const score = fd.score ?? 0;
+    const pending = fd.counts?.pending ?? 0;
+    const completed = fd.counts?.completed ?? 0;
+    const today = new Date().toISOString().split('T')[0];
+    // One snapshot per day: compare against the latest snapshot before today
+    const recent = await atGet(base, 'Score_History', `{UserID}='${userId}'`, 'sort[0][field]=Date&sort[0][direction]=desc', 5);
+    const todays = recent.find(r => r.fields?.Date === today) || null;
+    const prev = recent.find(r => r.fields?.Date && r.fields.Date !== today) || null;
+    const prevScore = prev?.fields?.Score ?? score;
     const scoreChange = score - prevScore;
     const thirdParty = await calculateThirdPartyScore(userId, base).catch(() => null);
-    const today = new Date().toISOString().split('T')[0];
-    const fields = { UserID: userId, Date: today, Score: score, Pending: pending, Completed: completed, ScoreChange: scoreChange, TriggerEvent: triggerEvent, AlertSent: false, ThirdPartyRiskScore: thirdParty?.total ?? null, ProcessorScore: thirdParty?.breakdown?.processors?.score ?? null, PartnerScore: thirdParty?.breakdown?.partners?.score ?? null, AffiliateScore: thirdParty?.breakdown?.affiliates?.score ?? null };
-    const snap = await atCreate(base, 'Score_History', fields);
+    const fields = { UserID: userId, Date: today, Score: score, Pending: pending, Completed: completed, ScoreChange: scoreChange, TriggerEvent: triggerEvent, ThirdPartyRiskScore: thirdParty?.total ?? null, ProcessorScore: thirdParty?.breakdown?.processors?.score ?? null, PartnerScore: thirdParty?.breakdown?.partners?.score ?? null, AffiliateScore: thirdParty?.breakdown?.affiliates?.score ?? null };
+    let snap;
+    if (todays) {
+      const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== null && v !== undefined));
+      await atPatch(base, 'Score_History', todays.id, clean);
+      snap = { id: todays.id };
+      // An alert for today has already been considered
+      if (todays.fields?.AlertSent) return res.json({ snapshotId: snap.id, score, scoreChange, alertFired: false, thirdPartyScore: thirdParty });
+    } else {
+      snap = await atCreate(base, 'Score_History', { ...fields, AlertSent: false });
+    }
     let alertFired = false;
     if (scoreChange <= -10) {
       const profiles = await atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1);
@@ -1491,7 +1523,7 @@ async function handleScoreHistory(req, res) {
         } catch (e) { console.error('score-drop alert non-fatal:', e); }
       }
     }
-    return res.json({ snapshotId: snap?.id, scoreChange, alertFired, thirdPartyScore: thirdParty });
+    return res.json({ snapshotId: snap?.id, score, scoreChange, alertFired, thirdPartyScore: thirdParty });
   }
   return res.status(405).json({ error: 'Method not allowed' });
 }
@@ -1509,13 +1541,13 @@ async function handleSendAlert(req, res) {
   if (!toEmail) return res.json({ sent: false, reason: 'No email on profile' });
 
   const alertTemplates = {
-    score_drop: { subject: `Your Sendwize compliance score dropped by ${Math.abs(req.body.scoreChange||0)} points`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Compliance score alert</h2><p style="color:#555;margin:0 0 24px;font-size:14px">Your score dropped by <strong>${Math.abs(req.body.scoreChange||0)} points</strong>, now at <strong>${req.body.score}/100</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View dashboard</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
-    consent_expiry: { subject: `Sendwize: consent expiry approaching`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Consent expiry notice</h2><p style="color:#555;margin:0 0 24px;font-size:14px">One or more segments have consent expiring within 30 days.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View dashboard</a></div></div>` },
-    dpa_anniversary: { subject: `Sendwize: agreement anniversary approaching — ${req.body.entityName || 'a vendor'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Agreement anniversary alert</h2><p style="color:#555;font-size:14px">Your agreement with <strong>${req.body.entityName || 'a third party'}</strong> is due for review in <strong>${req.body.daysUntil || '30'} days</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open relationships register</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
-    competitor_ruling: { subject: `Sendwize: new ruling involving ${req.body.competitorName || 'a watched competitor'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Competitor intelligence alert</h2><p style="color:#555;font-size:14px"><strong>${req.body.competitorName || 'A competitor you watch'}</strong> appears in a new regulatory ruling: ${req.body.rulingSummary || ''}.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open sector intelligence</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
-    audience_damaged: { subject: `Sendwize: audience alert — ${req.body.segmentName || 'a segment'} needs attention`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Audience Read alert</h2><p style="color:#555;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved to <strong>${req.body.sentimentState || 'a negative state'}</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View Audience Read</a></div></div>` },
-    dossier_compliance_change: { subject: `Sendwize: compliance change affecting ${req.body.campaignTitle || 'a campaign'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Campaign compliance alert</h2><p style="color:#555;margin:0 0 16px;font-size:14px">A new regulatory ruling affects claim types in <strong>${req.body.campaignTitle || 'Untitled'}</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open campaign dossier</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
-    segment_state_change: { subject: `Sendwize: ${req.body.segmentName || 'a segment'} moved to ${req.body.sentimentState || 'a new state'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Audience state change</h2><p style="color:#555;margin:0 0 20px;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved to <strong>${req.body.sentimentState || 'a warning state'}</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open Audience Read</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    score_drop: { subject: `Your Sendwize compliance score dropped by ${Math.abs(req.body.scoreChange||0)} points`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Compliance score alert</h2><p style="color:#555;margin:0 0 24px;font-size:14px">Your score dropped by <strong>${Math.abs(req.body.scoreChange||0)} points</strong>, now at <strong>${req.body.score}/100</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View dashboard</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    consent_expiry: { subject: `Sendwize: consent expiry approaching`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Consent expiry notice</h2><p style="color:#555;margin:0 0 24px;font-size:14px">One or more segments have consent expiring within 30 days.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View dashboard</a></div></div>` },
+    dpa_anniversary: { subject: `Sendwize: agreement anniversary approaching — ${req.body.entityName || 'a vendor'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Agreement anniversary alert</h2><p style="color:#555;font-size:14px">Your agreement with <strong>${req.body.entityName || 'a third party'}</strong> is due for review in <strong>${req.body.daysUntil || '30'} days</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open relationships register</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    competitor_ruling: { subject: `Sendwize: new ruling involving ${req.body.competitorName || 'a watched competitor'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Competitor intelligence alert</h2><p style="color:#555;font-size:14px"><strong>${req.body.competitorName || 'A competitor you watch'}</strong> appears in a new regulatory ruling: ${req.body.rulingSummary || ''}.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open sector intelligence</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    audience_damaged: { subject: `Sendwize: audience alert — ${req.body.segmentName || 'a segment'} needs attention`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Audience Read alert</h2><p style="color:#555;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved to <strong>${req.body.sentimentState || 'a negative state'}</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View Audience Read</a></div></div>` },
+    dossier_compliance_change: { subject: `Sendwize: compliance change affecting ${req.body.campaignTitle || 'a campaign'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Campaign compliance alert</h2><p style="color:#555;margin:0 0 16px;font-size:14px">A new regulatory ruling affects claim types in <strong>${req.body.campaignTitle || 'Untitled'}</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open campaign dossier</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    segment_state_change: { subject: `Sendwize: ${req.body.segmentName || 'a segment'} moved to ${req.body.sentimentState || 'a new state'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Audience state change</h2><p style="color:#555;margin:0 0 20px;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved to <strong>${req.body.sentimentState || 'a warning state'}</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open Audience Read</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
   };
   const tmpl = alertTemplates[alertType];
   if (!tmpl) return res.status(400).json({ error: `Unknown alertType: ${alertType}` });
@@ -1547,7 +1579,8 @@ async function handleBriefing(req, res) {
   const pending = fixesData?.fixes?.pending || [];
   const score = fixesData?.score || 0;
   const thirdParty = await calculateThirdPartyScore(userId, base).catch(() => null);
-for (const r of vendors.slice(0,5)) {
+  const intelLines = [];
+  for (const r of vendors.slice(0,5)) {
     const enf = safeJSON(r.fields.EnforcementRelevanceJson, {})?.relevant || [];
     if (enf.length) intelLines.push(`- Processor ${r.fields.VendorName}: ${enf.length} relevant enforcement action(s) identified.`);
     const { gaps } = marketingGaps(safeJSON(r.fields.MarketingChecksJson, null));
@@ -1651,6 +1684,8 @@ async function handleDossierToggleMonitoring(req, res) {
 // ── v7.6: Access control ─────────────────────────────────────
 // Reference data with no customer information
 const PUBLIC_ACTIONS = ['vendors', 'violations', 'cron-status'];
+// Server-to-server only: never callable from a browser
+const INTERNAL_ACTIONS = ['send-alert', 'backfill-processor-fixes'];
 
 // Actions that read, update or delete one customer record by id
 const OWNED_RECORD_TABLES = {
@@ -1693,6 +1728,9 @@ export default async function handler(req, res) {
     // v7.6 — identity, then ownership of any record touched by id
     const auth = await requireAuth(req, res, { publicActions: PUBLIC_ACTIONS });
     if (!auth) return;
+    if (INTERNAL_ACTIONS.includes(action) && auth.kind !== 'internal') {
+      return res.status(403).json({ error: 'Not allowed', code: 'internal_only' });
+    }
     if (!(await assertRecordOwnership(req, res, auth))) return;
 
     if (action === 'report'                  && req.method === 'GET')                       return await handleReport(req, res);

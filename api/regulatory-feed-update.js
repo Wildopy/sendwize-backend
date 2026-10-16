@@ -37,6 +37,7 @@
 
 import { atFetch } from './_airtable.js';
 import { internalHeaders } from './_auth.js';
+import { fetchPage } from './_page-scan.js';
 import { createHash } from 'crypto';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -473,24 +474,17 @@ async function checkLandingPageDrift() {
       for (const urlObj of urlsToCheck) {
         try {
           results.checked++;
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
+          // SSRF-safe fetch: customer-supplied URLs never reach internal hosts
+          const page = await fetchPage(urlObj.url, { allowText: true });
 
-          const response = await fetch(urlObj.url, {
-            headers: { 'User-Agent': 'Sendwize-Monitor/2.0 (compliance check)' },
-            signal: controller.signal,
-            redirect: 'follow',
-          });
-          clearTimeout(timeout);
-
-          if (!response.ok) {
+          if (!page.ok) {
             if (storedHashes[urlObj.url]) {
-              changedUrls.push({ url: urlObj.url, type: urlObj.type, reason: `Page returned HTTP ${response.status}` });
+              changedUrls.push({ url: urlObj.url, type: urlObj.type, reason: page.httpStatus ? `Page returned HTTP ${page.httpStatus}` : `Page could not be fetched (${page.error})` });
             }
             continue;
           }
 
-          const body = await response.text();
+          const body = page.html;
           const stripped = body
             .replace(/<script[\s\S]*?<\/script>/gi, '')
             .replace(/<style[\s\S]*?<\/style>/gi, '')

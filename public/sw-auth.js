@@ -20,7 +20,8 @@
 (function () {
   var KEY = 'sw_token';
   var BACKEND = /^https:\/\/sendwize-backend\.vercel\.app\//;
-  var DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  // Set window.SW_DASHBOARD_URL before this script to point at the live dashboard
+  var DASHBOARD = window.SW_DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
   var cached = null;
 
   // Token handed over in the URL fragment by a Webflow link

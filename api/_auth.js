@@ -125,6 +125,16 @@ export async function requireAuth(req, res, { publicActions = [] } = {}) {
   return null;
 }
 
+// For endpoints and actions only other Sendwize endpoints or cron may call
+// (e.g. digest, vendor-monitor, send-alert). Members are always rejected,
+// and the rollout switch does not apply.
+export async function requireInternal(req, res) {
+  const auth = await authenticate(req);
+  if (auth && auth.kind === 'internal') return auth;
+  res.status(401).json({ error: 'Not allowed', code: 'internal_only' });
+  return null;
+}
+
 // Airtable record ids look like rec + 14 characters. Validating them also
 // stops formula injection where ids are placed inside filterByFormula.
 export function isRecordId(id) {

@@ -1,5 +1,12 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — _page-scan.js v1.1  (used by submit-check.js v5.2 and site-sweep.js v1.0)
+// SENDWIZE — _page-scan.js v1.2  (used by submit-check.js, site-sweep.js, dpa-scan.js,
+//   vendor-dpa-reader.js, check-vendors.js)
+//
+// v1.2 (security): fetchPage() also resolves the hostname and refuses
+//   private, loopback, link-local and internal addresses on every
+//   redirect hop, so a public name pointing at an internal IP is blocked.
+//   New option { allowText: true } accepts text/plain (policy pages).
+//   This is now the only way Sendwize fetches a user-supplied URL.
 //
 // Campaign-level page scanner for Campaign Defence.
 // Underscore prefix: Vercel does not expose this file as an endpoint.
@@ -37,6 +44,8 @@
 // Evidence types used: page_observed (new — detected in page source),
 // ai_assessment (Claude interpretation backed by a verified excerpt).
 // ─────────────────────────────────────────────────────────────
+
+import { lookup } from 'node:dns/promises';
 
 export const PAGE_SCAN_VERSION = '1.0';
 
@@ -77,12 +86,42 @@ export function isSafePublicUrl(raw) {
   return { ok: true, url: u.toString() };
 }
 
+// True for addresses a public web page should never resolve to
+export function isPrivateAddress(ip) {
+  const v = String(ip || '').toLowerCase();
+  if (v.includes(':')) {
+    if (v === '::' || v === '::1') return true;
+    if (v.startsWith('::ffff:')) return isPrivateAddress(v.slice(7));
+    return /^(fc|fd|fe8|fe9|fea|feb)/.test(v);
+  }
+  const p = v.split('.').map(Number);
+  if (p.length !== 4 || p.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return true;
+  const [a, b] = p;
+  return a === 0 || a === 10 || a === 127 || a >= 224 ||
+    (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) ||
+    (a === 198 && (b === 18 || b === 19));
+}
+
+export async function resolvesPublic(hostname) {
+  try {
+    const addrs = await lookup(hostname, { all: true, verbatim: true });
+    if (!addrs.length) return { ok: false, reason: 'Host could not be resolved' };
+    if (addrs.some(a => isPrivateAddress(a.address))) return { ok: false, reason: 'Host resolves to a private address' };
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: 'Host could not be resolved' };
+  }
+}
+
 // ── Fetch (manual redirects so every hop is safety-checked) ──
-export async function fetchPage(rawUrl) {
+export async function fetchPage(rawUrl, opts = {}) {
   let current = rawUrl;
   for (let hop = 0; hop < 4; hop++) {
     const safe = isSafePublicUrl(current);
     if (!safe.ok) return { ok: false, error: safe.reason, finalUrl: current };
+    const dnsOk = await resolvesPublic(new URL(safe.url).hostname);
+    if (!dnsOk.ok) return { ok: false, error: dnsOk.reason, finalUrl: current };
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -110,7 +149,7 @@ export async function fetchPage(rawUrl) {
     if (!r.ok) { clearTimeout(timer); return { ok: false, error: `HTTP ${r.status}`, httpStatus: r.status, finalUrl: current }; }
 
     const ct = r.headers.get('content-type') || '';
-    if (ct && !ct.includes('html')) {
+    if (ct && !ct.includes('html') && !(opts.allowText && ct.includes('text/plain'))) {
       clearTimeout(timer);
       return { ok: false, error: `Not an HTML page (${ct.split(';')[0]})`, httpStatus: r.status, finalUrl: current };
     }
