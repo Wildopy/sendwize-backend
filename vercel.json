@@ -11,6 +11,10 @@
     {
       "path": "/api/exposure?action=assess-pending",
       "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/free-check?action=report",
+      "schedule": "15 7 * * *"
     }
   ],
   "functions": {

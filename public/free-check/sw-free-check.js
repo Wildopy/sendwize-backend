@@ -32,6 +32,9 @@
     '.swfc-vh{font-size:20px;font-weight:700;margin:6px 0 4px;line-height:1.3}' +
     '.swfc-item{background:#fff;border:1px solid var(--b);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:14px;line-height:1.45}' +
     '.swfc-ref{display:block;font-size:11px;color:var(--mu);margin-top:3px}' +
+    '.swfc-chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--mu);margin-top:12px;font-weight:400}' +
+    '.swfc-chk input{width:auto;margin-top:2px}' +
+    '.swfc-blur{filter:blur(4px);user-select:none;color:var(--mu)}' +
     '.swfc-lock{margin-top:12px;padding:14px;border:1px dashed #d1d5db;border-radius:8px;background:rgba(255,255,255,.7);font-size:14px}' +
     '.swfc-cta{display:inline-block;margin-top:10px;background:var(--t);color:#fff;text-decoration:none;padding:11px 18px;border-radius:8px;font-weight:600;font-size:14px}' +
     '.swfc-spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:swfcs .7s linear infinite;vertical-align:-2px;margin-right:8px}' +
@@ -50,9 +53,11 @@
       '<div class="swfc-subj"><label for="swfc-subj">Subject line</label><input id="swfc-subj" maxlength="300" placeholder="Last chance: 50% off ends tonight"></div>' +
       '<label for="swfc-copy">Your campaign copy</label>' +
       '<textarea id="swfc-copy" maxlength="6000" placeholder="Paste the email, SMS or post you are about to send"></textarea>' +
+      '<label for="swfc-email">Your work email</label><input id="swfc-email" type="email" autocomplete="email" maxlength="254" placeholder="you@company.com">' +
+      '<label class="swfc-chk"><input type="checkbox" id="swfc-consent"> <span>Email me Sendwize compliance tips and offers. Unsubscribe any time.</span></label>' +
       '<button class="swfc-go" type="submit">Check it free</button>' +
       '<div class="swfc-err" role="alert"></div>' +
-      '<p class="swfc-small">No sign-up. Checked against ICO, ASA and CMA rules. We do not keep the text you paste. Not legal advice.</p>' +
+      '<p class="swfc-small">One free check a day. Checked against ICO, ASA and CMA rules. We use your email to limit free checks and only send you marketing if you tick the box. We do not keep the text you paste. Not legal advice.</p>' +
     '</form><div class="swfc-out" aria-live="polite"></div></div>';
 
   var form = root.querySelector('form');
@@ -74,17 +79,17 @@
     btn.disabled = true; btn.innerHTML = '<span class="swfc-spin"></span>Checking against ICO, ASA and CMA rules…';
     fetch(API + '/api/free-check', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channel: channel, subject: root.querySelector('#swfc-subj').value, copy: root.querySelector('#swfc-copy').value }),
+      body: JSON.stringify({ channel: channel, subject: root.querySelector('#swfc-subj').value, copy: root.querySelector('#swfc-copy').value, email: root.querySelector('#swfc-email').value, marketingConsent: root.querySelector('#swfc-consent').checked }),
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { d.status = r.status; throw d; } return d; });
     }).then(function (v) {
       var h = '<div class="swfc-res ' + esc(v.verdict) + '"><div class="swfc-vl">' + esc(v.label) + '</div><div class="swfc-vh">' + esc(v.headline) + '</div>';
-      if (v.summary) h += '<div class="swfc-small" style="margin-top:0">' + esc(v.summary) + '</div>';
-      (v.items || []).forEach(function (i) { h += '<div class="swfc-item">' + esc(i.issue) + (i.regulation ? '<span class="swfc-ref">' + esc(i.regulation) + '</span>' : '') + '</div>'; });
-      var more = (v.hiddenCount || 0) + (v.lowCount || 0);
+      if (v.glimpse) {
+        h += '<div class="swfc-item">' + esc(v.glimpse.text) + ' <span class="swfc-blur" aria-hidden="true">the rule it falls under and how to fix it</span></div>';
+      }
       h += '<div class="swfc-lock">' +
-        (more ? '<strong>' + more + ' more item' + (more === 1 ? '' : 's') + '</strong>, the fix for each, and a rewritten version are in your Sendwize account.' :
-                'Check your list and landing pages too, and keep a dated record that you checked, in your Sendwize account.') +
+        (v.issueCount ? '<strong>' + v.issueCount + ' item' + (v.issueCount === 1 ? '' : 's') + ' found.</strong> The full details, the fix for each one and a rewritten version are in the Sendwize report.' :
+                        'Check your list and landing pages too, and keep a dated record that you checked, with Sendwize.') +
         '<br><a class="swfc-cta" href="' + esc(SIGNUP) + '">See the full report</a></div>';
       h += '<p class="swfc-small">' + esc(v.notice) + '</p></div>';
       out.innerHTML = h;
