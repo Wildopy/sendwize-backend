@@ -76,7 +76,7 @@ function stripEvidenceMarkers(text) {
     .trim();
 }
 
-const SYSTEM_PROMPT = `
+export const SYSTEM_PROMPT = `
 SECTION 1 -- IDENTITY & ROLE
 You are a senior UK marketing compliance analyst with specialist expertise in:
 * PECR (Privacy and Electronic Communications Regulations 2003)
@@ -383,7 +383,7 @@ ${LEGAL_RULES}
 `;
 
 // The reply is forced into this shape, so a malformed answer can't reach customers.
-const ANALYSIS_SCHEMA = {
+export const ANALYSIS_SCHEMA = {
   type: 'object',
   properties: {
     score: { type: 'integer' },
@@ -412,7 +412,7 @@ const ANALYSIS_SCHEMA = {
   additionalProperties: false,
 };
 
-const CHANNEL_RULES = {
+export const CHANNEL_RULES = {
   email: `CHANNEL: EMAIL
 Apply: PECR Reg 22 (consent / soft opt-in), Reg 23 (sender identity), UK GDPR, ASA CAP Code, CMA/DMCCA rules, plus sector rules (FCA for financial services).
 Check: unsubscribe mechanism, postal address, sender identification, consent signals, all CAP Code and DMCCA red flags, plus any sector-specific rules that apply.

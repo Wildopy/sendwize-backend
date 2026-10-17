@@ -47,6 +47,9 @@
     },
     "api/verdict.js": {
       "maxDuration": 60
+    },
+    "api/free-check.js": {
+      "maxDuration": 60
     }
   }
 }
