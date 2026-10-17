@@ -9,8 +9,9 @@
 // Caps per UTC day: SENDWIZE_FREE_CHECK_PER_EMAIL (default 1),
 // SENDWIZE_FREE_CHECK_PER_IP (default 1), SENDWIZE_FREE_CHECK_DAILY
 // (default 30) in total.
-// Each check is logged to the Airtable table Free_Checks (email, verdict,
-// marketing consent; never the copy). GET ?action=report (cron, 07:15)
+// Each check is logged to the Airtable table Free_Checks (email and
+// verdict; never the copy). Visitors are told the email is only used to
+// limit checks, so it must not be used for marketing. GET ?action=report (cron, 07:15)
 // emails SENDWIZE_ALERT_EMAIL yesterday's numbers and heaviest users, and
 // an alert goes out the moment the daily total runs out.
 // ─────────────────────────────────────────────────────────────
@@ -25,7 +26,6 @@ const MAX_COPY = 6000;
 const GLIMPSE_WORDS = 7;
 const KEEP = 60 * 60 * 24 * 3;
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i;
-const CONSENT_TEXT = 'Email me Sendwize compliance tips and offers. Unsubscribe any time.';
 
 function cap(name, fallback) {
   const n = parseInt(process.env[name] || '', 10);
@@ -112,7 +112,7 @@ async function report(req, res) {
   const html = `<p><strong>${checks}</strong> free check${checks === 1 ? '' : 's'} on ${day} (cap ${cap}), from <strong>${people}</strong> email address${people === 1 ? '' : 'es'} on ${connections} connection${connections === 1 ? '' : 's'}.</p>` +
     (busiestConn && busiestConn[1] > 3 ? `<p>One connection ran ${busiestConn[1]} checks. That can be one person using several email addresses, or an office sharing a network.</p>` : '') +
     `<table style="font-family:sans-serif;font-size:14px"><tr><th align="left">Email</th><th align="left">Checks</th></tr>${rows}</table>` +
-    `<p>Every check is listed in the Free_Checks table in Airtable, with whether they agreed to marketing emails.</p>`;
+    `<p>Every check is listed in the Free_Checks table in Airtable, with their verdict.</p>`;
   const sent = await sendEmail(`Free check: ${checks} check${checks === 1 ? '' : 's'} from ${people} ${people === 1 ? 'person' : 'people'} yesterday`, html);
   return res.json({ success: true, day, checks, people, connections, sent });
 }
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'The free check is not available right now.', code: 'free_check_off' });
   }
 
-  const { copy, subject, channel, email, marketingConsent } = req.body ?? {};
+  const { copy, subject, channel, email } = req.body ?? {};
   const mail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   if (!EMAIL_RE.test(mail)) return res.status(400).json({ error: 'Enter your work email to run the free check.' });
   const ch = CHANNELS.includes(channel) ? channel : 'email';
@@ -196,7 +196,6 @@ export default async function handler(req, res) {
       tally(`sw:free:byip:${day}`, hash(clientIp(req))),
       logCheck({
         Email: mail, Channel: ch, Verdict: verdict, Issues: hold.length + fix.length,
-        MarketingConsent: marketingConsent === true, ConsentText: marketingConsent === true ? CONSENT_TEXT : '',
         VisitorHash: hash(clientIp(req)), CheckedAt: new Date().toISOString(),
       }),
     ]).catch(e => console.warn('[free-check] tally failed:', e.message));
@@ -210,7 +209,6 @@ export default async function handler(req, res) {
       issueCount: hold.length + fix.length,
       glimpse,
       notice: 'This checks the copy only, not your list or landing pages. It is not legal advice. We do not keep the text you paste.',
-      consentText: CONSENT_TEXT,
     });
   } catch (e) {
     console.error('[free-check]', e.message);

@@ -32,8 +32,6 @@
     '.swfc-vh{font-size:20px;font-weight:700;margin:6px 0 4px;line-height:1.3}' +
     '.swfc-item{background:#fff;border:1px solid var(--b);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:14px;line-height:1.45}' +
     '.swfc-ref{display:block;font-size:11px;color:var(--mu);margin-top:3px}' +
-    '.swfc-chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--mu);margin-top:12px;font-weight:400}' +
-    '.swfc-chk input{width:auto;margin-top:2px}' +
     '.swfc-blur{filter:blur(4px);user-select:none;color:var(--mu)}' +
     '.swfc-lock{margin-top:12px;padding:14px;border:1px dashed #d1d5db;border-radius:8px;background:rgba(255,255,255,.7);font-size:14px}' +
     '.swfc-cta{display:inline-block;margin-top:10px;background:var(--t);color:#fff;text-decoration:none;padding:11px 18px;border-radius:8px;font-weight:600;font-size:14px}' +
@@ -54,10 +52,9 @@
       '<label for="swfc-copy">Your campaign copy</label>' +
       '<textarea id="swfc-copy" maxlength="6000" placeholder="Paste the email, SMS or post you are about to send"></textarea>' +
       '<label for="swfc-email">Your work email</label><input id="swfc-email" type="email" autocomplete="email" maxlength="254" placeholder="you@company.com">' +
-      '<label class="swfc-chk"><input type="checkbox" id="swfc-consent"> <span>Email me Sendwize compliance tips and offers. Unsubscribe any time.</span></label>' +
       '<button class="swfc-go" type="submit">Check it free</button>' +
       '<div class="swfc-err" role="alert"></div>' +
-      '<p class="swfc-small">One free check a day. Checked against ICO, ASA and CMA rules. We use your email to limit free checks and only send you marketing if you tick the box. We do not keep the text you paste. Not legal advice.</p>' +
+      '<p class="swfc-small">One free check a day. Checked against ICO, ASA and CMA rules. We use your email only to limit free checks, never for marketing. We do not keep the text you paste. Not legal advice.</p>' +
     '</form><div class="swfc-out" aria-live="polite"></div></div>';
 
   var form = root.querySelector('form');
@@ -79,7 +76,7 @@
     btn.disabled = true; btn.innerHTML = '<span class="swfc-spin"></span>Checking against ICO, ASA and CMA rules…';
     fetch(API + '/api/free-check', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channel: channel, subject: root.querySelector('#swfc-subj').value, copy: root.querySelector('#swfc-copy').value, email: root.querySelector('#swfc-email').value, marketingConsent: root.querySelector('#swfc-consent').checked }),
+      body: JSON.stringify({ channel: channel, subject: root.querySelector('#swfc-subj').value, copy: root.querySelector('#swfc-copy').value, email: root.querySelector('#swfc-email').value }),
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { d.status = r.status; throw d; } return d; });
     }).then(function (v) {
