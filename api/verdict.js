@@ -49,6 +49,9 @@ async function checkCopy({ userId, copy, subject, channel, sendingContext }) {
   });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) return { ok: false, error: d.error || `Copy check failed (${r.status})` };
+  // analyze-copy returns a placeholder (score 50, no issues) when it can't read the AI's answer.
+  // Treat that as a failed check, never as clean copy.
+  if (d.verdict === 'Analysis Error') return { ok: false, error: 'the AI answer could not be read' };
   return {
     ok: true, score: d.score ?? null, checkId: d.sourceRecordId || null,
     issues: (d.violations || []).map(v => ({ severity: sev(v.severity) || 'medium', regulation: v.regulation || '', issue: v.issue || '', recommendation: v.recommendation || '' })),
