@@ -28,7 +28,7 @@
 //      countdown timers, urgency/scarcity language, extra fees,
 //      terms/privacy links, pre-ticked marketing boxes, review
 //      widgets, tracking tags visible in source, ad disclosure
-//   3. Claude (temperature 0) reviews detections for relevance and
+//   3. Claude reviews detections for relevance and
 //      checks the page against the campaign's extracted claims
 //   4. AI interprets evidence, never manufactures it: every AI
 //      excerpt is verified against the page text server-side and
@@ -45,11 +45,11 @@
 // ai_assessment (Claude interpretation backed by a verified excerpt).
 // ─────────────────────────────────────────────────────────────
 
+import { claudeFetch } from './_claude.js';
 import { lookup } from 'node:dns/promises';
 
 export const PAGE_SCAN_VERSION = '1.0';
 
-const MODEL             = 'claude-sonnet-4-6';
 const FETCH_TIMEOUT_MS  = 8000;
 const CLAUDE_TIMEOUT_MS = 20000;
 const MAX_PAGES         = 6;
@@ -406,10 +406,10 @@ async function callClaudeJson(prompt, maxTokens = 1500) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CLAUDE_TIMEOUT_MS);
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, temperature: 0, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }),
       signal: controller.signal,
     });
     if (!r.ok) throw new Error(`Anthropic API ${r.status}`);

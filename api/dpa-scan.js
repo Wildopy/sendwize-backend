@@ -19,6 +19,7 @@
 //   sourceContent: URL to scrape, pasted text, or base64-encoded PDF
 // ─────────────────────────────────────────────────────────────
 
+import { claudeFetch } from './_claude.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { fetchPage } from './_page-scan.js';
@@ -171,7 +172,7 @@ async function extractTextFromPdf(pdfBase64) {
   const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -180,7 +181,6 @@ async function extractTextFromPdf(pdfBase64) {
       'anthropic-beta': 'pdfs-2024-09-25',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       messages: [{
         role: 'user',
@@ -251,7 +251,7 @@ async function extractQuotesWithAI(text, results) {
       .map(r => '- id: ' + r.id + ' | ' + r.label + ' (' + r.articleRef + ')')
       .join('\n');
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -259,7 +259,7 @@ async function extractQuotesWithAI(text, results) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: 2000,
+        max_tokens: 2000,
         messages: [{ role: 'user', content:
           'You are looking at a Data Processing Agreement or Privacy Policy. For each of the clauses listed, find and quote the exact sentence or short passage from the document that addresses it. Do NOT paraphrase. Do NOT interpret. Quote verbatim from the document. If a clause is not clearly addressed, return null for that item.\n\nDOCUMENT:\n"""\n' + text.slice(0, 15000) + '\n"""\n\nCLAUSES TO FIND QUOTES FOR:\n' + clauseList + '\n\nRespond ONLY with JSON, no markdown fences:\n{\n  "quotes": [\n    { "id": "<clause id from list above>", "quote": "<exact quoted sentence(s) from document, or null>" }\n  ]\n}'
         }],

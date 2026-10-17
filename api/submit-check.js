@@ -47,12 +47,13 @@
 //        Every letter is watermarked SIMULATION — NOT ACTUAL
 //        REGULATOR CORRESPONDENCE.
 //        One Claude call per submit, weakest lens first.
-//        Model: claude-sonnet-4-6, max_tokens 1000.
+//        Model: see api/_claude.js, max_tokens 1000.
 //
 // v4.30: All direct Airtable calls now go through atFetch() for
 //        429/5xx retry with backoff.
 // v4.29: Dossier re-verification (stickiness). LastVerified stamp.
 // ─────────────────────────────────────────────────────────────
+import { claudeFetch } from './_claude.js';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
@@ -312,7 +313,7 @@ async function generateLetter(moduleFields, evidenceStrength, campaignTitle, own
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not set');
 
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key':         anthropicKey,
@@ -320,7 +321,6 @@ async function generateLetter(moduleFields, evidenceStrength, campaignTitle, own
         'Content-Type':      'application/json',
       },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-6',
         max_tokens: 1000,
         messages:   [{ role: 'user', content: prompt }],
       }),
@@ -514,7 +514,7 @@ async function extractClaims(copyText) {
   if (!anthropicKey || !copyText?.trim()) return [];
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key': anthropicKey,
@@ -522,7 +522,6 @@ async function extractClaims(copyText) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
         max_tokens: 800,
         messages: [{ role: 'user', content: `Analyse this marketing copy and extract every specific claim that could have regulatory implications under UK law (ICO/PECR, ASA/CAP Code, CMA/DMCCA 2024).
 
@@ -636,7 +635,7 @@ RULES:
 Write the response now.`;
 
     try {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'x-api-key': anthropicKey,
@@ -644,7 +643,6 @@ Write the response now.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
           max_tokens: 600,
           messages: [{ role: 'user', content: prompt }],
         }),

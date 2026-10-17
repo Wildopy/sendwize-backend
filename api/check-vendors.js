@@ -28,6 +28,7 @@
 //   (SSRF-safe); calls to generate-fix and profile streak signed with the
 //   internal secret (they were silently rejected before).
 // ─────────────────────────────────────────────────────────────
+import { claudeFetch, LEGAL_RULES } from './_claude.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { fq } from './_airtable.js';
@@ -135,7 +136,7 @@ a28-11: Controller identity and contact clearly stated
 a28-12: Processor identity and DPO (if required) clearly stated`;
 
 async function analyzeA28FromPdf(vendorName, pdfBase64) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
     method:  'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -143,8 +144,7 @@ async function analyzeA28FromPdf(vendorName, pdfBase64) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 2000,
+      max_tokens: 2000, system: LEGAL_RULES,
       messages: [{
         role: 'user',
         content: [
@@ -170,7 +170,7 @@ async function analyzeA28FromPdf(vendorName, pdfBase64) {
 }
 
 async function analyzeA28FromText(vendorName, policyText, policyUrl) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
     method:  'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -178,8 +178,7 @@ async function analyzeA28FromText(vendorName, policyText, policyUrl) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 2000,
+      max_tokens: 2000, system: LEGAL_RULES,
       messages: [{
         role: 'user',
         content: `The vendor is "${vendorName}". The following text was scraped from their published policy at ${policyUrl}. Review it as their Data Processing Agreement.\n\nSCRAPED POLICY:\n"""\n${policyText}\n"""\n\n${A28_INSTRUCTIONS}`,
@@ -403,7 +402,7 @@ async function scrapePrivacyPolicy(url) {
 // ─────────────────────────────────────────────────────────────
 async function guessPrivacyPolicyUrl(vendorName) {
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method:  'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -411,7 +410,6 @@ async function guessPrivacyPolicyUrl(vendorName) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
         max_tokens: 150,
         messages: [{
           role: 'user',
@@ -720,7 +718,7 @@ Use ONLY the scraped text above as evidence for dimensions and gaps. If a dimens
     : `NO PRIVACY POLICY SCRAPED. Use general knowledge only. Mark dimensions Unknown where you can\u2019t verify. Any gaps you list must be flagged as unverified in the detail.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method:  'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -728,8 +726,7 @@ Use ONLY the scraped text above as evidence for dimensions and gaps. If a dimens
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        max_tokens: 2000, system: LEGAL_RULES,
         messages: [{
           role: 'user',
           content: `You are a UK GDPR compliance researcher. A UK marketing team uses "${vendorName}" as a data processor.

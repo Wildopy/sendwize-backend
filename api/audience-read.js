@@ -32,6 +32,7 @@
 const BASE_ID = process.env.BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`;
+import { claudeFetch } from './_claude.js';
 import { smartDetect, smartValidate } from './_smart-import.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
@@ -259,7 +260,7 @@ async function aiMapColumns(headers, sampleRows) {
   });
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
@@ -267,7 +268,6 @@ async function aiMapColumns(headers, sampleRows) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         system: AI_MAP_SYSTEM,
         messages: [{ role: 'user', content: `Map these CSV columns:\n${JSON.stringify(sample)}` }],
@@ -339,7 +339,7 @@ async function generateNarrative(segmentName, data, priorState) {
   };
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
@@ -347,7 +347,6 @@ async function generateNarrative(segmentName, data, priorState) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
         max_tokens: 300,
         system: NARRATIVE_SYSTEM,
         messages: [{ role: 'user', content: `Explain this segment's state to a marketing manager:\n${JSON.stringify(context)}` }],
@@ -392,7 +391,7 @@ async function generatePresendNarrative(segment, campaignType, prediction, bench
   };
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
@@ -400,7 +399,6 @@ async function generatePresendNarrative(segment, campaignType, prediction, bench
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
         max_tokens: 250,
         system: PRESEND_NARRATIVE_SYSTEM,
         messages: [{ role: 'user', content: `Explain this pre-send prediction:\n${JSON.stringify(context)}` }],
@@ -1633,7 +1631,7 @@ export default async function handler(req, res) {
       });
       const prompt=`You are a UK email marketing strategist. Based on this campaign performance data, write a strategy brief in three short paragraphs:\n\n1. WHAT'S WORKING — highlight the strongest metrics and why they matter commercially.\n2. WHAT NEEDS ATTENTION — flag any declining trends, below-benchmark metrics, or risks. If everything looks good, say so honestly.\n3. NEXT 30 DAYS — give 2-3 specific, actionable recommendations. Be concrete ("send a re-engagement sequence to your declining segment" not "consider improving engagement").\n\nSector: ${strategySector||'general'}\n\n${segSummaries.join('\n\n---\n\n')}\n\nWrite for a marketing manager, not a compliance officer. Use £ figures where available. Be direct — no hedging language, no "consider", no "you might want to". Three paragraphs, 150 words maximum total. No headers or bullet points.`;
       try {
-        const aiRes=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:prompt}]})});
+        const aiRes=await claudeFetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({max_tokens:400,messages:[{role:'user',content:prompt}]})});
         if(!aiRes.ok) return res.status(500).json({success:false,error:'Strategy generation failed'});
         const msg=await aiRes.json();
         return res.json({success:true,brief:msg.content?.[0]?.text||''});

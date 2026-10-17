@@ -24,6 +24,7 @@
 //   - export default async function handler
 // ─────────────────────────────────────────────────────────────
 
+import { claudeFetch, LEGAL_RULES } from './_claude.js';
 import { requireInternal, isRecordId } from './_auth.js';
 import { fetchPage } from './_page-scan.js';
 
@@ -144,7 +145,7 @@ export default async function handler(req, res) {
   // ── 2. Claude extraction ──────────────────────────────────
   let extracted = null;
   try {
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    const claudeRes = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method:  'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -152,8 +153,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        max_tokens: 1000, system: LEGAL_RULES,
         messages: [{
           role:    'user',
           content: `You are a UK GDPR compliance analyst. Extract compliance information about "${vendorName}" from the page text below.

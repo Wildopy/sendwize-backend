@@ -46,6 +46,7 @@
 // v7.3 preserved: partner/affiliate ASA/CAP/CMA dimensions.
 // ─────────────────────────────────────────────────────────────
 
+import { claudeFetch } from './_claude.js';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 
@@ -268,11 +269,11 @@ async function prefillFromKnownVendor(base, vendorName, fields) {
 async function assessUnknownVendor(vendorName, fields) {
   if (!process.env.ANTHROPIC_API_KEY) return fields;
   try {
-    const r = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
+    const r = await withTimeout(claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: 1200,
+        max_tokens: 1200,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{ role: 'user', content: `Research the company "${vendorName}" as a marketing/data technology vendor used by UK businesses. Find:\n1. Their correct legal entity name\n2. ICO Data Protection Register entry (registration number if found)\n3. Whether they publish a Data Processing Agreement / DPA (find the URL)\n4. Where they store/process data (countries)\n5. Transfer mechanisms (SCCs, BCRs, EU-US DPF)\n6. Any known data breaches or security incidents\n7. Security certifications (SOC 2, ISO 27001, etc)\n8. Any ICO, ASA, or CMA enforcement actions against them\n\nReturn ONLY a JSON object with these exact keys:\n{"vendorLegalName":"","icoRegistered":"Yes|No|Unknown","icoRegistrationNumber":"","dpaUrl":"","transferDestination":"","transferMechanism":"","breachHistory":"None publicly disclosed.|description if found","certifications":"","enforcementHistory":"None identified in sources reviewed.|description if found","confidence":"high|medium|low"}\nNo other text.` }],
       }),
@@ -483,11 +484,11 @@ async function getRelevantEnforcement(base, name, entityType, relationshipContex
   // If no candidates in Violation_Database AND we have Claude, do a web search
   if (!candidates.length && process.env.ANTHROPIC_API_KEY) {
     try {
-      const r = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
+      const r = await withTimeout(claudeFetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6', max_tokens: 800,
+          max_tokens: 800,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
           messages: [{ role: 'user', content: `Search for any ICO, ASA, or CMA enforcement actions, fines, or regulatory rulings against "${name}" in the UK. Check ico.org.uk/action-weve-taken/enforcement/ and asa.org.uk/codes-and-rulings/rulings.html specifically.\n\nIf you find any relevant enforcement actions, return a JSON array:\n[{"regulator":"ICO|ASA|CMA","date":"YYYY-MM-DD","violation":"brief description","fine":number_or_null,"source":"URL where found","sameEntity":true,"relevanceNote":"why this is relevant","claimTypes":["pricing_claim|urgency_claim|scarcity_claim|free_claim|health_claim|comparative_claim|guarantee_claim|environmental_claim|consent|other"]}]\n\nIf you find NO relevant enforcement actions, return exactly:\n[]\n\nNo other text.` }],
         }),
@@ -530,11 +531,11 @@ async function getRelevantEnforcement(base, name, entityType, relationshipContex
       date: v.fields.DateOfAction || '', violation: (v.fields.Violation || '').slice(0, 250),
       fine: v.fields.FineAmount || null,
     }));
-    const r = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
+    const r = await withTimeout(claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: 800,
+        max_tokens: 800,
         messages: [{ role: 'user', content: `I searched for enforcement actions related to "${name}" (a ${entityType || 'marketing vendor'} used as a ${relationshipContext || 'data processor'}).\n\nThese candidate results came back:\n${JSON.stringify(candidateSummaries)}\n\nFor EACH candidate, determine:\n1. Is this definitely the same organisation (or parent/subsidiary)?\n2. Is the enforcement action relevant to their role as a ${relationshipContext || 'data processor/marketing platform'}?\n3. Is it relevant to a UK marketer using this vendor?\n\nReturn ONLY a JSON array where each element has:\n{"index":0,"relevant":true|false,"sameEntity":true|false,"relevanceNote":"one sentence explaining why included or excluded"}\nNo other text.` }],
       }),
     }), 15000);
@@ -1250,11 +1251,11 @@ async function handleCompetitorWatch(req, res) {
       // Promo tactics scan (public website only, no ad platforms)
       if (process.env.ANTHROPIC_API_KEY) {
         try {
-          const promoRes = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
+          const promoRes = await withTimeout(claudeFetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-6', max_tokens: 400,
+              max_tokens: 400,
               tools: [{ type: 'web_search_20250305', name: 'web_search' }],
               messages: [{ role: 'user', content: `Search for current marketing promotions, discount claims, urgency claims, or pricing tactics being used by ${competitor.CompetitorName} on their public website in the UK right now. Do NOT access any advertising platforms such as Meta Ad Library, TikTok, or social media ad archives. Only check their public website and search results. Return ONLY a JSON array of up to 5 objects: [{"claimType":"fake_urgency|reference_pricing|superlative|free_claim|other","description":"brief description","complianceNote":"brief compliance observation"}]. No other text.` }],
             }),
@@ -1600,7 +1601,7 @@ async function handleBriefing(req, res) {
     if ((r.fields.RulingCount || 0) > 0) intelLines.push(`- Competitor ${r.fields.CompetitorName}: ${r.fields.RulingCount} relevant enforcement action(s) on record.`);
   }
   const promptContext = [`Compliance score: ${score}/100`, `Third-party risk score: ${thirdParty?.total ?? 'not calculated'}/100`, `Processors: ${vendors.length}, Partners: ${partners.length}, Affiliates: ${affiliates.length}, Competitors watched: ${competitors.length}`, `Pending fixes: ${pending.length}`, fixesData?.exposure ? `Open regulatory exposure (comparable published cases): £${(fixesData.exposure.totalLow||0).toLocaleString('en-GB')}–£${(fixesData.exposure.totalHigh||0).toLocaleString('en-GB')}; regulator attention likelihood ${fixesData.exposure.likelihood?.level || 'unknown'}` : '', fixesData?.exposure?.clusters?.length ? `Biggest areas: ${fixesData.exposure.clusters.slice(0,3).map(c => `${c.label} (${c.count} finding${c.count>1?'s':''})`).join('; ')}` : '', fixesData?.riskAddressed ? `Exposure addressed this month: £${(fixesData.riskAddressed.monthTotal||0).toLocaleString('en-GB')}` : '', `Top open findings: ${pending.slice(0,3).map(p => (p.description||'').slice(0,90)).join(' | ') || 'none'}`, intelLines.length ? `\nRelationship intelligence:\n${intelLines.join('\n')}` : '\nNo relationship alerts this week.'].filter(Boolean).join('\n');
-  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 600, system: `You are a compliance advisor for UK email marketers. Write a concise weekly briefing of 180-220 words. Use only the figures given; never invent numbers. Lead with the single most valuable action this week. Never say "compliant", "illegal" or "in breach". Never give legal advice. Plain English.`, messages: [{ role: 'user', content: `Status:\n${promptContext}\n\nWrite the weekly briefing.` }] }) });
+  const claudeRes = await claudeFetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ max_tokens: 600, system: `You are a compliance advisor for UK email marketers. Write a concise weekly briefing of 180-220 words. Use only the figures given; never invent numbers. Lead with the single most valuable action this week. Never say "compliant", "illegal" or "in breach". Never give legal advice. Plain English.`, messages: [{ role: 'user', content: `Status:\n${promptContext}\n\nWrite the weekly briefing.` }] }) });
   if (!claudeRes.ok) return res.status(claudeRes.status).json({ error: 'Failed to generate briefing' });
   const briefing = (await claudeRes.json()).content?.[0]?.text || '';
   if (profile?.id) atPatch(base, 'User_Profile', profile.id, { LastBriefingSent: today, LastBriefingText: briefing }).catch(e => console.error('briefing save non-fatal:', e));
@@ -1674,7 +1675,7 @@ async function handleSimulationRun(req, res) {
   const regCfg = { ICO: { orgName:"Information Commissioner's Office", refPrefix:'ICO-ENF', signatory:'Senior Enforcement Officer, Direct Marketing Team', tone:'formal ICO enforcement tone, reference PECR Regulation 22 and UK GDPR articles by number' }, ASA: { orgName:'Advertising Standards Authority', refPrefix:'ASA-ENQ', signatory:'Investigations Executive, ASA', tone:'formal ASA tone, reference specific CAP Code rules by number' }, CMA: { orgName:'Competition and Markets Authority', refPrefix:'CMA-CP', signatory:'Senior Director, Consumer Protection', tone:'formal CMA enforcement tone under DMCCA 2024' } }[regulator];
   let letter = {};
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:2000, messages:[{ role:'user', content: `Simulate a ${regulator} enforcement letter. USER PENDING FIXES:\n${fixList}\n\nTone: ${regCfg.tone}. Return ONLY JSON (no markdown):\n{"reference":"${regCfg.refPrefix}-XXXXX","subject":"...","opening":"...","context":"...","closing":"...","signatory":"${regCfg.signatory}","questions":[{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."}]}` }] }) });
+    const r = await claudeFetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ max_tokens:2000, messages:[{ role:'user', content: `Simulate a ${regulator} enforcement letter. USER PENDING FIXES:\n${fixList}\n\nTone: ${regCfg.tone}. Return ONLY JSON (no markdown):\n{"reference":"${regCfg.refPrefix}-XXXXX","subject":"...","opening":"...","context":"...","closing":"...","signatory":"${regCfg.signatory}","questions":[{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."}]}` }] }) });
     if (r.ok) { const text = (await r.json()).content?.[0]?.text||''; const m = text.match(/\{[\s\S]*\}/); if (m) letter = JSON.parse(m[0]); }
   } catch (e) { console.error('Letter parse non-fatal:', e); }
   const thisBand = bandConfig[escalationBand];

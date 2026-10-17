@@ -35,6 +35,7 @@
 // with { secret: CRON_SECRET }.
 // ─────────────────────────────────────────────────────────────
 
+import { claudeFetch, LEGAL_RULES } from './_claude.js';
 import { atFetch } from './_airtable.js';
 import { internalHeaders } from './_auth.js';
 import { fetchPage } from './_page-scan.js';
@@ -142,12 +143,11 @@ async function scanRegulator(regulator, claudeKey) {
     CMA: `Find CMA (Competition and Markets Authority) enforcement actions, cases opened, and undertakings published in the last 7 days under DMCCA 2024 or the Consumer Protection from Unfair Trading Regulations. Include company names and the specific practice being investigated or sanctioned.`,
   };
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await claudeFetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': claudeKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
+      max_tokens: 1500, system: LEGAL_RULES,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{
         role: 'user',
@@ -210,7 +210,7 @@ async function scanCompetitorPromos(competitors, claudeKey) {
         results.scanned++;
 
         try {
-          const promoRes = await fetch('https://api.anthropic.com/v1/messages', {
+          const promoRes = await claudeFetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
               'x-api-key': claudeKey,
@@ -218,8 +218,7 @@ async function scanCompetitorPromos(competitors, claudeKey) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-6',
-              max_tokens: 400,
+              max_tokens: 400, system: LEGAL_RULES,
               tools: [{ type: 'web_search_20250305', name: 'web_search' }],
               messages: [{
                 role: 'user',
@@ -982,7 +981,7 @@ async function filterMaterialChanges(changedUrls, claims, claudeKey) {
   // Process each changed URL individually to get specific relevance notes
   for (const changed of changedUrls) {
     try {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'x-api-key': claudeKey,
@@ -990,8 +989,7 @@ async function filterMaterialChanges(changedUrls, claims, claudeKey) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 300,
+          max_tokens: 300, system: LEGAL_RULES,
           messages: [{ role: 'user', content: `A marketing campaign links to ${changed.url}. The page has changed since the campaign was approved.
 
 The campaign makes these specific claims:

@@ -16,6 +16,7 @@
 // Airtable (Compliance_Fixes): AssessmentJson (long text),
 // EvidenceHash (single line text). See the review doc.
 // ─────────────────────────────────────────────────────────────
+import { claudeFetch, parseJson, MODEL, LEGAL_RULES } from './_claude.js';
 import { atFetch, fq } from './_airtable.js';
 import { requireAuth, isRecordId, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
@@ -25,7 +26,6 @@ import {
   ICO_LEGAL_MAX, NOT_LEGAL_ADVICE, DUAA_WARNING,
 } from './_exposure.js';
 
-const MODEL = 'claude-sonnet-4-6';
 const BULK_MAX = 12;
 
 const base = () => `https://api.airtable.com/v0/${process.env.BASE_ID}`;
@@ -47,44 +47,39 @@ async function askClaude(fix, profile) {
   const text = evidenceText(fix, profile);
   const cases = closestCases(fix.fixType, fix.contactVolume);
   const menu = AI_FACTOR_IDS.map(id => `- ${id}: ${FACTORS[id].label}`).join('\n');
-  const tool = {
-    name: 'record_assessment',
-    description: 'Record which factors from the menu the evidence supports.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        factors: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', enum: AI_FACTOR_IDS },
-              quote: { type: 'string', description: 'Exact words copied from the evidence that show this factor applies.' },
-            },
-            required: ['id', 'quote'],
+  const schema = {
+    type: 'object',
+    properties: {
+      factors: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', enum: AI_FACTOR_IDS },
+            quote: { type: 'string', description: 'Exact words copied from the evidence that show this factor applies.' },
           },
+          required: ['id', 'quote'],
+          additionalProperties: false,
         },
-        plain_english: { type: 'string', description: 'Two sentences for a marketing manager on why this matters. No legal conclusions.' },
-        confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
       },
-      required: ['factors', 'plain_english', 'confidence'],
+      plain_english: { type: 'string', description: 'Two sentences for a marketing manager on why this matters. No legal conclusions.' },
+      confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
     },
+    required: ['factors', 'plain_english', 'confidence'],
+    additionalProperties: false,
   };
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+  const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
     signal: AbortSignal.timeout(25000),
     body: JSON.stringify({
-      model: MODEL, max_tokens: 700, temperature: 0,
-      tools: [tool], tool_choice: { type: 'tool', name: 'record_assessment' },
-      system: 'You assess UK marketing compliance evidence for a regulatory exposure model. Only select a factor when the evidence text plainly shows it, and copy the exact words that show it. Never infer facts that are not written. If nothing applies, return an empty factors list. Never say "illegal", "unlawful", "in breach" or "compliant"; use "potential area requiring review". Not legal advice.',
+      max_tokens: 700,
+      system: `You assess UK marketing compliance evidence for a regulatory exposure model. Only select a factor when the evidence text plainly shows it, and copy the exact words that show it into "quote". Never infer facts that are not written. If nothing applies, return an empty factors list. "plain_english" is two sentences for a marketing manager on why this matters.\n\n${LEGAL_RULES}`,
       messages: [{ role: 'user', content: `Factor menu:\n${menu}\n\nComparable published cases (for context only):\n${cases.map(c => `- ${c.name} (${c.date}, £${c.penalty.toLocaleString('en-GB')}): ${c.summary}`).join('\n') || '- none on file for this finding type'}\n\nEvidence:\n<<<\n${text}\n>>>` }],
     }),
-  });
+  }, { effort: 'low', schema });
   if (!r.ok) throw new Error(`Claude ${r.status}`);
   const data = await r.json();
-  const call = (data.content || []).find(c => c.type === 'tool_use');
-  const validated = validateAssessment(call?.input || {}, text);
+  const answer = parseJson(data.content?.[0]?.text, {});
+  const validated = validateAssessment(answer || {}, text);
   return { ...validated, assessedAt: new Date().toISOString(), model: MODEL, engine: ENGINE_VERSION };
 }
 
@@ -139,12 +134,16 @@ export default async function handler(req, res) {
       if (!r.ok) return res.status(r.status).json({ error: r.status === 422 ? 'Add the AssessmentJson and EvidenceHash fields to Compliance_Fixes in Airtable' : 'Airtable error' });
       const recs = (await r.json()).records || [];
       const profiles = {}; const results = [];
-      for (const rec of recs) {
-        try {
-          const uid = rec.fields.UserID;
-          profiles[uid] = profiles[uid] || await loadProfile(uid);
-          results.push(await assessAndStore(rec, profiles[uid]));
-        } catch (e) { results.push({ fixId: rec.id, error: e.message }); }
+      const started = Date.now();
+      // Four at a time, and no new batch after 30s, so the run fits the 60s limit.
+      for (let i = 0; i < recs.length && Date.now() - started < 30000; i += 4) {
+        results.push(...await Promise.all(recs.slice(i, i + 4).map(async rec => {
+          try {
+            const uid = rec.fields.UserID;
+            profiles[uid] = profiles[uid] || loadProfile(uid);
+            return await assessAndStore(rec, await profiles[uid]);
+          } catch (e) { return { fixId: rec.id, error: e.message }; }
+        })));
       }
       return res.json({ success: true, processed: results.length, results });
     }

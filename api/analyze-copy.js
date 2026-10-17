@@ -19,6 +19,7 @@
 //   + Post-process: strip [EVIDENCE REQUIRED: ...] markers from any
 //     recommendation or fixedVersion text (belt and braces).
 
+import { claudeFetch, parseJson, LEGAL_RULES } from './_claude.js';
 import crypto from 'crypto';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
@@ -373,7 +374,43 @@ Respond ONLY in this exact JSON. No preamble. No markdown fences.
 }
 
 EVERY violation MUST have a requiresEvidence boolean. Do not omit this field.
+
+------------------------------------------------------------
+
+SECTION 12 -- CUSTOMER-FACING WORDING
+The "issue", "recommendation", "enforcement_note" and "summary" fields are shown to customers. Internal words in this prompt such as "violation" and "breach" describe your task; they must not appear in those fields.
+${LEGAL_RULES}
 `;
+
+// The reply is forced into this shape, so a malformed answer can't reach customers.
+const ANALYSIS_SCHEMA = {
+  type: 'object',
+  properties: {
+    score: { type: 'integer' },
+    verdict: { type: 'string', enum: ['No issues found', 'Minor issues to address', 'Review required before sending', 'Do not send -- address critical issues first', 'Significant violations identified'] },
+    violations: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          regulation: { type: 'string' },
+          severity: { type: 'string', enum: ['critical', 'high', 'medium', 'low'] },
+          issue: { type: 'string' },
+          location: { type: 'string' },
+          recommendation: { type: 'string' },
+          requiresEvidence: { type: 'boolean' },
+          enforcement_note: { type: 'string' },
+        },
+        required: ['regulation', 'severity', 'issue', 'location', 'recommendation', 'requiresEvidence'],
+        additionalProperties: false,
+      },
+    },
+    fixedVersion: { type: 'string' },
+    summary: { type: 'string' },
+  },
+  required: ['score', 'verdict', 'violations', 'summary'],
+  additionalProperties: false,
+};
 
 const CHANNEL_RULES = {
   email: `CHANNEL: EMAIL
@@ -575,7 +612,7 @@ export default async function handler(req, res) {
       if (imageBlocks.length > 0) messageContent.push({ type: 'text', text: `\nNote: ${imageBlocks.length} image(s) provided. Analyse for compliance issues alongside the copy.` });
     }
 
-    const claudeHttpRes = await fetch('https://api.anthropic.com/v1/messages', {
+    const claudeHttpRes = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
@@ -583,12 +620,11 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
         max_tokens: 5000,
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: messageContent }]
       })
-    });
+    }, { effort: 'medium', schema: ANALYSIS_SCHEMA, cacheSystem: true });
 
     console.log('Claude status:', claudeHttpRes.status);
     const message = await claudeHttpRes.json();
@@ -599,13 +635,10 @@ export default async function handler(req, res) {
     }
 
     let aiAnalysis = null;
-    try {
-      const stripped  = message.content[0].text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      const jsonMatch = stripped.match(/\{[\s\S]*\}/);
-      aiAnalysis = JSON.parse(jsonMatch ? jsonMatch[0] : stripped);
-    } catch {
-      console.error('JSON parse failed. Full text:', message.content[0]?.text?.slice(0, 1000));
-      aiAnalysis = { score: 50, verdict: 'Analysis Error', violations: [], summary: message.content[0]?.text || 'Error' };
+    aiAnalysis = parseJson(message.content?.[0]?.text);
+    if (!aiAnalysis || typeof aiAnalysis !== 'object') {
+      console.error('JSON parse failed. Full text:', message.content?.[0]?.text?.slice(0, 1000));
+      aiAnalysis = { score: 50, verdict: 'Analysis Error', violations: [], summary: 'The analysis could not be read. Please run the check again.' };
     }
 
     // v5.5: strip any leftover [EVIDENCE REQUIRED:] markers from AI output
