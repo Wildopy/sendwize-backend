@@ -110,16 +110,41 @@
       if (!v.length) return;
       $('hist').hidden = false;
       $('hl').innerHTML = v.map(function (x) {
-        return '<div class="item"><span class="tag">' + esc(x.verdict) + '</span>' + esc(x.campaign) + ' <span class="note">· ' + esc(x.channel) + ' · ' + esc(new Date(x.createdAt).toLocaleString('en-GB')) + '</span></div>';
+        return '<div class="item"><a href="#" data-id="' + esc(x.id) + '" class="open-v"><span class="tag">' + esc(x.verdict) + '</span>' + esc(x.campaign) + '</a> <span class="note">· ' + esc(x.channel) + ' · ' + esc(new Date(x.createdAt).toLocaleString('en-GB')) + '</span></div>';
       }).join('');
     }).catch(function () {});
   }
   loadHistory();
 
+  // Reopen a saved verdict from the list, or from ?verdictId= in the address
+  $('hl').addEventListener('click', function (e) {
+    var a = e.target.closest('.open-v'); if (!a) return;
+    e.preventDefault();
+    openVerdict(a.getAttribute('data-id'));
+  });
+  function openVerdict(id) {
+    call('/api/verdict?action=get&id=' + encodeURIComponent(id) + '&userId=' + encodeURIComponent(userId))
+      .then(showVerdict)
+      .catch(function (err) { $('err').textContent = err.message; });
+  }
+  var startId = new URLSearchParams(location.search).get('verdictId');
+  if (startId) openVerdict(startId);
+
   function items(list, area) {
     return list.map(function (i) {
       return '<div class="item"><span class="tag">' + esc(i.area) + '</span>' + esc(i.text) + (i.action ? '<div class="act">' + esc(i.action) + '</div>' : '') + '</div>';
     }).join('');
+  }
+
+  function showVerdict(v) {
+      var h = '<div class="verdict ' + esc(v.verdict) + '"><div class="vl">' + esc(v.label) + '</div><div class="vh">' + esc(v.headline) + '</div>' +
+        '<div class="note">' + (v.reopened ? 'Saved verdict' + (v.campaign ? ' for ' + esc(v.campaign) : '') + ', checked ' : 'Checked ') + esc(new Date(v.createdAt).toLocaleString('en-GB')) + (v.saved ? '. Saved to your records.' : '. Not saved: ask your admin to add the Send_Verdicts table.') + '</div></div>';
+      if (v.hold.length) h += '<div class="card"><div class="sec">Stop and resolve</div>' + items(v.hold) + '</div>';
+      if (v.fix.length) h += '<div class="card"><div class="sec">Fix before sending</div>' + items(v.fix) + '</div>';
+      if (v.ok.length) h += '<div class="card"><div class="sec">Checked and clear</div>' + items(v.ok) + '</div>';
+      h += '<div class="card"><div class="note">' + esc(v.notice) + '</div><div class="fp">Fingerprint ' + esc(v.fingerprint) + '</div></div>';
+      $('out').innerHTML = h;
+      $('out').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   $('f').addEventListener('submit', async function (e) {
@@ -139,14 +164,7 @@
         sendingContext: $('src').value ? { listSource: $('src').value } : undefined,
       };
       var v = await call('/api/verdict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      var h = '<div class="verdict ' + esc(v.verdict) + '"><div class="vl">' + esc(v.label) + '</div><div class="vh">' + esc(v.headline) + '</div>' +
-        '<div class="note">Checked ' + esc(new Date(v.createdAt).toLocaleString('en-GB')) + (v.saved ? '. Saved to your records.' : '. Not saved: ask your admin to add the Send_Verdicts table.') + '</div></div>';
-      if (v.hold.length) h += '<div class="card"><div class="sec">Stop and resolve</div>' + items(v.hold) + '</div>';
-      if (v.fix.length) h += '<div class="card"><div class="sec">Fix before sending</div>' + items(v.fix) + '</div>';
-      if (v.ok.length) h += '<div class="card"><div class="sec">Checked and clear</div>' + items(v.ok) + '</div>';
-      h += '<div class="card"><div class="note">' + esc(v.notice) + '</div><div class="fp">Fingerprint ' + esc(v.fingerprint) + '</div></div>';
-      $('out').innerHTML = h;
-      $('out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showVerdict(v);
       loadHistory();
     } catch (err) {
       $('err').textContent = err.message;

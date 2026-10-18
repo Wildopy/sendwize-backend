@@ -616,10 +616,7 @@ function startSimulation() {
     return r.json();
   }).then(function(d){
     btn.disabled = false; btn.textContent = 'Start '+selectedReg+' Simulation';
-    simData = d;
-    document.querySelector('.intro').style.display = 'none';
-    document.getElementById('startWrap').style.display = 'none';
-    renderSpine(selectedReg);
+    openSimulation(d);
   }).catch(function(e){
     btn.disabled = false; btn.textContent = 'Start '+selectedReg+' Simulation';
     showErr('Simulation failed: '+e.message+'. Please try again.');
@@ -920,6 +917,50 @@ function resetToRegulator(reg) {
 }
 
 // ── Utils ─────────────────────────────────────────────────────
+// ── Past simulations: list and reopen ──
+function openSimulation(d) {
+  simData = d;
+  selectedReg = d.regulator || selectedReg;
+  document.querySelector('.intro').style.display = 'none';
+  document.getElementById('startWrap').style.display = 'none';
+  var ph = document.getElementById('pastSims'); if (ph) ph.style.display = 'none';
+  renderSpine(selectedReg);
+}
+function loadSimulation(id) {
+  swFetch(APP_URL+'/api/data?action=report&type=simulation&recordId='+encodeURIComponent(id)+'&userId='+encodeURIComponent(userId))
+    .then(function(r){ if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(rec){
+      var d = null; try { d = JSON.parse(rec && rec.fields && rec.fields.ResultJson || 'null'); } catch(e) {}
+      if (!d) throw new Error('not found');
+      openSimulation(d);
+    }).catch(function(){ showErr('That simulation could not be opened.'); });
+}
+function loadPastSimulations() {
+  if (!userId || isDemo) return;
+  swFetch(APP_URL+'/api/data?action=history&type=simulation&userId='+encodeURIComponent(userId))
+    .then(function(r){ return r.ok ? r.json() : { records: [] }; })
+    .then(function(d){
+      var recs = (d.records || []).slice(0, 10);
+      if (!recs.length) return;
+      var box = document.createElement('div');
+      box.id = 'pastSims';
+      box.style.cssText = 'max-width:720px;margin:24px auto 0;background:#fff;border:1px solid #ececec;border-radius:10px;padding:18px 20px';
+      box.innerHTML = '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#EA7317;margin-bottom:8px">Past simulations</div>' +
+        recs.map(function(r){
+          var f = r.fields || {};
+          var when = f.CreatedAt ? new Date(f.CreatedAt).toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+          return '<button type="button" onclick="loadSimulation(\'' + r.id + '\')" style="display:flex;width:100%;justify-content:space-between;gap:12px;padding:10px 0;border:none;border-bottom:1px solid #f0f0f0;background:none;font:inherit;font-size:14px;cursor:pointer;text-align:left">' +
+            '<span><strong>' + escH(f.Regulator || '') + '</strong> &middot; ' + escH(f.Band || '') + '</span><span style="color:#6b7280">' + escH(when) + ' &rarr;</span></button>';
+        }).join('');
+      var sw = document.getElementById('startWrap');
+      sw.parentNode.insertBefore(box, sw.nextSibling);
+    }).catch(function(){});
+}
+(function(){
+  var simId = new URLSearchParams(window.location.search).get('simulationId');
+  if (simId && userId) loadSimulation(simId); else loadPastSimulations();
+})();
+
 function showErr(msg) { var e=document.getElementById('errBox'); e.textContent=msg; e.classList.add('show'); setTimeout(function(){e.classList.remove('show');},5000); }
 function fmtNum(n) { return (parseInt(n)||0).toLocaleString('en-GB'); }
 function escH(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }

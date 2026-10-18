@@ -19,7 +19,7 @@
 // ─────────────────────────────────────────────────────────────
 import crypto from 'crypto';
 import { atFetch, fq } from './_airtable.js';
-import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
+import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { scanCampaignPages, isSafePublicUrl } from './_page-scan.js';
 
@@ -129,13 +129,17 @@ export function decide({ channel, copy, pages, list }) {
   }
 
   const verdict = hold.length ? 'hold' : fix.length ? 'fix_first' : 'go';
-  const label = { hold: 'Hold', fix_first: 'Fix first', go: 'Go' }[verdict];
+  return { verdict, ...describe(verdict, hold, fix), hold, fix, ok };
+}
+
+const LABELS = { hold: 'Hold', fix_first: 'Fix first', go: 'Go' };
+function describe(verdict, hold, fix) {
   const headline = verdict === 'hold'
     ? `Hold this send. ${hold.length} item${hold.length === 1 ? '' : 's'} could put the campaign at risk.`
     : verdict === 'fix_first'
       ? `Fix ${fix.length} item${fix.length === 1 ? '' : 's'} first, then send.`
       : 'Good to send. Nothing found that needs review.';
-  return { verdict, label, headline, hold, fix, ok };
+  return { label: LABELS[verdict], headline };
 }
 
 const fingerprint = obj => crypto.createHash('sha256').update(JSON.stringify(obj)).digest('hex');
@@ -155,7 +159,25 @@ export default async function handler(req, res) {
       const recs = await atList('Send_Verdicts', `{UserID}=${fq(userId)}`, 'sort[0][field]=CreatedAt&sort[0][direction]=desc', 20);
       return res.json({ success: true, verdicts: (recs || []).map(r => ({ id: r.id, createdAt: r.fields.CreatedAt, verdict: r.fields.Verdict, campaign: r.fields.CampaignName || '', channel: r.fields.Channel || '', fingerprint: r.fields.Fingerprint || '' })) });
     }
-    if (req.method !== 'POST') return res.status(405).json({ error: 'POST to run a verdict, or GET ?action=list' });
+    // Reopen a saved verdict exactly as it was recorded
+    if (req.method === 'GET' && req.query.action === 'get') {
+      const id = String(req.query.id || '');
+      if (!isRecordId(id)) return res.status(400).json({ error: 'Valid id required' });
+      const r = await atFetch(`${base()}/Send_Verdicts/${id}`, { headers: atH() });
+      if (!r.ok) return res.status(404).json({ error: 'Verdict not found' });
+      const f = (await r.json()).fields || {};
+      if (f.UserID !== userId) return res.status(404).json({ error: 'Verdict not found' });
+      let reasons = {}; try { reasons = JSON.parse(f.ReasonsJson || '{}'); } catch {}
+      const hold = reasons.hold || [], fix = reasons.fix || [], ok = reasons.ok || [];
+      const verdict = Object.keys(LABELS).find(k => LABELS[k] === f.Verdict) || (hold.length ? 'hold' : fix.length ? 'fix_first' : 'go');
+      return res.json({
+        success: true, verdict, ...describe(verdict, hold, fix), hold, fix, ok,
+        verdictId: id, saved: true, fingerprint: f.Fingerprint || '', createdAt: f.CreatedAt,
+        campaign: f.CampaignName || '', channel: f.Channel || '', listName: f.ListName || '', urls: (f.Urls || '').split('\n').filter(Boolean),
+        notice: NOTICE, reopened: true,
+      });
+    }
+    if (req.method !== 'POST') return res.status(405).json({ error: 'POST to run a verdict, or GET ?action=list|get' });
     if (!(await checkLimit(req, res, auth, 'verdict'))) return;
 
     const b = req.body || {};

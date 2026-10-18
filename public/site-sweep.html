@@ -108,7 +108,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <script>
 const swFetch=window.swFetch||((u,o)=>fetch(u,o)); // sends the sign-in token (sw-auth.js)
 const API='https://sendwize-backend.vercel.app/api/site-sweep';
-let U=null,S=null,BUSY=false,VERIFY_FAIL=null;
+let U=null,S=null,BUSY=false,VERIFY_FAIL=null,ALL=[];
 const $=id=>document.getElementById(id);
 const E=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 let _t;function toast(m,c=''){const t=$('toast');t.textContent=m;t.className='toast on'+(c?' '+c:'');clearTimeout(_t);_t=setTimeout(()=>t.classList.remove('on'),4000);}
@@ -123,12 +123,24 @@ async function init(){
     const r=await swFetch(`${API}?action=get&userId=${encodeURIComponent(U)}${want?'&domain='+encodeURIComponent(want):''}`);
     const j=await r.json();
     S=want?j.sweep:(j.sweeps||[])[0]||null;
+    if(!want)ALL=j.sweeps||[];
+    else swFetch(`${API}?action=get&userId=${encodeURIComponent(U)}`).then(x=>x.json()).then(x=>{ALL=x.sweeps||[];renderOthers();}).catch(()=>{});
   }catch(e){S=null;}
   render();
 }
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
 
-function render(){
+// Other sites this member has swept, each reopening its latest sweep
+function renderOthers(){
+  const others=ALL.filter(x=>x.domain&&(!S||x.domain!==S.domain));
+  const old=$('swOthers');if(old)old.remove();
+  if(!others.length||!$('app'))return;
+  const d=document.createElement('div');d.id='swOthers';d.className='card view';d.style.marginTop='16px';
+  d.innerHTML='<div class="card-t">Your other sites</div>'+others.map(x=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #f0f0f0;font-size:14px"><a href="?userId=${encodeURIComponent(U)}&domain=${encodeURIComponent(x.domain)}">${E(x.domain)}</a><span style="color:#6b7280">${x.siteScore!=null?'Score '+E(x.siteScore)+' · ':''}${x.lastSweptAt?'Last swept '+E(fDT(x.lastSweptAt)):'Not swept yet'}</span></div>`).join('');
+  $('app').appendChild(d);
+}
+function render(){renderMain();renderOthers();}
+function renderMain(){
   if(BUSY==='run')return renderRunning();
   if(!S)return renderSetup();
   if(!S.verified)return renderVerify();

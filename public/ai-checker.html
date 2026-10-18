@@ -357,6 +357,7 @@
       Try with example data
     </button>
     <p class="disclaimer">Information only &mdash; not legal advice.</p>
+    <div id="pastChecks"></div>
   </div>
 
   <div class="loading" id="loadingSection">
@@ -455,6 +456,54 @@
       document.getElementById('formSection').style.display = 'none';
       return;
     }
+    var checkId = new URLSearchParams(window.location.search).get('checkId');
+    if (checkId) openPastCheck(checkId);
+    loadPastChecks();
+  }
+
+  // ── Past checks: list the member's saved checks and reopen one ──
+  function loadPastChecks() {
+    swFetch(APP_URL + '/api/data?action=history&type=ai&userId=' + encodeURIComponent(userId))
+      .then(function(r) { return r.ok ? r.json() : { records: [] }; })
+      .then(function(d) {
+        var recs = (d.records || []).slice(0, 10);
+        var el = document.getElementById('pastChecks');
+        if (!recs.length || !el) return;
+        el.innerHTML = '<div style="margin-top:22px;border-top:1px solid var(--border-mid);padding-top:16px">' +
+          '<div class="section-title">Past checks</div>' +
+          recs.map(function(r) {
+            var f = r.fields || {};
+            return '<button type="button" onclick="openPastCheck(\'' + r.id + '\')" style="display:flex;width:100%;justify-content:space-between;gap:12px;padding:9px 0;border:none;border-bottom:1px solid var(--border);background:none;font:inherit;font-size:13px;cursor:pointer;text-align:left;color:var(--text)">' +
+              '<span>' + escH(f.FileName || 'Copy check') + ' <span style="color:var(--muted)">&middot; ' + escH(f.Verdict || '') + '</span></span>' +
+              '<span style="color:var(--muted);white-space:nowrap">' + escH(f.CheckDate || '') + ' &rarr;</span></button>';
+          }).join('') + '</div>';
+      }).catch(function() {});
+  }
+
+  function openPastCheck(id) {
+    clearError();
+    swFetch(APP_URL + '/api/data?action=report&type=ai&recordId=' + encodeURIComponent(id) + '&userId=' + encodeURIComponent(userId))
+      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(rec) {
+        if (!rec || !rec.fields) throw new Error('not found');
+        var f = rec.fields, a = {};
+        try { a = JSON.parse(f.Analysis || '{}'); } catch (e) {}
+        var types = ['email', 'sms', 'push', 'social', 'directmail'];
+        if (types.indexOf(f.ContentType) !== -1) {
+          currentContentType = f.ContentType;
+          var sel = document.getElementById('contentType'); if (sel) sel.value = f.ContentType;
+        }
+        lastCopy = f.MarketingCopy || '';
+        document.getElementById('copyText').value = lastCopy;
+        renderResults({
+          score: f.RiskScore, verdict: f.Verdict, summary: a.summary || '',
+          violations: (a.violations || []).map(function(v) { var c = Object.assign({}, v); delete c._fromContext; delete c._fixType; return c; }),
+          fixedVersion: f.FixedVersion || '', sourceRecordId: rec.id, comparison: a.comparison || null,
+        });
+        document.getElementById('verdictSub').textContent = 'Saved check from ' + (f.CheckDate || '') + '. Edit the rewrite and recheck to see what has changed.';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      })
+      .catch(function() { showError('That check could not be opened.'); });
   }
   document.readyState === 'loading'
     ? document.addEventListener('DOMContentLoaded', init)

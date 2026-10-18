@@ -587,6 +587,7 @@ const REPORT_TABLES = {
   dossier: 'Campaign_Dossiers', pecr: 'Suppression_Checks',
   audience: 'Audience_Read_Campaigns', partner: 'Partner_Register',
   affiliate: 'Affiliate_Register', competitor: 'Competitor_Watch',
+  simulation: 'Simulations',
 };
 async function handleReport(req, res) {
   const { recordId, type } = req.query;
@@ -665,6 +666,7 @@ async function handleHistory(req, res) {
     partner:     { table: 'Partner_Register',         sort: 'LastChecked' },
     affiliate:   { table: 'Affiliate_Register',       sort: 'LastChecked' },
     competitor:  { table: 'Competitor_Watch',          sort: 'LastAutoChecked' },
+    simulation:  { table: 'Simulations',               sort: 'CreatedAt' },
   };
   if (!type || !tableMap[type]) return res.status(400).json({ error: `type must be one of: ${Object.keys(tableMap).join(' | ')}` });
   const { table, sort } = tableMap[type];
@@ -1679,7 +1681,13 @@ async function handleSimulationRun(req, res) {
     if (r.ok) { const text = (await r.json()).content?.[0]?.text||''; const m = text.match(/\{[\s\S]*\}/); if (m) letter = JSON.parse(m[0]); }
   } catch (e) { console.error('Letter parse non-fatal:', e); }
   const thisBand = bandConfig[escalationBand];
-  return res.status(200).json({ regulator, stage1: { checks: [] }, stage2: { band: escalationBand, bandLabel: thisBand.label, bandColour: thisBand.colour, bandBg: thisBand.bgColour, bandBorder: thisBand.borderColour, bandDescription: (bandDescriptions[regulator]||bandDescriptions.ICO)[escalationBand], factors: [] }, stage3: { letter }, stage4: { documents: [] }, stage5: { penalty: { low:0, high:0, context:'' }, representations:[] } });
+  const result = { regulator, stage1: { checks: [] }, stage2: { band: escalationBand, bandLabel: thisBand.label, bandColour: thisBand.colour, bandBg: thisBand.bgColour, bandBorder: thisBand.borderColour, bandDescription: (bandDescriptions[regulator]||bandDescriptions.ICO)[escalationBand], factors: [] }, stage3: { letter }, stage4: { documents: [] }, stage5: { penalty: { low:0, high:0, context:'' }, representations:[] } };
+  // Keep every run so the member can reopen it later (Simulations table; skipped if missing)
+  try {
+    const rec = await atCreate(base, 'Simulations', { UserID: userId, CreatedAt: new Date().toISOString(), Regulator: regulator, Band: thisBand.label, ResultJson: JSON.stringify(result).slice(0, 95000) });
+    result.simulationId = rec?.id || null;
+  } catch (e) { console.warn('Simulation not saved:', e.message); }
+  return res.status(200).json(result);
 }
 
 // ── DOSSIER-TOGGLE-MONITORING handler ────────────────────────

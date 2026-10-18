@@ -12,7 +12,7 @@
   'use strict';
   var API = 'https://sendwize-backend.vercel.app';
   var root, userId, D = null;
-  var st = { filter: 'all', raMode: 'month', page: { ai: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
+  var st = { filter: 'all', raMode: 'month', page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
 
   var TOOLS = [
     { k: 'verdict',   l: 'Send-day verdict', u: '/send-verdict.html', hot: true },
@@ -120,7 +120,7 @@
       '<div class="sw-card sw-pad" id="sw-fixes">' + fixesSection() + '</div>' +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Recent checks</span><span>' +
-        ['ai', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { ai: 'Copy', vendor: 'Vendors', audience: 'Audience' }[k] + '</button>'; }).join('') +
+        ['ai', 'verdict', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Vendors', audience: 'Audience' }[k] + '</button>'; }).join('') +
       '</span></div><div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/profile.html')) + '">Your profile</a></div>';
     drawSpark();
@@ -306,7 +306,9 @@
     try {
       if (!histCache[k]) {
         el.className = 'sw-ld'; el.innerHTML = '<div class="sw-spin"></div>';
-        histCache[k] = (await api('/api/data?action=history&type=' + k + '&userId=' + encodeURIComponent(userId))).records || [];
+        histCache[k] = k === 'verdict'
+          ? ((await api('/api/verdict?action=list&userId=' + encodeURIComponent(userId))).verdicts || []).map(function (v) { return { id: v.id, fields: { CampaignName: v.campaign, Verdict: v.verdict, CreatedAt: v.createdAt, Channel: v.channel } }; })
+          : (await api('/api/data?action=history&type=' + k + '&userId=' + encodeURIComponent(userId))).records || [];
       }
       var rs = histCache[k], per = 6, pages = Math.max(1, Math.ceil(rs.length / per));
       var p = st.page[k] = Math.min(st.page[k], pages - 1);
@@ -318,8 +320,10 @@
   }
   function histRow(k, f, id) {
     var t, s, d, href;
-    if (k === 'ai') { t = f.CampaignName || f.Subject || 'Copy check'; s = f.Verdict || (f.IssueCount != null ? f.IssueCount + ' issues' : ''); d = f.CheckDate; href = link('/ai-report.html', 'id=' + encodeURIComponent(id)); }
-    else if (k === 'vendor') { t = f.VendorName || f.Vendor || 'Vendor'; s = f.RiskLevel || f.Status || ''; d = f.LastChecked; href = link('/vendor-report.html', 'id=' + encodeURIComponent(id)); }
+    if (k === 'ai') { t = f.FileName || 'Copy check'; s = f.Verdict || ''; d = f.CheckDate; href = link('/ai-checker.html', 'checkId=' + encodeURIComponent(id)); }
+    else if (k === 'verdict') { t = f.CampaignName || 'Send-day verdict'; s = f.Verdict || ''; d = f.CreatedAt; href = link('/send-verdict.html', 'verdictId=' + encodeURIComponent(id)); }
+    else if (k === 'simulation') { t = (f.Regulator || '') + ' simulation'; s = f.Band || ''; d = f.CreatedAt; href = link('/ico-simulator.html', 'simulationId=' + encodeURIComponent(id)); }
+    else if (k === 'vendor') { t = f.VendorName || f.Vendor || 'Vendor'; s = f.RiskLevel || f.Status || ''; d = f.LastChecked; href = link('/vendor-checker.html'); }
     else { t = f.CampaignName || f.Name || 'Audience read'; s = f.Verdict || f.Status || ''; d = f.SendDate; href = link('/audience-read.html'); }
     return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(t) + '</div><div class="sw-row-s">' + [esc(s), esc(date(d))].filter(Boolean).join(' · ') + '</div></div><a class="sw-link" href="' + esc(href) + '">Open</a></div>';
   }
