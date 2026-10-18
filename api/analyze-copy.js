@@ -23,6 +23,7 @@ import { claudeFetch, parseJson, LEGAL_RULES } from './_claude.js';
 import crypto from 'crypto';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
+import { fq } from './_airtable.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -576,6 +577,60 @@ async function generateFixes(userId, allViolations, emailChecks, sourceRecordId)
   }
 }
 
+// ── Recheck: compare a new run with the check it re-runs ──
+// A finding is matched by its fix type, or by its rule when it has none.
+function findingKey(v) {
+  return mapViolationToFixType(v) || `rule:${String(v.regulation || '').toLowerCase().replace(/\s+/g, ' ').trim()}`;
+}
+
+async function loadPreviousCheck(userId, recordId) {
+  if (!/^rec[A-Za-z0-9]{14}$/.test(recordId || '')) return null;
+  const r = await fetch(`https://api.airtable.com/v0/${process.env.BASE_ID}/AI_Compliance_Checks/${recordId}`, {
+    headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` },
+  });
+  if (!r.ok) return null;
+  const rec = await r.json();
+  if (rec.fields?.UserID !== userId) return null;
+  let analysis = {};
+  try { analysis = JSON.parse(rec.fields.Analysis || '{}'); } catch {}
+  return { id: rec.id, root: analysis.recheckRoot || rec.id, violations: analysis.violations || [] };
+}
+
+function compareChecks(before, after) {
+  const afterKeys = new Set(after.map(findingKey));
+  const beforeKeys = new Set(before.map(findingKey));
+  const brief = v => ({ issue: v.issue || '', regulation: v.regulation || '', severity: v.severity || '' });
+  return {
+    resolved:   before.filter(v => !afterKeys.has(findingKey(v))).map(brief),
+    stillOpen:  before.filter(v => afterKeys.has(findingKey(v))).map(brief),
+    newFindings: after.filter(v => !beforeKeys.has(findingKey(v))).map(brief),
+    resolvedTypes: [...new Set(before.filter(v => !afterKeys.has(findingKey(v))).map(mapViolationToFixType).filter(Boolean))],
+  };
+}
+
+// Close the dashboard fixes from the earlier check whose finding no longer appears.
+async function closeResolvedFixes(userId, sourceIds, fixTypes) {
+  if (!fixTypes.length) return 0;
+  const base = `https://api.airtable.com/v0/${process.env.BASE_ID}`;
+  const auth = { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
+  const types = fixTypes.map(t => `{OriginalFixType}=${fq(t)}`).join(',');
+  const sources = [...new Set(sourceIds)].map(id => `{SourceRecordID}=${fq(id)}`).join(',');
+  const formula = `AND({UserID}=${fq(userId)},OR(${sources}),{Status}='pending',OR(${types}))`;
+  const r = await fetch(`${base}/Compliance_Fixes?filterByFormula=${encodeURIComponent(formula)}&maxRecords=50`, { headers: auth });
+  if (!r.ok) return 0;
+  const recs = (await r.json()).records || [];
+  const today = new Date().toISOString().split('T')[0];
+  let closed = 0;
+  for (let i = 0; i < recs.length; i += 10) {
+    const u = await fetch(`${base}/Compliance_Fixes`, {
+      method: 'PATCH', headers: auth,
+      body: JSON.stringify({ records: recs.slice(i, i + 10).map(x => ({ id: x.id, fields: { Status: 'completed', CompletedDate: today, CompletionSource: 'improved_on_rerun' } })) }),
+    });
+    if (u.ok) closed += Math.min(10, recs.length - i);
+  }
+  return closed;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -588,7 +643,7 @@ export default async function handler(req, res) {
     const auth = await requireAuth(req, res);
     if (!auth) return;
     if (!(await checkLimit(req, res, auth, 'copy_scan'))) return;
-    const { contentType, content, subject, userId, autoFix, sendingContext, images } = req.body ?? {};
+    const { contentType, content, subject, userId, autoFix, sendingContext, images, recheckOf } = req.body ?? {};
     if (!userId)      return res.status(400).json({ error: 'Missing userId' });
     if (!contentType) return res.status(400).json({ error: 'Missing contentType' });
     if (!['email','sms','push','social','directmail'].includes(contentType)) return res.status(400).json({ error: 'Invalid contentType' });
@@ -673,6 +728,11 @@ export default async function handler(req, res) {
       else                                   finalVerdict = 'No issues found';
     }
 
+    // Recheck: compare with the earlier check before saving this one
+    let comparison = null;
+    const previous = recheckOf ? await loadPreviousCheck(userId, recheckOf).catch(() => null) : null;
+    if (previous) comparison = compareChecks(previous.violations, allViolations);
+
     let savedRecordId = null;
     try {
       const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -693,7 +753,7 @@ export default async function handler(req, res) {
           Warnings:       warningCount,
           MarketingCopy:  content?.slice(0, 10000) ?? '',
           FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
-          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '' }),
+          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
           FixedVersion:   aiAnalysis?.fixedVersion ?? '',
           RelatedCases:   '',
           SendingContext: contextBlock || '',
@@ -705,9 +765,18 @@ export default async function handler(req, res) {
       console.error('AI_Compliance_Checks save error:', err);
     }
 
-    if (allViolations.length > 0) {
-      try { await generateFixes(userId, allViolations, [], savedRecordId); }
+    // On a recheck, findings that were already open keep their existing fixes
+    const prevKeys = previous ? new Set(previous.violations.map(findingKey)) : null;
+    const fixable = prevKeys ? allViolations.filter(v => !prevKeys.has(findingKey(v))) : allViolations;
+    if (fixable.length > 0) {
+      try { await generateFixes(userId, fixable, [], savedRecordId); }
       catch (e) { console.error('generateFixes error:', e); }
+    }
+
+    if (comparison) {
+      try { comparison.closedFixes = await closeResolvedFixes(userId, [previous.root, previous.id], comparison.resolvedTypes); }
+      catch (e) { console.error('closeResolvedFixes error:', e); comparison.closedFixes = 0; }
+      delete comparison.resolvedTypes;
     }
 
     fetch(`${APP_URL}/api/profile?action=streak`, {
@@ -717,7 +786,7 @@ export default async function handler(req, res) {
     }).catch(e => console.error('Streak update failed:', e));
 
     const cleanViolations = allViolations.map(({ _fromContext, _fixType, ...rest }) => rest);
-    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, contentType, checkHash, sourceRecordId: savedRecordId });
+    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, contentType, checkHash, sourceRecordId: savedRecordId, comparison });
 
   } catch (error) {
     console.error('analyze-copy error:', error);

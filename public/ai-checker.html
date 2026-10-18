@@ -387,18 +387,21 @@
         <div class="rewrite-box" id="originalBox"></div>
       </div>
       <div class="rewrite-col">
-        <div class="rewrite-col-label fixed">&#x2705; Compliant rewrite</div>
-        <div class="rewrite-box fixed-box" id="fixedBox"></div>
+        <div class="rewrite-col-label fixed">&#x2705; Suggested rewrite <span style="font-weight:400;text-transform:none;letter-spacing:0">(you can edit it)</span></div>
+        <div class="rewrite-box fixed-box" id="fixedBox" contenteditable="true" spellcheck="true" aria-label="Suggested rewrite, editable"></div>
         <div class="rewrite-note" id="rewriteNote"></div>
         <div class="copy-actions">
           <button class="btn-secondary" onclick="copyCopy()">Copy to clipboard</button>
           <span class="copy-success" id="copySuccess">&#x2713; Copied!</span>
+          <button class="btn-secondary" id="recheckBtn" onclick="recheckVersion()" style="margin-left:auto;border-color:var(--orange);color:var(--orange);font-weight:600">Recheck this version</button>
         </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">Edit the rewrite if you like, then recheck. Findings that no longer appear are marked resolved and their dashboard fixes are closed.</div>
       </div>
     </div>
 
     <div class="card" id="violationsCard">
       <div class="section-title" id="violationsTitle">Compliance Issues</div>
+      <div id="recheckSummary"></div>
       <div id="violationsList" class="violations-list"></div>
     </div>
     <div class="card checks-section" id="checksSection">
@@ -591,7 +594,34 @@
       : '');
   }
 
-  async function runCheck() {
+  // Re-run the check on the (edited) rewrite and compare with the previous run
+  async function recheckVersion() {
+    var text = (document.getElementById('fixedBox').innerText || '').trim();
+    if (!text) { showError('The rewrite is empty. Add your copy before rechecking.'); return; }
+    if (!lastCheckSourceRecordId) { showError('This check was not saved, so it cannot be compared. Run a new check instead.'); return; }
+    document.getElementById('copyText').value = text;
+    await runCheck({ recheckOf: lastCheckSourceRecordId });
+  }
+
+  function renderRecheckSummary(c) {
+    var el = document.getElementById('recheckSummary');
+    if (!el) return;
+    if (!c) { el.innerHTML = ''; return; }
+    function list(items, colour) {
+      return items.map(function(i) { return '<div style="font-size:13px;padding:4px 0;color:' + colour + '">' + escH(i.issue) + (i.regulation ? ' <span style="color:var(--muted);font-size:11px">' + escH(i.regulation) + '</span>' : '') + '</div>'; }).join('');
+    }
+    el.innerHTML = '<div style="border:1px solid var(--border-mid);border-radius:10px;padding:14px 16px;margin-bottom:16px;background:var(--white)">' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);margin-bottom:6px">Recheck result</div>' +
+      '<div style="font-size:14px;font-weight:600;margin-bottom:8px">' + c.resolved.length + ' resolved &middot; ' + c.stillOpen.length + ' still open &middot; ' + c.newFindings.length + ' new' +
+      (c.closedFixes ? ' &middot; ' + c.closedFixes + ' dashboard fix' + (c.closedFixes === 1 ? '' : 'es') + ' closed' : '') + '</div>' +
+      (c.resolved.length ? '<div style="font-size:12px;font-weight:600;margin-top:6px">Resolved</div>' + list(c.resolved, '#16a34a') : '') +
+      (c.stillOpen.length ? '<div style="font-size:12px;font-weight:600;margin-top:6px">Still open</div>' + list(c.stillOpen, '#b45309') : '') +
+      (c.newFindings.length ? '<div style="font-size:12px;font-weight:600;margin-top:6px">New in this version</div>' + list(c.newFindings, '#dc2626') : '') +
+      '</div>';
+  }
+
+  async function runCheck(opts) {
+    opts = opts && opts.recheckOf ? opts : {};
     if (!userId) { showError('Please return to the dashboard and open this tool from there.'); return; }
     clearError();
     var copy = document.getElementById('copyText').value.trim();
@@ -601,6 +631,7 @@
     try {
       var sendingContext = getSendingContext();
       var payload = { userId: userId, contentType: currentContentType, content: copy, autoFix: true };
+      if (opts.recheckOf) payload.recheckOf = opts.recheckOf;
       if (sendingContext) payload.sendingContext = sendingContext;
       if (uploadedImages.length > 0) payload.images = uploadedImages.map(function(i) { return { data: i.data, mediaType: i.mediaType }; });
       var res = await swFetch(APP_URL + '/api/analyze-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -618,6 +649,7 @@
     // v5.4: capture the source record ID from the server so we can attach
     // certifications to it when the user hits Finish
     lastCheckSourceRecordId = data.sourceRecordId || null;
+    renderRecheckSummary(data.comparison || null);
     evidenceCertifications = [];
     evidenceMap = {};
 
@@ -640,7 +672,7 @@
       var changedCount = violations.filter(function(v) { return !v.requiresEvidence && (v.severity === 'critical' || v.severity === 'high'); }).length;
       var evidenceCount = violations.filter(function(v) { return v.requiresEvidence; }).length;
       var noteparts = [];
-      if (changedCount > 0) noteparts.push(changedCount + ' compliance issue' + (changedCount !== 1 ? 's' : '') + ' fixed');
+      if (changedCount > 0) noteparts.push(changedCount + ' potential area' + (changedCount !== 1 ? 's' : '') + ' addressed in the rewrite');
       if (evidenceCount > 0) noteparts.push(evidenceCount + ' evidence item' + (evidenceCount !== 1 ? 's' : '') + ' marked [EVIDENCE REQUIRED] for you to resolve');
       document.getElementById('rewriteNote').textContent = noteparts.length ? noteparts.join(' \u00b7 ') + '. Brand voice preserved.' : 'Brand voice and energy preserved.';
     } else {
@@ -788,7 +820,7 @@
 
   async function copyCopy() {
     try {
-      await navigator.clipboard.writeText(document.getElementById('fixedBox').textContent);
+      await navigator.clipboard.writeText(document.getElementById('fixedBox').innerText);
       var el = document.getElementById('copySuccess');
       el.classList.add('show'); setTimeout(function() { el.classList.remove('show'); }, 2200);
     } catch(e) {}
