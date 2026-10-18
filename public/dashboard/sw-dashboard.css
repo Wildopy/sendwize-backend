@@ -127,3 +127,11 @@
 @media(max-width:900px){.sw-tools{grid-template-columns:repeat(4,minmax(0,1fr))}.sw-g-3{grid-template-columns:1fr}}
 @media(max-width:680px){.sw-wrap{padding-left:12px;padding-right:12px}.sw-g-top,.sw-g-2{grid-template-columns:1fr}.sw-fx{flex-wrap:wrap}.sw-fx-exp{text-align:left}}
 @media(max-width:480px){.sw-tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* v1.1: confidence chip and the "tighten this figure" form */
+.sw-conf{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.sw-conf.high{background:var(--gb);color:var(--g)}.sw-conf.medium{background:#fef3c7;color:#92400e}.sw-conf.low{background:#f3f4f6;color:#4b5563}
+.sw-tf{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+.sw-tf label{font-size:12px;font-weight:600;color:var(--t)}
+.sw-tf input,.sw-tf select{font:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--b);border-radius:8px;background:#fff;color:var(--t);width:100%;box-sizing:border-box}
+.sw-cost-l{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--b)}
+.sw-cost-l:last-child{border-bottom:none}

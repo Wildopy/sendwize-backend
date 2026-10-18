@@ -1,9 +1,15 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — exposure.js v1.0
+// SENDWIZE — exposure.js v1.1
 // "Why this number?" and AI exposure assessments.
+// v1.1: the profile's turnover, list size, opt-in records and history
+//   sharpen the figure (see _exposure.js). Claude may also quote the
+//   audience size from the finding. New action=inputs saves a campaign's
+//   budget and expected revenue for the ASA/CMA commercial cost.
 //
 // GET  /api/exposure?action=explain&fixId=rec…     member: full explanation of one figure
 // POST /api/exposure?action=assess  { fixId }       member: Claude reads the evidence for one fix
+// POST /api/exposure?action=inputs { fixId, campaignBudget, campaignRevenue }
+//                                                   member: campaign figures for an ASA/CMA finding
 // GET  /api/exposure?action=assess-pending          cron/internal: assess open ICO fixes in bulk
 //
 // Claude never writes a number. It may only pick factors from the fixed
@@ -14,7 +20,9 @@
 // evidence always gives the same figure.
 //
 // Airtable (Compliance_Fixes): AssessmentJson (long text),
-// EvidenceHash (single line text). See the review doc.
+// EvidenceHash (single line text), CommercialInputs (long text).
+// User_Profile: TypicalCampaignBudget, TypicalCampaignRevenue (number),
+// set from the last campaign entered. See the review doc.
 // ─────────────────────────────────────────────────────────────
 import { claudeFetch, parseJson, MODEL, LEGAL_RULES } from './_claude.js';
 import { atFetch, fq } from './_airtable.js';
@@ -22,7 +30,7 @@ import { requireAuth, isRecordId, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import {
   formatFixRecord, evidenceText, evidenceHash, validateAssessment, reductionTips,
-  normaliseBand, normaliseSector, FACTORS, AI_FACTOR_IDS, closestCases, ENGINE_VERSION,
+  profileContext, COMMERCIAL_ASSUMPTIONS, FACTORS, AI_FACTOR_IDS, closestCases, ENGINE_VERSION,
   ICO_LEGAL_MAX, NOT_LEGAL_ADVICE, DUAA_WARNING,
 } from './_exposure.js';
 
@@ -33,9 +41,11 @@ const atH  = () => ({ Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}`, 'Co
 
 async function loadProfile(userId) {
   const r = await atFetch(`${base()}/User_Profile?filterByFormula=${encodeURIComponent(`{UserID}=${fq(userId)}`)}&maxRecords=1`, { headers: atH() });
-  const f = r.ok ? ((await r.json()).records?.[0]?.fields || {}) : {};
-  return { revenueBand: normaliseBand(f.RevenueBand || 'under_1m'), sector: normaliseSector(f.Sector || 'general') };
+  const rec = r.ok ? ((await r.json()).records?.[0] || null) : null;
+  return { ...profileContext(rec?.fields || {}), profileId: rec?.id || null };
 }
+// Band and sector only: what the AI evidence and its hash are built from
+const bandSector = p => ({ revenueBand: p.revenueBand, sector: p.sector });
 
 async function loadFix(fixId) {
   const r = await atFetch(`${base()}/Compliance_Fixes/${fixId}`, { headers: atH() });
@@ -44,7 +54,7 @@ async function loadFix(fixId) {
 
 // ── Claude: pick factors from the menu, quoting the evidence ──
 async function askClaude(fix, profile) {
-  const text = evidenceText(fix, profile);
+  const text = evidenceText(fix, bandSector(profile));
   const cases = closestCases(fix.fixType, fix.contactVolume);
   const menu = AI_FACTOR_IDS.map(id => `- ${id}: ${FACTORS[id].label}`).join('\n');
   const schema = {
@@ -62,17 +72,19 @@ async function askClaude(fix, profile) {
           additionalProperties: false,
         },
       },
+      audience_count: { type: 'integer', description: 'Number of people or messages the evidence says were affected. 0 if the evidence does not state a number.' },
+      audience_quote: { type: 'string', description: 'Exact words from the evidence that state that number, or an empty string.' },
       plain_english: { type: 'string', description: 'Two sentences for a marketing manager on why this matters. No legal conclusions.' },
       confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
     },
-    required: ['factors', 'plain_english', 'confidence'],
+    required: ['factors', 'audience_count', 'audience_quote', 'plain_english', 'confidence'],
     additionalProperties: false,
   };
   const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
     signal: AbortSignal.timeout(25000),
     body: JSON.stringify({
       max_tokens: 700,
-      system: `You assess UK marketing compliance evidence for a regulatory exposure model. Only select a factor when the evidence text plainly shows it, and copy the exact words that show it into "quote". Never infer facts that are not written. If nothing applies, return an empty factors list. "plain_english" is two sentences for a marketing manager on why this matters.\n\n${LEGAL_RULES}`,
+      system: `You assess UK marketing compliance evidence for a regulatory exposure model. Only select a factor when the evidence text plainly shows it, and copy the exact words that show it into "quote". If the evidence states how many people or messages were affected, give that number in "audience_count" and the exact words in "audience_quote". Never infer facts that are not written. If nothing applies, return an empty factors list. "plain_english" is two sentences for a marketing manager on why this matters.\n\n${LEGAL_RULES}`,
       messages: [{ role: 'user', content: `Factor menu:\n${menu}\n\nComparable published cases (for context only):\n${cases.map(c => `- ${c.name} (${c.date}, £${c.penalty.toLocaleString('en-GB')}): ${c.summary}`).join('\n') || '- none on file for this finding type'}\n\nEvidence:\n<<<\n${text}\n>>>` }],
     }),
   }, { effort: 'low', schema });
@@ -84,10 +96,10 @@ async function askClaude(fix, profile) {
 }
 
 async function assessAndStore(rec, profile) {
-  const fix = formatFixRecord(rec, profile.revenueBand, profile.sector);
+  const fix = formatFixRecord(rec, profile.revenueBand, profile.sector, profile.inputs);
   if (fix.exposure?.category !== 'ICO') return { fixId: rec.id, skipped: 'not an ICO finding' };
   const assessment = await askClaude(fix, profile);
-  const hash = evidenceHash(fix, profile);
+  const hash = evidenceHash(fix, bandSector(profile));
   const r = await atFetch(`${base()}/Compliance_Fixes/${rec.id}`, {
     method: 'PATCH', headers: atH(),
     body: JSON.stringify({ fields: { AssessmentJson: JSON.stringify(assessment), EvidenceHash: hash } }),
@@ -100,7 +112,7 @@ async function assessAndStore(rec, profile) {
 }
 
 function explain(rec, profile) {
-  const fix = formatFixRecord(rec, profile.revenueBand, profile.sector);
+  const fix = formatFixRecord(rec, profile.revenueBand, profile.sector, profile.inputs);
   const e = fix.exposure || {};
   return {
     success: true,
@@ -110,7 +122,9 @@ function explain(rec, profile) {
     assessmentStale: fix.assessmentStale,
     canAssess: e.category === 'ICO',
     tips: e.category === 'ICO' ? reductionTips(e) : [],
-    profile,
+    campaignInputs: fix.campaignInputs || null,
+    assumptions: e.marketingCost ? COMMERCIAL_ASSUMPTIONS : null,
+    profile: { revenueBand: profile.revenueBand, sector: profile.sector, inputs: profile.inputs },
     legalMax: ICO_LEGAL_MAX,
     duaaWarning: DUAA_WARNING,
     disclaimer: NOT_LEGAL_ADVICE,
@@ -158,6 +172,30 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET' && action === 'explain') return res.json(explain(rec, profile));
 
+    if (req.method === 'POST' && action === 'inputs') {
+      const money = v => { if (v === '' || v == null) return null; const n = Number(v); return Number.isFinite(n) && n > 0 && n < 1e9 ? Math.round(n) : NaN; };
+      const campaignBudget = money(req.body?.campaignBudget), campaignRevenue = money(req.body?.campaignRevenue);
+      if (Number.isNaN(campaignBudget) || Number.isNaN(campaignRevenue)) return res.status(400).json({ error: 'Enter amounts in pounds, above zero' });
+      if (!campaignBudget && !campaignRevenue) return res.status(400).json({ error: 'Enter a budget or expected revenue' });
+      const fx = formatFixRecord(rec, profile.revenueBand, profile.sector, profile.inputs);
+      if (!fx.exposure?.marketingCost) return res.status(400).json({ error: 'Campaign figures apply to ASA and CMA findings only' });
+      const values = Object.fromEntries(Object.entries({ campaignBudget, campaignRevenue }).filter(([, v]) => v));
+      const pr = await atFetch(`${base()}/Compliance_Fixes/${fixId}`, {
+        method: 'PATCH', headers: atH(),
+        body: JSON.stringify({ fields: { CommercialInputs: JSON.stringify({ ...(fx.campaignInputs || {}), ...values, savedAt: new Date().toISOString() }) } }),
+      });
+      if (!pr.ok) return res.status(pr.status === 422 ? 422 : 502).json({ error: pr.status === 422 ? 'Add the CommercialInputs field to Compliance_Fixes in Airtable' : 'Could not save' });
+      // Pre-fill the next campaign. Best effort: the profile fields may not exist yet.
+      if (profile.profileId) {
+        await atFetch(`${base()}/User_Profile/${profile.profileId}`, {
+          method: 'PATCH', headers: atH(),
+          body: JSON.stringify({ fields: { ...(campaignBudget ? { TypicalCampaignBudget: campaignBudget } : {}), ...(campaignRevenue ? { TypicalCampaignRevenue: campaignRevenue } : {}) } }),
+        }).catch(() => null);
+      }
+      const [fresh, freshProfile] = await Promise.all([loadFix(fixId), loadProfile(userId)]);
+      return res.json(explain(fresh || rec, freshProfile));
+    }
+
     if (req.method === 'POST' && action === 'assess') {
       if (!(await checkLimit(req, res, auth, 'exposure'))) return;
       const out = await assessAndStore(rec, profile);
@@ -166,7 +204,7 @@ export default async function handler(req, res) {
       return res.json(explain(fresh || rec, profile));
     }
 
-    return res.status(400).json({ error: 'Unknown action. Use ?action=explain|assess|assess-pending' });
+    return res.status(400).json({ error: 'Unknown action. Use ?action=explain|assess|inputs|assess-pending' });
   } catch (e) {
     console.error('exposure.js error:', e);
     return res.status(500).json({ error: e.message || 'Exposure error' });
