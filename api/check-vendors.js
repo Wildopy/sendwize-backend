@@ -21,7 +21,19 @@
 //     (no server-side text extraction — Claude reads the PDF)
 //   + URL path reuses existing scrapePrivacyPolicy() helper
 //   + Both paths call the same Article 28 prompt
+//
+// v4.31 (security): request authenticated via _auth.js (verified member id
+//   replaces any browser userId); vendor names escaped in Airtable
+//   formulas; policy pages fetched through _page-scan.js fetchPage()
+//   (SSRF-safe); calls to generate-fix and profile streak signed with the
+//   internal secret (they were silently rejected before).
 // ─────────────────────────────────────────────────────────────
+import { claudeFetch, LEGAL_RULES } from './_claude.js';
+import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
+import { checkLimit } from './_limits.js';
+import { fq } from './_airtable.js';
+import { fetchPage } from './_page-scan.js';
+
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const SCRAPE_TIMEOUT_MS = 8000;
 const SCRAPE_MAX_CHARS  = 12000;
@@ -31,9 +43,12 @@ const PDF_MAX_BYTES = 10 * 1024 * 1024; // 10MB
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+  if (!(await checkLimit(req, res, auth, 'vendor_check'))) return;
 
   const body = req.body ?? {};
 
@@ -121,7 +136,7 @@ a28-11: Controller identity and contact clearly stated
 a28-12: Processor identity and DPO (if required) clearly stated`;
 
 async function analyzeA28FromPdf(vendorName, pdfBase64) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
     method:  'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -129,8 +144,7 @@ async function analyzeA28FromPdf(vendorName, pdfBase64) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 2000,
+      max_tokens: 2000, system: LEGAL_RULES,
       messages: [{
         role: 'user',
         content: [
@@ -156,7 +170,7 @@ async function analyzeA28FromPdf(vendorName, pdfBase64) {
 }
 
 async function analyzeA28FromText(vendorName, policyText, policyUrl) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
     method:  'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -164,8 +178,7 @@ async function analyzeA28FromText(vendorName, policyText, policyUrl) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 2000,
+      max_tokens: 2000, system: LEGAL_RULES,
       messages: [{
         role: 'user',
         content: `The vendor is "${vendorName}". The following text was scraped from their published policy at ${policyUrl}. Review it as their Data Processing Agreement.\n\nSCRAPED POLICY:\n"""\n${policyText}\n"""\n\n${A28_INSTRUCTIONS}`,
@@ -218,7 +231,7 @@ async function handleBulkScanRequest(body, res) {
     let vendorLibrary = {};
     if (knownNames.length > 0) {
       try {
-        const formula = `OR(${knownNames.map(n => `LOWER({VendorName})='${n}'`).join(',')})`;
+        const formula = `OR(${knownNames.map(n => `LOWER({VendorName})=${fq(n)}`).join(',')})`;
         const libRes  = await fetch(
           `${atBase}/Marketing_Vendors?filterByFormula=${encodeURIComponent(formula)}`,
           { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
@@ -281,7 +294,7 @@ async function handleBulkScanRequest(body, res) {
       try {
         const ui = result.userInput || {};
         const existingRes = await fetch(
-          `${atBase}/Vendor_Register?filterByFormula=AND({UserID}='${userId}',{VendorName}='${result.name}')&maxRecords=1`,
+          `${atBase}/Vendor_Register?filterByFormula=${encodeURIComponent(`AND({UserID}=${fq(userId)},{VendorName}=${fq(result.name)})`)}&maxRecords=1`,
           { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
         );
         const existing = (existingRes.ok ? await existingRes.json() : { records: [] }).records?.[0];
@@ -325,7 +338,7 @@ async function handleBulkScanRequest(body, res) {
         try {
           await fetch(`${APP_URL}/api/generate-fix`, {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: internalHeaders(),
             body:    JSON.stringify(fix),
           });
         } catch (e) { console.error(`generate-fix failed for ${result.name}:`, e); }
@@ -333,8 +346,8 @@ async function handleBulkScanRequest(body, res) {
     }
 
     // ── 6. Streak ─────────────────────────────────────────────
-    fetch(`${APP_URL}/api/profile?action=streak`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    await fetch(`${APP_URL}/api/profile?action=streak`, {
+      method: 'POST', headers: internalHeaders(),
       body:   JSON.stringify({ userId })
     }).catch(e => console.error('Streak update failed:', e));
 
@@ -353,21 +366,10 @@ async function scrapePrivacyPolicy(url) {
   if (!url || typeof url !== 'string') return null;
   if (!/^https?:\/\//i.test(url))       return null;
 
-  const controller = new AbortController();
-  const timer      = setTimeout(() => controller.abort(), SCRAPE_TIMEOUT_MS);
-
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': SCRAPE_UA, 'Accept': 'text/html,application/xhtml+xml' },
-      signal:  controller.signal,
-      redirect: 'follow',
-    });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const ct = res.headers.get('content-type') || '';
-    if (!/text\/html|xhtml/i.test(ct)) return null;
-
-    const html = await res.text();
+    const page = await fetchPage(url);
+    if (!page.ok) return null;
+    const html = page.html;
     const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -390,7 +392,6 @@ async function scrapePrivacyPolicy(url) {
       scrapedAt: new Date().toISOString(),
     };
   } catch (e) {
-    clearTimeout(timer);
     console.error(`scrapePrivacyPolicy failed for ${url}:`, e.message);
     return null;
   }
@@ -401,7 +402,7 @@ async function scrapePrivacyPolicy(url) {
 // ─────────────────────────────────────────────────────────────
 async function guessPrivacyPolicyUrl(vendorName) {
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method:  'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -409,7 +410,6 @@ async function guessPrivacyPolicyUrl(vendorName) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
         max_tokens: 150,
         messages: [{
           role: 'user',
@@ -718,7 +718,7 @@ Use ONLY the scraped text above as evidence for dimensions and gaps. If a dimens
     : `NO PRIVACY POLICY SCRAPED. Use general knowledge only. Mark dimensions Unknown where you can\u2019t verify. Any gaps you list must be flagged as unverified in the detail.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method:  'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -726,8 +726,7 @@ Use ONLY the scraped text above as evidence for dimensions and gaps. If a dimens
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        max_tokens: 2000, system: LEGAL_RULES,
         messages: [{
           role: 'user',
           content: `You are a UK GDPR compliance researcher. A UK marketing team uses "${vendorName}" as a data processor.

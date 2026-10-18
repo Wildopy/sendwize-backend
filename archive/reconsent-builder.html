@@ -363,6 +363,7 @@
 
 </div>
 
+<script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
 <script>
   const userId     = new URLSearchParams(window.location.search).get('userId') || '';
   const VERCEL_URL = window.location.origin;
@@ -375,7 +376,7 @@
   async function checkRecentAudit() {
     if (!userId) return;
     try {
-      const resp = await fetch(`${VERCEL_URL}/api/data?action=report&type=audit&recordId=latest&userId=${encodeURIComponent(userId)}`);
+      const resp = await swFetch(`${VERCEL_URL}/api/data?action=report&type=audit&recordId=latest&userId=${encodeURIComponent(userId)}`);
       if (!resp.ok) return;
       const data = await resp.json();
       const risky  = data.Risky  || data.risky  || 0;
@@ -440,7 +441,7 @@
         modifier ? `Please ${modifier}` : ''
       ].filter(Boolean).join('. ');
 
-      const resp = await fetch(`${VERCEL_URL}/api/generate-reconsent-email`, {
+      const resp = await swFetch(`${VERCEL_URL}/api/generate-reconsent-email`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({

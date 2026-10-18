@@ -19,7 +19,10 @@
 //   sourceContent: URL to scrape, pasted text, or base64-encoded PDF
 // ─────────────────────────────────────────────────────────────
 
+import { claudeFetch } from './_claude.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
+import { checkLimit } from './_limits.js';
+import { fetchPage } from './_page-scan.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const SCRAPE_TIMEOUT_MS = 10000;
@@ -141,18 +144,11 @@ const CHECKS = [
 // ── scrapePolicy ──────────────────────────────────────────────
 async function scrapePolicy(url) {
   if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url)) return null;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), SCRAPE_TIMEOUT_MS);
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': SCRAPE_UA, 'Accept': 'text/html,application/xhtml+xml' },
-      signal: controller.signal, redirect: 'follow',
-    });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const ct = res.headers.get('content-type') || '';
-    if (!/text\/html|xhtml|text\/plain/i.test(ct)) return null;
-    const raw = await res.text();
+    // SSRF-safe fetch (blocks internal hosts on every redirect hop)
+    const page = await fetchPage(url, { allowText: true });
+    if (!page.ok) return null;
+    const raw = page.html;
     const text = raw
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -164,7 +160,6 @@ async function scrapePolicy(url) {
     if (text.length < 500) return null;
     return text.slice(0, SCRAPE_MAX_CHARS);
   } catch (e) {
-    clearTimeout(timer);
     console.error('scrapePolicy failed:', e.message);
     return null;
   }
@@ -177,7 +172,7 @@ async function extractTextFromPdf(pdfBase64) {
   const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -186,7 +181,6 @@ async function extractTextFromPdf(pdfBase64) {
       'anthropic-beta': 'pdfs-2024-09-25',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       messages: [{
         role: 'user',
@@ -257,7 +251,7 @@ async function extractQuotesWithAI(text, results) {
       .map(r => '- id: ' + r.id + ' | ' + r.label + ' (' + r.articleRef + ')')
       .join('\n');
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -265,7 +259,7 @@ async function extractQuotesWithAI(text, results) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: 2000,
+        max_tokens: 2000,
         messages: [{ role: 'user', content:
           'You are looking at a Data Processing Agreement or Privacy Policy. For each of the clauses listed, find and quote the exact sentence or short passage from the document that addresses it. Do NOT paraphrase. Do NOT interpret. Quote verbatim from the document. If a clause is not clearly addressed, return null for that item.\n\nDOCUMENT:\n"""\n' + text.slice(0, 15000) + '\n"""\n\nCLAUSES TO FIND QUOTES FOR:\n' + clauseList + '\n\nRespond ONLY with JSON, no markdown fences:\n{\n  "quotes": [\n    { "id": "<clause id from list above>", "quote": "<exact quoted sentence(s) from document, or null>" }\n  ]\n}'
         }],
@@ -415,6 +409,7 @@ export default async function handler(req, res) {
     // Identity: the verified member id replaces any userId sent by the browser
     const auth = await requireAuth(req, res);
     if (!auth) return;
+    if (!(await checkLimit(req, res, auth, 'dpa_scan'))) return;
     const { userId, vendorName, vendorRegisterId, sourceType, sourceContent } = req.body ?? {};
     if (!userId) return res.status(400).json({ error: 'userId is required' });
     if (!vendorName) return res.status(400).json({ error: 'vendorName is required' });

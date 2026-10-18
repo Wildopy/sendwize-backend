@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
+  <link rel="icon" type="image/svg+xml" href="https://sendwize-backend.vercel.app/favicon.svg">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Send-day verdict — Sendwize</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--o:#EA7317;--ol:#FFF4EA;--bg:#FAFAFA;--w:#fff;--b:#ececec;--t:#1a1a1a;--mu:#6b7280;--r:#dc2626;--rb:#fef2f2;--y:#b45309;--yb:#fffbeb;--g:#16a34a;--gb:#f0fdf4;--rad:10px}
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
+    header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b)}
+    header img{height:28px;display:block}
+    header a{color:var(--mu);font-size:14px;font-weight:500;text-decoration:none}
+    .wrap{max-width:820px;margin:0 auto;padding:32px 16px 60px}
+    h1{font-size:24px;margin-bottom:6px}
+    .sub{font-size:14px;color:var(--mu);line-height:1.5;margin-bottom:24px}
+    .card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:22px;margin-bottom:16px}
+    label{display:block;font-size:12px;font-weight:600;margin:14px 0 6px}
+    label:first-child{margin-top:0}
+    .hint{font-weight:400;color:var(--mu)}
+    input,textarea,select{width:100%;font:inherit;font-size:14px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:var(--t)}
+    textarea{min-height:180px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    button.go{margin-top:18px;width:100%;background:var(--o);color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+    button.go:disabled{opacity:.5;cursor:wait}
+    .err{color:var(--r);font-size:13px;margin-top:10px}
+    .verdict{border-radius:var(--rad);padding:22px;margin-bottom:16px;border:2px solid}
+    .verdict.go{background:var(--gb);border-color:#86efac}.verdict.fix_first{background:var(--yb);border-color:#fcd34d}.verdict.hold{background:var(--rb);border-color:#fca5a5}
+    .vl{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    .verdict.go .vl{color:var(--g)}.verdict.fix_first .vl{color:var(--y)}.verdict.hold .vl{color:var(--r)}
+    .vh{font-size:22px;font-weight:700;margin:6px 0}
+    .item{padding:10px 0;border-bottom:1px solid var(--b);font-size:14px;line-height:1.45}
+    .item:last-child{border-bottom:none}
+    .tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;background:#f3f4f6;color:var(--mu);margin-right:6px}
+    .act{font-size:13px;color:var(--mu);margin-top:3px}
+    .sec{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--o);margin-bottom:6px}
+    .fp{font-family:ui-monospace,monospace;font-size:11px;color:var(--mu);word-break:break-all;margin-top:10px}
+    .note{font-size:12px;color:var(--mu);line-height:1.5}
+    .hist a{color:var(--t)}
+    .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:8px}
+    @keyframes s{to{transform:rotate(360deg)}}
+    @media(max-width:600px){.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header>
+  <img src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
+  <a id="dash" href="#">Dashboard</a>
+</header>
+<main class="wrap">
+  <h1>Send-day verdict</h1>
+  <p class="sub">Paste the campaign before it goes out. Sendwize checks the copy, the landing pages and the list together and gives one answer: Go, Fix first, or Hold. Each verdict is saved with a fingerprint as a record that you checked.</p>
+
+  <form class="card" id="f">
+    <div class="row">
+      <div><label for="name">Campaign name</label><input id="name" maxlength="120" placeholder="Black Friday email"></div>
+      <div><label for="ch">Channel</label>
+        <select id="ch"><option value="email">Email</option><option value="sms">SMS</option><option value="push">Push</option><option value="social">Social</option><option value="directmail">Direct mail</option></select></div>
+    </div>
+    <label for="subj">Subject line <span class="hint">(email)</span></label><input id="subj" maxlength="300">
+    <label for="copy">Campaign copy</label><textarea id="copy" required placeholder="Paste the full email, SMS or post"></textarea>
+    <label for="urls">Landing pages <span class="hint">(one per line, up to 4)</span></label><textarea id="urls" style="min-height:70px" placeholder="https://"></textarea>
+    <div class="row">
+      <div><label for="list">Send list <span class="hint">(as named in List health)</span></label><select id="list"><option value="">Most recent list check</option></select></div>
+      <div><label for="src">Where the list came from</label>
+        <select id="src"><option value="">Not stated</option><option value="direct">Collected by us</option><option value="purchased">Bought or rented</option><option value="partner">From a partner or affiliate</option></select></div>
+    </div>
+    <button class="go" id="run" type="submit">Get the verdict</button>
+    <div class="err" id="err" role="alert"></div>
+  </form>
+
+  <div id="out" aria-live="polite"></div>
+
+  <div class="card hist" id="hist" hidden><div class="sec">Recent verdicts</div><div id="hl"></div></div>
+</main>
+<script>
+(function () {
+  var API = 'https://sendwize-backend.vercel.app';
+  var DASH = window.SW_DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  var userId = new URLSearchParams(location.search).get('userId');
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  $('dash').href = DASH;
+
+  async function call(path, opts) {
+    var r = await swFetch(API + path, opts);
+    var j = {}; try { j = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error(j.error || ('Request failed (' + r.status + ')'));
+    return j;
+  }
+
+  if (!userId) {
+    $('f').innerHTML = '<p class="note">Open this tool from your <a href="' + esc(DASH) + '">dashboard</a> so we know who you are.</p>';
+    return;
+  }
+
+  call('/api/list-intelligence?action=lists&userId=' + encodeURIComponent(userId)).then(function (d) {
+    (d.lists || []).forEach(function (l) {
+      var n = l.listName || l.name; if (!n) return;
+      var o = document.createElement('option'); o.value = n; o.textContent = n; $('list').appendChild(o);
+    });
+  }).catch(function () {});
+
+  function loadHistory() {
+    call('/api/verdict?action=list&userId=' + encodeURIComponent(userId)).then(function (d) {
+      var v = d.verdicts || [];
+      if (!v.length) return;
+      $('hist').hidden = false;
+      $('hl').innerHTML = v.map(function (x) {
+        return '<div class="item"><a href="#" data-id="' + esc(x.id) + '" class="open-v"><span class="tag">' + esc(x.verdict) + '</span>' + esc(x.campaign) + '</a> <span class="note">· ' + esc(x.channel) + ' · ' + esc(new Date(x.createdAt).toLocaleString('en-GB')) + '</span></div>';
+      }).join('');
+    }).catch(function () {});
+  }
+  loadHistory();
+
+  // Reopen a saved verdict from the list, or from ?verdictId= in the address
+  $('hl').addEventListener('click', function (e) {
+    var a = e.target.closest('.open-v'); if (!a) return;
+    e.preventDefault();
+    openVerdict(a.getAttribute('data-id'));
+  });
+  function openVerdict(id) {
+    call('/api/verdict?action=get&id=' + encodeURIComponent(id) + '&userId=' + encodeURIComponent(userId))
+      .then(showVerdict)
+      .catch(function (err) { $('err').textContent = err.message; });
+  }
+  var startId = new URLSearchParams(location.search).get('verdictId');
+  if (startId) openVerdict(startId);
+
+  function items(list, area) {
+    return list.map(function (i) {
+      return '<div class="item"><span class="tag">' + esc(i.area) + '</span>' + esc(i.text) + (i.action ? '<div class="act">' + esc(i.action) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+
+  function showVerdict(v) {
+      var h = '<div class="verdict ' + esc(v.verdict) + '"><div class="vl">' + esc(v.label) + '</div><div class="vh">' + esc(v.headline) + '</div>' +
+        '<div class="note">' + (v.reopened ? 'Saved verdict' + (v.campaign ? ' for ' + esc(v.campaign) : '') + ', checked ' : 'Checked ') + esc(new Date(v.createdAt).toLocaleString('en-GB')) + (v.saved ? '. Saved to your records.' : '. Not saved: ask your admin to add the Send_Verdicts table.') + '</div></div>';
+      if (v.hold.length) h += '<div class="card"><div class="sec">Stop and resolve</div>' + items(v.hold) + '</div>';
+      if (v.fix.length) h += '<div class="card"><div class="sec">Fix before sending</div>' + items(v.fix) + '</div>';
+      if (v.ok.length) h += '<div class="card"><div class="sec">Checked and clear</div>' + items(v.ok) + '</div>';
+      h += '<div class="card"><div class="note">' + esc(v.notice) + '</div><div class="fp">Fingerprint ' + esc(v.fingerprint) + '</div></div>';
+      $('out').innerHTML = h;
+      $('out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  $('f').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    $('err').textContent = '';
+    var btn = $('run');
+    btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Checking copy, pages and list…';
+    try {
+      var body = {
+        userId: userId,
+        campaignName: $('name').value.trim(),
+        channel: $('ch').value,
+        subject: $('subj').value.trim(),
+        copy: $('copy').value,
+        urls: $('urls').value.split(/\s+/).filter(Boolean),
+        listName: $('list').value,
+        sendingContext: $('src').value ? { listSource: $('src').value } : undefined,
+      };
+      var v = await call('/api/verdict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      showVerdict(v);
+      loadHistory();
+    } catch (err) {
+      $('err').textContent = err.message;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Get the verdict';
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -8,6 +8,13 @@
 // POST ?action=suppression-report { userId, campaignRecordId }
 //
 // All actions require userId. All errors return JSON — never throws.
+//
+// v2.1 (security): request authenticated via _auth.js (verified member id
+//   replaces any browser userId); campaignRecordId validated; calls to
+//   generate-fix, profile streak and generate-reconsent-email signed with
+//   the internal secret (they were silently rejected before).
+
+import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -267,7 +274,7 @@ async function handleAudit(req, res) {
     fixCalls.map(fix =>
       fetch(`${APP_URL}/api/generate-fix`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: internalHeaders(),
         body:    JSON.stringify({ userId, ...fix, tool: 'Database Auditor' })
       })
       .then(r => r.json())
@@ -277,9 +284,9 @@ async function handleAudit(req, res) {
   );
 
   // Streak call — fire and forget
-  fetch(`${APP_URL}/api/profile?action=streak`, {
+  await fetch(`${APP_URL}/api/profile?action=streak`, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: internalHeaders(),
     body:    JSON.stringify({ userId })
   }).catch(e => console.error('Streak update failed:', e));
 
@@ -312,7 +319,7 @@ async function handleReconsentDraft(req, res) {
 
   const reconsentRes = await fetch(`${APP_URL}/api/generate-reconsent-email`, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: internalHeaders(),
     body: JSON.stringify({
       userId,
       senderName,
@@ -396,7 +403,7 @@ async function handleMarkSent(req, res) {
   try {
     await fetch(`${APP_URL}/api/generate-fix`, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: internalHeaders(),
       body: JSON.stringify({
         userId,
         fixType:       'reconsent_sent',
@@ -433,6 +440,7 @@ async function handleSuppressionReport(req, res) {
 
   if (!userId)           return res.status(400).json({ error: 'Missing userId' });
   if (!campaignRecordId) return res.status(400).json({ error: 'Missing campaignRecordId' });
+  if (!isRecordId(campaignRecordId)) return res.status(400).json({ error: 'Invalid campaignRecordId' });
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
@@ -497,14 +505,16 @@ async function handleSuppressionReport(req, res) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  const action = req.query.action || req.body.action;
+  const action = req.query.action || req.body?.action;
 
   try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
     if (action === 'audit')               return await handleAudit(req, res);
     if (action === 'reconsent-draft')     return await handleReconsentDraft(req, res);
     if (action === 'mark-sent')           return await handleMarkSent(req, res);

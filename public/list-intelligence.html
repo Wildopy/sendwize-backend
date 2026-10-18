@@ -1062,7 +1062,7 @@ function renderResults(d){
         +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Estimated exposure</div><div class="presend-gate-exp-val" style="color:var(--r)">\u00a3'+fmt(Math.round(exp.totalExposure))+'</div></div>'
         +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Safe send pool</div><div class="presend-gate-exp-val" style="color:var(--g)">'+fmt(total-_liab)+'</div></div>'
         +'</div>'
-        +'<div style="font-size:10px;color:var(--mu);margin-top:8px">ICO \u00a3'+fmt(Math.round(exp.ico.estimatedExposure))+' \u00b7 ASA \u00a3'+fmt(Math.round(exp.asa.estimatedExposure))+' \u00b7 CMA \u00a3'+fmt(Math.round(exp.cma.estimatedExposure))+'</div>';
+        +'<div style="font-size:10px;color:var(--mu);margin-top:8px">ICO \u00a3'+fmt(Math.round(exp.ico.estimatedExposure))+' \u00b7 ASA: '+fmt((exp.asa&&exp.asa.flaggedContacts)||0)+' contacts flagged (reputational, no \u00a3 figure) \u00b7 CMA: '+fmt((exp.cma&&exp.cma.flaggedContacts)||0)+' contacts flagged (statutory maximum only)</div>';
     } else if(_liab>0){
       expHtml='<div class="presend-gate-exposure">'
         +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Contacts to suppress</div><div class="presend-gate-exp-val" style="color:var(--r)">'+fmt(_liab)+'</div></div>'

@@ -1,5 +1,12 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-recommendations.js v1.2
+// SENDWIZE — list-recommendations.js v1.3
+// v1.3: reads opportunities from the latest List Intelligence check for
+//   each list (List_Intelligence_Checks → Results.opportunities). The old
+//   source table, List_Opportunities, is never written by the current
+//   code, so the dashboard card was empty or stale. List_Opportunities is
+//   still read as a fallback. Decay is calculated on read; nothing is
+//   written back on page load any more (that cost one Airtable write per
+//   opportunity on every dashboard view).
 // v1.2 (security): request authenticated via _auth.js; the verified member
 //   id replaces any userId from the browser.
 // GET /api/list-recommendations?userId=x
@@ -78,102 +85,63 @@ export default async function handler(req, res) {
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
   try {
-    const oppsResult = await atGet(
-      'List_Opportunities',
-      `AND({UserID}='${userId}',{Status}='Open')`,
-      'sort[0][field]=EstimatedValue&sort[0][direction]=desc',
-      50
-    );
-
-    // Airtable failed even after retries — degrade gracefully instead of
-    // throwing a 500. The dashboard card shows the empty state, which is
-    // honest (we genuinely don't know) and matches what hasData:false
-    // already renders for "no opportunities yet".
-    if (!oppsResult.ok) {
-      return res.status(200).json({
-        success:         false,
-        unrealisedTotal: 0,
-        opportunities:   [],
-        hasData:         false,
-        degraded:        true,
-        reason:          `Airtable temporarily unavailable (status ${oppsResult.status})`,
-      });
-    }
-
-    const opps = oppsResult.records;
-
-    if (!opps.length) {
-      return res.status(200).json({
-        success:         true,
-        unrealisedTotal: 0,
-        opportunities:   [],
-        hasData:         false,
-      });
-    }
-
     const now = new Date();
+    const decay = (estimated, rate, created) => {
+      const monthsOld = Math.max(0, (now - new Date(created || now)) / (30 * 86400000));
+      return { currentValue: parseFloat(Math.max(0, estimated * Math.pow(1 - rate / 100, monthsOld)).toFixed(2)), monthsOld: parseFloat(monthsOld.toFixed(1)) };
+    };
 
-    // Compute decay for every opportunity first (synchronous, instant) so the
-    // response is never gated on Airtable round-trips.
-    const decayed = opps.map(o => {
-      const f            = o.fields;
-      const created      = f.CreatedDate ? new Date(f.CreatedDate) : now;
-      const monthsOld    = (now - created) / (30 * 86400000);
-      const decayRate    = f.DecayRate || 2.5; // % per month
-      const estimated    = f.EstimatedValue || 0;
-      const currentValue = parseFloat(
-        Math.max(0, estimated * Math.pow(1 - decayRate / 100, monthsOld)).toFixed(2)
-      );
-      return {
-        id:                o.id,
-        type:              f.OpportunityType  || '',
-        description:       f.Description      || '',
-        estimatedValue:    estimated,
-        currentValue,
-        decayRate,
-        recommendedAction: f.RecommendedAction || '',
-        status:            f.Status           || 'Open',
-        createdDate:       f.CreatedDate      || null,
-        monthsOld:         parseFloat(monthsOld.toFixed(1)),
-      };
-    });
-
-    // Persist the decayed CurrentValue back to Airtable — fired concurrently
-    // via Promise.all, not sequentially in a for-loop. This is the actual
-    // bug fix: previously each atPatch was awaited one at a time, and under
-    // Airtable rate-limiting each call can take up to ~4s (full retry/backoff
-    // budget) — so as few as 3 open opportunities could push total sequential
-    // latency past Vercel Hobby's 10s function timeout, killing the function
-    // mid-request with no clean error response (the "issue after issue" in
-    // the browser network tab).
-    //
-    // Running them concurrently means N patches take ~1x the worst-case
-    // latency instead of Nx. We still await the batch before responding,
-    // per this file's own rule (all async work awaited before res.json() —
-    // Vercel may freeze/tear down the function the instant a response is
-    // sent, so an un-awaited write can silently never complete). Individual
-    // patch failures remain non-fatal — only logged, never block the response.
-    await Promise.all(
-      decayed.map(d =>
-        atPatch('List_Opportunities', d.id, { CurrentValue: d.currentValue })
-          .then(patchResult => {
-            if (!patchResult.ok) {
-              console.error(`CurrentValue patch failed for ${d.id} (non-fatal): status ${patchResult.status}`);
-            }
-          })
-      )
-    ).catch(e => console.error('Unexpected error in decay patch batch (non-fatal):', e));
-
-    const unrealisedTotal = parseFloat(
-      decayed.reduce((s, o) => s + o.currentValue, 0).toFixed(2)
+    // 1. Latest check per list
+    const checks = await atGet(
+      'List_Intelligence_Checks',
+      `{UserID}='${userId}'`,
+      'sort[0][field]=CheckDate&sort[0][direction]=desc',
+      30
     );
+    const latestPerList = {};
+    for (const c of checks.records) {
+      const name = c.fields.ListName || 'List';
+      if (!latestPerList[name]) latestPerList[name] = c;
+    }
+    let opportunities = [];
+    for (const [listName, c] of Object.entries(latestPerList)) {
+      let results = null;
+      try { results = c.fields.Results ? JSON.parse(c.fields.Results) : null; } catch { results = null; }
+      for (const [i, o] of (results?.opportunities || []).entries()) {
+        const estimated = Number(o.estimatedValue) || 0;
+        if (estimated <= 0) continue;
+        const rate = Number(o.decayRate) || 2.5;
+        const d = decay(estimated, rate, c.fields.CheckDate);
+        opportunities.push({
+          id: `${c.id}:${i}`, listName, type: o.type || '', description: o.description || '',
+          estimatedValue: estimated, currentValue: d.currentValue, decayRate: rate,
+          recommendedAction: o.recommendedAction || '', status: 'Open',
+          createdDate: c.fields.CheckDate || null, monthsOld: d.monthsOld,
+        });
+      }
+    }
 
+    // 2. Fallback: legacy List_Opportunities rows
+    if (!opportunities.length) {
+      const legacy = await atGet('List_Opportunities', `AND({UserID}='${userId}',{Status}='Open')`, 'sort[0][field]=EstimatedValue&sort[0][direction]=desc', 50);
+      opportunities = legacy.records.map(o => {
+        const f = o.fields; const rate = f.DecayRate || 2.5; const d = decay(f.EstimatedValue || 0, rate, f.CreatedDate);
+        return { id: o.id, type: f.OpportunityType || '', description: f.Description || '', estimatedValue: f.EstimatedValue || 0, currentValue: d.currentValue, decayRate: rate, recommendedAction: f.RecommendedAction || '', status: f.Status || 'Open', createdDate: f.CreatedDate || null, monthsOld: d.monthsOld };
+      });
+      if (!checks.ok && !legacy.ok) {
+        return res.status(200).json({ success: false, unrealisedTotal: 0, opportunities: [], hasData: false, degraded: true, reason: 'Airtable temporarily unavailable' });
+      }
+    }
+
+    opportunities.sort((a, b) => b.currentValue - a.currentValue);
+    const unrealisedTotal = parseFloat(opportunities.reduce((s, o) => s + o.currentValue, 0).toFixed(2));
     return res.status(200).json({
-      success:         true,
-      hasData:         true,
+      success: true,
+      hasData: opportunities.length > 0,
       unrealisedTotal,
-      opportunities:   decayed,
-      count:           decayed.length,
+      opportunities,
+      count: opportunities.length,
+      basis: 'Opportunities from your latest List Intelligence check per list, reduced each month they are not acted on.',
     });
 
   } catch (err) {

@@ -1,4 +1,10 @@
-// /api/exposure-summary.js v1.3
+// /api/exposure-summary.js v1.4
+// v1.4: Tiles 2 and 3 come from the shared exposure engine (via fixes.js),
+//   so they match the Action Items and Risk Addressed figures: open ICO
+//   findings are clustered the way a regulator would investigate them,
+//   and "Risk cleared" is the exposure removed by completed fixes.
+//   Wording fixed ("mandatory ad withdrawal" was not accurate); the CPL
+//   link points at the onboarding page on the backend.
 // v1.3 (security): request authenticated via _auth.js; the verified member
 //   id replaces any userId from the browser.
 // Financial Hero Block: Lost / At Risk / Cleared
@@ -20,7 +26,9 @@
 //   ICO figures: comparable published cases. Commercial figures: user's own data at time of fix.
 // - Commercial NEVER summed with regulatory. ASA/CMA NEVER get a £ figure.
 
-import { requireAuth, CORS_HEADERS } from './_auth.js';
+import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
+
+const APP_URL = 'https://sendwize-backend.vercel.app';
 
 const AIRTABLE_BASE = process.env.AIRTABLE_BASE_ID;
 const AIRTABLE_KEY  = process.env.AIRTABLE_API_KEY;
@@ -123,8 +131,8 @@ function buildHeroHtml(data) {
     + '<div class="sw-hl" style="color:#92400e">Regulatory exposure</div>'
     + '<div class="sw-hn">' + (regHigh ? fmtGBP(regLow) + '\u2013' + fmtGBP(regHigh) : '\u00a30') + '</div>'
     + '<div style="font-size:11px;color:var(--tm);margin-top:4px">Open ICO issues \u00b7 comparable published cases</div>'
-    + (aL ? '<div style="font-size:11px;color:var(--mu);margin-top:2px">+' + aL + ' ASA issue' + (aL !== 1 ? 's' : '') + ' requiring mandatory ad withdrawal</div>' : '')
-    + (cL ? '<div style="font-size:11px;color:var(--mu);margin-top:2px">+' + cL + ' CMA undertakings risk</div>' : '')
+    + (aL ? '<div style="font-size:11px;color:var(--mu);margin-top:2px">+' + aL + ' ASA issue' + (aL !== 1 ? 's' : '') + ' \u00b7 reputational, ruling published if upheld</div>' : '')
+    + (cL ? '<div style="font-size:11px;color:var(--mu);margin-top:2px">+' + cL + ' CMA issue' + (cL !== 1 ? 's' : '') + ' \u00b7 statutory maximum applies</div>' : '')
     + '</div>';
 
   // Tile 3 — Risk Cleared (green)
@@ -237,19 +245,17 @@ export default async function handler(req, res) {
       }
     });
 
-    var regLow = 0, regHigh = 0;
-    dedupeICO(pendingICO).forEach(function(rec) {
-      var f = rec.fields || {};
-      regLow  += num(f.ExposureLow);
-      regHigh += num(f.ExposureHigh);
-    });
-
-    // ── Tile 3: Risk Cleared ─────────────────────────────────────────────────
-    // ICO: deduped completed fixes, ExposureHigh, traceable to published cases
-    // Commercial: completed fixes, ExposureHigh, user's own data at time of fix (no dedupe needed)
-    var clearedIco = dedupeICO(completedICO).reduce(function(s, rec) {
-      return s + num((rec.fields || {}).ExposureHigh);
-    }, 0);
+    // v1.4: ICO figures from the shared engine (same as the dashboard)
+    var regLow = 0, regHigh = 0, clearedIco = 0;
+    try {
+      var fr = await fetch(APP_URL + '/api/fixes?action=get&userId=' + encodeURIComponent(userId), { headers: internalHeaders() });
+      if (fr.ok) {
+        var fd = await fr.json();
+        regLow  = fd.exposure ? fd.exposure.totalLow  : 0;
+        regHigh = fd.exposure ? fd.exposure.totalHigh : 0;
+        clearedIco = fd.riskAddressed ? fd.riskAddressed.allTotal : 0;
+      }
+    } catch (e) { console.error('exposure-summary: fixes fetch failed (non-fatal):', e); }
     var clearedCommercial = completedCommercial.reduce(function(s, rec) {
       return s + num((rec.fields || {}).ExposureHigh);
     }, 0);

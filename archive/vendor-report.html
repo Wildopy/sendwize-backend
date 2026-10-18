@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PECR Report — Sendwize</title>
+  <title>Vendor Check Report — Sendwize</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -13,14 +13,14 @@
       --green:#16a34a; --green-bg:#f0fdf4; --green-bd:#bbf7d0;
       --yellow:#d97706; --yellow-bg:#fffbeb; --yellow-bd:#fde68a;
       --red:#dc2626; --red-bg:#fef2f2; --red-bd:#fecaca;
+      --blue:#1d4ed8; --blue-bg:#eff6ff; --blue-bd:#bfdbfe;
       --radius:8px;
     }
     body { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
-    /* Nav */
     .topnav { background:var(--white); border-bottom:1px solid var(--border); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
     .topnav-logo { font-size:18px; font-weight:800; color:var(--orange); letter-spacing:-.5px; }
-    .nav-actions { display:flex; align-items:center; gap:8px; }
+    .nav-actions { display:flex; gap:8px; align-items:center; }
     .btn-ghost { padding:7px 14px; border:1px solid var(--border-mid); border-radius:var(--radius); font-size:13px; font-weight:500; background:var(--white); color:var(--muted); cursor:pointer; font-family:inherit; transition:all .15s; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
     .btn-ghost:hover { border-color:var(--orange); color:var(--orange); }
     .btn-primary { padding:7px 16px; border-radius:var(--radius); font-size:13px; font-weight:600; background:var(--orange); color:var(--white); border:none; cursor:pointer; font-family:inherit; transition:background .15s; }
@@ -28,58 +28,65 @@
 
     .container { max-width:860px; margin:0 auto; padding:36px 20px 80px; }
 
-    /* State */
     .state-box { text-align:center; padding:100px 20px; }
     .spinner { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 14px; }
     @keyframes spin { to { transform:rotate(360deg); } }
     .state-text { font-size:14px; color:var(--muted); }
 
-    /* Hero */
     .hero { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:32px; margin-bottom:16px; }
     .hero-eyebrow { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:10px; }
     .hero-title { font-size:28px; font-weight:800; line-height:1.2; margin-bottom:8px; }
-    .hero-meta { font-size:13px; color:var(--muted); margin-bottom:22px; display:flex; gap:16px; flex-wrap:wrap; }
-    .hero-meta span::before { content:''; }
+    .hero-meta { font-size:13px; color:var(--muted); margin-bottom:22px; }
     .verdict-badge { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:6px; font-size:14px; font-weight:700; border:1px solid; }
     .verdict-pass { background:var(--green-bg); color:var(--green); border-color:var(--green-bd); }
     .verdict-warn { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow-bd); }
     .verdict-fail { background:var(--red-bg); color:var(--red); border-color:var(--red-bd); }
 
-    /* Metrics */
     .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
     @media(max-width:580px){ .metrics { grid-template-columns:repeat(2,1fr); } }
     .metric { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:18px 16px; text-align:center; }
     .metric-val { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; }
     .metric-lbl { font-size:11px; color:var(--muted); font-weight:500; }
 
-    /* Card */
     .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
     .card-label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; }
 
-    /* Issues */
-    .issue-list { display:flex; flex-direction:column; gap:8px; }
-    .issue-item { padding:12px 14px 12px 16px; border-radius:var(--radius); border-left:3px solid; }
-    .issue-item.critical { background:var(--red-bg); border-color:var(--red); }
-    .issue-item.major    { background:var(--yellow-bg); border-color:var(--yellow); }
-    .issue-item.moderate { background:#fff7ed; border-color:#fb923c; }
-    .issue-item.minor    { background:var(--bg); border-color:var(--border-mid); }
-    .issue-header { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
-    .issue-sev { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:3px; }
-    .issue-item.critical .issue-sev { background:var(--red); color:#fff; }
-    .issue-item.major    .issue-sev { background:var(--yellow); color:#fff; }
-    .issue-item.moderate .issue-sev { background:#fb923c; color:#fff; }
-    .issue-item.minor    .issue-sev { background:var(--muted); color:#fff; }
-    .issue-text { font-size:13px; color:var(--text); line-height:1.5; }
+    /* Vendor cards */
+    .vendor-list { display:flex; flex-direction:column; gap:12px; }
+    .vendor-card { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .vendor-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:var(--bg); border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap; }
+    .vendor-name-row { display:flex; align-items:center; gap:8px; }
+    .vendor-name { font-size:14px; font-weight:700; }
+    .vendor-ai-badge { font-size:10px; padding:2px 7px; border-radius:3px; font-weight:600; background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue-bd); }
+    .vendor-cat { font-size:12px; color:var(--muted); }
+    .vendor-score { display:flex; align-items:center; gap:8px; }
+    .score-num { font-size:18px; font-weight:800; }
+    .score-label { font-size:11px; color:var(--muted); }
+    .vendor-body { padding:14px 16px; }
+    .detail-list { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    .detail-item { display:flex; align-items:flex-start; gap:8px; font-size:13px; }
+    .detail-icon { flex-shrink:0; margin-top:1px; }
+    .detail-icon.pass { color:var(--green); }
+    .detail-icon.warn { color:var(--yellow); }
+    .detail-icon.info { color:var(--muted); }
+    .detail-text { line-height:1.4; }
+    .detail-text strong { color:var(--text); }
+    .detail-text span { color:var(--muted); }
+    .action-list { display:flex; flex-direction:column; gap:4px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+    .action-item { font-size:12px; color:var(--text); display:flex; gap:6px; line-height:1.4; }
+    .action-item::before { content:'→'; color:var(--orange); font-weight:700; flex-shrink:0; }
+    .vendor-links { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .vendor-link { font-size:12px; color:var(--orange); text-decoration:none; border:1px solid var(--orange-light); border-radius:4px; padding:3px 10px; background:var(--orange-light); transition:all .15s; }
+    .vendor-link:hover { background:var(--orange); color:var(--white); }
 
     /* Fixes */
     .fix-list { display:flex; flex-direction:column; gap:8px; }
-    .fix-item { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid var(--border); border-radius:var(--radius); transition:border-color .15s; }
-    .fix-item:hover { border-color:var(--border-mid); }
+    .fix-item { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid var(--border); border-radius:var(--radius); }
     .fix-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
     .fix-dot.pending   { background:var(--yellow); }
     .fix-dot.completed { background:var(--green); }
     .fix-dot.dismissed { background:#d1d5db; }
-    .fix-body { flex:1; min-width:0; }
+    .fix-body { flex:1; }
     .fix-title { font-size:13px; font-weight:600; margin-bottom:3px; }
     .fix-desc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
     .fix-pills { display:flex; gap:6px; flex-wrap:wrap; }
@@ -89,28 +96,14 @@
     .pill-medium   { background:#fff7ed;           color:#ea580c; }
     .pill-low      { background:var(--bg);         color:var(--muted); border:1px solid var(--border-mid); }
     .pill-exposure { background:var(--orange-light); color:var(--orange); }
-    .pill-done     { background:var(--green-bg); color:var(--green); }
     .pill-pending  { background:var(--yellow-bg); color:var(--yellow); }
+    .pill-completed{ background:var(--green-bg);  color:var(--green); }
     .pill-dismissed{ background:var(--bg); color:var(--muted); border:1px solid var(--border-mid); }
-
-    /* Q&A */
-    .qa-list { display:flex; flex-direction:column; }
-    .qa-item { padding:13px 0; border-bottom:1px solid var(--border); }
-    .qa-item:last-child { border-bottom:none; }
-    .qa-q { font-size:13px; font-weight:600; margin-bottom:4px; }
-    .qa-a { font-size:13px; color:var(--muted); padding-left:14px; line-height:1.5; }
-
-    /* Channels */
-    .channel-list { display:flex; gap:8px; flex-wrap:wrap; }
-    .channel-tag { padding:5px 12px; border:1px solid var(--border-mid); border-radius:20px; font-size:12px; font-weight:500; color:var(--text); }
 
     .empty-state { text-align:center; padding:28px 20px; color:var(--muted); font-size:13px; }
     .empty-icon  { font-size:24px; margin-bottom:8px; }
 
-    @media print {
-      .topnav { display:none; }
-      .container { padding:20px; }
-    }
+    @media print { .topnav { display:none; } .container { padding:20px; } }
   </style>
 </head>
 <body>
@@ -130,18 +123,19 @@
     <div id="report" style="display:none;"></div>
   </div>
 
+<script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
 <script>
-  const p          = new URLSearchParams(window.location.search);
-  const recordId   = p.get('id') || p.get('recordId');
-  const userId     = p.get('userId');
-  const BASE       = window.location.origin;
+  const p        = new URLSearchParams(window.location.search);
+  const recordId = p.get('id') || p.get('recordId');
+  const userId   = p.get('userId');
+  const BASE     = window.location.origin;
 
   async function load() {
     if (!recordId) { return showError('No report ID provided.'); }
     try {
       const [rr, fr] = await Promise.all([
-        fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=pecr`),
-        userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
+        swFetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=vendor`),
+        userId ? swFetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
       ]);
       if (!rr.ok) throw new Error('Report not found');
       const rd = await rr.json();
@@ -151,60 +145,51 @@
   }
 
   function render(f, fd) {
-    const score    = f.Score ?? 0;
-    const result   = f.Result || '';
-    const date     = fmtDate(f.SubmissionDate);
-    const channels = (f.Channels || '').split(',').map(s=>s.trim()).filter(Boolean);
-    const issues   = (f.Issues   || '').split(';').map(s=>s.trim()).filter(Boolean);
-    const answers  = parseJ(f.Answers);
-    const scoreExcluded = f.ScoreExcluded === true || f.ScoreExcluded === 'true';
+    const date    = fmtDate(f.CheckDate);
+    const results = parseJ(f.Results) || {};
+    const vendors = results.results || parseJ(f.Vendors) || [];
 
-    const vc  = result.includes('Wizely') ? 'pass' : result.includes('STOP') ? 'warn' : 'fail';
-    const vi  = vc==='pass' ? '✅' : vc==='warn' ? '⚠️' : '🚫';
-    const sc  = score>=75 ? 'var(--green)' : score>=50 ? 'var(--yellow)' : 'var(--red)';
+    const total      = vendors.length;
+    const noDpa      = vendors.filter(v => !v.links?.dpa && !(v.details||[]).some(d=>d.status==='pass'&&d.label?.toLowerCase().includes('dpa'))).length;
+    const highRisk   = vendors.filter(v => (v.score||0) < 50).length;
+    const avgScore   = total ? Math.round(vendors.reduce((s,v)=>s+(v.score||0),0)/total) : 0;
 
-    // Related fixes
+    const vc = highRisk === 0 && noDpa === 0 ? 'pass' : highRisk <= 1 || noDpa <= 1 ? 'warn' : 'fail';
+    const vi = vc==='pass'?'✅':vc==='warn'?'⚠️':'🚫';
+    const verdictText = vc==='pass' ? 'All Vendors Compliant' : vc==='warn' ? 'Issues Found' : 'Urgent Action Required';
+    const sc = avgScore >= 70 ? 'var(--green)' : avgScore >= 50 ? 'var(--yellow)' : 'var(--red)';
+
     const allFixes = fd?.fixes || fd?.records || [];
     const fixes = allFixes.filter(x => {
       const xf = x.fields||x;
-      return xf.SourceRecordID === recordId || xf.Tool === 'PECR Questionnaire';
+      return xf.SourceRecordID === recordId || xf.Tool === 'Vendor Checker';
     });
     const pending   = fixes.filter(x=>(x.fields||x).Status==='pending').length;
     const completed = fixes.filter(x=>(x.fields||x).Status==='completed').length;
 
     document.getElementById('report').innerHTML = `
       <div class="hero">
-        <div class="hero-eyebrow">PECR Compliance Report</div>
-        <div class="hero-title">${esc(f.CampaignName || 'Unnamed Campaign')}</div>
-        <div class="hero-meta">
-          <span>${date}</span>
-          ${f.LawfulBasis ? `<span>${esc(f.LawfulBasis)}</span>` : ''}
-          ${scoreExcluded ? `<span style="color:var(--red)">Score excluded — critical issue</span>` : ''}
-        </div>
-        <div class="verdict-badge verdict-${vc}">${vi} ${esc(result || 'Pending')}</div>
+        <div class="hero-eyebrow">Vendor Check Report</div>
+        <div class="hero-title">${total} Vendor${total!==1?'s':''} Checked</div>
+        <div class="hero-meta">${date}</div>
+        <div class="verdict-badge verdict-${vc}">${vi} ${verdictText}</div>
       </div>
 
       <div class="metrics">
-        <div class="metric"><div class="metric-val" style="color:${sc}">${scoreExcluded ? 'N/A' : score+'/100'}</div><div class="metric-lbl">Compliance Score</div></div>
-        <div class="metric"><div class="metric-val" style="color:var(--red)">${issues.length}</div><div class="metric-lbl">Issues Flagged</div></div>
+        <div class="metric"><div class="metric-val" style="color:${sc}">${avgScore}/100</div><div class="metric-lbl">Avg Compliance Score</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--red)">${noDpa}</div><div class="metric-lbl">Missing DPA</div></div>
         <div class="metric"><div class="metric-val" style="color:var(--yellow)">${pending}</div><div class="metric-lbl">Fixes Pending</div></div>
-        <div class="metric"><div class="metric-val" style="color:var(--green)">${completed}</div><div class="metric-lbl">Fixes Complete</div></div>
+        <div class="metric"><div class="metric-val" style="color:var(--green)">${completed}</div><div class="metric-lbl">Fixes Done</div></div>
       </div>
 
-      ${channels.length ? `
+      ${vendors.length ? `
       <div class="card">
-        <div class="card-label">Channels</div>
-        <div class="channel-list">${channels.map(c=>`<span class="channel-tag">${esc(c)}</span>`).join('')}</div>
-      </div>` : ''}
-
-      ${issues.length ? `
-      <div class="card">
-        <div class="card-label">Issues Flagged (${issues.length})</div>
-        <div class="issue-list">${issues.map(renderIssue).join('')}</div>
+        <div class="card-label">Vendor Results (${vendors.length})</div>
+        <div class="vendor-list">${vendors.map(renderVendor).join('')}</div>
       </div>` : `
       <div class="card">
-        <div class="card-label">Issues</div>
-        <div class="empty-state"><div class="empty-icon">✅</div>No issues flagged</div>
+        <div class="card-label">Vendors</div>
+        <div class="empty-state"><div class="empty-icon">📋</div>No vendor data available</div>
       </div>`}
 
       ${fixes.length ? `
@@ -212,65 +197,64 @@
         <div class="card-label">Compliance Fixes</div>
         <div class="fix-list">${fixes.map(renderFix).join('')}</div>
       </div>` : ''}
-
-      <div class="card">
-        <div class="card-label">Questionnaire Responses</div>
-        <div class="qa-list">${renderAnswers(answers, f)}</div>
-      </div>
     `;
+
     document.getElementById('stateBox').style.display = 'none';
     document.getElementById('report').style.display   = 'block';
   }
 
-  function renderIssue(raw) {
-    const sev  = raw.toLowerCase().includes('critical') || raw.toLowerCase().includes('hardfail') ? 'critical'
-               : raw.toLowerCase().includes('major')    ? 'major'
-               : raw.toLowerCase().includes('moderate') ? 'moderate' : 'minor';
-    const text = raw.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-    return `<div class="issue-item ${sev}">
-      <div class="issue-header"><span class="issue-sev">${sev}</span></div>
-      <div class="issue-text">${esc(text)}</div>
-    </div>`;
-  }
+  function renderVendor(v) {
+    const score = v.score || 0;
+    const sc = score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+    const details     = v.details     || [];
+    const actionItems = v.actionItems || [];
 
-  function renderFix(fx) {
-    const f = fx.fields || fx;
-    const st = f.Status || 'pending';
-    const expLow  = f.ExposureLow  || 0;
-    const expHigh = f.ExposureHigh || 0;
-    return `<div class="fix-item">
-      <div class="fix-dot ${st}"></div>
-      <div class="fix-body">
-        <div class="fix-title">${esc(fmtFixType(f.FixType || ''))}</div>
-        <div class="fix-desc">${esc(f.Description || '')}</div>
-        <div class="fix-pills">
-          ${f.Severity ? `<span class="pill pill-${f.Severity}">${f.Severity}</span>` : ''}
-          <span class="pill pill-${st}">${st}</span>
-          ${expLow||expHigh ? `<span class="pill pill-exposure">${fmtMoney(expLow)}–${fmtMoney(expHigh)}</span>` : ''}
+    return `<div class="vendor-card">
+      <div class="vendor-header">
+        <div>
+          <div class="vendor-name-row">
+            <span class="vendor-name">${esc(v.name||'')}</span>
+            ${v.isAI ? `<span class="vendor-ai-badge">AI tool</span>` : ''}
+          </div>
+          <div class="vendor-cat">${esc(v.category||'')}</div>
         </div>
+        <div class="vendor-score">
+          <span class="score-num" style="color:${sc}">${score}</span>
+          <span class="score-label">/ 100</span>
+        </div>
+      </div>
+      <div class="vendor-body">
+        ${details.length ? `<div class="detail-list">${details.map(d=>`
+          <div class="detail-item">
+            <span class="detail-icon ${d.status||'info'}">${d.status==='pass'?'✓':d.status==='warning'?'⚠':'ℹ'}</span>
+            <div class="detail-text"><strong>${esc(d.label||'')}</strong>${d.description?` — <span>${esc(d.description)}</span>`:''}</div>
+          </div>`).join('')}
+        </div>` : ''}
+        ${actionItems.length ? `<div class="action-list">${actionItems.map(a=>`<div class="action-item">${esc(a)}</div>`).join('')}</div>` : ''}
+        ${(v.links?.dpa||v.links?.privacy) ? `<div class="vendor-links">
+          ${v.links.dpa     ? `<a href="${esc(v.links.dpa)}"     target="_blank" rel="noopener" class="vendor-link">View DPA</a>` : ''}
+          ${v.links.privacy ? `<a href="${esc(v.links.privacy)}" target="_blank" rel="noopener" class="vendor-link">Privacy Policy</a>` : ''}
+        </div>` : ''}
       </div>
     </div>`;
   }
 
-  function renderAnswers(answers, f) {
-    if (Array.isArray(answers) && answers.length) {
-      return answers.map(a=>`<div class="qa-item">
-        <div class="qa-q">${esc(a.question||'')}</div>
-        <div class="qa-a">${esc(a.answer||'—')}</div>
-      </div>`).join('');
-    }
-    // Flat fallback — use known fields
-    const rows = [
-      ['Campaign Name',  f.CampaignName],
-      ['Audience',       f.Audience || (answers?.audience)],
-      ['Lawful Basis',   f.LawfulBasis || (answers?.lawfulBasis)],
-      ['Channels',       f.Channels || (answers?.channels)],
-    ].filter(([,v])=>v);
-    if (!rows.length) return `<div class="empty-state">No questionnaire data available</div>`;
-    return rows.map(([q,a])=>`<div class="qa-item">
-      <div class="qa-q">${esc(q)}</div>
-      <div class="qa-a">${esc(String(a))}</div>
-    </div>`).join('');
+  function renderFix(fx) {
+    const f  = fx.fields||fx;
+    const st = f.Status||'pending';
+    const el = f.ExposureLow||0, eh = f.ExposureHigh||0;
+    return `<div class="fix-item">
+      <div class="fix-dot ${st}"></div>
+      <div class="fix-body">
+        <div class="fix-title">${esc(fmtFixType(f.FixType||''))}</div>
+        <div class="fix-desc">${esc(f.Description||'')}</div>
+        <div class="fix-pills">
+          ${f.Severity ? `<span class="pill pill-${f.Severity}">${f.Severity}</span>` : ''}
+          <span class="pill pill-${st}">${st}</span>
+          ${el||eh ? `<span class="pill pill-exposure">${fmtMoney(el)}–${fmtMoney(eh)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
   }
 
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '—'; }
@@ -278,9 +262,7 @@
   function fmtMoney(n) { if(!n)return'£0'; if(n>=1000000)return`£${(n/1e6).toFixed(1)}m`; if(n>=1000)return`£${(n/1000).toFixed(0)}k`; return`£${n}`; }
   function parseJ(v) { if(!v)return null; if(typeof v==='object')return v; try{return JSON.parse(v);}catch{return null;} }
   function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function showError(msg) {
-    document.getElementById('stateBox').innerHTML=`<div class="state-text" style="color:var(--red)">⚠️ ${esc(msg)}</div>`;
-  }
+  function showError(msg) { document.getElementById('stateBox').innerHTML=`<div class="state-text" style="color:var(--red)">⚠️ ${esc(msg)}</div>`; }
 
   load();
 </script>

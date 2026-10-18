@@ -11,7 +11,15 @@
 //
 // Stickiness mechanism: every campaign is a compliance check trigger.
 // Users run campaigns constantly — this tool runs every time.
+//
+// v1.1 (security): request authenticated via _auth.js (verified member id
+//   replaces any browser userId); campaignId validated and must belong to
+//   the caller; vendor names escaped in Airtable formulas; generate-fix
+//   calls signed with the internal secret (silently rejected before).
 // ─────────────────────────────────────────────────────────────
+
+import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
+import { fq } from './_airtable.js';
 
 const APP_URL  = 'https://sendwize-backend.vercel.app';
 const BASE_ID  = process.env.BASE_ID;
@@ -22,6 +30,17 @@ const atH = () => ({
   Authorization:  `Bearer ${AT_TOKEN}`,
   'Content-Type': 'application/json',
 });
+
+// Loads a campaign and confirms the caller owns it. Returns the record or
+// sends the error response and returns null.
+async function loadOwnedCampaign(campaignId, userId, res) {
+  if (!isRecordId(campaignId)) { res.status(400).json({ error: 'Invalid campaignId' }); return null; }
+  const cr = await fetch(`${AT_BASE}/Campaigns/${campaignId}`, { headers: atH() });
+  if (!cr.ok) { res.status(404).json({ error: 'Campaign not found' }); return null; }
+  const campaign = await cr.json();
+  if (campaign.fields?.UserID !== userId) { res.status(403).json({ error: 'Campaign does not belong to this user' }); return null; }
+  return campaign;
+}
 
 function nullStrip(obj) {
   return Object.fromEntries(
@@ -123,12 +142,14 @@ function buildCampaignVerdict(vendorRecords, campaignName) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const { action } = req.query;
 
   try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
 
     // ── LIST campaigns ────────────────────────────────────────
     if (req.method === 'GET' && action === 'list') {
@@ -136,7 +157,7 @@ export default async function handler(req, res) {
       if (!userId) return res.status(400).json({ error: 'userId required' });
 
       const r = await fetch(
-        `${AT_BASE}/Campaigns?filterByFormula={UserID}='${userId}'&sort[0][field]=SendDate&sort[0][direction]=desc&maxRecords=50`,
+        `${AT_BASE}/Campaigns?filterByFormula=${encodeURIComponent(`{UserID}=${fq(userId)}`)}&sort[0][field]=SendDate&sort[0][direction]=desc&maxRecords=50`,
         { headers: atH() }
       );
       if (!r.ok) return res.status(r.status).json({ error: 'Failed to fetch campaigns' });
@@ -176,10 +197,9 @@ export default async function handler(req, res) {
       const { userId, campaignId, vendorNames } = req.body ?? {};
       if (!userId || !campaignId) return res.status(400).json({ error: 'userId and campaignId required' });
 
-      // Fetch campaign record
-      const cr = await fetch(`${AT_BASE}/Campaigns/${campaignId}`, { headers: atH() });
-      if (!cr.ok) return res.status(404).json({ error: 'Campaign not found' });
-      const campaign = await cr.json();
+      // Fetch campaign record (must belong to the caller)
+      const campaign = await loadOwnedCampaign(campaignId, userId, res);
+      if (!campaign) return;
 
       // Get vendor names from request or campaign record
       let names = vendorNames || [];
@@ -189,7 +209,7 @@ export default async function handler(req, res) {
       if (!names.length) return res.status(400).json({ error: 'No vendors specified for this campaign' });
 
       // Fetch vendor register entries for each vendor
-      const formula = `AND({UserID}='${userId}',OR(${names.map(n=>`{VendorName}='${n}'`).join(',')}))`;
+      const formula = `AND({UserID}=${fq(userId)},OR(${names.map(n=>`{VendorName}=${fq(n)}`).join(',')}))`;
       const vr = await fetch(
         `${AT_BASE}/Vendor_Register?filterByFormula=${encodeURIComponent(formula)}&maxRecords=50`,
         { headers: atH() }
@@ -223,7 +243,7 @@ export default async function handler(req, res) {
         try {
           await fetch(`${APP_URL}/api/generate-fix`, {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: internalHeaders(),
             body:    JSON.stringify({
               userId,
               fixType:       'dpa_breach',
@@ -244,6 +264,7 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && action === 'clear') {
       const { userId, campaignId } = req.body ?? {};
       if (!userId || !campaignId) return res.status(400).json({ error: 'userId and campaignId required' });
+      if (!(await loadOwnedCampaign(campaignId, userId, res))) return;
 
       await fetch(`${AT_BASE}/Campaigns/${campaignId}`, {
         method:  'PATCH',

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vendor Check Report — Sendwize</title>
+  <title>Database Audit Report — Sendwize</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -13,7 +13,7 @@
       --green:#16a34a; --green-bg:#f0fdf4; --green-bd:#bbf7d0;
       --yellow:#d97706; --yellow-bg:#fffbeb; --yellow-bd:#fde68a;
       --red:#dc2626; --red-bg:#fef2f2; --red-bd:#fecaca;
-      --blue:#1d4ed8; --blue-bg:#eff6ff; --blue-bd:#bfdbfe;
+      --teal:#0d9488; --teal-bg:#f0fdfa; --teal-bd:#99f6e4;
       --radius:8px;
     }
     body { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
@@ -42,42 +42,56 @@
     .verdict-warn { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow-bd); }
     .verdict-fail { background:var(--red-bg); color:var(--red); border-color:var(--red-bd); }
 
-    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
-    @media(max-width:580px){ .metrics { grid-template-columns:repeat(2,1fr); } }
-    .metric { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:18px 16px; text-align:center; }
-    .metric-val { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; }
-    .metric-lbl { font-size:11px; color:var(--muted); font-weight:500; }
+    /* Consent breakdown - 4 coloured tiles */
+    .consent-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    @media(max-width:580px){ .consent-grid { grid-template-columns:repeat(2,1fr); } }
+    .consent-tile { border-radius:var(--radius); padding:18px 16px; text-align:center; border:1px solid; }
+    .consent-tile.safe   { background:var(--green-bg);  border-color:var(--green-bd); }
+    .consent-tile.prob   { background:var(--teal-bg);   border-color:var(--teal-bd);  }
+    .consent-tile.risky  { background:var(--yellow-bg); border-color:var(--yellow-bd); }
+    .consent-tile.danger { background:var(--red-bg);    border-color:var(--red-bd);   }
+    .consent-val { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .consent-tile.safe   .consent-val { color:var(--green); }
+    .consent-tile.prob   .consent-val { color:var(--teal);  }
+    .consent-tile.risky  .consent-val { color:var(--yellow); }
+    .consent-tile.danger .consent-val { color:var(--red);   }
+    .consent-lbl  { font-size:11px; font-weight:500; }
+    .consent-tile.safe   .consent-lbl { color:#166534; }
+    .consent-tile.prob   .consent-lbl { color:#134e4a; }
+    .consent-tile.risky  .consent-lbl { color:#78350f; }
+    .consent-tile.danger .consent-lbl { color:#7f1d1d; }
+    .consent-pct { font-size:11px; margin-top:3px; opacity:.7; }
 
     .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
     .card-label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; }
 
-    /* Vendor cards */
-    .vendor-list { display:flex; flex-direction:column; gap:12px; }
-    .vendor-card { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
-    .vendor-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:var(--bg); border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap; }
-    .vendor-name-row { display:flex; align-items:center; gap:8px; }
-    .vendor-name { font-size:14px; font-weight:700; }
-    .vendor-ai-badge { font-size:10px; padding:2px 7px; border-radius:3px; font-weight:600; background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue-bd); }
-    .vendor-cat { font-size:12px; color:var(--muted); }
-    .vendor-score { display:flex; align-items:center; gap:8px; }
-    .score-num { font-size:18px; font-weight:800; }
-    .score-label { font-size:11px; color:var(--muted); }
-    .vendor-body { padding:14px 16px; }
-    .detail-list { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
-    .detail-item { display:flex; align-items:flex-start; gap:8px; font-size:13px; }
-    .detail-icon { flex-shrink:0; margin-top:1px; }
-    .detail-icon.pass { color:var(--green); }
-    .detail-icon.warn { color:var(--yellow); }
-    .detail-icon.info { color:var(--muted); }
-    .detail-text { line-height:1.4; }
-    .detail-text strong { color:var(--text); }
-    .detail-text span { color:var(--muted); }
-    .action-list { display:flex; flex-direction:column; gap:4px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
-    .action-item { font-size:12px; color:var(--text); display:flex; gap:6px; line-height:1.4; }
-    .action-item::before { content:'→'; color:var(--orange); font-weight:700; flex-shrink:0; }
-    .vendor-links { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-    .vendor-link { font-size:12px; color:var(--orange); text-decoration:none; border:1px solid var(--orange-light); border-radius:4px; padding:3px 10px; background:var(--orange-light); transition:all .15s; }
-    .vendor-link:hover { background:var(--orange); color:var(--white); }
+    /* Progress bar */
+    .bar-wrap { margin-bottom:14px; }
+    .bar-label-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+    .bar-name  { font-size:13px; font-weight:500; }
+    .bar-count { font-size:12px; color:var(--muted); }
+    .bar-track { height:8px; background:var(--bg); border-radius:4px; overflow:hidden; border:1px solid var(--border); }
+    .bar-fill  { height:100%; border-radius:4px; transition:width .4s ease; }
+    .bar-fill.safe   { background:var(--green); }
+    .bar-fill.prob   { background:var(--teal);  }
+    .bar-fill.risky  { background:var(--yellow); }
+    .bar-fill.danger { background:var(--red);   }
+
+    /* Expiry timeline */
+    .timeline-list { display:flex; flex-direction:column; gap:8px; }
+    .timeline-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); }
+    .timeline-period { font-size:13px; font-weight:600; }
+    .timeline-count  { font-size:13px; font-weight:700; color:var(--red); }
+    .timeline-note   { font-size:11px; color:var(--muted); }
+
+    /* Source quality */
+    .source-list { display:flex; flex-direction:column; gap:8px; }
+    .source-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); }
+    .source-name  { font-size:13px; font-weight:500; }
+    .source-badge { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:600; }
+    .source-good { background:var(--green-bg); color:var(--green); }
+    .source-warn { background:var(--yellow-bg); color:var(--yellow); }
+    .source-bad  { background:var(--red-bg); color:var(--red); }
 
     /* Fixes */
     .fix-list { display:flex; flex-direction:column; gap:8px; }
@@ -123,6 +137,7 @@
     <div id="report" style="display:none;"></div>
   </div>
 
+<script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
 <script>
   const p        = new URLSearchParams(window.location.search);
   const recordId = p.get('id') || p.get('recordId');
@@ -133,8 +148,8 @@
     if (!recordId) { return showError('No report ID provided.'); }
     try {
       const [rr, fr] = await Promise.all([
-        fetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=vendor`),
-        userId ? fetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
+        swFetch(`${BASE}/api/data?action=report&recordId=${recordId}&type=audit`),
+        userId ? swFetch(`${BASE}/api/fixes?action=get&userId=${userId}`) : null
       ]);
       if (!rr.ok) throw new Error('Report not found');
       const rd = await rr.json();
@@ -144,52 +159,97 @@
   }
 
   function render(f, fd) {
-    const date    = fmtDate(f.CheckDate);
+    const date    = fmtDate(f.AuditDate);
+    const total   = f.Total || 0;
+    const safe    = f.Safe    || 0;
+    const prob    = f.Probably || 0;
+    const risky   = f.Risky  || 0;
+    const danger  = f.Danger || 0;
     const results = parseJ(f.Results) || {};
-    const vendors = results.results || parseJ(f.Vendors) || [];
 
-    const total      = vendors.length;
-    const noDpa      = vendors.filter(v => !v.links?.dpa && !(v.details||[]).some(d=>d.status==='pass'&&d.label?.toLowerCase().includes('dpa'))).length;
-    const highRisk   = vendors.filter(v => (v.score||0) < 50).length;
-    const avgScore   = total ? Math.round(vendors.reduce((s,v)=>s+(v.score||0),0)/total) : 0;
+    const pct = n => total ? Math.round(n/total*100) : 0;
+    const dangerPct = pct(danger + risky);
+    const vc = dangerPct === 0 ? 'pass' : dangerPct <= 20 ? 'warn' : 'fail';
+    const vi = vc==='pass' ? '✅' : vc==='warn' ? '⚠️' : '🚫';
+    const verdictText = vc==='pass' ? 'Database Healthy' : vc==='warn' ? 'Issues Detected' : 'Urgent Action Required';
 
-    const vc = highRisk === 0 && noDpa === 0 ? 'pass' : highRisk <= 1 || noDpa <= 1 ? 'warn' : 'fail';
-    const vi = vc==='pass'?'✅':vc==='warn'?'⚠️':'🚫';
-    const verdictText = vc==='pass' ? 'All Vendors Compliant' : vc==='warn' ? 'Issues Found' : 'Urgent Action Required';
-    const sc = avgScore >= 70 ? 'var(--green)' : avgScore >= 50 ? 'var(--yellow)' : 'var(--red)';
+    const expiryTimeline = results.expiryTimeline || [];
+    const sourceQuality  = results.sourceQuality  || [];
 
     const allFixes = fd?.fixes || fd?.records || [];
     const fixes = allFixes.filter(x => {
       const xf = x.fields||x;
-      return xf.SourceRecordID === recordId || xf.Tool === 'Vendor Checker';
+      return xf.SourceRecordID === recordId || xf.Tool === 'Database Auditor';
     });
     const pending   = fixes.filter(x=>(x.fields||x).Status==='pending').length;
     const completed = fixes.filter(x=>(x.fields||x).Status==='completed').length;
 
     document.getElementById('report').innerHTML = `
       <div class="hero">
-        <div class="hero-eyebrow">Vendor Check Report</div>
-        <div class="hero-title">${total} Vendor${total!==1?'s':''} Checked</div>
-        <div class="hero-meta">${date}</div>
+        <div class="hero-eyebrow">Database Audit Report</div>
+        <div class="hero-title">${total.toLocaleString()} Contacts Audited</div>
+        <div class="hero-meta">${date}${f.CustomerType ? ` · ${esc(f.CustomerType)}` : ''}${f.ProductType ? ` · ${esc(f.ProductType)}` : ''}</div>
         <div class="verdict-badge verdict-${vc}">${vi} ${verdictText}</div>
       </div>
 
-      <div class="metrics">
-        <div class="metric"><div class="metric-val" style="color:${sc}">${avgScore}/100</div><div class="metric-lbl">Avg Compliance Score</div></div>
-        <div class="metric"><div class="metric-val" style="color:var(--red)">${noDpa}</div><div class="metric-lbl">Missing DPA</div></div>
-        <div class="metric"><div class="metric-val" style="color:var(--yellow)">${pending}</div><div class="metric-lbl">Fixes Pending</div></div>
-        <div class="metric"><div class="metric-val" style="color:var(--green)">${completed}</div><div class="metric-lbl">Fixes Done</div></div>
+      <div class="consent-grid">
+        <div class="consent-tile safe">
+          <div class="consent-val">${safe.toLocaleString()}</div>
+          <div class="consent-lbl">Safe to send</div>
+          <div class="consent-pct">${pct(safe)}%</div>
+        </div>
+        <div class="consent-tile prob">
+          <div class="consent-val">${prob.toLocaleString()}</div>
+          <div class="consent-lbl">Probably OK</div>
+          <div class="consent-pct">${pct(prob)}%</div>
+        </div>
+        <div class="consent-tile risky">
+          <div class="consent-val">${risky.toLocaleString()}</div>
+          <div class="consent-lbl">Risky</div>
+          <div class="consent-pct">${pct(risky)}%</div>
+        </div>
+        <div class="consent-tile danger">
+          <div class="consent-val">${danger.toLocaleString()}</div>
+          <div class="consent-lbl">Do not send</div>
+          <div class="consent-pct">${pct(danger)}%</div>
+        </div>
       </div>
 
-      ${vendors.length ? `
       <div class="card">
-        <div class="card-label">Vendor Results (${vendors.length})</div>
-        <div class="vendor-list">${vendors.map(renderVendor).join('')}</div>
-      </div>` : `
+        <div class="card-label">Consent Breakdown</div>
+        ${renderBar('Safe to send', safe, total, 'safe')}
+        ${renderBar('Probably OK', prob, total, 'prob')}
+        ${renderBar('Risky', risky, total, 'risky')}
+        ${renderBar('Danger — do not send', danger, total, 'danger')}
+      </div>
+
+      ${expiryTimeline.length ? `
       <div class="card">
-        <div class="card-label">Vendors</div>
-        <div class="empty-state"><div class="empty-icon">📋</div>No vendor data available</div>
-      </div>`}
+        <div class="card-label">Consent Expiry Timeline</div>
+        <div class="timeline-list">${expiryTimeline.map(t=>`
+          <div class="timeline-item">
+            <div>
+              <div class="timeline-period">${esc(t.period||t.label||'')}</div>
+              ${t.description ? `<div class="timeline-note">${esc(t.description)}</div>` : ''}
+            </div>
+            <div class="timeline-count">${(t.count||0).toLocaleString()} contacts</div>
+          </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      ${sourceQuality.length ? `
+      <div class="card">
+        <div class="card-label">Source Quality</div>
+        <div class="source-list">${sourceQuality.map(s=>{
+          const q = (s.quality||s.score||'').toString().toLowerCase();
+          const cls = q.includes('good')||q.includes('high') ? 'source-good' : q.includes('poor')||q.includes('low')||q.includes('bad') ? 'source-bad' : 'source-warn';
+          return `<div class="source-item">
+            <span class="source-name">${esc(s.source||s.name||'')}</span>
+            <span class="source-badge ${cls}">${esc(s.quality||s.score||'Unknown')}</span>
+          </div>`;
+        }).join('')}
+        </div>
+      </div>` : ''}
 
       ${fixes.length ? `
       <div class="card">
@@ -202,39 +262,14 @@
     document.getElementById('report').style.display   = 'block';
   }
 
-  function renderVendor(v) {
-    const score = v.score || 0;
-    const sc = score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
-    const details     = v.details     || [];
-    const actionItems = v.actionItems || [];
-
-    return `<div class="vendor-card">
-      <div class="vendor-header">
-        <div>
-          <div class="vendor-name-row">
-            <span class="vendor-name">${esc(v.name||'')}</span>
-            ${v.isAI ? `<span class="vendor-ai-badge">AI tool</span>` : ''}
-          </div>
-          <div class="vendor-cat">${esc(v.category||'')}</div>
-        </div>
-        <div class="vendor-score">
-          <span class="score-num" style="color:${sc}">${score}</span>
-          <span class="score-label">/ 100</span>
-        </div>
+  function renderBar(label, count, total, cls) {
+    const pct = total ? Math.round(count/total*100) : 0;
+    return `<div class="bar-wrap">
+      <div class="bar-label-row">
+        <span class="bar-name">${label}</span>
+        <span class="bar-count">${count.toLocaleString()} (${pct}%)</span>
       </div>
-      <div class="vendor-body">
-        ${details.length ? `<div class="detail-list">${details.map(d=>`
-          <div class="detail-item">
-            <span class="detail-icon ${d.status||'info'}">${d.status==='pass'?'✓':d.status==='warning'?'⚠':'ℹ'}</span>
-            <div class="detail-text"><strong>${esc(d.label||'')}</strong>${d.description?` — <span>${esc(d.description)}</span>`:''}</div>
-          </div>`).join('')}
-        </div>` : ''}
-        ${actionItems.length ? `<div class="action-list">${actionItems.map(a=>`<div class="action-item">${esc(a)}</div>`).join('')}</div>` : ''}
-        ${(v.links?.dpa||v.links?.privacy) ? `<div class="vendor-links">
-          ${v.links.dpa     ? `<a href="${esc(v.links.dpa)}"     target="_blank" rel="noopener" class="vendor-link">View DPA</a>` : ''}
-          ${v.links.privacy ? `<a href="${esc(v.links.privacy)}" target="_blank" rel="noopener" class="vendor-link">Privacy Policy</a>` : ''}
-        </div>` : ''}
-      </div>
+      <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
     </div>`;
   }
 

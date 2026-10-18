@@ -2,6 +2,9 @@
 // SENDWIZE — digest.js v1.0
 // GET/POST /api/digest                  → run digest for ALL users
 // GET/POST /api/digest?userId=x         → run digest for one user (testing)
+// v1.1 (security): cron/internal callers only (Authorization: Bearer
+//   CRON_SECRET, or the internal header). Previously anyone could trigger
+//   an email to every user.
 //
 // Designed as a cron target (cron-job.org). Once a week it reads each
 // user's two most recent snapshots from Audience_Read_Snapshots and
@@ -18,6 +21,9 @@
 //   - Per-user error isolation: one user failing never blocks the rest
 //   - Null-strip before any Airtable write
 // ─────────────────────────────────────────────────────────────
+
+import { requireInternal } from './_auth.js';
+import { fq } from './_airtable.js';
 
 const RESEND_FROM = 'alerts@sendwize.co.uk';
 const DASH_URL    = 'https://www.sendwize.co.uk/dashboard';
@@ -68,7 +74,7 @@ function fmtN(n)   { return (n || 0).toLocaleString('en-GB'); }
 async function audienceDiff(userId) {
   let recs;
   try {
-    recs = await atGet('Audience_Read_Snapshots', `{UserID}="${userId}"`,
+    recs = await atGet('Audience_Read_Snapshots', `{UserID}=${fq(userId)}`,
       'sort[0][field]=SnapshotTimestamp&sort[0][direction]=desc', 200);
   } catch { return null; }
   if (!recs.length) return null;
@@ -106,7 +112,7 @@ async function audienceDiff(userId) {
 async function listDiff(userId) {
   let recs;
   try {
-    recs = await atGet('List_Intelligence_Snapshots', `{UserID}="${userId}"`,
+    recs = await atGet('List_Intelligence_Snapshots', `{UserID}=${fq(userId)}`,
       'sort[0][field]=SnapshotTimestamp&sort[0][direction]=desc', 12);
   } catch { return null; }
   if (!recs.length) return null;
@@ -246,17 +252,16 @@ async function processUser(profile, force) {
 
 // ── Handler ───────────────────────────────────────────────────
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  const auth = await requireInternal(req, res);
+  if (!auth) return;
 
   const userId = req.query.userId || req.body?.userId || null;
 
   try {
     let profiles;
     if (userId) {
-      profiles = await atGet('User_Profile', `{UserID}="${userId}"`, '', 1);
+      profiles = await atGet('User_Profile', `{UserID}=${fq(userId)}`, '', 1);
       if (!profiles.length) return res.status(404).json({ error: 'User not found' });
     } else {
       // All users who have an email. Snapshot lookups filter out the

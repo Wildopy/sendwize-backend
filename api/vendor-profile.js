@@ -4,7 +4,16 @@
 // Body: { userId, vendorName, vendorRecordId }
 //
 // v1.0-beta: RiskRating (was ICORiskLevel), LastAutoChecked (was LastChecked)
+// v1.1 (security): request authenticated via _auth.js (verified member id
+//   replaces any browser userId); vendorRecordId must belong to the caller;
+//   vendor name escaped in the Airtable formula; calls to generate-fix
+//   signed with the internal secret (they were silently rejected before).
+//   CMA issues now use the known fix type fake_reviews (cma_reviews was
+//   rejected by generate-fix as unknown).
 // ─────────────────────────────────────────────────────────────
+
+import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
+import { fq } from './_airtable.js';
 
 const APP_URL   = 'https://sendwize-backend.vercel.app';
 const BASE_ID   = process.env.BASE_ID;
@@ -180,9 +189,11 @@ function nullStrip(obj) { return Object.fromEntries(Object.entries(obj).filter((
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
 
   const { userId, vendorName, vendorRecordId } = req.body ?? {};
   if (!userId || !vendorName) return res.status(400).json({ error: 'userId and vendorName required' });
@@ -190,10 +201,13 @@ export default async function handler(req, res) {
   try {
     let record = null;
     if (vendorRecordId) {
+      if (!isRecordId(vendorRecordId)) return res.status(400).json({ error: 'Invalid vendorRecordId' });
       const r = await fetch(`${AT_BASE}/Vendor_Register/${vendorRecordId}`, { headers: atH() });
       if (r.ok) record = await r.json();
+      if (record && record.fields?.UserID !== userId) return res.status(403).json({ error: 'Vendor does not belong to this user' });
     } else {
-      const r = await fetch(`${AT_BASE}/Vendor_Register?filterByFormula=AND({UserID}='${userId}',{VendorName}='${vendorName}')&maxRecords=1`, { headers: atH() });
+      const formula = encodeURIComponent(`AND({UserID}=${fq(userId)},{VendorName}=${fq(vendorName)})`);
+      const r = await fetch(`${AT_BASE}/Vendor_Register?filterByFormula=${formula}&maxRecords=1`, { headers: atH() });
       if (r.ok) { const d = await r.json(); record = d.records?.[0] || null; }
     }
     if (!record) return res.status(404).json({ error: 'Vendor not found in register' });
@@ -232,15 +246,15 @@ export default async function handler(req, res) {
 
     for (const issue of allIssues) {
       try {
-        const fixTypeMap = { ICO:'dpa_breach', ASA:'asa_liability', CMA:'cma_reviews', Commercial:'commercial_risk' };
-        await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        const fixTypeMap = { ICO:'dpa_breach', ASA:'asa_liability', CMA:'fake_reviews', Commercial:'commercial_risk' };
+        await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: internalHeaders(),
           body: JSON.stringify({ userId, fixType: fixTypeMap[issue.regulator] || 'dpa_breach', description: `Vendor Profile (${vendorName}): ${issue.issue}. ${issue.action}`, tool: `Vendor Profile \u2014 ${vendorName}`, severity: issue.severity, contactVolume: f.ContactVolume || null, sourceRecordId: rid }) });
       } catch(e) { console.error(`generate-fix failed:`, e.message); }
     }
 
     for (const finding of rssFindings.slice(0, 3)) {
       try {
-        await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        await fetch(`${APP_URL}/api/generate-fix`, { method: 'POST', headers: internalHeaders(),
           body: JSON.stringify({ userId, fixType: 'legitimate_interest_abuse', description: `Vendor Monitor (${vendorName}): ${finding.source} finding — "${finding.title}". Source: ${finding.link}`, tool: `Vendor Monitor \u2014 ${vendorName}`, severity: 'medium', contactVolume: f.ContactVolume || null, sourceRecordId: rid }) });
       } catch(e) { console.error('RSS fix failed:', e.message); }
     }

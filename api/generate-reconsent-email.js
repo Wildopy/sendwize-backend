@@ -3,13 +3,27 @@
 // Generates a PECR-compliant re-consent draft (email or SMS) via Claude.
 // Does NOT send anything. Returns draft text for the user to copy into their own ESP.
 // No streak call — this is not a user-facing tool completion.
+// v1.1 (security): authenticated via _auth.js — internal callers
+//   (audit-database-v2) or a signed-in member.
+//   Previously anyone could call it and spend Claude credit.
+
+import { claudeFetch } from './_claude.js';
+import { requireAuth, CORS_HEADERS } from './_auth.js';
+import { checkLimit } from './_limits.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin',  '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+  if (!(await checkLimit(req, res, auth, 'reconsent'))) return;
 
   // ── Parameter validation ────────────────────────────────────────────────────
   const {
@@ -56,7 +70,7 @@ EMAIL-SPECIFIC RULES (mandatory):
 - Do not use fake urgency, countdown language, or scarcity framing.
 - Output format: subject line first, then a blank line, then the email body.`;
 
-  const systemPrompt = `You are a UK marketing compliance specialist writing PECR-compliant re-consent drafts. You produce copy only — no commentary, no preamble, no sign-off notes. Your output is the draft itself, ready to copy and paste.`;
+  const systemPrompt = `You are a UK marketing compliance specialist writing PECR-compliant re-consent drafts. You produce copy only — no commentary, no preamble, no sign-off notes. Your output is the draft itself, ready to copy and paste. Never invent facts, offers or figures about the sender.`;
 
   const userPrompt = `Write a PECR-compliant re-consent ${channel === 'sms' ? 'SMS message' : 'email'} on behalf of ${senderName}.
 
@@ -82,7 +96,7 @@ Produce the draft now. Output the draft copy only — nothing else.`;
 
   // ── Call Claude ─────────────────────────────────────────────────────────────
   try {
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    const claudeRes = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +104,6 @@ Produce the draft now. Output the draft copy only — nothing else.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
         max_tokens: 800,
         system: systemPrompt,
         messages: [

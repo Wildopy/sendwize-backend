@@ -24,9 +24,11 @@
 // v1.7 preserved: draft-reconsent, AI column mapper, narrative, per-list fixes
 // ─────────────────────────────────────────────────────────────
 
+import { claudeFetch } from './_claude.js';
 import crypto from 'crypto';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
+import { checkLimit } from './_limits.js';
 import { smartDetect, smartValidate } from './_smart-import.js';
 import { validateListUpload, normaliseListRow } from './_normalise.js';
 
@@ -179,10 +181,10 @@ async function aiMapListColumns(headers, sampleRows) {
     return { header: h, samples: vals };
   });
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: AI_MAP_LIST_SYSTEM, messages: [{ role: 'user', content: `Map these CSV columns:\n${JSON.stringify(sample)}` }] }),
+      body: JSON.stringify({ max_tokens: 1000, system: AI_MAP_LIST_SYSTEM, messages: [{ role: 'user', content: `Map these CSV columns:\n${JSON.stringify(sample)}` }] }),
     });
     if (!res.ok) { console.error('AI list column mapper HTTP error:', res.status); return null; }
     const msg = await res.json();
@@ -413,7 +415,8 @@ function calculateListExposure(analysis) {
   const disposableCount = (scored || []).filter(c => c.primaryRisk === 'disposable_domain').length;
   const asaExposure = {
     roleBasedContacts: roleBasedCount, disposableContacts: disposableCount,
-    estimatedExposure: parseFloat((roleBasedCount * EXPOSURE_ANCHORS.asa.roleBasedPerContact + disposableCount * EXPOSURE_ANCHORS.asa.disposablePerContact).toFixed(2)),
+    // Spec: ASA risk is reputational, never a £ figure
+    estimatedExposure: 0, reputationalOnly: true, flaggedContacts: roleBasedCount + disposableCount,
     label: EXPOSURE_ANCHORS.asa.label, basis: EXPOSURE_ANCHORS.asa.basis, signals: asaNote || null,
   };
 
@@ -423,13 +426,15 @@ function calculateListExposure(analysis) {
   const cmaContactCount = spamTrapCount + typoCount;
   const cmaExposure = {
     affectedContacts: cmaContactCount,
-    estimatedExposure: parseFloat((cmaContactCount * EXPOSURE_ANCHORS.cma.dataQualityPerContact).toFixed(2)),
+    // Spec: CMA shown as statutory maximum only, never a per-contact £ figure
+    estimatedExposure: 0, statutoryMaxOnly: true, flaggedContacts: cmaContactCount,
     label: EXPOSURE_ANCHORS.cma.label, basis: EXPOSURE_ANCHORS.cma.basis, signals: cmaNote || null,
   };
 
   const estimatedValue = parseFloat(((activeCount + recoverableCount) * DEFAULT_REVENUE_PER_CONTACT).toFixed(2));
   const recoverableValue = parseFloat((recoverableCount * DEFAULT_REVENUE_PER_CONTACT * DEFAULT_RECONSENT_SUCCESS_RATE).toFixed(2));
-  const totalExposure = parseFloat((icoExposure.estimatedExposure + asaExposure.estimatedExposure + cmaExposure.estimatedExposure).toFixed(2));
+  // ICO only: ASA and CMA never carry a £ figure, and are never added in
+  const totalExposure = parseFloat(icoExposure.estimatedExposure.toFixed(2));
 
   return { totalExposure, estimatedValue, recoverableValue, ico: icoExposure, asa: asaExposure, cma: cmaExposure, methodology: 'Indicative estimates based on published UK enforcement benchmarks. Not a prediction of regulatory outcome.' };
 }
@@ -565,7 +570,7 @@ const LIST_NARRATIVE_SYSTEM = `You are a UK email marketing analyst writing for 
 async function generateListNarrative(listName, analysis, changes) {
   const context = { listName, totalContacts: analysis.totalContacts, activeCount: analysis.activeCount, recoverableCount: analysis.recoverableCount, atRiskCount: analysis.atRiskCount, liabilityCount: analysis.liabilityCount, assetValue: analysis.assetValue, icoStatus: analysis.icoStatus, expiring30: analysis.expiring30, expiring60: analysis.expiring60, expiring90: analysis.expiring90, valueExpiring90: analysis.valueExpiring90, dataQualityFlags: analysis.dataQualityFlags, changes: changes ? { direction: changes.direction, valueDelta: changes.valueDelta, liabilityDelta: changes.liabilityDelta, activeDelta: changes.activeDelta, daysSincePrevious: changes.daysSincePrevious } : null };
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, system: LIST_NARRATIVE_SYSTEM, messages: [{ role: 'user', content: `Explain this list's state:\n${JSON.stringify(context)}` }] }) });
+    const res = await claudeFetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ max_tokens: 300, system: LIST_NARRATIVE_SYSTEM, messages: [{ role: 'user', content: `Explain this list's state:\n${JSON.stringify(context)}` }] }) });
     if (!res.ok) return null;
     const msg = await res.json(); return msg.content?.[0]?.text?.trim() || null;
   } catch (e) { console.error('List narrative failed (non-fatal):', e.message); return null; }
@@ -610,6 +615,7 @@ export default async function handler(req, res) {
   // Identity: the verified member id replaces any userId sent by the browser
   const auth = await requireAuth(req, res);
   if (!auth) return;
+  if (req.query?.action === 'upload' && !(await checkLimit(req, res, auth, 'list_upload'))) return;
 
   const { action, userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId is required' });
@@ -919,7 +925,7 @@ export default async function handler(req, res) {
       if(exposure?.totalExposure)parts.push(`Regulatory exposure: £${Math.round(exposure.totalExposure).toLocaleString()} (ICO £${Math.round(exposure.ico?.estimatedExposure||0)}, ASA £${Math.round(exposure.asa?.estimatedExposure||0)}, CMA £${Math.round(exposure.cma?.estimatedExposure||0)})`);
       if(domainAnalysis?.insight)parts.push(`Domains: ${domainAnalysis.insight}`);if(freshness?.verdict)parts.push(`Freshness: ${freshness.verdict}`);if(engagementGaps?.insight)parts.push(`Engagement gaps: ${engagementGaps.insight}`);
       const prompt=`You are a UK email marketing data strategist. Based on this contact list analysis, write a health brief in three short paragraphs:\n\n1. LIST QUALITY — assess the overall quality based on tier distribution, domain composition, and freshness. Be specific with numbers.\n2. RISKS — flag consent decay, engagement gaps, domain issues, or exposure. If the list is clean, say so.\n3. ACTIONS — give 2-3 specific next steps. Be concrete and use £ figures where available.\n\n${parts.join('\n')}\n\nWrite for a marketing manager. Be direct. Three paragraphs, 150 words maximum. No headers or bullet points.`;
-      try{const aiRes=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:prompt}]})});if(!aiRes.ok)return res.status(500).json({success:false,error:'Brief generation failed'});const msg=await aiRes.json();return res.json({success:true,brief:msg.content?.[0]?.text||''});}catch(e){return res.status(500).json({success:false,error:'Brief generation failed'});}
+      try{const aiRes=await claudeFetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({max_tokens:400,messages:[{role:'user',content:prompt}]})});if(!aiRes.ok)return res.status(500).json({success:false,error:'Brief generation failed'});const msg=await aiRes.json();return res.json({success:true,brief:msg.content?.[0]?.text||''});}catch(e){return res.status(500).json({success:false,error:'Brief generation failed'});}
     }
 
     // ── DRAFT RE-CONSENT EMAIL — v1.7 ───────────────────────
@@ -930,11 +936,11 @@ export default async function handler(req, res) {
       if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'AI not configured' });
       const sectorLabels = { ecommerce: 'an ecommerce / retail brand', finance: 'a financial services company', healthcare: 'a health and wellness brand', agency: 'a B2B services company', other: 'a UK business' };
       const sectorDesc = sectorLabels[sector] || sectorLabels.other;
-      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      const claudeRes = await claudeFetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6', max_tokens: 600,
+          max_tokens: 600,
           system: `You write re-consent / re-permission emails for UK email marketers. The email must:\n- Be PECR compliant — the recipient must be able to clearly opt in or opt out\n- Not use fake urgency, countdown timers, or misleading claims (DMCCA 2024)\n- Not use guilt, pressure, or dark patterns\n- Be honest about why they are receiving the email\n- Include a clear "Yes, keep me subscribed" call to action\n- Include a clear unsubscribe option\n- Be under 120 words in the body\n- Match the tone of ${sectorDesc}\n- Not include HTML tags — plain text only\n\nReturn ONLY a JSON object with two fields, no markdown:\n{"subject":"...","body":"..."}`,
           messages: [{ role: 'user', content: `Write a re-consent email for "${listName || 'our list'}". ${recoverableCount || 0} contacts have declining consent and will cross the PECR threshold within 90 days. Total list size: ${totalContacts || 0}. Sector: ${sector || 'ecommerce'}.` }],
         }),

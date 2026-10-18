@@ -20,7 +20,8 @@
 (function () {
   var KEY = 'sw_token';
   var BACKEND = /^https:\/\/sendwize-backend\.vercel\.app\//;
-  var DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  // Set window.SW_DASHBOARD_URL before this script to point at the live dashboard
+  var DASHBOARD = window.SW_DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
   var cached = null;
 
   // Token handed over in the URL fragment by a Webflow link
@@ -57,6 +58,18 @@
     (document.body || document.documentElement).appendChild(d);
   }
 
+  // Shown when the member has no active paid plan (API returns 402)
+  var PRICING = window.SW_PRICING_URL || 'https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/pricing-1';
+  function showPlanRequired() {
+    if (document.getElementById('sw-plan-banner')) return;
+    var d = document.createElement('div');
+    d.id = 'sw-plan-banner';
+    d.setAttribute('role', 'alert');
+    d.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;max-width:560px;margin:0 auto;background:#0f0f0d;color:#fff;padding:14px 18px;border-radius:10px;font:500 14px/1.5 "DM Sans",-apple-system,sans-serif;box-shadow:0 8px 32px rgba(0,0,0,.2)';
+    d.innerHTML = 'Your Sendwize plan isn\'t active. <a href="' + PRICING + '" style="color:#EA7317;font-weight:600">Choose a plan</a> to keep using the tools.';
+    (document.body || document.documentElement).appendChild(d);
+  }
+
   async function swFetch(url, opts) {
     opts = opts || {};
     var headers = new Headers(opts.headers || {});
@@ -67,6 +80,7 @@
     if (t && !headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + t);
     var res = await fetch(url, Object.assign({}, opts, { headers: headers }));
     if (res.status === 401) showExpired();
+    if (res.status === 402) showPlanRequired();
     return res;
   }
 

@@ -1,5 +1,9 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — vendor-dpa-reader.js v1.0
+// SENDWIZE — vendor-dpa-reader.js v1.1
+// v1.1 (security): internal callers only (vendor-monitor). This endpoint
+//   rewrites the shared Marketing_Vendors library every customer sees, so
+//   it must never be callable from a browser. The policy page is fetched
+//   through _page-scan.js fetchPage() (SSRF-safe, size-capped).
 // POST /api/vendor-dpa-reader
 // Body: { vendorRecordId, vendorName, url }
 //
@@ -19,6 +23,10 @@
 //   - Null strip before every Airtable PATCH
 //   - export default async function handler
 // ─────────────────────────────────────────────────────────────
+
+import { claudeFetch, LEGAL_RULES } from './_claude.js';
+import { requireInternal, isRecordId } from './_auth.js';
+import { fetchPage } from './_page-scan.js';
 
 const BASE_ID      = process.env.BASE_ID;
 const AT_TOKEN     = process.env.AIRTABLE_TOKEN;
@@ -95,31 +103,25 @@ function stripHtml(html) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin',  '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'POST only' });
+  const auth = await requireInternal(req, res);
+  if (!auth) return;
 
   const { vendorRecordId, vendorName, url } = req.body ?? {};
   if (!vendorRecordId || !vendorName || !url) {
     return res.status(400).json({ error: 'vendorRecordId, vendorName and url are required' });
   }
+  if (!isRecordId(vendorRecordId)) return res.status(400).json({ error: 'Invalid vendorRecordId' });
 
   const today = new Date().toISOString().split('T')[0];
 
   // ── 1. Fetch the policy page ──────────────────────────────
   let pageText = '';
   try {
-    const pageRes = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Sendwize-Compliance-Bot/1.0; +https://sendwize.co.uk)',
-        'Accept':     'text/html,application/xhtml+xml',
-      },
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!pageRes.ok) throw new Error(`HTTP ${pageRes.status}`);
-    const html = await pageRes.text();
+    const page = await fetchPage(url, { allowText: true });
+    if (!page.ok) throw new Error(page.error || 'fetch failed');
+    const html = page.html;
     pageText   = stripHtml(html);
   } catch (e) {
     console.error(`vendor-dpa-reader: fetch failed for ${vendorName} (${url}):`, e.message);
@@ -143,7 +145,7 @@ export default async function handler(req, res) {
   // ── 2. Claude extraction ──────────────────────────────────
   let extracted = null;
   try {
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    const claudeRes = await claudeFetch('https://api.anthropic.com/v1/messages', {
       method:  'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -151,8 +153,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        max_tokens: 1000, system: LEGAL_RULES,
         messages: [{
           role:    'user',
           content: `You are a UK GDPR compliance analyst. Extract compliance information about "${vendorName}" from the page text below.

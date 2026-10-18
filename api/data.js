@@ -1,6 +1,17 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.6
+// SENDWIZE — data.js v7.7
 // Commercial Relationships & Risk Register
+//
+// v7.7 changes:
+//   + send-alert and backfill-processor-fixes are internal-only. A
+//     signed-in member could previously trigger Sendwize-branded alert
+//     emails with their own text in them.
+//   + score-history POST no longer trusts a score sent by the browser.
+//     The score is recalculated from fixes.js, and there is at most one
+//     snapshot per user per day (later loads update today's row), so
+//     the sparkline is one point per day and score-drop alerts compare
+//     against the previous day.
+//   + Weekly briefing no longer crashes (intelLines was never declared).
 //
 // v7.6 changes (security):
 //   + Every request is authenticated via _auth.js (Memberstack token,
@@ -35,11 +46,14 @@
 // v7.3 preserved: partner/affiliate ASA/CAP/CMA dimensions.
 // ─────────────────────────────────────────────────────────────
 
+import { claudeFetch } from './_claude.js';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
 const RESEND_FROM = 'alerts@sendwize.co.uk';
+// Where alert emails send people. Set DASHBOARD_URL in Vercel to the live dashboard.
+const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 
 // ── Airtable helpers ──────────────────────────────────────────
 function atHeaders(token) {
@@ -255,11 +269,11 @@ async function prefillFromKnownVendor(base, vendorName, fields) {
 async function assessUnknownVendor(vendorName, fields) {
   if (!process.env.ANTHROPIC_API_KEY) return fields;
   try {
-    const r = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
+    const r = await withTimeout(claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: 1200,
+        max_tokens: 1200,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{ role: 'user', content: `Research the company "${vendorName}" as a marketing/data technology vendor used by UK businesses. Find:\n1. Their correct legal entity name\n2. ICO Data Protection Register entry (registration number if found)\n3. Whether they publish a Data Processing Agreement / DPA (find the URL)\n4. Where they store/process data (countries)\n5. Transfer mechanisms (SCCs, BCRs, EU-US DPF)\n6. Any known data breaches or security incidents\n7. Security certifications (SOC 2, ISO 27001, etc)\n8. Any ICO, ASA, or CMA enforcement actions against them\n\nReturn ONLY a JSON object with these exact keys:\n{"vendorLegalName":"","icoRegistered":"Yes|No|Unknown","icoRegistrationNumber":"","dpaUrl":"","transferDestination":"","transferMechanism":"","breachHistory":"None publicly disclosed.|description if found","certifications":"","enforcementHistory":"None identified in sources reviewed.|description if found","confidence":"high|medium|low"}\nNo other text.` }],
       }),
@@ -470,11 +484,11 @@ async function getRelevantEnforcement(base, name, entityType, relationshipContex
   // If no candidates in Violation_Database AND we have Claude, do a web search
   if (!candidates.length && process.env.ANTHROPIC_API_KEY) {
     try {
-      const r = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
+      const r = await withTimeout(claudeFetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6', max_tokens: 800,
+          max_tokens: 800,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
           messages: [{ role: 'user', content: `Search for any ICO, ASA, or CMA enforcement actions, fines, or regulatory rulings against "${name}" in the UK. Check ico.org.uk/action-weve-taken/enforcement/ and asa.org.uk/codes-and-rulings/rulings.html specifically.\n\nIf you find any relevant enforcement actions, return a JSON array:\n[{"regulator":"ICO|ASA|CMA","date":"YYYY-MM-DD","violation":"brief description","fine":number_or_null,"source":"URL where found","sameEntity":true,"relevanceNote":"why this is relevant","claimTypes":["pricing_claim|urgency_claim|scarcity_claim|free_claim|health_claim|comparative_claim|guarantee_claim|environmental_claim|consent|other"]}]\n\nIf you find NO relevant enforcement actions, return exactly:\n[]\n\nNo other text.` }],
         }),
@@ -517,11 +531,11 @@ async function getRelevantEnforcement(base, name, entityType, relationshipContex
       date: v.fields.DateOfAction || '', violation: (v.fields.Violation || '').slice(0, 250),
       fine: v.fields.FineAmount || null,
     }));
-    const r = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
+    const r = await withTimeout(claudeFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: 800,
+        max_tokens: 800,
         messages: [{ role: 'user', content: `I searched for enforcement actions related to "${name}" (a ${entityType || 'marketing vendor'} used as a ${relationshipContext || 'data processor'}).\n\nThese candidate results came back:\n${JSON.stringify(candidateSummaries)}\n\nFor EACH candidate, determine:\n1. Is this definitely the same organisation (or parent/subsidiary)?\n2. Is the enforcement action relevant to their role as a ${relationshipContext || 'data processor/marketing platform'}?\n3. Is it relevant to a UK marketer using this vendor?\n\nReturn ONLY a JSON array where each element has:\n{"index":0,"relevant":true|false,"sameEntity":true|false,"relevanceNote":"one sentence explaining why included or excluded"}\nNo other text.` }],
       }),
     }), 15000);
@@ -573,6 +587,7 @@ const REPORT_TABLES = {
   dossier: 'Campaign_Dossiers', pecr: 'Suppression_Checks',
   audience: 'Audience_Read_Campaigns', partner: 'Partner_Register',
   affiliate: 'Affiliate_Register', competitor: 'Competitor_Watch',
+  simulation: 'Simulations',
 };
 async function handleReport(req, res) {
   const { recordId, type } = req.query;
@@ -651,6 +666,7 @@ async function handleHistory(req, res) {
     partner:     { table: 'Partner_Register',         sort: 'LastChecked' },
     affiliate:   { table: 'Affiliate_Register',       sort: 'LastChecked' },
     competitor:  { table: 'Competitor_Watch',          sort: 'LastAutoChecked' },
+    simulation:  { table: 'Simulations',               sort: 'CreatedAt' },
   };
   if (!type || !tableMap[type]) return res.status(400).json({ error: `type must be one of: ${Object.keys(tableMap).join(' | ')}` });
   const { table, sort } = tableMap[type];
@@ -1237,11 +1253,11 @@ async function handleCompetitorWatch(req, res) {
       // Promo tactics scan (public website only, no ad platforms)
       if (process.env.ANTHROPIC_API_KEY) {
         try {
-          const promoRes = await withTimeout(fetch('https://api.anthropic.com/v1/messages', {
+          const promoRes = await withTimeout(claudeFetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-6', max_tokens: 400,
+              max_tokens: 400,
               tools: [{ type: 'web_search_20250305', name: 'web_search' }],
               messages: [{ role: 'user', content: `Search for current marketing promotions, discount claims, urgency claims, or pricing tactics being used by ${competitor.CompetitorName} on their public website in the UK right now. Do NOT access any advertising platforms such as Meta Ad Library, TikTok, or social media ad archives. Only check their public website and search results. Return ONLY a JSON array of up to 5 objects: [{"claimType":"fake_urgency|reference_pricing|superlative|free_claim|other","description":"brief description","complianceNote":"brief compliance observation"}]. No other text.` }],
             }),
@@ -1470,16 +1486,35 @@ async function handleScoreHistory(req, res) {
     return res.json({ snapshots: records.map(r => ({ id: r.id, date: r.fields.Date || '', score: r.fields.Score || 0, pending: r.fields.Pending || 0, completed: r.fields.Completed || 0, scoreChange: r.fields.ScoreChange || 0, triggerEvent: r.fields.TriggerEvent || '', thirdPartyRiskScore: r.fields.ThirdPartyRiskScore ?? null, processorScore: r.fields.ProcessorScore ?? null, partnerScore: r.fields.PartnerScore ?? null, affiliateScore: r.fields.AffiliateScore ?? null })) });
   }
   if (req.method === 'POST') {
-    const { userId, score, pending = 0, completed = 0, triggerEvent = 'Dashboard Load' } = req.body;
+    const { userId } = req.body || {};
+    const triggerEvent = String(req.body?.triggerEvent || 'Dashboard Load').slice(0, 60);
     if (!userId) return res.status(400).json({ error: 'userId required' });
-    if (score === undefined) return res.status(400).json({ error: 'score required' });
-    const prevRecords = await atGet(base, 'Score_History', `{UserID}='${userId}'`, 'sort[0][field]=Date&sort[0][direction]=desc', 1);
-    const prevScore = prevRecords[0]?.fields?.Score ?? score;
+    // Score is always recalculated on the server — never taken from the browser
+    const fr = await fetch(`${APP_URL}/api/fixes?action=get&userId=${encodeURIComponent(userId)}`, { headers: internalHeaders() });
+    if (!fr.ok) return res.status(502).json({ error: 'Could not calculate score' });
+    const fd = await fr.json();
+    const score = fd.score ?? 0;
+    const pending = fd.counts?.pending ?? 0;
+    const completed = fd.counts?.completed ?? 0;
+    const today = new Date().toISOString().split('T')[0];
+    // One snapshot per day: compare against the latest snapshot before today
+    const recent = await atGet(base, 'Score_History', `{UserID}='${userId}'`, 'sort[0][field]=Date&sort[0][direction]=desc', 5);
+    const todays = recent.find(r => r.fields?.Date === today) || null;
+    const prev = recent.find(r => r.fields?.Date && r.fields.Date !== today) || null;
+    const prevScore = prev?.fields?.Score ?? score;
     const scoreChange = score - prevScore;
     const thirdParty = await calculateThirdPartyScore(userId, base).catch(() => null);
-    const today = new Date().toISOString().split('T')[0];
-    const fields = { UserID: userId, Date: today, Score: score, Pending: pending, Completed: completed, ScoreChange: scoreChange, TriggerEvent: triggerEvent, AlertSent: false, ThirdPartyRiskScore: thirdParty?.total ?? null, ProcessorScore: thirdParty?.breakdown?.processors?.score ?? null, PartnerScore: thirdParty?.breakdown?.partners?.score ?? null, AffiliateScore: thirdParty?.breakdown?.affiliates?.score ?? null };
-    const snap = await atCreate(base, 'Score_History', fields);
+    const fields = { UserID: userId, Date: today, Score: score, Pending: pending, Completed: completed, ScoreChange: scoreChange, TriggerEvent: triggerEvent, ThirdPartyRiskScore: thirdParty?.total ?? null, ProcessorScore: thirdParty?.breakdown?.processors?.score ?? null, PartnerScore: thirdParty?.breakdown?.partners?.score ?? null, AffiliateScore: thirdParty?.breakdown?.affiliates?.score ?? null };
+    let snap;
+    if (todays) {
+      const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== null && v !== undefined));
+      await atPatch(base, 'Score_History', todays.id, clean);
+      snap = { id: todays.id };
+      // An alert for today has already been considered
+      if (todays.fields?.AlertSent) return res.json({ snapshotId: snap.id, score, scoreChange, alertFired: false, thirdPartyScore: thirdParty });
+    } else {
+      snap = await atCreate(base, 'Score_History', { ...fields, AlertSent: false });
+    }
     let alertFired = false;
     if (scoreChange <= -10) {
       const profiles = await atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1);
@@ -1491,7 +1526,7 @@ async function handleScoreHistory(req, res) {
         } catch (e) { console.error('score-drop alert non-fatal:', e); }
       }
     }
-    return res.json({ snapshotId: snap?.id, scoreChange, alertFired, thirdPartyScore: thirdParty });
+    return res.json({ snapshotId: snap?.id, score, scoreChange, alertFired, thirdPartyScore: thirdParty });
   }
   return res.status(405).json({ error: 'Method not allowed' });
 }
@@ -1509,13 +1544,13 @@ async function handleSendAlert(req, res) {
   if (!toEmail) return res.json({ sent: false, reason: 'No email on profile' });
 
   const alertTemplates = {
-    score_drop: { subject: `Your Sendwize compliance score dropped by ${Math.abs(req.body.scoreChange||0)} points`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Compliance score alert</h2><p style="color:#555;margin:0 0 24px;font-size:14px">Your score dropped by <strong>${Math.abs(req.body.scoreChange||0)} points</strong>, now at <strong>${req.body.score}/100</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View dashboard</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
-    consent_expiry: { subject: `Sendwize: consent expiry approaching`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Consent expiry notice</h2><p style="color:#555;margin:0 0 24px;font-size:14px">One or more segments have consent expiring within 30 days.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View dashboard</a></div></div>` },
-    dpa_anniversary: { subject: `Sendwize: agreement anniversary approaching — ${req.body.entityName || 'a vendor'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Agreement anniversary alert</h2><p style="color:#555;font-size:14px">Your agreement with <strong>${req.body.entityName || 'a third party'}</strong> is due for review in <strong>${req.body.daysUntil || '30'} days</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open relationships register</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
-    competitor_ruling: { subject: `Sendwize: new ruling involving ${req.body.competitorName || 'a watched competitor'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Competitor intelligence alert</h2><p style="color:#555;font-size:14px"><strong>${req.body.competitorName || 'A competitor you watch'}</strong> appears in a new regulatory ruling: ${req.body.rulingSummary || ''}.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open sector intelligence</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
-    audience_damaged: { subject: `Sendwize: audience alert — ${req.body.segmentName || 'a segment'} needs attention`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Audience Read alert</h2><p style="color:#555;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved to <strong>${req.body.sentimentState || 'a negative state'}</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View Audience Read</a></div></div>` },
-    dossier_compliance_change: { subject: `Sendwize: compliance change affecting ${req.body.campaignTitle || 'a campaign'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Campaign compliance alert</h2><p style="color:#555;margin:0 0 16px;font-size:14px">A new regulatory ruling affects claim types in <strong>${req.body.campaignTitle || 'Untitled'}</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open campaign dossier</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
-    segment_state_change: { subject: `Sendwize: ${req.body.segmentName || 'a segment'} moved to ${req.body.sentimentState || 'a new state'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Audience state change</h2><p style="color:#555;margin:0 0 20px;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved to <strong>${req.body.sentimentState || 'a warning state'}</strong>.</p><a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open Audience Read</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    score_drop: { subject: `Your Sendwize compliance score dropped by ${Math.abs(req.body.scoreChange||0)} points`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Compliance score alert</h2><p style="color:#555;margin:0 0 24px;font-size:14px">Your score dropped by <strong>${Math.abs(req.body.scoreChange||0)} points</strong>, now at <strong>${req.body.score}/100</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View dashboard</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    consent_expiry: { subject: `Sendwize: consent expiry approaching`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Consent expiry notice</h2><p style="color:#555;margin:0 0 24px;font-size:14px">One or more segments have consent expiring within 30 days.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View dashboard</a></div></div>` },
+    dpa_anniversary: { subject: `Sendwize: agreement anniversary approaching — ${req.body.entityName || 'a vendor'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Agreement anniversary alert</h2><p style="color:#555;font-size:14px">Your agreement with <strong>${req.body.entityName || 'a third party'}</strong> is due for review in <strong>${req.body.daysUntil || '30'} days</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open relationships register</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    competitor_ruling: { subject: `Sendwize: new ruling involving ${req.body.competitorName || 'a watched competitor'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Competitor intelligence alert</h2><p style="color:#555;font-size:14px"><strong>${req.body.competitorName || 'A competitor you watch'}</strong> appears in a new regulatory ruling: ${req.body.rulingSummary || ''}.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open sector intelligence</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    audience_damaged: { subject: `Sendwize: audience alert — ${req.body.segmentName || 'a segment'} needs attention`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2>Audience Read alert</h2><p style="color:#555;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved to <strong>${req.body.sentimentState || 'a negative state'}</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">View Audience Read</a></div></div>` },
+    dossier_compliance_change: { subject: `Sendwize: compliance change affecting ${req.body.campaignTitle || 'a campaign'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Campaign compliance alert</h2><p style="color:#555;margin:0 0 16px;font-size:14px">A new regulatory ruling affects claim types in <strong>${req.body.campaignTitle || 'Untitled'}</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open campaign dossier</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
+    segment_state_change: { subject: `Sendwize: ${req.body.segmentName || 'a segment'} moved to ${req.body.sentimentState || 'a new state'}`, html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><div style="background:#EA7317;padding:24px 32px;border-radius:8px 8px 0 0"><p style="color:white;font-size:20px;font-weight:700;margin:0">sendwize</p></div><div style="background:#fff;padding:32px;border:1px solid #f0f0f0;border-top:none;border-radius:0 0 8px 8px"><h2 style="margin:0 0 8px">Audience state change</h2><p style="color:#555;margin:0 0 20px;font-size:14px">Your <strong>${req.body.segmentName || 'audience'}</strong> segment has moved to <strong>${req.body.sentimentState || 'a warning state'}</strong>.</p><a href="${DASHBOARD_URL}" style="background:#EA7317;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block">Open Audience Read</a><p style="margin:32px 0 0;font-size:11px;color:#999">Not legal advice.</p></div></div>` },
   };
   const tmpl = alertTemplates[alertType];
   if (!tmpl) return res.status(400).json({ error: `Unknown alertType: ${alertType}` });
@@ -1547,7 +1582,8 @@ async function handleBriefing(req, res) {
   const pending = fixesData?.fixes?.pending || [];
   const score = fixesData?.score || 0;
   const thirdParty = await calculateThirdPartyScore(userId, base).catch(() => null);
-for (const r of vendors.slice(0,5)) {
+  const intelLines = [];
+  for (const r of vendors.slice(0,5)) {
     const enf = safeJSON(r.fields.EnforcementRelevanceJson, {})?.relevant || [];
     if (enf.length) intelLines.push(`- Processor ${r.fields.VendorName}: ${enf.length} relevant enforcement action(s) identified.`);
     const { gaps } = marketingGaps(safeJSON(r.fields.MarketingChecksJson, null));
@@ -1566,8 +1602,8 @@ for (const r of vendors.slice(0,5)) {
   for (const r of competitors.slice(0,5)) {
     if ((r.fields.RulingCount || 0) > 0) intelLines.push(`- Competitor ${r.fields.CompetitorName}: ${r.fields.RulingCount} relevant enforcement action(s) on record.`);
   }
-  const promptContext = [`Compliance score: ${score}/100`, `Third-party risk score: ${thirdParty?.total ?? 'not calculated'}/100`, `Processors: ${vendors.length}, Partners: ${partners.length}, Affiliates: ${affiliates.length}, Competitors watched: ${competitors.length}`, `Pending fixes: ${pending.length}`, intelLines.length ? `\nRelationship intelligence:\n${intelLines.join('\n')}` : '\nNo relationship alerts this week.'].join('\n');
-  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 600, system: `You are a compliance advisor for UK email marketers. Write a concise weekly briefing of 180-220 words. Never say "compliant" or "in breach". Never give legal advice. Plain English.`, messages: [{ role: 'user', content: `Status:\n${promptContext}\n\nWrite the weekly briefing.` }] }) });
+  const promptContext = [`Compliance score: ${score}/100`, `Third-party risk score: ${thirdParty?.total ?? 'not calculated'}/100`, `Processors: ${vendors.length}, Partners: ${partners.length}, Affiliates: ${affiliates.length}, Competitors watched: ${competitors.length}`, `Pending fixes: ${pending.length}`, fixesData?.exposure ? `Open regulatory exposure (comparable published cases): £${(fixesData.exposure.totalLow||0).toLocaleString('en-GB')}–£${(fixesData.exposure.totalHigh||0).toLocaleString('en-GB')}; regulator attention likelihood ${fixesData.exposure.likelihood?.level || 'unknown'}` : '', fixesData?.exposure?.clusters?.length ? `Biggest areas: ${fixesData.exposure.clusters.slice(0,3).map(c => `${c.label} (${c.count} finding${c.count>1?'s':''})`).join('; ')}` : '', fixesData?.riskAddressed ? `Exposure addressed this month: £${(fixesData.riskAddressed.monthTotal||0).toLocaleString('en-GB')}` : '', `Top open findings: ${pending.slice(0,3).map(p => (p.description||'').slice(0,90)).join(' | ') || 'none'}`, intelLines.length ? `\nRelationship intelligence:\n${intelLines.join('\n')}` : '\nNo relationship alerts this week.'].filter(Boolean).join('\n');
+  const claudeRes = await claudeFetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ max_tokens: 600, system: `You are a compliance advisor for UK email marketers. Write a concise weekly briefing of 180-220 words. Use only the figures given; never invent numbers. Lead with the single most valuable action this week. Never say "compliant", "illegal" or "in breach". Never give legal advice. Plain English.`, messages: [{ role: 'user', content: `Status:\n${promptContext}\n\nWrite the weekly briefing.` }] }) });
   if (!claudeRes.ok) return res.status(claudeRes.status).json({ error: 'Failed to generate briefing' });
   const briefing = (await claudeRes.json()).content?.[0]?.text || '';
   if (profile?.id) atPatch(base, 'User_Profile', profile.id, { LastBriefingSent: today, LastBriefingText: briefing }).catch(e => console.error('briefing save non-fatal:', e));
@@ -1581,21 +1617,40 @@ async function handleConsentExpiryCheck(req, res) {
   if (!userId) return res.status(400).json({ error: 'userId required' });
   const base = airtableBase();
   const today = new Date().toISOString().split('T')[0];
-  const audits = await atGet(base, 'Database_Audits', `{UserID}='${userId}'`, 'sort[0][field]=AuditDate&sort[0][direction]=desc', 1).catch(() => []);
-  const audit = audits[0];
-  if (!audit) return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0 });
-  let expiryTimeline = []; try { expiryTimeline = JSON.parse(audit.fields.ExpiryTimeline || '[]'); } catch {}
-  const d30 = new Date(); d30.setDate(d30.getDate()+30); const d60 = new Date(); d60.setDate(d60.getDate()+60); const d90 = new Date(); d90.setDate(d90.getDate()+90);
-  let e30=0, e60=0, e90=0;
-  expiryTimeline.forEach(s => { if (!s.expiryDate) return; const exp = new Date(s.expiryDate); const count = s.count||1; if (exp<=d30) e30+=count; else if (exp<=d60) e60+=count; else if (exp<=d90) e90+=count; });
-  if (!e30) return res.json({ checked: true, alertFired: false, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90 });
+  // v7.7: List Intelligence (latest check per list) is the main source;
+  // the older Database Auditor is still read when there is no list check.
+  let e30=0, e60=0, e90=0, source = 'none';
+  const liChecks = await atGet(base, 'List_Intelligence_Checks', `{UserID}='${userId}'`, 'sort[0][field]=CheckDate&sort[0][direction]=desc', 30).catch(() => []);
+  const seenLists = new Set();
+  for (const c of liChecks) {
+    const name = c.fields.ListName || 'List';
+    if (seenLists.has(name)) continue;
+    seenLists.add(name);
+    // Counts were measured on CheckDate; shift the buckets by the days since
+    const days = c.fields.CheckDate ? Math.floor((Date.now() - new Date(c.fields.CheckDate)) / 86400000) : 0;
+    const b30 = c.fields.Expiring30 || 0, b60 = c.fields.Expiring60 || 0, b90 = c.fields.Expiring90 || 0;
+    if (days < 30) { e30 += b30; e60 += b60; e90 += b90; }
+    else if (days < 60) { e30 += b30 + b60; e60 += b90; }
+    else { e30 += b30 + b60 + b90; }
+    source = 'list_intelligence';
+  }
+  if (source === 'none') {
+    const audits = await atGet(base, 'Database_Audits', `{UserID}='${userId}'`, 'sort[0][field]=AuditDate&sort[0][direction]=desc', 1).catch(() => []);
+    const audit = audits[0];
+    if (!audit) return res.json({ checked: true, alertFired: false, expiringIn30: 0, expiringIn60: 0, expiringIn90: 0, source });
+    let expiryTimeline = []; try { expiryTimeline = JSON.parse(audit.fields.ExpiryTimeline || '[]'); } catch {}
+    const d30 = new Date(); d30.setDate(d30.getDate()+30); const d60 = new Date(); d60.setDate(d60.getDate()+60); const d90 = new Date(); d90.setDate(d90.getDate()+90);
+    expiryTimeline.forEach(s => { if (!s.expiryDate) return; const exp = new Date(s.expiryDate); const count = s.count||1; if (exp<=d30) e30+=count; else if (exp<=d60) e60+=count; else if (exp<=d90) e90+=count; });
+    source = 'database_audit';
+  }
+  if (!e30) return res.json({ checked: true, alertFired: false, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90, source });
   const profiles = await atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []);
   const profile = profiles[0];
   const lastAlert = profile?.fields?.LastAlertSent || '';
-  if (lastAlert && Math.floor((new Date(today)-new Date(lastAlert))/86400000) < 7) return res.json({ checked: true, alertFired: false, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90 });
+  if (lastAlert && Math.floor((new Date(today)-new Date(lastAlert))/86400000) < 7) return res.json({ checked: true, alertFired: false, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90, source });
   const alertRes = await fetch(`${APP_URL}/api/data?action=send-alert`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId, alertType: 'consent_expiry' }) }).catch(() => ({ ok: false }));
   if (profile?.id) atPatch(base, 'User_Profile', profile.id, { LastAlertSent: today }).catch(() => {});
-  return res.json({ checked: true, alertFired: alertRes.ok, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90 });
+  return res.json({ checked: true, alertFired: alertRes.ok, expiringIn30: e30, expiringIn60: e60, expiringIn90: e90, source });
 }
 
 // ── VENDOR-WATCH (legacy compat) ─────────────────────────────
@@ -1622,11 +1677,17 @@ async function handleSimulationRun(req, res) {
   const regCfg = { ICO: { orgName:"Information Commissioner's Office", refPrefix:'ICO-ENF', signatory:'Senior Enforcement Officer, Direct Marketing Team', tone:'formal ICO enforcement tone, reference PECR Regulation 22 and UK GDPR articles by number' }, ASA: { orgName:'Advertising Standards Authority', refPrefix:'ASA-ENQ', signatory:'Investigations Executive, ASA', tone:'formal ASA tone, reference specific CAP Code rules by number' }, CMA: { orgName:'Competition and Markets Authority', refPrefix:'CMA-CP', signatory:'Senior Director, Consumer Protection', tone:'formal CMA enforcement tone under DMCCA 2024' } }[regulator];
   let letter = {};
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:2000, messages:[{ role:'user', content: `Simulate a ${regulator} enforcement letter. USER PENDING FIXES:\n${fixList}\n\nTone: ${regCfg.tone}. Return ONLY JSON (no markdown):\n{"reference":"${regCfg.refPrefix}-XXXXX","subject":"...","opening":"...","context":"...","closing":"...","signatory":"${regCfg.signatory}","questions":[{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."}]}` }] }) });
+    const r = await claudeFetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ max_tokens:2000, messages:[{ role:'user', content: `Simulate a ${regulator} enforcement letter. USER PENDING FIXES:\n${fixList}\n\nTone: ${regCfg.tone}. Return ONLY JSON (no markdown):\n{"reference":"${regCfg.refPrefix}-XXXXX","subject":"...","opening":"...","context":"...","closing":"...","signatory":"${regCfg.signatory}","questions":[{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."}]}` }] }) });
     if (r.ok) { const text = (await r.json()).content?.[0]?.text||''; const m = text.match(/\{[\s\S]*\}/); if (m) letter = JSON.parse(m[0]); }
   } catch (e) { console.error('Letter parse non-fatal:', e); }
   const thisBand = bandConfig[escalationBand];
-  return res.status(200).json({ regulator, stage1: { checks: [] }, stage2: { band: escalationBand, bandLabel: thisBand.label, bandColour: thisBand.colour, bandBg: thisBand.bgColour, bandBorder: thisBand.borderColour, bandDescription: (bandDescriptions[regulator]||bandDescriptions.ICO)[escalationBand], factors: [] }, stage3: { letter }, stage4: { documents: [] }, stage5: { penalty: { low:0, high:0, context:'' }, representations:[] } });
+  const result = { regulator, stage1: { checks: [] }, stage2: { band: escalationBand, bandLabel: thisBand.label, bandColour: thisBand.colour, bandBg: thisBand.bgColour, bandBorder: thisBand.borderColour, bandDescription: (bandDescriptions[regulator]||bandDescriptions.ICO)[escalationBand], factors: [] }, stage3: { letter }, stage4: { documents: [] }, stage5: { penalty: { low:0, high:0, context:'' }, representations:[] } };
+  // Keep every run so the member can reopen it later (Simulations table; skipped if missing)
+  try {
+    const rec = await atCreate(base, 'Simulations', { UserID: userId, CreatedAt: new Date().toISOString(), Regulator: regulator, Band: thisBand.label, ResultJson: JSON.stringify(result).slice(0, 95000) });
+    result.simulationId = rec?.id || null;
+  } catch (e) { console.warn('Simulation not saved:', e.message); }
+  return res.status(200).json(result);
 }
 
 // ── DOSSIER-TOGGLE-MONITORING handler ────────────────────────
@@ -1651,6 +1712,8 @@ async function handleDossierToggleMonitoring(req, res) {
 // ── v7.6: Access control ─────────────────────────────────────
 // Reference data with no customer information
 const PUBLIC_ACTIONS = ['vendors', 'violations', 'cron-status'];
+// Server-to-server only: never callable from a browser
+const INTERNAL_ACTIONS = ['send-alert', 'backfill-processor-fixes'];
 
 // Actions that read, update or delete one customer record by id
 const OWNED_RECORD_TABLES = {
@@ -1693,6 +1756,9 @@ export default async function handler(req, res) {
     // v7.6 — identity, then ownership of any record touched by id
     const auth = await requireAuth(req, res, { publicActions: PUBLIC_ACTIONS });
     if (!auth) return;
+    if (INTERNAL_ACTIONS.includes(action) && auth.kind !== 'internal') {
+      return res.status(403).json({ error: 'Not allowed', code: 'internal_only' });
+    }
     if (!(await assertRecordOwnership(req, res, auth))) return;
 
     if (action === 'report'                  && req.method === 'GET')                       return await handleReport(req, res);

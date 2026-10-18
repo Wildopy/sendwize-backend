@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   const { action } = req.query;
   // Identity: the verified member id replaces any userId sent by the browser
-  const auth = await requireAuth(req, res);
+  const auth = await requireAuth(req, res, { allowUnpaid: true });
   if (!auth) return;
   if (req.method === 'GET'  && action === 'get')    return handleGet(req, res);
   if (req.method === 'POST' && action === 'save')   return handleSave(req, res);
