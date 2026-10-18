@@ -17,9 +17,10 @@
 //      Claude from the finding's own text, but only if Claude quotes
 //      the evidence and the quote is found in it (validateAssessment).
 //   3. Position: 0.5 + sum of factor weights, clamped to 0.05–0.95. The
-//      figure shown is a band 40% as wide as the frame, centred on that
-//      position. It can never leave the published-case frame, and the
-//      model never writes a number.
+//      figure shown is a band centred on that position, 16% / 26% / 40%
+//      as wide as the frame at high / medium / low confidence (v1.1),
+//      plus the centre as the most likely figure. It can never leave the
+//      published-case frame, and the model never writes a number.
 //   4. Aggregation: findings a regulator would investigate together
 //      (same area, e.g. consent) are clustered. Cluster = the largest
 //      finding + 25% of each other finding, capped at 2x the largest.
@@ -28,24 +29,35 @@
 //      the customer's revenue band, never a range. Commercial figures
 //      are never added to regulatory ones.
 //
+// v1.1: the profile sharpens the figure. Exact turnover, list size,
+//   opt-in records and complaint history become rule factors; the band
+//   shown narrows as more of them are known (confidence high / medium /
+//   low), with one most-likely figure in the middle and a list of the
+//   inputs that would tighten it. ASA and CMA findings get a separate
+//   commercial cost (ad withdrawn, customers refunded) worked out only
+//   from the customer's own campaign budget and revenue. Never a fine.
+//
 // LEGAL POSITION: comparable published cases, not a prediction, not
 // legal advice. Weights and case anchors are for the founder to review.
 // ─────────────────────────────────────────────────────────────
 import { createHash } from 'node:crypto';
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
+// Keys are compared with spaces removed and hyphens as en dashes, so the
+// profile's '£1M–£10M' and older '£1M – £10M' both resolve.
 const REVENUE_BAND_MAP = {
-  'Under \u00a31M':             'under_1m',
-  '\u00a31M \u2013 \u00a310M':  '1m_10m',
-  '\u00a310M \u2013 \u00a350M': '10m_50m',
-  'Over \u00a350M':             'over_50m',
+  'Under\u00a31M':            'under_1m',
+  '\u00a31M\u2013\u00a310M':  '1m_10m',
+  '\u00a310M\u2013\u00a350M': '10m_50m',
+  'Over\u00a350M':            'over_50m',
   under_1m: 'under_1m',
   '1m_10m': '1m_10m',
   '10m_50m':'10m_50m',
   over_50m: 'over_50m',
 };
 function normaliseBand(raw) {
-  return REVENUE_BAND_MAP[raw] || 'under_1m';
+  const k = String(raw || '').replace(/\s+/g, '').replace(/-/g, '\u2013');
+  return REVENUE_BAND_MAP[k] || REVENUE_BAND_MAP[raw] || 'under_1m';
 }
 
 // ── SECTOR MULTIPLIERS ────────────────────────────────────────
@@ -60,8 +72,11 @@ const SECTOR_MULTIPLIERS = {
   charity:   0.7,
 };
 
+// Profile sector values that map onto a multiplier under another name
+const SECTOR_ALIASES = { healthcare: 'health', agency: 'general', saas: 'general', other: 'general' };
 function normaliseSector(raw) {
-  const s = (raw || '').toLowerCase().trim();
+  let s = (raw || '').toLowerCase().trim();
+  s = SECTOR_ALIASES[s] || s;
   return SECTOR_MULTIPLIERS[s] !== undefined ? s : 'general';
 }
 
@@ -526,6 +541,14 @@ export const FACTORS = {
   complaints_mentioned:  { label: 'Complaints from recipients mentioned', weight: 0.15, source: 'ai' },
   isolated_issue:        { label: 'Isolated issue affecting one campaign or page', weight: -0.10, source: 'ai' },
   partial_compliance:    { label: 'Partly in place (e.g. notice exists but is incomplete)', weight: -0.10, source: 'ai' },
+  // v1.1: from the customer's profile
+  turnover_lower:        { label: 'Turnover in the lower part of your size band', weight: -0.08, source: 'profile' },
+  turnover_upper:        { label: 'Turnover in the upper part of your size band', weight: 0.08, source: 'profile' },
+  consent_records_all:   { label: 'A dated record is kept of every opt-in', weight: -0.12, source: 'profile' },
+  consent_records_none:  { label: 'No record is kept of when people opted in', weight: 0.15, source: 'profile' },
+  regulator_contact:     { label: 'A regulator has been in contact in the last two years', weight: 0.15, source: 'profile' },
+  complaints_received:   { label: 'Complaints received from recipients in the last two years', weight: 0.10, source: 'profile' },
+  clean_history:         { label: 'No complaints or regulator contact in the last two years', weight: -0.05, source: 'profile' },
 };
 export const AI_FACTOR_IDS = Object.keys(FACTORS).filter(k => FACTORS[k].source === 'ai');
 
@@ -550,17 +573,84 @@ export function closestCases(fixType, volume) {
     .map(({ c }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, summary: c.summary, url: ICO_ACTION_URL }));
 }
 
+// ── Profile inputs that sharpen the figures (all optional) ──
+const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
+const yesNo = v => (v === 'Yes' || v === true) ? true : (v === 'No' || v === false) ? false : null;
+export const CONSENT_RECORDS = ['all', 'some', 'none'];
+export function profileInputs(f = {}) {
+  return {
+    turnover:          num(f.AnnualTurnover),
+    listSize:          num(f.ListSize),
+    averageOrderValue: num(f.AverageOrderValue),
+    consentRecords:    CONSENT_RECORDS.includes(f.ConsentRecords) ? f.ConsentRecords : null,
+    regulatorContact:  yesNo(f.PriorRegulatorContact),
+    complaints:        yesNo(f.ComplaintsReceived),
+    campaignBudget:    num(f.TypicalCampaignBudget),
+    campaignRevenue:   num(f.TypicalCampaignRevenue),
+  };
+}
+export function bandFromTurnover(t) {
+  t = num(t);
+  if (!t) return null;
+  return t < 1e6 ? 'under_1m' : t < 1e7 ? '1m_10m' : t < 5e7 ? '10m_50m' : 'over_50m';
+}
+export const BAND_LABELS = { under_1m: 'Under \u00a31M', '1m_10m': '\u00a31M\u2013\u00a310M', '10m_50m': '\u00a310M\u2013\u00a350M', over_50m: 'Over \u00a350M' };
+// Band, sector and inputs from a User_Profile record. An exact turnover
+// beats the band picked in the profile.
+export function profileContext(f = {}) {
+  const inputs = profileInputs(f);
+  return {
+    revenueBand: bandFromTurnover(inputs.turnover) || normaliseBand(f.RevenueBand || 'under_1m'),
+    sector: normaliseSector(f.Sector || 'general'),
+    inputs,
+  };
+}
+// Where the turnover sits inside its band, 0 to 1 on a log scale
+const BAND_LIMITS = { under_1m: [1e5, 1e6], '1m_10m': [1e6, 1e7], '10m_50m': [1e7, 5e7], over_50m: [5e7, 5e8] };
+function turnoverPosition(t, band) {
+  const [a, b] = BAND_LIMITS[band] || BAND_LIMITS.under_1m;
+  const v = Math.min(Math.max(t, a), b);
+  return (Math.log10(v) - Math.log10(a)) / (Math.log10(b) - Math.log10(a));
+}
+const CONSENT_AREAS = ['consent', 'suppression'];
+
 // ── Rule-based factors from the evidence we already hold ──
 const HIGH_SCRUTINY = ['finance', 'health', 'gambling'];
-export function ruleFactors(fix, sector) {
+// Contacts affected: the finding's own figure, then a figure the AI
+// quoted from the finding, then the list size on the profile.
+export function volumeFor(fix, inputs = {}, assessment = null) {
+  const own = Number(fix.contactVolume || fix.processingContext?.contactVolume) || null;
+  if (own) return { count: own, source: 'finding' };
+  if (assessment?.audience?.count) return { count: assessment.audience.count, source: 'ai', quote: assessment.audience.quote };
+  if (inputs.listSize) return { count: inputs.listSize, source: 'profile' };
+  return null;
+}
+
+export function ruleFactors(fix, sector, inputs = {}, assessment = null, revenueBand = null) {
   const out = [];
   const ctx = fix.processingContext || {};
-  const vol = Number(fix.contactVolume || ctx.contactVolume) || null;
-  if (vol) {
-    if (vol > 1000000) out.push({ id: 'volume_very_large', evidence: `${vol.toLocaleString('en-GB')} contacts` });
-    else if (vol > 100000) out.push({ id: 'volume_large', evidence: `${vol.toLocaleString('en-GB')} contacts` });
-    else if (vol < 10000) out.push({ id: 'volume_small', evidence: `${vol.toLocaleString('en-GB')} contacts` });
+  const v = volumeFor(fix, inputs, assessment);
+  if (v) {
+    const ev = v.source === 'profile' ? `${v.count.toLocaleString('en-GB')} on your list (from your profile)`
+      : v.source === 'ai' ? v.quote : `${v.count.toLocaleString('en-GB')} contacts`;
+    const vol = v.count;
+    if (vol > 1000000) out.push({ id: 'volume_very_large', evidence: ev });
+    else if (vol > 100000) out.push({ id: 'volume_large', evidence: ev });
+    else if (vol < 10000) out.push({ id: 'volume_small', evidence: ev });
   }
+  if (inputs.turnover && revenueBand) {
+    const p = turnoverPosition(inputs.turnover, revenueBand);
+    const ev = `Turnover about \u00a3${Math.round(inputs.turnover).toLocaleString('en-GB')} (from your profile)`;
+    if (p < 0.33) out.push({ id: 'turnover_lower', evidence: ev });
+    else if (p > 0.67) out.push({ id: 'turnover_upper', evidence: ev });
+  }
+  if (CONSENT_AREAS.includes(areaOf(fix.fixType))) {
+    if (inputs.consentRecords === 'all') out.push({ id: 'consent_records_all', evidence: 'From your profile' });
+    else if (inputs.consentRecords === 'none') out.push({ id: 'consent_records_none', evidence: 'From your profile' });
+  }
+  if (inputs.regulatorContact) out.push({ id: 'regulator_contact', evidence: 'From your profile' });
+  if (inputs.complaints) out.push({ id: 'complaints_received', evidence: 'From your profile' });
+  if (inputs.regulatorContact === false && inputs.complaints === false) out.push({ id: 'clean_history', evidence: 'From your profile' });
   const dataTypes = Array.isArray(ctx.dataTypes) ? ctx.dataTypes : [];
   if (dataTypes.some(d => /special category|health|biometric|political|religio|sexual|children/i.test(d))) out.push({ id: 'sensitive_data', evidence: dataTypes.join(', ') });
   else if (dataTypes.some(d => /behaviour|purchase|financial/i.test(d))) out.push({ id: 'behavioural_data', evidence: dataTypes.join(', ') });
@@ -596,7 +686,7 @@ export function evidenceText(fix, profile = {}) {
 export function evidenceHash(fix, profile = {}) {
   return createHash('sha256').update(`${ENGINE_VERSION}|${fix.fixType}|${evidenceText(fix, profile)}`).digest('hex').slice(0, 32);
 }
-export const ENGINE_VERSION = 'exp-1.0';
+export const ENGINE_VERSION = 'exp-1.0'; // unchanged in v1.1 so stored AI readings stay valid
 
 const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
@@ -616,7 +706,14 @@ export function validateAssessment(raw, text) {
   }
   const summary = typeof raw?.plain_english === 'string' ? raw.plain_english.slice(0, 600) : '';
   const confidence = ['low', 'medium', 'high'].includes(raw?.confidence) ? raw.confidence : 'medium';
-  return { factors, summary, confidence };
+  // Audience size: only if the quote is in the evidence and contains the number
+  let audience = null;
+  const count = Math.round(Number(raw?.audience_count) || 0);
+  const aq = norm(raw?.audience_quote);
+  if (count > 0 && aq.length >= 6 && ev.includes(aq) && aq.replace(/[,\s]/g, '').includes(String(count))) {
+    audience = { count, quote: String(raw.audience_quote).slice(0, 200) };
+  }
+  return { factors, summary, confidence, audience };
 }
 
 // Position inside the frame and the narrowed range
@@ -624,24 +721,53 @@ function positionFrom(factorIds) {
   const sum = factorIds.reduce((s, id) => s + (FACTORS[id]?.weight || 0), 0);
   return Math.min(0.95, Math.max(0.05, 0.5 + sum));
 }
-function narrowed(low, high, pos) {
+const roundNice = v => v >= 10000 ? Math.round(v / 1000) * 1000 : Math.round(v / 100) * 100;
+// The more we know, the narrower the band: share of the frame either side
+export const HALF_WIDTH = { high: 0.08, medium: 0.13, low: 0.2 };
+function narrowed(low, high, pos, half) {
   const w = high - low;
   const centre = low + w * pos;
   const r = v => Math.round(v / 100) * 100;
-  return { low: r(Math.max(low, centre - w * 0.2)), high: r(Math.min(high, centre + w * 0.2)) };
+  return { low: r(Math.max(low, centre - w * half)), high: r(Math.min(high, centre + w * half)), centre: roundNice(centre) };
 }
 
-// Adds factors, position, narrowed range and closest cases to an ICO
-// exposure object built by buildExposureForFix().
-export function refineExposure(exposure, fix, sector, assessment) {
+// What we know about this finding, and what would tighten the figure
+export const TIGHTEN = {
+  listSize:       'How many people are on your marketing list',
+  turnover:       'Your approximate annual turnover',
+  history:        'Any complaints or regulator contact in the last two years',
+  consentRecords: 'Whether you keep a dated record of each opt-in',
+  assess:         'Let AI read the finding for facts that move the figure',
+};
+export function confidenceFor(fix, inputs = {}, assessment = null) {
+  const known = {
+    listSize: !!volumeFor(fix, inputs, assessment),
+    turnover: !!inputs.turnover,
+    history: inputs.regulatorContact != null && inputs.complaints != null,
+    consentRecords: CONSENT_AREAS.includes(areaOf(fix.fixType)) ? inputs.consentRecords != null : true,
+    assess: !!assessment,
+  };
+  const n = Object.values(known).filter(Boolean).length;
+  // AI reading is a bonus: a complete profile alone reaches high
+  const level = n >= 4 ? 'high' : n >= 2 ? 'medium' : 'low';
+  const tighten = Object.keys(known).filter(k => !known[k]).map(k => ({ key: k, label: TIGHTEN[k] }));
+  return { level, known: n, of: 5, tighten };
+}
+
+// Adds factors, position, narrowed range, most-likely figure, confidence
+// and closest cases to an ICO exposure object built by buildExposureForFix().
+export function refineExposure(exposure, fix, sector, assessment, inputs = {}) {
   if (!exposure || exposure.category !== 'ICO' || !exposure.hasRange) return exposure;
-  const rules = ruleFactors(fix, sector);
-  const ai = (assessment?.factors || []).filter(f => FACTORS[f.id]);
-  const all = [...rules.map(f => ({ ...f, source: 'rule' })), ...ai.map(f => ({ id: f.id, evidence: f.quote, source: 'ai' }))];
+  const rules = ruleFactors(fix, sector, inputs, assessment, exposure.revenueBand);
+  let ai = (assessment?.factors || []).filter(f => FACTORS[f.id]);
+  // Complaints confirmed on the profile replace the AI's reading of them
+  if (rules.some(f => f.id === 'complaints_received')) ai = ai.filter(f => f.id !== 'complaints_mentioned');
+  const all = [...rules.map(f => ({ ...f, source: FACTORS[f.id].source === 'profile' ? 'profile' : 'rule' })), ...ai.map(f => ({ id: f.id, evidence: f.quote, source: 'ai' }))];
   const ids = [...new Set(all.map(f => f.id))];
-  // No evidence either way: show the full published-case frame
   const position = ids.length ? positionFrom(ids) : 0.5;
-  const n = ids.length ? narrowed(exposure.realisticLow, exposure.realisticHigh, position) : { low: exposure.realisticLow, high: exposure.realisticHigh };
+  const conf = confidenceFor(fix, inputs, assessment);
+  const n = narrowed(exposure.realisticLow, exposure.realisticHigh, position, HALF_WIDTH[conf.level]);
+  const vol = volumeFor(fix, inputs, assessment);
   return {
     ...exposure,
     frameLow: exposure.realisticLow,
@@ -649,12 +775,71 @@ export function refineExposure(exposure, fix, sector, assessment) {
     realisticLow: n.low,
     realisticHigh: n.high,
     midpoint: Math.round((n.low + n.high) / 2),
+    mostLikely: n.centre,
+    confidence: conf.level,
+    confidenceKnown: conf.known,
+    confidenceOf: conf.of,
+    tighten: conf.tighten,
     position: Math.round(position * 100) / 100,
     factors: all.map(f => ({ id: f.id, label: FACTORS[f.id].label, direction: FACTORS[f.id].weight > 0 ? 'up' : 'down', evidence: f.evidence, source: f.source })),
-    closestCases: closestCases(fix.fixType, fix.contactVolume || fix.processingContext?.contactVolume),
+    closestCases: closestCases(fix.fixType, vol?.count),
     basis: ai.length ? 'assessed' : ids.length ? 'rules' : 'standard',
     aiSummary: assessment?.summary || '',
-    rangeLabel: 'Comparable published cases · adjusted for your evidence · not a prediction · not legal advice',
+    rangeLabel: 'Comparable published cases · adjusted for your evidence and profile · not a prediction · not legal advice',
+  };
+}
+
+// ── Commercial cost of ASA and CMA findings (v1.1) ──
+// Worked out only from the customer's own campaign figures. Each
+// assumption is shown with the figure. Never a fine, never added to
+// regulatory exposure. Assumptions are for the founder to review.
+export const COMMERCIAL_ASSUMPTIONS = {
+  reworkShare: 0.10,     // redoing and re-approving the creative, share of campaign budget
+  reworkMin: 500,
+  salesLost: { low: 0.25, likely: 0.5, high: 0.75 },   // share of expected sales lost if the ad is pulled
+  refunded:  { low: 0.05, likely: 0.15, high: 0.30 },  // share of campaign revenue refunded or compensated
+};
+export function marketingCost(category, inputs = {}, campaign = {}) {
+  if (category !== 'ASA' && category !== 'CMA') return null;
+  const A = COMMERCIAL_ASSUMPTIONS;
+  const own = num(campaign?.campaignBudget) || num(campaign?.campaignRevenue);
+  const budget = num(campaign?.campaignBudget) || inputs.campaignBudget || null;
+  const revenue = num(campaign?.campaignRevenue) || inputs.campaignRevenue || null;
+  const pct = x => `${Math.round(x * 100)}%`;
+  const base = {
+    category, budget, revenue,
+    source: own ? 'campaign' : 'profile',
+    label: category === 'ASA' ? 'If this ad had to be withdrawn' : 'If customers had to be refunded',
+    disclaimer: COMMERCIAL_DISCLAIMER,
+  };
+  if (category === 'ASA') {
+    const needs = [!budget && 'campaignBudget', !revenue && 'campaignRevenue'].filter(Boolean);
+    if (!budget && !revenue) return { ...base, available: false, needs };
+    const rework = budget ? Math.max(A.reworkMin, budget * A.reworkShare) : 0;
+    const lost = k => revenue ? revenue * A.salesLost[k] : 0;
+    const lines = [];
+    if (budget) lines.push({ label: 'Redoing and re-approving the ad', amount: roundNice(rework), basis: `${pct(A.reworkShare)} of the campaign budget` });
+    if (revenue) lines.push({ label: 'Sales lost if it is pulled partway through', amount: roundNice(lost('likely')), basis: `${pct(A.salesLost.likely)} of expected campaign sales (${pct(A.salesLost.low)} if pulled late, ${pct(A.salesLost.high)} if early)` });
+    return { ...base, available: true, needs, lines,
+      low: roundNice(rework + lost('low')), mostLikely: roundNice(rework + lost('likely')), high: roundNice(rework + lost('high')) };
+  }
+  if (!revenue) return { ...base, available: false, needs: ['campaignRevenue'] };
+  const r = k => revenue * A.refunded[k];
+  return { ...base, available: true, needs: [],
+    lines: [{ label: 'Refunds or compensation to customers who bought', amount: roundNice(r('likely')), basis: `${pct(A.refunded.likely)} of campaign revenue (range ${pct(A.refunded.low)} to ${pct(A.refunded.high)})` }],
+    low: roundNice(r('low')), mostLikely: roundNice(r('likely')), high: roundNice(r('high')) };
+}
+export function marketingCostTotals(fixes) {
+  const list = fixes.map(f => f.exposure?.marketingCost).filter(Boolean);
+  const ok = list.filter(m => m.available);
+  return {
+    count: list.length,
+    priced: ok.length,
+    needInputs: list.length - ok.length,
+    low: ok.reduce((s, m) => s + m.low, 0),
+    mostLikely: ok.reduce((s, m) => s + m.mostLikely, 0),
+    high: ok.reduce((s, m) => s + m.high, 0),
+    disclaimer: COMMERCIAL_DISCLAIMER,
   };
 }
 
@@ -672,13 +857,20 @@ export function clusterExposure(fixes) {
     const lead = sorted[0].exposure, rest = sorted.slice(1);
     const low  = Math.min(lead.realisticLow  * 2, lead.realisticLow  + 0.25 * rest.reduce((s, f) => s + f.exposure.realisticLow, 0));
     const high = Math.min(lead.realisticHigh * 2, lead.realisticHigh + 0.25 * rest.reduce((s, f) => s + f.exposure.realisticHigh, 0));
-    return { area, label: AREAS[area]?.label || 'Other data protection', low: Math.round(low), high: Math.round(high), count: list.length, leadFixId: sorted[0].id, fixIds: list.map(f => f.id) };
+    const likely = Math.min(lead.mostLikely * 2, lead.mostLikely + 0.25 * rest.reduce((s, f) => s + (f.exposure.mostLikely || 0), 0));
+    const confidence = worstConfidence(list.map(f => f.exposure.confidence));
+    return { area, label: AREAS[area]?.label || 'Other data protection', low: Math.round(low), high: Math.round(high), mostLikely: roundNice(likely || (low + high) / 2), confidence, count: list.length, leadFixId: sorted[0].id, fixIds: list.map(f => f.id) };
   }).sort((a, b) => b.high - a.high);
   return {
     clusters,
     totalLow:  clusters.reduce((s, c) => s + c.low, 0),
     totalHigh: clusters.reduce((s, c) => s + c.high, 0),
+    totalMostLikely: clusters.reduce((s, c) => s + c.mostLikely, 0),
+    confidence: clusters.length ? worstConfidence(clusters.map(c => c.confidence)) : null,
   };
+}
+function worstConfidence(levels) {
+  return ['low', 'medium', 'high'].find(l => levels.includes(l)) || 'low';
 }
 const mid = c => (c.totalLow + c.totalHigh) / 2;
 
@@ -752,7 +944,7 @@ export function reductionTips(exposure) {
 
 // ── Format one Compliance_Fixes record for the API ──
 const safeParse = (raw) => { try { return raw ? JSON.parse(raw) : null; } catch { return null; } };
-export function formatFixRecord(r, revenueBand, sector) {
+export function formatFixRecord(r, revenueBand, sector, inputs = {}) {
   const f = r.fields || {};
   const fixType = (f.FixType || '').toLowerCase();
   const processingContext = safeParse(f.ProcessingContext);
@@ -782,7 +974,11 @@ export function formatFixRecord(r, revenueBand, sector) {
   const assessment = safeParse(f.AssessmentJson);
   const hash = evidenceHash(fix, { sector, revenueBand: normaliseBand(revenueBand) });
   const current = assessment && f.EvidenceHash === hash ? assessment : null;
-  fix.exposure = refineExposure(base, fix, sector, current);
+  fix.exposure = refineExposure(base, fix, sector, current, inputs || {});
+  if (base.category === 'ASA' || base.category === 'CMA') {
+    fix.campaignInputs = safeParse(f.CommercialInputs) || null;
+    fix.exposure = { ...fix.exposure, marketingCost: marketingCost(base.category, inputs || {}, fix.campaignInputs || {}) };
+  }
   fix.assessment = current ? { assessedAt: assessment.assessedAt || null, confidence: assessment.confidence || null } : null;
   fix.assessmentStale = !!(assessment && !current);
   return fix;

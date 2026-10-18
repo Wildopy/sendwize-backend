@@ -1,5 +1,11 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — profile.js v6.4
+// SENDWIZE — profile.js v6.5
+// v6.5: fields that sharpen exposure figures: annualTurnover, listSize,
+//       consentRecords (all|some|none), priorRegulatorContact and
+//       complaintsReceived (Yes|No), typicalCampaignBudget and
+//       typicalCampaignRevenue. An exact turnover also sets RevenueBand.
+//       Sector accepts the values the profile page sends (health,
+//       general, gambling were rejected before).
 // v6.4 (security): every request authenticated via _auth.js; the
 //       verified member id replaces any userId from the browser.
 // v6.3: Added CPL (Number) field — cost per lead/subscriber.
@@ -8,6 +14,10 @@
 // ─────────────────────────────────────────────────────────────
 import { atFetch } from './_airtable.js';
 import { requireAuth, CORS_HEADERS } from './_auth.js';
+import { bandFromTurnover, BAND_LABELS, CONSENT_RECORDS } from './_exposure.js';
+
+const posNum = v => (typeof v === 'number' && Number.isFinite(v) && v > 0 && v < 1e12) ? Math.round(v) : null;
+const yesNo  = v => (v === 'Yes' || v === 'No') ? v : null;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -65,6 +75,14 @@ function fmt(record, userId) {
     onboardingComplete: f.OnboardingComplete || false,
     averageOrderValue:  f.AverageOrderValue  || null,
     cpl:                f.CPL                || null,   // v6.3 — cost per lead, feeds Financial Hero Block
+    // v6.5 — sharpen exposure figures
+    annualTurnover:        f.AnnualTurnover         || null,
+    listSize:              f.ListSize               || null,
+    consentRecords:        f.ConsentRecords         || null,
+    priorRegulatorContact: f.PriorRegulatorContact  || null,
+    complaintsReceived:    f.ComplaintsReceived     || null,
+    typicalCampaignBudget: f.TypicalCampaignBudget  || null,
+    typicalCampaignRevenue:f.TypicalCampaignRevenue || null,
   };
 }
 
@@ -125,17 +143,24 @@ async function handleGet(req, res) {
 
 async function handleSave(req, res) {
   // v6.3: added cpl to destructure
-  const { userId, revenueBand, sector, businessSize, emailVolume, email, onboardingComplete, averageOrderValue, cpl } = req.body ?? {};
+  const { userId, sector, businessSize, emailVolume, email, onboardingComplete, averageOrderValue, cpl,
+          annualTurnover, listSize, consentRecords, priorRegulatorContact, complaintsReceived,
+          typicalCampaignBudget, typicalCampaignRevenue } = req.body ?? {};
+  let { revenueBand } = req.body ?? {};
   if (!userId) return res.status(400).json({ error: 'userId is required' });
 
   const validRevenueBands = ['Under £1M', '£1M–£10M', '£10M–£50M', 'Over £50M'];
-  const validSectors      = ['ecommerce', 'agency', 'finance', 'healthcare', 'b2b', 'saas', 'media', 'charity', 'other'];
+  const validSectors      = ['ecommerce', 'agency', 'finance', 'healthcare', 'health', 'gambling', 'b2b', 'saas', 'media', 'charity', 'general', 'other'];
   const validSizes        = ['micro', 'smb', 'midmarket'];
   const validVolumes      = ['micro_send', 'small_send', 'medium_send', 'large_send', 'enterprise_send'];
   if (revenueBand  && !validRevenueBands.includes(revenueBand))  return res.status(400).json({ error: `Invalid revenueBand. Must be one of: ${validRevenueBands.join(', ')}` });
   if (sector       && !validSectors.includes(sector))            return res.status(400).json({ error: `Invalid sector. Must be one of: ${validSectors.join(', ')}` });
   if (businessSize && !validSizes.includes(businessSize))        return res.status(400).json({ error: `Invalid businessSize. Must be one of: ${validSizes.join(', ')}` });
   if (emailVolume  && !validVolumes.includes(emailVolume))       return res.status(400).json({ error: `Invalid emailVolume. Must be one of: ${validVolumes.join(', ')}` });
+  if (consentRecords && !CONSENT_RECORDS.includes(consentRecords)) return res.status(400).json({ error: `Invalid consentRecords. Must be one of: ${CONSENT_RECORDS.join(', ')}` });
+  // An exact turnover decides the band, so the two never disagree
+  const turnoverBand = bandFromTurnover(posNum(annualTurnover));
+  if (turnoverBand) revenueBand = BAND_LABELS[turnoverBand];
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID        = process.env.BASE_ID;
@@ -150,6 +175,13 @@ async function handleSave(req, res) {
     Email:              email              || null,
     AverageOrderValue:  (typeof averageOrderValue === 'number' && averageOrderValue > 0) ? averageOrderValue : null,
     CPL:                (typeof cpl === 'number' && cpl > 0) ? cpl : null,   // v6.3
+    AnnualTurnover:         posNum(annualTurnover),
+    ListSize:               posNum(listSize),
+    ConsentRecords:         consentRecords || null,
+    PriorRegulatorContact:  yesNo(priorRegulatorContact),
+    ComplaintsReceived:     yesNo(complaintsReceived),
+    TypicalCampaignBudget:  posNum(typicalCampaignBudget),
+    TypicalCampaignRevenue: posNum(typicalCampaignRevenue),
     ...(typeof onboardingComplete === 'boolean' ? { OnboardingComplete: onboardingComplete } : {}),
   };
   const fields = Object.fromEntries(
@@ -164,7 +196,7 @@ async function handleSave(req, res) {
     });
     if (!r.ok) {
       console.error('User_Profile patch failed after retries:', r.status);
-      return res.status(r.status).json({ error: 'Failed to save profile — please try again' });
+      return res.status(r.status).json({ error: r.status === 422 ? 'Some profile fields are missing in Airtable. Add the new User_Profile fields from the review guide.' : 'Failed to save profile — please try again' });
     }
     record = await r.json();
   } else {

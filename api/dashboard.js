@@ -1,6 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — dashboard.js v1.0
+// SENDWIZE — dashboard.js v1.1
 // GET /api/dashboard   (signed-in member)
+// v1.1: most-likely figure and confidence for ICO exposure; ASA/CMA
+//   commercial cost (marketingCost), kept apart from regulatory figures.
 //
 // Every figure on the dashboard in one response, all from the shared
 // exposure engine, so the numbers on screen always agree:
@@ -34,7 +36,12 @@ const slimFix = f => ({
   completionSource: f.completionSource, improvedOnRerun: f.improvedOnRerun,
   exposure: f.exposure ? {
     category: f.exposure.category, realisticLow: f.exposure.realisticLow, realisticHigh: f.exposure.realisticHigh,
+    mostLikely: f.exposure.mostLikely || null, confidence: f.exposure.confidence || null,
     basis: f.exposure.basis || null, referralRisk: f.exposure.referralRisk || null,
+    marketingCost: f.exposure.marketingCost ? {
+      available: f.exposure.marketingCost.available, label: f.exposure.marketingCost.label,
+      mostLikely: f.exposure.marketingCost.mostLikely || null, low: f.exposure.marketingCost.low || null, high: f.exposure.marketingCost.high || null,
+    } : null,
     referralRiskLabel: f.exposure.referralRiskLabel || null,
     factorCount: (f.exposure.factors || []).length,
   } : null,
@@ -97,6 +104,8 @@ export default async function handler(req, res) {
       exposure: {
         totalLow: fx.exposure?.totalLow || 0,
         totalHigh: fx.exposure?.totalHigh || 0,
+        totalMostLikely: fx.exposure?.totalMostLikely || 0,
+        confidence: fx.exposure?.confidence || null,
         clusters: fx.exposure?.clusters || [],
         likelihood: fx.exposure?.likelihood || null,
         asaPending: fx.categoryCounts?.pending?.asa || 0,
@@ -108,6 +117,7 @@ export default async function handler(req, res) {
       },
       riskAddressed: fx.riskAddressed || null,
       commercial: fx.commercial || null,
+      marketingCost: fx.marketingCost || null,
       alreadyLost: hero && !hero._error ? { amount: hero.lost || 0, isEstimate: !!hero.lostIsEstimate, excessUnsubs12mo: hero.excessUnsubs12mo || 0, cplUsed: hero.cplUsed || null, commercialAtRisk: hero.commercialAtRisk || 0 } : null,
       consentExpiry: expiry && !expiry._error ? { in30: expiry.expiringIn30 || 0, in60: expiry.expiringIn60 || 0, in90: expiry.expiringIn90 || 0, source: expiry.source || null } : null,
       listValue: listValue && !listValue._error ? { hasData: !!listValue.hasData, total: listValue.unrealisedTotal || 0, top: (listValue.opportunities || []).slice(0, 3), basis: listValue.basis || '' } : null,

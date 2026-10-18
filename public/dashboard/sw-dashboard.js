@@ -43,6 +43,10 @@
   function gbp(n) { n = Math.round(Number(n) || 0); return '£' + n.toLocaleString('en-GB'); }
   function gbpK(n) { n = Number(n) || 0; return n >= 1e6 ? '£' + (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e4 ? '£' + Math.round(n / 1e3) + 'k' : gbp(n); }
   function range(lo, hi) { return lo === hi ? gbpK(hi) : gbpK(lo) + '–' + gbpK(hi); }
+  // "About £54k", the most likely figure; falls back to the band alone
+  function likely(ml, lo, hi) { return ml ? 'About ' + gbpK(ml) : range(lo, hi); }
+  var CONF = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' };
+  function confChip(c) { return c ? '<span class="sw-conf ' + esc(c) + '">' + esc(CONF[c] || c) + '</span>' : ''; }
   function date(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function nice(s) { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
   function $(sel, el) { return (el || root).querySelector(sel); }
@@ -181,13 +185,17 @@
     var other = [];
     if (e.asaPending) other.push(e.asaPending + ' advertising finding' + (e.asaPending > 1 ? 's' : '') + ' (ASA: published rulings, no fines)');
     if (e.cmaPending) other.push(e.cmaPending + ' consumer law finding' + (e.cmaPending > 1 ? 's' : '') + (e.cmaMax ? ' (CMA: ' + esc(e.cmaMax.label) + ')' : ''));
+    var mc = D.marketingCost;
+    if (mc && mc.count) other.push(mc.priced ? 'Commercial cost if ads were pulled or customers refunded: about <b>' + gbpK(mc.mostLikely) + '</b>' + (mc.needInputs ? ' (' + mc.needInputs + ' more need campaign figures)' : '') + '. Separate from fines.'
+      : 'Add campaign figures to see the commercial cost of ' + mc.count + ' advertising or consumer law finding' + (mc.count > 1 ? 's' : '') + '.');
     var raV = st.raMode === 'month' ? ra.monthTotal : ra.allTotal;
     return '<div class="sw-grid sw-g-3" style="margin:0">' +
       '<div class="sw-ht red"><div class="sw-hl">Already lost</div>' + lost + '</div>' +
-      '<div class="sw-ht amber"><div class="sw-hl">Open regulatory exposure (ICO)</div><div class="sw-hn">' + (e.totalHigh ? range(e.totalLow, e.totalHigh) : '£0') + '</div>' +
+      '<div class="sw-ht amber"><div class="sw-hl">Open regulatory exposure (ICO)</div><div class="sw-hn">' + (e.totalHigh ? likely(e.totalMostLikely, e.totalLow, e.totalHigh) : '£0') + '</div>' +
+        (e.totalHigh && e.totalMostLikely ? '<div class="sw-hs">Likely ' + range(e.totalLow, e.totalHigh) + confChip(e.confidence) + '</div>' : '') +
         '<div class="sw-hs">Grouped the way a regulator would investigate. Comparable published cases, not a prediction.</div>' + lk +
         (other.length ? '<div class="sw-hs" style="margin-top:6px">' + other.join('<br>') + '</div>' : '') +
-        (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">Why this number?</button>' : '') + '</div>' +
+        (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">' + (e.confidence && e.confidence !== 'high' ? 'Why this number? Tighten it' : 'Why this number?') + '</button>' : '') + '</div>' +
       '<div class="sw-ht green"><div class="sw-hl">Risk addressed</div>' +
         '<div style="margin-top:4px"><button class="sw-tog' + (st.raMode === 'month' ? ' on' : '') + '" data-act="ra" data-m="month">This month</button><button class="sw-tog' + (st.raMode === 'all' ? ' on' : '') + '" data-act="ra" data-m="all">All time</button></div>' +
         '<div class="sw-hn">' + gbpK(raV || 0) + '</div>' +
@@ -197,7 +205,7 @@
   function clustersCard() {
     var cl = D.exposure.clusters || [];
     var body = cl.length ? cl.map(function (c) {
-      return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(c.label) + '</div><div class="sw-row-s">' + c.count + ' finding' + (c.count > 1 ? 's' : '') + '</div></div><div class="sw-row-v">' + range(c.low, c.high) + '</div><button class="sw-link" data-act="why" data-id="' + esc(c.leadFixId) + '">Why?</button></div>';
+      return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(c.label) + '</div><div class="sw-row-s">' + c.count + ' finding' + (c.count > 1 ? 's' : '') + '</div></div><div class="sw-row-v">' + likely(c.mostLikely, c.low, c.high) + (c.mostLikely ? '<div class="sw-row-s">' + range(c.low, c.high) + '</div>' : '') + '</div><button class="sw-link" data-act="why" data-id="' + esc(c.leadFixId) + '">Why?</button></div>';
     }).join('') : '<div class="sw-empty">No open data protection findings.</div>';
     return '<div class="sw-card sw-pad"><div class="sw-lbl">Exposure by area</div>' + body +
       (D.exposure.duaaWarning ? '<div class="sw-note" style="margin-top:10px">' + esc(D.exposure.duaaWarning) + '</div>' : '') + '</div>';
@@ -219,9 +227,13 @@
   function expLine(f) {
     var e = f.exposure;
     if (!e) return '';
-    if (e.category === 'ICO' && e.realisticHigh) return '<div class="sw-fx-exp"><span class="sw-badge ico">ICO</span> <span class="sw-fx-range">' + range(e.realisticLow, e.realisticHigh) + '</span>' + (e.basis === 'assessed' ? ' <span class="sw-badge est">AI-assessed</span>' : '') + ' <button class="sw-link" data-act="why" data-id="' + esc(f.id) + '">Why?</button></div>';
-    if (e.category === 'ASA') return '<div class="sw-fx-exp"><span class="sw-badge asa">ASA</span> Published ruling risk, no fine</div>';
-    if (e.category === 'CMA') return '<div class="sw-fx-exp"><span class="sw-badge cma">CMA</span> Statutory maximum applies</div>';
+    if (e.category === 'ICO' && e.realisticHigh) return '<div class="sw-fx-exp"><span class="sw-badge ico">ICO</span> <span class="sw-fx-range">' + likely(e.mostLikely, e.realisticLow, e.realisticHigh) + (e.mostLikely ? ' (' + range(e.realisticLow, e.realisticHigh) + ')' : '') + '</span>' + (e.basis === 'assessed' ? ' <span class="sw-badge est">AI-assessed</span>' : '') + ' <button class="sw-link" data-act="why" data-id="' + esc(f.id) + '">Why?</button></div>';
+    if (e.category === 'ASA' || e.category === 'CMA') {
+      var m = e.marketingCost;
+      var head = e.category === 'ASA' ? '<span class="sw-badge asa">ASA</span> Published ruling risk, no fine' : '<span class="sw-badge cma">CMA</span> Statutory maximum applies';
+      var cost = m && m.available ? ' · ' + esc(m.label) + ': about ' + gbpK(m.mostLikely) : '';
+      return '<div class="sw-fx-exp">' + head + cost + ' <button class="sw-link" data-act="why" data-id="' + esc(f.id) + '">' + (m && !m.available ? 'Add campaign figures' : 'Why?') + '</button></div>';
+    }
     if (e.category === 'Commercial') return '<div class="sw-fx-exp"><span class="sw-badge est">Commercial</span> ' + (e.realisticHigh ? range(e.realisticLow, e.realisticHigh) + ' revenue' : 'Revenue impact') + '</div>';
     return '';
   }
@@ -354,14 +366,16 @@
     if (e.category === 'ICO' && e.realisticHigh) {
       var span = (e.frameHigh - e.frameLow) || 1;
       var l = ((e.realisticLow - e.frameLow) / span) * 100, w = ((e.realisticHigh - e.realisticLow) / span) * 100;
-      h += '<div class="sw-dr-sec"><div class="sw-hn">' + range(e.realisticLow, e.realisticHigh) + '</div>' +
-        '<div class="sw-hs">' + ({ assessed: 'Narrowed using rules and an AI reading of your evidence.', rules: 'Narrowed using facts we hold about this finding.', standard: 'Full range for comparable published cases. No evidence yet to narrow it.' }[e.basis] || '') + '</div>' +
+      h += '<div class="sw-dr-sec"><div class="sw-hn">' + likely(e.mostLikely, e.realisticLow, e.realisticHigh) + confChip(e.confidence) + '</div>' +
+        (e.mostLikely ? '<div class="sw-hs">Most likely figure. Likely range ' + range(e.realisticLow, e.realisticHigh) + '.</div>' : '') +
+        '<div class="sw-hs">' + ({ assessed: 'Placed using your profile, rules and an AI reading of your evidence.', rules: 'Placed using your profile and facts we hold about this finding.', standard: 'Middle of the published-case range. Add the details below to place it more precisely.' }[e.basis] || '') + '</div>' +
         '<div class="sw-frame"><i style="left:' + Math.max(0, l).toFixed(1) + '%;width:' + Math.max(2, w).toFixed(1) + '%"></i></div>' +
         '<div class="sw-frame-l"><span>' + gbpK(e.frameLow) + '</span><span>Published-case range for your size and sector</span><span>' + gbpK(e.frameHigh) + '</span></div></div>';
+      h += tightenForm(e, x, f.id);
       var fac = e.factors || [];
       h += '<div class="sw-dr-sec"><div class="sw-lbl">What moved it</div>' + (fac.length ? fac.map(function (q) {
-        return '<div class="sw-fac"><span class="sw-fac-ic ' + (q.direction === 'up' ? 'up' : 'down') + '">' + (q.direction === 'up' ? '↑' : '↓') + '</span><div>' + esc(q.label) + '<span class="sw-src' + (q.source === 'ai' ? ' ai' : '') + '">' + (q.source === 'ai' ? 'AI' : 'Rule') + '</span>' + (q.evidence ? '<div class="sw-fac-ev">“' + esc(q.evidence) + '”</div>' : '') + '</div></div>';
-      }).join('') : '<div class="sw-empty">Nothing yet. The figure stays at the full published range until there is evidence.</div>') + '</div>';
+        return '<div class="sw-fac"><span class="sw-fac-ic ' + (q.direction === 'up' ? 'up' : 'down') + '">' + (q.direction === 'up' ? '↑' : '↓') + '</span><div>' + esc(q.label) + '<span class="sw-src' + (q.source === 'ai' ? ' ai' : '') + '">' + (q.source === 'ai' ? 'AI' : q.source === 'profile' ? 'Profile' : 'Rule') + '</span>' + (q.evidence ? '<div class="sw-fac-ev">“' + esc(q.evidence) + '”</div>' : '') + '</div></div>';
+      }).join('') : '<div class="sw-empty">Nothing yet. The figure sits in the middle of the published range until there is evidence.</div>') + '</div>';
       if (e.aiSummary) h += '<div class="sw-dr-sec"><div class="sw-lbl">In plain English</div><div class="sw-hs">' + esc(e.aiSummary) + '</div></div>';
       if (x.canAssess) h += '<div class="sw-dr-sec">' + (x.assessment ? '<div class="sw-note">AI read this evidence on ' + esc(date(x.assessment.assessedAt)) + ' (' + esc(x.assessment.confidence) + ' confidence).</div>' : x.assessmentStale ? '<div class="sw-note">The evidence has changed since the last AI reading.</div>' : '') +
         '<button class="sw-wide-btn" data-act="assess" data-id="' + esc(f.id) + '">' + (x.assessment ? 'Re-assess with AI' : 'Assess with AI') + '</button><div class="sw-note" style="margin-top:6px">AI can only pick from a fixed list of factors, and each must quote your evidence word for word. It never writes the number.</div></div>';
@@ -373,13 +387,81 @@
       h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(e.rangeLabel || '') + '. Legal maximum: ' + esc(x.legalMax) + '. ' + esc(x.duaaWarning || '') + '</div></div>';
     } else if (e.category === 'ASA') {
       h += '<div class="sw-dr-sec"><div class="sw-hs">The ASA does not fine. The risk is an upheld ruling published under your brand name.</div>' + (e.referralNote ? '<div class="sw-note" style="margin-top:8px">' + esc(e.referralNote) + '</div>' : '') + '</div>';
+      h += costSection(e.marketingCost, x, f.id);
     } else if (e.category === 'CMA') {
       h += '<div class="sw-dr-sec"><div class="sw-hs">Under the DMCCA 2024 the CMA can fine directly. We show the statutory maximum for your size only, because there are not yet enough published cases to estimate a realistic range.</div>' + (D && D.exposure.cmaMax ? '<div class="sw-note" style="margin-top:8px">' + esc(D.exposure.cmaMax.label) + '</div>' : '') + '</div>';
+      h += costSection(e.marketingCost, x, f.id);
     } else {
       h += '<div class="sw-dr-sec"><div class="sw-hs">This is a commercial figure (lost revenue), shown separately and never added to regulatory exposure.</div></div>';
     }
     h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(x.disclaimer || '') + '</div></div>';
     drawer.innerHTML = h;
+  }
+
+  // Only the details we don't have yet, so the figure can be placed more precisely
+  function tightenForm(e, x, fixId) {
+    var need = (e.tighten || []).filter(function (t) { return t.key !== 'assess'; });
+    if (!need.length) return '';
+    var inp = (x.profile && x.profile.inputs) || {};
+    function yn(id, label, v) {
+      return '<div class="sw-tf"><label for="' + id + '">' + label + '</label><select id="' + id + '"><option value="">Choose</option><option' + (v === true ? ' selected' : '') + '>Yes</option><option' + (v === false ? ' selected' : '') + '>No</option></select></div>';
+    }
+    var fields = need.map(function (t) {
+      if (t.key === 'listSize') return '<div class="sw-tf"><label for="sw-t-list">How many people are on your marketing list?</label><input id="sw-t-list" type="number" min="1" inputmode="numeric" placeholder="e.g. 25000"></div>';
+      if (t.key === 'turnover') return '<div class="sw-tf"><label for="sw-t-turn">Approximate annual turnover (£)</label><input id="sw-t-turn" type="number" min="1" inputmode="numeric" placeholder="e.g. 3500000"></div>';
+      if (t.key === 'consentRecords') return '<div class="sw-tf"><label for="sw-t-cons">Do you keep a dated record of each opt-in?</label><select id="sw-t-cons"><option value="">Choose</option><option value="all">Yes, for everyone</option><option value="some">For some contacts</option><option value="none">No</option></select></div>';
+      if (t.key === 'history') return yn('sw-t-comp', 'Complaints from recipients in the last two years?', inp.complaints) + yn('sw-t-reg', 'Any contact from the ICO, ASA or CMA in the last two years?', inp.regulatorContact);
+      return '';
+    }).join('');
+    return '<div class="sw-dr-sec"><div class="sw-lbl">Tighten this figure</div><div class="sw-hs">Answer what you can. It is saved to your profile and sharpens every figure.</div>' + fields +
+      '<button class="sw-wide-btn" data-act="save-tighten" data-id="' + esc(fixId) + '" style="margin-top:12px">Update the figure</button></div>';
+  }
+
+  // ASA / CMA: what the finding could cost the business, from its own campaign figures
+  function costSection(m, x, fixId) {
+    if (!m) return '';
+    var ci = x.campaignInputs || {};
+    var h = '<div class="sw-dr-sec"><div class="sw-lbl">Commercial cost</div>';
+    if (m.available) {
+      h += '<div class="sw-hn">About ' + gbpK(m.mostLikely) + '</div><div class="sw-hs">' + esc(m.label) + '. Likely ' + range(m.low, m.high) + '.</div>' +
+        (m.lines || []).map(function (l) { return '<div class="sw-cost-l"><span>' + esc(l.label) + '<div class="sw-note">' + esc(l.basis) + '</div></span><b>' + gbpK(l.amount) + '</b></div>'; }).join('') +
+        '<div class="sw-note" style="margin-top:6px">Worked out from ' + (m.source === 'campaign' ? 'the figures you gave for this campaign' : 'your usual campaign figures') + '. Never added to regulatory exposure.</div>';
+    } else {
+      h += '<div class="sw-hs">Add this campaign’s figures to see what it could cost ' + (m.category === 'ASA' ? 'if the ad had to be withdrawn' : 'if customers had to be refunded') + '.</div>';
+    }
+    h += '<div class="sw-tf"><label for="sw-c-bud">Campaign budget (£)</label><input id="sw-c-bud" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignBudget || m.budget || '') + '" placeholder="Media and creative, e.g. 8000"></div>' +
+      '<div class="sw-tf"><label for="sw-c-rev">Expected sales from the campaign (£)</label><input id="sw-c-rev" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignRevenue || m.revenue || '') + '" placeholder="e.g. 40000"></div>' +
+      '<button class="sw-wide-btn" data-act="save-campaign" data-id="' + esc(fixId) + '" style="margin-top:12px">' + (m.available ? 'Update' : 'Show the cost') + '</button>' +
+      '<div class="sw-note" style="margin-top:6px">' + esc(m.disclaimer || '') + '</div></div>';
+    return h;
+  }
+
+  function val(id) { var el = drawer.querySelector('#' + id); return el ? el.value.trim() : ''; }
+
+  async function saveTighten(fixId, btn) {
+    var body = { userId: userId }, n;
+    if ((n = parseFloat(val('sw-t-list'))) > 0) body.listSize = n;
+    if ((n = parseFloat(val('sw-t-turn'))) > 0) body.annualTurnover = n;
+    if (val('sw-t-cons')) body.consentRecords = val('sw-t-cons');
+    if (val('sw-t-comp')) body.complaintsReceived = val('sw-t-comp');
+    if (val('sw-t-reg')) body.priorRegulatorContact = val('sw-t-reg');
+    if (Object.keys(body).length < 2) { toast('Answer at least one question', 'er'); return; }
+    btn.disabled = true; btn.textContent = 'Updating…';
+    try {
+      await api('/api/profile?action=save', { method: 'POST', body: body });
+      await why(fixId); toast('Figure updated', 'ok'); refreshQuiet();
+    } catch (e) { btn.disabled = false; btn.textContent = 'Update the figure'; toast(e.message, 'er'); }
+  }
+
+  async function saveCampaign(fixId, btn) {
+    var b = parseFloat(val('sw-c-bud')) || null, r = parseFloat(val('sw-c-rev')) || null;
+    if (!b && !r) { toast('Enter a budget or expected sales', 'er'); return; }
+    var label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Working it out…';
+    try {
+      drawWhy(await api('/api/exposure?action=inputs', { method: 'POST', body: { userId: userId, fixId: fixId, campaignBudget: b, campaignRevenue: r } }));
+      toast('Cost updated', 'ok'); refreshQuiet();
+    } catch (e) { btn.disabled = false; btn.textContent = label; toast(e.message, 'er'); }
   }
 
   async function assess(fixId, btn) {
@@ -460,6 +542,8 @@
       case 'why': why(id); break;
       case 'close': closeLayers(); break;
       case 'assess': assess(id, t); break;
+      case 'save-tighten': saveTighten(id, t); break;
+      case 'save-campaign': saveCampaign(id, t); break;
       case 'done': complete(id, t.getAttribute('data-src'), t); break;
       case 'dismiss': dismissModal(id); break;
       case 'do-dismiss': var r = overlay.querySelector('input[name=sw-dis]:checked'); if (r) dismiss(id, r.value, t); break;

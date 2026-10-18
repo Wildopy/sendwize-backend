@@ -1,5 +1,10 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — fixes.js v7.0
+// SENDWIZE — fixes.js v7.1
+// v7.1: profile inputs (exact turnover, list size, opt-in records,
+//   complaint history) sharpen every ICO figure; an exact turnover
+//   overrides the band. Adds mostLikely + confidence to the totals and
+//   marketingCost (ASA/CMA commercial cost, from the customer's own
+//   campaign figures) alongside, never added to regulatory exposure.
 // v7.0: exposure constants, ranges and the score moved to _exposure.js
 //   (shared with generate-fix, exposure-summary and dashboard, so every
 //   figure agrees). Each ICO range is now refined by the evidence held
@@ -74,13 +79,14 @@ import {
   normaliseBand, normaliseSector, getRealisticMidpoint, buildExposureForFix,
   refineExposure, evidenceHash, clusterExposure, riskAddressed, computeScore,
   attentionLikelihood, cmaStatutoryMax, DISMISS_REASONS, formatFixRecord,
+  profileContext, marketingCostTotals,
   ICO_LEGAL_MAX, NOT_LEGAL_ADVICE, COMMERCIAL_DISCLAIMER, DUAA_WARNING,
 } from './_exposure.js';
 
 // ── FORMAT FIX ────────────────────────────────────────────────
 // v7.0: lives in _exposure.js (formatFixRecord) so dashboard.js and
 // exposure.js format fixes identically.
-const formatFix = (r, revenueBand, sector) => formatFixRecord(r, revenueBand, sector);
+const formatFix = (r, revenueBand, sector, inputs) => formatFixRecord(r, revenueBand, sector, inputs);
 
 // ── GET ───────────────────────────────────────────────────────
 async function handleGet(req, res) {
@@ -94,6 +100,7 @@ async function handleGet(req, res) {
   let revenueBand  = revenueBandParam ? normaliseBand(revenueBandParam) : null;
   let sector       = 'general';
   let profileFields = null;
+  let inputs       = {};
 
   const fixesPromise = atFetch(
     `${base}/Compliance_Fixes?filterByFormula={UserID}='${userId}'&sort[0][field]=CreatedDate&sort[0][direction]=desc`,
@@ -117,8 +124,10 @@ async function handleGet(req, res) {
       const rec = pd.records?.[0] || null;
       if (rec) {
         profileFields = rec.fields;
-        if (!revenueBand) revenueBand = normaliseBand(rec.fields?.RevenueBand || 'under_1m');
-        sector = normaliseSector(rec.fields?.Sector || 'general');
+        const ctx = profileContext(rec.fields || {});
+        if (!revenueBand) revenueBand = ctx.revenueBand;
+        sector = ctx.sector;
+        inputs = ctx.inputs;
       }
     }
   } catch(e) { console.error('Profile parse failed (non-fatal):', e); }
@@ -135,9 +144,9 @@ async function handleGet(req, res) {
   const completedReg = completed.filter(r => !isCommercial(r));
   const activeReg    = pendingReg.length + completedReg.length;
 
-  const pendingFormatted   = pending.map(r   => formatFix(r, revenueBand, sector));
-  const completedFormatted = completed.map(r => formatFix(r, revenueBand, sector));
-  const dismissedFormatted = dismissed.map(r => formatFix(r, revenueBand, sector));
+  const pendingFormatted   = pending.map(r   => formatFix(r, revenueBand, sector, inputs));
+  const completedFormatted = completed.map(r => formatFix(r, revenueBand, sector, inputs));
+  const dismissedFormatted = dismissed.map(r => formatFix(r, revenueBand, sector, inputs));
 
   // v7.0: severity-weighted score from the shared engine
   const scored = computeScore([...pendingFormatted, ...completedFormatted, ...dismissedFormatted]);
@@ -189,6 +198,8 @@ async function handleGet(req, res) {
       clusters:   openExposure.clusters,
       totalLow:   openExposure.totalLow,
       totalHigh:  openExposure.totalHigh,
+      totalMostLikely: openExposure.totalMostLikely,
+      confidence: openExposure.confidence,
       likelihood: attentionLikelihood(pendingFormatted, sector),
       cmaMax:     cmaStatutoryMax(revenueBand),
       basis:      'Comparable published cases, grouped the way a regulator would investigate them. Not a prediction. Not legal advice.',
@@ -204,6 +215,7 @@ async function handleGet(req, res) {
       legalMaxLabel: 'ICO statutory maximum (DUAA 2025)',
       duaaWarning:   DUAA_WARNING,
     },
+    marketingCost: marketingCostTotals(pendingFormatted),
     commercial: {
       totalLow:   Math.round(commercialLow),
       totalHigh:  Math.round(commercialHigh),
@@ -267,8 +279,7 @@ async function handleComplete(req, res) {
       const pd = await pr.json();
       const rec = pd.records?.[0];
       if (rec) {
-        revenueBand = normaliseBand(rec.fields?.RevenueBand || 'under_1m');
-        sector      = normaliseSector(rec.fields?.Sector || 'general');
+        ({ revenueBand, sector } = profileContext(rec.fields || {}));
       }
     }
   } catch(e) {}
