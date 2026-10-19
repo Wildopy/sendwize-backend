@@ -1,6 +1,10 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — exposure.js v1.1
+// SENDWIZE — exposure.js v1.2
 // "Why this number?" and AI exposure assessments.
+// v1.2: action=draft writes the ready-to-use fix for one finding (the
+//   steps plus text to paste: rewritten copy, consent wording, an email
+//   to a vendor). Cached on the fix in FixDraft (long text) when that
+//   field exists; works without it.
 // v1.1: the profile's turnover, list size, opt-in records and history
 //   sharpen the figure (see _exposure.js). Claude may also quote the
 //   audience size from the finding. New action=inputs saves a campaign's
@@ -10,6 +14,7 @@
 // POST /api/exposure?action=assess  { fixId }       member: Claude reads the evidence for one fix
 // POST /api/exposure?action=inputs { fixId, campaignBudget, campaignRevenue }
 //                                                   member: campaign figures for an ASA/CMA finding
+// POST /api/exposure?action=draft { fixId, fresh } member: ready-to-use fix for one finding
 // GET  /api/exposure?action=assess-pending          cron/internal: assess open ICO fixes in bulk
 //
 // Claude never writes a number. It may only pick factors from the fixed
@@ -111,6 +116,39 @@ async function assessAndStore(rec, profile) {
   return { fixId: rec.id, factors: assessment.factors.length };
 }
 
+// ── Claude: the ready-to-use fix for one finding ──
+async function draftFix(fix, profile) {
+  const schema = {
+    type: 'object',
+    properties: {
+      headline: { type: 'string', description: 'One sentence: what to change.' },
+      steps: { type: 'array', items: { type: 'string' }, description: 'Two to five short steps, in order, each one sentence.' },
+      paste_label: { type: 'string', description: 'What the paste text is, e.g. "Replacement subject line", "Sign-up form wording", "Email to your vendor".' },
+      paste_text: { type: 'string', description: 'Ready-to-use text the member can copy straight into their email, form, page or message. Plain text, no markdown.' },
+    },
+    required: ['headline', 'steps', 'paste_label', 'paste_text'],
+    additionalProperties: false,
+  };
+  const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
+    signal: AbortSignal.timeout(40000),
+    body: JSON.stringify({
+      max_tokens: 900,
+      system: `You help a UK SME marketing team close one finding from a compliance check. Write the practical fix: a one-line headline, two to five short steps, and one piece of ready-to-use text they can paste (rewritten copy, consent wording for a sign-up form, a suppression note, or an email asking a vendor for a data processing agreement, whichever fits). Base it only on the finding below. Where you need a detail you don't have (a brand name, a date, a price), leave a clear placeholder in [square brackets]. Plain British English, no jargon.\n\n${LEGAL_RULES}`,
+      messages: [{ role: 'user', content: `Finding type: ${fix.fixType}\nRegulator area: ${fix.exposure?.category || 'unknown'}\nFound by: ${fix.tool || 'a Sendwize check'}\nSeverity: ${fix.severity || 'unknown'}\nSector: ${profile.sector || 'not given'}\n\nFinding:\n<<<\n${String(fix.description || '').slice(0, 3000)}\n>>>` }],
+    }),
+  }, { effort: 'low', schema });
+  if (!r.ok) throw new Error(r.status === 422 ? 'Could not draft a fix for this finding' : `Claude ${r.status}`);
+  const a = parseJson((await r.json()).content?.[0]?.text, null);
+  if (!a || !a.paste_text) throw new Error('Could not draft a fix for this finding');
+  return {
+    headline: String(a.headline || '').slice(0, 300),
+    steps: (Array.isArray(a.steps) ? a.steps : []).slice(0, 5).map(x => String(x).slice(0, 300)),
+    pasteLabel: String(a.paste_label || 'Ready to paste').slice(0, 80),
+    pasteText: String(a.paste_text).slice(0, 4000),
+    draftedAt: new Date().toISOString(),
+  };
+}
+
 function explain(rec, profile) {
   const fix = formatFixRecord(rec, profile.revenueBand, profile.sector, profile.inputs);
   const e = fix.exposure || {};
@@ -204,7 +242,21 @@ export default async function handler(req, res) {
       return res.json(explain(fresh || rec, profile));
     }
 
-    return res.status(400).json({ error: 'Unknown action. Use ?action=explain|assess|inputs|assess-pending' });
+    if (req.method === 'POST' && action === 'draft') {
+      const cached = (() => { try { return JSON.parse(rec.fields.FixDraft || 'null'); } catch { return null; } })();
+      if (cached && cached.pasteText && !req.body?.fresh) return res.json({ success: true, draft: cached, cached: true, disclaimer: NOT_LEGAL_ADVICE });
+      if (!(await checkLimit(req, res, auth, 'fix_draft'))) return;
+      const fix = formatFixRecord(rec, profile.revenueBand, profile.sector, profile.inputs);
+      const draft = await draftFix(fix, profile);
+      // Best effort: the FixDraft field may not exist yet
+      await atFetch(`${base()}/Compliance_Fixes/${fixId}`, {
+        method: 'PATCH', headers: atH(),
+        body: JSON.stringify({ fields: { FixDraft: JSON.stringify(draft) } }),
+      }).catch(() => null);
+      return res.json({ success: true, draft, cached: false, disclaimer: NOT_LEGAL_ADVICE });
+    }
+
+    return res.status(400).json({ error: 'Unknown action. Use ?action=explain|assess|inputs|draft|assess-pending' });
   } catch (e) {
     console.error('exposure.js error:', e);
     return res.status(500).json({ error: e.message || 'Exposure error' });

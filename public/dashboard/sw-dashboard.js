@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   SENDWIZE — sw-dashboard.js v1.0  (browser)
+   SENDWIZE — sw-dashboard.js v1.1  (browser)
    The member dashboard, served from Vercel so the Webflow embed stays
    a few lines long. Needs sw-auth.js in the Webflow site head and
    sw-dashboard.css on the page. Renders into <div id="sw-dashboard">.
@@ -7,12 +7,21 @@
    Every figure comes from /api/dashboard (one call, shared exposure
    engine). "Why this number?" comes from /api/exposure. Briefing,
    campaigns and recent checks load after first paint.
+
+   v1.1: Case Twin (closest published case, side by side), fixes
+   grouped by risk area and expandable in place with a ready-to-use
+   fix, effort chips and Quick wins, What-if mode, clickable areas,
+   interactive score trend, animated figures and a small celebration
+   when a fix closes.
    ───────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
   var API = 'https://sendwize-backend.vercel.app';
   var root, userId, D = null;
-  var st = { filter: 'all', raMode: 'month', page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
+  var st = { filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
+  var drafts = {}, nums = {}, lastRing = null;
+  var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var AREA_LABELS = { consent: 'Marketing consent', suppression: 'Opt-outs and suppression', processors: 'Processors and data sharing', transparency: 'Transparency and identity', lawful_basis: 'Legitimate interests', ASA: 'Advertising claims (ASA)', CMA: 'Consumer law (CMA)', Commercial: 'Commercial', other: 'Other' };
 
   var TOOLS = [
     { k: 'verdict',   l: 'Send-day verdict', u: '/send-verdict.html', hot: true },
@@ -76,6 +85,48 @@
     clearTimeout(toastT); toastT = setTimeout(function () { t.className = 'sw-toast'; }, 3200);
   }
 
+  // ── motion: figures count to their new value, the ring fills ──
+  var FMT = { int: function (n) { return String(Math.round(n)); }, gbpK: gbpK, about: function (n) { return 'About ' + gbpK(n); } };
+  function cu(k, v, f) { return '<span class="sw-cu" data-k="' + k + '" data-v="' + (Number(v) || 0) + '" data-f="' + f + '">' + FMT[f](REDUCED ? v : nums[k] != null ? nums[k] : 0) + '</span>'; }
+  function animate() {
+    root.querySelectorAll('.sw-cu').forEach(function (el) {
+      var k = el.getAttribute('data-k'), to = +el.getAttribute('data-v'), fmt = FMT[el.getAttribute('data-f')];
+      var from = nums[k] != null ? nums[k] : 0;
+      nums[k] = to;
+      if (REDUCED || from === to) { el.textContent = fmt(to); return; }
+      var t0 = performance.now(), dur = 900;
+      (function step() {
+        var p = Math.min(1, (performance.now() - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt(from + (to - from) * e);
+        if (p < 1) requestAnimationFrame(step);
+      })();
+    });
+    var ring = $('#sw-ring-fg');
+    if (ring) {
+      var target = ring.getAttribute('data-to');
+      lastRing = +target;
+      requestAnimationFrame(function () { requestAnimationFrame(function () { ring.setAttribute('stroke-dashoffset', target); }); });
+    }
+  }
+
+  // Small burst of confetti from an element (skipped for reduced motion)
+  function celebrate(fromEl, big) {
+    if (REDUCED) return;
+    var r = fromEl && fromEl.isConnected ? fromEl.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
+    var box = document.createElement('div'); box.className = 'sw-confetti'; box.setAttribute('aria-hidden', 'true');
+    box.style.left = (r.left + r.width / 2) + 'px'; box.style.top = (r.top + r.height / 2) + 'px';
+    var cols = ['#EA7317', '#16a34a', '#ca8a04', '#7c3aed', '#0ea5e9'];
+    for (var i = 0, n = big ? 46 : 26; i < n; i++) {
+      var p = document.createElement('i'), a = Math.random() * Math.PI * 2, d = 60 + Math.random() * (big ? 160 : 100);
+      p.style.background = cols[i % cols.length];
+      p.style.setProperty('--x', Math.cos(a) * d + 'px'); p.style.setProperty('--y', (Math.sin(a) * d - 40) + 'px'); p.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+      p.style.animationDelay = (Math.random() * 80) + 'ms';
+      box.appendChild(p);
+    }
+    document.body.appendChild(box);
+    setTimeout(function () { box.remove(); }, 1400);
+  }
+
   // ── boot: wait for Memberstack ──
   function waitFor(test, ms) {
     return new Promise(function (resolve) {
@@ -117,7 +168,7 @@
     rotateVisits();
     var changed = whatChanged();
     root.innerHTML =
-      toolsNav() + changed +
+      toolsNav() + changed + twinCard() +
       '<div class="sw-grid sw-g-top">' + scoreCard() + heroTiles() + '</div>' +
       '<div class="sw-grid sw-g-2">' + clustersCard() + startHere() + '</div>' +
       '<div class="sw-grid sw-g-3">' + expiryCard() + briefingCard() + listValueCard() + '</div>' +
@@ -127,7 +178,7 @@
         ['ai', 'verdict', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Vendors', audience: 'Audience' }[k] + '</button>'; }).join('') +
       '</span></div><div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/profile.html')) + '">Your profile</a></div>';
-    drawSpark();
+    drawSpark(); animate();
   }
 
   function toolsNav() {
@@ -160,21 +211,42 @@
     var ch = s.change ? '<div class="sw-note" style="margin-bottom:6px">' + (s.change > 0 ? '▲ ' : '▼ ') + Math.abs(s.change) + ' since last snapshot</div>' : '';
     var n = D.counts || {};
     return '<div class="sw-card sw-sc"><div class="sw-lbl">Compliance score</div>' +
-      '<div class="sw-ring"><svg width="100" height="100" viewBox="0 0 100 100"><circle class="sw-ring-bg" cx="50" cy="50" r="44"/><circle class="sw-ring-fg" cx="50" cy="50" r="44" stroke="' + esc(s.colour || '#EA7317') + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"/></svg>' +
-      '<div class="sw-sc-num">' + (s.value || 0) + '<small>/ 100</small></div></div>' +
+      '<div class="sw-ring"><svg width="100" height="100" viewBox="0 0 100 100"><circle class="sw-ring-bg" cx="50" cy="50" r="44"/><circle class="sw-ring-fg" id="sw-ring-fg" cx="50" cy="50" r="44" stroke="' + esc(s.colour || '#EA7317') + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (REDUCED ? off : lastRing == null ? c : lastRing).toFixed(1) + '" data-to="' + off.toFixed(1) + '"/></svg>' +
+      '<div class="sw-sc-num">' + cu('score', s.value || 0, 'int') + '<small>/ 100</small></div></div>' +
       '<span class="sw-pill" style="background:' + esc(s.colour || '#EA7317') + '22;color:' + esc(s.colour || '#EA7317') + '">' + esc(s.band || '') + '</span>' + ch +
-      '<div class="sw-sc-counts"><div><div class="sw-scc-n">' + (n.pending || 0) + '</div><div class="sw-scc-l">Open</div></div><div><div class="sw-scc-n">' + (n.completed || 0) + '</div><div class="sw-scc-l">Fixed</div></div></div>' +
+      '<div class="sw-sc-counts"><div><div class="sw-scc-n">' + cu('open', n.pending || 0, 'int') + '</div><div class="sw-scc-l">Open</div></div><div><div class="sw-scc-n">' + cu('fixed', n.completed || 0, 'int') + '</div><div class="sw-scc-l">Fixed</div></div></div>' +
       '<div class="sw-note">' + esc(s.note) + '</div><div class="sw-spark" id="sw-spark"></div></div>';
   }
 
+  // Score trend: hover or tap a point to see what happened that day
   function drawSpark() {
     var el = $('#sw-spark'), pts = (D.score.trend || []).filter(function (p) { return typeof p.score === 'number'; });
     if (!el) return;
     if (pts.length < 2) { el.innerHTML = '<div class="sw-note">Your trend appears after a second day of activity.</div>'; return; }
-    var w = 200, h = 36, n = pts.length;
-    var xy = pts.map(function (p, i) { return [(i / (n - 1)) * w, h - 2 - (p.score / 100) * (h - 4)]; });
+    var w = 200, h = 44, n = pts.length, lo = Math.max(0, Math.min.apply(null, pts.map(function (p) { return p.score; })) - 5), hi = Math.min(100, Math.max.apply(null, pts.map(function (p) { return p.score; })) + 5);
+    if (hi - lo < 10) { hi = Math.min(100, lo + 10); lo = hi - 10; }
+    var xy = pts.map(function (p, i) { return [(i / (n - 1)) * w, h - 3 - ((p.score - lo) / (hi - lo)) * (h - 6)]; });
     var d = xy.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
-    el.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none" role="img" aria-label="Score over the last ' + n + ' snapshots"><path d="' + d + '" fill="none" stroke="#EA7317" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><div class="sw-note">Last ' + n + ' snapshots</div>';
+    el.innerHTML = '<div class="sw-trend"><svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none" role="img" aria-label="Score over the last ' + n + ' snapshots">' +
+      '<path d="' + d + ' L' + w + ' ' + h + ' L0 ' + h + ' Z" fill="rgba(234,115,23,.10)"/><path d="' + d + '" fill="none" stroke="#EA7317" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>' +
+      '<i class="sw-trend-dot" hidden></i><div class="sw-trend-tip" hidden></div></div><div class="sw-note">Last ' + n + ' snapshots · hover for what changed</div>';
+    var box = el.querySelector('.sw-trend'), dot = el.querySelector('.sw-trend-dot'), tip = el.querySelector('.sw-trend-tip');
+    function day(s) { return String(s || '').slice(0, 10); }
+    function at(x) {
+      var r = box.getBoundingClientRect(), i = Math.max(0, Math.min(n - 1, Math.round((x - r.left) / r.width * (n - 1)))), p = pts[i], k = day(p.date);
+      var ev = [];
+      (D.fixes.completed || []).forEach(function (f) { if (day(f.completedDate) === k) ev.push('Fixed: ' + nice(f.fixType)); });
+      (D.fixes.pending || []).concat(D.fixes.completed || []).forEach(function (f) { if (day(f.createdDate) === k) ev.push('Found: ' + nice(f.fixType)); });
+      var prev = i ? pts[i - 1].score : null, ch = prev == null ? '' : p.score > prev ? ' (+' + (p.score - prev) + ')' : p.score < prev ? ' (' + (p.score - prev) + ')' : '';
+      dot.hidden = tip.hidden = false;
+      var px = (xy[i][0] / w) * 100, py = (xy[i][1] / h) * 100;
+      dot.style.left = px + '%'; dot.style.top = py + '%';
+      tip.style.left = Math.max(18, Math.min(82, px)) + '%';
+      tip.innerHTML = '<b>' + esc(date(p.date)) + ' · ' + p.score + esc(ch) + '</b>' + (ev.length ? '<br>' + ev.slice(0, 3).map(esc).join('<br>') + (ev.length > 3 ? '<br>+' + (ev.length - 3) + ' more' : '') : '');
+    }
+    box.addEventListener('mousemove', function (e) { at(e.clientX); });
+    box.addEventListener('touchstart', function (e) { at(e.touches[0].clientX); }, { passive: true });
+    box.addEventListener('mouseleave', function () { dot.hidden = tip.hidden = true; });
   }
 
   function heroTiles() {
@@ -191,37 +263,77 @@
     var raV = st.raMode === 'month' ? ra.monthTotal : ra.allTotal;
     return '<div class="sw-grid sw-g-3" style="margin:0">' +
       '<div class="sw-ht red"><div class="sw-hl">Already lost</div>' + lost + '</div>' +
-      '<div class="sw-ht amber"><div class="sw-hl">Open regulatory exposure (ICO)</div><div class="sw-hn">' + (e.totalHigh ? likely(e.totalMostLikely, e.totalLow, e.totalHigh) : '£0') + '</div>' +
+      '<div class="sw-ht amber"><div class="sw-hl">Open regulatory exposure (ICO)</div><div class="sw-hn">' + (e.totalHigh && e.totalMostLikely ? cu('ico', e.totalMostLikely, 'about') : e.totalHigh ? range(e.totalLow, e.totalHigh) : cu('ico', 0, 'gbpK')) + '</div>' +
         (e.totalHigh && e.totalMostLikely ? '<div class="sw-hs">Likely ' + range(e.totalLow, e.totalHigh) + confChip(e.confidence) + '</div>' : '') +
         '<div class="sw-hs">Grouped the way a regulator would investigate. Comparable published cases, not a prediction.</div>' + lk +
         (other.length ? '<div class="sw-hs" style="margin-top:6px">' + other.join('<br>') + '</div>' : '') +
         (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">' + (e.confidence && e.confidence !== 'high' ? 'Why this number? Tighten it' : 'Why this number?') + '</button>' : '') + '</div>' +
       '<div class="sw-ht green"><div class="sw-hl">Risk addressed</div>' +
         '<div style="margin-top:4px"><button class="sw-tog' + (st.raMode === 'month' ? ' on' : '') + '" data-act="ra" data-m="month">This month</button><button class="sw-tog' + (st.raMode === 'all' ? ' on' : '') + '" data-act="ra" data-m="all">All time</button></div>' +
-        '<div class="sw-hn">' + gbpK(raV || 0) + '</div>' +
+        '<div class="sw-hn">' + cu('ra_' + st.raMode, raV || 0, 'gbpK') + '</div>' +
         '<div class="sw-hs">' + (st.raMode === 'all' && ra.allTotal ? gbpK(ra.verified) + ' verified by a re-run, ' + gbpK(ra.selfAttested) + ' marked fixed by you.' : 'Exposure removed by the fixes you have completed.') + '</div></div></div>';
   }
 
   function clustersCard() {
     var cl = D.exposure.clusters || [];
     var body = cl.length ? cl.map(function (c) {
-      return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(c.label) + '</div><div class="sw-row-s">' + c.count + ' finding' + (c.count > 1 ? 's' : '') + '</div></div><div class="sw-row-v">' + likely(c.mostLikely, c.low, c.high) + (c.mostLikely ? '<div class="sw-row-s">' + range(c.low, c.high) + '</div>' : '') + '</div><button class="sw-link" data-act="why" data-id="' + esc(c.leadFixId) + '">Why?</button></div>';
+      return '<div class="sw-row sw-row-btn' + (st.area === c.area ? ' on' : '') + '" data-act="area" data-a="' + esc(c.area) + '" role="button" tabindex="0" title="Show these findings"><div class="sw-row-main"><div class="sw-row-t">' + esc(c.label) + '</div><div class="sw-row-s">' + c.count + ' finding' + (c.count > 1 ? 's' : '') + ' · show</div></div><div class="sw-row-v">' + likely(c.mostLikely, c.low, c.high) + (c.mostLikely ? '<div class="sw-row-s">' + range(c.low, c.high) + '</div>' : '') + '</div><button class="sw-link" data-act="why" data-id="' + esc(c.leadFixId) + '">Why?</button></div>';
     }).join('') : '<div class="sw-empty">No open data protection findings.</div>';
     return '<div class="sw-card sw-pad"><div class="sw-lbl">Exposure by area</div>' + body +
       (D.exposure.duaaWarning ? '<div class="sw-note" style="margin-top:10px">' + esc(D.exposure.duaaWarning) + '</div>' : '') + '</div>';
   }
 
-  // Top three open findings by what fixing them removes
+  // ── exposure maths in the browser (same rules as clusterExposure in
+  //    _exposure.js), so What-if and Start here can try changes instantly ──
+  function icoOf(list) {
+    var groups = {};
+    list.forEach(function (f) {
+      var e = f.exposure;
+      if (!e || e.category !== 'ICO' || !e.realisticHigh) return;
+      (groups[f.area || 'other'] = groups[f.area || 'other'] || []).push(e);
+    });
+    var t = { low: 0, high: 0, likely: 0 };
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k].slice().sort(function (a, b) { return b.realisticHigh - a.realisticHigh; }), lead = g[0], rest = g.slice(1);
+      var sum = function (key) { return rest.reduce(function (s, e) { return s + (e[key] || 0); }, 0); };
+      var ml = function (e) { return e.mostLikely || (e.realisticLow + e.realisticHigh) / 2; };
+      t.low += Math.min(lead.realisticLow * 2, lead.realisticLow + 0.25 * sum('realisticLow'));
+      t.high += Math.min(lead.realisticHigh * 2, lead.realisticHigh + 0.25 * sum('realisticHigh'));
+      t.likely += Math.min(ml(lead) * 2, ml(lead) + 0.25 * rest.reduce(function (s, e) { return s + ml(e); }, 0));
+    });
+    return t;
+  }
+  function without(ids) { return (D.fixes.pending || []).filter(function (f) { return !ids[f.id]; }); }
+  // ICO exposure (most likely) that closing this one finding removes
+  function removes(f) { var o = {}; o[f.id] = 1; return Math.max(0, icoOf(D.fixes.pending || []).likely - icoOf(without(o)).likely); }
+  var SEV_W = { critical: 8, high: 5, medium: 3, low: 1 };
+  function weight(f) { var w = (D.score.model && D.score.model.weights) || SEV_W; return w[f.severity] || 3; }
+  function projScore(ids) {
+    var m = D.score.model;
+    if (!m || !m.total) return D.score.value || 0;
+    var add = (D.fixes.pending || []).filter(function (f) { return ids[f.id] && !(f.exposure && f.exposure.category === 'Commercial'); }).reduce(function (s, f) { return s + weight(f); }, 0);
+    return Math.min(100, Math.round(((m.earned + add) / m.total) * 100));
+  }
+  function effort(f) { return f.effort || { mins: 60, label: 'About an hour' }; }
+  function effortChip(f) {
+    var e = effort(f);
+    return '<span class="sw-chip ' + (e.quick || e.mins <= 30 ? 'quick' : e.dev ? 'dev' : '') + '" title="Rough time for a typical team">' + (e.quick || e.mins <= 30 ? '⚡ ' : '') + esc(e.label) + (e.dev ? ' · may need a developer' : '') + '</span>';
+  }
+  // Value for time: £ removed (ICO) or a stand-in from severity, per minute
+  function valueForTime(f) {
+    var m = f.exposure && f.exposure.marketingCost, v = removes(f) + (m && m.available ? m.mostLikely * 0.25 : 0) + weight(f) * 1500;
+    return v / Math.max(10, effort(f).mins);
+  }
+
+  // Top three open findings by value for the time they take
   function startHere() {
-    var sev = { critical: 4, high: 3, medium: 2, low: 1 };
-    var top = (D.fixes.pending || []).slice().sort(function (a, b) {
-      var x = (b.exposure && b.exposure.realisticHigh || 0) - (a.exposure && a.exposure.realisticHigh || 0);
-      return x || (sev[b.severity] || 0) - (sev[a.severity] || 0);
-    }).slice(0, 3);
+    var top = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); }).slice(0, 3);
     var body = top.length ? '<div class="sw-steps">' + top.map(function (f, i) {
-      return '<div class="sw-step"><div class="sw-fx-body"><div class="sw-row-t">' + (i + 1) + '. ' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(f.description.slice(0, 140)) + '</div></div>' + expLine(f) + '</div>';
+      var r = removes(f);
+      return '<div class="sw-step sw-row-btn" data-act="goto" data-id="' + esc(f.id) + '" role="button" tabindex="0"><div class="sw-step-n">' + (i + 1) + '</div><div class="sw-fx-body"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(f.description.slice(0, 110)) + (f.description.length > 110 ? '…' : '') + '</div>' +
+        '<div class="sw-chips">' + effortChip(f) + (r >= 1000 ? '<span class="sw-chip good">Removes about ' + gbpK(r) + '</span>' : '') + '</div></div><span class="sw-chev">›</span></div>';
     }).join('') + '</div>' : '<div class="sw-empty">Nothing open. Run a check before your next send.</div>';
-    return '<div class="sw-card sw-pad"><div class="sw-lbl">Start here</div>' + body + '</div>';
+    return '<div class="sw-card sw-pad"><div class="sw-lbl">Start here · best value for your time</div>' + body + '</div>';
   }
 
   function expLine(f) {
@@ -261,30 +373,144 @@
     return '<div class="sw-card sw-pad"><div class="sw-lbl">List value</div>' + body + '</div>';
   }
 
+  // ── Case Twin ──
+  function twinOf(f) { var t = D.caseTwin && D.caseTwin.byFix && D.caseTwin.byFix[f.id]; return t ? { t: t, c: D.caseTwin.cases[t.caseId] } : null; }
+  function outcome(c) {
+    var when = c.date ? ' · ' + esc(date(c.date.length === 4 ? c.date + '-06-01' : c.date.length === 7 ? c.date + '-01' : c.date).replace(/^\d+ /, '')) : '';
+    if (c.penalty) return 'Fined <b>' + gbp(c.penalty) + '</b> by the ' + esc(c.regulator) + when;
+    if (c.regulator === 'ASA') return 'Upheld ASA ruling, published under their name' + when;
+    return esc(c.regulator) + ' action' + when;
+  }
+  function twinCard() {
+    var T = D.caseTwin, pend = D.fixes.pending || [];
+    if (!T) return '';
+    if (!T.hero) {
+      return '<div class="sw-twin calm"><div class="sw-twin-main"><div class="sw-lbl">Case Twin</div><div class="sw-twin-name">' + (pend.length ? 'No published case matches your open findings' : 'No twin. Nothing open looks like a published case') + '</div>' +
+        '<div class="sw-hs">We compare every open finding with ' + (T.librarySize || 0) + ' published ICO, ASA and CMA cases, and the list grows as new rulings land.</div></div></div>';
+    }
+    var h = T.hero, c = T.cases[h.caseId], open = h.openFixIds.length, done = h.doneFixIds.length, pct = Math.round(done / Math.max(1, open + done) * 100);
+    return '<div class="sw-twin"><div class="sw-twin-main"><div class="sw-lbl">Your closest case twin</div>' +
+      '<div class="sw-twin-name">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div>' +
+      '<div class="sw-hs">' + esc(c.summary) + '</div>' +
+      '<div class="sw-chips">' + h.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
+      '<div class="sw-twin-btns"><button class="sw-btn o" data-act="twin" data-id="' + esc(h.fixId) + '">See it side by side</button><button class="sw-btn q" data-act="twin-only">Show the ' + open + ' finding' + (open > 1 ? 's' : '') + '</button></div></div>' +
+      '<div class="sw-twin-side"><div class="sw-meter" style="--p:' + h.match + '"><div><b>' + h.match + '%</b><span>match</span></div></div>' +
+      '<div class="sw-twin-gap"><b>' + open + ' fix' + (open > 1 ? 'es' : '') + '</b> away from clear</div>' +
+      '<div class="sw-prog"><i style="width:' + pct + '%"></i></div><div class="sw-note">' + (done ? done + ' related fix' + (done > 1 ? 'es' : '') + ' already done' : 'Each fix moves you further from this case') + '</div></div></div>';
+  }
+  function twinDrawer(fixId) {
+    var f = (D.fixes.pending || []).filter(function (x) { return x.id === fixId; })[0], tw = f && twinOf(f);
+    if (!tw) return;
+    ensureLayers();
+    overlay.innerHTML = ''; overlay.classList.add('on'); drawer.classList.add('on', 'wide');
+    var c = tw.c, related = function (x) { return c.types.indexOf(x.fixType) >= 0; };
+    var open = (D.fixes.pending || []).filter(related), done = (D.fixes.completed || []).filter(related);
+    var you = [];
+    if (f.contactVolume) you.push('Audience: ' + Number(f.contactVolume).toLocaleString('en-GB') + (c.volume ? ' (theirs: ' + Number(c.volume).toLocaleString('en-GB') + ')' : ''));
+    if (D.profile && D.profile.sector) you.push('Sector: ' + nice(D.profile.sector));
+    var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Case Twin · ' + tw.t.match + '% match</div><div class="sw-h2">You and ' + esc(c.name) + '</div></div>' +
+      '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' +
+        (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + (c.source === 'curated' ? esc(c.regulator) + ' enforcement page' : 'Read the ruling') + '</a>' : '') + '</div>' +
+      '<div class="sw-vs-mid" aria-hidden="true">vs</div>' +
+      '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(f.description) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
+      '<div class="sw-dr-sec"><div class="sw-lbl">Why they match</div><div class="sw-chips">' + tw.t.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div></div>' +
+      '<div class="sw-dr-sec"><div class="sw-lbl">What you have already done differently</div>' + (done.length ? done.map(function (x) {
+        var v = x.completionSource === 'improved_on_rerun' || x.completionSource === 'verified';
+        return '<div class="sw-fac"><span class="sw-fac-ic down">✓</span><div>' + esc(nice(x.fixType)) + '<span class="sw-src' + (v ? ' ai' : '') + '">' + (v ? 'Verified' : 'Marked by you') + '</span>' + (x.completedDate ? '<div class="sw-note">' + esc(date(x.completedDate)) + '</div>' : '') + '</div></div>';
+      }).join('') : '<div class="sw-empty">Nothing yet. Each fix below puts distance between you and this case.</div>') + '</div>' +
+      '<div class="sw-dr-sec"><div class="sw-lbl">Still the same · ' + open.length + ' to close</div>' + open.map(function (x) {
+        return '<div class="sw-fac"><span class="sw-fac-ic up">!</span><div style="flex:1">' + esc(nice(x.fixType)) + '<div class="sw-chips">' + effortChip(x) + '</div></div><button class="sw-link" data-act="goto" data-id="' + esc(x.id) + '">Open</button></div>';
+      }).join('') + '</div>' +
+      '<div class="sw-dr-sec"><div class="sw-note">A published case for comparison, matched on issue, sector, audience size and date. It is not a prediction of what would happen to you, and not legal advice.</div></div>';
+    drawer.innerHTML = h;
+  }
+
+  // ── Action items: grouped by area, expandable, What-if ──
+  function groupOf(f) { var c = f.exposure && f.exposure.category; return f.area && f.area !== 'other' ? f.area : (c === 'ASA' || c === 'CMA' || c === 'Commercial' ? c : 'other'); }
+  function valueChip(f) {
+    var e = f.exposure;
+    if (!e) return '';
+    if (e.category === 'ICO' && e.realisticHigh) return '<span class="sw-fx-val">' + (e.mostLikely ? gbpK(e.mostLikely) : range(e.realisticLow, e.realisticHigh)) + '<small>ICO</small></span>';
+    if (e.category === 'ASA') return '<span class="sw-fx-val sm">' + (e.marketingCost && e.marketingCost.available ? gbpK(e.marketingCost.mostLikely) : 'Ruling') + '<small>ASA</small></span>';
+    if (e.category === 'CMA') return '<span class="sw-fx-val sm">' + (e.marketingCost && e.marketingCost.available ? gbpK(e.marketingCost.mostLikely) : 'Fine risk') + '<small>CMA</small></span>';
+    return '';
+  }
   function fixesSection() {
-    var all = D.fixes.pending || [];
+    var all = D.fixes.pending || [], heroIds = {};
+    if (D.caseTwin && D.caseTwin.hero) D.caseTwin.hero.openFixIds.forEach(function (id) { heroIds[id] = 1; });
     var list = all.filter(function (f) {
+      if (st.area && groupOf(f) !== st.area) return false;
+      if (st.twinOnly && !heroIds[f.id]) return false;
       if (st.filter === 'all') return true;
       if (st.filter === 'improved') return !!f.improvedOnRerun;
+      if (st.filter === 'quick') return effort(f).mins <= 30;
       return f.exposure && f.exposure.category === st.filter;
     });
-    var flt = [['all', 'All'], ['ICO', 'ICO'], ['ASA', 'ASA'], ['CMA', 'CMA'], ['improved', 'Improved']].map(function (x) {
+    var flt = [['all', 'All'], ['quick', '⚡ Quick wins'], ['ICO', 'ICO'], ['ASA', 'ASA'], ['CMA', 'CMA'], ['improved', 'Improved']].map(function (x) {
       return '<button class="sw-flt' + (st.filter === x[0] ? ' on' : '') + '" data-act="flt" data-f="' + x[0] + '">' + x[1] + '</button>';
     }).join('');
-    var rows = list.length ? list.map(function (f) {
-      var page = TOOL_PAGE[String(f.tool || '').toLowerCase()];
-      return '<div class="sw-fx" data-id="' + esc(f.id) + '"><span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body">' +
-        '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div><div class="sw-fx-desc">' + esc(f.description) + '</div>' +
-        '<div class="sw-fx-meta">' + (f.tool ? '<span class="sw-fx-tool">' + esc(f.tool) + '</span> · ' : '') + esc(nice(f.severity)) + (f.createdDate ? ' · found ' + esc(date(f.createdDate)) : '') + '</div>' +
-        (f.improvedOnRerun ? '<div class="sw-improved">A re-run shows this has improved. Confirm to get full credit.</div>' : '') +
-        '</div>' + expLine(f) +
-        '<div class="sw-fx-act">' +
-          (f.improvedOnRerun ? '<button class="sw-btn g" data-act="done" data-src="improved_on_rerun">Confirm improved</button>' : '<button class="sw-btn g" data-act="done" data-src="manual">Mark fixed</button>') +
-          (page ? '<button class="sw-btn o" data-act="tool" data-u="' + esc(page) + '">Re-run check</button>' : '') +
-          '<button class="sw-btn q" data-act="dismiss">Dismiss</button>' +
-        '</div></div>';
-    }).join('') : '<div class="sw-empty">' + (all.length ? 'Nothing matches this filter.' : 'No open action items.') + '</div>';
-    return '<div class="sw-fx-hdr"><span class="sw-h2">Action items <span class="sw-cnt">' + all.length + '</span></span><span>' + flt + '</span></div>' + rows;
+    var tags = (st.area ? '<button class="sw-tag" data-act="area-clear">' + esc(AREA_LABELS[st.area] || nice(st.area)) + ' ✕</button>' : '') +
+      (st.twinOnly ? '<button class="sw-tag" data-act="twin-clear">Case Twin findings ✕</button>' : '');
+    var groups = {}, order = [];
+    list.forEach(function (f) { var g = groupOf(f); if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(f); });
+    var cl = {}; (D.exposure.clusters || []).forEach(function (c) { cl[c.area] = c; });
+    order.sort(function (a, b) { return ((cl[b] && cl[b].high) || 0) - ((cl[a] && cl[a].high) || 0); });
+    var body = order.map(function (g) {
+      var fs = groups[g], done = (D.fixes.completed || []).filter(function (f) { return groupOf(f) === g; }).length, openN = all.filter(function (f) { return groupOf(f) === g; }).length;
+      var pct = Math.round(done / Math.max(1, done + openN) * 100);
+      return '<div class="sw-lane"><div class="sw-lane-h"><div><span class="sw-lane-t">' + esc(AREA_LABELS[g] || nice(g)) + '</span> <span class="sw-cnt">' + openN + '</span></div>' +
+        (cl[g] ? '<span class="sw-lane-v">' + likely(cl[g].mostLikely, cl[g].low, cl[g].high) + '</span>' : '') + '</div>' +
+        '<div class="sw-lane-p"><div class="sw-prog"><i style="width:' + pct + '%"></i></div><span class="sw-note">' + done + ' of ' + (done + openN) + ' fixed</span></div>' +
+        fs.map(fixRow).join('') + '</div>';
+    }).join('');
+    var empty = '<div class="sw-empty">' + (all.length ? 'Nothing matches this filter.' : 'No open action items.') + '</div>';
+    return '<div class="sw-fx-hdr"><span class="sw-h2">Action items <span class="sw-cnt">' + all.length + '</span></span><span class="sw-fx-ctl">' + flt +
+      '<button class="sw-flt wi' + (st.whatif ? ' on' : '') + '" data-act="whatif" title="Tick findings to see what fixing them would change">What if?</button></span></div>' +
+      (tags ? '<div class="sw-tags">' + tags + '</div>' : '') +
+      (st.whatif ? '<div class="sw-wi-hint">Tick the findings you could fix and watch your score and exposure move.</div>' : '') +
+      (list.length ? body : empty) + (st.whatif ? '<div class="sw-wi" id="sw-wi">' + whatIfBar() + '</div>' : '');
+  }
+  function fixRow(f) {
+    var open = !!st.open[f.id], tw = twinOf(f), page = TOOL_PAGE[String(f.tool || '').toLowerCase()];
+    var head = '<div class="sw-fx-head" data-act="expand" role="button" tabindex="0" aria-expanded="' + open + '">' +
+      (st.whatif ? '<label class="sw-pick" data-act="noop"><input type="checkbox" data-pick="' + esc(f.id) + '"' + (st.picked[f.id] ? ' checked' : '') + ' aria-label="Include in what-if"></label>' : '') +
+      '<span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body"><div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' +
+      (open ? '' : '<div class="sw-fx-desc one">' + esc(f.description) + '</div>') +
+      '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : '') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
+      valueChip(f) + '<span class="sw-chev">' + (open ? '⌃' : '⌄') + '</span></div>';
+    if (!open) return '<div class="sw-fx" data-id="' + esc(f.id) + '">' + head + '</div>';
+    var d = drafts[f.id];
+    var fixBox = d && d.pasteText ? '<div class="sw-draft"><div class="sw-lbl">The fix</div><div class="sw-row-t">' + esc(d.headline) + '</div><ol>' + (d.steps || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' +
+        '<div class="sw-paste"><div class="sw-paste-h"><span>' + esc(d.pasteLabel) + '</span><button class="sw-btn o" data-act="copy">Copy</button></div><pre>' + esc(d.pasteText) + '</pre></div>' +
+        '<div class="sw-note">Drafted by AI from this finding. Check names, prices and dates in [brackets] before you use it. Not legal advice. <button class="sw-link" data-act="draft" data-fresh="1">Write it again</button></div></div>'
+      : d && d.loading ? '<div class="sw-draft"><div class="sw-ld"><div class="sw-spin"></div>Writing the fix…</div></div>'
+      : '<div class="sw-draft empty"><div><div class="sw-row-t">Want the fix written for you?</div><div class="sw-row-s">Steps plus text you can paste straight into your email, form or page.</div></div><button class="sw-btn g" data-act="draft">Write the fix for me</button></div>';
+    return '<div class="sw-fx open" data-id="' + esc(f.id) + '">' + head + '<div class="sw-fx-more">' +
+      '<div class="sw-fx-desc">' + esc(f.description) + '</div>' +
+      '<div class="sw-fx-meta">' + (f.tool ? '<span class="sw-fx-tool">' + esc(f.tool) + '</span> · ' : '') + esc(nice(f.severity)) + (f.createdDate ? ' · found ' + esc(date(f.createdDate)) : '') + '</div>' +
+      (f.improvedOnRerun ? '<div class="sw-improved">A re-run shows this has improved. Confirm to get full credit.</div>' : '') + expLine(f) +
+      (tw ? '<div class="sw-twin-mini"><span><b>Case Twin:</b> ' + esc(tw.c.name) + ' · ' + outcome(tw.c) + ' · ' + tw.t.match + '% match</span><button class="sw-link" data-act="twin">Side by side</button></div>' : '') +
+      fixBox +
+      '<div class="sw-fx-act">' +
+        (f.improvedOnRerun ? '<button class="sw-btn g" data-act="done" data-src="improved_on_rerun">Confirm improved</button>' : '<button class="sw-btn g" data-act="done" data-src="manual">Mark fixed</button>') +
+        (page ? '<button class="sw-btn o" data-act="tool" data-u="' + esc(page) + '">Recheck now</button>' : '') +
+        '<button class="sw-btn q" data-act="dismiss">Dismiss</button>' +
+      '</div></div></div>';
+  }
+  function whatIfBar() {
+    var ids = st.picked, n = Object.keys(ids).length;
+    if (!n) return '<span class="sw-note">Nothing ticked yet.</span>';
+    var picked = (D.fixes.pending || []).filter(function (f) { return ids[f.id]; });
+    // Start from the server's total so the bar agrees with the exposure tile
+    var s0 = D.score.value || 0, s1 = projScore(ids), all = icoOf(D.fixes.pending || []).likely;
+    var e0 = D.exposure.totalMostLikely || all, e1 = Math.max(0, e0 - (all - icoOf(without(ids)).likely));
+    var mins = picked.reduce(function (s, f) { return s + effort(f).mins; }, 0);
+    var t = mins < 60 ? mins + ' minutes' : mins < 480 ? 'about ' + (Math.round(mins / 30) / 2) + ' hours' : 'about ' + Math.round(mins / 480 * 2) / 2 + ' days';
+    return '<div class="sw-wi-t">If you fix these ' + n + ':</div>' +
+      '<div class="sw-wi-k"><span>Score</span><b>' + s0 + ' → <em class="up">' + s1 + '</em></b></div>' +
+      (e0 ? '<div class="sw-wi-k"><span>ICO exposure</span><b>' + gbpK(e0) + ' → <em class="down">' + gbpK(e1) + '</em></b></div>' : '') +
+      '<div class="sw-wi-k"><span>Work</span><b>' + t + '</b></div>' +
+      '<button class="sw-link" data-act="wi-clear">Clear</button>';
   }
 
   // ── deferred sections ──
@@ -350,11 +576,11 @@
     [overlay, drawer].forEach(function (el) { el.addEventListener('click', onClick); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLayers(); });
   }
-  function closeLayers() { if (drawer) { drawer.classList.remove('on'); overlay.classList.remove('on'); overlay.innerHTML = ''; } }
+  function closeLayers() { if (drawer) { drawer.classList.remove('on', 'wide'); overlay.classList.remove('on'); overlay.innerHTML = ''; } }
 
   async function why(fixId) {
     ensureLayers();
-    overlay.innerHTML = ''; overlay.classList.add('on'); drawer.classList.add('on');
+    overlay.innerHTML = ''; overlay.classList.add('on'); drawer.classList.add('on'); drawer.classList.remove('wide');
     drawer.innerHTML = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-ld"><div class="sw-spin"></div>Working out the figure…</div>';
     try { drawWhy(await api('/api/exposure?action=explain&userId=' + encodeURIComponent(userId) + '&fixId=' + encodeURIComponent(fixId))); }
     catch (e) { drawer.innerHTML = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-err">' + esc(e.message) + '</div>'; }
@@ -508,7 +734,10 @@
     try {
       await api('/api/fixes?action=complete', { method: 'POST', body: { userId: userId, fixId: fixId, completionSource: src } });
       toast(src === 'improved_on_rerun' ? 'Confirmed. Full credit added.' : 'Marked fixed. Re-run the check for full credit.', 'ok');
-      refreshQuiet();
+      celebrate(btn, src === 'improved_on_rerun');
+      delete st.open[fixId]; delete st.picked[fixId];
+      await refreshQuiet();
+      var top = $('.sw-g-top'); if (top && top.scrollIntoView && top.getBoundingClientRect().top < 0) top.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
     } catch (e) { btn.disabled = false; toast(e.message, 'er'); }
   }
 
@@ -530,6 +759,29 @@
     } catch (e) { btn.disabled = false; toast(e.message, 'er'); }
   }
 
+  async function draft(fixId, fresh) {
+    drafts[fixId] = { loading: true }; redrawFixes();
+    try {
+      var r = await api('/api/exposure?action=draft', { method: 'POST', body: { userId: userId, fixId: fixId, fresh: !!fresh } });
+      drafts[fixId] = r.draft;
+    } catch (e) { delete drafts[fixId]; toast(e.message, 'er'); }
+    redrawFixes();
+  }
+  function copyDraft(fixId, btn) {
+    var d = drafts[fixId]; if (!d) return;
+    var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.pasteText).then(done, function () { toast('Select the text and copy it', 'er'); });
+    else toast('Select the text and copy it', 'er');
+  }
+  function redrawFixes() { var el = $('#sw-fixes'); if (el) el.innerHTML = fixesSection(); }
+  function gotoFix(id) {
+    closeLayers();
+    st.open[id] = true; st.area = null; st.twinOnly = false; if (st.filter !== 'all') st.filter = 'all';
+    redrawFixes();
+    var row = root.querySelector('.sw-fx[data-id="' + id + '"]');
+    if (row) { row.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'center' }); row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600); }
+  }
+
   function onClick(ev) {
     var t = ev.target.closest('[data-act]');
     if (!t) return;
@@ -549,10 +801,22 @@
       case 'do-dismiss': var r = overlay.querySelector('input[name=sw-dis]:checked'); if (r) dismiss(id, r.value, t); break;
       case 'save-band': saveBand(t); break;
       case 'flt': st.filter = t.getAttribute('data-f'); $('#sw-fixes').innerHTML = fixesSection(); break;
-      case 'ra': st.raMode = t.getAttribute('data-m'); var g = $('.sw-g-top'); g.innerHTML = scoreCard() + heroTiles(); drawSpark(); break;
+      case 'ra': st.raMode = t.getAttribute('data-m'); var g = $('.sw-g-top'); g.innerHTML = scoreCard() + heroTiles(); drawSpark(); animate(); break;
       case 'hist': st.histTab = t.getAttribute('data-k'); root.querySelectorAll('[data-act=hist]').forEach(function (b) { b.classList.toggle('on', b === t); }); loadHistory(); break;
       case 'pg': st.page[st.histTab] += +t.getAttribute('data-d'); loadHistory(); break;
       case 'brf-more': $('#sw-brf').classList.remove('clip'); t.hidden = true; break;
+      case 'noop': break;
+      case 'expand': if (ev.target.closest('.sw-pick')) break; if (st.open[id]) delete st.open[id]; else st.open[id] = true; redrawFixes(); break;
+      case 'goto': gotoFix(id); break;
+      case 'twin': twinDrawer(id); break;
+      case 'twin-only': st.twinOnly = true; st.area = null; redrawFixes(); $('#sw-fixes').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); break;
+      case 'twin-clear': st.twinOnly = false; redrawFixes(); break;
+      case 'area': st.area = t.getAttribute('data-a'); st.twinOnly = false; redrawFixes(); root.querySelectorAll('[data-act=area]').forEach(function (b) { b.classList.toggle('on', b === t); }); $('#sw-fixes').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); break;
+      case 'area-clear': st.area = null; redrawFixes(); root.querySelectorAll('[data-act=area]').forEach(function (b) { b.classList.remove('on'); }); break;
+      case 'whatif': st.whatif = !st.whatif; if (!st.whatif) st.picked = {}; redrawFixes(); break;
+      case 'wi-clear': st.picked = {}; redrawFixes(); break;
+      case 'draft': draft(id, t.getAttribute('data-fresh') === '1'); break;
+      case 'copy': copyDraft(id, t); break;
       case 'close-changed': store('dismiss_changed_' + userId, D.generatedAt.slice(0, 10)); t.parentNode.remove(); break;
     }
   }
@@ -567,6 +831,17 @@
     boot().then(function () {
       if (!root) return;
       root.addEventListener('click', onClick);
+      // What-if ticks update the bar without redrawing the list
+      root.addEventListener('change', function (ev) {
+        var id = ev.target.getAttribute && ev.target.getAttribute('data-pick');
+        if (!id) return;
+        if (ev.target.checked) st.picked[id] = true; else delete st.picked[id];
+        var bar = $('#sw-wi'); if (bar) bar.innerHTML = whatIfBar();
+      });
+      // Enter or Space on rows that act as buttons
+      root.addEventListener('keydown', function (ev) {
+        if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.getAttribute && ev.target.getAttribute('role') === 'button') { ev.preventDefault(); ev.target.click(); }
+      });
       ensureLayers();
       overlay.addEventListener('change', onChange);
     });

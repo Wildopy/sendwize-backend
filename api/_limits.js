@@ -25,6 +25,7 @@ const DEFAULT_LIMITS = {
   reconsent:      30,  // re-consent drafts
   verdict:        40,  // Send-day verdict
   exposure:       20,  // AI exposure assessments requested by a member
+  fix_draft:      40,  // ready-to-use fixes on the dashboard
 };
 
 let warned = false;

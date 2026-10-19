@@ -1,6 +1,9 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — dashboard.js v1.1
+// SENDWIZE — dashboard.js v1.2
 // GET /api/dashboard   (signed-in member)
+// v1.2: Case Twin (closest published case per open finding, from the
+//   curated anchors plus the daily regulator feed), effort per finding,
+//   area per finding and the score model the What-if mode needs.
 // v1.1: most-likely figure and confidence for ICO exposure; ASA/CMA
 //   commercial cost (marketingCost), kept apart from regulatory figures.
 //
@@ -17,8 +20,23 @@
 // not needed for first paint).
 // ─────────────────────────────────────────────────────────────
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
+import { atFetch } from './_airtable.js';
+import { areaOf, SEVERITY_WEIGHT, SELF_ATTESTED_CREDIT } from './_exposure.js';
+import { buildLibrary, caseTwins, effortFor } from './_cases.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
+
+// Recent rulings from the daily regulator feed, for Case Twin. Best effort.
+async function feedRulings() {
+  try {
+    const url = `https://api.airtable.com/v0/${process.env.BASE_ID}/Sector_Intelligence_Feed?pageSize=100&maxRecords=200`
+      + `&sort%5B0%5D%5Bfield%5D=PublishedDate&sort%5B0%5D%5Bdirection%5D=desc`;
+    const r = await atFetch(url, { headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` } });
+    return r.ok ? ((await r.json()).records || []) : [];
+  } catch (e) {
+    return [];
+  }
+}
 
 async function call(path, opts = {}) {
   try {
@@ -32,7 +50,8 @@ async function call(path, opts = {}) {
 
 const slimFix = f => ({
   id: f.id, fixType: f.fixType, description: f.description, tool: f.tool, severity: f.severity,
-  status: f.status, createdDate: f.createdDate, completedDate: f.completedDate,
+  status: f.status, area: areaOf(f.fixType), effort: effortFor(f.fixType),
+  contactVolume: f.contactVolume || null, createdDate: f.createdDate, completedDate: f.completedDate,
   completionSource: f.completionSource, improvedOnRerun: f.improvedOnRerun,
   exposure: f.exposure ? {
     category: f.exposure.category, realisticLow: f.exposure.realisticLow, realisticHigh: f.exposure.realisticHigh,
@@ -78,13 +97,25 @@ export default async function handler(req, res) {
     ]);
 
     // Wave 3: trend + list value
-    const [history, listValue] = await Promise.all([
+    const [history, listValue, feed] = await Promise.all([
       call(`/api/data?action=score-history&userId=${u}&limit=30`),
       call(`/api/list-recommendations?userId=${u}`),
+      feedRulings(),
     ]);
 
     const pending = fx.fixes?.pending || [];
     const completed = fx.fixes?.completed || [];
+    const dismissed = fx.fixes?.dismissed || [];
+    const twins = caseTwins(pending, completed, buildLibrary(feed), { sector: profile?.sector || fx.sector, listSize: profile?.listSize });
+
+    // What-if needs the same weights computeScore uses
+    const w = f => SEVERITY_WEIGHT[f.severity] || 3;
+    const counted = [...pending, ...completed, ...dismissed].filter(f => f.exposure?.category !== 'Commercial' && !(f.status === 'dismissed' && f.dismissReason !== 'accepted_risk'));
+    const scoreModel = {
+      total: counted.reduce((s, f) => s + w(f), 0),
+      earned: counted.filter(f => f.status === 'completed').reduce((s, f) => s + w(f) * ((f.completionSource === 'improved_on_rerun' || f.completionSource === 'verified') ? 1 : SELF_ATTESTED_CREDIT), 0),
+      weights: SEVERITY_WEIGHT,
+    };
     return res.json({
       success: true,
       generatedAt: new Date().toISOString(),
@@ -98,6 +129,7 @@ export default async function handler(req, res) {
         value: fx.score, band: fx.scoreBand, colour: fx.scoreColour,
         change: snap?.scoreChange ?? 0,
         trend: (history?.snapshots || []).map(s => ({ date: s.date, score: s.score })).reverse(),
+        model: scoreModel,
         note: 'Severity-weighted share of findings fixed. Fixes verified by a re-run count in full; fixes marked by hand count 75%.',
       },
       counts: fx.counts,
@@ -121,6 +153,7 @@ export default async function handler(req, res) {
       alreadyLost: hero && !hero._error ? { amount: hero.lost || 0, isEstimate: !!hero.lostIsEstimate, excessUnsubs12mo: hero.excessUnsubs12mo || 0, cplUsed: hero.cplUsed || null, commercialAtRisk: hero.commercialAtRisk || 0 } : null,
       consentExpiry: expiry && !expiry._error ? { in30: expiry.expiringIn30 || 0, in60: expiry.expiringIn60 || 0, in90: expiry.expiringIn90 || 0, source: expiry.source || null } : null,
       listValue: listValue && !listValue._error ? { hasData: !!listValue.hasData, total: listValue.unrealisedTotal || 0, top: (listValue.opportunities || []).slice(0, 3), basis: listValue.basis || '' } : null,
+      caseTwin: twins,
       fixes: {
         pending: pending.map(slimFix),
         completed: completed.slice(0, 50).map(slimFix),
