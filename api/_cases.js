@@ -1,5 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — _cases.js v1.0
+// SENDWIZE — _cases.js v1.1
+// v1.1: twins only when close (TWIN_MIN, audience within 100x, no
+// low-severity findings), so distant cases don't alarm anyone.
 // Case Twin: each open finding is set beside the real published case
 // it most resembles, so a member sees who was caught doing the same
 // thing, what it cost them, and how far they are from clear.
@@ -110,18 +112,21 @@ export function buildLibrary(feedRecords = []) {
   return lib;
 }
 
+// A twin is only shown when it is genuinely close: the same issue plus the
+// same sector or an audience within 10x. A case 100x the member's size is
+// never a twin, so a small list isn't set beside a 79M-email fine.
+export const TWIN_MIN = 75;
+
 // Match strength 0-98 with the reasons behind it
 export function matchCase(fix, c, ctx = {}) {
   if (!c.types.includes(fix.fixType)) return null;
+  const v = Number(fix.contactVolume) || Number(ctx.listSize) || null;
+  const gap = v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : null;
+  if (gap != null && gap > 2) return null;
   const reasons = ['Same issue: ' + niceType(fix.fixType)];
   let score = c.source === 'curated' ? 55 : 48;
   if (c.sector && c.sector === sectorKey(ctx.sector)) { score += 15; reasons.push('Same sector'); }
-  const v = Number(fix.contactVolume) || Number(ctx.listSize) || null;
-  if (v && c.volume) {
-    const gap = Math.abs(Math.log10(c.volume) - Math.log10(v));
-    if (gap <= 1) { score += 15; reasons.push('Similar audience size'); }
-    else if (gap <= 2) score += 7;
-  }
+  if (gap != null && gap <= 1) { score += 15; reasons.push('Similar audience size'); }
   const y = yearOf(c.date), now = ctx.now ? yearOf(ctx.now) : new Date().getFullYear() + new Date().getMonth() / 12;
   if (y && now - y <= 2) { score += 10; reasons.push('Recent ruling'); }
   if (c.penalty) score += 5;
@@ -134,10 +139,11 @@ const niceType = t => { const s = String(t || '').replace(/_/g, ' '); return s.c
 export function caseTwins(pending, completed, library, ctx = {}) {
   const byFix = {}, used = {};
   for (const f of pending) {
+    if (f.severity === 'low') continue;
     let best = null;
     for (const c of library) {
       const m = matchCase(f, c, ctx);
-      if (!m) continue;
+      if (!m || m.score < TWIN_MIN) continue;
       if (!best || m.score > best.match || (m.score === best.match && (c.penalty || 0) > (best.c.penalty || 0))) best = { c, match: m.score, reasons: m.reasons };
     }
     if (!best) continue;

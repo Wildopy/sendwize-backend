@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   SENDWIZE — sw-dashboard.js v1.1  (browser)
+   SENDWIZE — sw-dashboard.js v1.2  (browser)
    The member dashboard, served from Vercel so the Webflow embed stays
    a few lines long. Needs sw-auth.js in the Webflow site head and
    sw-dashboard.css on the page. Renders into <div id="sw-dashboard">.
@@ -7,6 +7,10 @@
    Every figure comes from /api/dashboard (one call, shared exposure
    engine). "Why this number?" comes from /api/exposure. Briefing,
    campaigns and recent checks load after first paint.
+
+   v1.2: action items are compact. Each risk area folds (only the riskiest
+   opens), shows its three best-value fixes first, and every row has
+   one-tap Fix it and ✓ buttons without opening it.
 
    v1.1: Case Twin (closest published case, side by side), fixes
    grouped by risk area and expandable in place with a ready-to-use
@@ -18,7 +22,7 @@
   'use strict';
   var API = 'https://sendwize-backend.vercel.app';
   var root, userId, D = null;
-  var st = { filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
+  var st = { filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
   var drafts = {}, nums = {}, lastRing = null;
   var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var AREA_LABELS = { consent: 'Marketing consent', suppression: 'Opt-outs and suppression', processors: 'Processors and data sharing', transparency: 'Transparency and identity', lawful_basis: 'Legitimate interests', ASA: 'Advertising claims (ASA)', CMA: 'Consumer law (CMA)', Commercial: 'Commercial', other: 'Other' };
@@ -385,8 +389,8 @@
     var T = D.caseTwin, pend = D.fixes.pending || [];
     if (!T) return '';
     if (!T.hero) {
-      return '<div class="sw-twin calm"><div class="sw-twin-main"><div class="sw-lbl">Case Twin</div><div class="sw-twin-name">' + (pend.length ? 'No published case matches your open findings' : 'No twin. Nothing open looks like a published case') + '</div>' +
-        '<div class="sw-hs">We compare every open finding with ' + (T.librarySize || 0) + ' published ICO, ASA and CMA cases, and the list grows as new rulings land.</div></div></div>';
+      return '<div class="sw-twin calm"><div class="sw-twin-main"><div class="sw-lbl">Case Twin</div><div class="sw-twin-name">' + (pend.length ? 'No published case is close to your open findings' : 'No twin. Nothing open looks like a published case') + '</div>' +
+        '<div class="sw-hs">We compare every open finding with ' + (T.librarySize || 0) + ' published ICO, ASA and CMA cases and only show one when the issue matches and so does your sector or audience size.</div></div></div>';
     }
     var h = T.hero, c = T.cases[h.caseId], open = h.openFixIds.length, done = h.doneFixIds.length, pct = Math.round(done / Math.max(1, open + done) * 100);
     return '<div class="sw-twin"><div class="sw-twin-main"><div class="sw-lbl">Your closest case twin</div>' +
@@ -455,13 +459,19 @@
     list.forEach(function (f) { var g = groupOf(f); if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(f); });
     var cl = {}; (D.exposure.clusters || []).forEach(function (c) { cl[c.area] = c; });
     order.sort(function (a, b) { return ((cl[b] && cl[b].high) || 0) - ((cl[a] && cl[a].high) || 0); });
-    var body = order.map(function (g) {
-      var fs = groups[g], done = (D.fixes.completed || []).filter(function (f) { return groupOf(f) === g; }).length, openN = all.filter(function (f) { return groupOf(f) === g; }).length;
+    // Only the riskiest area opens by default; a filter opens everything it matches
+    var narrowed = st.filter !== 'all' || st.area || st.twinOnly;
+    var body = order.map(function (g, gi) {
+      var fs = groups[g].slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); });
+      var done = (D.fixes.completed || []).filter(function (f) { return groupOf(f) === g; }).length, openN = all.filter(function (f) { return groupOf(f) === g; }).length;
       var pct = Math.round(done / Math.max(1, done + openN) * 100);
-      return '<div class="sw-lane"><div class="sw-lane-h"><div><span class="sw-lane-t">' + esc(AREA_LABELS[g] || nice(g)) + '</span> <span class="sw-cnt">' + openN + '</span></div>' +
+      var isOpen = st.lane[g] != null ? st.lane[g] : (narrowed || gi === 0);
+      var shown = st.laneMore[g] || narrowed ? fs : fs.slice(0, 3), more = fs.length - shown.length;
+      return '<div class="sw-lane' + (isOpen ? ' open' : '') + '"><div class="sw-lane-h" data-act="lane" data-g="' + esc(g) + '" role="button" tabindex="0" aria-expanded="' + isOpen + '">' +
+        '<span class="sw-chev">' + (isOpen ? '⌃' : '⌄') + '</span><span class="sw-lane-t">' + esc(AREA_LABELS[g] || nice(g)) + '</span> <span class="sw-cnt">' + openN + '</span>' +
+        '<span class="sw-lane-p"><span class="sw-prog"><i style="width:' + pct + '%"></i></span><span class="sw-note">' + done + '/' + (done + openN) + ' fixed</span></span>' +
         (cl[g] ? '<span class="sw-lane-v">' + likely(cl[g].mostLikely, cl[g].low, cl[g].high) + '</span>' : '') + '</div>' +
-        '<div class="sw-lane-p"><div class="sw-prog"><i style="width:' + pct + '%"></i></div><span class="sw-note">' + done + ' of ' + (done + openN) + ' fixed</span></div>' +
-        fs.map(fixRow).join('') + '</div>';
+        (isOpen ? shown.map(fixRow).join('') + (more > 0 ? '<button class="sw-lane-more" data-act="lane-more" data-g="' + esc(g) + '">Show ' + more + ' more</button>' : '') : '') + '</div>';
     }).join('');
     var empty = '<div class="sw-empty">' + (all.length ? 'Nothing matches this filter.' : 'No open action items.') + '</div>';
     return '<div class="sw-fx-hdr"><span class="sw-h2">Action items <span class="sw-cnt">' + all.length + '</span></span><span class="sw-fx-ctl">' + flt +
@@ -474,10 +484,12 @@
     var open = !!st.open[f.id], tw = twinOf(f), page = TOOL_PAGE[String(f.tool || '').toLowerCase()];
     var head = '<div class="sw-fx-head" data-act="expand" role="button" tabindex="0" aria-expanded="' + open + '">' +
       (st.whatif ? '<label class="sw-pick" data-act="noop"><input type="checkbox" data-pick="' + esc(f.id) + '"' + (st.picked[f.id] ? ' checked' : '') + ' aria-label="Include in what-if"></label>' : '') +
-      '<span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body"><div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' +
-      (open ? '' : '<div class="sw-fx-desc one">' + esc(f.description) + '</div>') +
+      '<span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body">' +
+      (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(f.description) + '">' + esc(f.description) + '</div>') +
       '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : '') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
-      valueChip(f) + '<span class="sw-chev">' + (open ? '⌃' : '⌄') + '</span></div>';
+      valueChip(f) +
+      (open || st.whatif ? '' : '<span class="sw-fx-quick"><button class="sw-btn o" data-act="quickfix" title="Open it with the fix written for you">Fix it</button><button class="sw-btn ok" data-act="done" data-src="' + (f.improvedOnRerun ? 'improved_on_rerun' : 'manual') + '" title="Mark fixed" aria-label="Mark fixed">✓</button></span>') +
+      '<span class="sw-chev">' + (open ? '⌃' : '⌄') + '</span></div>';
     if (!open) return '<div class="sw-fx" data-id="' + esc(f.id) + '">' + head + '</div>';
     var d = drafts[f.id];
     var fixBox = d && d.pasteText ? '<div class="sw-draft"><div class="sw-lbl">The fix</div><div class="sw-row-t">' + esc(d.headline) + '</div><ol>' + (d.steps || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' +
@@ -806,6 +818,9 @@
       case 'pg': st.page[st.histTab] += +t.getAttribute('data-d'); loadHistory(); break;
       case 'brf-more': $('#sw-brf').classList.remove('clip'); t.hidden = true; break;
       case 'noop': break;
+      case 'lane': var g = t.getAttribute('data-g'), ln = t.closest('.sw-lane'); st.lane[g] = !(ln && ln.classList.contains('open')); redrawFixes(); break;
+      case 'lane-more': st.laneMore[t.getAttribute('data-g')] = true; redrawFixes(); break;
+      case 'quickfix': st.open[id] = true; if (!drafts[id]) draft(id); else redrawFixes(); break;
       case 'expand': if (ev.target.closest('.sw-pick')) break; if (st.open[id]) delete st.open[id]; else st.open[id] = true; redrawFixes(); break;
       case 'goto': gotoFix(id); break;
       case 'twin': twinDrawer(id); break;
