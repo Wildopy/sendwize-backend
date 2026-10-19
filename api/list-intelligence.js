@@ -1,5 +1,10 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — list-intelligence.js v1.9
+// SENDWIZE — list-intelligence.js v2.0
+// v2.0: "your real list" (green / amber / red with reasons), consent clock on
+// the member's chosen period (default 24 months) replacing the half-life
+// model, sign-up source quality joined to Site Sweep form findings, evidence
+// pack, unsubscribe leaks across lists (List_Optouts), soft opt-in misuse,
+// Case Twin and Black Friday plan. Logic lives in _list-insights.js.
 //
 // v1.9 (security): every request authenticated via _auth.js; the verified
 //   member id replaces any userId from the browser. Calls to generate-fix
@@ -31,6 +36,8 @@ import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { smartDetect, smartValidate } from './_smart-import.js';
 import { validateListUpload, normaliseListRow } from './_normalise.js';
+import { buildListInsights, emailKey, DEFAULT_CONSENT_MONTHS } from './_list-insights.js';
+import { buildLibrary } from './_cases.js';
 
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -143,13 +150,24 @@ You will receive column headers and sample values from a contact list CSV export
 TARGET FIELDS (use these exact strings):
 - email              — email address
 - date_added         — when the contact was added, joined, signed up, subscribed, or created
-- last_engagement    — last activity date: last open, last click, last visit, last active
+- optin_time         — the exact time the person opted in (e.g. Mailchimp OPTIN_TIME, consent timestamp)
+- optin_ip           — IP address recorded at opt-in
+- confirm_time       — when a double opt-in was confirmed (e.g. Mailchimp CONFIRM_TIME)
+- last_engagement    — last activity date: last open, last active, last visit
+- last_click         — last click date
 - last_purchase      — last purchase or order date
 - engagement_type    — type of engagement: purchase, click, open, visit
+- engagement_score   — an engagement rating such as Mailchimp MEMBER_RATING (1-5)
 - segment            — list name, segment, group, tag, audience
-- status             — subscription status: subscribed, unsubscribed, active, bounced
-- order_value        — order value, spend, LTV, revenue (monetary)
-- engagement_count   — number of opens, clicks, sessions, orders (integer count)
+- source             — where or how they signed up: source, signup form, lead source, original source, UTM source
+- status             — subscription status: subscribed, unsubscribed, cleaned, bounced, pending
+- marketing_consent  — whether they consented to marketing: yes/no, SUBSCRIBED / NEVER_SUBSCRIBED, "Accepts Email Marketing"
+- unsubscribed_flag  — a yes/no or true/false column saying the person unsubscribed or is blacklisted
+- unsub_time         — when they unsubscribed (e.g. Mailchimp UNSUB_TIME)
+- consent_basis      — the legal basis: consent, double opt-in, soft opt-in, legitimate interest, purchased, partner
+- order_value        — order value, spend, total spent, customer lifetime value (monetary)
+- order_count        — number of orders or purchases (integer)
+- engagement_count   — number of opens, clicks or sessions (integer count)
 - ignore             — names, IDs, phone numbers, addresses, or anything else
 
 CRITICAL RULES:
@@ -158,10 +176,12 @@ CRITICAL RULES:
    - "created", "joined", "signed_up", "subscribed", "added" → date_added
    - "last_open", "last_click", "last_active", "last_engagement" → last_engagement
    - "last_purchase", "last_order", "last_buy" → last_purchase
+   - "last_click" → last_click; "optin_time", "consent date" → optin_time; "confirm_time" → confirm_time; "unsub_time" → unsub_time
    - If ambiguous and only one date column exists, prefer date_added.
 3. Status columns have values like "subscribed", "active", "bounced", "unsubscribed".
 4. Monetary columns (£, $, values like 65.00, 120.50) → order_value.
-5. Integer count columns (opens: 12, clicks: 5) → engagement_count.
+5. Integer count columns (opens: 12, clicks: 5) → engagement_count; order or purchase counts → order_count.
+5b. Yes/no consent columns ("Accepts Email Marketing", "Email Marketing Consent") → marketing_consent; yes/no unsubscribe columns → unsubscribed_flag.
 6. Each target can only be assigned once.
 7. Names, phone numbers, addresses, company names → ignore.
 
@@ -214,6 +234,9 @@ function detectListColumns(headers, rows) {
       else { mapping[h] = 'date_added'; }
       continue;
     }
+    if (lc.includes('source') || lc.includes('signup form') || lc.includes('sign up form')) { mapping[h] = 'source'; continue; }
+    if (lc.includes('consent basis') || lc.includes('legal basis') || lc.includes('lawful basis')) { mapping[h] = 'consent_basis'; continue; }
+    if (lc.includes('accepts') || lc.includes('marketing consent')) { mapping[h] = 'marketing_consent'; continue; }
     if (lc.includes('engag') || lc.includes('type') || lc.includes('action') || lc.includes('event')) { mapping[h] = 'engagement_type'; continue; }
     if (lc.includes('segment') || lc.includes('list') || lc.includes('group') || lc.includes('tag')) { mapping[h] = 'segment'; continue; }
     if (lc.includes('status') || lc.includes('state') || lc.includes('subscri')) { mapping[h] = 'status'; continue; }
@@ -248,35 +271,24 @@ const SECTOR_BENCHMARKS = { ecommerce:{conversionRate:0.025,avgOrderMultiplier:1
 // ─────────────────────────────────────────────────────────────
 // DIMENSIONS 1–4 + LIST ANALYSIS — unchanged from v1.6
 // ─────────────────────────────────────────────────────────────
-const CONSENT_DECAY_HALF_LIFE_DAYS = 365;
-const CONSENT_THRESHOLD = 20;
+// v2.0: consent clock. Consent runs from the latest sign-up or sign of
+// interest (open, click, purchase) for the period the member chooses
+// (default 24 months). The ICO sets no fixed period, so this is the
+// member's own policy applied consistently, not an invented decay curve.
+// Strength is the share of the period left; 0 means it has run out.
+const DEFAULT_VALIDITY_DAYS = Math.round(DEFAULT_CONSENT_MONTHS * 30.44);
+const CONSENT_THRESHOLD = 1;
 
-function dimension1_consent(contact) {
-  const now = new Date(); const added = contact.dateAdded ? new Date(contact.dateAdded) : now;
-  const daysOld = Math.max(0, (now - added) / 86400000);
-  const baseDecay = Math.pow(0.5, daysOld / CONSENT_DECAY_HALF_LIFE_DAYS);
-  let engagementReset = 0;
-  if (contact.lastEngagement) {
-    const lastEng = new Date(contact.lastEngagement); const daysSinceEng = Math.max(0, (now - lastEng) / 86400000);
-    const engType = (contact.engagementType || '').toLowerCase();
-    let resetStrength = 0;
-    if (engType.includes('purchas') || engType.includes('order') || engType.includes('buy')) resetStrength = 0.6;
-    else if (engType.includes('click')) resetStrength = 0.4;
-    else if (engType.includes('open')) resetStrength = 0.2;
-    else resetStrength = 0.15;
-    engagementReset = resetStrength * Math.pow(0.5, daysSinceEng / CONSENT_DECAY_HALF_LIFE_DAYS);
-  }
-  let disengagementPenalty = 0;
-  if (contact.lastEngagement) { const dse = (new Date() - new Date(contact.lastEngagement)) / 86400000; if (dse > 180) disengagementPenalty = 0.15; if (dse > 365) disengagementPenalty = 0.30; }
-  else if (daysOld > 180) { disengagementPenalty = 0.20; }
-  const rawStrength = Math.min(1, baseDecay + engagementReset - disengagementPenalty);
-  const consentStrength = Math.round(Math.max(0, rawStrength) * 100);
-  const decayPerMonth = (1 - Math.pow(0.5, 30 / CONSENT_DECAY_HALF_LIFE_DAYS)) * 100;
-  const consentDecayRate = parseFloat(decayPerMonth.toFixed(2));
-  const currentFraction = rawStrength; const thresholdFraction = CONSENT_THRESHOLD / 100;
-  let daysToThreshold = null;
-  if (currentFraction > thresholdFraction) { daysToThreshold = Math.round(CONSENT_DECAY_HALF_LIFE_DAYS * Math.log(currentFraction / thresholdFraction) / Math.log(2)); }
-  return { consentStrength, consentDecayRate, daysToThreshold };
+function dimension1_consent(contact, validityDays = DEFAULT_VALIDITY_DAYS) {
+  const t = d => { const x = d ? new Date(d).getTime() : NaN; return isNaN(x) ? 0 : x; };
+  const signup = t(contact.optinTime) || t(contact.confirmTime) || t(contact.dateAdded);
+  const anchor = Math.max(signup, t(contact.lastEngagement), t(contact.lastClick), t(contact.lastPurchase));
+  const consentDecayRate = parseFloat((100 * 30 / validityDays).toFixed(2));
+  // No dates at all: unknown, not expired. Flagged separately as "no sign-up record".
+  if (!anchor) return { consentStrength: 60, consentDecayRate, daysToThreshold: null };
+  const daysLeft = (anchor + validityDays * 86400000 - Date.now()) / 86400000;
+  if (daysLeft <= 0) return { consentStrength: 0, consentDecayRate, daysToThreshold: null };
+  return { consentStrength: Math.max(1, Math.min(100, Math.round(100 * daysLeft / validityDays))), consentDecayRate, daysToThreshold: Math.round(daysLeft) };
 }
 
 function dimension2_deliverability(contact, domainCounts, totalContacts) {
@@ -332,11 +344,11 @@ function prioritisationScore(consent, commercial, risk, deliverability, maxComme
   return parseFloat((cScore * 0.35 + comScore * 0.30 + rScore * 0.25 + dScore * 0.10).toFixed(4));
 }
 
-function analyseList(contacts, sector, aov) {
+function analyseList(contacts, sector, aov, validityDays = DEFAULT_VALIDITY_DAYS) {
   const domainCounts = {}; const emails = new Set(); let duplicates = 0;
   for (const c of contacts) { const email = (c.email || '').toLowerCase().trim(); if (emails.has(email)) { duplicates++; continue; } emails.add(email); const domain = email.split('@')[1] || ''; domainCounts[domain] = (domainCounts[domain] || 0) + 1; }
   const seen = new Set(); const unique = contacts.filter(c => { const email = (c.email || '').toLowerCase().trim(); if (seen.has(email)) return false; seen.add(email); return true; });
-  const analysed = unique.map(c => { const d1 = dimension1_consent(c); const d2 = dimension2_deliverability(c, domainCounts, unique.length); const d3 = dimension3_commercial(c, sector, aov); const d4 = dimension4_risk(d1); return { ...c, ...d1, ...d2, ...d3, ...d4 }; });
+  const analysed = unique.map(c => { const d1 = dimension1_consent(c, validityDays); const d2 = dimension2_deliverability(c, domainCounts, unique.length); const d3 = dimension3_commercial(c, sector, aov); const d4 = dimension4_risk(d1); return { ...c, ...d1, ...d2, ...d3, ...d4 }; });
   const maxCommercial = Math.max(...analysed.map(c => c.commercialValue), 1);
   const scored = analysed.map(c => ({ ...c, priorityScore: prioritisationScore({ consentStrength: c.consentStrength }, { commercialValue: c.commercialValue }, { daysToThreshold: c.daysToThreshold }, { deliverabilityScore: c.deliverabilityScore }, maxCommercial) }));
   const active = scored.filter(c => c.consentStrength >= 60 && c.deliverabilityScore >= 60);
@@ -577,6 +589,93 @@ async function generateListNarrative(listName, analysis, changes) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// v2.0 — CONTEXT FOR THE REVEALS
+// Opt-out register (List_Optouts): truncated email hashes of everyone
+// who unsubscribed or complained in each list's latest upload, so a
+// later upload of any list can spot people who opted out but are
+// active again. One record per chunk; older chunks for the same list
+// are replaced on each upload. Every call here is optional: if a
+// table is missing the reveal says it couldn't check.
+// ─────────────────────────────────────────────────────────────
+const OPTOUT_TABLE = 'List_Optouts';
+const OPTOUT_CHUNK = 7000; // 13 chars per key, well under Airtable's 100k long-text limit
+const OPTOUT_MAX_RECORDS = 60;
+
+async function loadOptouts(userId) {
+  const keys = new Set(); const sources = new Map();
+  try {
+    const recs = await atGet(OPTOUT_TABLE, `{UserID}='${userId}'`, 'sort[0][field]=CheckDate&sort[0][direction]=desc', OPTOUT_MAX_RECORDS);
+    for (const r of recs) {
+      for (const k of String(r.fields.Hashes || '').split(',')) {
+        if (k.length !== 12 || keys.has(k)) continue;
+        keys.add(k); sources.set(k, r.fields.ListName || LEGACY_LIST_NAME);
+      }
+    }
+    return { ok: true, keys, sources };
+  } catch (e) { console.warn('List_Optouts read skipped:', e.message); return { ok: false, keys, sources }; }
+}
+
+async function saveOptouts(userId, listName, contacts) {
+  const optedOut = contacts.filter(c => c.status === 'unsubscribed' || c.status === 'complained' || c.marketingConsent === 'opted_out' || c.unsubTime || c.unsubscribedFlag);
+  try {
+    const old = await atGet(OPTOUT_TABLE, `AND({UserID}='${userId}',${listNameFormulaFragment(listName)})`, '', 100);
+    for (let i = 0; i < old.length; i += 10) {
+      const qs = old.slice(i, i + 10).map(r => 'records[]=' + r.id).join('&');
+      await atFetch(`${AT_BASE}/${OPTOUT_TABLE}?${qs}`, { method: 'DELETE', headers: atH() });
+    }
+    const keys = [...new Set(optedOut.map(c => emailKey(c.email)))];
+    const today = new Date().toISOString().split('T')[0];
+    for (let i = 0; i < keys.length && i / OPTOUT_CHUNK < 20; i += OPTOUT_CHUNK) {
+      const chunk = keys.slice(i, i + OPTOUT_CHUNK);
+      await atCreate(OPTOUT_TABLE, { UserID: userId, ListName: listName, CheckDate: today, Count: chunk.length, Hashes: chunk.join(',') });
+    }
+    return keys.length;
+  } catch (e) { console.warn('List_Optouts write skipped:', e.message); return null; }
+}
+
+// Sign-up form findings from the member's latest Site Sweep
+async function loadSweepFindings(userId) {
+  try {
+    const recs = await atGet('Site_Sweeps', `{UserID}='${userId}'`, 'sort[0][field]=LastSweptAt&sort[0][direction]=desc', 3);
+    for (const r of recs) {
+      let sweep = null; try { sweep = JSON.parse(r.fields.SweepJson || 'null'); } catch {}
+      const findings = sweep?.findings || [];
+      if (!findings.length) continue;
+      return findings.filter(f => f.category === 'capture' || /^capture_/.test(String(f.checkId || '')))
+        .map(f => ({ fixType: f.checkId || 'capture', title: f.title || '', page: f.page || '', domain: r.fields.Domain || '' }));
+    }
+  } catch (e) { console.warn('Site_Sweeps read skipped:', e.message); }
+  return [];
+}
+
+async function loadCaseLibrary() {
+  try { return buildLibrary(await atGet('Sector_Intelligence_Feed', '', 'sort[0][field]=PublishedDate&sort[0][direction]=desc', 200)); }
+  catch (e) { return buildLibrary([]); }
+}
+
+// Fixes for the new reveals, deduplicated per list like the others
+async function emitInsightFixes(userId, listName, ins) {
+  const slug = slugify(listName); const today = new Date().toISOString().split('T')[0];
+  const resolved = what => `${what} resolved on rerun of "${listName}" (${today}).`;
+  await emitLIFix(userId, listName, { fixType: 'suppression_breach', sourceRecordId: `li-leak:${slug}`, presentNow: ins.leaks.count > 0,
+    description: `${ins.leaks.count.toLocaleString()} contacts on "${listName}" unsubscribed in an earlier upload but are active here. Suppress them unless they re-subscribed.`,
+    severity: 'High', contactVolume: ins.leaks.count, resolvedSummary: resolved('Unsubscribe leak') });
+  if (ins.softOptIn.checked) await emitLIFix(userId, listName, { fixType: 'consent_missing', sourceRecordId: `li-softoptin:${slug}`, presentNow: ins.softOptIn.noPurchase > 0,
+    description: `${(ins.softOptIn.noPurchase || 0).toLocaleString()} contacts on "${listName}" are held on soft opt-in but have never bought. Soft opt-in doesn't cover them: ask them to opt in or stop marketing to them.`,
+    severity: 'High', contactVolume: ins.softOptIn.noPurchase, resolvedSummary: resolved('Soft opt-in gap') });
+  await emitLIFix(userId, listName, { fixType: 'third_party_list', sourceRecordId: `li-thirdparty:${slug}`, presentNow: ins.thirdParty > 0,
+    description: `${ins.thirdParty.toLocaleString()} contacts on "${listName}" came from bought, rented or partner data. Under PECR they need consent that named your business.`,
+    severity: 'High', contactVolume: ins.thirdParty, resolvedSummary: resolved('Third-party data') });
+  const badForm = (ins.provenance.sources || []).find(g => g.sweepFindings && g.sweepFindings.length);
+  if (ins.provenance.available) await emitLIFix(userId, listName, { fixType: 'invalid_consent_mechanism', sourceRecordId: `li-source:${slug}`, presentNow: !!badForm,
+    description: badForm ? `${badForm.count.toLocaleString()} contacts on "${listName}" came from "${badForm.source}", where Site Sweep found: ${badForm.sweepFindings[0].title.toLowerCase()} (${badForm.sweepFindings[0].page}). Their consent may not be valid.` : '',
+    severity: 'High', contactVolume: badForm?.count, resolvedSummary: resolved('Sign-up form issue') });
+}
+
+// Strip the per-row parts before saving to Airtable
+function storableInsights(ins) { const { _rowFlags, _indices, ...rest } = ins; return rest; }
+
 // MAIN HANDLER — v1.8
 // ─────────────────────────────────────────────────────────────
 
@@ -792,8 +891,22 @@ export default async function handler(req, res) {
       if (mapped.length === 0) return res.status(400).json({ error: 'No valid email addresses found after processing. Check your column mapping.' });
       // ── Everything below is unchanged from v1.8 ───────────
 
-      const analysis = analyseList(mapped, sector, aov);
+      // v2.0: the member's consent period (months), default 24
+      const consentMonths = Math.min(120, Math.max(6, parseInt(req.body.consentMonths, 10) || DEFAULT_CONSENT_MONTHS));
+      const analysis = analyseList(mapped, sector, aov, Math.round(consentMonths * 30.44));
       const opportunities = generateOpportunities(analysis);
+
+      // v2.0: the reveals. Opt-outs from earlier uploads, Site Sweep form findings
+      // and the case library are loaded before this upload's opt-outs are saved.
+      const [optouts, sweepFindings, library] = await Promise.all([loadOptouts(userId), loadSweepFindings(userId), loadCaseLibrary()]);
+      const valueByIndex = new Map(analysis.scored.map(c => [c.originalIndex, c.commercialValue]));
+      const insights = buildListInsights(mapped, {
+        mapping, consentMonths, sector, library, sweepFindings,
+        optoutKeys: optouts.ok ? optouts.keys : null, optoutSources: optouts.sources,
+        value: c => valueByIndex.get(c.originalIndex) || 0,
+      });
+      const optoutsSaved = await saveOptouts(userId, listName, mapped);
+      insights.leaks.registerSaved = optoutsSaved != null;
 
       // ── Performance layer: domain composition, freshness, engagement gaps ──
       const allEmails = mapped.map(c=>c.email).filter(Boolean);
@@ -837,8 +950,7 @@ export default async function handler(req, res) {
           cmaNote: analysis.cmaNote, dataQualityFlags: analysis.dataQualityFlags,
           expiring30: analysis.expiring30, expiring60: analysis.expiring60, expiring90: analysis.expiring90,
           valueExpiring90: analysis.valueExpiring90, opportunities, narrative, sector: sector || null, domainAnalysis, freshness: freshnessData, engagementGaps: gapData,
-          activeIndices: analysis.activeIndices, recoverableIndices: analysis.recoverableIndices,
-          atRiskIndices: analysis.atRiskIndices, liabilityIndices: analysis.liabilityIndices,
+          insights: storableInsights(insights),
         }),
       };
       await atCreate('List_Intelligence_Checks', checkFields);
@@ -846,8 +958,9 @@ export default async function handler(req, res) {
       // Emit fixes
       const liabSrc = liabilitySourceId(listName);
       const comSrc  = commercialLossSourceId(listName);
-      await emitLIFix(userId, listName, { fixType: 'consent_expired', sourceRecordId: liabSrc, presentNow: analysis.liabilityCount > 0, description: `${analysis.liabilityCount.toLocaleString()} contacts in "${listName}" are below the consent threshold. Suppress these before sending.`, severity: analysis.liabilityPct > 0.2 ? 'High' : analysis.liabilityPct > 0.05 ? 'Medium' : 'Low', contactVolume: analysis.liabilityCount, resolvedSummary: `Liability contacts resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).` });
+      await emitLIFix(userId, listName, { fixType: 'consent_expired', sourceRecordId: liabSrc, presentNow: analysis.liabilityCount > 0, description: `${analysis.liabilityCount.toLocaleString()} contacts in "${listName}" have had no sign-up or engagement within your ${consentMonths}-month consent period. Suppress or re-permission them before sending.`, severity: analysis.liabilityPct > 0.2 ? 'High' : analysis.liabilityPct > 0.05 ? 'Medium' : 'Low', contactVolume: analysis.liabilityCount, resolvedSummary: `Liability contacts resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).` });
       const commercialLoss = analysis.liabilityCount > 0 ? parseFloat((analysis.liability.reduce((s, c) => s + c.commercialValue, 0)).toFixed(2)) : 0;
+      await emitInsightFixes(userId, listName, insights);
       await emitLIFix(userId, listName, { fixType: 'commercial_loss', sourceRecordId: comSrc, presentNow: commercialLoss > 50, description: `Estimated £${commercialLoss.toLocaleString()} in commercial value at risk from liability contacts in "${listName}".`, severity: commercialLoss > 500 ? 'High' : commercialLoss > 100 ? 'Medium' : 'Low', exposureLow: Math.round(commercialLoss * 0.5), exposureHigh: Math.round(commercialLoss * 1.5), resolvedSummary: `Commercial loss resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).` });
 
       return res.json({
@@ -862,7 +975,9 @@ export default async function handler(req, res) {
         atRiskIndices: analysis.atRiskIndices, liabilityIndices: analysis.liabilityIndices,
         // v1.8
         exposure, exposureChanges,
-        downloadIndices: { active: analysis.activeIndices, recoverable: analysis.recoverableIndices, atRisk: analysis.atRiskIndices, liability: analysis.liabilityIndices },
+        downloadIndices: { active: analysis.activeIndices, recoverable: analysis.recoverableIndices, atRisk: analysis.atRiskIndices, liability: analysis.liabilityIndices, green: insights._indices.green, amber: insights._indices.amber, red: insights._indices.red },
+        // v2.0
+        insights: storableInsights(insights), rowFlags: insights._rowFlags, fieldMapping: mapping,
       });
     }
 

@@ -9,6 +9,8 @@
 //   1. The copy (analyze-copy: deterministic rules first, AI reads the copy)
 //   2. The landing pages (shared page scanner, rules first)
 //   3. The list (latest List Intelligence check + open data findings)
+//   4. The audience (v1.1): complaint rate on recent sends to the list
+//      and how often it has been emailed this week (Audience Read)
 // The verdict itself is pure rules over those results, so the same
 // inputs always give the same answer. Each verdict gets a fingerprint
 // (sha256 of the inputs and result) and is saved to Send_Verdicts as
@@ -91,8 +93,28 @@ async function checkList(userId, listName) {
   };
 }
 
+// ── 4. Audience: recent sends to the same list (Audience Read) ──
+// Complaint rates against the Gmail / Yahoo bulk-sender limit and how
+// many times the list has been emailed this week.
+const COMPLAINT_LIMIT = 0.003, COMPLAINT_TARGET = 0.001;
+async function checkAudience(userId, listName) {
+  // Without a list name the week's sends can't be pinned to one audience
+  if (!listName) return { ok: true, found: false };
+  const since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  const f = `AND({UserID}=${fq(userId)},IS_AFTER({SendDate},'${since}')${listName ? `,LOWER({SegmentName})=LOWER(${fq(listName)})` : ''})`;
+  const recs = await atList('Audience_Read_Campaigns', f, 'sort[0][field]=SendDate&sort[0][direction]=desc', 50);
+  if (recs === null) return { ok: false };
+  const seen = new Set();
+  const sends = recs.map(r => r.fields).filter(x => { const k = `${x.SegmentName}|${x.SendDate}|${x.CampaignName}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  const weekAgo = Date.now() - 7 * 86400000;
+  const lastWeek = sends.filter(x => new Date(x.SendDate).getTime() >= weekAgo);
+  const rate = x => (Number(x.ComplaintCount) || 0) / Math.max(1, Number(x.VolumeSent) || 0);
+  const latest = sends.find(x => Number(x.VolumeSent) > 0) || null;
+  return { ok: true, found: sends.length > 0, sendsThisWeek: lastWeek.length, latest: latest ? { name: latest.CampaignName || 'your last send', date: latest.SendDate, complaintRate: rate(latest) } : null };
+}
+
 // ── Rules: the verdict ──
-export function decide({ channel, copy, pages, list }) {
+export function decide({ channel, copy, pages, list, audience = { ok: true, found: false } }) {
   const hold = [], fix = [], ok = [];
   const needsConsent = channel === 'email' || channel === 'sms';
 
@@ -121,11 +143,19 @@ export function decide({ channel, copy, pages, list }) {
     list.blockingFixes.forEach(f => hold.push({ area: 'list', text: f.description || f.fixType.replace(/_/g, ' '), action: 'Resolve this open finding, or suppress the affected contacts, before sending.' }));
     if (needsConsent && !list.found) fix.push({ area: 'list', text: list.listName ? `No list check on file for "${list.listName}".` : 'No list check on file.', action: 'Upload the send list to List health so consent and suppression are checked.' });
     if (list.found) {
-      if (list.liabilityPct > 0.05) hold.push({ area: 'list', text: `${Number(list.liabilityCount).toLocaleString('en-GB')} contacts (${Math.round(list.liabilityPct * 100)}%) are below the consent threshold.`, action: 'Suppress these contacts before sending.' });
-      else if (list.liabilityCount > 0) fix.push({ area: 'list', text: `${Number(list.liabilityCount).toLocaleString('en-GB')} contacts are below the consent threshold.`, action: 'Suppress these contacts before sending.' });
+      if (list.liabilityPct > 0.05) hold.push({ area: 'list', text: `${Number(list.liabilityCount).toLocaleString('en-GB')} contacts (${Math.round(list.liabilityPct * 100)}%) are past your consent period.`, action: 'Suppress these contacts before sending.' });
+      else if (list.liabilityCount > 0) fix.push({ area: 'list', text: `${Number(list.liabilityCount).toLocaleString('en-GB')} contacts are past your consent period.`, action: 'Suppress these contacts before sending.' });
       if (list.ageDays != null && list.ageDays > LIST_STALE_DAYS) fix.push({ area: 'list', text: `The last list check is ${list.ageDays} days old.`, action: 'Re-upload the list so the check reflects who you are sending to.' });
-      if (!list.liabilityCount && (list.ageDays == null || list.ageDays <= LIST_STALE_DAYS) && !list.blockingFixes.length) ok.push({ area: 'list', text: `List check from ${list.checkDate} shows no contacts below the consent threshold.` });
+      if (!list.liabilityCount && (list.ageDays == null || list.ageDays <= LIST_STALE_DAYS) && !list.blockingFixes.length) ok.push({ area: 'list', text: `List check from ${list.checkDate} shows no contacts past your consent period.` });
     }
+  }
+
+  if (audience.ok && audience.found) {
+    const l = audience.latest;
+    if (l && l.complaintRate >= COMPLAINT_LIMIT) hold.push({ area: 'audience', text: `Your last send ("${l.name}", ${l.date}) had ${(l.complaintRate * 100).toFixed(2)}% spam complaints, over the 0.3% limit Gmail and Yahoo enforce.`, action: 'Send only to contacts who engaged recently until complaints fall, and check this list\'s consent.' });
+    else if (l && l.complaintRate >= COMPLAINT_TARGET) fix.push({ area: 'audience', text: `Your last send had ${(l.complaintRate * 100).toFixed(2)}% spam complaints, above Google's recommended 0.1%.`, action: 'Trim contacts who haven\'t engaged in 6 months from this send.' });
+    if (audience.sendsThisWeek >= 2) fix.push({ area: 'audience', text: `This would be send number ${audience.sendsThisWeek + 1} to this list in 7 days.`, action: 'Check Audience Read to see how this list reacts to a third send in a week.' });
+    if (!hold.some(x => x.area === 'audience') && !fix.some(x => x.area === 'audience')) ok.push({ area: 'audience', text: `Recent sends to this list are within the spam-complaint limits${audience.sendsThisWeek ? ` (${audience.sendsThisWeek} send${audience.sendsThisWeek === 1 ? '' : 's'} this week)` : ''}.` });
   }
 
   const verdict = hold.length ? 'hold' : fix.length ? 'fix_first' : 'go';
@@ -192,12 +222,13 @@ export default async function handler(req, res) {
     const subject = b.subject ? String(b.subject).slice(0, 300) : '';
     const campaign = b.campaignName ? String(b.campaignName).slice(0, 120) : subject || 'Untitled campaign';
 
-    const [copyR, pagesR, listR] = await Promise.all([
+    const [copyR, pagesR, listR, audR] = await Promise.all([
       checkCopy({ userId, copy, subject, channel, sendingContext: b.sendingContext }).catch(e => ({ ok: false, error: e.message })),
       checkPages(urls, userId).catch(e => ({ ok: true, findings: [], pages: urls.map(url => ({ url, verdict: 'error', error: e.message })) })),
       checkList(userId, listName).catch(() => ({ ok: false, blockingFixes: [] })),
+      channel === 'email' ? checkAudience(userId, listName).catch(() => ({ ok: false })) : Promise.resolve({ ok: true, found: false }),
     ]);
-    const result = decide({ channel, copy: copyR, pages: pagesR, list: listR });
+    const result = decide({ channel, copy: copyR, pages: pagesR, list: listR, audience: audR });
     const createdAt = new Date().toISOString();
     const inputs = { copy, subject, channel, urls, listName };
     const fp = fingerprint({ v: VERSION, inputs, verdict: result.verdict, hold: result.hold, fix: result.fix, createdAt });

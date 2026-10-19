@@ -1,4 +1,9 @@
-// api/audience-read.js — Sendwize Audience Read v7.8
+// api/audience-read.js — Sendwize Audience Read v8.0
+// v8.0: 12-month list forecast, per-send table (people lost, £ value, net,
+// complaints against the 0.3% Gmail / Yahoo limit), best campaign by net,
+// third-send-in-a-week effect, next-send call and Black Friday plan, all from
+// _campaign-insights.js. Campaign saves are batched and skip sends already
+// stored; loads paginate and dedupe.
 // v7.8 (security): every request (except the public methodology text)
 //   authenticated via _auth.js; the verified member id replaces any userId
 //   from the browser. Calls to generate-fix and send-alert carry the
@@ -37,6 +42,7 @@ import { smartDetect, smartValidate } from './_smart-import.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { validateAudienceUpload } from './_normalise.js';
+import { buildCampaignInsights } from './_campaign-insights.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const AT_HEADERS = () => ({
@@ -523,9 +529,11 @@ function normaliseDate(raw) {
   if (!raw) return null;
   const s = String(raw).trim();
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  const uk = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  // v8.0: "15/03/2024 10:00" from campaign exports
+  const ds = s.replace(/\s+\d{1,2}:\d{2}.*$/, '');
+  const uk = ds.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (uk) return `${uk[3]}-${uk[2]}-${uk[1]}`;
-  const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  const us = ds.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if (us) {
     const yr = us[3].length === 2 ? '20' + us[3] : us[3];
     return `${yr}-${String(us[1]).padStart(2, '0')}-${String(us[2]).padStart(2, '0')}`;
@@ -1060,13 +1068,74 @@ async function upsertSegment(userId, segmentName, data) {
   return { priorState, newState, isNew, recordId };
 }
 
+function campaignFields(userId, segmentName, campaign, impact) {
+  return { UserID: userId, SegmentName: segmentName, CampaignName: campaign.campaign_name || 'Campaign', CampaignType: campaign.campaign_type || null, SendDate: campaign.date, VolumeSent: campaign.volume_sent || null, UnsubscribeCount: campaign.unsubscribe_count || 0, OpenRate: campaign.open_rate || null, ClickRate: campaign.click_rate || null, ComplaintCount: campaign.complaint_count ?? null, ImpactScore: impact?.impactScore || null, ImpactCategory: impact?.category || null, ImpactReason: impact?.plainVerdict || null, RecoveryDaysEstimated: null, UnsubRate: impact?.unsubRate || null, ExcessUnsubs: impact?.excessUnsubs || null, Revenue: campaign.revenue || null, Channel: campaign.channel || null, ConsentBasis: campaign.consent_basis || null, DeliveryRate: campaign.delivery_rate || null, BounceRate: campaign.bounce_rate || null };
+}
+// v8.0: counts the reveals need. Saved when the fields exist in Airtable
+// (see the review doc); if they don't, the save quietly falls back.
+const EXTRA_CAMPAIGN_FIELDS = c => ({ BounceCount: c.bounce_count ?? null, DeliveredCount: c.delivered_count ?? null, OpenCount: c.open_count ?? null, ClickCount: c.click_count ?? null, Cost: c.cost ?? null, Conversions: c.conversions ?? null });
+let extraCampaignFieldsOk = true;
+const campaignKey = (segment, c) => `${segment || 'Default'}|${c.date}|${(c.campaign_name || 'Campaign').toLowerCase()}`;
+
 async function saveCampaign(userId, segmentName, campaign, impact) {
-  await atCreate('Audience_Read_Campaigns', { UserID: userId, SegmentName: segmentName, CampaignName: campaign.campaign_name || 'Campaign', CampaignType: campaign.campaign_type || null, SendDate: campaign.date, VolumeSent: campaign.volume_sent || null, UnsubscribeCount: campaign.unsubscribe_count || 0, OpenRate: campaign.open_rate || null, ClickRate: campaign.click_rate || null, ComplaintCount: campaign.complaint_count || null, ImpactScore: impact?.impactScore || null, ImpactCategory: impact?.category || null, ImpactReason: impact?.plainVerdict || null, RecoveryDaysEstimated: null, UnsubRate: impact?.unsubRate || null, ExcessUnsubs: impact?.excessUnsubs || null, Revenue: campaign.revenue || null, Channel: campaign.channel || null, ConsentBasis: campaign.consent_basis || null, DeliveryRate: campaign.delivery_rate || null, BounceRate: campaign.bounce_rate || null });
+  await saveCampaigns(userId, segmentName, [{ campaign, impact }]);
 }
 
+// Batches of 10 (Airtable's limit per request), skipping sends already stored
+async function saveCampaigns(userId, segmentName, items, existingKeys = new Set()) {
+  const fresh = items.filter(({ campaign }) => !existingKeys.has(campaignKey(segmentName, campaign)));
+  for (let i = 0; i < fresh.length; i += 10) {
+    const batch = fresh.slice(i, i + 10);
+    const build = withExtra => batch.map(({ campaign, impact }) => ({ fields: Object.fromEntries(Object.entries({ ...campaignFields(userId, segmentName, campaign, impact), ...(withExtra ? EXTRA_CAMPAIGN_FIELDS(campaign) : {}) }).filter(([, v]) => v !== null && v !== undefined)) }));
+    let r = await fetch(`${AT_BASE}/Audience_Read_Campaigns`, { method: 'POST', headers: AT_HEADERS(), body: JSON.stringify({ records: build(extraCampaignFieldsOk) }) });
+    if (!r.ok && extraCampaignFieldsOk) {
+      const body = await r.text();
+      if (/UNKNOWN_FIELD_NAME/.test(body)) {
+        extraCampaignFieldsOk = false;
+        r = await fetch(`${AT_BASE}/Audience_Read_Campaigns`, { method: 'POST', headers: AT_HEADERS(), body: JSON.stringify({ records: build(false) }) });
+      } else throw new Error(`Airtable POST Audience_Read_Campaigns failed: ${r.status} — ${body}`);
+    }
+    if (!r.ok) throw new Error(`Airtable POST Audience_Read_Campaigns failed: ${r.status} — ${await r.text()}`);
+    batch.forEach(({ campaign }) => existingKeys.add(campaignKey(segmentName, campaign)));
+  }
+  return fresh.length;
+}
+
+// Newest 1,000 sends, oldest first. Pages through Airtable (100 per page).
 async function loadCampaigns(userId) {
-  const records = await atGet('Audience_Read_Campaigns', `{UserID}="${userId}"`, 'sort[0][field]=SendDate&sort[0][direction]=asc', 500);
-  return records.map(r => ({ segment: r.fields.SegmentName, campaign_name: r.fields.CampaignName, campaign_type: r.fields.CampaignType, date: r.fields.SendDate, volume_sent: r.fields.VolumeSent || null, unsubscribe_count: r.fields.UnsubscribeCount || 0, open_rate: r.fields.OpenRate || null, click_rate: r.fields.ClickRate || null, complaint_count: r.fields.ComplaintCount || null, revenue: r.fields.Revenue || null, cost: r.fields.Cost || null, conversions: r.fields.Conversions || null, open_count: r.fields.OpenCount || null, click_count: r.fields.ClickCount || null, delivered_count: r.fields.DeliveredCount || null, bounce_count: r.fields.BounceCount || null, channel: r.fields.Channel || null, consent_basis: r.fields.ConsentBasis || null, delivery_rate: r.fields.DeliveryRate || null, bounce_rate: r.fields.BounceRate || null }));
+  const records = [];
+  let offset = null;
+  do {
+    let url = `${AT_BASE}/Audience_Read_Campaigns?pageSize=100&filterByFormula=${encodeURIComponent(`{UserID}="${userId}"`)}&sort[0][field]=SendDate&sort[0][direction]=desc`;
+    if (offset) url += `&offset=${encodeURIComponent(offset)}`;
+    const r = await fetch(url, { headers: AT_HEADERS() });
+    if (!r.ok) throw new Error(`Airtable GET Audience_Read_Campaigns failed: ${r.status}`);
+    const j = await r.json();
+    records.push(...(j.records || []));
+    offset = j.offset || null;
+  } while (offset && records.length < 1000);
+  const seen = new Set();
+  return records.reverse().map(r => ({ segment: r.fields.SegmentName, campaign_name: r.fields.CampaignName, campaign_type: r.fields.CampaignType, date: r.fields.SendDate, volume_sent: r.fields.VolumeSent || null, unsubscribe_count: r.fields.UnsubscribeCount || 0, open_rate: r.fields.OpenRate || null, click_rate: r.fields.ClickRate || null, complaint_count: r.fields.ComplaintCount ?? null, revenue: r.fields.Revenue || null, cost: r.fields.Cost || null, conversions: r.fields.Conversions || null, open_count: r.fields.OpenCount || null, click_count: r.fields.ClickCount || null, delivered_count: r.fields.DeliveredCount || null, bounce_count: r.fields.BounceCount || null, channel: r.fields.Channel || null, consent_basis: r.fields.ConsentBasis || null, delivery_rate: r.fields.DeliveryRate || null, bounce_rate: r.fields.BounceRate || null }))
+    // Earlier versions saved a send again on every re-upload
+    .filter(c => { const k = campaignKey(c.segment, c); if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
+// Consent that lapses before Black Friday, from the latest List Intelligence check
+async function loadListIntelPeak(userId) {
+  try {
+    const recs = await atGet('List_Intelligence_Checks', `{UserID}="${userId}"`, 'sort[0][field]=CheckDate&sort[0][direction]=desc', 5);
+    let lapse = 0, found = false;
+    const seenLists = new Set();
+    for (const r of recs) {
+      const name = r.fields.ListName || 'Main list';
+      if (seenLists.has(name)) continue;
+      seenLists.add(name);
+      let res = null; try { res = JSON.parse(r.fields.Results || 'null'); } catch {}
+      const p = res?.insights?.peak;
+      if (p) { lapse += p.lapseBeforePeak || 0; found = true; }
+    }
+    return found ? { lapseBeforePeak: lapse } : null;
+  } catch { return null; }
 }
 
 async function snapshotSegment(userId, segmentName, data) {
@@ -1295,7 +1364,8 @@ export default async function handler(req, res) {
       const curMap = {}, prevMap = {};
       for (const seg of Object.keys(snapsBySeg)) { const list = snapsBySeg[seg]; if (list[0]) curMap[seg] = { state: list[0].state, capital: list[0].capital, avgUnsubRate: list[0].avgUnsubRate, excessUnsubs: list[0].excessUnsubs }; if (list[1]) prevMap[seg] = list[1]; }
       const changes = Object.keys(curMap).length ? buildChangeComparison(curMap, prevMap) : null;
-      return res.status(200).json({ success: true, segments: results, recommendations, sector, changes });
+      const insights = buildCampaignInsights(allCampaigns, { cpl: Number(req.query.cpl) || null, listIntel: await loadListIntelPeak(userId) });
+      return res.status(200).json({ success: true, segments: results, recommendations, sector, changes, insights });
     }
 
     // ─────────────────────────────────────────────────────────
@@ -1447,16 +1517,16 @@ export default async function handler(req, res) {
 
       // v7.6: collect narrative promises — run in parallel, don't block upload
       const narrativePromises = {};
+      // v8.0: skip sends already stored from an earlier upload of the same export
+      const existingCampaigns = await loadCampaigns(userId).catch(() => []);
+      const existingKeys = new Set(existingCampaigns.map(c => campaignKey(c.segment, c)));
 
       for (const [segmentName, segCampaigns] of Object.entries(segmentGroups)) {
         const data = runAlgorithms(segCampaigns, sector);
         const latestVolume = segCampaigns[segCampaigns.length - 1]?.volume_sent || 1000;
         data._latestVolumeSent = latestVolume;
         const segExposure = calculateAudienceExposure(data);
-        for (const c of segCampaigns) {
-          const impact = algorithm3_campaignImpact(c, segCampaigns, data.fingerprint, getBenchmark(sector));
-          await saveCampaign(userId, segmentName, c, impact);
-        }
+        await saveCampaigns(userId, segmentName, segCampaigns.map(c => ({ campaign: c, impact: algorithm3_campaignImpact(c, segCampaigns, data.fingerprint, getBenchmark(sector)) })), existingKeys);
 
         const upsert = await upsertSegment(userId, segmentName, {
           fingerprint:         data.fingerprint,
@@ -1531,7 +1601,9 @@ export default async function handler(req, res) {
         }
       }
       const changes = buildChangeComparison(currentMap, priorMap);
-      return res.status(200).json({ success: true, segments: savedSegments, campaignsSaved: campaigns.length, sector, changes });
+      // v8.0: the reveals, from this upload's sends
+      const insights = buildCampaignInsights(campaigns, { cpl: cplVal, listIntel: await loadListIntelPeak(userId) });
+      return res.status(200).json({ success: true, segments: savedSegments, campaignsSaved: campaigns.length, sector, changes, insights });
     }
 
     // ─────────────────────────────────────────────────────────
