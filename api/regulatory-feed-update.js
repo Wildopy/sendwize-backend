@@ -30,6 +30,8 @@
 //      MonitoringActive=true (Phase 3)
 //   7. Checks landing page URLs for content changes (Phase 4)
 //   8. Checks reference pricing campaigns for expiry (Phase 5)
+//   9. Checks members' latest list results for contacts with the same
+//      issue as a new ICO consent or suppression ruling (Phase 6)
 //
 // Trigger: Vercel Cron (GET with Authorization header) or manual POST
 // with { secret: CRON_SECRET }.
@@ -259,6 +261,66 @@ async function scanCompetitorPromos(competitors, claudeKey) {
     }
   }
 
+  return results;
+}
+
+// ── Phase 6: List impact of new rulings ───────────────────────
+// When a new consent or suppression ruling lands, check every member's
+// latest List Intelligence results for contacts with the same issue
+// and add a fix naming the ruling and the count. Deduplicated per
+// ruling and list by SourceRecordID (generate-fix skips repeats).
+const RULING_TO_LIST_REASONS = {
+  consent_missing:    ['soft_optin_no_purchase', 'third_party', 'consent_expired'],
+  suppression_breach: ['leak'],
+};
+const REASON_WORDS = {
+  soft_optin_no_purchase: 'held on soft opt-in without a purchase', third_party: 'from bought or partner data',
+  consent_expired: 'past your consent period', leak: 'unsubscribed earlier but active again',
+};
+async function notifyListImpact(allItems) {
+  const results = { listsChecked: 0, fixesAdded: 0, errors: [] };
+  const rulings = allItems.filter(i => (i.regulator || '').toUpperCase() === 'ICO'
+    && (i.claimTypes || []).some(ct => RULING_TO_LIST_REASONS[ct]));
+  if (!rulings.length) return results;
+  let checks = [];
+  try {
+    const since = new Date(Date.now() - 120 * 86400000).toISOString().slice(0, 10);
+    checks = await atGet('List_Intelligence_Checks', `IS_AFTER({CheckDate},'${since}')`, 'sort[0][field]=CheckDate&sort[0][direction]=desc', 500);
+  } catch (e) { results.errors.push(e.message); return results; }
+  const latest = new Map();
+  for (const r of checks) {
+    const key = `${r.fields.UserID}|${r.fields.ListName || 'Main list'}`;
+    if (!latest.has(key)) latest.set(key, r);
+  }
+  results.listsChecked = latest.size;
+  for (const r of latest.values()) {
+    let counts = null;
+    try { counts = JSON.parse(r.fields.Results || 'null')?.insights?.reasonCounts || null; } catch {}
+    if (!counts) continue;
+    const listName = r.fields.ListName || 'Main list';
+    for (const item of rulings) {
+      for (const ct of item.claimTypes) {
+        const reasons = (RULING_TO_LIST_REASONS[ct] || []).filter(x => counts[x] > 0);
+        if (!reasons.length) continue;
+        const total = reasons.reduce((s, x) => s + counts[x], 0);
+        const detail = reasons.map(x => `${counts[x].toLocaleString('en-GB')} ${REASON_WORDS[x]}`).join(', ');
+        const fine = item.fineAmount ? ` (fined \u00a3${Number(item.fineAmount).toLocaleString('en-GB')})` : '';
+        try {
+          await fetch(`${APP_URL}/api/generate-fix`, {
+            method: 'POST', headers: internalHeaders(),
+            body: JSON.stringify({
+              userId: r.fields.UserID, tool: 'List Intelligence', severity: 'High',
+              fixType: ct === 'suppression_breach' ? 'suppression_breach' : 'consent_missing',
+              description: `New ICO ruling: ${item.companyName}${fine}, ${item.publishedDate || ''}. ${(item.rulingSummary || '').slice(0, 160)} Your list "${listName}" has ${total.toLocaleString('en-GB')} contacts with the same issue: ${detail}.`,
+              contactVolume: total,
+              sourceRecordId: `li-ruling:${String(item.companyName || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30)}:${listName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}`,
+            }),
+          });
+          results.fixesAdded++;
+        } catch (e) { results.errors.push(e.message); }
+      }
+    }
+  }
   return results;
 }
 
@@ -912,6 +974,9 @@ export default async function handler(req, res) {
     results.dossierMonitoring = { checked: 0, alertsFired: 0, errors: [] };
   }
 
+  // ── Phase 6: List impact of new rulings (daily) ─────────────
+  results.listImpact = allItems.length ? await notifyListImpact(allItems) : { listsChecked: 0, fixesAdded: 0, errors: [] };
+
   // ── Phase 4: Landing page drift detection (daily) ───────────
   console.log('Starting landing page drift check');
   results.landingPageDrift = await checkLandingPageDrift();
@@ -950,6 +1015,11 @@ export default async function handler(req, res) {
       urlsChecked:    results.landingPageDrift.checked,
       dossiersAlerted: results.landingPageDrift.drifted,
       errors:         results.landingPageDrift.errors.length,
+    },
+    listImpact: {
+      listsChecked: results.listImpact.listsChecked,
+      fixesAdded:   results.listImpact.fixesAdded,
+      errors:       results.listImpact.errors.length,
     },
     refPriceExpiry: {
       dossiersChecked: results.refPriceExpiry.checked,

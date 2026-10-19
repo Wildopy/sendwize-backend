@@ -33,7 +33,7 @@ const FIELD_DEFS = {
   campaign_name:     { type: 'string', modes: ['audience'],       friendlyName: 'Campaign' },
   campaign_type:     { type: 'string', modes: ['audience'],       friendlyName: 'Campaign type' },
   channel:           { type: 'string', modes: ['audience'],       friendlyName: 'Channel' },
-  consent_basis:     { type: 'string', modes: ['audience'],       friendlyName: 'Consent basis' },
+  consent_basis:     { type: 'string', modes: ['audience','list'], friendlyName: 'Consent basis' },
   volume_sent:       { type: 'count',  modes: ['audience'],       friendlyName: 'Sends' },
   delivered_count:   { type: 'count',  modes: ['audience'],       friendlyName: 'Delivered' },
   open_count:        { type: 'count',  modes: ['audience'],       friendlyName: 'Opens' },
@@ -57,6 +57,16 @@ const FIELD_DEFS = {
   status:            { type: 'string', modes: ['list'],           friendlyName: 'Status' },
   order_value:       { type: 'money',  modes: ['list'],           friendlyName: 'Order value' },
   engagement_count:  { type: 'count',  modes: ['list'],           friendlyName: 'Engagement count' },
+  source:            { type: 'string', modes: ['list'],           friendlyName: 'Sign-up source' },
+  marketing_consent: { type: 'string', modes: ['list'],           friendlyName: 'Marketing consent' },
+  unsubscribed_flag: { type: 'string', modes: ['list'],           friendlyName: 'Unsubscribed (yes/no)' },
+  unsub_time:        { type: 'date',   modes: ['list'],           friendlyName: 'Unsubscribe date' },
+  optin_time:        { type: 'date',   modes: ['list'],           friendlyName: 'Opt-in time' },
+  optin_ip:          { type: 'string', modes: ['list'],           friendlyName: 'Opt-in IP' },
+  confirm_time:      { type: 'date',   modes: ['list'],           friendlyName: 'Double opt-in confirmed' },
+  last_click:        { type: 'date',   modes: ['list'],           friendlyName: 'Last click' },
+  order_count:       { type: 'count',  modes: ['list'],           friendlyName: 'Number of orders' },
+  engagement_score:  { type: 'count',  modes: ['list'],           friendlyName: 'Engagement rating' },
 };
 
 // ─── ALIAS TABLE ────────────────────────────────────────────
@@ -166,6 +176,9 @@ const ALIASES = {
   'date': 'date', 'send date': 'date', 'sent date': 'date',
   'sent on': 'date', 'send on': 'date', 'delivered at': 'date',
   'timestamp': 'date', 'campaign date': 'date', 'date sent': 'date',
+  'send time': 'date', 'sent at': 'date', 'send date time': 'date', 'publish date': 'date',
+  'unique placed orders': 'conversions', 'placed orders': 'conversions',
+  'campaign channel': 'channel',
 
   // ── List Intelligence specific ────────────────────────────
   'email': 'email', 'email address': 'email', 'e mail': 'email',
@@ -204,6 +217,49 @@ const ALIASES = {
   'engagement count': 'engagement_count', 'activity count': 'engagement_count',
   'total opens': 'engagement_count', 'total clicks': 'engagement_count',
   'sessions': 'engagement_count',
+};
+
+// List-mode aliases checked before the shared table, so contact
+// exports from Klaviyo, Mailchimp, HubSpot, Brevo and Shopify map
+// without clashing with the campaign-report names above.
+const LIST_ALIASES = {
+  // Klaviyo profile export
+  'email marketing consent': 'marketing_consent', 'email consent': 'marketing_consent',
+  'initial source': 'source', 'initial source medium': 'source', 'list source': 'source',
+  'last click': 'last_click', 'last email click': 'last_click',
+  'historic customer lifetime value': 'order_value', 'total customer lifetime value': 'order_value',
+  'historic number of orders': 'order_count', 'number of orders': 'order_count',
+  'first active': 'date_added', 'last active': 'last_engagement', 'last open': 'last_engagement',
+  // Mailchimp audience export (subscribed / unsubscribed / cleaned files)
+  'optin time': 'optin_time', 'opt in time': 'optin_time',
+  'optin ip': 'optin_ip', 'opt in ip': 'optin_ip',
+  'confirm time': 'confirm_time', 'confirmed time': 'confirm_time', 'confirm ip': 'ignore',
+  'member rating': 'engagement_score', 'rating': 'engagement_score',
+  'unsub time': 'unsub_time', 'unsubscribe date': 'unsub_time', 'unsubscribed date': 'unsub_time',
+  'unsub reason': 'ignore', 'unsub campaign title': 'ignore', 'last changed': 'ignore', 'leid': 'ignore', 'euid': 'ignore',
+  // HubSpot contacts export
+  'create date': 'date_added', 'original source': 'source', 'original source drill down 1': 'ignore',
+  'last marketing email click date': 'last_click', 'last marketing email open date': 'last_engagement',
+  'unsubscribed from all email': 'unsubscribed_flag', 'opted out of all email': 'unsubscribed_flag',
+  'legal basis for processing contacts data': 'consent_basis', 'legal basis': 'consent_basis',
+  'total revenue': 'order_value',
+  // Brevo
+  'added time': 'date_added', 'email blacklisted': 'unsubscribed_flag', 'blacklisted': 'unsubscribed_flag', 'opt in': 'marketing_consent', 'double opt in': 'confirm_time',
+  // Shopify customers export
+  'accepts email marketing': 'marketing_consent', 'accepts marketing': 'marketing_consent',
+  'email marketing status': 'marketing_consent', 'total spent': 'order_value', 'total orders': 'order_count',
+  // Generic
+  'source': 'source', 'signup source': 'source', 'sign up source': 'source', 'lead source': 'source',
+  'acquisition source': 'source', 'signup form': 'source', 'sign up form': 'source', 'form name': 'source',
+  'how they signed up': 'source', 'channel': 'source', 'utm source': 'source',
+  'consent basis': 'consent_basis', 'consent': 'consent_basis', 'consent type': 'consent_basis',
+  'lawful basis': 'consent_basis', 'opt in method': 'consent_basis', 'permission': 'consent_basis',
+  'marketing consent': 'marketing_consent', 'marketing opt in': 'marketing_consent', 'email opt in': 'marketing_consent',
+  'unsubscribed': 'unsubscribed_flag', 'is unsubscribed': 'unsubscribed_flag',
+  'opt in date': 'optin_time', 'consent date': 'optin_time', 'consent timestamp': 'optin_time',
+  'ip address': 'optin_ip', 'signup ip': 'optin_ip',
+  'orders': 'order_count', 'order count': 'order_count', 'purchases': 'order_count',
+  'clv': 'order_value', 'customer lifetime value': 'order_value',
 };
 
 // ─── NORMALISE HEADER ───────────────────────────────────────
@@ -352,6 +408,14 @@ function smartDetect(headers, sampleRows, mode = 'audience') {
     const norm = normaliseHeader(h);
     const profile = profiles[h];
 
+    // List-mode aliases first ('ignore' marks known noise columns)
+    if (mode === 'list' && LIST_ALIASES[norm]) {
+      const field = LIST_ALIASES[norm];
+      if (field === 'ignore') continue;
+      candidates.push({ header: h, field, score: 100, source: 'alias' });
+      continue;
+    }
+
     // Direct alias match
     if (ALIASES[norm]) {
       const field = ALIASES[norm];
@@ -493,7 +557,7 @@ function smartDetect(headers, sampleRows, mode = 'audience') {
   }
 
   // Step 6: Build capabilities and summary
-  const hasDate = mode === 'audience' ? claimedFields.has('date') : (claimedFields.has('date_added') || claimedFields.has('last_engagement'));
+  const hasDate = mode === 'audience' ? claimedFields.has('date') : ['date_added', 'last_engagement', 'optin_time', 'last_click'].some(f => claimedFields.has(f));
   const hasVolumeClaimed = claimedFields.has('volume_sent') || claimedFields.has('delivered_count');
   const hasOpenData = claimedFields.has('open_rate') || claimedFields.has('open_count');
   const hasClickData = claimedFields.has('click_rate') || claimedFields.has('click_count');
@@ -546,6 +610,12 @@ function smartDetect(headers, sampleRows, mode = 'audience') {
     if (claimedFields.has('engagement_type'))   available.push('Engagement type');
     if (claimedFields.has('order_value'))       available.push('Order value');
     if (claimedFields.has('status'))           available.push('Subscription status');
+    if (claimedFields.has('marketing_consent')) available.push('Marketing consent');
+    if (claimedFields.has('source'))           available.push('Sign-up source');     else unavailable.push('Sign-up source');
+    if (claimedFields.has('consent_basis'))    available.push('Consent basis');
+    if (claimedFields.has('optin_time') || claimedFields.has('confirm_time')) available.push('Opt-in record');
+    if (claimedFields.has('last_click'))       available.push('Last click');
+    if (claimedFields.has('order_count'))      available.push('Number of orders');
   }
 
   // canAnalyse: do we have enough to say ANYTHING useful?

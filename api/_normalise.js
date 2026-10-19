@@ -6,6 +6,8 @@
 // before any analysis. No downstream function should ever touch
 // raw row data or reference source column names.
 
+import { normaliseConsentBasis, normaliseMarketingConsent } from './_list-insights.js';
+
 // ─── Date parsing ─────────────────────────────────────────────
 // Handles: DD/MM/YYYY, MM/DD/YYYY (if unambiguous), YYYY-MM-DD,
 // ISO 8601, "15 Mar 2023", "March 15, 2023", Unix timestamps (ms),
@@ -152,6 +154,13 @@ const STATUS_MAP = {
   'cleaned': 'cleaned', 'suppressed': 'cleaned', 'blacklisted': 'cleaned',
   'complaint': 'complained', 'complained': 'complained', 'spam': 'complained',
   'marked as spam': 'complained', 'abuse': 'complained',
+  // Platform-specific states (Klaviyo, Mailchimp, Shopify, HubSpot)
+  'never_subscribed': 'not_subscribed', 'never subscribed': 'not_subscribed',
+  'not subscribed': 'not_subscribed', 'not_subscribed': 'not_subscribed',
+  'non-subscribed': 'not_subscribed', 'nonsubscribed': 'not_subscribed',
+  'pending': 'pending', 'unconfirmed': 'pending',
+  'transactional': 'transactional',
+  'archived': 'cleaned',
 };
 
 export function normaliseStatus(val) {
@@ -212,6 +221,41 @@ export function normaliseListRow(rawRow, fieldMapping) {
       case 'segment':
         contact.segment = rawVal ? String(rawVal).trim() : null;
         break;
+      case 'source':
+        contact.source = rawVal ? String(rawVal).trim().slice(0, 120) : null;
+        break;
+      case 'consent_basis':
+        contact.consentBasis = normaliseConsentBasis(rawVal);
+        break;
+      case 'marketing_consent':
+        contact.marketingConsent = normaliseMarketingConsent(rawVal);
+        break;
+      case 'unsubscribed_flag':
+        contact.unsubscribedFlag = /^(yes|true|1|y|unsubscribed|opted out)$/i.test(String(rawVal || '').trim());
+        break;
+      case 'unsub_time':
+        contact.unsubTime = parseFlexibleDate(rawVal);
+        break;
+      case 'optin_time':
+        contact.optinTime = parseFlexibleDate(rawVal);
+        break;
+      case 'optin_ip':
+        contact.optinIp = rawVal && String(rawVal).trim() ? String(rawVal).trim().slice(0, 64) : null;
+        break;
+      case 'confirm_time':
+        contact.confirmTime = parseFlexibleDate(rawVal);
+        break;
+      case 'last_click':
+        contact.lastClick = parseFlexibleDate(rawVal);
+        break;
+      case 'order_count':
+        contact.orderCount = parseCount(rawVal);
+        break;
+      case 'engagement_score': {
+        const n = parseFloat(String(rawVal ?? '').replace(/[^0-9.]/g, ''));
+        contact.engagementScore = Number.isFinite(n) ? n : null;
+        break;
+      }
       // Anything else: silently ignore
     }
   }

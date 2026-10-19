@@ -265,6 +265,45 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   .action-cards { grid-template-columns: 1fr; }
   .val-stats { grid-template-columns: 1fr; }
 }
+
+/* v2.0 — The reveals: real list, sources, evidence, leaks */
+.ins-wrap{margin-bottom:32px}
+.ins-hero{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:26px 26px 22px;box-shadow:var(--shm);margin-bottom:14px}
+.ins-kicker{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--o);margin-bottom:8px}
+.ins-headline{font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.2;margin-bottom:16px}
+.ins-headline em{font-style:normal;color:var(--g)}
+.ins-bar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--bg);margin-bottom:10px}
+.ins-bar span{display:block;height:100%}
+.ins-bar .g{background:var(--g)}.ins-bar .a{background:#f59e0b}.ins-bar .r{background:var(--r)}
+.ins-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--tm);margin-bottom:14px}
+.ins-legend b{font-size:14px;color:var(--t)}
+.ins-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.ins-reasons{display:flex;flex-wrap:wrap;gap:6px}
+.ins-chip{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;border:1px solid var(--b);background:var(--bg);color:var(--tm)}
+.ins-chip.red{background:var(--rb);border-color:var(--rc);color:#991b1b}.ins-chip.amber{background:var(--yb);border-color:var(--yc);color:#854d0e}
+.ins-reveals{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.ins-reveal{background:var(--w);border:1px solid var(--b);border-left:4px solid var(--blue);border-radius:var(--rad);padding:14px 16px;font-size:14px;line-height:1.55;box-shadow:var(--sh)}
+.ins-reveal.red{border-left-color:var(--r)}.ins-reveal.amber{border-left-color:#f59e0b}
+.ins-reveal .lbl{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin-bottom:3px}
+.ins-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+.ins-act{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:16px;display:flex;flex-direction:column;gap:8px}
+.ins-act h4{font-size:14px;font-weight:700}.ins-act p{font-size:12px;color:var(--mu);line-height:1.5;flex:1}
+.ins-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:14px}
+.ins-card h3{font-size:15px;font-weight:700;margin-bottom:4px}.ins-card .sub{font-size:12px;color:var(--mu);margin-bottom:12px;line-height:1.5}
+.ins-table{width:100%;border-collapse:collapse;font-size:12px}
+.ins-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);padding:6px 8px;border-bottom:1px solid var(--b)}
+.ins-table td{padding:8px;border-bottom:1px solid var(--b);vertical-align:top}
+.ins-table tr.flag td:first-child{font-weight:700;color:#991b1b}
+.ins-mini{display:inline-flex;height:6px;width:80px;border-radius:3px;overflow:hidden;background:var(--bg);vertical-align:middle;margin-right:6px}
+.ins-mini span{display:block;height:100%}
+.ins-ev{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.ins-ev div{background:var(--bg);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--mu)}
+.ins-ev b{display:block;font-size:18px;color:var(--t)}
+.ins-twin{border-left:4px solid var(--pur)}
+.ins-note{font-size:11px;color:var(--mu);line-height:1.5;margin-top:8px}
+.consent-period{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:14px 16px;margin-bottom:14px;font-size:13px}
+.consent-period input{width:70px;font-family:inherit;font-size:14px;font-weight:600;padding:6px 8px;border:1px solid var(--bm);border-radius:6px}
+@media(max-width:640px){.ins-headline{font-size:21px}.ins-hero{padding:20px 16px}}
 </style>
 </head>
 <body>
@@ -395,6 +434,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
     <p class="ctx-note">Used only to calculate estimated list value. Stored to your profile &mdash; you won&apos;t be asked again.</p>
   </div>
+  <div class="consent-period">
+    <span>Treat consent as valid for</span><input type="number" id="consentMonths" min="6" max="120" value="24" onchange="saveConsentMonths()"><span>months after someone signs up or last engages.</span>
+    <span style="font-size:11px;color:var(--mu);flex-basis:100%">The ICO sets no fixed period. Pick the one your policy uses; 24 months is a common choice.</span>
+  </div>
   <div class="btn-row">
     <button class="btn btn-primary" id="btnAnalyse" onclick="submitUpload()">Analyse my list &rarr;</button>
     <button class="btn btn-ghost" onclick="showScreen('upload')">&larr; Back</button>
@@ -419,6 +462,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <button class="btn btn-primary btn-sm" onclick="generateHealthBrief()">AI Health Brief ✨</button>
     </div>
   </div>
+  <div id="insightsSection"></div>
   <div id="presendGate"></div>
   <div id="actionCards"></div>
   <div id="reconsentDraft" class="reconsent-draft"></div>
@@ -493,11 +537,20 @@ var currentListName=null;     // NEW — which list is shown in results
 var currentFilename='';       // NEW — for name pre-fill
 var TF=[
   {v:'ignore',l:'\u2014 ignore \u2014'},{v:'email',l:'Email address'},
-  {v:'date_added',l:'Date added / joined'},{v:'last_engagement',l:'Last engagement date'},
+  {v:'date_added',l:'Date added / joined'},{v:'optin_time',l:'Opt-in time'},
+  {v:'optin_ip',l:'Opt-in IP address'},{v:'confirm_time',l:'Double opt-in confirmed'},
+  {v:'source',l:'Sign-up source / form'},{v:'consent_basis',l:'Consent basis'},
+  {v:'marketing_consent',l:'Marketing consent (yes/no)'},{v:'status',l:'Subscription status'},
+  {v:'unsubscribed_flag',l:'Unsubscribed (yes/no)'},{v:'unsub_time',l:'Unsubscribe date'},
+  {v:'last_engagement',l:'Last open / activity date'},{v:'last_click',l:'Last click date'},
   {v:'last_purchase',l:'Last purchase date'},{v:'engagement_type',l:'Engagement type'},
-  {v:'segment',l:'Segment / group'},{v:'status',l:'Subscription status'},
-  {v:'order_value',l:'Order value (\u00a3)'},{v:'engagement_count',l:'Engagement count'},
+  {v:'engagement_score',l:'Engagement rating (e.g. 1\u20135)'},
+  {v:'segment',l:'Segment / group'},
+  {v:'order_value',l:'Order value / total spent (\u00a3)'},{v:'order_count',l:'Number of orders'},
+  {v:'engagement_count',l:'Engagement count'},
 ];
+function getConsentMonths(){var v=parseInt((el('consentMonths')||{}).value,10);if(!v){try{v=parseInt(localStorage.getItem('sw_consent_months'),10);}catch(e){}}return Math.min(120,Math.max(6,v||24));}
+function saveConsentMonths(){try{localStorage.setItem('sw_consent_months',String(getConsentMonths()));}catch(e){}}
 function el(id){return document.getElementById(id);}
 function fmt(n){return(n||0).toLocaleString('en-GB');}
 function fmtGBP(n){return n?'\u00a3'+fmt(Math.round(n)):'n/a';}
@@ -706,7 +759,7 @@ function submitWithSmartDetectionLI(json) {
       showLoading('Analysing across four dimensions\u2026');
       swFetch(API + '?userId=' + userId + '&action=upload', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listName: listName.trim(), rows: parsedCSV.rows, fieldMapping: mapping, sector: sector, aov: aov, uploadVersion: Date.now() })
+        body: JSON.stringify({ listName: listName.trim(), rows: parsedCSV.rows, fieldMapping: mapping, sector: sector, aov: aov, consentMonths: getConsentMonths(), uploadVersion: Date.now() })
       })
         .then(function(r) { return r.json(); })
         .then(function(result) {
@@ -832,6 +885,7 @@ function onListNameChange(){
   btn.style.opacity=v.length?'1':'.4';
 }
 function buildMappingTable(){
+  try{var cm=localStorage.getItem('sw_consent_months');if(cm&&el('consentMonths'))el('consentMonths').value=cm;}catch(e){}
   var samp=parsedCSV.rows[0]||{};
   var card=document.createElement('div');card.className='map-card';
   card.innerHTML='<h3>Your contact list columns</h3><p class="map-meta">'+parsedCSV.headers.length+' columns &middot; '+parsedCSV.rows.length.toLocaleString()+' contacts</p>'+
@@ -884,7 +938,7 @@ async function submitUpload(){
   var sector=el('ctxSector').value||'ecommerce';var aov=parseFloat(el('ctxAov').value)||50;
   showLoading('Analysing across four dimensions\u2026');
   try{
-    var resp=await swFetch(API+'?userId='+userId+'&action=upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:listName,rows:parsedCSV.rows,fieldMapping:mapping,sector:sector,aov:aov,uploadVersion:Date.now()})});
+    var resp=await swFetch(API+'?userId='+userId+'&action=upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:listName,rows:parsedCSV.rows,fieldMapping:mapping,sector:sector,aov:aov,consentMonths:getConsentMonths(),uploadVersion:Date.now()})});
     var json=await resp.json();if(!json.success)throw new Error(json.error||'Upload failed');
     hideLoading();
     lastResults=json;
@@ -1017,6 +1071,100 @@ function renderPerformanceLayer(d){
   var freshEl=document.getElementById('freshnessSection');if(freshEl&&d.freshness){var fr=d.freshness,freshColor=fr.freshState==='fresh'?'var(--g)':fr.freshState==='stale'?'var(--r)':'var(--y)',distHtml=Object.values(fr.distribution||{}).map(function(b){return'<div class="tier-row"><div class="tier-label" style="width:120px">'+escH(b.label)+'</div><div class="tier-bar-wrap"><div class="tier-bar-fill" style="width:'+b.pct+'%;background:'+freshColor+'"></div></div><div class="tier-count">'+fmt(b.count)+'</div><div class="tier-pct">'+b.pct+'%</div></div>';}).join('');freshEl.innerHTML='<div class="tiers-card"><div class="tiers-title">List freshness</div>'+distHtml+'<div style="font-size:12px;color:var(--tm);margin-top:10px;padding-top:10px;border-top:1px solid var(--b);line-height:1.5">'+escH(fr.verdict)+'</div><div style="font-size:10px;color:var(--mu);margin-top:4px">Average contact age: '+fr.avgAgeDays+' days · Oldest: '+fmtDate(fr.oldest)+' · Newest: '+fmtDate(fr.newest)+'</div></div>';}
   var gapEl=document.getElementById('engagementGapSection');if(gapEl&&d.engagementGaps){var eg=d.engagementGaps,gapColors={gold:'var(--g)',active:'var(--blue)',cooling:'var(--y)',dormant:'var(--r)',neverEngaged:'var(--mu)'},gapHtml=Object.entries(eg.segments||{}).map(function(entry){var key=entry[0],seg=entry[1];return'<div class="tier-row"><div class="tier-dot" style="background:'+(gapColors[key]||'var(--mu)')+'"></div><div class="tier-label" style="width:140px">'+escH(seg.label.split(' — ')[0])+'</div><div class="tier-bar-wrap"><div class="tier-bar-fill" style="width:'+seg.pct+'%;background:'+(gapColors[key]||'var(--mu)')+'"></div></div><div class="tier-count">'+fmt(seg.count)+'</div><div class="tier-pct">'+seg.pct+'%</div><div class="tier-desc">'+escH(seg.desc)+'</div></div>';}).join('');gapEl.innerHTML='<div class="tiers-card"><div class="tiers-title">Engagement quality</div>'+gapHtml+'<div style="font-size:12px;color:var(--tm);margin-top:10px;padding-top:10px;border-top:1px solid var(--b);line-height:1.5">'+escH(eg.insight)+'</div></div>';}
 }
+// ── v2.0: the reveals ──────────────────────────────────────────
+var rowFlagMap=null; // originalIndex -> [band, reasons]
+var REASON_LABELS={invalid:'Invalid email',disposable:'Disposable address',opted_out:'Unsubscribed or complained',leak:'Opted out earlier, active here',bounced:'Bounced or cleaned',not_subscribed:'Never subscribed',third_party:'Bought or partner data',soft_optin_no_purchase:'Soft opt-in, never bought',consent_expired:'Past your consent period',consent_expiring:'Consent ends within 90 days',dormant:'No engagement in 12 months',unknown_basis:'Consent basis not recorded',no_signup_record:'No sign-up record',role_based:'Role address',typo_domain:'Likely typo domain'};
+function insPct(n,t){return t>0?Math.round(n/t*100):0;}
+function renderInsights(d){
+  var host=el('insightsSection');if(!host)return;
+  var ins=d.insights||(d.results&&d.results.insights)||null;
+  if(!ins||!ins.realList){host.innerHTML='';return;}
+  rowFlagMap=null;
+  if(d.rowFlags&&d.rowFlags.length){rowFlagMap={};d.rowFlags.forEach(function(f){rowFlagMap[f[0]]=[f[1],f[2]];});}
+  var rl=ins.realList,t=rl.total||0;
+  var html='<div class="ins-wrap">';
+  // Headline
+  html+='<div class="ins-hero"><div class="ins-kicker">Your real list</div>'
+    +'<div class="ins-headline"><em>'+fmt(rl.green)+'</em> of your '+fmt(t)+' contacts are safe to market today.</div>'
+    +'<div class="ins-bar"><span class="g" style="width:'+rl.greenPct+'%"></span><span class="a" style="width:'+rl.amberPct+'%"></span><span class="r" style="width:'+rl.redPct+'%"></span></div>'
+    +'<div class="ins-legend"><span><i style="background:var(--g)"></i><b>'+fmt(rl.green)+'</b> safe to market</span><span><i style="background:#f59e0b"></i><b>'+fmt(rl.amber)+'</b> need attention</span><span><i style="background:var(--r)"></i><b>'+fmt(rl.red)+'</b> can’t legally or usefully contact</span></div>'
+    +'<div class="ins-reasons">'+(rl.reasons||[]).slice(0,8).map(function(r){return'<span class="ins-chip '+r.band+'">'+escH(r.label)+' · '+fmt(r.count)+'</span>';}).join('')+'</div>'
+    +'<div class="ins-note">Consent counted as valid for '+(ins.consentMonths||24)+' months after sign-up or the last open, click or purchase. Change this on the upload screen.</div></div>';
+  // Reveals
+  if(ins.reveals&&ins.reveals.length){
+    var lbl={leak:'Unsubscribe leak',soft_opt_in:'Soft opt-in',third_party:'Third-party data',expiring:'Consent running out',source:'Where your good contacts come from',case_twin:'Who was fined for this'};
+    html+='<div class="ins-reveals">'+ins.reveals.filter(function(r){return r.kind!=='case_twin'||!ins.caseTwin;}).map(function(r){return'<div class="ins-reveal '+(r.severity==='red'?'red':r.severity==='amber'?'amber':'')+'"><span class="lbl">'+escH(lbl[r.kind]||'Insight')+'</span>'+escH(r.text)+'</div>';}).join('')+'</div>';
+  }
+  // Fixes, one click each
+  var canDl=!!(parsedCSV&&rowFlagMap!==null);
+  var dlNote=canDl?'':'<p style="color:var(--y)">Re-upload the list to download this file.</p>';
+  html+='<div class="ins-actions">'
+    +'<div class="ins-act"><h4>✅ Clean file ('+fmt(rl.green)+')</h4><p>Everyone you can safely market to today, ready to import into any platform or ad audience.</p>'+dlNote+'<button class="btn btn-primary btn-sm" '+(canDl?'':'disabled ')+'onclick="downloadBand(\'green\')">Download</button></div>'
+    +'<div class="ins-act"><h4>⚠️ Keep them ('+fmt(rl.amber)+')</h4><p>Contacts whose consent is ageing or who’ve gone quiet. Send them a re-permission email.</p>'+dlNote+'<div class="btn-row"><button class="btn btn-ghost btn-sm" '+(canDl?'':'disabled ')+'onclick="downloadBand(\'amber\')">Download</button><button class="btn btn-primary btn-sm" onclick="generateReconsentDraft()">Write the email</button></div></div>'
+    +'<div class="ins-act"><h4>⛔ Suppress ('+fmt(rl.red)+')</h4><p>Everyone you shouldn’t email, with the reason for each. Add them to your platform’s suppression list.</p>'+dlNote+'<button class="btn btn-ghost btn-sm" '+(canDl?'':'disabled ')+'onclick="downloadBand(\'red\')">Download</button></div>'
+    +'<div class="ins-act"><h4>📁 Evidence pack</h4><p>Your full list with each contact’s consent status and reasons, dated today. Keep it as your record if the ICO asks.</p>'+dlNote+'<button class="btn btn-ghost btn-sm" '+(canDl?'':'disabled ')+'onclick="downloadEvidence()">Download</button></div>'
+    +'</div>';
+  // Sources
+  var pv=ins.provenance||{};
+  if(pv.available&&pv.sources&&pv.sources.length){
+    var showBuy=pv.sources.some(function(g){return g.buyersPct!=null;}),showNever=pv.sources.some(function(g){return g.neverEngagedPct!=null;});
+    html+='<div class="ins-card"><h3>Where your contacts come from</h3><div class="sub">Each sign-up source, how much of it you can market to'+(showBuy?', and how many bought':'')+'. Flagged sources need a look.</div>'
+      +'<div style="overflow-x:auto"><table class="ins-table"><thead><tr><th>Source</th><th>Contacts</th><th>Safe / attention / blocked</th>'+(showNever?'<th>Never engaged</th>':'')+(showBuy?'<th>Bought</th>':'')+'<th>Main issue</th></tr></thead><tbody>'
+      +pv.sources.slice(0,12).map(function(g){
+        var sweep=(g.sweepFindings||[]).length?'<div style="color:var(--r);font-size:11px;margin-top:3px">Site Sweep: '+escH(g.sweepFindings[0].title)+' ('+escH(g.sweepFindings[0].page)+')</div>':'';
+        return'<tr class="'+(g.flagged?'flag':'')+'"><td>'+(g.flagged?'⚠️ ':'')+escH(g.source)+sweep+'</td><td>'+fmt(g.count)+'</td><td><span class="ins-mini"><span style="width:'+g.greenPct+'%;background:var(--g)"></span><span style="width:'+g.amberPct+'%;background:#f59e0b"></span><span style="width:'+g.redPct+'%;background:var(--r)"></span></span>'+g.greenPct+'% safe</td>'+(showNever?'<td>'+(g.neverEngagedPct!=null?g.neverEngagedPct+'%':'—')+'</td>':'')+(showBuy?'<td>'+(g.buyersPct!=null?g.buyersPct+'%':'—')+'</td>':'')+'<td>'+escH(g.topReasonLabel||'—')+'</td></tr>';
+      }).join('')+'</tbody></table></div>'
+      +((pv.formIssues||[]).length&&!pv.sources.some(function(g){return(g.sweepFindings||[]).length;})?'<div class="ins-note">Site Sweep also found sign-up form issues: '+pv.formIssues.slice(0,3).map(function(f){return escH(f.title)+' ('+escH(f.page)+')';}).join('; ')+'. Contacts collected there may not have valid consent.</div>':'')
+      +'</div>';
+  } else if(pv.note){
+    html+='<div class="ins-card"><h3>Where your contacts come from</h3><div class="sub" style="margin:0">'+escH(pv.note)+' Most platforms include one: Klaviyo “Initial Source”, HubSpot “Original Source”, or your form name.</div></div>';
+  }
+  // Evidence
+  var ev=ins.evidence||{};
+  if(ev.coverage){
+    var c=ev.coverage,cell=function(label,v){return v==null?'':'<div><b>'+v+'%</b>'+label+'</div>';};
+    html+='<div class="ins-card"><h3>Your consent evidence: '+escH(ev.grade==='strong'?'strong':ev.grade==='partial'?'partial':'weak')+'</h3><div class="sub">'+escH(ev.sentence||'')+'</div><div class="ins-ev">'
+      +cell('have a sign-up date',c.signupDate)+cell('have a source',c.source)+cell('have an opt-in time',c.optinTimestamp)+cell('have an opt-in IP',c.optinIp)+cell('confirmed double opt-in',c.doubleOptIn)+'</div></div>';
+  }
+  // Soft opt-in / leaks notes when they couldn't be checked
+  var notes=[];
+  if(ins.softOptIn&&!ins.softOptIn.checked&&ins.softOptIn.note)notes.push(ins.softOptIn.note);
+  if(ins.leaks&&!ins.leaks.checked)notes.push('Unsubscribe leaks across your lists could not be checked this time.');
+  else if(ins.leaks&&ins.leaks.checked&&!ins.leaks.count)notes.push('No unsubscribe leaks: nobody who opted out in your earlier uploads is active on this list.');
+  // Case twin
+  if(ins.caseTwin){var tw=ins.caseTwin;html+='<div class="ins-card ins-twin"><h3>'+escH(tw.name)+'</h3><div class="sub">'+escH(tw.regulator)+(tw.date?' · '+escH(tw.date):'')+(tw.penalty?' · £'+fmt(tw.penalty):'')+' · '+tw.match+'% match ('+escH((tw.reasons||[]).join(', '))+')</div><div style="font-size:13px;line-height:1.6">'+escH(tw.sentence)+'</div>'+(tw.summary?'<div class="ins-note">'+escH(tw.summary)+'</div>':'')+'</div>';}
+  // Peak
+  if(ins.peak){html+='<div class="ins-card"><h3>🛍️ Black Friday</h3><div class="sub" style="margin:0;font-size:13px;color:var(--tm)">'+escH(ins.peak.sentence)+'</div></div>';}
+  if(notes.length)html+='<div class="ins-note">'+notes.map(escH).join(' ')+'</div>';
+  html+='</div><div class="sec-hdr" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin:8px 0 14px">Full valuation and compliance audit</div>';
+  host.innerHTML=html;
+}
+function csvCell(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function saveCsv(name,lines){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));a.download=name;a.click();}
+function listSlugName(){return(currentListName||'list').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+function downloadBand(band){
+  if(!parsedCSV||!downloadIndices||!downloadIndices[band]){showToast('Re-upload the list to download this file','er');return;}
+  var idx=downloadIndices[band];if(!idx.length){showToast('Nobody in this group','');return;}
+  var headers=parsedCSV.headers.slice(),withReason=band!=='green';
+  if(withReason)headers.push('Sendwize reason');
+  var lines=[headers.map(csvCell).join(',')];
+  idx.forEach(function(i){var r=parsedCSV.rows[i];if(!r)return;var vals=parsedCSV.headers.map(function(h){return csvCell(r[h]);});
+    if(withReason){var f=rowFlagMap&&rowFlagMap[i];vals.push(csvCell(f?f[1].split('|').map(function(x){return REASON_LABELS[x]||x;}).join('; '):''));}
+    lines.push(vals.join(','));});
+  var names={green:'safe-to-market',amber:'re-permission',red:'suppress'};
+  saveCsv('sendwize-'+listSlugName()+'-'+names[band]+'-'+new Date().toISOString().split('T')[0]+'.csv',lines);
+  showToast('Downloading '+fmt(idx.length)+' contacts','ok');
+}
+function downloadEvidence(){
+  if(!parsedCSV||!rowFlagMap){showToast('Re-upload the list to download the evidence pack','er');return;}
+  var today=new Date().toISOString().split('T')[0];
+  var headers=parsedCSV.headers.concat(['Sendwize status','Sendwize reasons','Checked on']);
+  var lines=[headers.map(csvCell).join(',')];
+  parsedCSV.rows.forEach(function(r,i){var f=rowFlagMap[i];var status=f?(f[0]==='r'?'Do not market':'Needs attention'):'Safe to market';
+    lines.push(parsedCSV.headers.map(function(h){return csvCell(r[h]);}).concat([status,f?f[1].split('|').map(function(x){return REASON_LABELS[x]||x;}).join('; '):'',today].map(csvCell)).join(','));});
+  saveCsv('sendwize-'+listSlugName()+'-consent-evidence-'+today+'.csv',lines);
+  showToast('Evidence pack downloaded','ok');
+}
 function renderResults(d){
   var total=d.totalContacts||0;
   var pct=function(n){return total>0?Math.round(n/total*100):0;};
@@ -1027,6 +1175,7 @@ function renderResults(d){
     ?'<span>'+escH(titleName)+'</span><span style="font-size:13px;font-weight:500;color:var(--mu)">List Valuation &amp; Compliance Audit</span>'
     :'List Valuation &amp; Compliance Audit';
   renderListPicker();
+  renderInsights(d);
   var metaParts=[];
   if(d.checkDate)metaParts.push('Analysed '+fmtDate(d.checkDate));
   if(d.sector)metaParts.push(capFirst(d.sector));
@@ -1435,7 +1584,9 @@ function hideLoading(){el('loadingBg').classList.remove('open');}
 function showToast(msg,type){var t=el('toast');t.textContent=msg;t.className='toast on'+(type?' '+type:'');setTimeout(function(){t.className='toast';},3500);}
 function fmtDate(s){if(!s)return'';return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
 function capFirst(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
-var LIST_DEMO_CSV='email,date_added,last_engagement,engagement_type\nalice@example.com,2023-01-15,2024-05-20,purchase\nbob@gmail.com,2022-06-10,2024-04-01,click\ncarol@hotmail.com,2021-03-22,2023-08-15,open\ndave@yahoo.com,2020-11-05,2022-12-01,open\neve@gmail.com,2023-08-01,2024-05-25,click\nfrank@outlook.com,2019-04-12,,\ngrace@gmail.com,2023-03-15,2024-05-10,purchase\nhenry@gmial.com,2023-07-20,,\ninfo@company.com,2022-09-01,2023-01-01,open\njake@mailinator.com,2023-02-14,,\nkate@gmail.com,2022-11-30,2024-03-15,click\nliam@hotmail.com,2020-07-08,2022-05-01,open\nmia@gmail.com,2023-05-12,2024-05-28,purchase\nnoah@outlook.com,2021-12-25,2023-06-10,open\nolivia@gmail.com,2023-09-01,2024-04-20,click\npeter@yahoo.com,2018-03-15,,\nquinn@gmail.com,2023-06-14,2024-05-15,purchase\nrose@hotmail.com,2022-01-20,2023-09-01,open\nsam@gmail.com,2023-10-01,2024-05-01,click\ntina@gmail.com,2021-08-18,2022-11-15,open\nadmin@business.com,2022-04-05,2023-02-01,open\numa@outlook.com,2023-02-28,2024-04-10,click\nvictor@gmail.com,2019-10-10,,\nwendy@gmail.com,2023-07-07,2024-05-22,purchase\nxander@yaho.com,2022-12-01,2023-08-01,open';
+var LIST_DEMO_CSV='email,date_added,last_engagement,engagement_type,source,consent_basis,total_orders\nalice@example.com,2023-01-15,2024-05-20,purchase,Checkout,soft opt-in,3\nbob@gmail.com,2022-06-10,2024-04-01,click,Website footer,consent,1\ncarol@hotmail.com,2021-03-22,2023-08-15,open,Website footer,consent,0\ndave@yahoo.com,2020-11-05,2022-12-01,open,Instagram giveaway,consent,0\neve@gmail.com,2023-08-01,2024-05-25,click,Checkout,soft opt-in,0\nfrank@outlook.com,2019-04-12,,,Bought list 2019,third party,0\ngrace@gmail.com,2023-03-15,2024-05-10,purchase,Checkout,soft opt-in,2\nhenry@gmial.com,2023-07-20,,,Instagram giveaway,consent,0\ninfo@company.com,2022-09-01,2023-01-01,open,Trade show,,0\njake@mailinator.com,2023-02-14,,,Instagram giveaway,consent,0\nkate@gmail.com,2022-11-30,2024-03-15,click,Website footer,consent,1\nliam@hotmail.com,2020-07-08,2022-05-01,open,Instagram giveaway,consent,0\nmia@gmail.com,2023-05-12,2024-05-28,purchase,Checkout,soft opt-in,4\nnoah@outlook.com,2021-12-25,2023-06-10,open,Website footer,consent,0\nolivia@gmail.com,2023-09-01,2024-04-20,click,Checkout,soft opt-in,0\npeter@yahoo.com,2018-03-15,,,Bought list 2019,third party,0\nquinn@gmail.com,2023-06-14,2024-05-15,purchase,Checkout,soft opt-in,1\nrose@hotmail.com,2022-01-20,2023-09-01,open,Instagram giveaway,consent,0\nsam@gmail.com,2023-10-01,2024-05-01,click,Website footer,consent,0\ntina@gmail.com,2021-08-18,2022-11-15,open,Instagram giveaway,consent,0\nadmin@business.com,2022-04-05,2023-02-01,open,Trade show,,0\numa@outlook.com,2023-02-28,2024-04-10,click,Checkout,soft opt-in,0\nvictor@gmail.com,2019-10-10,,,Bought list 2019,third party,0\nwendy@gmail.com,2023-07-07,2024-05-22,purchase,Checkout,soft opt-in,2\nxander@yaho.com,2022-12-01,2023-08-01,open,Instagram giveaway,consent,0';
+// Precomputed by api/_list-insights.js from LIST_DEMO_CSV (judged as of 1 Jun 2024, when the example was exported)
+var DEMO_LIST_INSIGHTS={"insights":{"version":"list-insights-1.0","consentMonths":24,"capabilities":{"signup":true,"engagement":true,"purchase":true,"basis":true,"source":true,"status":false,"optinTime":false,"optinIp":false,"confirmTime":false,"value":false},"headline":"11 of your 25 contacts are safe to market today.","reveals":[{"kind":"soft_opt_in","severity":"red","text":"3 contacts marked soft opt-in have never bought from you. Soft opt-in only covers people who bought or started to buy, so they need to opt in."},{"kind":"third_party","severity":"red","text":"3 contacts came from bought, rented or partner data. The ICO's most common PECR fines start here."},{"kind":"case_twin","severity":"info","text":"HelloFresh (Grocery Delivery E-Services UK Ltd) was fined £140,000 by the ICO in 2024 for marketing to people without valid consent. 3 of your contacts fall into the same category: soft opt-in with no purchase."}],"realList":{"total":25,"green":11,"amber":6,"red":8,"greenPct":44,"amberPct":24,"redPct":32,"reasons":[{"code":"dormant","band":"amber","label":"No engagement in 12 months","count":4,"pct":16},{"code":"soft_optin_no_purchase","band":"red","label":"Soft opt-in with no purchase","count":3,"pct":12},{"code":"third_party","band":"red","label":"Bought, rented or partner data","count":3,"pct":12},{"code":"typo_domain","band":"amber","label":"Likely typo in the domain","count":2,"pct":8},{"code":"disposable","band":"red","label":"Disposable email address","count":1,"pct":4},{"code":"consent_expired","band":"red","label":"No sign-up or engagement within your consent period","count":1,"pct":4}],"amberValue":47,"amberSpent":0,"expiring60":0,"expiring60Value":0,"expiring60Spent":0},"leaks":{"checked":false,"count":0,"comparedAgainst":0,"from":[],"sentence":null},"softOptIn":{"checked":true,"onSoftOptIn":8,"noPurchase":3,"sentence":"3 contacts marked soft opt-in have never bought from you. Soft opt-in only covers people who bought or started to buy, so they need to opt in."},"thirdParty":3,"provenance":{"available":true,"sources":[{"source":"Checkout","count":8,"sharePct":32,"greenPct":63,"amberPct":0,"redPct":38,"neverEngagedPct":0,"buyersPct":63,"evidencePct":100,"topReason":"soft_optin_no_purchase","topReasonLabel":"Soft opt-in with no purchase","sweepFindings":[],"flagged":false},{"source":"Instagram giveaway","count":7,"sharePct":28,"greenPct":14,"amberPct":57,"redPct":29,"neverEngagedPct":29,"buyersPct":0,"evidencePct":100,"topReason":"dormant","topReasonLabel":"No engagement in 12 months","sweepFindings":[{"title":"Pre-ticked marketing consent box","page":"/giveaway","fixType":"capture_pre_ticked"}],"flagged":false},{"source":"Website footer","count":5,"sharePct":20,"greenPct":100,"amberPct":0,"redPct":0,"neverEngagedPct":0,"buyersPct":40,"evidencePct":100,"topReason":null,"topReasonLabel":null,"sweepFindings":[],"flagged":false},{"source":"Bought list 2019","count":3,"sharePct":12,"greenPct":0,"amberPct":0,"redPct":100,"neverEngagedPct":100,"buyersPct":0,"evidencePct":100,"topReason":"third_party","topReasonLabel":"Bought, rented or partner data","sweepFindings":[],"flagged":false},{"source":"Trade show","count":2,"sharePct":8,"greenPct":0,"amberPct":100,"redPct":0,"neverEngagedPct":0,"buyersPct":0,"evidencePct":100,"topReason":"dormant","topReasonLabel":"No engagement in 12 months","sweepFindings":[],"flagged":false}],"best":null,"worst":null,"sentence":null,"formIssues":[{"fixType":"capture_pre_ticked","title":"Pre-ticked marketing consent box","page":"/giveaway"}]},"evidence":{"grade":"strong","fullRecordPct":100,"coverage":{"signupDate":100,"source":100,"optinTimestamp":null,"optinIp":null,"doubleOptIn":null},"noSignupRecord":0,"sentence":"100% of your contacts have a full consent record: when they signed up, plus where (source) or how (opt-in IP or double opt-in)."},"caseTwin":{"caseId":"hellofresh_2024","name":"HelloFresh (Grocery Delivery E-Services UK Ltd)","regulator":"ICO","date":"2024-01","penalty":140000,"summary":"About 79M marketing emails and 1M texts; consent bundled with an age confirmation, no mention of SMS, marketing continued after cancellation.","url":"https://ico.org.uk/action-weve-taken/enforcement/","match":85,"reasons":["Same issue: Consent missing","Same sector","Recent ruling"],"issue":"Soft opt-in with no purchase","yourCount":3,"reason":"soft_optin_no_purchase","sentence":"HelloFresh (Grocery Delivery E-Services UK Ltd) was fined £140,000 by the ICO in 2024 for marketing to people without valid consent. 3 of your contacts fall into the same category: soft opt-in with no purchase."},"peak":{"date":"2024-11-29","daysToPeak":181,"lapseBeforePeak":1,"reachable":16,"sentence":"By Black Friday (2024-11-29) you can safely email about 16 people on this list. 1 more lose consent before then unless they engage."},"reasonCounts":{"dormant":9,"soft_optin_no_purchase":3,"third_party":3,"consent_expired":4,"typo_domain":2,"unknown_basis":2,"role_based":2,"disposable":1}},"rowFlags":[[3,"a","dormant"],[4,"r","soft_optin_no_purchase"],[5,"r","third_party|consent_expired|dormant"],[7,"a","typo_domain"],[8,"a","dormant|unknown_basis|role_based"],[9,"r","disposable|dormant"],[11,"r","consent_expired|dormant"],[14,"r","soft_optin_no_purchase"],[15,"r","third_party|consent_expired|dormant"],[19,"a","dormant"],[20,"a","dormant|unknown_basis|role_based"],[21,"r","soft_optin_no_purchase"],[22,"r","third_party|consent_expired|dormant"],[24,"a","typo_domain"]],"downloadIndices":{"green":[0,1,2,6,10,12,13,16,17,18,23],"amber":[3,7,8,19,20,24],"red":[4,5,9,11,14,15,21,22]}};
 function loadListDemo(){
   showLoading('Generating example valuation\u2026');
   setTimeout(function(){
@@ -1457,9 +1608,11 @@ function loadListDemo(){
       changes:{direction:'improved',daysSincePrevious:9,valueDelta:312.00,liabilityDelta:-2,activeDelta:3,totalDelta:0,expiring30Delta:1,previous:{assetValue:2535.50,liabilityCount:6,activeCount:6,totalContacts:24,expiring30:2,date:''}},
       consentExpiring:{in30:3,in60:4,in90:7,valueAtRisk:1240.00},
     };
+    demoResults.insights=DEMO_LIST_INSIGHTS.insights;demoResults.rowFlags=DEMO_LIST_INSIGHTS.rowFlags;
     hideLoading();lastResults=demoResults;
     currentListName='Example list';
-    downloadIndices=null;
+    parsedCSV=parseCSV(LIST_DEMO_CSV);
+    downloadIndices=DEMO_LIST_INSIGHTS.downloadIndices;
     renderResults(demoResults);showScreen('results');
     var blob=new Blob([LIST_DEMO_CSV],{type:'text/csv'});
     el('listDemoDlLink').href=URL.createObjectURL(blob);
