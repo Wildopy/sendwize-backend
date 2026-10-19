@@ -20,7 +20,7 @@
 // are missing instead of guessing.
 // ─────────────────────────────────────────────────────────────
 import crypto from 'crypto';
-import { matchCase } from './_cases.js';
+import { matchCase, TWIN_MIN } from './_cases.js';
 
 export const DEFAULT_CONSENT_MONTHS = 24;
 export const EXPIRING_WINDOW_DAYS = 90;
@@ -281,7 +281,7 @@ function caseTwinFor(counts, library, ctx) {
     if (!fixType || !count) continue;
     for (const c of library || []) {
       const m = matchCase({ fixType, contactVolume: count }, c, ctx);
-      if (!m) continue;
+      if (!m || m.score < TWIN_MIN) continue;
       if (!best || m.score > best.match || (m.score === best.match && (c.penalty || 0) > (best.penalty || 0))) {
         best = { caseId: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty || null, summary: c.summary, url: c.url, match: m.score, reasons: m.reasons, issue: REASONS[reason].label, yourCount: count, reason };
       }
