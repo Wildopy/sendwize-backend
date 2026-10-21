@@ -1034,7 +1034,7 @@ export function method() {
     severityWeight: SEVERITY_WEIGHT,
     selfAttestedCredit: SELF_ATTESTED_CREDIT,
     requiredProfile: REQUIRED_PROFILE,
-    cases: CASE_ANCHORS.map(c => ({ ...c, url: ICO_ACTION_URL })),
+    cases: CASE_ANCHORS.map(c => ({ ...c, url: c.url || ICO_ACTION_URL })),
     legal: { icoMax: ICO_LEGAL_MAX, cmaMax: CMA_LEGAL_MAX, duaaWarning: DUAA_WARNING, notLegalAdvice: NOT_LEGAL_ADVICE, commercialDisclaimer: COMMERCIAL_DISCLAIMER },
   };
 }
