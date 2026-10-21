@@ -90,7 +90,7 @@ async function askClaude(fix, profile) {
     body: JSON.stringify({
       max_tokens: 700,
       system: `You assess UK marketing compliance evidence for a regulatory exposure model. Only select a factor when the evidence text plainly shows it, and copy the exact words that show it into "quote". If the evidence states how many people or messages were affected, give that number in "audience_count" and the exact words in "audience_quote". Never infer facts that are not written. If nothing applies, return an empty factors list. "plain_english" is two sentences for a marketing manager on why this matters.\n\n${LEGAL_RULES}`,
-      messages: [{ role: 'user', content: `Factor menu:\n${menu}\n\nComparable published cases (for context only):\n${cases.map(c => `- ${c.name} (${c.date}, £${c.penalty.toLocaleString('en-GB')}): ${c.summary}`).join('\n') || '- none on file for this finding type'}\n\nEvidence:\n<<<\n${text}\n>>>` }],
+      messages: [{ role: 'user', content: `Factor menu:\n${menu}\n\nComparable published cases (for context only):\n${cases.map(c => `- ${c.name} (${c.regulator}, ${c.date}, ${c.outcome}): ${c.summary}`).join('\n') || '- none on file for this finding type'}\n\nEvidence:\n<<<\n${text}\n>>>` }],
     }),
   }, { effort: 'low', schema });
   if (!r.ok) throw new Error(`Claude ${r.status}`);
@@ -213,11 +213,12 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && action === 'inputs') {
       const money = v => { if (v === '' || v == null) return null; const n = Number(v); return Number.isFinite(n) && n > 0 && n < 1e9 ? Math.round(n) : NaN; };
       const campaignBudget = money(req.body?.campaignBudget), campaignRevenue = money(req.body?.campaignRevenue);
-      if (Number.isNaN(campaignBudget) || Number.isNaN(campaignRevenue)) return res.status(400).json({ error: 'Enter amounts in pounds, above zero' });
+      const averageOrderValue = money(req.body?.averageOrderValue);
+      if ([campaignBudget, campaignRevenue, averageOrderValue].some(Number.isNaN)) return res.status(400).json({ error: 'Enter amounts in pounds, above zero' });
       if (!campaignBudget && !campaignRevenue) return res.status(400).json({ error: 'Enter a budget or expected revenue' });
       const fx = formatFixRecord(rec, profile.revenueBand, profile.sector, profile.inputs);
       if (!fx.exposure?.marketingCost) return res.status(400).json({ error: 'Campaign figures apply to ASA and CMA findings only' });
-      const values = Object.fromEntries(Object.entries({ campaignBudget, campaignRevenue }).filter(([, v]) => v));
+      const values = Object.fromEntries(Object.entries({ campaignBudget, campaignRevenue, averageOrderValue }).filter(([, v]) => v));
       const pr = await atFetch(`${base()}/Compliance_Fixes/${fixId}`, {
         method: 'PATCH', headers: atH(),
         body: JSON.stringify({ fields: { CommercialInputs: JSON.stringify({ ...(fx.campaignInputs || {}), ...values, savedAt: new Date().toISOString() }) } }),
@@ -227,7 +228,7 @@ export default async function handler(req, res) {
       if (profile.profileId) {
         await atFetch(`${base()}/User_Profile/${profile.profileId}`, {
           method: 'PATCH', headers: atH(),
-          body: JSON.stringify({ fields: { ...(campaignBudget ? { TypicalCampaignBudget: campaignBudget } : {}), ...(campaignRevenue ? { TypicalCampaignRevenue: campaignRevenue } : {}) } }),
+          body: JSON.stringify({ fields: { ...(campaignBudget ? { TypicalCampaignBudget: campaignBudget } : {}), ...(campaignRevenue ? { TypicalCampaignRevenue: campaignRevenue } : {}), ...(averageOrderValue && !profile.inputs?.averageOrderValue ? { AverageOrderValue: averageOrderValue } : {}) } }),
         }).catch(() => null);
       }
       const [fresh, freshProfile] = await Promise.all([loadFix(fixId), loadProfile(userId)]);

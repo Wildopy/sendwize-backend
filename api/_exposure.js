@@ -41,6 +41,7 @@
 // legal advice. Weights and case anchors are for the founder to review.
 // ─────────────────────────────────────────────────────────────
 import { createHash } from 'node:crypto';
+import { CASES, caseOutcome } from './_case-library.js';
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
 // Keys are compared with spaces removed and hyphens as en dashes, so the
@@ -112,7 +113,7 @@ const EXPOSURE_CONSTANTS = {
     },
     lowDriver:  'First offence, small contact volume, prompt remediation on discovery, full ICO cooperation',
     highDriver: 'Repeated or deliberate breach, large contact volume, prior ICO enforcement history, complaints received',
-    caseAnchor: 'Anchored to HelloFresh (Jan 2024, \u00a3140,000 \u2014 79M emails with bundled/unclear consent) and Allay Claims (Jan 2026, \u00a3120,000 \u2014 4M SMS classified as direct marketing). Verify: ico.org.uk/action-weve-taken.',
+    caseAnchor: 'Anchored to HelloFresh (Jan 2024, \u00a3140,000 \u2014 79M emails with bundled/unclear consent) and Allay Claims (Jan 2026, \u00a3120,000 \u2014 4M texts without valid consent). Sources in the case library.',
   },
   consent_expired: {
     category: 'ICO',
@@ -135,7 +136,7 @@ const EXPOSURE_CONSTANTS = {
     },
     lowDriver:  'Small post opt-out contact volume, isolated incident, no prior suppression failures',
     highDriver: 'Systematic suppression failure, large volume, deliberate disregard for opt-out requests',
-    caseAnchor: 'Anchored to HelloFresh (Jan 2024 \u2014 continued contact after opt-out, contributing factor to \u00a3140,000 penalty). Verify: ico.org.uk/action-weve-taken.',
+    caseAnchor: 'Anchored to HelloFresh (Jan 2024 \u2014 continued contact after opt-out, contributing factor to \u00a3140,000 penalty). Sources in the case library.',
   },
   dpa_breach: {
     category: 'ICO',
@@ -226,9 +227,9 @@ const EXPOSURE_CONSTANTS = {
       over_50m:  { low: 100000, high: 225000 },
     },
     lowDriver:  'Small affiliate send volume, affiliate has some consent documentation, prompt investigation and suppression on discovery',
-    highDriver: 'Large affiliate send volume, no consent documentation held, similar to the Saga case pattern (3.8M messages, \u00a3225k fine)',
+    highDriver: 'Large affiliate send volume, no consent documentation held, similar to the Saga Services case pattern (129M partner emails, \u00a3150k fine)',
     sectorNote: 'Finance and health sector affiliate sends are subject to stricter consent specificity requirements. The ICO has prioritised these sectors in PECR affiliate enforcement.',
-    caseAnchor: 'Anchored to Saga Group Ltd (2021, \u00a3225,000) and JTT Marketing Ltd (2021, \u00a3130,000) \u2014 both PECR Reg 22 affiliate consent failures.',
+    caseAnchor: 'Anchored to Saga Services Ltd and Saga Personal Finance Ltd (Sep 2021, \u00a3150,000 and \u00a375,000), ESL Consultancy Services (Jan 2025, \u00a3200,000) and This Is The Big Deal (Aug 2023, \u00a330,000) \u2014 all PECR Reg 22 affiliate consent failures.',
   },
 
   affiliate_sender_identity_breach: {
@@ -300,9 +301,9 @@ const EXPOSURE_CONSTANTS = {
       over_50m:  { low: 120000, high: 225000 },
     },
     lowDriver:  'Small volume of leads from this affiliate, landing page partially compliant, prompt investigation on discovery',
-    highDriver: 'Large volume of leads, consent wording does not name your organisation, similar to Saga pattern (\u00a3225k), CMA pricing claims also present on landing page',
-    sectorNote: 'Finance and insurance lead generation affiliates face the highest ICO scrutiny \u2014 the Saga and JTT cases both involved financial product affiliates.',
-    caseAnchor: 'Anchored to Saga Group Ltd (2021, \u00a3225,000) and JTT Marketing Ltd (2021, \u00a3130,000).',
+    highDriver: 'Large volume of leads, consent wording does not name your organisation, similar to the Saga pattern (\u00a3225k across two Saga companies), CMA pricing claims also present on landing page',
+    sectorNote: 'Finance and insurance lead generation affiliates face the highest ICO scrutiny \u2014 the Saga and ESL Consultancy cases both involved financial product affiliates.',
+    caseAnchor: 'Anchored to Saga Services Ltd and Saga Personal Finance Ltd (Sep 2021, \u00a3150,000 and \u00a375,000) and Monetise Media Ltd (Dec 2022, \u00a385,000 after appeal).',
   },
 
   third_party_list: {
@@ -315,7 +316,7 @@ const EXPOSURE_CONSTANTS = {
     },
     lowDriver:  'Small volume sent, single purchased list, prompt suppression on discovery, no prior enforcement history',
     highDriver: 'Large volume sent to purchased data, repeated use, complaints received, no consent documentation held',
-    caseAnchor: 'Anchored to ZMLUK Ltd (Dec 2025, \u00a3105,000) \u2014 marketing sent using purchased contact data without valid PECR consent.',
+    caseAnchor: 'Anchored to ZMLUK Ltd (Dec 2025, \u00a3105,000 \u2014 67M emails on consent shared with 361 partners) and National Debt Advice Ltd (Oct 2024, \u00a330,000 \u2014 texts to bought-in data).',
   },
 
   invalid_consent_mechanism: {
@@ -329,7 +330,7 @@ const EXPOSURE_CONSTANTS = {
     lowDriver:  'Consent mechanism partially compliant, small volume, prompt remediation, some documentation held',
     highDriver: 'Pre-ticked consent boxes, bundled consent with unrelated terms, large volume, complaints from data subjects',
     sectorNote: 'Finance sector consent mechanisms face higher ICO scrutiny following the 2024 ICO direct marketing guidance update.',
-    caseAnchor: 'Anchored to HelloFresh (Jan 2024, \u00a3140,000 \u2014 consent bundled with age confirmation, no SMS mention, 24-month post-cancellation marketing). Verify: ico.org.uk/action-weve-taken.',
+    caseAnchor: 'Anchored to HelloFresh (Jan 2024, \u00a3140,000 \u2014 consent bundled with age confirmation, no SMS mention, 24-month post-cancellation marketing). Sources in the case library.',
   },
 };
 
@@ -552,25 +553,20 @@ export const FACTORS = {
 };
 export const AI_FACTOR_IDS = Object.keys(FACTORS).filter(k => FACTORS[k].source === 'ai');
 
-// ── Published case anchors (from the existing Sendwize rule base).
-//    Confirm each at ico.org.uk/action-weve-taken before relying on it. ──
-export const CASE_ANCHORS = [
-  { id: 'hellofresh_2024', name: 'HelloFresh (Grocery Delivery E-Services UK Ltd)', regulator: 'ICO', date: '2024-01', penalty: 140000, volume: 80000000, summary: 'About 79M marketing emails and 1M texts; consent bundled with an age confirmation, no mention of SMS, marketing continued after cancellation.', types: ['consent_missing', 'invalid_consent_mechanism', 'suppression_breach'] },
-  { id: 'allay_2026',      name: 'Allay Claims Ltd', regulator: 'ICO', date: '2026-01', penalty: 120000, volume: 4000000, summary: 'About 4M SMS messages found to be direct marketing without valid consent.', types: ['consent_missing'] },
-  { id: 'zmluk_2025',      name: 'ZMLUK Ltd', regulator: 'ICO', date: '2025-12', penalty: 105000, volume: 67800000, summary: 'About 67.8M emails sent using purchased contact data without valid PECR consent.', types: ['third_party_list', 'consent_missing'] },
-  { id: 'saga_2021',       name: 'Saga Services / Saga Personal Finance', regulator: 'ICO', date: '2021', penalty: 225000, volume: 3800000, summary: 'Marketing sent by affiliates relying on indirect consent that did not name the brand.', types: ['lead_gen_consent_gap', 'affiliate_consent_unverified', 'invalid_consent_mechanism'] },
-  { id: 'jtt_2021',        name: 'JTT Marketing Ltd', regulator: 'ICO', date: '2021', penalty: 130000, volume: null, summary: 'Lead generation marketing without consent that named the sending organisation.', types: ['lead_gen_consent_gap', 'affiliate_consent_unverified'] },
-];
+// ── Published case anchors: the verified case library (_case-library.js),
+//    each with the regulator's own page. ──
+export const CASE_ANCHORS = CASES;
 export const ICO_ACTION_URL = 'https://ico.org.uk/action-weve-taken/enforcement/';
 
+// Closest cases for a finding: same issue, nearest audience size, fines first
 export function closestCases(fixType, volume) {
   const matches = CASE_ANCHORS.filter(c => c.types.includes(fixType));
   const v = Number(volume) || null;
   return matches
-    .map(c => ({ c, d: v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5 }))
+    .map(c => ({ c, d: (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
     .sort((a, b) => a.d - b.d)
     .slice(0, 3)
-    .map(({ c }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, summary: c.summary, url: ICO_ACTION_URL }));
+    .map(({ c }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, url: c.url || ICO_ACTION_URL }));
 }
 
 // ── Profile inputs that sharpen the figures (all optional) ──
@@ -797,19 +793,55 @@ export const COMMERCIAL_ASSUMPTIONS = {
   reworkShare: 0.10,     // redoing and re-approving the creative, share of campaign budget
   reworkMin: 500,
   salesLost: { low: 0.25, likely: 0.5, high: 0.75 },   // share of expected sales lost if the ad is pulled
-  refunded:  { low: 0.05, likely: 0.15, high: 0.30 },  // share of campaign revenue refunded or compensated
+  refunded:  { low: 0.05, likely: 0.15, high: 0.30 },  // share of campaign revenue refunded or compensated (fallback)
+  // Payment disputes: share of affected customers who raise a chargeback or
+  // formal complaint, and the fee on each on top of the order value. An
+  // assumption, not taken from a published case.
+  disputes:  { low: 0.005, likely: 0.01, high: 0.02 },
+  disputeFee: 20,
 };
-export function marketingCost(category, inputs = {}, campaign = {}) {
+
+// Refund per affected customer from CMA cases that published both the
+// refund total and the number of customers. Same issue first, else every
+// CMA case that published both.
+export function refundBenchmarks(fixType) {
+  const all = CASES.filter(c => c.regulator === 'CMA' && c.refunds && c.volume);
+  const same = all.filter(c => c.types.includes(fixType));
+  const use = same.length >= 2 ? same : all;
+  const cases = use.map(c => ({ id: c.id, name: c.name, date: c.date, url: c.url, perCustomer: Math.round(c.refunds / c.volume * 100) / 100 }))
+    .sort((a, b) => a.perCustomer - b.perCustomer);
+  if (!cases.length) return null;
+  const v = cases.map(c => c.perCustomer), mid = Math.floor(v.length / 2);
+  const median = v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;
+  return { low: v[0], likely: Math.round(median * 100) / 100, high: v[v.length - 1], sameIssue: use === same, cases };
+}
+
+// What becomes public, with no £ on it: the regulator publishes the
+// outcome under the business's name. Most recent comparable case as the example.
+function publicRecord(category, fixType) {
+  const pool = CASES.filter(c => c.regulator === category);
+  const ex = pool.filter(c => c.types.includes(fixType)).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0]
+    || pool.sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+  const text = category === 'ASA'
+    ? 'Upheld ASA rulings are published on asa.org.uk under the advertiser\u2019s name, and rulings from years back are still listed there.'
+    : 'Each CMA case has a public page on gov.uk naming the business, and fines and refund orders are announced in a press release.';
+  return { text, example: ex ? { name: ex.name, date: ex.date, url: ex.url } : null };
+}
+
+export function marketingCost(category, inputs = {}, campaign = {}, fixType = null) {
   if (category !== 'ASA' && category !== 'CMA') return null;
   const A = COMMERCIAL_ASSUMPTIONS;
   const own = num(campaign?.campaignBudget) || num(campaign?.campaignRevenue);
   const budget = num(campaign?.campaignBudget) || inputs.campaignBudget || null;
   const revenue = num(campaign?.campaignRevenue) || inputs.campaignRevenue || null;
+  const aov = num(campaign?.averageOrderValue) || inputs.averageOrderValue || null;
   const pct = x => `${Math.round(x * 100)}%`;
   const base = {
     category, budget, revenue,
     source: own ? 'campaign' : 'profile',
     label: category === 'ASA' ? 'If this ad had to be withdrawn' : 'If customers had to be refunded',
+    averageOrderValue: aov,
+    publicRecord: publicRecord(category, fixType),
     disclaimer: COMMERCIAL_DISCLAIMER,
   };
   if (category === 'ASA') {
@@ -823,11 +855,28 @@ export function marketingCost(category, inputs = {}, campaign = {}) {
     return { ...base, available: true, needs, lines,
       low: roundNice(rework + lost('low')), mostLikely: roundNice(rework + lost('likely')), high: roundNice(rework + lost('high')) };
   }
-  if (!revenue) return { ...base, available: false, needs: ['campaignRevenue'] };
-  const r = k => revenue * A.refunded[k];
-  return { ...base, available: true, needs: [],
-    lines: [{ label: 'Refunds or compensation to customers who bought', amount: roundNice(r('likely')), basis: `${pct(A.refunded.likely)} of campaign revenue (range ${pct(A.refunded.low)} to ${pct(A.refunded.high)})` }],
-    low: roundNice(r('low')), mostLikely: roundNice(r('likely')), high: roundNice(r('high')) };
+  if (!revenue) return { ...base, available: false, needs: ['campaignRevenue', !aov && 'averageOrderValue'].filter(Boolean) };
+  // Customers affected: orders the campaign brings in
+  const customers = aov ? Math.max(1, Math.round(revenue / aov)) : null;
+  const bench = customers ? refundBenchmarks(fixType) : null;
+  const lines = [];
+  let refund;
+  if (bench) {
+    const per = k => Math.min(aov, bench[k]);
+    refund = k => customers * per(k);
+    lines.push({ label: 'Refunds to customers who bought', amount: roundNice(refund('likely')), key: 'refunds',
+      basis: `${customers.toLocaleString('en-GB')} orders \u00d7 \u00a3${per('likely').toFixed(2)} each, the middle of what CMA cases refunded per customer (\u00a3${bench.low.toFixed(2)} to \u00a3${bench.high.toFixed(2)})`,
+      cases: bench.cases });
+  } else {
+    refund = k => revenue * A.refunded[k];
+    lines.push({ label: 'Refunds or compensation to customers who bought', amount: roundNice(refund('likely')), key: 'refunds',
+      basis: `${pct(A.refunded.likely)} of campaign revenue (range ${pct(A.refunded.low)} to ${pct(A.refunded.high)}). Add your average order value to base this on real CMA refunds.` });
+  }
+  const dispute = k => customers ? customers * A.disputes[k] * (aov + A.disputeFee) : 0;
+  if (customers) lines.push({ label: 'Payment disputes and chargebacks', amount: roundNice(dispute('likely')), key: 'disputes', assumption: true,
+    basis: `${(A.disputes.likely * 100).toFixed(0)}% of ${customers.toLocaleString('en-GB')} customers dispute (${(A.disputes.low * 100).toFixed(1)}% to ${(A.disputes.high * 100).toFixed(0)}%), each costing the \u00a3${Math.round(aov)} order plus a \u00a3${A.disputeFee} fee. Sendwize assumption, not from a case.` });
+  return { ...base, available: true, needs: aov ? [] : ['averageOrderValue'], customers, lines,
+    low: roundNice(refund('low') + dispute('low')), mostLikely: roundNice(refund('likely') + dispute('likely')), high: roundNice(refund('high') + dispute('high')) };
 }
 export function marketingCostTotals(fixes) {
   const list = fixes.map(f => f.exposure?.marketingCost).filter(Boolean);
@@ -977,7 +1026,7 @@ export function formatFixRecord(r, revenueBand, sector, inputs = {}) {
   fix.exposure = refineExposure(base, fix, sector, current, inputs || {});
   if (base.category === 'ASA' || base.category === 'CMA') {
     fix.campaignInputs = safeParse(f.CommercialInputs) || null;
-    fix.exposure = { ...fix.exposure, marketingCost: marketingCost(base.category, inputs || {}, fix.campaignInputs || {}) };
+    fix.exposure = { ...fix.exposure, marketingCost: marketingCost(base.category, inputs || {}, fix.campaignInputs || {}, fixType) };
   }
   fix.assessment = current ? { assessedAt: assessment.assessedAt || null, confidence: assessment.confidence || null } : null;
   fix.assessmentStale = !!(assessment && !current);

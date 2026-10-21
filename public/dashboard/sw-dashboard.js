@@ -383,7 +383,7 @@
     var when = c.date ? ' · ' + esc(date(c.date.length === 4 ? c.date + '-06-01' : c.date.length === 7 ? c.date + '-01' : c.date).replace(/^\d+ /, '')) : '';
     if (c.penalty) return 'Fined <b>' + gbp(c.penalty) + '</b> by the ' + esc(c.regulator) + when;
     if (c.regulator === 'ASA') return 'Upheld ASA ruling, published under their name' + when;
-    return esc(c.regulator) + ' action' + when;
+    return esc(c.outcome || c.regulator + ' action') + when;
   }
   function twinCard() {
     var T = D.caseTwin, pend = D.fixes.pending || [];
@@ -619,7 +619,7 @@
         '<button class="sw-wide-btn" data-act="assess" data-id="' + esc(f.id) + '">' + (x.assessment ? 'Re-assess with AI' : 'Assess with AI') + '</button><div class="sw-note" style="margin-top:6px">AI can only pick from a fixed list of factors, and each must quote your evidence word for word. It never writes the number.</div></div>';
       var cases = e.closestCases || [];
       if (cases.length) h += '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
-        return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + gbp(c.penalty) + '<div class="sw-hs">' + esc(c.summary) + '</div><a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">ICO enforcement page</a></div>';
+        return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + '<div class="sw-hs">' + esc(c.summary) + '</div><a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a></div>';
       }).join('') + '</div>';
       if ((x.tips || []).length) h += '<div class="sw-dr-sec"><div class="sw-lbl">What would bring it down</div>' + x.tips.map(function (t) { return '<div class="sw-fac"><span class="sw-fac-ic down">↓</span><div>' + esc(t) + '</div></div>'; }).join('') + '</div>';
       h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(e.rangeLabel || '') + '. Legal maximum: ' + esc(x.legalMax) + '. ' + esc(x.duaaWarning || '') + '</div></div>';
@@ -662,13 +662,19 @@
     var h = '<div class="sw-dr-sec"><div class="sw-lbl">Commercial cost</div>';
     if (m.available) {
       h += '<div class="sw-hn">About ' + gbpK(m.mostLikely) + '</div><div class="sw-hs">' + esc(m.label) + '. Likely ' + range(m.low, m.high) + '.</div>' +
-        (m.lines || []).map(function (l) { return '<div class="sw-cost-l"><span>' + esc(l.label) + '<div class="sw-note">' + esc(l.basis) + '</div></span><b>' + gbpK(l.amount) + '</b></div>'; }).join('') +
+        (m.lines || []).map(function (l) {
+          var refs = (l.cases || []).map(function (c) { return '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.name) + ' ' + gbp(c.perCustomer) + '</a>'; }).join(' · ');
+          return '<div class="sw-cost-l"><span>' + esc(l.label) + (l.assumption ? ' <span class="sw-src">Assumption</span>' : '') + '<div class="sw-note">' + esc(l.basis) + '</div>' + (refs ? '<div class="sw-note">Per customer: ' + refs + '</div>' : '') + '</span><b>' + gbpK(l.amount) + '</b></div>';
+        }).join('') +
         '<div class="sw-note" style="margin-top:6px">Worked out from ' + (m.source === 'campaign' ? 'the figures you gave for this campaign' : 'your usual campaign figures') + '. Never added to regulatory exposure.</div>';
     } else {
       h += '<div class="sw-hs">Add this campaign’s figures to see what it could cost ' + (m.category === 'ASA' ? 'if the ad had to be withdrawn' : 'if customers had to be refunded') + '.</div>';
     }
+    var pr = m.publicRecord;
+    if (pr) h += '<div class="sw-cost-l"><span>Reputation<div class="sw-note">' + esc(pr.text) + (pr.example ? ' For example: <a class="sw-link" href="' + esc(pr.example.url) + '" target="_blank" rel="noopener">' + esc(pr.example.name) + '</a>.' : '') + ' No £ figure: nothing published supports one.</div></span><b>Public</b></div>';
     h += '<div class="sw-tf"><label for="sw-c-bud">Campaign budget (£)</label><input id="sw-c-bud" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignBudget || m.budget || '') + '" placeholder="Media and creative, e.g. 8000"></div>' +
       '<div class="sw-tf"><label for="sw-c-rev">Expected sales from the campaign (£)</label><input id="sw-c-rev" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignRevenue || m.revenue || '') + '" placeholder="e.g. 40000"></div>' +
+      (m.category === 'CMA' ? '<div class="sw-tf"><label for="sw-c-aov">Average order value (£)</label><input id="sw-c-aov" type="number" min="1" inputmode="numeric" value="' + esc(ci.averageOrderValue || m.averageOrderValue || '') + '" placeholder="e.g. 60"></div>' : '') +
       '<button class="sw-wide-btn" data-act="save-campaign" data-id="' + esc(fixId) + '" style="margin-top:12px">' + (m.available ? 'Update' : 'Show the cost') + '</button>' +
       '<div class="sw-note" style="margin-top:6px">' + esc(m.disclaimer || '') + '</div></div>';
     return h;
@@ -692,12 +698,12 @@
   }
 
   async function saveCampaign(fixId, btn) {
-    var b = parseFloat(val('sw-c-bud')) || null, r = parseFloat(val('sw-c-rev')) || null;
+    var b = parseFloat(val('sw-c-bud')) || null, r = parseFloat(val('sw-c-rev')) || null, a = parseFloat(val('sw-c-aov')) || null;
     if (!b && !r) { toast('Enter a budget or expected sales', 'er'); return; }
     var label = btn.textContent;
     btn.disabled = true; btn.textContent = 'Working it out…';
     try {
-      drawWhy(await api('/api/exposure?action=inputs', { method: 'POST', body: { userId: userId, fixId: fixId, campaignBudget: b, campaignRevenue: r } }));
+      drawWhy(await api('/api/exposure?action=inputs', { method: 'POST', body: { userId: userId, fixId: fixId, campaignBudget: b, campaignRevenue: r, averageOrderValue: a } }));
       toast('Cost updated', 'ok'); refreshQuiet();
     } catch (e) { btn.disabled = false; btn.textContent = label; toast(e.message, 'er'); }
   }
