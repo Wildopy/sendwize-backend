@@ -213,11 +213,12 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && action === 'inputs') {
       const money = v => { if (v === '' || v == null) return null; const n = Number(v); return Number.isFinite(n) && n > 0 && n < 1e9 ? Math.round(n) : NaN; };
       const campaignBudget = money(req.body?.campaignBudget), campaignRevenue = money(req.body?.campaignRevenue);
-      if (Number.isNaN(campaignBudget) || Number.isNaN(campaignRevenue)) return res.status(400).json({ error: 'Enter amounts in pounds, above zero' });
+      const averageOrderValue = money(req.body?.averageOrderValue);
+      if ([campaignBudget, campaignRevenue, averageOrderValue].some(Number.isNaN)) return res.status(400).json({ error: 'Enter amounts in pounds, above zero' });
       if (!campaignBudget && !campaignRevenue) return res.status(400).json({ error: 'Enter a budget or expected revenue' });
       const fx = formatFixRecord(rec, profile.revenueBand, profile.sector, profile.inputs);
       if (!fx.exposure?.marketingCost) return res.status(400).json({ error: 'Campaign figures apply to ASA and CMA findings only' });
-      const values = Object.fromEntries(Object.entries({ campaignBudget, campaignRevenue }).filter(([, v]) => v));
+      const values = Object.fromEntries(Object.entries({ campaignBudget, campaignRevenue, averageOrderValue }).filter(([, v]) => v));
       const pr = await atFetch(`${base()}/Compliance_Fixes/${fixId}`, {
         method: 'PATCH', headers: atH(),
         body: JSON.stringify({ fields: { CommercialInputs: JSON.stringify({ ...(fx.campaignInputs || {}), ...values, savedAt: new Date().toISOString() }) } }),
@@ -227,7 +228,7 @@ export default async function handler(req, res) {
       if (profile.profileId) {
         await atFetch(`${base()}/User_Profile/${profile.profileId}`, {
           method: 'PATCH', headers: atH(),
-          body: JSON.stringify({ fields: { ...(campaignBudget ? { TypicalCampaignBudget: campaignBudget } : {}), ...(campaignRevenue ? { TypicalCampaignRevenue: campaignRevenue } : {}) } }),
+          body: JSON.stringify({ fields: { ...(campaignBudget ? { TypicalCampaignBudget: campaignBudget } : {}), ...(campaignRevenue ? { TypicalCampaignRevenue: campaignRevenue } : {}), ...(averageOrderValue && !profile.inputs?.averageOrderValue ? { AverageOrderValue: averageOrderValue } : {}) } }),
         }).catch(() => null);
       }
       const [fresh, freshProfile] = await Promise.all([loadFix(fixId), loadProfile(userId)]);
