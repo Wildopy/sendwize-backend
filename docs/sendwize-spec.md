@@ -201,7 +201,7 @@ Field names are case-sensitive. The code looks them up by name, and a missing fi
 | `SENDWIZE_AUTH_ENFORCE` | remove | `false` only during rollout |
 | `SENDWIZE_ALLOW_USERID_BYPASS` | dev only | never in production |
 | `MONITOR_KEY` | optional | external cron for vendor-monitor |
-| `SITE_SWEEP_BROWSER` | optional | headless browser for Site Sweep |
+| `SITE_SWEEP_BROWSER` | optional | set `off` to disable the headless-browser check in Site Sweep |
 
 ## 12. Webflow embeds
 
