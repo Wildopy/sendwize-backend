@@ -193,7 +193,7 @@ th.yours{color:var(--od)}
     <h2><span class="n">08</span>The cases behind the ranges</h2>
     <p>These published decisions anchor the ranges and appear as &ldquo;closest published cases&rdquo; under <b>Why this number?</b>. Case Twin on your dashboard also draws on rulings our daily regulator feed picks up, so it grows as new decisions are published.</p>
     <div class="cases" id="cases"><span class="ld">Loading&hellip;</span></div>
-    <p style="font-size:12px;margin-top:10px">Check any decision on the <a href="https://ico.org.uk/action-weve-taken/enforcement/" target="_blank" rel="noopener">ICO enforcement register</a>.</p>
+    <p style="font-size:12px;margin-top:10px">Each case links to the regulator&rsquo;s published record.</p>
   </section>
 
   <section id="s9">
@@ -383,7 +383,7 @@ th.yours{color:var(--od)}
     set('scoreText', 'The share of your findings that are fixed, weighted by severity: critical ' + w.critical + ', high ' + w.high + ', medium ' + w.medium + ', low ' + w.low + '. A fix verified by re-running the check counts in full; a fix you mark yourself counts ' + pct(M.selfAttestedCredit) + '. Findings you dismiss as not applicable or wrong leave the score; findings you accept the risk on still count as open. Commercial findings are not part of the score.');
     var cs = M.cases.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
     set('cases', cs.map(function (c) {
-      return '<div class="case"><div class="case-f">' + gbp(c.penalty) + '</div><div class="case-n">' + esc(c.name) + '</div><div class="case-s">' + esc(c.summary) + '</div><div class="case-m">' + esc(c.regulator) + ' · ' + esc(c.date) + ' · used for ' + esc(c.types.map(nice).join(', ')) + '</div></div>';
+      return '<div class="case"><div class="case-f">' + gbp(c.penalty) + '</div><div class="case-n">' + esc(c.name) + '</div><div class="case-s">' + esc(c.summary) + '</div><div class="case-m">' + esc(c.regulator) + ' · ' + esc(c.date) + ((c.types || []).length ? ' · used for ' + esc(c.types.map(nice).join(', ')) : '') + (c.url ? ' · <a href="' + esc(c.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</div></div>';
     }).join(''));
     set('duaa', '<b>Treat ICO figures as a floor, not a ceiling.</b> ' + esc(M.legal.duaaWarning));
     set('legalMax', '<b>Legal maximums.</b> ICO: ' + esc(M.legal.icoMax) + '. CMA: ' + esc(M.legal.cmaMax) + '.');
