@@ -16,6 +16,8 @@
 //                                                   member: campaign figures for an ASA/CMA finding
 // POST /api/exposure?action=draft { fixId, fresh } member: ready-to-use fix for one finding
 // GET  /api/exposure?action=assess-pending          cron/internal: assess open ICO fixes in bulk
+// GET  /api/exposure?action=method                  public: the constants behind every figure,
+//                                                   for the "Sendwize exposure algorithm" page
 //
 // Claude never writes a number. It may only pick factors from the fixed
 // AI menu in _exposure.js, each with a quote from the finding's own
@@ -35,7 +37,7 @@ import { requireAuth, isRecordId, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import {
   formatFixRecord, evidenceText, evidenceHash, validateAssessment, reductionTips,
-  profileContext, COMMERCIAL_ASSUMPTIONS, FACTORS, AI_FACTOR_IDS, closestCases, ENGINE_VERSION,
+  profileContext, method, COMMERCIAL_ASSUMPTIONS, FACTORS, AI_FACTOR_IDS, closestCases, ENGINE_VERSION,
   ICO_LEGAL_MAX, NOT_LEGAL_ADVICE, DUAA_WARNING,
 } from './_exposure.js';
 
@@ -175,6 +177,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   const { action } = req.query;
+  // Published method: no member data, so no sign-in needed
+  if (req.method === 'GET' && action === 'method') {
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600');
+    return res.json(method());
+  }
   try {
     const auth = await requireAuth(req, res);
     if (!auth) return;
@@ -256,7 +263,7 @@ export default async function handler(req, res) {
       return res.json({ success: true, draft, cached: false, disclaimer: NOT_LEGAL_ADVICE });
     }
 
-    return res.status(400).json({ error: 'Unknown action. Use ?action=explain|assess|inputs|draft|assess-pending' });
+    return res.status(400).json({ error: 'Unknown action. Use ?action=explain|assess|inputs|draft|assess-pending|method' });
   } catch (e) {
     console.error('exposure.js error:', e);
     return res.status(500).json({ error: e.message || 'Exposure error' });

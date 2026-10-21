@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Sendwize exposure algorithm</title>
+<meta name="description" content="How every exposure figure in Sendwize is calculated: published enforcement cases, your business profile and fixed rules.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fed7aa;
+  --bg:#F4F3F0;--w:#ffffff;--b:#E8E6E1;
+  --t:#0C0B09;--tm:#5C5852;--mu:#8A867E;
+  --g:#16a34a;--gb:#f0fdf4;--r:#b91c1c;--rb:#fef2f2;
+  --pur:#7c3aed;--purb:#f5f3ff;
+  --rad:12px;--rad-sm:8px;--sh:0 1px 3px rgba(0,0,0,.06);
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:var(--o);font-weight:600;text-decoration:none}a:hover{text-decoration:underline}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.nav-logo{font-size:16px;font-weight:700;color:var(--o);letter-spacing:-.3px}
+.nav-back{border:1px solid var(--b);color:var(--tm);font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px}
+.nav-back:hover{border-color:var(--o);color:var(--o);text-decoration:none}
+.page{max-width:820px;margin:0 auto;padding:40px 16px 80px}
+.eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);margin-bottom:10px}
+h1{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.8px;line-height:1.1;margin-bottom:14px}
+.lede{font-size:16px;color:var(--tm);max-width:640px}
+.promises{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:28px 0 36px}
+.promise{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:14px 16px;font-size:13px;color:var(--tm)}
+.promise b{display:block;color:var(--t);font-size:14px;margin-bottom:2px}
+.toc{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:16px 20px;margin-bottom:40px;font-size:13px}
+.toc ol{padding-left:20px;columns:2;column-gap:28px}.toc li{margin:3px 0}
+section{margin-bottom:48px;scroll-margin-top:70px}
+h2{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:8px;display:flex;align-items:baseline;gap:10px}
+h2 .n{font-family:'DM Mono',monospace;font-size:13px;color:var(--o);font-weight:500}
+h3{font-size:14px;font-weight:700;margin:22px 0 8px}
+p{font-size:14px;color:var(--tm);margin-bottom:10px;max-width:680px}
+p b{color:var(--t)}
+.card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px;box-shadow:var(--sh);margin:14px 0}
+.formula{background:var(--t);color:#f5f5f4;border-radius:var(--rad);padding:18px 20px;font-family:'DM Mono',monospace;font-size:13px;line-height:1.9;margin:14px 0;overflow-x:auto;white-space:pre}
+.formula .c{color:#a8a29e}.formula .k{color:#fbbf24}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--b);border-radius:var(--rad);background:var(--w);margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--b);vertical-align:top}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);font-weight:700;background:#faf9f7;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num{font-family:'DM Mono',monospace;white-space:nowrap}
+.yours{background:var(--ol)}
+th.yours{color:var(--od)}
+.up{color:var(--r);font-family:'DM Mono',monospace;font-weight:600}.down{color:var(--g);font-family:'DM Mono',monospace;font-weight:600}
+.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.tag.profile{background:var(--ol);color:var(--od)}.tag.rule{background:#e7e5e4;color:#44403c}.tag.ai{background:var(--purb);color:var(--pur)}
+.tag.high{background:#fee2e2;color:#991b1b}.tag.medium{background:#fef3c7;color:#92400e}.tag.low{background:var(--gb);color:var(--g)}
+.you{background:var(--w);border:1px solid var(--om);border-top:4px solid var(--o);border-radius:var(--rad);padding:20px;margin-bottom:40px}
+.you-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}
+.you-item{background:var(--bg);border-radius:var(--rad-sm);padding:10px 12px}
+.you-k{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu)}
+.you-v{font-size:15px;font-weight:700;font-family:'DM Mono',monospace}
+.you-v.miss{color:var(--r);font-family:inherit;font-size:13px}
+.steps{list-style:none;counter-reset:s}
+.steps li{counter-increment:s;position:relative;padding:8px 0 8px 34px;font-size:13px;color:var(--tm);border-bottom:1px dashed var(--b)}
+.steps li:last-child{border-bottom:none}
+.steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:22px;height:22px;border-radius:50%;background:var(--o);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.steps li b{color:var(--t)}
+.bar{position:relative;height:12px;background:#ece9e3;border-radius:6px;margin:18px 0 6px}
+.bar i{position:absolute;top:0;bottom:0;background:var(--o);border-radius:6px;opacity:.85}
+.bar s{position:absolute;top:-5px;width:3px;height:22px;background:var(--t);border-radius:2px}
+.bar-l{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}
+.callout{background:#fff7ed;border:1px solid var(--om);border-left:3px solid var(--o);border-radius:var(--rad-sm);padding:14px 16px;font-size:13px;color:#7c2d12;margin:14px 0}
+.cases{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.case{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px}
+.case-f{font-family:'DM Mono',monospace;font-size:17px;font-weight:600;color:#991b1b}
+.case-n{font-size:13px;font-weight:700;margin:2px 0}
+.case-s{font-size:12px;color:var(--tm)}
+.case-m{font-size:11px;color:var(--mu);margin-top:6px}
+.ld{color:var(--mu);font-size:13px;font-style:italic}
+.foot{font-size:12px;color:var(--mu);border-top:1px solid var(--b);padding-top:18px;margin-top:40px}
+@media(max-width:640px){.promises{grid-template-columns:1fr}.toc ol{columns:1}.cases{grid-template-columns:1fr}.nav{padding:12px 16px}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-logo">sendwize</span>
+  <a class="nav-back" id="navBack" href="https://new-mvp-v2.webflow.io/">&larr; Back to dashboard</a>
+</nav>
+
+<main class="page">
+  <div class="eyebrow">Methodology</div>
+  <h1>The Sendwize exposure algorithm</h1>
+  <p class="lede">Every &pound; figure on your dashboard comes from the method on this page. The numbers in the tables below are read live from the same code that calculates your figures, so this page can't fall out of date.</p>
+
+  <div class="promises">
+    <div class="promise"><b>Anchored to real cases</b>Ranges come from published ICO enforcement, scaled to your size and sector.</div>
+    <div class="promise"><b>AI never writes a number</b>AI can only tick factors from a fixed list, and only by quoting your evidence word for word.</div>
+    <div class="promise"><b>Same evidence, same figure</b>Every step is a fixed rule. Change an input and you can see exactly why the figure moved.</div>
+  </div>
+
+  <div class="you" id="you" hidden>
+    <div class="eyebrow" style="margin-bottom:4px">Your business profile</div>
+    <p style="margin:0">These are the answers your figures are built on. <a id="editProfile" href="#">Edit your profile</a></p>
+    <div class="you-grid" id="youGrid"></div>
+  </div>
+
+  <nav class="toc" aria-label="Contents">
+    <ol>
+      <li><a href="#s1">The published-case range</a></li>
+      <li><a href="#s2">Factors that move the figure</a></li>
+      <li><a href="#s3">From factors to one figure</a></li>
+      <li><a href="#s4">Worked example</a></li>
+      <li><a href="#s5">Adding findings together</a></li>
+      <li><a href="#s6">Advertising (ASA) and consumer law (CMA)</a></li>
+      <li><a href="#s7">Score, risk addressed and other figures</a></li>
+      <li><a href="#s8">The cases behind the ranges</a></li>
+      <li><a href="#s9">What these figures are not</a></li>
+    </ol>
+  </nav>
+
+  <section id="s1">
+    <h2><span class="n">01</span>The published-case range</h2>
+    <p>Each data protection finding (ICO) has a type, such as <b>consent missing</b> or <b>suppression breach</b>. For each type we hold a range of what comparable organisations were fined in published ICO decisions, split by annual turnover. We call this the <b>frame</b>. Your figure can never go outside it.</p>
+    <div class="formula"><span class="c">// Step 1</span>
+<span class="k">frame</span> = range for the finding type, for your turnover band
+        &times; your sector multiplier</div>
+    <h3>Ranges by finding type and turnover band</h3>
+    <div class="tbl-wrap"><table id="bandTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
+    <p style="font-size:12px">Ranges shown before the sector multiplier. Your turnover band is highlighted when you are signed in. If you give an exact turnover, it decides your band.</p>
+    <h3>Sector multipliers</h3>
+    <div class="tbl-wrap"><table id="sectorTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
+    <p style="font-size:12px">Regulators have fined finance, health and gambling more heavily for the same breach, and charities and B2B senders less.</p>
+  </section>
+
+  <section id="s2">
+    <h2><span class="n">02</span>Factors that move the figure</h2>
+    <p>Where you sit inside the frame depends on aggravating factors (push it up) and mitigating factors (pull it down), the same things a regulator weighs. Every factor comes from a fixed list with a fixed weight. They come from three places:</p>
+    <ul class="steps" style="margin:10px 0 14px">
+      <li><span class="tag profile">Profile</span> &nbsp;<b>Your business profile.</b> Turnover, list size, opt-in records, complaints and regulator contact. This is why the profile is required.</li>
+      <li><span class="tag rule">Rule</span> &nbsp;<b>Facts we already hold about the finding.</b> Contacts affected, data types, DPA status, whether a documented assessment exists, known breach history, and how long the finding has been open.</li>
+      <li><span class="tag ai">AI</span> &nbsp;<b>An AI reading of the finding, only if you ask for one.</b> It can only tick factors from the AI part of this list, and each must come with a quote of at least three words that appears word for word in the finding. Anything else is thrown away, never repaired. The reading is saved and reused until the evidence changes.</li>
+    </ul>
+    <div class="tbl-wrap"><table id="factorTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
+    <p style="font-size:12px">Contacts affected comes from the finding itself first, then a number the AI quoted from it, then the list size on your profile. Opt-in record factors apply to consent and opt-out findings only. Turnover counts as the lower or upper part of its band when it sits in the bottom or top third (measured on a log scale). If your profile confirms complaints, the AI&rsquo;s reading of complaints is ignored so it is never counted twice.</p>
+  </section>
+
+  <section id="s3">
+    <h2><span class="n">03</span>From factors to one figure</h2>
+    <div class="formula" id="posFormula">Loading&hellip;</div>
+    <p>The <b>most likely figure</b> is the point in the frame the factors land on. The <b>likely range</b> around it gets narrower the more we know about you. Confidence counts five things we might know:</p>
+    <div class="tbl-wrap"><table id="confTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
+    <p style="font-size:12px">With a complete business profile, a finding usually reaches high confidence. An AI reading is a bonus, not a requirement.</p>
+  </section>
+
+  <section id="s4">
+    <h2><span class="n">04</span>Worked example</h2>
+    <div class="card" id="example"><span class="ld">Loading&hellip;</span></div>
+  </section>
+
+  <section id="s5">
+    <h2><span class="n">05</span>Adding findings together</h2>
+    <p>Adding every finding&rsquo;s figure together would overstate things: a regulator investigates related failings as one case and issues one penalty. So findings are grouped by area, and each area is counted once.</p>
+    <div class="formula" id="clusterFormula">Loading&hellip;</div>
+    <div class="tbl-wrap"><table id="areaTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
+    <p>Next to the total we show an <b>attention likelihood</b> (Low, Medium or High). It is never multiplied into the figure. It adds points for: critical findings open (+2), the largest audience affected (+2 over 100,000, +1 over 10,000), an issue type the ICO has fined recently such as opt-outs or bought-in data (+2), a finance, health or gambling sector (+1), and findings open for more than 90 days (+1). Five points or more is High, three or more is Medium.</p>
+  </section>
+
+  <section id="s6">
+    <h2><span class="n">06</span>Advertising (ASA) and consumer law (CMA)</h2>
+    <h3>ASA: no fines, so no fine figure</h3>
+    <p>The ASA does not fine. An upheld ruling is published permanently under your brand name, and serious or repeat cases can be referred to Trading Standards. So ASA findings show a <b>referral risk</b>, never a fine.</p>
+    <div class="tbl-wrap"><table id="asaTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
+    <h3>CMA: the statutory maximum only</h3>
+    <p>Since the DMCCA 2024 the CMA can fine directly. There are not yet enough published decisions to anchor a realistic range, so we show only the legal maximum for a business your size, worked out from the top of your turnover band.</p>
+    <div class="tbl-wrap"><table id="cmaTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
+    <h3>Commercial cost (your own figures, never a fine)</h3>
+    <p>If you give a campaign&rsquo;s budget and expected sales, we estimate what an ASA or CMA finding could cost the business. These figures are labelled as business cost and are never added to regulatory exposure.</p>
+    <div class="tbl-wrap"><table id="commTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
+  </section>
+
+  <section id="s7">
+    <h2><span class="n">07</span>Score, risk addressed and other figures</h2>
+    <h3>Compliance score</h3>
+    <p id="scoreText">Loading&hellip;</p>
+    <h3>Risk addressed</h3>
+    <p>The exposure removed by the fixes you have completed: your total with those findings still open, minus your total now, using the grouping in step 5. It is split into fixes <b>verified</b> by re-running the check and fixes you <b>marked fixed</b> yourself.</p>
+    <h3>Already lost</h3>
+    <p>A commercial figure, not a regulatory one: extra unsubscribes over the last 12 months (from Audience Read) multiplied by your cost per subscriber. If you have not entered a cost per subscriber we use a sector default and label the figure as an estimate.</p>
+  </section>
+
+  <section id="s8">
+    <h2><span class="n">08</span>The cases behind the ranges</h2>
+    <p>These published decisions anchor the ranges and appear as &ldquo;closest published cases&rdquo; under <b>Why this number?</b>. Case Twin on your dashboard also draws on rulings our daily regulator feed picks up, so it grows as new decisions are published.</p>
+    <div class="cases" id="cases"><span class="ld">Loading&hellip;</span></div>
+    <p style="font-size:12px;margin-top:10px">Check any decision on the <a href="https://ico.org.uk/action-weve-taken/enforcement/" target="_blank" rel="noopener">ICO enforcement register</a>.</p>
+  </section>
+
+  <section id="s9">
+    <h2><span class="n">09</span>What these figures are not</h2>
+    <div class="callout" id="duaa">Loading&hellip;</div>
+    <p><b>Not a prediction.</b> A real outcome depends on things no software sees: how you co-operate, the regulator&rsquo;s priorities that year, and how quickly you put things right.</p>
+    <p><b>Not legal advice.</b> For your specific position, speak to a solicitor who specialises in UK data protection or consumer law.</p>
+    <p><b>Not for financial reporting.</b> Don&rsquo;t use these figures as provisions in accounts or investor documents without independent legal and financial advice.</p>
+    <p id="legalMax"></p>
+  </section>
+
+  <div class="foot" id="foot">Illustrative ranges based on published enforcement data. Not a prediction. Not legal advice.</div>
+</main>
+
+<script>
+(function () {
+  var API = 'https://sendwize-backend.vercel.app';
+  var DASH = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  var userId = new URLSearchParams(location.search).get('userId') || '';
+  var M = null, P = null;
+
+  if (userId) {
+    document.getElementById('navBack').href = DASH + '?userId=' + encodeURIComponent(userId);
+    document.getElementById('editProfile').href = API + '/profile.html?userId=' + encodeURIComponent(userId);
+  } else {
+    document.getElementById('navBack').style.display = 'none';
+  }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function gbp(n) { return '£' + Math.round(Number(n) || 0).toLocaleString('en-GB'); }
+  function gbpK(n) { n = Number(n) || 0; return n >= 1e6 ? '£' + (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e4 ? '£' + Math.round(n / 1e3) + 'k' : gbp(n); }
+  function nice(s) { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function pct(x) { return Math.round(x * 100) + '%'; }
+  function signed(w) { return (w > 0 ? '+' : '−') + Math.abs(w).toFixed(2); }
+  function set(id, html) { document.getElementById(id).innerHTML = html; }
+  function row(cells, cls) { return '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' + cells.join('') + '</tr>'; }
+  var BAND_KEYS = ['under_1m', '1m_10m', '10m_50m', 'over_50m'];
+  var SECTOR_NAMES = { finance: 'Finance', health: 'Health / Healthcare', gambling: 'Gambling', ecommerce: 'Ecommerce / Retail', media: 'Media / Publishing', general: 'Agency, SaaS and other', b2b: 'B2B / Professional services', charity: 'Charity / Non-profit' };
+  var SECTOR_ALIAS = { healthcare: 'health', agency: 'general', saas: 'general', other: 'general' };
+
+  // ── Same rules as the engine (api/_exposure.js), for your profile ──
+  function bandOf(turnover, raw) {
+    var t = Number(turnover) || 0;
+    if (t > 0) return t < 1e6 ? 'under_1m' : t < 1e7 ? '1m_10m' : t < 5e7 ? '10m_50m' : 'over_50m';
+    var k = String(raw || '').replace(/\s+/g, '').replace(/-/g, '–');
+    var map = { 'Under£1M': 'under_1m', '£1M–£10M': '1m_10m', '£10M–£50M': '10m_50m', 'Over£50M': 'over_50m' };
+    return map[k] || null;
+  }
+  function sectorOf(s) { s = String(s || '').toLowerCase(); s = SECTOR_ALIAS[s] || s; return M.sectors[s] !== undefined ? s : 'general'; }
+  function weight(id) { var f = M.factors.filter(function (x) { return x.id === id; })[0]; return f ? f.weight : 0; }
+  function label(id) { var f = M.factors.filter(function (x) { return x.id === id; })[0]; return f ? f.label : id; }
+  function roundNice(v) { return v >= 10000 ? Math.round(v / 1000) * 1000 : Math.round(v / 100) * 100; }
+  // Factors your profile alone adds to a consent finding
+  function profileFactors(p, band) {
+    var out = [], list = Number(p.listSize) || 0, t = Number(p.annualTurnover) || 0;
+    if (list > 1e6) out.push('volume_very_large'); else if (list > 1e5) out.push('volume_large'); else if (list && list < 1e4) out.push('volume_small');
+    if (t && band) {
+      var lim = M.bandLimits[band], v = Math.min(Math.max(t, lim[0]), lim[1]);
+      var pos = (Math.log10(v) - Math.log10(lim[0])) / (Math.log10(lim[1]) - Math.log10(lim[0]));
+      if (pos < 0.33) out.push('turnover_lower'); else if (pos > 0.67) out.push('turnover_upper');
+    }
+    if (p.consentRecords === 'all') out.push('consent_records_all'); else if (p.consentRecords === 'none') out.push('consent_records_none');
+    if (p.priorRegulatorContact === 'Yes') out.push('regulator_contact');
+    if (p.complaintsReceived === 'Yes') out.push('complaints_received');
+    if (p.priorRegulatorContact === 'No' && p.complaintsReceived === 'No') out.push('clean_history');
+    return out;
+  }
+
+  function renderYou() {
+    if (!P) return;
+    var band = bandOf(P.annualTurnover, P.revenueBand), sec = sectorOf(P.sector);
+    var missing = P.profileMissing || [];
+    function item(k, v, key) { var miss = key && missing.indexOf(key) >= 0; return '<div class="you-item"><div class="you-k">' + esc(k) + '</div><div class="you-v' + (miss ? ' miss' : '') + '">' + (miss ? 'Missing' : esc(v)) + '</div></div>'; }
+    set('youGrid',
+      item('Annual turnover', P.annualTurnover ? gbpK(P.annualTurnover) : '', 'turnover') +
+      item('Turnover band', band ? M.bands[band] : 'Not set') +
+      item('Sector', (SECTOR_NAMES[sec] || nice(sec)) + ' ×' + M.sectors[sec]) +
+      item('Marketing list', P.listSize ? Number(P.listSize).toLocaleString('en-GB') : '', 'listSize') +
+      item('Opt-in records', { all: 'Everyone', some: 'Some / not sure', none: 'None' }[P.consentRecords] || '', 'consentRecords') +
+      item('Complaints (2 yrs)', P.complaintsReceived || '', 'complaints') +
+      item('Regulator contact (2 yrs)', P.priorRegulatorContact || '', 'regulatorContact'));
+    document.getElementById('you').hidden = false;
+  }
+
+  function renderBands() {
+    var yb = P ? bandOf(P.annualTurnover, P.revenueBand) : null;
+    var h = row(['<th>Finding type</th>'].concat(BAND_KEYS.map(function (b) { return '<th class="' + (b === yb ? 'yours' : '') + '">' + esc(M.bands[b]) + (b === yb ? ' (you)' : '') + '</th>'; })));
+    M.ico.forEach(function (t) {
+      h += row(['<td>' + esc(nice(t.type)) + '<div style="font-size:11px;color:var(--mu)">' + esc(M.areas[t.area] || 'Other') + '</div></td>'].concat(BAND_KEYS.map(function (b) {
+        var r = t.bands[b]; return '<td class="num' + (b === yb ? ' yours' : '') + '">' + gbpK(r.low) + '–' + gbpK(r.high) + '</td>';
+      })));
+    });
+    set('bandTable', h);
+    var ys = P ? sectorOf(P.sector) : null;
+    var s = row(['<th>Sector</th>', '<th>Multiplier</th>']);
+    Object.keys(M.sectors).sort(function (a, b) { return M.sectors[b] - M.sectors[a]; }).forEach(function (k) {
+      s += row(['<td>' + esc(SECTOR_NAMES[k] || nice(k)) + (k === ys ? ' <b>(you)</b>' : '') + '</td>', '<td class="num">×' + M.sectors[k] + '</td>'], k === ys ? 'yours' : '');
+    });
+    set('sectorTable', s);
+  }
+
+  function renderFactors() {
+    var order = { profile: 0, rule: 1, ai: 2 };
+    var fs = M.factors.slice().sort(function (a, b) { return order[a.source] - order[b.source] || b.weight - a.weight; });
+    var h = row(['<th>Factor</th>', '<th>Source</th>', '<th>Effect on position</th>']);
+    fs.forEach(function (f) {
+      h += row(['<td>' + esc(f.label) + '</td>', '<td><span class="tag ' + f.source + '">' + { profile: 'Profile', rule: 'Rule', ai: 'AI' }[f.source] + '</span></td>', '<td class="' + (f.weight > 0 ? 'up' : 'down') + '">' + signed(f.weight) + (f.weight > 0 ? ' ↑' : ' ↓') + '</td>']);
+    });
+    set('factorTable', h);
+  }
+
+  function renderPosition() {
+    var p = M.position, hw = M.halfWidth;
+    set('posFormula',
+      '<span class="c">// Step 2: where in the frame</span>\n' +
+      '<span class="k">position</span>    = ' + p.start + ' + sum of factor weights   <span class="c">(kept between ' + p.min + ' and ' + p.max + ')</span>\n\n' +
+      '<span class="c">// Step 3: one figure and a range around it</span>\n' +
+      '<span class="k">most likely</span> = frame low + position × (frame high − frame low)\n' +
+      '<span class="k">likely range</span> = most likely ± a share of the frame width:\n' +
+      '              ' + pct(hw.high) + ' at high confidence, ' + pct(hw.medium) + ' at medium, ' + pct(hw.low) + ' at low\n' +
+      '              <span class="c">(never outside the frame)</span>');
+    var c = M.confidenceInputs, h = row(['<th>What we might know</th>', '<th>Counts when</th>']);
+    var when = { listSize: 'Your list size, or the finding states how many people it affected', turnover: 'Turnover is on your profile', history: 'Both complaint and regulator-contact questions are answered', consentRecords: 'Answered on your profile (always counts for non-consent findings)', assess: 'An AI reading has been done on the current evidence' };
+    Object.keys(c).forEach(function (k) { h += row(['<td>' + esc(c[k]) + '</td>', '<td>' + esc(when[k] || '') + '</td>']); });
+    h += row(['<td colspan="2"><span class="tag high">High</span> ' + M.confidenceAt.high + ' or more known &nbsp; <span class="tag medium">Medium</span> ' + M.confidenceAt.medium + ' or 3 &nbsp; <span class="tag low">Low</span> fewer</td>']);
+    set('confTable', h);
+  }
+
+  function renderExample() {
+    var t = M.ico.filter(function (x) { return x.type === 'consent_missing'; })[0] || M.ico[0];
+    var band = (P && bandOf(P.annualTurnover, P.revenueBand)) || '1m_10m';
+    var sec = P ? sectorOf(P.sector) : 'ecommerce';
+    var prof = P && P.profileComplete ? P : { annualTurnover: 2000000, listSize: 25000, consentRecords: 'some', complaintsReceived: 'No', priorRegulatorContact: 'No' };
+    if (!P || !P.profileComplete) band = bandOf(prof.annualTurnover);
+    var m = M.sectors[sec], low = Math.round(t.bands[band].low * m), high = Math.round(t.bands[band].high * m), w = high - low;
+    var ids = profileFactors(prof, band), sum = ids.reduce(function (s, id) { return s + weight(id); }, 0);
+    var pos = Math.min(M.position.max, Math.max(M.position.min, M.position.start + sum));
+    var known = 4, level = known >= M.confidenceAt.high ? 'high' : known >= M.confidenceAt.medium ? 'medium' : 'low', half = M.halfWidth[level];
+    var centre = low + w * pos, r100 = function (v) { return Math.round(v / 100) * 100; };
+    var lo = r100(Math.max(low, centre - w * half)), hi = r100(Math.min(high, centre + w * half));
+    var who = P && P.profileComplete ? 'your business' : 'an example business (' + gbpK(prof.annualTurnover) + ' turnover, ' + Number(prof.listSize).toLocaleString('en-GB') + ' contacts, ' + (SECTOR_NAMES[sec] || sec) + ', no complaints or regulator contact)';
+    set('example',
+      '<p style="margin-bottom:12px">A <b>' + esc(nice(t.type)) + '</b> finding for ' + esc(who) + ', using only the profile. No finding-specific facts or AI reading.</p>' +
+      '<ul class="steps">' +
+        '<li><b>Frame.</b> ' + esc(M.bands[band]) + ' range ' + gbp(t.bands[band].low) + '–' + gbp(t.bands[band].high) + ' × ' + m + ' (' + esc(SECTOR_NAMES[sec] || sec) + ') = <b>' + gbp(low) + '–' + gbp(high) + '</b></li>' +
+        '<li><b>Factors.</b> ' + (ids.length ? ids.map(function (id) { return esc(label(id)) + ' <span class="' + (weight(id) > 0 ? 'up' : 'down') + '">' + signed(weight(id)) + '</span>'; }).join('; ') : 'None') + '</li>' +
+        '<li><b>Position.</b> ' + M.position.start + ' ' + (sum >= 0 ? '+ ' : '− ') + Math.abs(sum).toFixed(2) + ' = <b>' + pos.toFixed(2) + '</b> of the way up the frame</li>' +
+        '<li><b>Most likely.</b> ' + gbp(low) + ' + ' + pos.toFixed(2) + ' × ' + gbp(w) + ' = <b>about ' + gbp(roundNice(centre)) + '</b></li>' +
+        '<li><b>Likely range.</b> High confidence (4 of 5 known), so ±' + pct(half) + ' of the frame: <b>' + gbp(lo) + '–' + gbp(hi) + '</b></li>' +
+      '</ul>' +
+      '<div class="bar"><i style="left:' + ((lo - low) / w * 100).toFixed(1) + '%;width:' + Math.max(1, (hi - lo) / w * 100).toFixed(1) + '%"></i><s style="left:calc(' + (pos * 100).toFixed(1) + '% - 1px)"></s></div>' +
+      '<div class="bar-l"><span>' + gbpK(low) + '</span><span>published-case frame</span><span>' + gbpK(high) + '</span></div>');
+  }
+
+  function renderClusters() {
+    var k = M.cluster.otherShare, cap = M.cluster.cap;
+    set('clusterFormula',
+      '<span class="c">// Per area, e.g. all consent findings</span>\n' +
+      '<span class="k">area figure</span> = largest finding + ' + pct(k) + ' of each other finding in the area\n' +
+      '              <span class="c">(never more than ' + cap + '× the largest finding)</span>\n\n' +
+      '<span class="k">total</span>       = sum of the area figures');
+    var h = row(['<th>Area a regulator would investigate together</th>', '<th>Finding types</th>']);
+    Object.keys(M.areas).forEach(function (a) {
+      var types = M.ico.filter(function (t) { return t.area === a; }).map(function (t) { return nice(t.type); });
+      h += row(['<td>' + esc(M.areas[a]) + '</td>', '<td style="font-size:12px;color:var(--tm)">' + esc(types.join(', ')) + '</td>']);
+    });
+    set('areaTable', h);
+  }
+
+  function renderAsaCma() {
+    var h = row(['<th>ASA finding type</th>', '<th>Referral risk</th>']);
+    M.asa.forEach(function (a) { h += row(['<td>' + esc(nice(a.type)) + '</td>', '<td><span class="tag ' + a.referralRisk + '">' + nice(a.referralRisk) + '</span></td>']); });
+    set('asaTable', h);
+    var yb = P ? bandOf(P.annualTurnover, P.revenueBand) : null;
+    var c = row(['<th>Turnover band</th>', '<th>CMA maximum we show</th>']);
+    BAND_KEYS.forEach(function (b) { var x = M.cma[b]; c += row(['<td>' + esc(M.bands[b]) + (b === yb ? ' <b>(you)</b>' : '') + '</td>', '<td class="num">' + (x.amount ? gbp(x.amount) : 'Higher of £300,000 or 10% of global turnover') + '</td>'], b === yb ? 'yours' : ''); });
+    set('cmaTable', c);
+    var A = M.commercial;
+    set('commTable', row(['<th>Cost</th>', '<th>Applies to</th>', '<th>Assumption</th>']) +
+      row(['<td>Redoing and re-approving the ad</td>', '<td>ASA</td>', '<td>' + pct(A.reworkShare) + ' of the campaign budget (at least ' + gbp(A.reworkMin) + ')</td>']) +
+      row(['<td>Sales lost if the ad is pulled</td>', '<td>ASA</td>', '<td>' + pct(A.salesLost.likely) + ' of expected campaign sales (' + pct(A.salesLost.low) + ' if pulled late, ' + pct(A.salesLost.high) + ' if early)</td>']) +
+      row(['<td>Refunds or compensation</td>', '<td>CMA</td>', '<td>' + pct(A.refunded.likely) + ' of campaign revenue (range ' + pct(A.refunded.low) + ' to ' + pct(A.refunded.high) + ')</td>']));
+  }
+
+  function renderRest() {
+    var w = M.severityWeight;
+    set('scoreText', 'The share of your findings that are fixed, weighted by severity: critical ' + w.critical + ', high ' + w.high + ', medium ' + w.medium + ', low ' + w.low + '. A fix verified by re-running the check counts in full; a fix you mark yourself counts ' + pct(M.selfAttestedCredit) + '. Findings you dismiss as not applicable or wrong leave the score; findings you accept the risk on still count as open. Commercial findings are not part of the score.');
+    var cs = M.cases.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+    set('cases', cs.map(function (c) {
+      return '<div class="case"><div class="case-f">' + gbp(c.penalty) + '</div><div class="case-n">' + esc(c.name) + '</div><div class="case-s">' + esc(c.summary) + '</div><div class="case-m">' + esc(c.regulator) + ' · ' + esc(c.date) + ' · used for ' + esc(c.types.map(nice).join(', ')) + '</div></div>';
+    }).join(''));
+    set('duaa', '<b>Treat ICO figures as a floor, not a ceiling.</b> ' + esc(M.legal.duaaWarning));
+    set('legalMax', '<b>Legal maximums.</b> ICO: ' + esc(M.legal.icoMax) + '. CMA: ' + esc(M.legal.cmaMax) + '.');
+    set('foot', esc(M.legal.notLegalAdvice) + ' Method version ' + esc(M.version) + '.');
+  }
+
+  function renderAll() { renderYou(); renderBands(); renderFactors(); renderPosition(); renderExample(); renderClusters(); renderAsaCma(); renderRest(); }
+
+  async function boot() {
+    try {
+      var r = await fetch(API + '/api/exposure?action=method');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      M = await r.json();
+    } catch (e) {
+      document.querySelectorAll('.ld').forEach(function (el) { el.textContent = 'Could not load. Please refresh.'; });
+      return;
+    }
+    renderAll();
+    if (!userId) return;
+    try {
+      var pr = await swFetch(API + '/api/profile?action=get&userId=' + encodeURIComponent(userId));
+      if (pr.ok) { P = await pr.json(); if (P && P.success === false) P = null; }
+    } catch (e) { P = null; }
+    if (P) renderAll();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

@@ -50,6 +50,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ld{padding:60px 20px;text-align:center;color:var(--mu);font-size:13px}
 .spin{width:20px;height:20px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
 @keyframes spin{to{transform:rotate(360deg)}}
+.req{color:var(--o)}
+.card.must{border-color:#fed7aa;border-top:4px solid var(--o)}
+.must-badge{display:inline-block;background:var(--ol);color:var(--od);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
+.fi.miss{border-color:var(--r);box-shadow:0 0 0 3px rgba(220,38,38,.08)}
+.algo{font-size:12px;color:var(--tm);margin-top:14px;line-height:1.6}
+.algo a{color:var(--o);font-weight:600;text-decoration:none}
 .toast{position:fixed;bottom:20px;right:20px;background:var(--t);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;transform:translateY(80px);opacity:0;transition:all .22s;max-width:280px}
 .toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
 @media(max-width:480px){.two-col{grid-template-columns:1fr}.ph{flex-direction:column;gap:10px;align-items:flex-start}}
@@ -65,15 +71,51 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div id="mainContent" style="display:none">
     <button class="back" onclick="goBack()">&#x2190; Back to dashboard</button>
     <div class="hdr">
-      <h1>Profile settings</h1>
-      <p>These figures personalise your financial exposure calculations on the dashboard.</p>
+      <h1>Business profile</h1>
+      <p>Every exposure figure on your dashboard is scaled to these answers. The required ones must be filled in before figures show.</p>
+    </div>
+
+    <!-- REQUIRED BUSINESS PROFILE -->
+    <div class="card must">
+      <div class="card-title">Required for exposure figures<span class="must-badge">Required</span></div>
+      <p class="hint" style="margin:-8px 0 18px;font-size:12px">Regulators scale penalties to the business in front of them, so we do too. Until these are answered your dashboard shows no &pound; figures. An estimate is fine.</p>
+      <div class="two-col">
+        <div class="fg">
+          <label for="turnover">Annual turnover <span class="req">*</span></label>
+          <div class="fi-wrap"><span class="fi-pfx">&pound;</span><input type="number" class="fi" id="turnover" min="1" placeholder="e.g. 3500000" oninput="turnoverBand()"></div>
+        </div>
+        <div class="fg">
+          <label for="listSize">Marketing list size <span class="req">*</span></label>
+          <input type="number" class="fi" id="listSize" min="1" placeholder="e.g. 25000">
+        </div>
+      </div>
+      <div class="fg">
+        <label for="consentRecords">Do you keep a dated record of each opt-in? <span class="req">*</span></label>
+        <select class="fi" id="consentRecords">
+          <option value="">Choose</option>
+          <option value="all">Yes, for everyone</option>
+          <option value="some">For some contacts, or not sure</option>
+          <option value="none">No</option>
+        </select>
+      </div>
+      <div class="two-col">
+        <div class="fg">
+          <label for="complaints">Complaints in the last two years? <span class="req">*</span></label>
+          <select class="fi" id="complaints"><option value="">Choose</option><option>No</option><option>Yes</option></select>
+        </div>
+        <div class="fg">
+          <label for="regContact">ICO, ASA or CMA contact in the last two years? <span class="req">*</span></label>
+          <select class="fi" id="regContact"><option value="">Choose</option><option>No</option><option>Yes</option></select>
+        </div>
+      </div>
+      <div class="algo">How each answer moves your figures, with every weight and published case we use: <a id="algoLink" href="https://sendwize-backend.vercel.app/exposure-algorithm.html">The Sendwize exposure algorithm</a></div>
     </div>
 
     <!-- SECTOR + CPL -->
     <div class="card">
       <div class="card-title">Your business</div>
       <div class="fg">
-        <label for="sector">Sector</label>
+        <label for="sector">Sector <span class="req">*</span></label>
         <select class="fi" id="sector">
           <option value="ecommerce">Ecommerce / Retail</option>
           <option value="b2b">B2B / Professional Services</option>
@@ -81,10 +123,11 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
           <option value="media">Media / Publishing / Newsletter</option>
           <option value="finance">Finance / Financial Services</option>
           <option value="health">Health / Healthcare</option>
+          <option value="gambling">Gambling</option>
           <option value="charity">Charity / Non-profit</option>
           <option value="general">Agency or Other</option>
         </select>
-        <span class="hint">Sets UK benchmark unsubscribe rates for Audience Read and your sector CPL default if no CPL is entered.</span>
+        <span class="hint">Scales exposure figures (finance, health and gambling are fined more heavily; charities and B2B less), and sets UK benchmark unsubscribe rates and your default CPL.</span>
       </div>
       <div class="fg">
         <label for="cplInput">Cost per subscriber / lead (CPL)</label>
@@ -132,42 +175,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
           <div><div class="rb-label">Over &pound;50M</div><div class="rb-sub">Large business</div></div>
         </label>
       </div>
-      <span class="hint" style="margin-top:10px;display:block">Used to contextualise ICO and CMA statutory maximum figures. If you enter an exact turnover below, it sets this for you.</span>
+      <span class="hint" style="margin-top:10px;display:block">Set automatically from your turnover above.</span>
     </div>
 
-    <!-- SHARPEN EXPOSURE FIGURES -->
+    <!-- CAMPAIGN FIGURES (optional) -->
     <div class="card">
-      <div class="card-title">Sharpen your exposure figures</div>
-      <p class="hint" style="margin:-8px 0 18px;font-size:12px">Every answer narrows your figures and raises their confidence. Leave anything you don&rsquo;t know blank.</p>
-      <div class="two-col">
-        <div class="fg">
-          <label for="turnover">Annual turnover</label>
-          <div class="fi-wrap"><span class="fi-pfx">&pound;</span><input type="number" class="fi" id="turnover" min="1" placeholder="e.g. 3500000" oninput="turnoverBand()"></div>
-        </div>
-        <div class="fg">
-          <label for="listSize">Marketing list size</label>
-          <input type="number" class="fi" id="listSize" min="1" placeholder="e.g. 25000">
-        </div>
-      </div>
-      <div class="fg">
-        <label for="consentRecords">Do you keep a dated record of each opt-in?</label>
-        <select class="fi" id="consentRecords">
-          <option value="">Not sure</option>
-          <option value="all">Yes, for everyone</option>
-          <option value="some">For some contacts</option>
-          <option value="none">No</option>
-        </select>
-      </div>
-      <div class="two-col">
-        <div class="fg">
-          <label for="complaints">Complaints in the last two years?</label>
-          <select class="fi" id="complaints"><option value="">Not sure</option><option>No</option><option>Yes</option></select>
-        </div>
-        <div class="fg">
-          <label for="regContact">ICO, ASA or CMA contact in the last two years?</label>
-          <select class="fi" id="regContact"><option value="">Not sure</option><option>No</option><option>Yes</option></select>
-        </div>
-      </div>
+      <div class="card-title">Campaign figures (optional)</div>
       <div class="two-col">
         <div class="fg">
           <label for="campBudget">Typical campaign budget</label>
@@ -178,7 +191,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
           <div class="fi-wrap"><span class="fi-pfx">&pound;</span><input type="number" class="fi" id="campRevenue" min="1" placeholder="e.g. 40000"></div>
         </div>
       </div>
-      <span class="hint">Campaign figures are used only to estimate the business cost of an advertising or pricing finding (an ad withdrawn, customers refunded). They are never presented as a fine.</span>
+      <span class="hint">Used only to estimate the business cost of an advertising or pricing finding (an ad withdrawn, customers refunded). Never presented as a fine.</span>
     </div>
 
     <button class="btn-save" id="btnSave" onclick="saveProfile()">Save settings</button>
@@ -193,6 +206,7 @@ var userId=new URLSearchParams(window.location.search).get('userId')||'';
 var selRevBand=null;
 
 function goBack(){window.location.href=DASH+(userId?'?userId='+userId:'');}
+(function(){var a=document.getElementById('algoLink');if(a&&userId)a.href+='?userId='+encodeURIComponent(userId);})();
 
 function selBand(lbl,val){
   document.querySelectorAll('.rb-opt').forEach(function(o){o.classList.remove('on');});
@@ -265,6 +279,10 @@ async function saveProfile(){
   var msg=document.getElementById('savedMsg');
   var sector=document.getElementById('sector').value;
   var cplVal=parseFloat(document.getElementById('cplInput').value)||null;
+  // The required card: every exposure figure depends on these
+  var req=['turnover','listSize','consentRecords','complaints','regContact'],miss=[];
+  req.forEach(function(id){var el=document.getElementById(id),ok=el.type==='number'?parseFloat(el.value)>0:!!el.value;el.classList.toggle('miss',!ok);if(!ok)miss.push(el);});
+  if(miss.length){miss[0].focus();showToast('Fill in the required answers to save','er');return;}
   btn.disabled=true;btn.textContent='Saving\u2026';msg.textContent='';
   try{
     var body={userId:userId,sector:sector};

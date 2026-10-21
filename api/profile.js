@@ -1,5 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — profile.js v6.5
+// SENDWIZE — profile.js v6.6
+// v6.6: the business profile is required before exposure figures show.
+//       get/save return profileComplete and profileMissing (keys of
+//       REQUIRED_PROFILE in _exposure.js still to answer).
 // v6.5: fields that sharpen exposure figures: annualTurnover, listSize,
 //       consentRecords (all|some|none), priorRegulatorContact and
 //       complaintsReceived (Yes|No), typicalCampaignBudget and
@@ -14,7 +17,7 @@
 // ─────────────────────────────────────────────────────────────
 import { atFetch } from './_airtable.js';
 import { requireAuth, CORS_HEADERS } from './_auth.js';
-import { bandFromTurnover, BAND_LABELS, CONSENT_RECORDS } from './_exposure.js';
+import { bandFromTurnover, BAND_LABELS, CONSENT_RECORDS, profileGaps } from './_exposure.js';
 
 const posNum = v => (typeof v === 'number' && Number.isFinite(v) && v > 0 && v < 1e12) ? Math.round(v) : null;
 const yesNo  = v => (v === 'Yes' || v === 'No') ? v : null;
@@ -59,6 +62,7 @@ async function fetchProfile(userId, token, baseId) {
 
 function fmt(record, userId) {
   const f = record.fields;
+  const missing = profileGaps(f);
   return {
     profileId:          record.id,
     userId:             f.UserID           || userId,
@@ -83,6 +87,9 @@ function fmt(record, userId) {
     complaintsReceived:    f.ComplaintsReceived     || null,
     typicalCampaignBudget: f.TypicalCampaignBudget  || null,
     typicalCampaignRevenue:f.TypicalCampaignRevenue || null,
+    // v6.6 — required before exposure figures show
+    profileComplete:       missing.length === 0,
+    profileMissing:        missing,
   };
 }
 
