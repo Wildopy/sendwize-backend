@@ -1177,7 +1177,7 @@ if (!recordId) {
           fixesGenerated.push(fixType);
         };
         if (r.consentNaming && !fields.ConsentChainVerified)
-          add('affiliate_consent_unverified', `Affiliate '${name}': consent wording not checked. Consent an affiliate collected only covers your marketing if it names your organisation (PECR Reg 22; Saga Group 2021).`, 'critical', { exposureLow, exposureHigh });
+          add('affiliate_consent_unverified', `Affiliate '${name}': consent wording not checked. Consent an affiliate collected only covers your marketing if it names your organisation (PECR Reg 22; Saga Services 2021).`, 'critical', { exposureLow, exposureHigh });
         if (r.senderIdentity && fields.SenderIdentityCompliant === 'Unverified')
           add('affiliate_sender_identity_breach', `Affiliate '${name}' sender identity not verified. PECR Reg 23 requires the sender not be disguised or concealed.`, 'high');
         if (!fields.MarketingMaterialsReviewed)

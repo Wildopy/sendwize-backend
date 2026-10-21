@@ -6,8 +6,8 @@
 // it most resembles, so a member sees who was caught doing the same
 // thing, what it cost them, and how far they are from clear.
 //
-// Library = the curated anchors in _exposure.js (CASE_ANCHORS) plus
-// the rulings the daily regulator feed writes to
+// Library = the verified case library (_case-library.js, via
+// CASE_ANCHORS) plus the rulings the daily regulator feed writes to
 // Sector_Intelligence_Feed, so the twins sharpen as rulings land.
 //
 // Matching is deterministic: same issue type, same sector, similar
@@ -18,18 +18,16 @@
 // wins" and ranking "Start here" by value for time.
 // ─────────────────────────────────────────────────────────────
 import { CASE_ANCHORS, ICO_ACTION_URL, areaOf } from './_exposure.js';
-
-// Sectors for the curated anchors (null where the record doesn't say)
-const ANCHOR_SECTORS = { hellofresh_2024: 'ecommerce', allay_2026: 'finance', zmluk_2025: null, saga_2021: 'finance', jtt_2021: null };
+import { caseOutcome } from './_case-library.js';
 
 // Feed claim types (regulatory-feed-update.js) → the finding types they match
 export const CLAIM_TO_FIX = {
   fake_urgency:      ['fake_urgency'],
   misleading_claim:  ['misleading_claim', 'asa_liability', 'affiliate_misleading_claims', 'unreviewed_joint_ads'],
-  fake_reviews:      ['misleading_claim'],
+  fake_reviews:      ['misleading_claim', 'fake_reviews'],
   health_claim:      ['misleading_claim', 'asa_liability'],
   reference_pricing: ['misleading_reference_price', 'partner_pricing_claims'],
-  drip_pricing:      ['misleading_reference_price', 'partner_pricing_claims'],
+  drip_pricing:      ['misleading_reference_price', 'partner_pricing_claims', 'drip_pricing'],
   undisclosed_ad:    ['undisclosed_ad', 'affiliate_ad_disclosure'],
   consent_missing:   ['consent_missing', 'consent_expired', 'invalid_consent_mechanism', 'third_party_list', 'lead_gen_consent_gap', 'affiliate_consent_unverified'],
   suppression_breach:['suppression_breach'],
@@ -88,8 +86,9 @@ function parseList(v) {
 export function buildLibrary(feedRecords = []) {
   const lib = CASE_ANCHORS.map(c => ({
     id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty || null,
-    volume: c.volume || null, summary: c.summary, types: c.types, sector: ANCHOR_SECTORS[c.id] ?? null,
-    url: ICO_ACTION_URL, source: 'curated',
+    refunds: c.refunds || null, outcome: caseOutcome(c),
+    volume: c.volume || null, summary: c.summary, types: c.types, sector: c.sector ?? null,
+    url: c.url || ICO_ACTION_URL, source: 'curated',
   }));
   const seen = new Set(lib.map(c => slug(c.name).split('_')[0]));
   for (const r of feedRecords) {
@@ -104,6 +103,7 @@ export function buildLibrary(feedRecords = []) {
     lib.push({
       id: 'feed_' + r.id, name, regulator: f.Regulator || '', date: f.PublishedDate || '',
       penalty: Number(f.FineAmount) > 0 ? Number(f.FineAmount) : null, volume: null,
+      outcome: caseOutcome({ penalty: Number(f.FineAmount) > 0 ? Number(f.FineAmount) : null, regulator: f.Regulator || '' }),
       summary: String(f.RulingSummary || '').slice(0, 300), types,
       sector: sectorKey(f.Sector),
       url: /^https:\/\//.test(f.RulingUrl || '') ? f.RulingUrl : null, source: 'feed',

@@ -383,7 +383,7 @@
     var when = c.date ? ' · ' + esc(date(c.date.length === 4 ? c.date + '-06-01' : c.date.length === 7 ? c.date + '-01' : c.date).replace(/^\d+ /, '')) : '';
     if (c.penalty) return 'Fined <b>' + gbp(c.penalty) + '</b> by the ' + esc(c.regulator) + when;
     if (c.regulator === 'ASA') return 'Upheld ASA ruling, published under their name' + when;
-    return esc(c.regulator) + ' action' + when;
+    return esc(c.outcome || c.regulator + ' action') + when;
   }
   function twinCard() {
     var T = D.caseTwin, pend = D.fixes.pending || [];
@@ -619,7 +619,7 @@
         '<button class="sw-wide-btn" data-act="assess" data-id="' + esc(f.id) + '">' + (x.assessment ? 'Re-assess with AI' : 'Assess with AI') + '</button><div class="sw-note" style="margin-top:6px">AI can only pick from a fixed list of factors, and each must quote your evidence word for word. It never writes the number.</div></div>';
       var cases = e.closestCases || [];
       if (cases.length) h += '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
-        return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + gbp(c.penalty) + '<div class="sw-hs">' + esc(c.summary) + '</div><a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">ICO enforcement page</a></div>';
+        return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + '<div class="sw-hs">' + esc(c.summary) + '</div><a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a></div>';
       }).join('') + '</div>';
       if ((x.tips || []).length) h += '<div class="sw-dr-sec"><div class="sw-lbl">What would bring it down</div>' + x.tips.map(function (t) { return '<div class="sw-fac"><span class="sw-fac-ic down">↓</span><div>' + esc(t) + '</div></div>'; }).join('') + '</div>';
       h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(e.rangeLabel || '') + '. Legal maximum: ' + esc(x.legalMax) + '. ' + esc(x.duaaWarning || '') + '</div></div>';

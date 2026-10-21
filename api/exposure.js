@@ -90,7 +90,7 @@ async function askClaude(fix, profile) {
     body: JSON.stringify({
       max_tokens: 700,
       system: `You assess UK marketing compliance evidence for a regulatory exposure model. Only select a factor when the evidence text plainly shows it, and copy the exact words that show it into "quote". If the evidence states how many people or messages were affected, give that number in "audience_count" and the exact words in "audience_quote". Never infer facts that are not written. If nothing applies, return an empty factors list. "plain_english" is two sentences for a marketing manager on why this matters.\n\n${LEGAL_RULES}`,
-      messages: [{ role: 'user', content: `Factor menu:\n${menu}\n\nComparable published cases (for context only):\n${cases.map(c => `- ${c.name} (${c.date}, £${c.penalty.toLocaleString('en-GB')}): ${c.summary}`).join('\n') || '- none on file for this finding type'}\n\nEvidence:\n<<<\n${text}\n>>>` }],
+      messages: [{ role: 'user', content: `Factor menu:\n${menu}\n\nComparable published cases (for context only):\n${cases.map(c => `- ${c.name} (${c.regulator}, ${c.date}, ${c.outcome}): ${c.summary}`).join('\n') || '- none on file for this finding type'}\n\nEvidence:\n<<<\n${text}\n>>>` }],
     }),
   }, { effort: 'low', schema });
   if (!r.ok) throw new Error(`Claude ${r.status}`);
