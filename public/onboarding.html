@@ -319,7 +319,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;-webkit-font-smoothing:antia
 </div>
 
 <script>
-var DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+var DASHBOARD = (window.SW && SW.dashboard) || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 var APP_URL   = 'https://sendwize-backend.vercel.app';
 var userId    = new URLSearchParams(window.location.search).get('userId') || '';
 var slides    = document.querySelectorAll('.slide');

@@ -437,7 +437,7 @@
 
 <script>
   var APP_URL = 'https://sendwize-backend.vercel.app';
-  var DASHBOARD_URL = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  var DASHBOARD_URL = (window.SW && SW.dashboard) || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 
   var currentContentType = 'email';
   var userId = null;
