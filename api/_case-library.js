@@ -24,6 +24,9 @@
 // types: the Sendwize finding types (fixType) the case is comparable to.
 // sector: same vocabulary as the profile (ecommerce, finance, health,
 //   media, b2b, charity, gambling), null where the record doesn't say.
+// match: optional words the source page must contain (default: the first
+//   word of name). scripts/check-case-links.mjs fetches every url and
+//   checks the page names the party and, where there is one, the amount.
 // Last checked: October 2026.
 // ─────────────────────────────────────────────────────────────
 
@@ -49,7 +52,7 @@ export const CASES = [
     summary: 'About 5.6M unsolicited debt-solution texts between April 2022 and May 2025, some posing as bailiff messages, aimed at people already in financial difficulty.',
     types: ['consent_missing'],
     url: ICO + '/about-the-ico/media-centre/news-and-blogs/2026/06/manchester-firm-fined-300-000-for-bombarding-people-in-debt-with-over-55-million-unlawful-texts/' },
-  { id: 'chand_2025', regulator: 'ICO', name: 'Bharat Singh Chand (sole trader)', date: '2025-10', penalty: 200000, volume: 966449, sector: null,
+  { id: 'chand_2025', regulator: 'ICO', name: 'Bharat Singh Chand (sole trader)', match: 'Chand', date: '2025-10', penalty: 200000, volume: 966449, sector: null,
     summary: 'Nearly 1M texts about debt solutions and energy grants sent without valid consent between December 2023 and July 2024, drawing 19,138 spam reports. Under appeal.',
     types: ['consent_missing'],
     url: ICO + '/about-the-ico/media-centre/news-and-blogs/2025/10/200-000-fine-for-sole-trader-who-sent-nearly-one-million-spam-texts/' },
@@ -57,7 +60,7 @@ export const CASES = [
     summary: 'Instigated loan-promotion texts sent by an affiliate without valid consent, and tried to hide who the sender was. 37,977 complaints.',
     types: ['lead_gen_consent_gap', 'affiliate_consent_unverified', 'affiliate_sender_identity_breach', 'consent_missing'],
     url: ICO + '/action-weve-taken/enforcement/esl-consultancy-services-ltd-mpn/' },
-  { id: 'tbdl_2023', regulator: 'ICO', name: 'This Is The Big Deal Ltd', date: '2023-08', penalty: 30000, volume: 41417889, sector: null,
+  { id: 'tbdl_2023', regulator: 'ICO', name: 'This Is The Big Deal Ltd', match: 'Big Deal', date: '2023-08', penalty: 30000, volume: 41417889, sector: null,
     summary: 'About 41M emails and texts sent by its affiliates to people who had not consented. It supplied the content and paid per sale, so the ICO held it responsible as instigator. Fine reduced from £150,000 after its finances were considered.',
     types: ['affiliate_consent_unverified', 'lead_gen_consent_gap', 'consent_missing'],
     url: ICO + '/action-weve-taken/enforcement/2023/08/this-is-the-big-deal-limited/' },
@@ -69,11 +72,11 @@ export const CASES = [
     summary: 'More than 31,000 marketing texts sent without valid consent over six weeks in 2022.',
     types: ['consent_missing'],
     url: ICO + '/about-the-ico/media-centre/news-and-blogs/2024/01/ico-fines-financial-services-company-50k-for-spam-text-messages/' },
-  { id: 'quicktax_2024', regulator: 'ICO', name: 'Quick Tax Claims Ltd', date: '2024-10', penalty: 120000, volume: null, sector: 'finance',
+  { id: 'quicktax_2024', regulator: 'ICO', name: 'Quick Tax Claims Ltd', match: 'Quick Tax Claims', date: '2024-10', penalty: 120000, volume: null, sector: 'finance',
     summary: 'Unlawful marketing texts offering tax refund services, sent without valid consent.',
     types: ['consent_missing'],
     url: ICO + '/about-the-ico/media-centre/news-and-blogs/2024/10/two-companies-fined-a-total-of-150k-after-bombarding-people-with-spam-texts-offering-financial-debt-services/' },
-  { id: 'nda_2024', regulator: 'ICO', name: 'National Debt Advice Ltd', date: '2024-10', penalty: 30000, volume: null, sector: 'finance',
+  { id: 'nda_2024', regulator: 'ICO', name: 'National Debt Advice Ltd', match: 'National Debt Advice', date: '2024-10', penalty: 30000, volume: null, sector: 'finance',
     summary: 'Marketing texts sent to bought-in data, including people recently turned down for loans, without valid consent.',
     types: ['third_party_list', 'consent_missing'],
     url: ICO + '/action-weve-taken/enforcement/2024/10/national-debt-advice-limited-mpn/' },
@@ -81,15 +84,15 @@ export const CASES = [
     summary: 'Nearly 500k emails about the "Fix Your Bike" voucher scheme to customers who had not opted in. Labelled a service message, but the ICO found it was marketing.',
     types: ['consent_missing', 'legitimate_interest_abuse'],
     url: ICO + '/media2/migrated/4021458/halfords-limited-monetary-penalty-notice.pdf' },
-  { id: 'wbac_2021', regulator: 'ICO', name: 'We Buy Any Car Ltd', date: '2021-09-15', penalty: 200000, volume: 195000000, sector: 'ecommerce',
+  { id: 'wbac_2021', regulator: 'ICO', name: 'We Buy Any Car Ltd', match: 'We Buy Any Car', date: '2021-09-15', penalty: 200000, volume: 195000000, sector: 'ecommerce',
     summary: 'About 191M emails and 3.6M texts following up valuation requests without fully meeting the soft opt-in rules.',
     types: ['consent_missing', 'invalid_consent_mechanism'],
     url: ICO + '/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv' },
-  { id: 'saga_services_2021', regulator: 'ICO', name: 'Saga Services Ltd', date: '2021-09-15', penalty: 150000, volume: 128895718, sector: 'finance',
+  { id: 'saga_services_2021', regulator: 'ICO', name: 'Saga Services Ltd', match: 'Saga Services', date: '2021-09-15', penalty: 150000, volume: 128895718, sector: 'finance',
     summary: 'About 129M emails sent by partner companies and their affiliates to lists of people who had never agreed to hear from Saga. Indirect consent was not enough.',
     types: ['lead_gen_consent_gap', 'affiliate_consent_unverified', 'invalid_consent_mechanism', 'third_party_list'],
     url: ICO + '/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv' },
-  { id: 'saga_pf_2021', regulator: 'ICO', name: 'Saga Personal Finance Ltd', date: '2021-09-15', penalty: 75000, volume: 28523745, sector: 'finance',
+  { id: 'saga_pf_2021', regulator: 'ICO', name: 'Saga Personal Finance Ltd', match: 'Saga Personal Finance', date: '2021-09-15', penalty: 75000, volume: 28523745, sector: 'finance',
     summary: 'About 28.5M emails sent through partners and affiliates relying on indirect consent that did not name Saga.',
     types: ['lead_gen_consent_gap', 'affiliate_consent_unverified', 'invalid_consent_mechanism'],
     url: ICO + '/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv' },
@@ -112,7 +115,7 @@ export const CASES = [
   { id: 'johnlewis_asa_2026', regulator: 'ASA', name: 'John Lewis plc', date: '2026-05-20', penalty: null, volume: null, sector: 'ecommerce',
     summary: 'A "Save £150" ad for a MacBook Air was misleading: the reference price had not been shown to be the usual selling price.',
     types: ['misleading_reference_price'], url: ASA + 'john-lewis-plc-a26-1326172-john-lewis-plc.html' },
-  { id: 'very_asa_2026', regulator: 'ASA', name: 'Shop Direct Home Shopping Ltd (Very)', date: '2026', penalty: null, volume: null, sector: 'ecommerce',
+  { id: 'very_asa_2026', regulator: 'ASA', name: 'Shop Direct Home Shopping Ltd (Very)', match: 'Shop Direct', date: '2026', penalty: null, volume: null, sector: 'ecommerce',
     summary: 'A "Save £150" claim was misleading because the higher price had applied for only six days.',
     types: ['misleading_reference_price'], url: ASA + 'shop-direct-home-shopping-ltd--a26-1329278-shop-direct-home-shopping-ltd.html' },
   { id: 'dusk_asa_2026', regulator: 'ASA', name: 'DUSK (Retail) Ltd', date: '2026-06-03', penalty: null, volume: null, sector: 'ecommerce',
@@ -145,7 +148,7 @@ export const CASES = [
   { id: 'minerva_asa_2026', regulator: 'ASA', name: 'Minerva Wellness Ltd', date: '2026-03', penalty: null, volume: null, sector: 'health',
     summary: 'Ads implied a menopause supplement could treat symptoms and used health claims that are not on the authorised register.',
     types: ['misleading_claim', 'asa_liability'], url: ASA + 'minerva-wellness-ltd-a25-1313816-minerva-wellness-ltd.html' },
-  { id: 'nova_asa_2026', regulator: 'ASA', name: 'Nova Relief (Nova Menopause Vitality)', date: '2026-03', penalty: null, volume: null, sector: 'health',
+  { id: 'nova_asa_2026', regulator: 'ASA', name: 'Nova Relief (Nova Menopause Vitality)', match: 'Nova Relief', date: '2026-03', penalty: null, volume: null, sector: 'health',
     summary: 'Gut health and oestrogen claims for a supplement were unauthorised, and the ads made medicinal claims.',
     types: ['misleading_claim', 'asa_liability'], url: ASA + 'nova-relief-a25-1313821-nova-relief.html' },
 
@@ -156,7 +159,7 @@ export const CASES = [
   { id: 'appliancesdirect_cma_2026', regulator: 'CMA', name: 'Appliances Direct (Buy It Direct Ltd)', date: '2026-10-14', penalty: 1200000, refunds: 432000, volume: null, sector: 'ecommerce',
     summary: 'Countdown offers that repeated the same codes for days, and extras opted in by default. About £432,000 refunded.',
     types: ['fake_urgency', 'drip_pricing'], url: CMA + '/cma-cases/appliances-direct-consumer-protection-enforcement-case' },
-  { id: 'goldsgym_cma_2026', regulator: 'CMA', name: 'Gold’s Gym (UK) Ltd', date: '2026-10-14', penalty: 45000, refunds: 9000, volume: null, sector: null,
+  { id: 'goldsgym_cma_2026', regulator: 'CMA', name: 'Gold’s Gym (UK) Ltd', match: 'Gym', date: '2026-10-14', penalty: 45000, refunds: 9000, volume: null, sector: null,
     summary: 'Membership prices left out the joining fee, so the total price was not given clearly and up front.',
     types: ['drip_pricing'], url: CMA + '/cma-cases/golds-gym-uk-limited-consumer-protection-enforcement-case' },
   { id: 'stubhub_cma_2026', regulator: 'CMA', name: 'StubHub UK', date: '2026-06-23', penalty: 889200, refunds: 590000, volume: 50000, sector: null,
@@ -165,7 +168,7 @@ export const CASES = [
   { id: 'marks_cma_2026', regulator: 'CMA', name: 'Marks Electrical', date: '2026-06-15', penalty: 720000, refunds: 600000, volume: 40000, sector: 'ecommerce',
     summary: 'Paid recycling and packaging extras were pre-selected without customers\' express agreement. Nearly 40,000 customers refunded.',
     types: ['drip_pricing'], url: CMA + '/cma-cases/marks-electrical-consumer-protection-enforcement-case' },
-  { id: 'aa_cma_2026', regulator: 'CMA', name: 'AA and BSM Driving Schools', date: '2026-04', penalty: 4200000, refunds: 760000, volume: 80000, sector: null,
+  { id: 'aa_cma_2026', regulator: 'CMA', name: 'AA and BSM Driving Schools', match: 'BSM', date: '2026-04', penalty: 4200000, refunds: 760000, volume: 80000, sector: null,
     summary: 'A mandatory £3 booking fee was left out of the upfront price for over 80,000 learners. The first CMA fine under its new consumer powers.',
     types: ['drip_pricing'], url: CMA + '/cma-cases/automobile-association-developments-limited-consumer-protection-enforcement-case' },
   { id: 'emma_cma_2026', regulator: 'CMA', name: 'Emma Sleep', date: '2026-05-22', penalty: null, volume: null, sector: 'ecommerce',
@@ -206,4 +209,65 @@ export function caseOutcome(c) {
   if (c.penalty) return 'Fined £' + c.penalty.toLocaleString('en-GB');
   if (c.outcome) return c.outcome;
   return c.regulator === 'ASA' ? 'Upheld ASA ruling' : c.regulator + ' action';
+}
+
+// The words a source page must contain for the case to count as verified
+export function matchWords(c) {
+  return c.match || String(c.name).split(/[\s(]/)[0].replace(/[^\w&-]/g, '');
+}
+
+// Finding types that are the same issue under another name (from the
+// copy checker and older tools), and ones close enough to show as a
+// related published case. Same-issue types also count for Case Twin.
+const SAME_ISSUE = {
+  no_consent: ['consent_missing'],
+  consent_expired: ['consent_missing'],
+  no_soft_optin: ['consent_missing', 'invalid_consent_mechanism'],
+  concealed_sender: ['affiliate_sender_identity_breach'],
+  fake_scarcity: ['fake_urgency'],
+  misleading_testimonial: ['fake_reviews'],
+  affiliate_misleading_claims: ['misleading_claim'],
+  partner_pricing_claims: ['misleading_reference_price', 'drip_pricing'],
+  partner_no_data_sharing_agreement: ['dpa_breach'],
+  no_article26_agreement: ['dpa_breach'],
+  ad_disclosure: ['undisclosed_ad'],
+  bundled_consent: ['invalid_consent_mechanism'],
+  form_consent_not_specific: ['invalid_consent_mechanism'],
+  expired_consent: ['consent_missing'],
+  stale_consent_data: ['consent_missing'],
+  misleading_pricing: ['misleading_reference_price'],
+  reference_pricing: ['misleading_reference_price'],
+  urgency: ['fake_urgency'],
+  stock_urgency: ['fake_urgency'],
+  sender_identity_unclear: ['affiliate_sender_identity_breach'],
+  suppression_not_synced: ['suppression_breach'],
+  objection_not_synced: ['suppression_breach'],
+  unauthorised_health_claim: ['asa_liability', 'misleading_claim'],
+  purpose_creep: ['legitimate_interest_abuse'],
+};
+const RELATED = {
+  missing_terms: ['misleading_claim', 'drip_pricing'],
+  missing_unsubscribe: ['suppression_breach'],
+  unreviewed_joint_ads: ['misleading_claim', 'undisclosed_ad'],
+  sector_risk_unreviewed: ['misleading_claim'],
+  partner_brand_risk: ['misleading_claim'],
+  invalid_consent_mechanism: ['consent_missing'],
+  consent_provenance_missing: ['consent_missing', 'third_party_list'],
+  consent_record_missing: ['consent_missing'],
+  soft_optin_no_optout: ['consent_missing', 'suppression_breach'],
+  dark_pattern: ['fake_urgency', 'drip_pricing'],
+  no_dpa: ['dpa_breach'],
+  no_data_sharing_agreement: ['dpa_breach', 'third_party_list'],
+  custom_audience_no_basis: ['legitimate_interest_abuse'],
+  privacy_no_notice: ['legitimate_interest_abuse', 'data_quality'],
+  privacy_notice_incomplete: ['data_quality'],
+  identity_company_details: ['affiliate_sender_identity_breach'],
+  identity_no_address: ['affiliate_sender_identity_breach'],
+  missing_address: ['affiliate_sender_identity_breach'],
+};
+export function sameIssueTypes(fixType) {
+  return [fixType, ...(SAME_ISSUE[fixType] || [])];
+}
+export function relatedTypes(fixType) {
+  return RELATED[fixType] || [];
 }

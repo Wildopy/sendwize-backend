@@ -41,7 +41,7 @@
 // legal advice. Weights and case anchors are for the founder to review.
 // ─────────────────────────────────────────────────────────────
 import { createHash } from 'node:crypto';
-import { CASES, caseOutcome } from './_case-library.js';
+import { CASES, caseOutcome, sameIssueTypes, relatedTypes } from './_case-library.js';
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
 // Keys are compared with spaces removed and hyphens as en dashes, so the
@@ -558,15 +558,18 @@ export const AI_FACTOR_IDS = Object.keys(FACTORS).filter(k => FACTORS[k].source 
 export const CASE_ANCHORS = CASES;
 export const ICO_ACTION_URL = 'https://ico.org.uk/action-weve-taken/enforcement/';
 
-// Closest cases for a finding: same issue, nearest audience size, fines first
+// Closest cases for a finding, from any regulator: same issue first, then
+// a related issue, then nearest audience size, fines before rulings.
 export function closestCases(fixType, volume) {
-  const matches = CASE_ANCHORS.filter(c => c.types.includes(fixType));
+  const same = sameIssueTypes(fixType), related = relatedTypes(fixType);
   const v = Number(volume) || null;
-  return matches
-    .map(c => ({ c, d: (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
+  return CASE_ANCHORS
+    .map(c => ({ c, rel: c.types.some(t => same.includes(t)) ? 0 : c.types.some(t => related.includes(t)) ? 1 : null }))
+    .filter(x => x.rel !== null)
+    .map(({ c, rel }) => ({ c, rel, d: rel * 10 + (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
     .sort((a, b) => a.d - b.d)
     .slice(0, 3)
-    .map(({ c }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, url: c.url || ICO_ACTION_URL }));
+    .map(({ c, rel }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, url: c.url || ICO_ACTION_URL, related: rel === 1 }));
 }
 
 // ── Profile inputs that sharpen the figures (all optional) ──
@@ -1026,7 +1029,8 @@ export function formatFixRecord(r, revenueBand, sector, inputs = {}) {
   fix.exposure = refineExposure(base, fix, sector, current, inputs || {});
   if (base.category === 'ASA' || base.category === 'CMA') {
     fix.campaignInputs = safeParse(f.CommercialInputs) || null;
-    fix.exposure = { ...fix.exposure, marketingCost: marketingCost(base.category, inputs || {}, fix.campaignInputs || {}, fixType) };
+    fix.exposure = { ...fix.exposure, marketingCost: marketingCost(base.category, inputs || {}, fix.campaignInputs || {}, fixType),
+      closestCases: closestCases(fixType, fix.contactVolume || inputs?.listSize) };
   }
   fix.assessment = current ? { assessedAt: assessment.assessedAt || null, confidence: assessment.confidence || null } : null;
   fix.assessmentStale = !!(assessment && !current);

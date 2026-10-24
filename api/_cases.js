@@ -18,7 +18,7 @@
 // wins" and ranking "Start here" by value for time.
 // ─────────────────────────────────────────────────────────────
 import { CASE_ANCHORS, ICO_ACTION_URL, areaOf } from './_exposure.js';
-import { caseOutcome } from './_case-library.js';
+import { caseOutcome, sameIssueTypes } from './_case-library.js';
 
 // Feed claim types (regulatory-feed-update.js) → the finding types they match
 export const CLAIM_TO_FIX = {
@@ -82,6 +82,8 @@ function parseList(v) {
   try { const p = JSON.parse(v || '[]'); return Array.isArray(p) ? p : []; } catch { return []; }
 }
 
+export const OFFICIAL_URL = /^https:\/\/(www\.)?(ico\.org\.uk|asa\.org\.uk|gov\.uk)\//;
+
 // One shape for every case, curated or from the feed
 export function buildLibrary(feedRecords = []) {
   const lib = CASE_ANCHORS.map(c => ({
@@ -97,6 +99,8 @@ export function buildLibrary(feedRecords = []) {
     if (!name || f.RelevantToSendwize === false) continue;
     const types = [...new Set(parseList(f.ClaimTypes).flatMap(t => CLAIM_TO_FIX[t] || []))];
     if (!types.length) continue;
+    // Only rulings the regulator itself published, so nothing unverifiable is matched
+    if (!OFFICIAL_URL.test(f.RulingUrl || '')) continue;
     const key = slug(name).split('_')[0];
     if (seen.has(key)) continue;
     seen.add(key);
@@ -106,7 +110,7 @@ export function buildLibrary(feedRecords = []) {
       outcome: caseOutcome({ penalty: Number(f.FineAmount) > 0 ? Number(f.FineAmount) : null, regulator: f.Regulator || '' }),
       summary: String(f.RulingSummary || '').slice(0, 300), types,
       sector: sectorKey(f.Sector),
-      url: /^https:\/\//.test(f.RulingUrl || '') ? f.RulingUrl : null, source: 'feed',
+      url: f.RulingUrl, source: 'feed',
     });
   }
   return lib;
@@ -119,7 +123,7 @@ export const TWIN_MIN = 75;
 
 // Match strength 0-98 with the reasons behind it
 export function matchCase(fix, c, ctx = {}) {
-  if (!c.types.includes(fix.fixType)) return null;
+  if (!c.types.some(t => sameIssueTypes(fix.fixType).includes(t))) return null;
   const v = Number(fix.contactVolume) || Number(ctx.listSize) || null;
   const gap = v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : null;
   if (gap != null && gap > 2) return null;
@@ -158,7 +162,7 @@ export function caseTwins(pending, completed, library, ctx = {}) {
   }
   if (hero) {
     const c = used[hero.caseId];
-    const related = f => c.types.includes(f.fixType);
+    const related = f => c.types.some(t => sameIssueTypes(f.fixType).includes(t));
     const open = pending.filter(related), done = completed.filter(related);
     hero.openFixIds = open.map(f => f.id);
     hero.doneFixIds = done.map(f => f.id);

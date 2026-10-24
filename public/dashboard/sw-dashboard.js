@@ -617,23 +617,31 @@
       if (e.aiSummary) h += '<div class="sw-dr-sec"><div class="sw-lbl">In plain English</div><div class="sw-hs">' + esc(e.aiSummary) + '</div></div>';
       if (x.canAssess) h += '<div class="sw-dr-sec">' + (x.assessment ? '<div class="sw-note">AI read this evidence on ' + esc(date(x.assessment.assessedAt)) + ' (' + esc(x.assessment.confidence) + ' confidence).</div>' : x.assessmentStale ? '<div class="sw-note">The evidence has changed since the last AI reading.</div>' : '') +
         '<button class="sw-wide-btn" data-act="assess" data-id="' + esc(f.id) + '">' + (x.assessment ? 'Re-assess with AI' : 'Assess with AI') + '</button><div class="sw-note" style="margin-top:6px">AI can only pick from a fixed list of factors, and each must quote your evidence word for word. It never writes the number.</div></div>';
-      var cases = e.closestCases || [];
-      if (cases.length) h += '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
-        return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + '<div class="sw-hs">' + esc(c.summary) + '</div><a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a></div>';
-      }).join('') + '</div>';
+      h += casesBlock(e.closestCases);
       if ((x.tips || []).length) h += '<div class="sw-dr-sec"><div class="sw-lbl">What would bring it down</div>' + x.tips.map(function (t) { return '<div class="sw-fac"><span class="sw-fac-ic down">↓</span><div>' + esc(t) + '</div></div>'; }).join('') + '</div>';
       h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(e.rangeLabel || '') + '. Legal maximum: ' + esc(x.legalMax) + '. ' + esc(x.duaaWarning || '') + '</div></div>';
     } else if (e.category === 'ASA') {
       h += '<div class="sw-dr-sec"><div class="sw-hs">The ASA does not fine. The risk is an upheld ruling published under your brand name.</div>' + (e.referralNote ? '<div class="sw-note" style="margin-top:8px">' + esc(e.referralNote) + '</div>' : '') + '</div>';
+      h += casesBlock(e.closestCases);
       h += costSection(e.marketingCost, x, f.id);
     } else if (e.category === 'CMA') {
       h += '<div class="sw-dr-sec"><div class="sw-hs">Under the DMCCA 2024 the CMA can fine directly. We show the statutory maximum for your size only, because there are not yet enough published cases to estimate a realistic range.</div>' + (D && D.exposure.cmaMax ? '<div class="sw-note" style="margin-top:8px">' + esc(D.exposure.cmaMax.label) + '</div>' : '') + '</div>';
+      h += casesBlock(e.closestCases);
       h += costSection(e.marketingCost, x, f.id);
     } else {
       h += '<div class="sw-dr-sec"><div class="sw-hs">This is a commercial figure (lost revenue), shown separately and never added to regulatory exposure.</div></div>';
     }
     h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(x.disclaimer || '') + '</div></div>';
     drawer.innerHTML = h;
+  }
+
+  // Closest published ICO, ASA or CMA cases, each linked to the regulator's own page
+  function casesBlock(cases) {
+    cases = cases || [];
+    if (!cases.length) return '';
+    return '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
+      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + (c.related ? ' <span class="sw-src">Related issue</span>' : '') + '<div class="sw-hs">' + esc(c.summary) + '</div><a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a></div>';
+    }).join('') + '</div>';
   }
 
   // Only the details we don't have yet, so the figure can be placed more precisely
