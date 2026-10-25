@@ -21,13 +21,32 @@ jobs:
       # Reads PDF notices; the check still runs (links only) if this fails
       - run: sudo apt-get update -q && sudo apt-get install -y -q poppler-utils || true
       - run: node scripts/check-case-links.mjs
-  discover:
-    if: github.event_name == 'pull_request'
+  # Reads every marketing case from the ICO, CMA and ASA records into the
+  # review list (data/case-review.json). Nothing it finds goes live until
+  # approved. On a branch it commits the list back; on the weekly run it
+  # attaches the list to the run for review.
+  import:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 60
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node scripts/discover-sources.mjs
+      - run: node scripts/import-cases.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: case-review
+          path: data/case-review.json
+      - name: Commit the review list to the branch
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref_name != 'main')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+          git add data/case-review.json
+          git diff --cached --quiet || (git commit -m "Update case review list from regulator records" && git push)
