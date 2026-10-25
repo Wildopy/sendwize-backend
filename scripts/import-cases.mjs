@@ -142,7 +142,7 @@ async function importIco(held) {
     if (!types.length) { held.push({ ...c, reason: 'no finding-type rule matched the ICO description' }); continue; }
     // The row's own description sometimes states the fine; if it disagrees with the amount column
     // (often the 20% early-payment discount), hold it rather than pick one
-    const stated = [...nature.matchAll(/£\s?([\d,.]+)\s*(million|m\b|k\b)?/gi)].map(x => Math.round(Number(x[1].replace(/,/g, '')) * ({ million: 1e6, m: 1e6, k: 1e3 }[lc(x[2] || '')] || 1)));
+    const stated = [...nature.matchAll(/£\s?(\d{1,3}(?:[ ,]\d{3})+|\d+(?:\.\d+)?)\s*(million|m\b|k\b)?/gi)].map(x => Math.round(Number(x[1].replace(/[ ,]/g, '')) * ({ million: 1e6, m: 1e6, k: 1e3 }[lc(x[2] || '')] || 1)));
     if (stated.length && !stated.includes(c.penalty)) { held.push({ ...c, reason: `register amount £${c.penalty.toLocaleString('en-GB')} differs from the fine stated in the same row (£${stated[0].toLocaleString('en-GB')})` }); continue; }
     if (!c.summary) c.summary = `${c.law} penalty recorded in the ICO register.`;
     out.push(c);
