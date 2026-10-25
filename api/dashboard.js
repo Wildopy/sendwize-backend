@@ -1,5 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — dashboard.js v1.2
+// SENDWIZE — dashboard.js v1.4
+// v1.4: alerts from _memory.js (consent lapsed since the last upload,
+//   complaints, new rulings touching a list), shown as "Sendwize noticed".
 // GET /api/dashboard   (signed-in member)
 // v1.3: profile.complete / profile.missing / profile.answers, so the
 //   dashboard can hold back figures until the business profile is done.
@@ -25,6 +27,7 @@ import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { atFetch } from './_airtable.js';
 import { areaOf, SEVERITY_WEIGHT, SELF_ATTESTED_CREDIT } from './_exposure.js';
 import { buildLibrary, caseTwins, effortFor } from './_cases.js';
+import { buildAlerts } from './_memory.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -99,10 +102,11 @@ export default async function handler(req, res) {
     ]);
 
     // Wave 3: trend + list value
-    const [history, listValue, feed] = await Promise.all([
+    const [history, listValue, feed, memory] = await Promise.all([
       call(`/api/data?action=score-history&userId=${u}&limit=30`),
       call(`/api/list-recommendations?userId=${u}`),
       feedRulings(),
+      buildAlerts(userId).catch(() => null),
     ]);
 
     const pending = fx.fixes?.pending || [];
@@ -121,6 +125,8 @@ export default async function handler(req, res) {
     return res.json({
       success: true,
       generatedAt: new Date().toISOString(),
+      // What Sendwize remembers from past uploads (consent lapsed since, complaints, rulings)
+      alerts: memory ? memory.alerts.slice(0, 8) : [],
       profile: {
         onboardingComplete: profile?.onboardingComplete ?? fx.profile?.onboardingComplete ?? null,
         revenueBand: profile?.revenueBand || null,

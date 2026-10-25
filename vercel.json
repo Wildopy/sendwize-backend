@@ -54,6 +54,12 @@
     },
     "api/free-check.js": {
       "maxDuration": 60
+    },
+    "api/digest.js": {
+      "maxDuration": 60
+    },
+    "api/audience-read.js": {
+      "maxDuration": 60
     }
   }
 }

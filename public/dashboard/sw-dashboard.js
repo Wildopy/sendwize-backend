@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   SENDWIZE — sw-dashboard.js v1.2  (browser)
+   SENDWIZE — sw-dashboard.js v1.3  (browser)
    The member dashboard, served from Vercel so the Webflow embed stays
    a few lines long. Needs sw-auth.js in the Webflow site head and
    sw-dashboard.css on the page. Renders into <div id="sw-dashboard">.
@@ -13,6 +13,8 @@
    dashboard shows a short profile form in place of any £ figure. Every
    figure links to "The Sendwize exposure algorithm" page, which explains
    the method from the live engine constants.
+
+   v1.3: "Sendwize noticed": alerts worked out from past uploads.
 
    v1.2: action items are compact. Each risk area folds (only the riskiest
    opens), shows its three best-value fixes first, and every row has
@@ -28,7 +30,7 @@
   'use strict';
   var API = 'https://sendwize-backend.vercel.app';
   var root, userId, D = null;
-  var st = { filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
+  var st = { filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
   var drafts = {}, nums = {}, lastRing = null;
   var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var AREA_LABELS = { consent: 'Marketing consent', suppression: 'Opt-outs and suppression', processors: 'Processors and data sharing', transparency: 'Transparency and identity', lawful_basis: 'Legitimate interests', ASA: 'Advertising claims (ASA)', CMA: 'Consumer law (CMA)', Commercial: 'Commercial', other: 'Other' };
@@ -181,7 +183,7 @@
     rotateVisits();
     var changed = whatChanged();
     root.innerHTML =
-      toolsNav() + changed + twinCard() +
+      toolsNav() + changed + noticedCard() + twinCard() +
       '<div class="sw-grid sw-g-top">' + scoreCard() + heroTiles() + '</div>' +
       '<div class="sw-grid sw-g-2">' + clustersCard() + startHere() + '</div>' +
       '<div class="sw-grid sw-g-3">' + expiryCard() + briefingCard() + listValueCard() + '</div>' +
@@ -436,6 +438,19 @@
       (v.basis ? '<div class="sw-note">' + esc(v.basis) + '</div>' : '')
       : '<div class="sw-empty">Upload a list in List health to see where the value is.</div>';
     return '<div class="sw-card sw-pad"><div class="sw-lbl">List value</div>' + body + '</div>';
+  }
+
+  // ── Sendwize noticed: alerts worked out from past uploads ──
+  var AUDIENCE_KINDS = { complaints_over: 1, complaints_near: 1, complaints_rising: 1, next_send: 1, forecast: 1 };
+  function noticedCard() {
+    var a = D.alerts || [];
+    if (!a.length) return '';
+    var shown = st.noticedAll ? a : a.slice(0, 3);
+    return '<div class="sw-card sw-pad sw-noticed"><div class="sw-lbl">Sendwize noticed</div>' + shown.map(function (x) {
+      var u = AUDIENCE_KINDS[x.kind] ? '/audience-read.html' : '/list-intelligence.html';
+      var cta = x.kind === 'lapsing' ? 'Write the email' : x.kind === 'lapsed' || x.kind === 'stale_list' ? 'Upload latest' : x.kind === 'ruling' ? 'See the list' : 'Open';
+      return '<div class="sw-ntc"><span class="sw-ntc-dot ' + esc(x.severity) + '"></span><div class="sw-ntc-t">' + esc(x.text) + '</div><button class="sw-btn q" data-act="tool" data-u="' + u + '">' + cta + '</button></div>';
+    }).join('') + (a.length > 3 && !st.noticedAll ? '<button class="sw-link" data-act="noticed-all">Show ' + (a.length - 3) + ' more</button>' : '') + '</div>';
   }
 
   // ── Case Twin ──
@@ -881,6 +896,7 @@
       case 'brf-more': $('#sw-brf').classList.remove('clip'); t.hidden = true; break;
       case 'noop': break;
       case 'lane': var g = t.getAttribute('data-g'), ln = t.closest('.sw-lane'); st.lane[g] = !(ln && ln.classList.contains('open')); redrawFixes(); break;
+      case 'noticed-all': st.noticedAll = true; render(); break;
       case 'lane-more': st.laneMore[t.getAttribute('data-g')] = true; redrawFixes(); break;
       case 'quickfix': st.open[id] = true; if (!drafts[id]) draft(id); else redrawFixes(); break;
       case 'expand': if (ev.target.closest('.sw-pick')) break; if (st.open[id]) delete st.open[id]; else st.open[id] = true; redrawFixes(); break;

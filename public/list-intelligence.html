@@ -1075,6 +1075,7 @@ function renderPerformanceLayer(d){
 var rowFlagMap=null; // originalIndex -> [band, reasons]
 var REASON_LABELS={invalid:'Invalid email',disposable:'Disposable address',opted_out:'Unsubscribed or complained',leak:'Opted out earlier, active here',bounced:'Bounced or cleaned',not_subscribed:'Never subscribed',third_party:'Bought or partner data',soft_optin_no_purchase:'Soft opt-in, never bought',consent_expired:'Past your consent period',consent_expiring:'Consent ends within 90 days',dormant:'No engagement in 12 months',unknown_basis:'Consent basis not recorded',no_signup_record:'No sign-up record',role_based:'Role address',typo_domain:'Likely typo domain'};
 function insPct(n,t){return t>0?Math.round(n/t*100):0;}
+function fmtDateShort(x){var t=new Date(x);return isNaN(t)?String(x||''):t.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
 function renderInsights(d){
   var host=el('insightsSection');if(!host)return;
   var ins=d.insights||(d.results&&d.results.insights)||null;
@@ -1083,6 +1084,13 @@ function renderInsights(d){
   if(d.rowFlags&&d.rowFlags.length){rowFlagMap={};d.rowFlags.forEach(function(f){rowFlagMap[f[0]]=[f[1],f[2]];});}
   var rl=ins.realList,t=rl.total||0;
   var html='<div class="ins-wrap">';
+  // Memory: what changed since this list was uploaded, with no new file
+  var su=ins.sinceUpload;
+  if(su&&su.days>=1&&(su.lapsed||su.next30)){
+    html+='<div class="ins-reveal '+(su.lapsed?'red':'amber')+'"><span class="lbl">Since you uploaded this on '+escH(fmtDateShort(su.checkDate))+'</span>'
+      +(su.lapsed?fmt(su.lapsed)+' contacts have passed your consent period, so you can now market to about '+fmt(Math.max(0,su.marketable-su.lapsed))+'. ':'')
+      +(su.next30?fmt(su.next30)+' more lose consent in the next 30 days. ':'')+'Upload your latest export to refresh the files below.</div>';
+  }
   // Headline
   html+='<div class="ins-hero"><div class="ins-kicker">Your real list</div>'
     +'<div class="ins-headline"><em>'+fmt(rl.green)+'</em> of your '+fmt(t)+' contacts are safe to market today.</div>'

@@ -346,6 +346,17 @@ export function buildListInsights(contacts, opts = {}) {
     sentence: `By Black Friday (${bf.toISOString().slice(0, 10)}) you can safely email about ${fmt(real.green + real.amber - lapseBeforePeak)} people on this list.${lapseBeforePeak ? ` ${fmt(lapseBeforePeak)} more lose consent before then unless they engage.` : ''}`,
   } : null;
 
+  // Memory: the day each marketable contact's consent runs out (next 12 months),
+  // so later visits and the weekly email can say what lapsed since this upload
+  // without a new file. Day keys only where someone lapses.
+  const lapseByDay = {};
+  for (const r of rows) {
+    if (r.v.band === 'red' || r.v.daysLeft == null || r.v.daysLeft <= 0 || r.v.daysLeft > 365) continue;
+    const k = new Date(now + r.v.daysLeft * DAY).toISOString().slice(0, 10);
+    lapseByDay[k] = (lapseByDay[k] || 0) + 1;
+  }
+  const memory = { checkedAt: new Date(now).toISOString().slice(0, 10), marketable: real.green + real.amber, lapseByDay };
+
   // Every reason count (not just primary) for fixes and the case twin
   const allReasons = {};
   for (const r of rows) for (const x of r.v.reasons) allReasons[x] = (allReasons[x] || 0) + 1;
@@ -373,9 +384,9 @@ export function buildListInsights(contacts, opts = {}) {
   for (const r of rows) indices[r.v.band].push(r.c.originalIndex);
 
   return {
-    version: 'list-insights-1.0', consentMonths, capabilities: has,
+    version: 'list-insights-1.1', consentMonths, capabilities: has,
     headline, reveals, realList: real, leaks, softOptIn, thirdParty, provenance: prov, evidence, caseTwin: twin, peak,
-    reasonCounts: allReasons,
+    reasonCounts: allReasons, memory,
     _rowFlags: rowFlags, _indices: indices,
   };
 }
