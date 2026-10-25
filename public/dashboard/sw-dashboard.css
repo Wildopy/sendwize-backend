@@ -235,3 +235,15 @@
 @keyframes swFlash{0%,100%{box-shadow:var(--shm)}30%{box-shadow:0 0 0 3px rgba(234,115,23,.45)}}
 @media(max-width:680px){.sw-twin{grid-template-columns:1fr;padding:18px}.sw-vs{grid-template-columns:1fr}.sw-vs-mid{padding:2px 0}.sw-fx-more{padding-left:14px}.sw-wi{gap:12px}}
 @media(prefers-reduced-motion:reduce){.sw-wrap,.sw-fx-more,.sw-fx.flash{animation:none}.sw-ring-fg{transition:none}}
+
+/* v1.3 business profile gate + method links */
+.sw-gate{max-width:760px;margin:0 auto;padding:28px;border-color:#fed7aa;border-top:4px solid var(--o)}
+.sw-gate-h{margin-bottom:8px}
+.sw-gate-t{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.sw-gate-h .sw-hs{font-size:13px;line-height:1.6}
+.sw-gate-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;margin:10px 0 16px}
+.sw-gate .sw-tf .sw-note{margin-top:1px}
+.sw-gate .sw-wide-btn{font-size:14px;padding:14px}
+.sw-algo-row{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:8px}
+a.sw-link{text-decoration:none}
+@media(max-width:680px){.sw-gate{padding:20px}.sw-gate-grid{grid-template-columns:1fr}}

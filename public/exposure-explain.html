@@ -1,126 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
-  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>How exposure figures are calculated — Sendwize</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fed7aa;
-  --bg:#F4F3F0;--w:#ffffff;--b:#E8E6E1;--bm:#D8D5CE;
-  --t:#0C0B09;--tm:#5C5852;--mu:#9C9890;
-  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
-  --r:#dc2626;--rb:#fef2f2;
-  --y:#ca8a04;--yb:#fefce8;
-  --pur:#7c3aed;--purb:#f5f3ff;
-  --rad:12px;--rad-sm:8px;
-  --sh:0 1px 3px rgba(0,0,0,.06);
-  --shm:0 4px 16px rgba(0,0,0,.08);
-}
-html{scroll-behavior:smooth}
-body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
-
-.nav{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
-.nav-logo{font-size:16px;font-weight:700;color:var(--o);letter-spacing:-.3px}
-.nav-back{background:none;border:1px solid var(--b);color:var(--tm);font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
-.nav-back:hover{border-color:var(--o);color:var(--o)}
-
-.page{max-width:780px;margin:0 auto;padding:40px 24px 80px}
-
-.hero{margin-bottom:48px}
-.hero-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);margin-bottom:10px}
-.hero-title{font-size:clamp(26px,4vw,38px);font-weight:700;letter-spacing:-.6px;line-height:1.15;margin-bottom:12px}
-.hero-sub{font-size:15px;color:var(--tm);line-height:1.7;max-width:560px}
-
-/* ── YOUR PROFILE ── */
-.your-profile{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:24px;margin-bottom:40px;box-shadow:var(--sh)}
-.yp-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin-bottom:16px}
-.yp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-.yp-item{padding:14px 16px;background:var(--bg);border-radius:var(--rad-sm);border:1px solid var(--b)}
-.yp-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:4px}
-.yp-val{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t)}
-
-/* ── SECTION ── */
-.section{margin-bottom:44px}
-.section-title{font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px}
-.section-sub{font-size:13px;color:var(--tm);margin-bottom:20px;line-height:1.6}
-
-/* ── REGULATOR TABS ── */
-.reg-tabs{display:flex;gap:6px;margin-bottom:20px}
-.reg-tab{background:var(--w);border:2px solid var(--b);color:var(--mu);padding:8px 18px;border-radius:var(--rad-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.03em}
-.reg-tab.ico.on{border-color:#991b1b;color:#991b1b;background:#fee2e2}
-.reg-tab.asa.on{border-color:var(--pur);color:var(--pur);background:var(--purb)}
-.reg-tab.cma.on{border-color:#92400e;color:#92400e;background:#fef3c7}
-.reg-panel{display:none}.reg-panel.on{display:block}
-
-/* ── BAND CARD ── */
-.band-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:16px}
-.band-card{padding:14px 16px;border-radius:var(--rad-sm);border:2px solid var(--b);background:var(--w);transition:all .2s}
-.band-card.yours{border-color:#991b1b;background:#fee2e2}
-.band-card.yours .band-name{color:#991b1b}
-.band-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}
-.band-range{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t);margin-bottom:2px}
-.band-yours{font-size:10px;font-weight:700;color:#991b1b;margin-top:4px}
-
-/* ── FIX ROWS ── */
-.fix-rows{display:flex;flex-direction:column;gap:1px;border:1px solid var(--b);border-radius:var(--rad);overflow:hidden;margin-bottom:16px}
-.fix-row{background:var(--w);padding:14px 18px;display:flex;align-items:center;gap:12px}
-.fix-row:not(:last-child){border-bottom:1px solid var(--b)}
-.fix-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;letter-spacing:.04em}
-.fix-badge.ico{background:#fee2e2;color:#991b1b}
-.fix-badge.asa{background:var(--purb);color:var(--pur)}
-.fix-badge.cma{background:#fef3c7;color:#92400e}
-.fix-name{font-size:12px;font-weight:600;flex:1;min-width:0}
-.fix-ranges{text-align:right;flex-shrink:0}
-.fix-range{font-size:11px;font-family:'DM Mono',monospace;color:var(--t);font-weight:600}
-.fix-range-label{font-size:10px;color:var(--mu)}
-
-/* ── CASE BOXES ── */
-.case-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-@media(max-width:500px){.case-grid{grid-template-columns:1fr}}
-.case-card{padding:16px;border-radius:var(--rad-sm);border:1px solid var(--b);background:var(--w)}
-.case-fine{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:#991b1b;margin-bottom:4px}
-.case-who{font-size:12px;font-weight:600;color:var(--t);margin-bottom:2px}
-.case-what{font-size:11px;color:var(--mu);line-height:1.5}
-.case-year{font-size:10px;color:var(--mu);margin-top:6px;font-family:'DM Mono',monospace}
-
-/* ── ASA REFERRAL ── */
-.referral-rows{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
-.referral-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--rad-sm);border:1px solid var(--b);background:var(--w)}
-.risk-pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;flex-shrink:0;margin-top:2px;white-space:nowrap}
-.risk-pill.high{background:#fee2e2;color:#991b1b}
-.risk-pill.medium{background:var(--ol);color:var(--o)}
-.risk-pill.low{background:var(--yb);color:var(--y)}
-.referral-body{flex:1}
-.referral-type{font-size:12px;font-weight:700;margin-bottom:2px}
-.referral-note{font-size:11px;color:var(--mu);line-height:1.5}
-
-/* ── DUAA ALERT ── */
-.duaa-alert{background:#fff7ed;border:1px solid var(--om);border-left:3px solid var(--o);border-radius:var(--rad-sm);padding:14px 16px;margin-bottom:16px}
-.duaa-alert-title{font-size:12px;font-weight:700;color:#92400e;margin-bottom:4px}
-.duaa-alert-body{font-size:11px;color:#78350f;line-height:1.6}
-
-/* ── MIDPOINT EXPLAINER ── */
-.midpoint-box{background:var(--t);border-radius:var(--rad);padding:20px 24px;margin-bottom:16px;color:#fff}
-.midpoint-title{font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
-.midpoint-formula{font-family:'DM Mono',monospace;font-size:13px;color:#fbbf24;line-height:2}
-.midpoint-desc{font-size:11px;color:#9ca3af;margin-top:8px;line-height:1.6}
-
-/* ── DISCLAIMER ── */
-.disclaimer{background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;font-size:11px;color:var(--mu);line-height:1.6;margin-bottom:40px}
-.disclaimer strong{color:var(--tm)}
-
-.back-wrap{text-align:center;margin-top:40px}
-.back-btn{display:inline-flex;align-items:center;gap:6px;background:var(--o);color:#fff;border:none;padding:12px 24px;border-radius:var(--rad-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:all .15s}
-.back-btn:hover{background:var(--od)}
-
-.info-note{font-size:11px;color:var(--mu);line-height:1.6;margin-top:8px}
-</style>
+<title>The Sendwize exposure algorithm</title>
+<!-- Replaced by exposure-algorithm.html, which reads the live engine constants -->
+<script>location.replace('/exposure-algorithm.html' + location.search + location.hash);</script>
+<meta http-equiv="refresh" content="0; url=/exposure-algorithm.html">
 </head>
+<body><p>This page has moved to <a href="/exposure-algorithm.html">The Sendwize exposure algorithm</a>.</p></body>
 <body>
 
 <nav class="nav">
@@ -305,7 +192,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 (function(){
   var AU = 'https://sendwize-backend.vercel.app';
   var userId = new URLSearchParams(window.location.search).get('userId') || '';
-  var dashUrl = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy'
+  var dashUrl = ((window.SW && SW.dashboard) || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy')
     + (userId ? '?userId=' + userId : '');
 
   document.getElementById('navBack').href = dashUrl;

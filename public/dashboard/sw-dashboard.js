@@ -8,6 +8,12 @@
    engine). "Why this number?" comes from /api/exposure. Briefing,
    campaigns and recent checks load after first paint.
 
+   v1.3: the business profile is required. Until turnover, list size,
+   opt-in records and complaint / regulator history are answered, the
+   dashboard shows a short profile form in place of any £ figure. Every
+   figure links to "The Sendwize exposure algorithm" page, which explains
+   the method from the live engine constants.
+
    v1.2: action items are compact. Each risk area folds (only the riskiest
    opens), shows its three best-value fixes first, and every row has
    one-tap Fix it and ✓ buttons without opening it.
@@ -45,6 +51,7 @@
     'audience read': '/audience-read.html', 'site sweep': '/site-sweep.html', 'campaign defence': '/campaign-defence.html',
   };
   var BANDS = ['Under £1M', '£1M–£10M', '£10M–£50M', 'Over £50M'];
+  var SECTORS = [['ecommerce', 'Ecommerce / Retail'], ['b2b', 'B2B / Professional Services'], ['saas', 'SaaS / Technology'], ['media', 'Media / Publishing / Newsletter'], ['finance', 'Finance / Financial Services'], ['health', 'Health / Healthcare'], ['gambling', 'Gambling'], ['charity', 'Charity / Non-profit'], ['general', 'Agency or Other']];
   var DISMISS = [
     ['not_applicable', 'Not applicable to us', 'Leaves your score.'],
     ['false_positive', 'Sendwize got this wrong', 'Leaves your score.'],
@@ -65,6 +72,7 @@
   function $(sel, el) { return (el || root).querySelector(sel); }
   function link(path, query) { var u = API + path + '?' + (userId ? 'userId=' + encodeURIComponent(userId) : '') + (query ? '&' + query : ''); return window.SW && SW.withToken ? SW.withToken(u) : u; }
   function go(path, query) { location.href = link(path, query); }
+  function algoLink(label) { return '<a class="sw-link sw-algo" href="' + esc(link('/exposure-algorithm.html')) + '">' + esc(label || 'The Sendwize exposure algorithm') + '</a>'; }
   function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem('sw_' + k) || 'null'); localStorage.setItem('sw_' + k, JSON.stringify(v)); } catch (e) { return null; } }
 
   async function api(path, opts) {
@@ -162,6 +170,7 @@
       return;
     }
     if (D.profile && D.profile.onboardingComplete === false) { go('/onboarding.html'); return; }
+    if (D.profile && D.profile.complete === false) { renderGate(); return; }
     render();
     if (D.profile && !D.profile.revenueBandSet) bandModal();
     loadBriefing(); loadCampaigns(); loadHistory();
@@ -181,8 +190,59 @@
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Recent checks</span><span>' +
         ['ai', 'verdict', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Vendors', audience: 'Audience' }[k] + '</button>'; }).join('') +
       '</span></div><div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
-      '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/profile.html')) + '">Your profile</a></div>';
+      '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/exposure-algorithm.html')) + '">The Sendwize exposure algorithm</a> · <a href="' + esc(link('/profile.html')) + '">Your business profile</a></div>';
     drawSpark(); animate();
+  }
+
+  // ── Business profile gate: no £ figure until these are answered ──
+  function renderGate() {
+    var a = (D.profile && D.profile.answers) || {}, n = (D.counts && D.counts.pending) || 0;
+    function opt(v, l, cur) { return '<option value="' + esc(v) + '"' + (cur === v ? ' selected' : '') + '>' + esc(l) + '</option>'; }
+    function yn(id, label, why, cur) {
+      return '<div class="sw-tf"><label for="' + id + '">' + label + '</label><select id="' + id + '"><option value="">Choose</option>' + opt('No', 'No', cur) + opt('Yes', 'Yes', cur) + '</select><div class="sw-note">' + why + '</div></div>';
+    }
+    root.innerHTML = toolsNav() +
+      '<div class="sw-card sw-gate"><div class="sw-gate-h"><div class="sw-lbl">Step 1 · Required</div><div class="sw-gate-t">Set up your business profile</div>' +
+        '<div class="sw-hs">Every £ figure on your dashboard is scaled to your business: regulators fine a £500k shop and a £40M retailer very differently. Six answers, about a minute. Your dashboard opens as soon as they are saved.' +
+        (n ? ' You already have <b>' + n + '</b> open finding' + (n > 1 ? 's' : '') + ' waiting to be priced.' : '') + '</div></div>' +
+      '<div class="sw-gate-grid">' +
+        '<div class="sw-tf"><label for="sw-g-sector">Sector</label><select id="sw-g-sector">' + SECTORS.map(function (x) { return opt(x[0], x[1], a.sector); }).join('') + '</select><div class="sw-note">Finance, health and gambling are fined more heavily; charities and B2B less.</div></div>' +
+        '<div class="sw-tf"><label for="sw-g-turn">Annual turnover (£)</label><input id="sw-g-turn" type="number" min="1" inputmode="numeric" placeholder="e.g. 3500000" value="' + esc(a.annualTurnover || '') + '"><div class="sw-note">An estimate is fine. Sets the size band of published cases we compare you with.</div></div>' +
+        '<div class="sw-tf"><label for="sw-g-list">People on your marketing list</label><input id="sw-g-list" type="number" min="1" inputmode="numeric" placeholder="e.g. 25000" value="' + esc(a.listSize || '') + '"><div class="sw-note">Audience size is one of the biggest factors in published fines.</div></div>' +
+        '<div class="sw-tf"><label for="sw-g-cons">Do you keep a dated record of each opt-in?</label><select id="sw-g-cons"><option value="">Choose</option>' + opt('all', 'Yes, for everyone', a.consentRecords) + opt('some', 'For some contacts, or not sure', a.consentRecords) + opt('none', 'No', a.consentRecords) + '</select><div class="sw-note">Proof of consent is the first thing the ICO asks for.</div></div>' +
+        yn('sw-g-comp', 'Complaints from recipients in the last two years?', 'Complaints usually trigger investigations.', a.complaintsReceived) +
+        yn('sw-g-reg', 'Contact from the ICO, ASA or CMA in the last two years?', 'Earlier regulator contact counts against you.', a.priorRegulatorContact) +
+      '</div>' +
+      '<button class="sw-wide-btn" data-act="save-gate">Save and open my dashboard</button>' +
+      '<div class="sw-note" style="margin-top:10px;text-align:center">How each answer moves your figures: ' + algoLink() + '. You can change them any time in your profile.</div></div>';
+  }
+
+  async function saveGate(btn) {
+    function v(id) { var el = root.querySelector('#' + id); return el ? el.value.trim() : ''; }
+    var body = { userId: userId, sector: v('sw-g-sector'), annualTurnover: parseFloat(v('sw-g-turn')) || null, listSize: parseFloat(v('sw-g-list')) || null,
+      consentRecords: v('sw-g-cons'), complaintsReceived: v('sw-g-comp'), priorRegulatorContact: v('sw-g-reg') };
+    var miss = [];
+    if (!(body.annualTurnover > 0)) miss.push('turnover');
+    if (!(body.listSize > 0)) miss.push('list size');
+    if (!body.consentRecords) miss.push('opt-in records');
+    if (!body.complaintsReceived) miss.push('complaints');
+    if (!body.priorRegulatorContact) miss.push('regulator contact');
+    if (miss.length) { toast('Still needed: ' + miss.join(', '), 'er'); return; }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      await api('/api/profile?action=save', { method: 'POST', body: body });
+      root.innerHTML = '<div class="sw-ld"><div class="sw-spin"></div>Working out your figures…</div>';
+      await load(); toast('Profile saved. Figures updated.', 'ok');
+    } catch (e) { btn.disabled = false; btn.textContent = 'Save and open my dashboard'; toast(e.message, 'er'); }
+  }
+
+  // "Scaled to: £3.5M turnover, 25,000 contacts, ecommerce · Edit"
+  function profileLine() {
+    var a = (D.profile && D.profile.answers) || {}, bits = [];
+    if (a.annualTurnover) bits.push(gbpK(a.annualTurnover) + ' turnover');
+    if (a.listSize) bits.push(Number(a.listSize).toLocaleString('en-GB') + ' contacts');
+    if (a.sector) bits.push(nice(a.sector));
+    return bits.length ? '<div class="sw-note" style="margin-top:6px">Scaled to your business: ' + esc(bits.join(', ')) + ' · <a class="sw-link" style="font-size:10px" href="' + esc(link('/profile.html')) + '">Edit</a></div>' : '';
   }
 
   function toolsNav() {
@@ -269,9 +329,9 @@
       '<div class="sw-ht red"><div class="sw-hl">Already lost</div>' + lost + '</div>' +
       '<div class="sw-ht amber"><div class="sw-hl">Open regulatory exposure (ICO)</div><div class="sw-hn">' + (e.totalHigh && e.totalMostLikely ? cu('ico', e.totalMostLikely, 'about') : e.totalHigh ? range(e.totalLow, e.totalHigh) : cu('ico', 0, 'gbpK')) + '</div>' +
         (e.totalHigh && e.totalMostLikely ? '<div class="sw-hs">Likely ' + range(e.totalLow, e.totalHigh) + confChip(e.confidence) + '</div>' : '') +
-        '<div class="sw-hs">Grouped the way a regulator would investigate. Comparable published cases, not a prediction.</div>' + lk +
+        '<div class="sw-hs">Grouped the way a regulator would investigate. Comparable published cases, not a prediction.</div>' + lk + profileLine() +
         (other.length ? '<div class="sw-hs" style="margin-top:6px">' + other.join('<br>') + '</div>' : '') +
-        (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">' + (e.confidence && e.confidence !== 'high' ? 'Why this number? Tighten it' : 'Why this number?') + '</button>' : '') + '</div>' +
+        '<div class="sw-algo-row">' + (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">' + (e.confidence && e.confidence !== 'high' ? 'Why this number? Tighten it' : 'Why this number?') + '</button>' : '') + algoLink('How we calculate this') + '</div></div>' +
       '<div class="sw-ht green"><div class="sw-hl">Risk addressed</div>' +
         '<div style="margin-top:4px"><button class="sw-tog' + (st.raMode === 'month' ? ' on' : '') + '" data-act="ra" data-m="month">This month</button><button class="sw-tog' + (st.raMode === 'all' ? ' on' : '') + '" data-act="ra" data-m="all">All time</button></div>' +
         '<div class="sw-hn">' + cu('ra_' + st.raMode, raV || 0, 'gbpK') + '</div>' +
@@ -284,7 +344,8 @@
       return '<div class="sw-row sw-row-btn' + (st.area === c.area ? ' on' : '') + '" data-act="area" data-a="' + esc(c.area) + '" role="button" tabindex="0" title="Show these findings"><div class="sw-row-main"><div class="sw-row-t">' + esc(c.label) + '</div><div class="sw-row-s">' + c.count + ' finding' + (c.count > 1 ? 's' : '') + ' · show</div></div><div class="sw-row-v">' + likely(c.mostLikely, c.low, c.high) + (c.mostLikely ? '<div class="sw-row-s">' + range(c.low, c.high) + '</div>' : '') + '</div><button class="sw-link" data-act="why" data-id="' + esc(c.leadFixId) + '">Why?</button></div>';
     }).join('') : '<div class="sw-empty">No open data protection findings.</div>';
     return '<div class="sw-card sw-pad"><div class="sw-lbl">Exposure by area</div>' + body +
-      (D.exposure.duaaWarning ? '<div class="sw-note" style="margin-top:10px">' + esc(D.exposure.duaaWarning) + '</div>' : '') + '</div>';
+      (D.exposure.duaaWarning ? '<div class="sw-note" style="margin-top:10px">' + esc(D.exposure.duaaWarning) + '</div>' : '') +
+      '<div style="margin-top:10px">' + algoLink() + '</div></div>';
   }
 
   // ── exposure maths in the browser (same rules as clusterExposure in
@@ -631,7 +692,7 @@
     } else {
       h += '<div class="sw-dr-sec"><div class="sw-hs">This is a commercial figure (lost revenue), shown separately and never added to regulatory exposure.</div></div>';
     }
-    h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(x.disclaimer || '') + '</div></div>';
+    h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(x.disclaimer || '') + '</div><div style="margin-top:8px">' + algoLink('Read the full method: the Sendwize exposure algorithm') + '</div></div>';
     drawer.innerHTML = h;
   }
 
@@ -826,6 +887,7 @@
       case 'dismiss': dismissModal(id); break;
       case 'do-dismiss': var r = overlay.querySelector('input[name=sw-dis]:checked'); if (r) dismiss(id, r.value, t); break;
       case 'save-band': saveBand(t); break;
+      case 'save-gate': saveGate(t); break;
       case 'flt': st.filter = t.getAttribute('data-f'); $('#sw-fixes').innerHTML = fixesSection(); break;
       case 'ra': st.raMode = t.getAttribute('data-m'); var g = $('.sw-g-top'); g.innerHTML = scoreCard() + heroTiles(); drawSpark(); animate(); break;
       case 'hist': st.histTab = t.getAttribute('data-k'); root.querySelectorAll('[data-act=hist]').forEach(function (b) { b.classList.toggle('on', b === t); }); loadHistory(); break;
