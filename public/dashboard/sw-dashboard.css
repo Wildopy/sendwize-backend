@@ -247,3 +247,12 @@
 .sw-algo-row{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:8px}
 a.sw-link{text-decoration:none}
 @media(max-width:680px){.sw-gate{padding:20px}.sw-gate-grid{grid-template-columns:1fr}}
+
+/* Sendwize noticed */
+.sw-noticed{margin-bottom:16px}
+.sw-ntc{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--b);font-size:13px;line-height:1.45}
+.sw-ntc:first-of-type{border-top:none}
+.sw-ntc-t{flex:1;min-width:0}
+.sw-ntc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:var(--mu)}
+.sw-ntc-dot.red{background:#dc2626}.sw-ntc-dot.amber{background:#ca8a04}.sw-ntc-dot.green{background:#16a34a}
+@media(max-width:680px){.sw-ntc{flex-wrap:wrap}.sw-ntc-t{flex:1 1 calc(100% - 19px)}.sw-ntc .sw-btn{margin-left:19px}}

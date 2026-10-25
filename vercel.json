@@ -54,6 +54,9 @@
     },
     "api/free-check.js": {
       "maxDuration": 60
+    },
+    "api/digest.js": {
+      "maxDuration": 60
     }
   }
 }

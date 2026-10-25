@@ -38,6 +38,7 @@ import { smartDetect, smartValidate } from './_smart-import.js';
 import { validateListUpload, normaliseListRow } from './_normalise.js';
 import { buildListInsights, emailKey, DEFAULT_CONSENT_MONTHS } from './_list-insights.js';
 import { buildLibrary } from './_cases.js';
+import { lapsedBetween } from './_memory.js';
 
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -808,6 +809,12 @@ export default async function handler(req, res) {
       const r = records[0];
       let results = null;
       try { results = r.fields.Results ? JSON.parse(r.fields.Results) : null; } catch(e) {}
+      // Memory: what has happened to this list since it was uploaded, from the stored consent timeline
+      const mem = results?.insights?.memory;
+      if (mem && r.fields.CheckDate) {
+        const from = new Date(r.fields.CheckDate).getTime(), now = Date.now();
+        results.insights.sinceUpload = { checkDate: r.fields.CheckDate, days: Math.floor((now - from) / 86400000), lapsed: lapsedBetween(mem, from, now + 86400000), next30: lapsedBetween(mem, now + 86400000, now + 31 * 86400000), marketable: mem.marketable };
+      }
       const snapshots = await getListSnapshots(userId, listName, 12);
       const changes   = snapshots.length >= 2 ? buildListComparison(snapshots[0], snapshots[1]) : null;
 
