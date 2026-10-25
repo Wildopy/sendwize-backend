@@ -42,6 +42,7 @@ import { smartDetect, smartValidate } from './_smart-import.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { validateAudienceUpload } from './_normalise.js';
+import { contributeSends, benchmarkMember } from './_benchmarks.js';
 import { buildCampaignInsights } from './_campaign-insights.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -1082,7 +1083,18 @@ async function saveCampaign(userId, segmentName, campaign, impact) {
 }
 
 // Batches of 10 (Airtable's limit per request), skipping sends already stored
-async function saveCampaigns(userId, segmentName, items, existingKeys = new Set()) {
+// Sendwize's own pooled benchmark, shown as a reveal once the cohort is big enough
+async function addBenchmark(insights, userId, sector, campaigns) {
+  try {
+    const b = await benchmarkMember(userId, sector, campaigns);
+    if (!b) return;
+    insights.benchmark = b;
+    insights.reveals = insights.reveals || [];
+    insights.reveals.splice(1, 0, { kind: 'benchmark', severity: b.severity === 'green' ? 'info' : b.severity, text: b.sentence });
+  } catch (e) { /* comparison is optional */ }
+}
+
+async function saveCampaigns(userId, segmentName, items, existingKeys = new Set(), sector = null) {
   const fresh = items.filter(({ campaign }) => !existingKeys.has(campaignKey(segmentName, campaign)));
   for (let i = 0; i < fresh.length; i += 10) {
     const batch = fresh.slice(i, i + 10);
@@ -1098,6 +1110,8 @@ async function saveCampaigns(userId, segmentName, items, existingKeys = new Set(
     if (!r.ok) throw new Error(`Airtable POST Audience_Read_Campaigns failed: ${r.status} — ${await r.text()}`);
     batch.forEach(({ campaign }) => existingKeys.add(campaignKey(segmentName, campaign)));
   }
+  // Anonymised copy into the Sendwize benchmark pool (only sends not seen before)
+  if (sector) await contributeSends(userId, sector, segmentName, fresh.map(x => x.campaign));
   return fresh.length;
 }
 
@@ -1365,6 +1379,7 @@ export default async function handler(req, res) {
       for (const seg of Object.keys(snapsBySeg)) { const list = snapsBySeg[seg]; if (list[0]) curMap[seg] = { state: list[0].state, capital: list[0].capital, avgUnsubRate: list[0].avgUnsubRate, excessUnsubs: list[0].excessUnsubs }; if (list[1]) prevMap[seg] = list[1]; }
       const changes = Object.keys(curMap).length ? buildChangeComparison(curMap, prevMap) : null;
       const insights = buildCampaignInsights(allCampaigns, { cpl: Number(req.query.cpl) || null, listIntel: await loadListIntelPeak(userId) });
+      await addBenchmark(insights, userId, sector, allCampaigns);
       return res.status(200).json({ success: true, segments: results, recommendations, sector, changes, insights });
     }
 
@@ -1526,7 +1541,7 @@ export default async function handler(req, res) {
         const latestVolume = segCampaigns[segCampaigns.length - 1]?.volume_sent || 1000;
         data._latestVolumeSent = latestVolume;
         const segExposure = calculateAudienceExposure(data);
-        await saveCampaigns(userId, segmentName, segCampaigns.map(c => ({ campaign: c, impact: algorithm3_campaignImpact(c, segCampaigns, data.fingerprint, getBenchmark(sector)) })), existingKeys);
+        await saveCampaigns(userId, segmentName, segCampaigns.map(c => ({ campaign: c, impact: algorithm3_campaignImpact(c, segCampaigns, data.fingerprint, getBenchmark(sector)) })), existingKeys, sector);
 
         const upsert = await upsertSegment(userId, segmentName, {
           fingerprint:         data.fingerprint,
@@ -1603,6 +1618,7 @@ export default async function handler(req, res) {
       const changes = buildChangeComparison(currentMap, priorMap);
       // v8.0: the reveals, from this upload's sends
       const insights = buildCampaignInsights(campaigns, { cpl: cplVal, listIntel: await loadListIntelPeak(userId) });
+      await addBenchmark(insights, userId, sector, await loadCampaigns(userId).catch(() => campaigns));
       return res.status(200).json({ success: true, segments: savedSegments, campaignsSaved: campaigns.length, sector, changes, insights });
     }
 

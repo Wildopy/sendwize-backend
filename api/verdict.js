@@ -24,6 +24,7 @@ import { atFetch, fq } from './_airtable.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { scanCampaignPages, isSafePublicUrl } from './_page-scan.js';
+import { lapsedBetween } from './_memory.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const VERSION = 'verdict-1.0';
@@ -79,7 +80,13 @@ async function checkList(userId, listName) {
     atList('Compliance_Fixes', `AND({UserID}=${fq(userId)},{Status}='pending',OR(${HOLD_FIX_TYPES.map(t => `LOWER({FixType})='${t}'`).join(',')}))`, '', 20),
   ]);
   const c = checks?.[0]?.fields || null;
+  // v2: the real-list reasons and the consent timeline stored at upload
+  let ins = null;
+  try { ins = c?.Results ? JSON.parse(c.Results).insights || null : null; } catch (e) {}
+  const lapsedSince = ins?.memory && c?.CheckDate ? lapsedBetween(ins.memory, new Date(c.CheckDate).getTime(), Date.now() + 86400000) : 0;
   return {
+    insights: ins ? { total: ins.realList?.total || 0, reasonCounts: ins.reasonCounts || {}, marketable: ins.memory?.marketable ?? null } : null,
+    lapsedSince,
     ok: checks !== null,
     found: !!c,
     listName: c?.ListName || listName || null,
@@ -89,7 +96,10 @@ async function checkList(userId, listName) {
     liabilityCount: c?.LiabilityCount ?? 0,
     liabilityPct: Number(c?.LiabilityPct) || 0,
     expiring30: c?.Expiring30 ?? 0,
-    blockingFixes: (fixes || []).map(r => ({ id: r.id, fixType: (r.fields.FixType || '').toLowerCase(), description: r.fields.Description || '' })),
+    blockingFixes: (fixes || [])
+      // List Intelligence's own findings are covered by the reasons below when they're present
+      .filter(r => !(ins && /^li-/.test(r.fields.SourceRecordID || '')))
+      .map(r => ({ id: r.id, fixType: (r.fields.FixType || '').toLowerCase(), description: r.fields.Description || '' })),
   };
 }
 
@@ -143,10 +153,11 @@ export function decide({ channel, copy, pages, list, audience = { ok: true, foun
     list.blockingFixes.forEach(f => hold.push({ area: 'list', text: f.description || f.fixType.replace(/_/g, ' '), action: 'Resolve this open finding, or suppress the affected contacts, before sending.' }));
     if (needsConsent && !list.found) fix.push({ area: 'list', text: list.listName ? `No list check on file for "${list.listName}".` : 'No list check on file.', action: 'Upload the send list to List health so consent and suppression are checked.' });
     if (list.found) {
-      if (list.liabilityPct > 0.05) hold.push({ area: 'list', text: `${Number(list.liabilityCount).toLocaleString('en-GB')} contacts (${Math.round(list.liabilityPct * 100)}%) are past your consent period.`, action: 'Suppress these contacts before sending.' });
+      if (list.insights) listRules(list, hold, fix, ok);
+      else if (list.liabilityPct > 0.05) hold.push({ area: 'list', text: `${Number(list.liabilityCount).toLocaleString('en-GB')} contacts (${Math.round(list.liabilityPct * 100)}%) are past your consent period.`, action: 'Suppress these contacts before sending.' });
       else if (list.liabilityCount > 0) fix.push({ area: 'list', text: `${Number(list.liabilityCount).toLocaleString('en-GB')} contacts are past your consent period.`, action: 'Suppress these contacts before sending.' });
       if (list.ageDays != null && list.ageDays > LIST_STALE_DAYS) fix.push({ area: 'list', text: `The last list check is ${list.ageDays} days old.`, action: 'Re-upload the list so the check reflects who you are sending to.' });
-      if (!list.liabilityCount && (list.ageDays == null || list.ageDays <= LIST_STALE_DAYS) && !list.blockingFixes.length) ok.push({ area: 'list', text: `List check from ${list.checkDate} shows no contacts past your consent period.` });
+      if (!list.insights && !list.liabilityCount && (list.ageDays == null || list.ageDays <= LIST_STALE_DAYS) && !list.blockingFixes.length) ok.push({ area: 'list', text: `List check from ${list.checkDate} shows no contacts past your consent period.` });
     }
   }
 
@@ -160,6 +171,32 @@ export function decide({ channel, copy, pages, list, audience = { ok: true, foun
 
   const verdict = hold.length ? 'hold' : fix.length ? 'fix_first' : 'go';
   return { verdict, ...describe(verdict, hold, fix), hold, fix, ok };
+}
+
+// Reasons that make a contact unlawful to market to, worst first
+const LEGAL_RED = [
+  ['leak', 'unsubscribed on another of your lists'],
+  ['opted_out', 'unsubscribed or opted out'],
+  ['not_subscribed', 'never subscribed'],
+  ['third_party', 'from bought or partner data'],
+  ['soft_optin_no_purchase', 'on soft opt-in but never bought'],
+  ['consent_expired', 'past your consent period'],
+];
+function listRules(list, hold, fix, ok) {
+  const rc = list.insights.reasonCounts, total = list.insights.total || 1;
+  const n = x => Number(x).toLocaleString('en-GB');
+  let legal = 0;
+  for (const [code, label] of LEGAL_RED) {
+    const c = rc[code] || 0;
+    if (!c) continue;
+    legal += c;
+    const item = { area: 'list', text: `${n(c)} contacts on "${list.listName}" are ${label}.`, action: 'Download the suppress file from List health and add it to your platform\'s suppression list before sending.' };
+    // Emailing people who unsubscribed elsewhere, or bought data, is a straight PECR breach
+    if (code === 'leak' || code === 'third_party' || c / total > 0.05) hold.push(item); else fix.push(item);
+  }
+  if (list.lapsedSince > 0) fix.push({ area: 'list', text: `${n(list.lapsedSince)} more contacts have passed your consent period since you uploaded "${list.listName}" on ${list.checkDate}.`, action: 'Upload your latest export so they are caught, or suppress anyone with no sign-up or engagement in your consent period.' });
+  if (list.ageDays != null && list.ageDays > LIST_STALE_DAYS) fix.push({ area: 'list', text: `The last list check is ${list.ageDays} days old.`, action: 'Re-upload the list so the check reflects who you are sending to.' });
+  if (!legal && !list.lapsedSince && (list.ageDays == null || list.ageDays <= LIST_STALE_DAYS) && !list.blockingFixes.length) ok.push({ area: 'list', text: `List check from ${list.checkDate} found nobody you can't legally email.` });
 }
 
 const LABELS = { hold: 'Hold', fix_first: 'Fix first', go: 'Go' };

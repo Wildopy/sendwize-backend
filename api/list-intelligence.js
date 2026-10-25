@@ -625,7 +625,9 @@ async function saveOptouts(userId, listName, contacts) {
       const qs = old.slice(i, i + 10).map(r => 'records[]=' + r.id).join('&');
       await atFetch(`${AT_BASE}/${OPTOUT_TABLE}?${qs}`, { method: 'DELETE', headers: atH() });
     }
-    const keys = [...new Set(optedOut.map(c => emailKey(c.email)))];
+    // Cumulative: an opt-out seen once stays on file even when a later export
+    // of this list leaves that person out, so re-imports are always caught
+    const keys = [...new Set([...old.flatMap(r => String(r.fields.Hashes || '').split(',').filter(k => k.length === 12)), ...optedOut.map(c => emailKey(c.email))])];
     const today = new Date().toISOString().split('T')[0];
     for (let i = 0; i < keys.length && i / OPTOUT_CHUNK < 20; i += OPTOUT_CHUNK) {
       const chunk = keys.slice(i, i + OPTOUT_CHUNK);
