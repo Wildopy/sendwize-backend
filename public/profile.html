@@ -201,7 +201,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="toast" id="toast"></div>
 <script>
 var AU='https://sendwize-backend.vercel.app';
-var DASH='https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+var DASH=(window.SW && SW.dashboard) || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 var userId=new URLSearchParams(window.location.search).get('userId')||'';
 var selRevBand=null;
 
@@ -244,7 +244,7 @@ function estimateCpl(){
 }
 
 async function loadProfile(){
-  if(!userId){document.getElementById('loadingState').innerHTML='<div class="ld">No user ID found. <a href="https://new-mvp-v2.webflow.io/" style="color:var(--o)">Go to dashboard</a></div>';return;}
+  if(!userId){document.getElementById('loadingState').innerHTML='<div class="ld">No user ID found. <a href="'+DASH+'" style="color:var(--o)">Go to dashboard</a></div>';return;}
   try{
     var r=await swFetch(AU+'/api/profile?action=get&userId='+userId);
     if(!r.ok)throw r;

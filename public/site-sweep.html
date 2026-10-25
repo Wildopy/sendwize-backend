@@ -117,7 +117,7 @@ async function post(action,body){const r=await swFetch(`${API}?action=${action}`
 
 async function init(){
   const p=new URLSearchParams(location.search);U=p.get('userId');
-  if(!U){$('app').innerHTML=`<div class="card view" style="text-align:center;padding:48px 32px"><div class="card-t" style="font-size:20px">Site Sweep</div><p class="card-s" style="margin:8px auto 20px;max-width:420px">A one-off review of your whole website for the gaps regulators look for first: cookies, privacy notice, sign-up consent and business details.</p><a class="btn btn-o" href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Go to Dashboard →</a></div>`;return;}
+  if(!U){$('app').innerHTML=`<div class="card view" style="text-align:center;padding:48px 32px"><div class="card-t" style="font-size:20px">Site Sweep</div><p class="card-s" style="margin:8px auto 20px;max-width:420px">A one-off review of your whole website for the gaps regulators look for first: cookies, privacy notice, sign-up consent and business details.</p><a class="btn btn-o" href="${E((window.SW&&SW.dashboard)||'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy')}">Go to Dashboard →</a></div>`;return;}
   try{
     const want=p.get('domain');
     const r=await swFetch(`${API}?action=get&userId=${encodeURIComponent(U)}${want?'&domain='+encodeURIComponent(want):''}`);

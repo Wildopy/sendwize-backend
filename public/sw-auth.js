@@ -20,8 +20,11 @@
 (function () {
   var KEY = 'sw_token';
   var BACKEND = /^https:\/\/sendwize-backend\.vercel\.app\//;
-  // Set window.SW_DASHBOARD_URL before this script to point at the live dashboard
-  var DASHBOARD = window.SW_DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  // The one place the dashboard URL lives: every tool page's Dashboard link
+  // and back button follow it. Change STAGING_DASHBOARD's replacement here
+  // (or set window.SW_DASHBOARD_URL before this script) when the live URL moves.
+  var STAGING_DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  var DASHBOARD = window.SW_DASHBOARD_URL || STAGING_DASHBOARD;
   var cached = null;
 
   // Token handed over in the URL fragment by a Webflow link
@@ -119,7 +122,18 @@
     return base + '#' + hash + 'swt=' + encodeURIComponent(cached);
   }
 
-  window.SW = { getToken: getToken, fetch: swFetch, decorateLinks: decorateLinks, withToken: withToken };
+  window.SW = { getToken: getToken, fetch: swFetch, decorateLinks: decorateLinks, withToken: withToken, dashboard: DASHBOARD };
+
+  // Tool pages: point hard-coded dashboard links at DASHBOARD
+  function retargetDashboardLinks() {
+    if (DASHBOARD === STAGING_DASHBOARD) return;
+    var links = document.querySelectorAll('a[href^="' + STAGING_DASHBOARD + '"]');
+    for (var i = 0; i < links.length; i++) links[i].setAttribute('href', DASHBOARD + links[i].getAttribute('href').slice(STAGING_DASHBOARD.length));
+  }
+  if (BACKEND.test(location.href)) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', retargetDashboardLinks);
+    else retargetDashboardLinks();
+  }
 
   // Auto-enable link decoration on pages that are not the backend itself
   if (!BACKEND.test(location.href)) {
