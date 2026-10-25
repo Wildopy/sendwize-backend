@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script src="https://sendwize-backend.vercel.app/sw-tool-nav.js" defer></script>
   <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Commercial Relationships — Sendwize</title>
+<title>Third parties — Sendwize</title>
 <link rel="preconnect" href="http//fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -430,7 +431,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div class="gate-card">
     <div class="gate-logo">sendwize</div>
     <i class="ph ph-lock-key ph icon-32 gate-icon"></i>
-    <div class="gate-title">Commercial Relationships</div>
+    <div class="gate-title">Third parties</div>
     <div class="gate-sub">Sign in via the dashboard to access your relationships register.</div>
     <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard <i class="ph ph-arrow-right"></i></a>
   </div>
@@ -439,7 +440,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="page-wrap" id="mainWrap" style="display:none">
 
   <div class="intro">
-    <div class="intro-eyebrow">Commercial Relationships &amp; Risk Register</div>
+    <div class="intro-eyebrow">Third parties &amp; risk register</div>
     <h1 class="intro-title">Every third party in one place</h1>
     <p class="intro-sub">Processors, partners, affiliates and competitors &mdash; tracked with a live risk score that feeds your main dashboard.</p>
   </div>
@@ -2283,12 +2284,12 @@ function renderCreative(rec) {
     resultHtml = '<div class="creative-clear"><i class="ph ph-check-circle icon-16"></i><strong>No CAP Code issues found.</strong> Creative appears compliant based on the content provided.</div>';
   }
 
-  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Paste the last email or ad '+escH(name)+' sent on your behalf. The AI Copy Checker will scan it against the CAP Code, pricing rules, and disclosure requirements.</p>'
+  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Paste the last email or ad '+escH(name)+' sent on your behalf. The Copy checker will scan it against the CAP Code, pricing rules, and disclosure requirements.</p>'
     + (reviewed ? '<div class="info-banner green"><i class="ph ph-check-circle icon-16"></i><div><strong>Creative reviewed'+(lastReview ? ' on '+lastReview : '')+'.</strong> Re-submit anytime to check new materials.</div></div>' : '')
     + '<div class="fg"><label>Subject line</label><input type="text" id="creative-subject" placeholder="e.g. \u26A1 Flash sale \u2014 50% off everything today only!"></div>'
     + '<div class="fg"><label>Email body / ad copy</label><div class="creative-paste"><textarea id="creative-body" placeholder="Paste the full email body text or ad copy here\u2026" rows="6"></textarea></div></div>'
     + '<div class="fg"><label>Claims made <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mu);font-size:10px">optional \u2014 list any specific claims</span></label><textarea id="creative-claims" placeholder="e.g. Award-winning, UK\'s #1 rated, Save up to 70%\u2026" rows="2" style="width:100%;padding:9px 11px;border:1px solid var(--b);border-radius:var(--rad-sm);font-size:13px;font-family:inherit;background:var(--w);outline:none"></textarea></div>'
-    + '<button class="btn btn-primary btn-sm" onclick="runCreativeReview(\''+escJ(rec.id)+'\')"><i class="ph ph-sparkle icon-16"></i>Run AI Copy Checker</button>'
+    + '<button class="btn btn-primary btn-sm" onclick="runCreativeReview(\''+escJ(rec.id)+'\')"><i class="ph ph-sparkle icon-16"></i>Run the copy checker</button>'
     + '<div id="creativeResult">'+resultHtml+'</div>';
 }
 

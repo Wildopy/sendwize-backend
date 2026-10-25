@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   SENDWIZE — sw-dashboard.js v1.3  (browser)
+   SENDWIZE — sw-dashboard.js v1.4  (browser)
    The member dashboard, served from Vercel so the Webflow embed stays
    a few lines long. Needs sw-auth.js in the Webflow site head and
    sw-dashboard.css on the page. Renders into <div id="sw-dashboard">.
@@ -7,6 +7,11 @@
    Every figure comes from /api/dashboard (one call, shared exposure
    engine). "Why this number?" comes from /api/exposure. Briefing,
    campaigns and recent checks load after first paint.
+
+   v1.4: easier to use. A "My Sendwize portal" header; tools grouped by
+   job with a line on what each is for; "Your next steps" comes first;
+   three headline figures with the full breakdown one tap away; a
+   three-step start for new accounts; plainer wording throughout.
 
    v1.3: the business profile is required. Until turnover, list size,
    opt-in records and complaint / regulator history are answered, the
@@ -29,21 +34,31 @@
 (function () {
   'use strict';
   var API = 'https://sendwize-backend.vercel.app';
-  var root, userId, D = null;
-  var st = { filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
+  var root, userId, member = null, D = null;
+  var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
   var drafts = {}, nums = {}, lastRing = null;
   var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var AREA_LABELS = { consent: 'Marketing consent', suppression: 'Opt-outs and suppression', processors: 'Processors and data sharing', transparency: 'Transparency and identity', lawful_basis: 'Legitimate interests', ASA: 'Advertising claims (ASA)', CMA: 'Consumer law (CMA)', Commercial: 'Commercial', other: 'Other' };
 
-  var TOOLS = [
-    { k: 'verdict',   l: 'Send-day verdict', u: '/send-verdict.html', hot: true },
-    { k: 'copy',      l: 'Copy check',       u: '/ai-checker.html' },
-    { k: 'vendor',    l: 'Vendors',          u: '/vendor-checker.html' },
-    { k: 'list',      l: 'List health',      u: '/list-intelligence.html' },
-    { k: 'audience',  l: 'Audience read',    u: '/audience-read.html' },
-    { k: 'sweep',     l: 'Site sweep',       u: '/site-sweep.html' },
-    { k: 'defence',   l: 'Campaign defence', u: '/campaign-defence.html' },
-    { k: 'simulator', l: 'ICO simulator',    u: '/ico-simulator.html' },
+  // Tools grouped by the job a marketer is doing. Names match each tool's
+  // own page and the switcher in /sw-tool-nav.js; change all three together.
+  var TOOL_GROUPS = [
+    { l: 'Before you send', tools: [
+      { k: 'verdict',   l: 'Send-day verdict',    u: '/send-verdict.html',      d: 'Go, fix first or hold for a campaign', hot: true },
+      { k: 'copy',      l: 'Copy checker',        u: '/ai-checker.html',        d: 'Check the wording of an email or ad' },
+    ] },
+    { l: 'Your list', tools: [
+      { k: 'list',      l: 'List health',         u: '/list-intelligence.html', d: 'Consent, value and who to remove' },
+      { k: 'audience',  l: 'Audience read',       u: '/audience-read.html',     d: 'What your last send did to your list' },
+    ] },
+    { l: 'Your website and suppliers', tools: [
+      { k: 'sweep',     l: 'Site sweep',          u: '/site-sweep.html',        d: 'Cookies, privacy notice and sign-up forms' },
+      { k: 'vendor',    l: 'Third parties',       u: '/vendor-checker.html',    d: 'Suppliers who handle your data' },
+    ] },
+    { l: 'Records and practice', tools: [
+      { k: 'defence',   l: 'Campaign defence',    u: '/campaign-defence.html',  d: 'Keep proof you checked each campaign' },
+      { k: 'simulator', l: 'Regulator simulator', u: '/ico-simulator.html',     d: 'Rehearse an ICO, ASA or CMA investigation' },
+    ] },
   ];
   // Which page re-runs the check that raised a fix (verified fixes get full credit)
   var TOOL_PAGE = {
@@ -160,6 +175,8 @@
     try { m = await ms.getCurrentMember(); } catch (e) {}
     userId = m && m.data && m.data.id;
     if (!userId) { root.innerHTML = '<div class="sw-err">Please log in to see your dashboard.</div>'; return; }
+    member = m.data;
+    st.detail = !!store('detail_' + userId);
     await waitFor(function () { return window.swFetch; }, 5000);
     load();
   }
@@ -181,16 +198,17 @@
   // ── render ──
   function render() {
     rotateVisits();
-    var changed = whatChanged();
+    var changed = whatChanged(), first = firstRun();
+    // What to do next comes first; the money detail is one tap away
     root.innerHTML =
-      toolsNav() + changed + noticedCard() + twinCard() +
-      '<div class="sw-grid sw-g-top">' + scoreCard() + heroTiles() + '</div>' +
-      '<div class="sw-grid sw-g-2">' + clustersCard() + startHere() + '</div>' +
+      portalHead() + toolsNav() + changed + (first || startHere()) + noticedCard() + summaryStrip() +
+      (st.detail ? '<div class="sw-grid sw-g-top">' + scoreCard() + heroTiles() + '</div>' + clustersCard() : '') +
+      (first ? '' : twinCard()) +
       '<div class="sw-grid sw-g-3">' + expiryCard() + briefingCard() + listValueCard() + '</div>' +
-      '<div class="sw-card sw-pad" id="sw-fixes">' + fixesSection() + '</div>' +
+      (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-card sw-pad" id="sw-fixes">' + fixesSection() + '</div>') +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Recent checks</span><span>' +
-        ['ai', 'verdict', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Vendors', audience: 'Audience' }[k] + '</button>'; }).join('') +
+        ['ai', 'verdict', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' }[k] + '</button>'; }).join('') +
       '</span></div><div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/exposure-algorithm.html')) + '">The Sendwize exposure algorithm</a> · <a href="' + esc(link('/profile.html')) + '">Your business profile</a></div>';
     drawSpark(); animate();
@@ -203,7 +221,7 @@
     function yn(id, label, why, cur) {
       return '<div class="sw-tf"><label for="' + id + '">' + label + '</label><select id="' + id + '"><option value="">Choose</option>' + opt('No', 'No', cur) + opt('Yes', 'Yes', cur) + '</select><div class="sw-note">' + why + '</div></div>';
     }
-    root.innerHTML = toolsNav() +
+    root.innerHTML = portalHead() + toolsNav() +
       '<div class="sw-card sw-gate"><div class="sw-gate-h"><div class="sw-lbl">Step 1 · Required</div><div class="sw-gate-t">Set up your business profile</div>' +
         '<div class="sw-hs">Every £ figure on your dashboard is scaled to your business: regulators fine a £500k shop and a £40M retailer very differently. Six answers, about a minute. Your dashboard opens as soon as they are saved.' +
         (n ? ' You already have <b>' + n + '</b> open finding' + (n > 1 ? 's' : '') + ' waiting to be priced.' : '') + '</div></div>' +
@@ -247,10 +265,63 @@
     return bits.length ? '<div class="sw-note" style="margin-top:6px">Scaled to your business: ' + esc(bits.join(', ')) + ' · <a class="sw-link" style="font-size:10px" href="' + esc(link('/profile.html')) + '">Edit</a></div>' : '';
   }
 
+  // "My Sendwize portal": who is signed in, today's date and the account links
+  function portalHead() {
+    var cf = (member && member.customFields) || {};
+    var name = cf['first-name'] || cf.firstName || cf.name || '';
+    var co = cf.company || cf['company-name'] || '';
+    var today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    return '<header class="sw-portal"><div><div class="sw-lbl">My Sendwize portal</div>' +
+      '<div class="sw-portal-t">' + (name ? 'Hi ' + esc(String(name).split(' ')[0]) : 'Welcome back') + (co ? ' · ' + esc(co) : '') + '</div>' +
+      '<div class="sw-note">' + esc(today) + '</div></div>' +
+      '<nav class="sw-portal-links" aria-label="Account"><a class="sw-link" href="' + esc(link('/profile.html')) + '">Business profile</a>' +
+      '<a class="sw-link" href="' + esc(link('/exposure-algorithm.html')) + '">How we work out figures</a></nav></header>';
+  }
+
   function toolsNav() {
-    return '<nav class="sw-tools" aria-label="Tools">' + TOOLS.map(function (t) {
-      return '<button class="sw-nt' + (t.hot ? ' hot' : '') + '" data-act="tool" data-u="' + esc(t.u) + '">' + esc(t.l) + '</button>';
+    return '<nav class="sw-tools" aria-label="Tools">' + TOOL_GROUPS.map(function (g) {
+      return '<div class="sw-tg"><div class="sw-tg-l">' + esc(g.l) + '</div>' + g.tools.map(function (t) {
+        return '<button class="sw-nt' + (t.hot ? ' hot' : '') + '" data-act="tool" data-u="' + esc(t.u) + '"><b>' + esc(t.l) + '</b><span>' + esc(t.d) + '</span></button>';
+      }).join('') + '</div>';
     }).join('') + '</nav>';
+  }
+
+  // New accounts: three first checks instead of a page of empty cards
+  function firstRun() {
+    var n = D.counts || {};
+    if ((n.pending || 0) + (n.completed || 0) > 0 || store('firstrun_hide_' + userId)) return '';
+    var fixes = (D.fixes.pending || []).concat(D.fixes.completed || []);
+    function ran(tool) { return fixes.some(function (f) { return String(f.tool || '').toLowerCase() === tool; }); }
+    var steps = [
+      [!!(D.listValue && D.listValue.hasData), 'Upload your marketing list', 'See who you can legally email, whose consent is running out and what the list is worth. Any ESP export works.', '/list-intelligence.html', 'Upload a list'],
+      [false, 'Check your next campaign', 'Paste the email or ad before it goes out. You get one answer: go, fix first or hold.', '/send-verdict.html', 'Check a campaign'],
+      [ran('site sweep'), 'Sweep your website', 'Finds gaps in cookies, your privacy notice and sign-up forms across the whole site.', '/site-sweep.html', 'Sweep my site'],
+    ];
+    var done = steps.filter(function (s) { return s[0]; }).length;
+    return '<div class="sw-card sw-pad sw-first"><div class="sw-first-h"><div><div class="sw-lbl">Get started · ' + done + ' of 3 done</div><div class="sw-h2">Three checks to see where you stand</div>' +
+      '<div class="sw-hs">Each takes a few minutes. Anything they find shows up here with what it could cost and how to fix it.</div></div>' +
+      '<button class="sw-link" data-act="first-hide">Hide this</button></div><div class="sw-first-steps">' + steps.map(function (s, i) {
+        return '<div class="sw-first-s' + (s[0] ? ' done' : '') + '"><div class="sw-step-n">' + (s[0] ? '✓' : i + 1) + '</div><div class="sw-fx-body"><div class="sw-row-t">' + esc(s[1]) + '</div><div class="sw-row-s">' + esc(s[2]) + '</div>' +
+          (s[0] ? '<div class="sw-note">Done</div>' : '<button class="sw-btn o" data-act="tool" data-u="' + esc(s[3]) + '">' + esc(s[4]) + '</button>') + '</div></div>';
+      }).join('') + '</div></div>';
+  }
+
+  // Three figures a marketer needs at a glance; the full breakdown opens below
+  function summaryStrip() {
+    var s = D.score, e = D.exposure, ra = D.riskAddressed || {}, n = D.counts || {};
+    var other = (e.asaPending || 0) + (e.cmaPending || 0);
+    var ch = s.change ? ' <span class="sw-note">' + (s.change > 0 ? '▲ ' : '▼ ') + Math.abs(s.change) + ' since last check</span>' : '';
+    var fresh = !((n.pending || 0) + (n.completed || 0)) && !(D.listValue && D.listValue.hasData);
+    return '<div class="sw-sum">' +
+      '<div class="sw-sum-t"><div class="sw-hl">Compliance score</div>' + (fresh ? '<div class="sw-hn">–</div><div class="sw-hs">Appears after your first check.</div></div>' : '<div class="sw-hn">' + cu('s_score', s.value || 0, 'int') + '<small>/100</small></div>' +
+        '<div class="sw-hs"><span class="sw-pill" style="background:' + esc(s.colour || '#EA7317') + '22;color:' + esc(s.colour || '#EA7317') + '">' + esc(s.band || '') + '</span>' + ch + '</div></div>') +
+      '<div class="sw-sum-t"><div class="sw-hl">ICO fine risk</div><div class="sw-hn">' + (e.totalHigh && e.totalMostLikely ? cu('s_ico', e.totalMostLikely, 'about') : e.totalHigh ? range(e.totalLow, e.totalHigh) : '£0') + '</div>' +
+        '<div class="sw-hs">' + (e.totalHigh ? 'Likely ' + range(e.totalLow, e.totalHigh) + ', from similar published fines. ' : 'Nothing open that the ICO fines for. ') +
+        (other ? other + ' advertising or consumer law finding' + (other > 1 ? 's' : '') + ' on top. ' : '') +
+        (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">Why?</button>' : '') + '</div></div>' +
+      '<div class="sw-sum-t"><div class="sw-hl">Fixed this month</div><div class="sw-hn">' + cu('s_ra', ra.monthTotal || 0, 'gbpK') + '</div>' +
+        '<div class="sw-hs">Fine risk removed. ' + (n.completed || 0) + ' fixed, ' + (n.pending || 0) + ' still open.</div></div>' +
+      '<button class="sw-sum-more" data-act="detail" aria-expanded="' + st.detail + '">' + (st.detail ? 'Hide the breakdown ⌃' : 'See the full breakdown ⌄') + '</button></div>';
   }
 
   // Compares today with the most recent visit on an earlier day (this browser)
@@ -267,7 +338,7 @@
     if (s !== prev.score) { bits.push('score ' + (s > prev.score ? 'up' : 'down') + ' <b>' + Math.abs(s - prev.score) + '</b> to ' + s); if (s < prev.score) good = false; }
     if (p > prev.pending) { bits.push('<b>' + (p - prev.pending) + '</b> new finding' + (p - prev.pending > 1 ? 's' : '')); good = false; }
     if (p < prev.pending) bits.push('<b>' + (prev.pending - p) + '</b> finding' + (prev.pending - p > 1 ? 's' : '') + ' closed');
-    if (Math.abs(ex - prev.exposure) >= 1000) { bits.push('upper exposure ' + (ex < prev.exposure ? 'down' : 'up') + ' to <b>' + gbpK(ex) + '</b>'); if (ex > prev.exposure) good = false; }
+    if (Math.abs(ex - prev.exposure) >= 1000) { bits.push('worst-case fine risk ' + (ex < prev.exposure ? 'down' : 'up') + ' to <b>' + gbpK(ex) + '</b>'); if (ex > prev.exposure) good = false; }
     if (!bits.length) return '';
     return '<div class="sw-changed' + (good ? ' good' : '') + '"><span>Since ' + esc(date(prev.at)) + ': ' + bits.join(', ') + '.</span><button class="sw-changed-x" data-act="close-changed" aria-label="Dismiss">✕</button></div>';
   }
@@ -319,33 +390,33 @@
     var e = D.exposure, ra = D.riskAddressed || {}, al = D.alreadyLost;
     var lost = al && al.amount ? '<div class="sw-hn">' + gbpK(al.amount) + '</div><div class="sw-hs">' + (al.isEstimate ? 'Estimated ' : '') + 'list value lost to ' + (al.excessUnsubs12mo || 0).toLocaleString('en-GB') + ' extra unsubscribes in 12 months' + (al.cplUsed ? ' at ' + gbp(al.cplUsed) + ' per lead' : '') + '.</div>'
       : '<div class="sw-hn">–</div><div class="sw-hs">Upload a list in List health to see what unsubscribes have cost you.</div>';
-    var lk = e.likelihood ? '<span class="sw-like ' + esc(e.likelihood.level) + '" title="' + esc((e.likelihood.reasons || []).join('. ')) + '">' + esc(e.likelihood.level) + ' attention likelihood</span>' : '';
+    var lk = e.likelihood ? '<span class="sw-like ' + esc(e.likelihood.level) + '" title="' + esc((e.likelihood.reasons || []).join('. ')) + '">' + 'Chance of regulator attention: ' + esc(String(e.likelihood.level).toLowerCase()) + '</span>' : '';
     var other = [];
-    if (e.asaPending) other.push(e.asaPending + ' advertising finding' + (e.asaPending > 1 ? 's' : '') + ' (ASA: published rulings, no fines)');
+    if (e.asaPending) other.push(e.asaPending + ' advertising finding' + (e.asaPending > 1 ? 's' : '') + ' (the ASA publishes rulings but does not fine)');
     if (e.cmaPending) other.push(e.cmaPending + ' consumer law finding' + (e.cmaPending > 1 ? 's' : '') + (e.cmaMax ? ' (CMA: ' + esc(e.cmaMax.label) + ')' : ''));
     var mc = D.marketingCost;
-    if (mc && mc.count) other.push(mc.priced ? 'Commercial cost if ads were pulled or customers refunded: about <b>' + gbpK(mc.mostLikely) + '</b>' + (mc.needInputs ? ' (' + mc.needInputs + ' more need campaign figures)' : '') + '. Separate from fines.'
+    if (mc && mc.count) other.push(mc.priced ? 'If ads had to be pulled or customers refunded, that could cost about <b>' + gbpK(mc.mostLikely) + '</b>' + (mc.needInputs ? ' (' + mc.needInputs + ' more need campaign figures)' : '') + ', on top of any fine.'
       : 'Add campaign figures to see the commercial cost of ' + mc.count + ' advertising or consumer law finding' + (mc.count > 1 ? 's' : '') + '.');
     var raV = st.raMode === 'month' ? ra.monthTotal : ra.allTotal;
     return '<div class="sw-grid sw-g-3" style="margin:0">' +
       '<div class="sw-ht red"><div class="sw-hl">Already lost</div>' + lost + '</div>' +
-      '<div class="sw-ht amber"><div class="sw-hl">Open regulatory exposure (ICO)</div><div class="sw-hn">' + (e.totalHigh && e.totalMostLikely ? cu('ico', e.totalMostLikely, 'about') : e.totalHigh ? range(e.totalLow, e.totalHigh) : cu('ico', 0, 'gbpK')) + '</div>' +
+      '<div class="sw-ht amber"><div class="sw-hl">ICO fine risk</div><div class="sw-hn">' + (e.totalHigh && e.totalMostLikely ? cu('ico', e.totalMostLikely, 'about') : e.totalHigh ? range(e.totalLow, e.totalHigh) : cu('ico', 0, 'gbpK')) + '</div>' +
         (e.totalHigh && e.totalMostLikely ? '<div class="sw-hs">Likely ' + range(e.totalLow, e.totalHigh) + confChip(e.confidence) + '</div>' : '') +
-        '<div class="sw-hs">Grouped the way a regulator would investigate. Comparable published cases, not a prediction.</div>' + lk + profileLine() +
+        '<div class="sw-hs">Based on fines in similar published cases, grouped the way a regulator would investigate. Not a prediction.</div>' + lk + profileLine() +
         (other.length ? '<div class="sw-hs" style="margin-top:6px">' + other.join('<br>') + '</div>' : '') +
         '<div class="sw-algo-row">' + (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">' + (e.confidence && e.confidence !== 'high' ? 'Why this number? Tighten it' : 'Why this number?') + '</button>' : '') + algoLink('How we calculate this') + '</div></div>' +
-      '<div class="sw-ht green"><div class="sw-hl">Risk addressed</div>' +
+      '<div class="sw-ht green"><div class="sw-hl">Fine risk removed</div>' +
         '<div style="margin-top:4px"><button class="sw-tog' + (st.raMode === 'month' ? ' on' : '') + '" data-act="ra" data-m="month">This month</button><button class="sw-tog' + (st.raMode === 'all' ? ' on' : '') + '" data-act="ra" data-m="all">All time</button></div>' +
         '<div class="sw-hn">' + cu('ra_' + st.raMode, raV || 0, 'gbpK') + '</div>' +
-        '<div class="sw-hs">' + (st.raMode === 'all' && ra.allTotal ? gbpK(ra.verified) + ' verified by a re-run, ' + gbpK(ra.selfAttested) + ' marked fixed by you.' : 'Exposure removed by the fixes you have completed.') + '</div></div></div>';
+        '<div class="sw-hs">' + (st.raMode === 'all' && ra.allTotal ? gbpK(ra.verified) + ' verified by a re-run, ' + gbpK(ra.selfAttested) + ' marked fixed by you.' : 'By the fixes you have completed.') + '</div></div></div>';
   }
 
   function clustersCard() {
     var cl = D.exposure.clusters || [];
     var body = cl.length ? cl.map(function (c) {
-      return '<div class="sw-row sw-row-btn' + (st.area === c.area ? ' on' : '') + '" data-act="area" data-a="' + esc(c.area) + '" role="button" tabindex="0" title="Show these findings"><div class="sw-row-main"><div class="sw-row-t">' + esc(c.label) + '</div><div class="sw-row-s">' + c.count + ' finding' + (c.count > 1 ? 's' : '') + ' · show</div></div><div class="sw-row-v">' + likely(c.mostLikely, c.low, c.high) + (c.mostLikely ? '<div class="sw-row-s">' + range(c.low, c.high) + '</div>' : '') + '</div><button class="sw-link" data-act="why" data-id="' + esc(c.leadFixId) + '">Why?</button></div>';
+      return '<div class="sw-row sw-row-btn' + (st.area === c.area ? ' on' : '') + '" data-act="area" data-a="' + esc(c.area) + '" role="button" tabindex="0" title="Show these findings"><div class="sw-row-main"><div class="sw-row-t">' + esc(c.label) + '</div><div class="sw-row-s">' + c.count + ' finding' + (c.count > 1 ? 's' : '') + ' · see them</div></div><div class="sw-row-v">' + likely(c.mostLikely, c.low, c.high) + (c.mostLikely ? '<div class="sw-row-s">' + range(c.low, c.high) + '</div>' : '') + '</div><button class="sw-link" data-act="why" data-id="' + esc(c.leadFixId) + '">Why?</button></div>';
     }).join('') : '<div class="sw-empty">No open data protection findings.</div>';
-    return '<div class="sw-card sw-pad"><div class="sw-lbl">Exposure by area</div>' + body +
+    return '<div class="sw-card sw-pad sw-areas"><div class="sw-lbl">Fine risk by area</div>' + body +
       (D.exposure.duaaWarning ? '<div class="sw-note" style="margin-top:10px">' + esc(D.exposure.duaaWarning) + '</div>' : '') +
       '<div style="margin-top:10px">' + algoLink() + '</div></div>';
   }
@@ -397,10 +468,12 @@
     var top = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); }).slice(0, 3);
     var body = top.length ? '<div class="sw-steps">' + top.map(function (f, i) {
       var r = removes(f);
-      return '<div class="sw-step sw-row-btn" data-act="goto" data-id="' + esc(f.id) + '" role="button" tabindex="0"><div class="sw-step-n">' + (i + 1) + '</div><div class="sw-fx-body"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(f.description.slice(0, 110)) + (f.description.length > 110 ? '…' : '') + '</div>' +
-        '<div class="sw-chips">' + effortChip(f) + (r >= 1000 ? '<span class="sw-chip good">Removes about ' + gbpK(r) + '</span>' : '') + '</div></div><span class="sw-chev">›</span></div>';
-    }).join('') + '</div>' : '<div class="sw-empty">Nothing open. Run a check before your next send.</div>';
-    return '<div class="sw-card sw-pad"><div class="sw-lbl">Start here · best value for your time</div>' + body + '</div>';
+      return '<div class="sw-step sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><div class="sw-step-n">' + (i + 1) + '</div><div class="sw-fx-body"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(f.description.slice(0, 110)) + (f.description.length > 110 ? '…' : '') + '</div>' +
+        '<div class="sw-chips">' + effortChip(f) + (r >= 1000 ? '<span class="sw-chip good">Cuts fine risk by about ' + gbpK(r) + '</span>' : '') + '</div><div class="sw-step-go">Show me how ›</div></div></div>';
+    }).join('') + '</div>' : '<div class="sw-empty">Nothing to fix right now. Check your next campaign before it goes out. <button class="sw-btn o" data-act="tool" data-u="/send-verdict.html">Check a campaign</button></div>';
+    var more = (D.fixes.pending || []).length - top.length;
+    return '<div class="sw-card sw-pad sw-next"><div class="sw-next-h"><div><div class="sw-lbl">Your next steps</div><div class="sw-h2">' + (top.length ? 'Fix these first: most risk removed for the time they take' : 'You are all caught up') + '</div></div>' +
+      (more > 0 ? '<button class="sw-link" data-act="all-fixes">See all ' + (more + top.length) + ' to fix</button>' : '') + '</div>' + body + '</div>';
   }
 
   function expLine(f) {
@@ -424,7 +497,7 @@
         return '<div class="sw-bkt ' + b[0] + '"><div class="sw-bkn">' + (b[1] || 0).toLocaleString('en-GB') + '</div><div class="sw-bkl">' + b[2] + '</div></div>';
       }).join('') + '</div><a class="sw-link" href="' + esc(link('/list-intelligence.html')) + '">Draft a re-consent email in List health</a>'
       : '<div class="sw-empty">No consents expiring in the next 90 days' + (c ? '.' : ' on record. Upload a list in List health.') + '</div>';
-    return '<div class="sw-card sw-pad"><div class="sw-lbl">Consent expiring</div>' + body + '</div>';
+    return '<div class="sw-card sw-pad"><div class="sw-lbl">Consent running out</div>' + body + '</div>';
   }
 
   function briefingCard() {
@@ -469,7 +542,7 @@
         '<div class="sw-hs">We compare every open finding with ' + (T.librarySize || 0) + ' published ICO, ASA and CMA cases and only show one when the issue matches and so does your sector or audience size.</div></div></div>';
     }
     var h = T.hero, c = T.cases[h.caseId], open = h.openFixIds.length, done = h.doneFixIds.length, pct = Math.round(done / Math.max(1, open + done) * 100);
-    return '<div class="sw-twin"><div class="sw-twin-main"><div class="sw-lbl">Your closest case twin</div>' +
+    return '<div class="sw-twin"><div class="sw-twin-main"><div class="sw-lbl">Case Twin · the published case most like yours</div>' +
       '<div class="sw-twin-name">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div>' +
       '<div class="sw-hs">' + esc(c.summary) + '</div>' +
       '<div class="sw-chips">' + h.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
@@ -526,7 +599,7 @@
       if (st.filter === 'quick') return effort(f).mins <= 30;
       return f.exposure && f.exposure.category === st.filter;
     });
-    var flt = [['all', 'All'], ['quick', '⚡ Quick wins'], ['ICO', 'ICO'], ['ASA', 'ASA'], ['CMA', 'CMA'], ['improved', 'Improved']].map(function (x) {
+    var flt = [['all', 'All'], ['quick', '⚡ Quick wins'], ['ICO', 'ICO'], ['ASA', 'ASA'], ['CMA', 'CMA'], ['improved', 'Improved on re-run']].map(function (x) {
       return '<button class="sw-flt' + (st.filter === x[0] ? ' on' : '') + '" data-act="flt" data-f="' + x[0] + '">' + x[1] + '</button>';
     }).join('');
     var tags = (st.area ? '<button class="sw-tag" data-act="area-clear">' + esc(AREA_LABELS[st.area] || nice(st.area)) + ' ✕</button>' : '') +
@@ -549,8 +622,8 @@
         (cl[g] ? '<span class="sw-lane-v">' + likely(cl[g].mostLikely, cl[g].low, cl[g].high) + '</span>' : '') + '</div>' +
         (isOpen ? shown.map(fixRow).join('') + (more > 0 ? '<button class="sw-lane-more" data-act="lane-more" data-g="' + esc(g) + '">Show ' + more + ' more</button>' : '') : '') + '</div>';
     }).join('');
-    var empty = '<div class="sw-empty">' + (all.length ? 'Nothing matches this filter.' : 'No open action items.') + '</div>';
-    return '<div class="sw-fx-hdr"><span class="sw-h2">Action items <span class="sw-cnt">' + all.length + '</span></span><span class="sw-fx-ctl">' + flt +
+    var empty = '<div class="sw-empty">' + (all.length ? 'Nothing matches this filter.' : 'Nothing to fix right now.') + '</div>';
+    return '<div class="sw-fx-hdr"><span class="sw-h2">Everything to fix <span class="sw-cnt">' + all.length + '</span></span><span class="sw-fx-ctl">' + flt +
       '<button class="sw-flt wi' + (st.whatif ? ' on' : '') + '" data-act="whatif" title="Tick findings to see what fixing them would change">What if?</button></span></div>' +
       (tags ? '<div class="sw-tags">' + tags + '</div>' : '') +
       (st.whatif ? '<div class="sw-wi-hint">Tick the findings you could fix and watch your score and exposure move.</div>' : '') +
@@ -596,7 +669,7 @@
     var t = mins < 60 ? mins + ' minutes' : mins < 480 ? 'about ' + (Math.round(mins / 30) / 2) + ' hours' : 'about ' + Math.round(mins / 480 * 2) / 2 + ' days';
     return '<div class="sw-wi-t">If you fix these ' + n + ':</div>' +
       '<div class="sw-wi-k"><span>Score</span><b>' + s0 + ' → <em class="up">' + s1 + '</em></b></div>' +
-      (e0 ? '<div class="sw-wi-k"><span>ICO exposure</span><b>' + gbpK(e0) + ' → <em class="down">' + gbpK(e1) + '</em></b></div>' : '') +
+      (e0 ? '<div class="sw-wi-k"><span>ICO fine risk</span><b>' + gbpK(e0) + ' → <em class="down">' + gbpK(e1) + '</em></b></div>' : '') +
       '<div class="sw-wi-k"><span>Work</span><b>' + t + '</b></div>' +
       '<button class="sw-link" data-act="wi-clear">Clear</button>';
   }
@@ -810,6 +883,10 @@
   // ── actions ──
   async function refreshQuiet() {
     try { D = await api('/api/dashboard?userId=' + encodeURIComponent(userId)); } catch (e) { return; }
+    rerender();
+  }
+  // Redraw without reloading the briefing and campaigns (recent checks are cached)
+  function rerender() {
     var keepB = $('#sw-brf') && $('#sw-brf').innerHTML, keepC = $('#sw-camps') && $('#sw-camps').outerHTML;
     render();
     if (keepB) { $('#sw-brf').innerHTML = keepB; if (keepB.length > 320) $('#sw-brf-more').hidden = false; }
@@ -825,7 +902,7 @@
       celebrate(btn, src === 'improved_on_rerun');
       delete st.open[fixId]; delete st.picked[fixId];
       await refreshQuiet();
-      var top = $('.sw-g-top'); if (top && top.scrollIntoView && top.getBoundingClientRect().top < 0) top.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+      var top = $('.sw-sum'); if (top && top.scrollIntoView && top.getBoundingClientRect().top < 0) top.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
     } catch (e) { btn.disabled = false; toast(e.message, 'er'); }
   }
 
@@ -896,11 +973,15 @@
       case 'brf-more': $('#sw-brf').classList.remove('clip'); t.hidden = true; break;
       case 'noop': break;
       case 'lane': var g = t.getAttribute('data-g'), ln = t.closest('.sw-lane'); st.lane[g] = !(ln && ln.classList.contains('open')); redrawFixes(); break;
-      case 'noticed-all': st.noticedAll = true; render(); break;
+      case 'noticed-all': st.noticedAll = true; rerender(); break;
       case 'lane-more': st.laneMore[t.getAttribute('data-g')] = true; redrawFixes(); break;
       case 'quickfix': st.open[id] = true; if (!drafts[id]) draft(id); else redrawFixes(); break;
       case 'expand': if (ev.target.closest('.sw-pick')) break; if (st.open[id]) delete st.open[id]; else st.open[id] = true; redrawFixes(); break;
       case 'goto': gotoFix(id); break;
+      case 'next': gotoFix(id); if (!drafts[id]) draft(id); break;
+      case 'all-fixes': $('#sw-fixes').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); break;
+      case 'detail': st.detail = !st.detail; store('detail_' + userId, st.detail); rerender(); break;
+      case 'first-hide': store('firstrun_hide_' + userId, true); rerender(); break;
       case 'twin': twinDrawer(id); break;
       case 'twin-only': st.twinOnly = true; st.area = null; redrawFixes(); $('#sw-fixes').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); break;
       case 'twin-clear': st.twinOnly = false; redrawFixes(); break;
