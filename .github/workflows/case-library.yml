@@ -2,7 +2,7 @@ name: Case library check
 # Fetches every case's source page and checks it names the party and the amount
 on:
   pull_request:
-    paths: ['api/_case-library.js', 'scripts/check-case-links.mjs', '.github/workflows/case-library.yml']
+    paths: ['api/_case-library.js', 'scripts/**', '.github/workflows/case-library.yml']
   push:
     branches: [main]
     paths: ['api/_case-library.js']
@@ -21,3 +21,13 @@ jobs:
       # Reads PDF notices; the check still runs (links only) if this fails
       - run: sudo apt-get update -q && sudo apt-get install -y -q poppler-utils || true
       - run: node scripts/check-case-links.mjs
+  discover:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/discover-sources.mjs
