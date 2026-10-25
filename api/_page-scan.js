@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // SENDWIZE — _page-scan.js v1.2  (used by submit-check.js, site-sweep.js, dpa-scan.js,
-//   vendor-dpa-reader.js, check-vendors.js)
+//   vendor-dpa-reader.js)
 //
 // v1.2 (security): fetchPage() also resolves the hostname and refuses
 //   private, loopback, link-local and internal addresses on every

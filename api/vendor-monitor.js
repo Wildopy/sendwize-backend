@@ -12,8 +12,8 @@
 //     updated silently with no fix record created.
 //   - compareCompliancePosition() implements the degradation matrix:
 //       DPAStatus:               Confirmed → worse
-//       TransferMechanism:       Adequacy/SCCs/BCRs/UK-US Bridge → None/Unknown
-//       ICORegistered:           Yes/Exempt → No/Unknown
+//       UK transfer position:    covered → not covered (_processor-rules.js)
+//       (ICORegistered dropped in v1.2: processors do not pay the ICO fee)
 //       IntlTransferOccurs:      No → Yes (new transfers appearing)
 //       BreachHistory:           None identified → anything else
 //       RiskRating:              Low→Medium/High or Medium→High
@@ -43,6 +43,7 @@
 import crypto from 'crypto';
 import { authenticate, internalHeaders, isRecordId } from './_auth.js';
 import { fetchPage } from './_page-scan.js';
+import { transferPosition } from './_processor-rules.js';
 
 const BASE_ID       = process.env.BASE_ID;
 const AT_TOKEN      = process.env.AIRTABLE_TOKEN;
@@ -153,25 +154,17 @@ function compareCompliancePosition(before, after) {
     }
   }
 
-  // Transfer mechanism — good mechanisms becoming None or Unknown
-  const mechGood = ['Adequacy','SCCs','BCRs','UK-US Bridge'];
-  const mechBefore = before.TransferMechanismConfirmed || 'Unknown';
-  const mechAfter  = after.TransferMechanismConfirmed  || 'Unknown';
-  if (mechGood.includes(mechBefore) && !mechGood.includes(mechAfter)) {
-    issues.push(`International transfer mechanism changed from ${mechBefore} to ${mechAfter} — lawful transfer basis may no longer be confirmed`);
-    escalate('high');
+  // UK transfer position — covered before, not covered now (_processor-rules.js)
+  const tBefore = transferPosition({ destination: before.TransferDestination, mechanism: before.TransferMechanismConfirmed, intlTransferOccurs: before.IntlTransferOccurs });
+  const tAfter  = transferPosition({ destination: after.TransferDestination,  mechanism: after.TransferMechanismConfirmed,  intlTransferOccurs: after.IntlTransferOccurs });
+  // 'unknown' after is ignored: a page that stops mentioning transfers is not evidence of a gap
+  if (tBefore.ok && ['unsafeguarded', 'needs_uk_tool'].includes(tAfter.status)) {
+    issues.push(`UK transfer position changed: ${tAfter.label}. ${tAfter.detail || 'Confirm which UK transfer tool now applies.'}`);
+    escalate(tAfter.status === 'unsafeguarded' ? 'high' : 'medium');
   }
 
-  // ICO registration — confirmed becoming No or Unknown
-  const icoBefore = before.ICORegistered || 'Unknown';
-  const icoAfter  = after.ICORegistered  || 'Unknown';
-  if ((icoBefore === 'Yes' || icoBefore === 'Exempt') && icoAfter === 'No') {
-    issues.push(`ICO registration status changed from ${icoBefore} to No — vendor may no longer be registered with the ICO`);
-    escalate('critical');
-  } else if ((icoBefore === 'Yes' || icoBefore === 'Exempt') && icoAfter === 'Unknown') {
-    issues.push(`ICO registration status changed from ${icoBefore} to Unknown — registration could not be confirmed from the updated page`);
-    escalate('medium');
-  }
+  // ICO registration is not compared: the fee is paid by controllers, so a
+  // processor dropping off the register is not a gap for the member.
 
   // International transfers appearing where none existed before
   const intlBefore = before.IntlTransferOccurs || 'Unknown';
@@ -299,6 +292,7 @@ async function processVendor(record) {
       DPAStatus:                   f.DPAStatus                   || 'Unknown',
       IntlTransferOccurs:          f.IntlTransferOccurs          || 'Unknown',
       TransferMechanismConfirmed:  f.TransferMechanismConfirmed  || 'Unknown',
+      TransferDestination:         f.TransferDestination         || '',
       BreachHistory:               f.BreachHistory               || 'None identified',
       RiskRating:                  f.RiskRating                  || 'Unknown',
     };

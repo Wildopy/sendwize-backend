@@ -1,5 +1,9 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — vendor-dpa-reader.js v1.1
+// SENDWIZE — vendor-dpa-reader.js v1.2
+// v1.2: risk rating and transfer rules from _processor-rules.js. Asks for
+//   the UK transfer tool (IDTA / UK Addendum / UK Extension), not plain
+//   SCCs. ICO registration no longer lowers the score (processors do not
+//   pay the ICO fee).
 // v1.1 (security): internal callers only (vendor-monitor). This endpoint
 //   rewrites the shared Marketing_Vendors library every customer sees, so
 //   it must never be callable from a browser. The policy page is fetched
@@ -14,7 +18,6 @@
 //
 // Called by:
 //   - vendor-monitor.js when content hash changes
-//   - check-vendors.js admin action (future)
 //   - Manual trigger from vendor library admin (future)
 //
 // Architecture rules:
@@ -27,6 +30,7 @@
 import { claudeFetch, LEGAL_RULES } from './_claude.js';
 import { requireInternal, isRecordId } from './_auth.js';
 import { fetchPage } from './_page-scan.js';
+import { calculateRiskRating, transferPosition, breachIsKnown, normaliseMechanism, TRANSFER_MECHANISMS } from './_processor-rules.js';
 
 const BASE_ID      = process.env.BASE_ID;
 const AT_TOKEN     = process.env.AIRTABLE_TOKEN;
@@ -38,47 +42,23 @@ const atH = () => ({
   'Content-Type': 'application/json',
 });
 
-// ── Risk rating — mirrors check-vendors.js exactly ───────────
-function calculateRiskRating(d) {
-  const ico    = (d.ICORegistered                  || '').toLowerCase();
-  const dpa    = (d.DPAStatus                      || '').toLowerCase();
-  const mech   = (d.TransferMechanismConfirmed     || '').toLowerCase();
-  const breach = (d.BreachHistory                  || '').toLowerCase();
-  const dest   = (d.TransferDestination            || '').toLowerCase();
-  const cert   = (d.RelevantSecurityCertification  || '').toLowerCase();
-  const dpo    = (d.DPOConfirmed                   || '').toLowerCase();
-  const intl   = (d.IntlTransferOccurs             || '').toLowerCase();
-
-  if (ico === 'no') return 'High';
-  if (breach && !['none identified','none','no','unknown',''].includes(breach)) return 'High';
-  const nonAdequate = dest && !['eu','eea','uk','n/a'].some(t => dest.includes(t));
-  const noMech      = ['none','unknown',''].includes(mech);
-  if (intl === 'yes' && nonAdequate && noMech) return 'High';
-  if (dpa === 'refused') return 'High';
-
-  if (['on request','unknown'].includes(dpa)) return 'Medium';
-  if (intl === 'yes' && noMech) return 'Medium';
-  if (!cert || ['no','none','unknown'].includes(cert)) return 'Medium';
-  if (!dpo  || ['no','none','unknown'].includes(dpo))  return 'Medium';
-
-  return 'Low';
-}
+// Risk rating and transfer rules come from _processor-rules.js (v1.2).
 
 // ── Base score from extracted dimensions ──────────────────────
 function calculateBaseScore(d) {
   let score = 100;
-  const ico   = d.ICORegistered                 || 'Unknown';
   const dpa   = d.DPAStatus                     || 'Unknown';
-  const mech  = d.TransferMechanismConfirmed    || 'Unknown';
-  const intl  = d.IntlTransferOccurs            || 'Unknown';
-  const breach = d.BreachHistory                || '';
   const cert  = d.RelevantSecurityCertification || 'Unknown';
+  const transfer = transferPosition({
+    destination: d.TransferDestination, mechanism: d.TransferMechanismConfirmed, intlTransferOccurs: d.IntlTransferOccurs,
+  });
 
-  if (ico === 'No')                                       score -= 20;
+  // ICO registration is not scored: the fee is paid by controllers, not processors
   if (dpa === 'Refused')                                  score -= 35;
   else if (dpa === 'On Request' || dpa === 'Unknown')     score -= 15;
-  if (intl === 'Yes' && (mech === 'None' || mech === 'Unknown')) score -= 20;
-  if (breach && !['none identified','none','no','unknown',''].includes(breach.toLowerCase())) score -= 15;
+  if (transfer.status === 'unsafeguarded')                score -= 20;
+  else if (!transfer.ok)                                  score -= 10;
+  if (breachIsKnown(d.BreachHistory))                     score -= 15;
   if (cert === 'No')                                      score -= 5;
 
   return Math.max(0, score);
@@ -171,7 +151,7 @@ Respond ONLY with this JSON — no markdown, no explanation:
   "DPAStatus": "<Confirmed|On Request|Refused|Unknown>",
   "IntlTransferOccurs": "<Yes|No|Unknown>",
   "TransferDestination": "<country or region, or Unknown>",
-  "TransferMechanismConfirmed": "<Adequacy|SCCs|BCRs|UK-US Bridge|None|Unknown>",
+  "TransferMechanismConfirmed": "<Adequacy|IDTA|UK Addendum|UK-US Bridge|BCRs|EU SCCs only|None|Unknown> (UK tools only: use IDTA for the ICO International Data Transfer Agreement, UK Addendum for EU SCCs with the UK Addendum, UK-US Bridge only if the UK Extension to the Data Privacy Framework is named; EU SCCs or EU-US DPF without a UK tool = EU SCCs only)",
   "BreachHistory": "<factual description of any breach or enforcement action mentioned, or exactly: None identified>",
   "DPOConfirmed": "<Yes|No|Unknown>",
   "RelevantSecurityCertification": "<Yes|No|Unknown>",
@@ -201,7 +181,7 @@ Respond ONLY with this JSON — no markdown, no explanation:
   const validICO    = ['Yes','No','Exempt','Unknown'];
   const validDPA    = ['Confirmed','On Request','Refused','Unknown'];
   const validIntl   = ['Yes','No','Unknown'];
-  const validMech   = ['Adequacy','SCCs','BCRs','UK-US Bridge','None','Unknown'];
+  const validMech   = TRANSFER_MECHANISMS;
   const validCert   = ['Yes','No','Unknown'];
   const validDPO    = ['Yes','No','Unknown'];
   const validRisk   = ['Low','Medium','High'];
@@ -216,7 +196,7 @@ Respond ONLY with this JSON — no markdown, no explanation:
     DPAStatus:                    guard(extracted.DPAStatus, validDPA),
     IntlTransferOccurs:           guard(extracted.IntlTransferOccurs, validIntl),
     TransferDestination:          extracted.TransferDestination || null,
-    TransferMechanismConfirmed:   guard(extracted.TransferMechanismConfirmed, validMech),
+    TransferMechanismConfirmed:   guard(normaliseMechanism(extracted.TransferMechanismConfirmed), validMech),
     BreachHistory:                extracted.BreachHistory || 'None identified',
     DPOConfirmed:                 guard(extracted.DPOConfirmed, validDPO),
     RelevantSecurityCertification: guard(extracted.RelevantSecurityCertification, validCert),
@@ -230,7 +210,8 @@ Respond ONLY with this JSON — no markdown, no explanation:
     const patchRes = await fetch(`${AT_BASE}/Marketing_Vendors/${vendorRecordId}`, {
       method:  'PATCH',
       headers: atH(),
-      body:    JSON.stringify({ fields: patchFields }),
+      // typecast: creates the new TransferMechanismConfirmed options (IDTA, UK Addendum, EU SCCs only) on first use
+      body:    JSON.stringify({ fields: patchFields, typecast: true }),
     });
     if (!patchRes.ok) {
       const errBody = await patchRes.text();

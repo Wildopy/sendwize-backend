@@ -28,9 +28,6 @@
     "api/dpa-scan.js": {
       "maxDuration": 60
     },
-    "api/check-vendors.js": {
-      "maxDuration": 60
-    },
     "api/analyze-copy.js": {
       "maxDuration": 60
     },

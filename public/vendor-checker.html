@@ -642,25 +642,28 @@ var TYPE_CONFIG = {
   },
 };
 
+// Article 28 clause cards, in the order of Art 28(3)(a)-(h), then 28(4),
+// the infringing-instruction duty and the Chapter V transfer check.
+// Ids are stable because DPAClauseResults stores them; a28-11 and a28-12
+// (controller contact, DPO named) were dropped: neither is an Article 28 term.
 var A28 = [
-  {id:'a28-1',  title:'Processing only on instructions',      req:'Processor acts only on documented controller instructions (Art 28(3)(a)).'},
-  {id:'a28-2',  title:'Confidentiality obligation',           req:'Authorised persons bound by confidentiality (Art 28(3)(b)).'},
-  {id:'a28-3',  title:'Security measures',                    req:'Appropriate technical and organisational security measures (Art 28(3)(c)).'},
-  {id:'a28-4',  title:'Sub-processor restrictions',           req:'No sub-processors without prior written controller consent (Art 28(2)/(4)).'},
-  {id:'a28-5',  title:'Data subject rights assistance',       req:'Assists with data subject rights requests (Art 28(3)(e)).'},
-  {id:'a28-6',  title:'Security and breach assistance',       req:'Assists with breach notification, DPIA, and consultation (Art 28(3)(f)).'},
-  {id:'a28-7',  title:'Deletion or return on termination',    req:'Deletes or returns data after services end (Art 28(3)(g)).'},
-  {id:'a28-8',  title:'Audit rights',                         req:'Allows audits and provides compliance evidence (Art 28(3)(h)).'},
-  {id:'a28-9',  title:'Subject matter and duration specified', req:'DPA specifies subject matter, duration, nature, purpose, data types, data subjects (Art 28(3)).'},
-  {id:'a28-10', title:'International transfer safeguards',    req:'Adequate safeguard for UK data transferred outside UK (Art 44-49).'},
-  {id:'a28-11', title:'Controller contact identified',        req:'Controller identity and contact clearly stated.'},
-  {id:'a28-12', title:'Processor / DPO identified',           req:'Processor identity and DPO (if required) clearly stated.'},
+  {id:'a28-9',  title:'Scope of processing set out',           req:'Subject matter, duration, nature, purpose, type of personal data and categories of data subjects (Art 28(3)).'},
+  {id:'a28-1',  title:'Processing only on your instructions',  req:'Processes data, including transfers abroad, only on your documented instructions (Art 28(3)(a)).'},
+  {id:'a28-2',  title:'Confidentiality obligation',            req:'People authorised to process the data are bound by confidentiality (Art 28(3)(b)).'},
+  {id:'a28-3',  title:'Security measures',                     req:'Takes the security measures required by Article 32 (Art 28(3)(c)).'},
+  {id:'a28-4',  title:'Sub-processors need your authorisation',req:'No sub-processor without your prior specific or general written authorisation; under a general one you are told of changes and can object (Art 28(2), 28(3)(d)).'},
+  {id:'a28-5',  title:'Data subject rights assistance',        req:'Helps you respond to people exercising their rights (Art 28(3)(e)).'},
+  {id:'a28-6',  title:'Security, breach and DPIA assistance',  req:'Helps you meet Articles 32-36, including telling you of a breach without undue delay (Art 28(3)(f), 33(2)).'},
+  {id:'a28-7',  title:'Deletion or return at the end',         req:'Deletes or returns all personal data when the services end, at your choice (Art 28(3)(g)).'},
+  {id:'a28-8',  title:'Audit and information rights',          req:'Makes available the information needed to show compliance and allows audits (Art 28(3)(h)).'},
+  {id:'a28-13', title:'Sub-processors bound by the same terms',req:'Same data protection obligations passed to every sub-processor by contract; processor stays fully liable (Art 28(4)).'},
+  {id:'a28-14', title:'Flags unlawful instructions',           req:'Tells you immediately if it thinks an instruction infringes data protection law (Art 28(3), final subparagraph).'},
+  {id:'a28-10', title:'UK transfer safeguard',                 req:'If data leaves the UK for a country without UK adequacy: IDTA, UK Addendum to the EU SCCs, UK-US Data Bridge or BCRs. EU SCCs or EU-US DPF alone do not cover UK data (Chapter V).'},
 ];
 
-// ── P1 FIX: Scan ID → A28 ID mapping ──────────────────────────
-// dpa-scan.js returns IDs like 'subject_matter_duration' but clause cards
-// use a28-X IDs. This map bridges them. Multiple scan IDs can map to one
-// a28 ID (e.g. 4 preamble checks → a28-9); worst status wins.
+// Scan ID → clause card. dpa-scan.js v1.4 also returns `a28` on each
+// result; this map covers scans saved before that. Several scan checks
+// can feed one card (e.g. the four scope checks → a28-9); worst status wins.
 var SCAN_ID_TO_A28 = {
   'subject_matter_duration': ['a28-9'],
   'nature_purpose':          ['a28-9'],
@@ -670,9 +673,12 @@ var SCAN_ID_TO_A28 = {
   'confidentiality':         ['a28-2'],
   'security_measures':       ['a28-3'],
   'sub_processors':          ['a28-4'],
-  'controller_assistance':   ['a28-5','a28-6'],
+  'sub_processor_flowdown':  ['a28-13'],
+  'controller_assistance':   ['a28-5'],
+  'compliance_assistance':   ['a28-6'],
   'deletion_or_return':      ['a28-7'],
   'audit_rights':            ['a28-8'],
+  'infringing_instructions': ['a28-14'],
   'transfer_mechanism':      ['a28-10'],
 };
 
@@ -743,7 +749,7 @@ var AFF_ROLES = [
 function parseJSON(s, fb) { try { return s ? JSON.parse(s) : fb; } catch(e) { return fb; } }
 function scoreColour(n) { return n>=70 ? 'var(--g)' : n>=40 ? 'var(--y)' : 'var(--r)'; }
 function hasDPAScan(f) { return Object.keys(parseJSON(f.DPAClauseResults, {})).length > 0; }
-function dpaFailCount(f) { return Object.values(parseJSON(f.DPAClauseResults, {})).filter(function(v){return v.status==='fail';}).length; }
+function dpaFailCount(f) { var r = parseJSON(f.DPAClauseResults, {}); return A28.filter(function(c){ return (r[c.id]||{}).status==='fail'; }).length; }
 function optionsHtml(list, selected) { return list.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===selected?' selected':'')+'>'+escH(o[1])+'</option>'; }).join(''); }
 
 function marketingStatus(f) {
@@ -857,7 +863,8 @@ function loadAll() {
     fetchRel('vendor'), fetchRel('partner'), fetchRel('affiliate'), fetchRel('competitor'),
     swFetch(APP_URL+'/api/data?action=vendors').then(function(r){return r.json();}).catch(function(){return{vendors:[]};}),
     swFetch(APP_URL+'/api/data?action=marketing-checks').then(function(r){return r.json();}).catch(function(){return{categories:{}};}),
-    swFetch(APP_URL+'/api/data?action=relationship-watch&userId='+userId).then(function(r){return r.json();}).catch(function(){return{};})
+    swFetch(APP_URL+'/api/data?action=relationship-watch&userId='+userId).then(function(r){return r.json();}).catch(function(){return{};}),
+    swFetch(APP_URL+'/api/site-sweep?action=get&userId='+encodeURIComponent(userId)).then(function(r){return r.json();}).catch(function(){return{};})
   ]).then(function(res){
     S.processors  = res[0];
     S.partners    = res[1];
@@ -867,6 +874,7 @@ function loadAll() {
     S.marketingDefs = res[5].categories || {};
     if (res[6].tradingName) S.tradingName = res[6].tradingName;
     S.watch = res[6].watch || S.watch || [];
+    S.sweep = latestSweepTrackers(res[7]);
     hideLoading();
     updateTypeCards();
     renderWorkArea();
@@ -980,8 +988,53 @@ function renderWorkArea() {
   document.getElementById('workExport').style.display = currentType==='competitors' ? 'none' : 'inline-flex';
   var records = S[currentType];
   var content = document.getElementById('workContent');
-  if (!records.length) { content.innerHTML = renderEmpty(); return; }
-  content.innerHTML = renderListControls() + '<div class="rel-list" id="relList">'+renderList(records)+'</div>';
+  var sweepHtml = currentType==='processors' ? sweepSuggestionsHtml() : '';
+  if (!records.length) { content.innerHTML = sweepHtml + renderEmpty(); return; }
+  content.innerHTML = sweepHtml + renderListControls() + '<div class="rel-list" id="relList">'+renderList(records)+'</div>';
+}
+
+// ── Site Sweep → register ─────────────────────────────────────
+// Trackers Site Sweep found on the member's website. Any not yet in the
+// register are offered for one-click adding; matching vendors get the
+// evidence on their cookie check server-side (data.js sweep-trackers).
+var SWEEP_CATEGORY_LABEL = { analytics:'Analytics', advertising:'Advertising', esp:'Email Service Provider' };
+
+function latestSweepTrackers(d) {
+  var list = (d && d.sweeps) || [];
+  for (var i = 0; i < list.length; i++) {
+    var sw = list[i].sweep;
+    if (sw) return { domain: list[i].domain, sweptAt: sw.completedAt || list[i].lastSweptAt, trackers: sw.trackers || [] };
+  }
+  return null;
+}
+
+function trackerInRegister(t) {
+  return S.processors.some(function(r){
+    var n = getName(r.fields).toLowerCase();
+    return t.aliases.concat([t.vendor.toLowerCase()]).some(function(a){
+      var esc = a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp('(^|[^a-z0-9])'+esc+'($|[^a-z0-9])').test(n);
+    });
+  });
+}
+
+function sweepSuggestionsHtml() {
+  if (!S.sweep) {
+    return '<div class="info-banner"><i class="ph ph-magnifying-glass icon-16"></i><div>Run <a href="'+APP_URL+'/site-sweep.html?userId='+encodeURIComponent(userId)+'" style="color:inherit;font-weight:700">Site Sweep</a> on your website and we will list the analytics and ad trackers it finds here, with proof of whether they fire before consent.</div></div>';
+  }
+  var missing = S.sweep.trackers.filter(function(t){ return !trackerInRegister(t); });
+  if (!missing.length) return '';
+  return '<div class="narrative-card" style="margin-bottom:14px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:4px">Found on '+escH(S.sweep.domain||'your website')+' but not in your register</div>'
+    + '<div style="font-size:11.5px;color:var(--mu);margin-bottom:10px">Site Sweep, '+fmtDate(S.sweep.sweptAt)+'. Each one receives your visitors\' data, so it needs a DPA and a consent check.</div>'
+    + missing.map(function(t){
+        var badge = t.firedBeforeConsent ? '<span class="pill pr">Fired before consent</span>' : '<span class="pill pmu">Found on your site</span>';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--b)">'
+          + '<div style="flex:1;min-width:0;font-size:13px;font-weight:600">'+escH(t.vendor)+' <span style="font-size:11px;font-weight:400;color:var(--mu)">detected as '+escH(t.detectedAs.join(', '))+'</span></div>'
+          + badge
+          + '<button class="btn btn-primary btn-sm" onclick="quickAdd(\''+escJ(t.vendor)+'\',\''+escJ(SWEEP_CATEGORY_LABEL[t.category]||'Analytics')+'\')">Add</button></div>';
+      }).join('')
+    + '</div>';
 }
 
 function renderEmpty() {
@@ -1265,6 +1318,7 @@ function renderDetailOverview(rec) {
   var body = document.getElementById('dpBody');
   if (!body) return;
   var f = rec.fields;
+  var name = getName(f);
   var known = S.knownVendors[f.VendorName||f.PartnerName||f.AffiliateName||'']||{};
   var rows = [];
   var t = currentType;
@@ -1417,7 +1471,7 @@ function renderMarketingChecks(rec) {
     not_applicable:  ['','pmu','Not applicable'],
   };
 
-  var html = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">These checks cover how <strong>you</strong> use '+escH(getName(f))+' \u2014 the part regulators hold you responsible for. They change with the platform type. Answers are self-assessed; anything marked "Not evidenced" or "Needs attention" is added to your fixes.</p>';
+  var html = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">These checks cover how <strong>you</strong> use '+escH(getName(f))+' \u2014 the part regulators hold you responsible for. They change with the platform type. Answers are self-assessed unless marked as verified by Site Sweep; anything marked "Not evidenced" or "Needs attention" is added to your fixes.</p>';
   html += '<div class="fg" style="max-width:300px"><label>Platform type</label><select onchange="changeMarketingCategory(\''+escJ(rec.id)+'\',this.value)">'+optionsHtml(catOpts, m.category)+'</select></div>';
   if (!m.defs.length) html += '<div class="info-banner"><i class="ph ph-warning icon-16"></i><div>Check definitions couldn\'t be loaded. Refresh the page.</div></div>';
 
@@ -1426,7 +1480,9 @@ function renderMarketingChecks(rec) {
     var st = STATUS[a.status] || ['','pmu','Not answered'];
     html += '<div class="clause-item '+st[0]+'">'
       + '<div class="clause-hdr"><span class="clause-num">'+escH(d.regulator)+'</span><span class="clause-title">'+escH(d.label)+'</span><span class="pill '+st[1]+'">'+st[2]+'</span></div>'
-      + '<div class="clause-req">'+escH(d.question)+'<br><span style="color:var(--mu)">'+escH(d.rule)+(d.severity==='critical'?' \u00b7 high impact':'')+'</span></div>'
+      + '<div class="clause-req">'+escH(d.question)+'<br><span style="color:var(--mu)">'+escH(d.rule)+(d.severity==='critical'?' \u00b7 high impact':'')+'</span>'
+      + (a.source==='site_sweep' && a.note ? '<div style="margin-top:6px;font-size:11.5px;font-weight:600;color:var(--tm)"><i class="ph ph-seal-check"></i> Verified by Site Sweep: '+escH(a.note.replace(/^Site Sweep [0-9-]+: /,''))+'</div>' : '')
+      + '</div>'
       + '<div class="clause-btns">'
       + '<button class="cb cb-pass" onclick="setMarketingCheck(\''+escJ(rec.id)+'\',\''+d.id+'\',\'passed\')">Passed</button>'
       + '<button class="cb cb-warn" onclick="setMarketingCheck(\''+escJ(rec.id)+'\',\''+d.id+'\',\'needs_attention\')">Needs attention</button>'
@@ -1467,13 +1523,13 @@ function renderDPAReview(rec) {
   var stored = clauseCache[rec.id]||{};
   try { if (!clauseCache[rec.id] && f.DPAClauseResults) stored = JSON.parse(f.DPAClauseResults); } catch(e){}
 
-  var passed = Object.values(stored).filter(function(v){return v.status==='pass';}).length;
+  var passed = A28.filter(function(c){return (stored[c.id]||{}).status==='pass';}).length;
   var pct = A28.length ? Math.round(passed/A28.length*100) : 0;
   var scoreHtml = Object.keys(stored).length
     ? '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Article 28 coverage</span><strong>'+passed+'/'+A28.length+' ('+pct+'%)</strong></div><div class="dpa-score-bar"><div class="dpa-score-fill" style="width:'+pct+'%;background:'+(pct>=80?'var(--g)':pct>=50?'var(--y)':'var(--r)')+'"></div></div></div>'
     : '';
 
-  var clauses = A28.map(function(c){
+  var clauses = A28.map(function(c, i){
     var r = stored[c.id]||{status:'unknown'};
     var cls = r.status==='pass'?'pass':r.status==='fail'?'fail':r.status==='warn'?'warn':'';
     var pc = r.status==='pass'?'pg':r.status==='fail'?'pr':r.status==='warn'?'py':'pmu';
@@ -1484,7 +1540,7 @@ function renderDPAReview(rec) {
       quoteHtml = '<div class="clause-quote"><i class="ph ph-quotes icon-16"></i>'+escH(r.note.length > 300 ? r.note.slice(0,300)+'\u2026' : r.note)+'</div>';
     }
     return '<div class="clause-item '+cls+'">'
-      +'<div class="clause-hdr"><span class="clause-num">'+c.id+'</span><span class="clause-title">'+escH(c.title)+'</span><span class="pill '+pc+'">'+pl+'</span></div>'
+      +'<div class="clause-hdr"><span class="clause-num">'+(i+1)+'</span><span class="clause-title">'+escH(c.title)+'</span><span class="pill '+pc+'">'+pl+'</span></div>'
       +'<div class="clause-req">'+escH(c.req)+'</div>'
       + quoteHtml
       +'<div class="clause-btns">'
@@ -1501,7 +1557,7 @@ function renderDPAReview(rec) {
     ? '<div class="scan-row"><div class="file-chosen"><i class="ph ph-file-pdf icon-16"></i><span class="file-chosen-name">'+escH(file.name)+'</span><button class="file-clear" onclick="clearScanFile()"><i class="ph ph-x icon-16"></i></button></div><button class="btn btn-primary btn-sm" onclick="runDPAScan(\''+rec.id+'\',\'file\')">Scan <i class="ph ph-arrow-right icon-16"></i></button></div>'
     : '<label class="file-drop" id="fileDrop"><strong>Click to choose a PDF</strong>Or drag and drop the DPA here<input type="file" accept=".pdf,application/pdf" onchange="chooseScanFile(this)"></label>';
 
-  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Evidence-based DPA review — check this vendor\'s agreement against 12 Article 28 UK GDPR requirements. Paste a URL, upload the PDF, or self-certify each clause.</p>'
+  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Evidence-based DPA review — check this vendor\'s agreement against the Article 28 UK GDPR requirements and the UK transfer rules. Paste a URL, upload the PDF, or self-certify each clause.</p>'
     + '<div class="scan-controls">'
     + '<div class="scan-controls-label">Scan the DPA</div>'
     + '<div class="scan-tabs">'
@@ -1594,7 +1650,7 @@ function handleScanResult(d, rec, res) {
     d.results.forEach(function(r) {
       var uiStatus = r.status === 'found' ? 'pass' : r.status === 'partial' ? 'warn' : 'fail';
       var note = r.quote || r.missingDetail || '';
-      var targets = SCAN_ID_TO_A28[r.id];
+      var targets = r.a28 ? [r.a28] : SCAN_ID_TO_A28[r.id];
       if (targets) {
         targets.forEach(function(a28Id) {
           if (!a28Grouped[a28Id]) a28Grouped[a28Id] = [];
@@ -2703,9 +2759,6 @@ function getName(f) {
 function escH(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 function escJ(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
-</script>
-</body>
-</html>
 function vendorAssuranceHtml(f, name) {
   var intel = parseJSON(f.IntelligenceJson, null);
   var bd = parseJSON(f.ScoreBreakdownJson, null);
@@ -2718,7 +2771,7 @@ function vendorAssuranceHtml(f, name) {
   html += '<div><div style="font-size:14px;font-weight:700">Vendor assurance</div><div style="font-size:11px;color:var(--mu)">Due diligence on the company itself \u2014 separate from how you use it'+(intel && intel.confidence ? ' \u00b7 confidence: '+escH(intel.confidence) : '')+'</div></div></div>';
   if (bd) {
     html += '<div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px">';
-    [['dpa','Agreement'],['icoRegister','ICO Register'],['enforcement','Enforcement'],['transfers','Transfers'],['freshness','Freshness'],['certifications','Certifications']].forEach(function(c){
+    [['dpa','Agreement'],['enforcement','Enforcement'],['transfers','UK transfers'],['freshness','Freshness'],['certifications','Certifications']].forEach(function(c){
       var it = bd[c[0]]; if (!it) return;
       var pct = it.max ? Math.round(it.score/it.max*100) : 0;
       var col = pct>=80 ? 'var(--g)' : pct>=50 ? 'var(--y)' : 'var(--r)';
@@ -2731,7 +2784,7 @@ function vendorAssuranceHtml(f, name) {
   }
   if (intel && intel.findings && intel.findings.length) {
     var typeLabels = { verified:'Verified', vendor_documented:'Vendor documentation', public_source:'Public source', ai_assessment:'AI assessment', not_available:'Not available' };
-    var pills = { passed:['pg','Passed'], needs_attention:['py','Needs attention'], not_evidenced:['pr','Not evidenced'] };
+    var pills = { passed:['pg','Passed'], needs_attention:['py','Needs attention'], not_evidenced:['pr','Not evidenced'], info:['pmu','For information'] };
     html += '<div style="padding:4px 20px 14px">';
     intel.findings.forEach(function(fd){
       var p = pills[fd.status] || ['pmu','Not checked'];
@@ -2746,3 +2799,7 @@ function vendorAssuranceHtml(f, name) {
   }
   return html + '</div>';
 }
+
+</script>
+</body>
+</html>

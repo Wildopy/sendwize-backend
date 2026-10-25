@@ -1,5 +1,12 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — dpa-scan.js v1.3
+// SENDWIZE — dpa-scan.js v1.4
+//
+// v1.4: checks moved to _processor-rules.js and corrected against Article
+//   28: (e) and (f) checked separately, plus 28(4) sub-processor flow-down
+//   and the duty to flag infringing instructions. A UK transfer tool (IDTA,
+//   UK Addendum, UK-US Data Bridge, BCRs) is now needed for a pass; EU
+//   SCCs or EU-US DPF alone count as partial. Each result carries `a28`,
+//   the register clause card it feeds.
 //
 // v1.3 (security): request authenticated via _auth.js; the verified member
 //   id replaces any userId from the browser. vendorRegisterId must belong
@@ -23,6 +30,7 @@ import { claudeFetch } from './_claude.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { fetchPage } from './_page-scan.js';
+import { runArticle28Checks } from './_processor-rules.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const SCRAPE_TIMEOUT_MS = 10000;
@@ -30,116 +38,8 @@ const SCRAPE_MAX_CHARS  = 40000;
 const SCRAPE_UA = 'Mozilla/5.0 (compatible; SendwizeComplianceBot/1.0; +https://sendwize.com/bot)';
 const PDF_MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
-const CHECKS = [
-  {
-    id: 'subject_matter_duration',
-    label: 'Subject matter and duration of processing',
-    articleRef: 'UK GDPR Article 28(3) preamble',
-    strict: [/subject[\s-]?matter[\s\S]{0,300}(process|agreement)/i, /duration of (the |this )?(processing|agreement)/i],
-    weak: [/term of (the |this )?(agreement|dpa)/i, /scope of (the )?processing/i],
-    severity: 'high',
-    missingDetail: 'UK GDPR Article 28(3) requires the DPA to define the subject matter and duration of the processing. Without this, the scope of the vendor\u2019s permitted processing is unclear \u2014 the ICO flags this as a foundational gap in Article 28 enforcement decisions.',
-  },
-  {
-    id: 'nature_purpose',
-    label: 'Nature and purpose of processing',
-    articleRef: 'UK GDPR Article 28(3) preamble',
-    strict: [/nature and purpose/i, /purpose of (the )?processing/i],
-    weak: [/processing (activities|purposes) (include|are)/i, /purpose[s]?[\s\S]{0,200}process/i],
-    severity: 'high',
-    missingDetail: 'UK GDPR Article 28(3) requires the DPA to define the nature and purpose of processing. Without this, there is no contractual limit on how the vendor uses your data.',
-  },
-  {
-    id: 'personal_data_types',
-    label: 'Types of personal data processed',
-    articleRef: 'UK GDPR Article 28(3) preamble',
-    strict: [/categor(y|ies) of personal data/i, /types? of personal data/i],
-    weak: [/personal data (processed|includes|comprises)/i, /(email address|contact details|behavioural data)[\s\S]{0,150}process/i],
-    severity: 'medium',
-    missingDetail: 'UK GDPR Article 28(3) requires the DPA to specify the types of personal data processed. Without this, you cannot demonstrate what data has been shared with the vendor if asked.',
-  },
-  {
-    id: 'data_subjects',
-    label: 'Categories of data subjects',
-    articleRef: 'UK GDPR Article 28(3) preamble',
-    strict: [/categor(y|ies) of data subjects/i, /data subjects (include|are|comprise)/i],
-    weak: [/individuals whose (personal )?data/i, /(customers|subscribers|end users)[\s\S]{0,100}personal data/i],
-    severity: 'medium',
-    missingDetail: 'UK GDPR Article 28(3) requires the DPA to identify categories of data subjects. Without this, the DPA cannot be scoped to a specific relationship.',
-  },
-  {
-    id: 'documented_instructions',
-    label: 'Processing on documented controller instructions',
-    articleRef: 'UK GDPR Article 28(3)(a)',
-    strict: [/(documented|written) instructions/i, /(on |per )(the )?controller['s]{0,2} instructions/i, /only.{0,80}process.{0,80}instructions/i],
-    weak: [/instructions from the controller/i, /controller'?s? instructions/i],
-    severity: 'high',
-    missingDetail: 'UK GDPR Article 28(3)(a) requires the processor to process personal data only on documented instructions from the controller. Absence of this clause is one of the most-cited Article 28 gaps in ICO enforcement.',
-  },
-  {
-    id: 'confidentiality',
-    label: 'Confidentiality commitments from personnel',
-    articleRef: 'UK GDPR Article 28(3)(b)',
-    strict: [/confidentiality (obligation|undertaking|commitment|agreement)/i, /(authorised|authorized) (persons|personnel)[\s\S]{0,150}confiden/i, /bound by (a )?duty of confiden/i],
-    weak: [/confidentiality/i, /confidential (information|obligations)/i],
-    severity: 'medium',
-    missingDetail: 'UK GDPR Article 28(3)(b) requires the processor to ensure that persons authorised to process the data are committed to confidentiality. Without an explicit clause, you have no contractual guarantee vendor staff are bound.',
-  },
-  {
-    id: 'security_measures',
-    label: 'Security measures (Article 32)',
-    articleRef: 'UK GDPR Articles 28(3)(c) and 32',
-    strict: [/article 32/i, /technical and organi(s|z)ational (measures|safeguards)/i],
-    weak: [/appropriate security measures/i, /security safeguards/i, /encryption[\s\S]{0,100}(rest|transit)/i],
-    severity: 'high',
-    missingDetail: 'UK GDPR Article 28(3)(c) requires the processor to take all measures required by Article 32 (security of processing). Missing this clause is a serious Article 28 gap.',
-  },
-  {
-    id: 'sub_processors',
-    label: 'Sub-processor engagement rules',
-    articleRef: 'UK GDPR Article 28(3)(d) and 28(2)',
-    strict: [/sub[\s-]?processor[s]?/i, /(prior |written )(authorisation|authorization|consent)[\s\S]{0,150}(engage|appoint|use)[\s\S]{0,50}(third|another) party/i],
-    weak: [/further processors/i, /third[\s-]?party (processors|providers)/i, /sub[\s-]?contract/i],
-    severity: 'high',
-    missingDetail: 'UK GDPR Article 28(2) and 28(3)(d) require processors to obtain prior authorisation before engaging sub-processors, and to flow down equivalent obligations. Without this clause you have no visibility or control over who else touches your data.',
-  },
-  {
-    id: 'controller_assistance',
-    label: 'Assistance to controller (data subject rights + security)',
-    articleRef: 'UK GDPR Articles 28(3)(e) and 28(3)(f)',
-    strict: [/assist.{0,150}(controller|customer).{0,150}(data subject|individual|access|erasure|rectification|portability|breach)/i, /reasonable assistance/i],
-    weak: [/support (the |our )?controller/i, /co[\s-]?operate with (the )?controller/i, /(respond|responding) to (data subject|access) requests/i],
-    severity: 'medium',
-    missingDetail: 'UK GDPR Articles 28(3)(e) and 28(3)(f) require the processor to assist you with responding to data subject rights requests and with security, breach and DPIA obligations. Without this clause you may be unable to meet ICO response deadlines when a request arrives.',
-  },
-  {
-    id: 'deletion_or_return',
-    label: 'Deletion or return of data on termination',
-    articleRef: 'UK GDPR Article 28(3)(g)',
-    strict: [/(delete|destroy|return)[\s\S]{0,200}(after|upon|on)[\s\S]{0,50}(end|termination|expir)/i, /(end|termination|expir)[\s\S]{0,150}(delete|destroy|return)[\s\S]{0,50}(personal )?data/i],
-    weak: [/(delete|erase|destroy).{0,100}personal data/i, /end of (the |this )?(agreement|processing|services)/i],
-    severity: 'medium',
-    missingDetail: 'UK GDPR Article 28(3)(g) requires the processor to delete or return all personal data at the end of the services. Without this clause data can persist indefinitely with the vendor after termination.',
-  },
-  {
-    id: 'audit_rights',
-    label: 'Audit and inspection rights',
-    articleRef: 'UK GDPR Article 28(3)(h)',
-    strict: [/right to audit/i, /audit rights/i, /(audit|inspection)[\s\S]{0,150}(controller|customer|reasonable)/i, /make available[\s\S]{0,150}(demonstrate|compliance)/i],
-    weak: [/audit/i, /inspection/i],
-    severity: 'medium',
-    missingDetail: 'UK GDPR Article 28(3)(h) requires the processor to make available all information necessary to demonstrate compliance and to allow for audits. Without this you cannot verify the vendor is doing what they claim.',
-  },
-  {
-    id: 'transfer_mechanism',
-    label: 'International transfer mechanism',
-    articleRef: 'UK GDPR Chapter V',
-    strict: [/Standard Contractual Clauses|SCC[s]?\b/i, /IDTA|International Data Transfer Agreement/i, /UK[\s-]?US Data Bridge/i, /Data Privacy Framework|EU[\s-]?US DPF/i, /adequacy (decision|regulations)/i, /Binding Corporate Rules|BCRs?/i],
-    weak: [/international (data )?transfer/i, /transfer.{0,100}outside (the )?(UK|EEA|European)/i],
-    severity: 'critical',
-    missingDetail: 'UK GDPR Chapter V requires a lawful transfer mechanism (SCCs, UK IDTA, UK-US Data Bridge, adequacy decision, or BCRs) for any personal data transferred outside the UK. Without an identifiable mechanism the transfer is unlawful \u2014 this is a per-se breach the ICO can act on without needing to show harm.',
-  },
-];
+// v1.4: the Article 28 checks live in _processor-rules.js (shared with
+// the register and vendor monitor).
 
 // ── scrapePolicy ──────────────────────────────────────────────
 async function scrapePolicy(url) {
@@ -208,30 +108,6 @@ async function extractTextFromPdf(pdfBase64) {
   const text = data.content?.find(b => b.type === 'text')?.text || '';
   if (text.length < 500) return null;
   return text.slice(0, SCRAPE_MAX_CHARS);
-}
-
-// ── runChecks ─────────────────────────────────────────────────
-function runChecks(text) {
-  const results = [];
-  for (const check of CHECKS) {
-    let status = 'missing';
-    let matchIndex = -1;
-    for (const p of check.strict) {
-      const m = text.match(p);
-      if (m) { status = 'found'; matchIndex = m.index; break; }
-    }
-    if (status === 'missing') {
-      for (const p of check.weak) {
-        const m = text.match(p);
-        if (m) { status = 'partial'; matchIndex = m.index; break; }
-      }
-    }
-    results.push({
-      id: check.id, label: check.label, articleRef: check.articleRef,
-      severity: check.severity, status, matchIndex, missingDetail: check.missingDetail,
-    });
-  }
-  return results;
 }
 
 // ── extractQuotesWithAI ───────────────────────────────────────
@@ -462,7 +338,7 @@ export default async function handler(req, res) {
     }
 
     // 2. Run deterministic checks
-    const results = runChecks(text);
+    const results = runArticle28Checks(text);
 
     // 3. AI quote extraction for found/partial
     const quotes = await extractQuotesWithAI(text, results);
@@ -489,7 +365,7 @@ export default async function handler(req, res) {
       success: true, scanRecordId, vendorName, score,
       counts: { found: foundCount, partial: partialCount, missing: missingCount, total: results.length },
       results,
-      disclaimer: 'Sendwize checked this document against UK GDPR Article 28(3) and Chapter V requirements. This is a factual gap check, not legal advice. Not all clauses may be present in this exact wording in every valid DPA \u2014 consult your legal counsel if in doubt.',
+      disclaimer: 'Sendwize checked this document against UK GDPR Article 28(2)-(4) and Chapter V requirements. This is a factual gap check, not legal advice. Not all clauses may be present in this exact wording in every valid DPA \u2014 consult your legal counsel if in doubt.',
     });
 
   } catch (error) {
