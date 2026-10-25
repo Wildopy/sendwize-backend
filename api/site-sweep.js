@@ -1,5 +1,9 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — site-sweep.js v1.1
+// SENDWIZE — site-sweep.js v1.2
+// v1.2: each sweep records `trackers` (one entry per vendor: fired before
+// consent, seen in source) and passes them to the Commercial Relationships
+// register (data.js sweep-trackers), which marks the matching vendors'
+// cookie checks with verified evidence.
 // v1.1: every request authenticated via _auth.js (verified member id
 // replaces any userId from the browser); internal calls carry the secret.
 //
@@ -49,6 +53,7 @@ import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { fetchPage, extractSignals, extractLinks, isSafePublicUrl, resolvesPublic } from './_page-scan.js';
+import { sweepTrackers } from './_processor-rules.js';
 
 const APP_URL       = 'https://sendwize-backend.vercel.app';
 const TABLE         = 'Site_Sweeps';
@@ -151,8 +156,31 @@ function publicView(record) {
     lastSweptAt: f.LastSweptAt || null,
     runCount: f.RunCount || 0,
     siteScore: typeof f.SiteScore === 'number' ? f.SiteScore : null,
-    sweep: safeJson(f.SweepJson, null),
+    sweep: withTrackers(safeJson(f.SweepJson, null)),
   };
+}
+
+// Sweeps saved before v1.2 have no `trackers`: rebuild them from the
+// tracker names (seen only, since the live-test detail was not kept)
+function withTrackers(sweep) {
+  if (!sweep || Array.isArray(sweep.trackers)) return sweep;
+  return { ...sweep, trackers: sweepTrackers({ seenInSource: sweep.thirdParties || [] }) };
+}
+
+// Tell the register which trackers the sweep found, so vendors there get
+// verified evidence on their cookie checks. Non-fatal.
+async function syncRegister(userId, domain, sweep) {
+  try {
+    const r = await fetch(`${APP_URL}/api/data?action=sweep-trackers`, {
+      method: 'POST', headers: internalHeaders(),
+      body: JSON.stringify({ userId, domain, sweptAt: sweep.completedAt, trackers: sweep.trackers || [] }),
+    });
+    if (!r.ok) throw new Error(`data ${r.status}`);
+    return await r.json();
+  } catch (e) {
+    console.error('Register sync failed (non-fatal):', e.message);
+    return null;
+  }
 }
 
 // ── Verification ──────────────────────────────────────────────
@@ -462,7 +490,10 @@ export function evaluateSite({ domain, pages, browser }) {
   const totals = { findings: findings.length, high: 0, medium: 0, low: 0 };
   for (const x of findings) totals[x.severity]++;
 
-  return { findings, notes, thirdParties, score, breakdown, totals };
+  // Per-vendor tracker evidence for the Commercial Relationships register
+  const trackers = sweepTrackers({ seenInSource: staticTrackers, firedBeforeConsent: browserTrackers, browserTested: browser?.status === 'ok' });
+
+  return { findings, notes, thirdParties, trackers, score, breakdown, totals };
 }
 
 // ── Sweep orchestration ───────────────────────────────────────
@@ -620,6 +651,9 @@ async function handleRun(req, res) {
   const fixKeys = safeJson(f.FixKeysJson, {});
   const emitted = await emitNewFixes({ userId, domain, recordId: record.id, findings: sweep.findings, fixKeys });
   sweep.fixesAdded = emitted.filter(e => e.status === 'created').length;
+
+  const sync = await syncRegister(userId, domain, sweep);
+  if (sync) sweep.registerSync = { vendorsUpdated: sync.updated || 0, notInRegister: sync.notInRegister || [] };
 
   let sweepJson = JSON.stringify(sweep);
   if (sweepJson.length > 95000) sweepJson = JSON.stringify({ ...sweep, pages: sweep.pages.slice(0, MAX_PAGES), truncated: true });

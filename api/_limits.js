@@ -17,7 +17,7 @@
 
 const DEFAULT_LIMITS = {
   copy_scan:      60,  // AI Scanner, Campaign Defence copy checks
-  vendor_check:   30,  // check-vendors, vendor intelligence
+  vendor_check:   30,  // vendor intelligence
   dpa_scan:       20,  // DPA reader (URL or PDF)
   site_sweep:     10,  // full site sweeps
   campaign_build: 30,  // Campaign Defence assemble / page scans

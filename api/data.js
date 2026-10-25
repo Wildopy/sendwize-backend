@@ -1,6 +1,15 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.7
+// SENDWIZE — data.js v7.8
 // Commercial Relationships & Risk Register
+//
+// v7.8 changes (processor rules, see _processor-rules.js):
+//   + Transfers scored on the UK position: the EEA and other UK-adequate
+//     countries pass; EU SCCs or EU-US DPF without the UK Addendum, IDTA
+//     or UK Extension are flagged. Replaces isUKOnly().
+//   + ICO registration is information only, no longer 15 score points
+//     (the ICO fee is paid by controllers, not processors). AI web-search
+//     findings are labelled ai_assessment, never verified.
+//   + Analytics consent check reflects the DUAA 2025 statistics exemption.
 //
 // v7.7 changes:
 //   + send-alert and backfill-processor-fixes are internal-only. A
@@ -49,6 +58,7 @@
 import { claudeFetch } from './_claude.js';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
+import { transferPosition, ICO_REGISTER_NOTE, sweepTrackers, trackerMatchesVendor, applySweepEvidence } from './_processor-rules.js';
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
 const RESEND_FROM = 'alerts@sendwize.co.uk';
@@ -241,7 +251,7 @@ async function prefillFromKnownVendor(base, vendorName, fields) {
     findings: [],
   };
   if (k.ICORegistered === 'Yes' || (k.ICORegistered || '').startsWith('Yes')) {
-    intel.findings.push({ finding: 'Registered with the ICO', evidence: 'ICO Data Protection Register — registration ' + (k.ICORegistrationNumber || 'confirmed'), type: 'verified', status: 'passed' });
+    intel.findings.push({ finding: 'Registered with the ICO', evidence: 'ICO Data Protection Register — registration ' + (k.ICORegistrationNumber || 'confirmed') + '. ' + ICO_REGISTER_NOTE, type: 'verified', status: 'info' });
   }
   if (k.DPAStatus === 'Confirmed') {
     intel.findings.push({ finding: 'Data Processing Agreement available', evidence: k.PrivacyPolicyUrl || 'Vendor documentation', type: 'vendor_documented', status: 'passed' });
@@ -251,10 +261,10 @@ async function prefillFromKnownVendor(base, vendorName, fields) {
   } else {
     intel.findings.push({ finding: 'No relevant breach history identified', evidence: 'Public disclosure review — no incidents found in sources reviewed', type: 'public_source', status: 'passed' });
   }
-  if (k.TransferMechanism || k.TransferMechanismConfirmed) {
+  if (k.TransferMechanism || k.TransferMechanismConfirmed || k.TransferDestination) {
     const dest = k.TransferDestination || fields.TransferDestination || '';
-    const isUK = dest.toLowerCase().includes('uk') && !dest.toLowerCase().includes('us');
-    intel.findings.push({ finding: 'International transfer mechanism documented', evidence: (k.TransferMechanism || k.TransferMechanismConfirmed) + (dest ? ' — data held in ' + dest : ''), type: 'vendor_documented', status: isUK ? 'passed' : 'needs_attention' });
+    const t = transferPosition({ destination: dest, mechanism: k.TransferMechanism || k.TransferMechanismConfirmed, intlTransferOccurs: k.IntlTransferOccurs });
+    intel.findings.push({ finding: 'UK transfer position: ' + t.label, evidence: (t.detail ? t.detail + ' ' : '') + (dest ? 'Data held in ' + dest + '.' : ''), type: 'vendor_documented', status: t.ok ? 'passed' : 'needs_attention' });
   }
   if (k.Certifications) {
     intel.findings.push({ finding: 'Security certifications held', evidence: k.Certifications, type: 'vendor_documented', status: 'passed' });
@@ -275,7 +285,7 @@ async function assessUnknownVendor(vendorName, fields) {
       body: JSON.stringify({
         max_tokens: 1200,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: `Research the company "${vendorName}" as a marketing/data technology vendor used by UK businesses. Find:\n1. Their correct legal entity name\n2. ICO Data Protection Register entry (registration number if found)\n3. Whether they publish a Data Processing Agreement / DPA (find the URL)\n4. Where they store/process data (countries)\n5. Transfer mechanisms (SCCs, BCRs, EU-US DPF)\n6. Any known data breaches or security incidents\n7. Security certifications (SOC 2, ISO 27001, etc)\n8. Any ICO, ASA, or CMA enforcement actions against them\n\nReturn ONLY a JSON object with these exact keys:\n{"vendorLegalName":"","icoRegistered":"Yes|No|Unknown","icoRegistrationNumber":"","dpaUrl":"","transferDestination":"","transferMechanism":"","breachHistory":"None publicly disclosed.|description if found","certifications":"","enforcementHistory":"None identified in sources reviewed.|description if found","confidence":"high|medium|low"}\nNo other text.` }],
+        messages: [{ role: 'user', content: `Research the company "${vendorName}" as a marketing/data technology vendor used by UK businesses. Find:\n1. Their correct legal entity name\n2. ICO Data Protection Register entry (registration number if found)\n3. Whether they publish a Data Processing Agreement / DPA (find the URL)\n4. Where they store/process data (countries)\n5. The UK transfer tool they use for UK customer data (ICO IDTA, UK Addendum to the EU SCCs, UK Extension to the Data Privacy Framework, BCRs). Say exactly what they name; EU SCCs or EU-US DPF without a UK tool is not enough\n6. Any known data breaches or security incidents\n7. Security certifications (SOC 2, ISO 27001, etc)\n8. Any ICO, ASA, or CMA enforcement actions against them\n\nReturn ONLY a JSON object with these exact keys:\n{"vendorLegalName":"","icoRegistered":"Yes|No|Unknown","icoRegistrationNumber":"","dpaUrl":"","transferDestination":"","transferMechanism":"","breachHistory":"None publicly disclosed.|description if found","certifications":"","enforcementHistory":"None identified in sources reviewed.|description if found","confidence":"high|medium|low"}\nNo other text.` }],
       }),
     }), 20000);
     if (!r.ok) return fields;
@@ -300,12 +310,12 @@ async function assessUnknownVendor(vendorName, fields) {
       confidence: result.confidence || 'medium',
       findings: [],
     };
+    // ICO registration is information only (processors do not pay the ICO fee),
+    // and this came from AI web search, so it is labelled as an AI assessment.
     if (result.icoRegistered === 'Yes') {
-      intel.findings.push({ finding: 'Registered with the ICO', evidence: 'ICO Data Protection Register' + (result.icoRegistrationNumber ? ' — ' + result.icoRegistrationNumber : ''), type: 'verified', status: 'passed' });
-    } else if (result.icoRegistered === 'No') {
-      intel.findings.push({ finding: 'Not found on ICO register', evidence: 'Searched ICO Data Protection Register — no matching entry. May be registered under a parent entity.', type: 'verified', status: 'needs_attention' });
+      intel.findings.push({ finding: 'Appears on the ICO register', evidence: 'ICO Data Protection Register' + (result.icoRegistrationNumber ? ' — ' + result.icoRegistrationNumber : '') + '. ' + ICO_REGISTER_NOTE, type: 'ai_assessment', status: 'info' });
     } else {
-      intel.findings.push({ finding: 'ICO registration status not confirmed', evidence: 'Could not verify — check ICO register directly', type: 'not_available', status: 'needs_attention' });
+      intel.findings.push({ finding: result.icoRegistered === 'No' ? 'Not found on the ICO register' : 'ICO registration not confirmed', evidence: ICO_REGISTER_NOTE + ' It only matters if this vendor also uses your data for its own purposes.', type: 'ai_assessment', status: 'info' });
     }
     if (result.dpaUrl) {
       intel.findings.push({ finding: 'DPA documentation found', evidence: result.dpaUrl, type: 'vendor_documented', status: 'passed' });
@@ -319,7 +329,8 @@ async function assessUnknownVendor(vendorName, fields) {
       intel.findings.push({ finding: 'No relevant breach history identified', evidence: 'No publicly disclosed incidents found in sources reviewed', type: 'public_source', status: 'passed' });
     }
     if (result.transferDestination) {
-      intel.findings.push({ finding: 'Data processing location identified', evidence: result.transferDestination + (result.transferMechanism ? ' — ' + result.transferMechanism : ''), type: result.confidence === 'high' ? 'vendor_documented' : 'ai_assessment', status: 'passed' });
+      const t = transferPosition({ destination: result.transferDestination, mechanism: result.transferMechanism });
+      intel.findings.push({ finding: 'UK transfer position: ' + t.label, evidence: result.transferDestination + (result.transferMechanism ? ' — ' + result.transferMechanism : '') + (t.detail ? '. ' + t.detail : ''), type: 'ai_assessment', status: t.ok ? 'passed' : 'needs_attention' });
       if (!fields.TransferDestination) fields.TransferDestination = result.transferDestination;
     }
     if (result.certifications) {
@@ -371,7 +382,7 @@ const MARKETING_CHECKS = {
     { id: 'crm_retention', label: 'Old consent reviewed', question: 'Do you review or remove contacts whose consent is old or who have not engaged for a long time?', rule: 'UK GDPR Art 5(1)(e)', regulator: 'ICO', severity: 'medium', fixType: 'stale_consent_data' },
   ],
   analytics: [
-    { id: 'an_prior_consent', label: 'Tags load only after consent', question: 'Do this tool\'s cookies or tags load only after the visitor opts in, not on page load?', rule: 'PECR Reg 6', regulator: 'ICO', severity: 'critical', fixType: 'tracking_without_consent' },
+    { id: 'an_prior_consent', label: 'Tags load only after consent (or exempt)', question: 'Do this tool\'s cookies or tags load only after the visitor opts in? Analytics used only to measure and improve your own site can be exempt from consent if visitors are told about it and given a simple, free way to object. Anything used for advertising or profiling still needs opt-in.', rule: 'PECR Reg 6 and Sch A1 (as amended by DUAA 2025 s.112)', regulator: 'ICO', severity: 'critical', fixType: 'tracking_without_consent' },
     { id: 'an_reject', label: 'Reject as easy as accept', question: 'Can visitors refuse non-essential cookies as easily as accepting them, on the first screen?', rule: 'PECR Reg 6 · ICO cookie guidance', regulator: 'ICO', severity: 'high', fixType: 'reject_not_equal' },
     { id: 'an_disclosed', label: 'Named in cookie notice', question: 'Is this tool named in your cookie or privacy notice, with its purpose?', rule: 'PECR Reg 6(2) · UK GDPR Art 13', regulator: 'ICO', severity: 'medium', fixType: 'cookie_not_disclosed' },
   ],
@@ -447,27 +458,20 @@ function buildScoreBreakdown(intel, fields = {}) {
   const dpaStatus = fields.DPAStatus || fields.AgreementStatus || intel.dpaStatus || 'Unknown';
   const dpaConfirmed = DPA_CONFIRMED.includes(dpaStatus) || intel.dpaStatus === 'Confirmed';
   const enforcement = hasRelevantEnforcement(intel);
-  const ukOnly = isUKOnly(intel.transferDestination);
-  const icoYes = intel.icoRegistered === 'Yes' || (intel.icoRegistered || '').startsWith('Yes');
+  const transfer = transferPosition({ destination: intel.transferDestination || fields.TransferDestination, mechanism: intel.transferMechanism });
   const days = intel.lastChecked ? Math.floor((Date.now() - new Date(intel.lastChecked)) / 86400000) : 999;
   return {
-    dpa:            { max: 30, score: dpaConfirmed ? 30 : intel.dpaUrl ? 20 : 0, label: dpaConfirmed ? 'Confirmed' : intel.dpaUrl ? 'Available but not confirmed' : 'Not found' },
-    icoRegister:    { max: 15, score: icoYes ? 15 : 0, label: intel.icoRegistered || 'Unknown' },
+    // v7.8: ICO registration no longer scored (the fee is paid by controllers,
+    // not processors); its 15 points moved to the agreement and transfers.
+    dpa:            { max: 35, score: dpaConfirmed ? 35 : intel.dpaUrl ? 23 : 0, label: dpaConfirmed ? 'Confirmed' : intel.dpaUrl ? 'Available but not confirmed' : 'Not found' },
     enforcement:    { max: 20, score: enforcement ? 5 : 20, label: enforcement ? 'Relevant history found' : 'No relevant actions identified' },
-    transfers:      { max: 15, score: ukOnly ? 15 : intel.transferMechanism ? 12 : 0, label: ukOnly ? 'UK-based — no transfer' : intel.transferMechanism || 'Not documented' },
+    transfers:      { max: 25, score: transfer.ok ? 25 : transfer.status === 'needs_uk_tool' ? 12 : transfer.status === 'unknown' ? 8 : 0, label: transfer.label },
     freshness:      { max: 10, score: days <= 90 ? 10 : days <= 180 ? 6 : 2, label: days <= 90 ? 'Current' : days <= 180 ? 'Review recommended' : 'Stale' },
     certifications: { max: 10, score: intel.certifications ? 10 : 0, label: intel.certifications || 'None identified' },
   };
 }
 
 function safeJSON(s, fallback) { try { return s ? JSON.parse(s) : fallback; } catch { return fallback; } }
-
-function isUKOnly(dest) {
-  const d = (dest || '').toLowerCase();
-  const uk = /\b(uk|united kingdom|great britain|england|scotland|wales)\b/.test(d);
-  const elsewhere = /\b(us|usa|united states|eu|eea|europe|ireland|germany|france|netherlands|india|australia|canada|global|worldwide|international)\b/.test(d);
-  return uk && !elsewhere;
-}
 
 function hasRelevantEnforcement(intel) {
   if ((intel.enforcementRelevant || []).length) return true;
@@ -741,6 +745,25 @@ async function handleRegister(req, res) {
       } catch (e) { console.error('Enforcement check non-fatal:', e); }
     }
 
+    // v7.8: a new vendor picks up the latest Site Sweep evidence for its trackers
+    if (!recordId && vendor.VendorName) {
+      try {
+        const sweep = await latestSweep(base, userId);
+        const tracker = sweep?.trackers.find(t => trackerMatchesVendor(t, vendor.VendorName));
+        if (tracker) {
+          const category = fields.Category && MARKETING_CHECKS[fields.Category] ? fields.Category : normaliseCategory(fields.VendorType, fields.VendorName);
+          const mc = { category, checks: {} };
+          const checks = applySweepEvidence(mc, tracker, sweep);
+          if (checks) {
+            mc.checks = checks;
+            fields.MarketingChecksJson = JSON.stringify(mc);
+            fields.MarketingScore = calculateMarketingScore(category, checks);
+            fields.Category = category;
+          }
+        }
+      } catch (e) { console.error('Site Sweep evidence non-fatal:', e); }
+    }
+
     try {
       const record = recordId
         ? await atPatch(base, 'Vendor_Register', recordId, fields)
@@ -769,6 +792,50 @@ async function handleRegister(req, res) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+}
+
+// ── Site Sweep evidence (v7.8) ────────────────────────────────
+// The member's most recent sweep that found anything, as
+// { domain, sweptAt, trackers }.
+async function latestSweep(base, userId) {
+  const recs = await atGet(base, 'Site_Sweeps', `{UserID}='${userId}'`, 'sort[0][field]=LastSweptAt&sort[0][direction]=desc', 5).catch(() => []);
+  for (const r of recs) {
+    const sw = safeJSON(r.fields.SweepJson, null);
+    if (!sw) continue;
+    const trackers = Array.isArray(sw.trackers) ? sw.trackers : sweepTrackers({ seenInSource: sw.thirdParties || [] });
+    return { domain: r.fields.Domain || sw.domain, sweptAt: sw.completedAt || r.fields.LastSweptAt, trackers };
+  }
+  return null;
+}
+
+// SWEEP-TRACKERS (internal, called by site-sweep.js after a run).
+// Writes verified evidence onto the cookie check of every register vendor
+// a tracker matches. No fixes are created here: Site Sweep already raised
+// the site-wide cookie fix.
+async function handleSweepTrackers(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const { userId, domain, sweptAt, trackers } = req.body || {};
+  if (!userId || !Array.isArray(trackers)) return res.status(400).json({ error: 'userId and trackers required' });
+  const base = airtableBase();
+  const processors = await atGet(base, 'Vendor_Register', `{UserID}='${userId}'`, '', 100).catch(() => []);
+  let updated = 0;
+  const matched = new Set();
+  for (const r of processors) {
+    const tracker = trackers.find(t => trackerMatchesVendor(t, r.fields.VendorName));
+    if (!tracker) continue;
+    matched.add(tracker.vendor);
+    const mc = safeJSON(r.fields.MarketingChecksJson, null)
+      || { category: r.fields.Category || normaliseCategory(r.fields.VendorType, r.fields.VendorName), checks: {} };
+    if (!MARKETING_CHECKS[mc.category]) mc.category = 'other';
+    const checks = applySweepEvidence(mc, tracker, { domain, sweptAt });
+    if (!checks) continue;
+    mc.checks = checks;
+    try {
+      await atPatch(base, 'Vendor_Register', r.id, { MarketingChecksJson: JSON.stringify(mc), MarketingScore: calculateMarketingScore(mc.category, checks), Category: mc.category });
+      updated++;
+    } catch (e) { console.error(`Sweep evidence patch failed for ${r.fields.VendorName}:`, e.message); }
+  }
+  return res.json({ updated, notInRegister: trackers.filter(t => !matched.has(t.vendor)).map(t => t.vendor) });
 }
 
 // ── BACKFILL-PROCESSOR-FIXES handler ─────────────────────────
@@ -1713,7 +1780,7 @@ async function handleDossierToggleMonitoring(req, res) {
 // Reference data with no customer information
 const PUBLIC_ACTIONS = ['vendors', 'violations', 'cron-status'];
 // Server-to-server only: never callable from a browser
-const INTERNAL_ACTIONS = ['send-alert', 'backfill-processor-fixes'];
+const INTERNAL_ACTIONS = ['send-alert', 'backfill-processor-fixes', 'sweep-trackers'];
 
 // Actions that read, update or delete one customer record by id
 const OWNED_RECORD_TABLES = {
@@ -1785,6 +1852,7 @@ export default async function handler(req, res) {
     if (action === 'affiliate-register'      && ['POST','DELETE'].includes(req.method))     return await handleAffiliateRegister(req, res);
     if (action === 'competitor-watch'        && ['POST','DELETE'].includes(req.method))     return await handleCompetitorWatch(req, res);
     if (action === 'backfill-processor-fixes' && req.method === 'POST')                     return await handleBackfillProcessorFixes(req, res);
+    if (action === 'sweep-trackers'           && req.method === 'POST')                     return await handleSweepTrackers(req, res);
     if (action === 'cron-status'              && req.method === 'GET')                      return await handleCronStatus(req, res);
     if (action === 'dossier-toggle-monitoring' && req.method === 'POST')                     return await handleDossierToggleMonitoring(req, res);
     return res.status(400).json({ error: 'Unknown action' });
