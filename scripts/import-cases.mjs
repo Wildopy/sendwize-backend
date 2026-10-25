@@ -194,11 +194,15 @@ async function importCma(held) {
     const oft = date && date < '2014-04-01';
     const outcome = penalty ? null : (CMA_OUTCOME[outcomeType] || '').replace('the CMA', oft ? 'the OFT' : 'the CMA') || null;
     const tagText = `${x.title} ${x.description} ${body.slice(0, 1500)}`;
-    const types = [...new Set([...textTypes(tagText), ...(/\bmisleading\b/i.test(tagText) ? ['misleading_claim'] : [])])];
+    const types = [...new Set([...textTypes(tagText), ...(/misleading (advertising|ads?\b|claims?|marketing|practices|statements|information|descriptions?|promotions?)/i.test(tagText) ? ['misleading_claim'] : [])])];
+    // Older cases carry a stock description; the title after the colon says what the case was about
+    const about = x.title.split(':').slice(1).join(':').trim();
+    const summary = /^(Office of Fair Trading \(OFT\) closed|Five closed Office of Fair Trading|Competition and Markets Authority \(CMA\) open consumer enforcement case)/.test(x.description || '') && about
+      ? about[0].toUpperCase() + about.slice(1) + '.' : x.description;
     const c = {
       id: `cma_${slug(name)}_${(date || x.opened_date || '').slice(0, 4)}`, ...base, match: matchFor(name), date, penalty, outcome,
       law: 'Consumer protection law', volume: null, refunds: null, sector: cmaSector(x.market_sector),
-      summary: x.description, types, evidence: { outcome_type: outcomeType || null, case_state: x.case_state, penalty_sentence: pm ? pm[0] : null },
+      summary, types, evidence: { outcome_type: outcomeType || null, case_state: x.case_state, penalty_sentence: pm ? pm[0] : null },
     };
     if (!penalty && !outcome) { held.push({ ...c, reason: 'no outcome published yet (open investigation, no finding made)' }); return; }
     if (!date) { held.push({ ...c, reason: 'no decision date in the record' }); return; }
