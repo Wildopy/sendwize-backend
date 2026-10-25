@@ -1,19 +1,19 @@
 {
- "generated": "2026-10-25T18:08:46.285Z",
+ "generated": "2026-10-25T18:19:00.679Z",
  "note": "Imported from regulator records. Not live: cases reach the product only once approved in data/case-approvals.json and published.",
  "counts": {
   "ready": {
    "ASA": 938,
-   "CMA": 33,
-   "ICO": 210
+   "CMA": 31,
+   "ICO": 205
   },
   "held": {
    "ASA": 432,
    "CMA": 67,
-   "ICO": 11
+   "ICO": 14
   }
  },
- "alreadyInLibrary": 26,
+ "alreadyInLibrary": 30,
  "asaYears": [
   {
    "year": 2008,
@@ -118,7 +118,10 @@
   "no decision date in the record": 3,
   "no finding-type rule matched the CMA description": 28,
   "register row has no readable date or amount": 2,
-  "no finding-type rule matched the ICO description": 9
+  "register amount £160,000 differs from the fine stated in the same row (£200,000)": 1,
+  "no finding-type rule matched the ICO description": 9,
+  "register amount £30,000 differs from the fine stated in the same row (£30)": 1,
+  "register amount £50,000 differs from the fine stated in the same row (£50)": 1
  },
  "ready": [
   {
@@ -1529,34 +1532,6 @@
    }
   },
   {
-   "id": "asa_higham_miller_coffee_ltd_t_a_exhale_heal_a26-1330390",
-   "regulator": "ASA",
-   "name": "Higham Miller Coffee Ltd t/a Exhale Healthy Coffee",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/higham-miller-coffee-ltd-a26-1330390-higham-miller-coffee-ltd.html",
-   "match": "Higham",
-   "date": "2026-07-22",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad)",
-   "summary": "A paid-for Instagram ad for a coffee company made unauthorised health and nutrition claims and included health claims that referred to the recommendation of an individual health professional.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "15.1",
-     "15.1"
-    ],
-    "topic": "Food, drink and supplements",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_domino_s_pizza_uk_ireland_ltd_t_a_domino_2026",
    "regulator": "ASA",
    "name": "Domino's Pizza UK & Ireland Ltd t/a Domino's",
@@ -1579,6 +1554,34 @@
     "rules": [
      "15.19",
      "30.16"
+    ],
+    "topic": "Food, drink and supplements",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_higham_miller_coffee_ltd_t_a_exhale_heal_a26-1330390",
+   "regulator": "ASA",
+   "name": "Higham Miller Coffee Ltd t/a Exhale Healthy Coffee",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/higham-miller-coffee-ltd-a26-1330390-higham-miller-coffee-ltd.html",
+   "match": "Higham",
+   "date": "2026-07-22",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (paid ad)",
+   "summary": "A paid-for Instagram ad for a coffee company made unauthorised health and nutrition claims and included health claims that referred to the recommendation of an individual health professional.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "15.1",
+     "15.1"
     ],
     "topic": "Food, drink and supplements",
     "decision": "Upheld"
@@ -26097,33 +26100,6 @@
    }
   },
   {
-   "id": "asa_charlotte_dawson_t_a_charlottedawsy_a21-1122943",
-   "regulator": "ASA",
-   "name": "Charlotte Dawson t/a charlottedawsy",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/charlotte-dawson-a21-1122943-charlotte-dawson.html",
-   "match": "Charlotte",
-   "date": "2021-12-22",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (own site)",
-   "summary": "An Instagram reel by Charlotte Dawson was banned for not being obviously identifiable as an ad.",
-   "types": [
-    "undisclosed_ad"
-   ],
-   "evidence": {
-    "rules": [
-     "2.3",
-     "2.1"
-    ],
-    "topic": "Beauty products, grooming and hygiene",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_british_telecommunications_plc_t_a_bt_bt_a21-1109653",
    "regulator": "ASA",
    "name": "British Telecommunications plc t/a BT, BT Sport",
@@ -26151,6 +26127,33 @@
      "3.11"
     ],
     "topic": "Computers, phones and telecoms",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_charlotte_dawson_t_a_charlottedawsy_a21-1122943",
+   "regulator": "ASA",
+   "name": "Charlotte Dawson t/a charlottedawsy",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/charlotte-dawson-a21-1122943-charlotte-dawson.html",
+   "match": "Charlotte",
+   "date": "2021-12-22",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (own site)",
+   "summary": "An Instagram reel by Charlotte Dawson was banned for not being obviously identifiable as an ad.",
+   "types": [
+    "undisclosed_ad"
+   ],
+   "evidence": {
+    "rules": [
+     "2.3",
+     "2.1"
+    ],
+    "topic": "Beauty products, grooming and hygiene",
     "decision": "Upheld"
    }
   },
@@ -27261,32 +27264,6 @@
    }
   },
   {
-   "id": "cma_ticketmaster_2025",
-   "regulator": "CMA",
-   "name": "Ticketmaster",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/ticketmaster-consumer-protection-case",
-   "match": "Ticketmaster",
-   "date": "2025-09-25",
-   "penalty": null,
-   "outcome": "Gave undertakings to the CMA",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) investigated consumer protection concerns regarding the sale of Oasis concert tickets by Ticketmaster UK Ltd (Ticketmaster), including how so-called ‘dynamic pricing' may have been used.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-undertakings",
-    "case_state": [
-     "closed"
-    ],
-    "penalty_sentence": null
-   }
-  },
-  {
    "id": "cma_worcester_bosch_2024",
    "regulator": "CMA",
    "name": "Worcester Bosch",
@@ -27302,34 +27279,6 @@
    "sector": null,
    "summary": "The CMA investigated Worcester Bosch’s marketing of its ‘hydrogen-blend ready’ boilers. This investigation formed part of the CMA’s wider work looking at consumer protection issues in the green heating and insulation sector. ",
    "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-undertakings",
-    "case_state": [
-     "closed"
-    ],
-    "penalty_sentence": null
-   }
-  },
-  {
-   "id": "cma_simba_sleep_limited_2024",
-   "regulator": "CMA",
-   "name": "Simba Sleep Limited",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/simba-sleep-limited-consumer-protection-case",
-   "match": "Simba",
-   "date": "2024-07-25",
-   "penalty": null,
-   "outcome": "Gave undertakings to the CMA",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The CMA is investigating the use of price reduction and urgency claims by Simba Sleep Limited.",
-   "types": [
-    "fake_urgency",
-    "misleading_reference_price",
     "misleading_claim"
    ],
    "evidence": {
@@ -28160,35 +28109,6 @@
    }
   },
   {
-   "id": "ico_esl_consultancy_services_ltd_2024",
-   "regulator": "ICO",
-   "name": "ESL Consultancy Services Ltd",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "ESL Consultancy Services Ltd",
-   "date": "2024-12-05",
-   "penalty": 160000,
-   "law": "PECR",
-   "volume": null,
-   "sector": null,
-   "summary": "Between 15 September 2022 and 5 December 2023, a total of 37,977 complaints were received regarding direct marketing messages which were sent at the instigation of ESL. The company has been fined £200,000 and issued with an enforcement notice.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "ESL Consultancy Services Ltd",
-     "",
-     "Between 15 September 2022 and 5 December 2023, a total of 37,977 complaints were received regarding direct marketing messages which were sent at the instigation of ESL. The company has been fined £200,000 and issued with an enforcement notice.",
-     "05/12/2024",
-     "",
-     "160,000",
-     "Appeal",
-     ""
-    ]
-   }
-  },
-  {
    "id": "ico_werepairuk_ltd_2024",
    "regulator": "ICO",
    "name": "WerepairUK Ltd",
@@ -28386,35 +28306,6 @@
      "11/01/2024",
      "",
      "100,000",
-     "Unpaid",
-     "Recovery ongoing"
-    ]
-   }
-  },
-  {
-   "id": "ico_l_a_d_h_limited_2024",
-   "regulator": "ICO",
-   "name": "L.A.D.H Limited",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "L.A.D.H Limited",
-   "date": "2024-01-11",
-   "penalty": 50000,
-   "law": "PECR",
-   "volume": null,
-   "sector": "finance",
-   "summary": "L.A.D.H Limited sent 31,329 direct market text messages to individuals in breach of regulation 22 and 23 of PECR. The company was fined £50,000 and issued with an enforcement notice.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "L.A.D.H Limited",
-     "Finance insurance and credit",
-     "L.A.D.H Limited sent 31,329 direct market text messages to individuals in breach of regulation 22 and 23 of PECR. The company was fined £50,000 and issued with an enforcement notice.",
-     "11/01/2024",
-     "",
-     "50,000",
      "Unpaid",
      "Recovery ongoing"
     ]
@@ -28944,35 +28835,6 @@
    }
   },
   {
-   "id": "ico_monetise_media_limited_2022",
-   "regulator": "ICO",
-   "name": "Monetise Media Limited",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Monetise Media Limited",
-   "date": "2022-12-12",
-   "penalty": 125000,
-   "law": "PECR",
-   "volume": null,
-   "sector": null,
-   "summary": "Between 28 July 2020 and 28 July 2021, Monetise Media Limited engaged in the transmission of a total of 3,506,157 direct marketing emails and text messages. These subscribers had not provided valid consent, contrary to the regulation 22 of PECR.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Monetise Media Limited",
-     "Marketing",
-     "Between 28 July 2020 and 28 July 2021, Monetise Media Limited engaged in the transmission of a total of 3,506,157 direct marketing emails and text messages. These subscribers had not provided valid consent, contrary to the regulation 22 of PECR.",
-     "12/12/2022",
-     "",
-     "125,000",
-     "Paid",
-     "Tribunal reduced penalty to £85k"
-    ]
-   }
-  },
-  {
    "id": "ico_ryan_hill_partners_2022",
    "regulator": "ICO",
    "name": "Ryan Hill Partners",
@@ -29318,35 +29180,6 @@
      "60,000",
      "Unpaid",
      "Compulsory liquidation - nil dividend"
-    ]
-   }
-  },
-  {
-   "id": "ico_bizfella_limited_2022",
-   "regulator": "ICO",
-   "name": "Bizfella Limited",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Bizfella Limited",
-   "date": "2022-04-06",
-   "penalty": 30000,
-   "law": "PECR",
-   "volume": null,
-   "sector": "finance",
-   "summary": "Between 15 November 2019 and 15 July 2020 Bizfella Limited instigated the sending of 224,550 unsolicited direct marketing SMS messages that were received by subscribers contrary to regulation 22 of PECR. They have been issued with a penalty notice for £30 000.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Bizfella Limited",
-     "Finance insurance and credit",
-     "Between 15 November 2019 and 15 July 2020 Bizfella Limited instigated the sending of 224,550 unsolicited direct marketing SMS messages that were received by subscribers contrary to regulation 22 of PECR. They have been issued with a penalty notice for £30 000.",
-     "06/04/2022",
-     "",
-     "30,000",
-     "Unpaid",
-     "Creditors voluntary liquidation - nil dividend"
     ]
    }
   },
@@ -30157,35 +29990,6 @@
      "10/05/2021",
      "",
      "£8,000",
-     "Paid",
-     ""
-    ]
-   }
-  },
-  {
-   "id": "ico_muscle_foods_limited_2021",
-   "regulator": "ICO",
-   "name": "Muscle Foods Limited",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Muscle Foods Limited",
-   "date": "2021-03-01",
-   "penalty": 50000,
-   "law": "PECR",
-   "volume": null,
-   "sector": "ecommerce",
-   "summary": "Muscle Foods Limited fined £50 000 for sending approximately 135,651,627 marketing emails and 6,354,426 marketing SMS messages to individuals without their consent, over a period of seven months.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Muscle Foods Limited",
-     "Retail and manufacture",
-     "Muscle Foods Limited fined £50 000 for sending approximately 135,651,627 marketing emails and 6,354,426 marketing SMS messages to individuals without their consent, over a period of seven months.",
-     "01/03/2021",
-     "",
-     "£50,000",
      "Paid",
      ""
     ]
@@ -41822,32 +41626,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "asa_person_s_unknown_t_a_pr_couches_sofas_94_a22-1178603",
-   "regulator": "ASA",
-   "name": "Person(s) Unknown t/a pr.couches-sofas-94612.com",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a22-1178603-person-s--unknown.html",
-   "match": "Person",
-   "date": "2023-05-24",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Internet (website content)",
-   "summary": "A content discovery network ad seen on a national newspaper’s website, falsely implied that the marketer was acting for purposes outside its business and made misleading claims regarding the nature of the content that the ads linked through to.",
-   "types": [],
-   "evidence": {
-    "rules": [
-     "1.7",
-     "1.7"
-    ],
-    "topic": null,
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
    "id": "asa_person_s_unknown_t_a_nimble_a22-1178589",
    "regulator": "ASA",
    "name": "Person(s) Unknown t/a Nimble",
@@ -41869,6 +41647,32 @@
      "1.7"
     ],
     "topic": "Claims, endorsements and testimonials Person(s)",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
+   "id": "asa_person_s_unknown_t_a_pr_couches_sofas_94_a22-1178603",
+   "regulator": "ASA",
+   "name": "Person(s) Unknown t/a pr.couches-sofas-94612.com",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a22-1178603-person-s--unknown.html",
+   "match": "Person",
+   "date": "2023-05-24",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content)",
+   "summary": "A content discovery network ad seen on a national newspaper’s website, falsely implied that the marketer was acting for purposes outside its business and made misleading claims regarding the nature of the content that the ads linked through to.",
+   "types": [],
+   "evidence": {
+    "rules": [
+     "1.7",
+     "1.7"
+    ],
+    "topic": null,
     "decision": "Upheld"
    },
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
@@ -45461,6 +45265,58 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_heating_oil_review_2026",
+   "regulator": "CMA",
+   "name": "Heating oil review",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/heating-oil-review-consumer-protection-enforcement-case",
+   "match": "Heating",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) commenced a consumer protection review of the supply of heating oil to consumers.",
+   "types": [],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_microsoft_2026",
+   "regulator": "CMA",
+   "name": "Microsoft",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/microsoft-consumer-protection-enforcement-case",
+   "match": "Microsoft",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of information to customers about changes to Microsoft 365 Personal and Family subscriptions made by Microsoft Ireland Operations Limited.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
    "id": "cma_dignity_2026",
    "regulator": "CMA",
    "name": "Dignity",
@@ -45475,6 +45331,34 @@
    "refunds": null,
    "sector": null,
    "summary": "The Competition and Markets Authority (CMA) is investigating Dignity Group Holdings Limited’s (‘Dignity’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews about crematoria.",
+   "types": [
+    "fake_reviews",
+    "misleading_claim"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_autotrader_2026",
+   "regulator": "CMA",
+   "name": "Autotrader",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/autotrader-consumer-protection-enforcement-case",
+   "match": "Autotrader",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "media",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Autotrader Limited’s (‘Autotrader’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.   ",
    "types": [
     "fake_reviews",
     "misleading_claim"
@@ -45517,59 +45401,6 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_autotrader_2026",
-   "regulator": "CMA",
-   "name": "Autotrader",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/autotrader-consumer-protection-enforcement-case",
-   "match": "Autotrader",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "media",
-   "summary": "The Competition and Markets Authority (CMA) is investigating Autotrader Limited’s (‘Autotrader’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.   ",
-   "types": [
-    "fake_reviews",
-    "misleading_claim"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_heating_oil_review_2026",
-   "regulator": "CMA",
-   "name": "Heating oil review",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/heating-oil-review-consumer-protection-enforcement-case",
-   "match": "Heating",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) commenced a consumer protection review of the supply of heating oil to consumers.",
-   "types": [],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
    "id": "cma_just_eat_2026",
    "regulator": "CMA",
    "name": "Just Eat",
@@ -45586,33 +45417,6 @@
    "summary": "The Competition and Markets Authority (CMA) is investigating Just Eat.co.uk Limited’s (‘Just Eat’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer review information like star ratings.",
    "types": [
     "fake_reviews",
-    "misleading_claim"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_microsoft_2026",
-   "regulator": "CMA",
-   "name": "Microsoft",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/microsoft-consumer-protection-enforcement-case",
-   "match": "Microsoft",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of information to customers about changes to Microsoft 365 Personal and Family subscriptions made by Microsoft Ireland Operations Limited.",
-   "types": [
     "misleading_claim"
    ],
    "evidence": {
@@ -45653,33 +45457,6 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_virgin_atlantic_2026",
-   "regulator": "CMA",
-   "name": "Virgin Atlantic",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/virgin-atlantic-consumer-protection-enforcement-case",
-   "match": "Virgin",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for package holidays offered by Virgin Atlantic in the UK. ",
-   "types": [
-    "drip_pricing"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
    "id": "cma_adobe_2026",
    "regulator": "CMA",
    "name": "Adobe",
@@ -45707,23 +45484,22 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_pasta_evangelists_2026",
+   "id": "cma_virgin_atlantic_2026",
    "regulator": "CMA",
-   "name": "Pasta Evangelists",
+   "name": "Virgin Atlantic",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
-   "match": "Pasta",
+   "url": "https://www.gov.uk/cma-cases/virgin-atlantic-consumer-protection-enforcement-case",
+   "match": "Virgin",
    "date": null,
    "penalty": null,
    "outcome": null,
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for package holidays offered by Virgin Atlantic in the UK. ",
    "types": [
-    "fake_reviews",
-    "misleading_claim"
+    "drip_pricing"
    ],
    "evidence": {
     "outcome_type": null,
@@ -45764,6 +45540,59 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_pasta_evangelists_2026",
+   "regulator": "CMA",
+   "name": "Pasta Evangelists",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
+   "match": "Pasta",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "ecommerce",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
+   "types": [
+    "fake_reviews",
+    "misleading_claim"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_leasehold_2019",
+   "regulator": "CMA",
+   "name": "Leasehold",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/leasehold",
+   "match": "Leasehold",
+   "date": null,
+   "penalty": null,
+   "outcome": "Gave undertakings to the CMA",
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
+   "types": [],
+   "evidence": {
+    "outcome_type": "consumer-enforcement-undertakings",
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no decision date in the record"
+  },
+  {
    "id": "cma_online_reviews_2020",
    "regulator": "CMA",
    "name": "Online reviews",
@@ -45780,6 +45609,34 @@
    "summary": "The Competition and Markets Authority (CMA) investigation into fake online reviews.",
    "types": [
     "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_online_consumer_reviews_2025",
+   "regulator": "CMA",
+   "name": "Online consumer reviews",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/online-consumer-reviews",
+   "match": "Online",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "ecommerce",
+   "summary": "The Competition and Market Authority's (CMA’s) work to protect consumers who rely on online reviews.",
+   "types": [
+    "fake_reviews",
+    "misleading_claim"
    ],
    "evidence": {
     "outcome_type": null,
@@ -45818,12 +45675,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_leasehold_2019",
+   "id": "cma_online_hotel_booking_2017",
    "regulator": "CMA",
-   "name": "Leasehold",
+   "name": "Online hotel booking",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/leasehold",
-   "match": "Leasehold",
+   "url": "https://www.gov.uk/cma-cases/online-hotel-booking",
+   "match": "Online",
    "date": null,
    "penalty": null,
    "outcome": "Gave undertakings to the CMA",
@@ -45831,36 +45688,36 @@
    "volume": null,
    "refunds": null,
    "sector": null,
-   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
-   "types": [],
+   "summary": "CMA launches consumer law investigation into hotel booking sites.",
+   "types": [
+    "drip_pricing",
+    "misleading_claim"
+   ],
    "evidence": {
     "outcome_type": "consumer-enforcement-undertakings",
     "case_state": [
-     "open"
+     "closed"
     ],
     "penalty_sentence": null
    },
    "reason": "no decision date in the record"
   },
   {
-   "id": "cma_online_consumer_reviews_2025",
+   "id": "cma_secondary_ticketing_websites_2012",
    "regulator": "CMA",
-   "name": "Online consumer reviews",
+   "name": "Secondary ticketing websites",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/online-consumer-reviews",
-   "match": "Online",
+   "url": "https://www.gov.uk/cma-cases/secondary-ticketing-websites",
+   "match": "Secondary",
    "date": null,
    "penalty": null,
    "outcome": null,
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The Competition and Market Authority's (CMA’s) work to protect consumers who rely on online reviews.",
-   "types": [
-    "fake_reviews",
-    "misleading_claim"
-   ],
+   "sector": null,
+   "summary": "The CMA is investigating suspected breaches of consumer protection law in the online secondary tickets market.",
+   "types": [],
    "evidence": {
     "outcome_type": null,
     "case_state": [
@@ -45896,59 +45753,6 @@
     "penalty_sentence": null
    },
    "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_secondary_ticketing_websites_2012",
-   "regulator": "CMA",
-   "name": "Secondary ticketing websites",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/secondary-ticketing-websites",
-   "match": "Secondary",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The CMA is investigating suspected breaches of consumer protection law in the online secondary tickets market.",
-   "types": [],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_online_hotel_booking_2017",
-   "regulator": "CMA",
-   "name": "Online hotel booking",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/online-hotel-booking",
-   "match": "Online",
-   "date": null,
-   "penalty": null,
-   "outcome": "Gave undertakings to the CMA",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "CMA launches consumer law investigation into hotel booking sites.",
-   "types": [
-    "drip_pricing",
-    "misleading_claim"
-   ],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-undertakings",
-    "case_state": [
-     "closed"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no decision date in the record"
   },
   {
    "id": "cma_fake_and_misleading_online_reviews_tradi_2019",
@@ -47155,6 +46959,36 @@
    ]
   },
   {
+   "id": "ico_esl_consultancy_services_ltd_2024",
+   "regulator": "ICO",
+   "name": "ESL Consultancy Services Ltd",
+   "source": "ICO penalties register",
+   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
+   "match": "ESL Consultancy Services Ltd",
+   "date": "2024-12-05",
+   "penalty": 160000,
+   "law": "PECR",
+   "volume": null,
+   "sector": null,
+   "summary": "Between 15 September 2022 and 5 December 2023, a total of 37,977 complaints were received regarding direct marketing messages which were sent at the instigation of ESL. The company has been fined £200,000 and issued with an enforcement notice.",
+   "types": [
+    "consent_missing"
+   ],
+   "evidence": {
+    "register_row": [
+     "ESL Consultancy Services Ltd",
+     "",
+     "Between 15 September 2022 and 5 December 2023, a total of 37,977 complaints were received regarding direct marketing messages which were sent at the instigation of ESL. The company has been fined £200,000 and issued with an enforcement notice.",
+     "05/12/2024",
+     "",
+     "160,000",
+     "Appeal",
+     ""
+    ]
+   },
+   "reason": "register amount £160,000 differs from the fine stated in the same row (£200,000)"
+  },
+  {
    "id": "ico_euroseal_windows_ltd_2022",
    "regulator": "ICO",
    "name": "Euroseal Windows Ltd",
@@ -47211,6 +47045,36 @@
    "reason": "no finding-type rule matched the ICO description"
   },
   {
+   "id": "ico_bizfella_limited_2022",
+   "regulator": "ICO",
+   "name": "Bizfella Limited",
+   "source": "ICO penalties register",
+   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
+   "match": "Bizfella Limited",
+   "date": "2022-04-06",
+   "penalty": 30000,
+   "law": "PECR",
+   "volume": null,
+   "sector": "finance",
+   "summary": "Between 15 November 2019 and 15 July 2020 Bizfella Limited instigated the sending of 224,550 unsolicited direct marketing SMS messages that were received by subscribers contrary to regulation 22 of PECR. They have been issued with a penalty notice for £30 000.",
+   "types": [
+    "consent_missing"
+   ],
+   "evidence": {
+    "register_row": [
+     "Bizfella Limited",
+     "Finance insurance and credit",
+     "Between 15 November 2019 and 15 July 2020 Bizfella Limited instigated the sending of 224,550 unsolicited direct marketing SMS messages that were received by subscribers contrary to regulation 22 of PECR. They have been issued with a penalty notice for £30 000.",
+     "06/04/2022",
+     "",
+     "30,000",
+     "Unpaid",
+     "Creditors voluntary liquidation - nil dividend"
+    ]
+   },
+   "reason": "register amount £30,000 differs from the fine stated in the same row (£30)"
+  },
+  {
    "id": "ico_royal_mail_group_limited_2022",
    "regulator": "ICO",
    "name": "Royal Mail Group Limited",
@@ -47265,6 +47129,36 @@
     ]
    },
    "reason": "no finding-type rule matched the ICO description"
+  },
+  {
+   "id": "ico_muscle_foods_limited_2021",
+   "regulator": "ICO",
+   "name": "Muscle Foods Limited",
+   "source": "ICO penalties register",
+   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
+   "match": "Muscle Foods Limited",
+   "date": "2021-03-01",
+   "penalty": 50000,
+   "law": "PECR",
+   "volume": null,
+   "sector": "ecommerce",
+   "summary": "Muscle Foods Limited fined £50 000 for sending approximately 135,651,627 marketing emails and 6,354,426 marketing SMS messages to individuals without their consent, over a period of seven months.",
+   "types": [
+    "consent_missing"
+   ],
+   "evidence": {
+    "register_row": [
+     "Muscle Foods Limited",
+     "Retail and manufacture",
+     "Muscle Foods Limited fined £50 000 for sending approximately 135,651,627 marketing emails and 6,354,426 marketing SMS messages to individuals without their consent, over a period of seven months.",
+     "01/03/2021",
+     "",
+     "£50,000",
+     "Paid",
+     ""
+    ]
+   },
+   "reason": "register amount £50,000 differs from the fine stated in the same row (£50)"
   },
   {
    "id": "ico_boost_finance_ltd_2018",
