@@ -196,7 +196,7 @@ async function importCma(held) {
     const tagText = `${x.title} ${x.description} ${body.slice(0, 1500)}`;
     const types = [...new Set([...textTypes(tagText), ...(/misleading (advertising|ads?\b|claims?|marketing|practices|statements|information|descriptions?|promotions?)/i.test(tagText) ? ['misleading_claim'] : [])])];
     // Older cases carry a stock description; the title after the colon says what the case was about
-    const about = x.title.split(':').slice(1).join(':').trim();
+    const about = x.title.split(':').slice(1).join(':').trim() || x.title.trim();
     const summary = /^(Office of Fair Trading \(OFT\) closed|Five closed Office of Fair Trading|Competition and Markets Authority \(CMA\) open consumer enforcement case)/.test(x.description || '') && about
       ? about[0].toUpperCase() + about.slice(1) + '.' : x.description;
     const c = {
