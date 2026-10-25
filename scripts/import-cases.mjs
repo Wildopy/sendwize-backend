@@ -140,6 +140,10 @@ async function importIco(held) {
       evidence: { register_row: row.slice(0, 8) },
     };
     if (!types.length) { held.push({ ...c, reason: 'no finding-type rule matched the ICO description' }); continue; }
+    // The row's own description sometimes states the fine; if it disagrees with the amount column
+    // (often the 20% early-payment discount), hold it rather than pick one
+    const stated = [...nature.matchAll(/£\s?([\d,.]+)\s*(million|m\b|k\b)?/gi)].map(x => Math.round(Number(x[1].replace(/,/g, '')) * ({ million: 1e6, m: 1e6, k: 1e3 }[lc(x[2] || '')] || 1)));
+    if (stated.length && !stated.includes(c.penalty)) { held.push({ ...c, reason: `register amount £${c.penalty.toLocaleString('en-GB')} differs from the fine stated in the same row (£${stated[0].toLocaleString('en-GB')})` }); continue; }
     if (!c.summary) c.summary = `${c.law} penalty recorded in the ICO register.`;
     out.push(c);
   }
@@ -300,8 +304,10 @@ async function verify(c) {
 // ── Run ──
 const held = [], found = [], report = {};
 const knownAsa = new Set(CASES.filter(c => c.regulator === 'ASA').map(c => c.url));
+// Same regulator, same first word of the name, within a year: the hand-checked case wins
+const first = s => squash(String(s).split(/[\s(]/)[0]);
 const isKnown = c => c.regulator === 'ASA' ? knownAsa.has(c.url)
-  : CASES.some(k => k.regulator === c.regulator && k.penalty && k.penalty === c.penalty && lc(k.name).split(/[\s(]/)[0] === lc(c.name).split(/[\s(]/)[0]);
+  : CASES.some(k => k.regulator === c.regulator && first(k.name) === first(c.name) && Math.abs(Number(String(k.date).slice(0, 4)) - Number(String(c.date).slice(0, 4))) <= 1);
 
 if (ONLY.includes('ico')) { const x = await importIco(held); report.ICO = x.length; found.push(...x); }
 if (ONLY.includes('cma')) { const x = await importCma(held); report.CMA = x.length; found.push(...x); }
