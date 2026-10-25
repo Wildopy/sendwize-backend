@@ -1,6 +1,8 @@
 // ─────────────────────────────────────────────────────────────
 // SENDWIZE — dashboard.js v1.2
 // GET /api/dashboard   (signed-in member)
+// v1.3: profile.complete / profile.missing / profile.answers, so the
+//   dashboard can hold back figures until the business profile is done.
 // v1.2: Case Twin (closest published case per open finding, from the
 //   curated anchors plus the daily regulator feed), effort per finding,
 //   area per finding and the score model the What-if mode needs.
@@ -124,6 +126,14 @@ export default async function handler(req, res) {
         revenueBand: profile?.revenueBand || null,
         revenueBandSet: !!profile?.revenueBand,
         sector: fx.sector,
+        // null when the profile couldn't be read: don't lock anyone out on an Airtable blip
+        complete: profile && !profile._error && !profile.degraded ? !!profile.profileComplete : null,
+        missing: profile?.profileMissing || [],
+        answers: {
+          sector: profile?.sector || null, annualTurnover: profile?.annualTurnover || null, listSize: profile?.listSize || null,
+          consentRecords: profile?.consentRecords || null, complaintsReceived: profile?.complaintsReceived || null,
+          priorRegulatorContact: profile?.priorRegulatorContact || null,
+        },
       },
       score: {
         value: fx.score, band: fx.scoreBand, colour: fx.scoreColour,

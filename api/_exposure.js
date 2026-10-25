@@ -37,6 +37,11 @@
 //   commercial cost (ad withdrawn, customers refunded) worked out only
 //   from the customer's own campaign budget and revenue. Never a fine.
 //
+// v1.2: the business profile is required. profileGaps() lists what is
+//   missing; the dashboard holds back every figure until it is filled.
+//   method() returns the constants below for the public "Sendwize
+//   exposure algorithm" page, so the page always matches this file.
+//
 // LEGAL POSITION: comparable published cases, not a prediction, not
 // legal advice. Weights and case anchors are for the founder to review.
 // ─────────────────────────────────────────────────────────────
@@ -595,6 +600,19 @@ export function bandFromTurnover(t) {
   return t < 1e6 ? 'under_1m' : t < 1e7 ? '1m_10m' : t < 5e7 ? '10m_50m' : 'over_50m';
 }
 export const BAND_LABELS = { under_1m: 'Under \u00a31M', '1m_10m': '\u00a31M\u2013\u00a310M', '10m_50m': '\u00a310M\u2013\u00a350M', over_50m: 'Over \u00a350M' };
+// ── The business profile every figure depends on (v1.2): required ──
+export const REQUIRED_PROFILE = {
+  turnover:         'Annual turnover',
+  listSize:         'Marketing list size',
+  consentRecords:   'Whether you keep a dated record of each opt-in',
+  complaints:       'Complaints from recipients in the last two years',
+  regulatorContact: 'Contact from the ICO, ASA or CMA in the last two years',
+};
+// Keys of REQUIRED_PROFILE still missing from a User_Profile record
+export function profileGaps(f = {}) {
+  const inputs = profileInputs(f);
+  return Object.keys(REQUIRED_PROFILE).filter(k => inputs[k] == null);
+}
 // Band, sector and inputs from a User_Profile record. An exact turnover
 // beats the band picked in the profile.
 export function profileContext(f = {}) {
@@ -717,9 +735,10 @@ export function validateAssessment(raw, text) {
 }
 
 // Position inside the frame and the narrowed range
+export const POSITION = { start: 0.5, min: 0.05, max: 0.95 };
 function positionFrom(factorIds) {
   const sum = factorIds.reduce((s, id) => s + (FACTORS[id]?.weight || 0), 0);
-  return Math.min(0.95, Math.max(0.05, 0.5 + sum));
+  return Math.min(POSITION.max, Math.max(POSITION.min, POSITION.start + sum));
 }
 const roundNice = v => v >= 10000 ? Math.round(v / 1000) * 1000 : Math.round(v / 100) * 100;
 // The more we know, the narrower the band: share of the frame either side
@@ -739,6 +758,7 @@ export const TIGHTEN = {
   consentRecords: 'Whether you keep a dated record of each opt-in',
   assess:         'Let AI read the finding for facts that move the figure',
 };
+export const CONFIDENCE_AT = { high: 4, medium: 2 };
 export function confidenceFor(fix, inputs = {}, assessment = null) {
   const known = {
     listSize: !!volumeFor(fix, inputs, assessment),
@@ -749,7 +769,7 @@ export function confidenceFor(fix, inputs = {}, assessment = null) {
   };
   const n = Object.values(known).filter(Boolean).length;
   // AI reading is a bonus: a complete profile alone reaches high
-  const level = n >= 4 ? 'high' : n >= 2 ? 'medium' : 'low';
+  const level = n >= CONFIDENCE_AT.high ? 'high' : n >= CONFIDENCE_AT.medium ? 'medium' : 'low';
   const tighten = Object.keys(known).filter(k => !known[k]).map(k => ({ key: k, label: TIGHTEN[k] }));
   return { level, known: n, of: 5, tighten };
 }
@@ -844,6 +864,8 @@ export function marketingCostTotals(fixes) {
 }
 
 // ── Clustering and totals (ICO only) ──
+// Cluster = largest finding + OTHER_SHARE of each other one, capped at CAP x the largest
+export const CLUSTER = { otherShare: 0.25, cap: 2 };
 export function clusterExposure(fixes) {
   const groups = {};
   for (const f of fixes) {
@@ -855,9 +877,10 @@ export function clusterExposure(fixes) {
   const clusters = Object.entries(groups).map(([area, list]) => {
     const sorted = [...list].sort((a, b) => b.exposure.realisticHigh - a.exposure.realisticHigh);
     const lead = sorted[0].exposure, rest = sorted.slice(1);
-    const low  = Math.min(lead.realisticLow  * 2, lead.realisticLow  + 0.25 * rest.reduce((s, f) => s + f.exposure.realisticLow, 0));
-    const high = Math.min(lead.realisticHigh * 2, lead.realisticHigh + 0.25 * rest.reduce((s, f) => s + f.exposure.realisticHigh, 0));
-    const likely = Math.min(lead.mostLikely * 2, lead.mostLikely + 0.25 * rest.reduce((s, f) => s + (f.exposure.mostLikely || 0), 0));
+    const { otherShare: k, cap } = CLUSTER;
+    const low  = Math.min(lead.realisticLow  * cap, lead.realisticLow  + k * rest.reduce((s, f) => s + f.exposure.realisticLow, 0));
+    const high = Math.min(lead.realisticHigh * cap, lead.realisticHigh + k * rest.reduce((s, f) => s + f.exposure.realisticHigh, 0));
+    const likely = Math.min(lead.mostLikely * cap, lead.mostLikely + k * rest.reduce((s, f) => s + (f.exposure.mostLikely || 0), 0));
     const confidence = worstConfidence(list.map(f => f.exposure.confidence));
     return { area, label: AREAS[area]?.label || 'Other data protection', low: Math.round(low), high: Math.round(high), mostLikely: roundNice(likely || (low + high) / 2), confidence, count: list.length, leadFixId: sorted[0].id, fixIds: list.map(f => f.id) };
   }).sort((a, b) => b.high - a.high);
@@ -982,6 +1005,38 @@ export function formatFixRecord(r, revenueBand, sector, inputs = {}) {
   fix.assessment = current ? { assessedAt: assessment.assessedAt || null, confidence: assessment.confidence || null } : null;
   fix.assessmentStale = !!(assessment && !current);
   return fix;
+}
+
+// ── Everything the public methodology page shows, straight from the
+//    constants above so the page can't drift from the code ──
+export function method() {
+  const ico = Object.entries(EXPOSURE_CONSTANTS)
+    .filter(([, d]) => d.category === 'ICO')
+    .map(([type, d]) => ({ type, area: areaOf(type), bands: d.bands, caseAnchor: d.caseAnchor || null }));
+  const asa = Object.entries(EXPOSURE_CONSTANTS)
+    .filter(([, d]) => d.category === 'ASA')
+    .map(([type, d]) => ({ type, referralRisk: d.referralRisk || 'medium' }));
+  const cma = Object.fromEntries(Object.keys(BAND_LABELS).map(b => [b, cmaStatutoryMax(b)]));
+  return {
+    version: ENGINE_VERSION,
+    bands: BAND_LABELS,
+    bandLimits: BAND_LIMITS,
+    sectors: SECTOR_MULTIPLIERS,
+    ico, asa, cma,
+    areas: Object.fromEntries(Object.entries(AREAS).map(([k, a]) => [k, a.label])),
+    factors: Object.entries(FACTORS).map(([id, f]) => ({ id, ...f })),
+    position: POSITION,
+    halfWidth: HALF_WIDTH,
+    confidenceAt: CONFIDENCE_AT,
+    confidenceInputs: TIGHTEN,
+    cluster: CLUSTER,
+    commercial: COMMERCIAL_ASSUMPTIONS,
+    severityWeight: SEVERITY_WEIGHT,
+    selfAttestedCredit: SELF_ATTESTED_CREDIT,
+    requiredProfile: REQUIRED_PROFILE,
+    cases: CASE_ANCHORS.map(c => ({ ...c, url: c.url || ICO_ACTION_URL })),
+    legal: { icoMax: ICO_LEGAL_MAX, cmaMax: CMA_LEGAL_MAX, duaaWarning: DUAA_WARNING, notLegalAdvice: NOT_LEGAL_ADVICE, commercialDisclaimer: COMMERCIAL_DISCLAIMER },
+  };
 }
 
 export {
