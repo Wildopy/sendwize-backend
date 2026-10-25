@@ -2,17 +2,17 @@ name: Case library check
 # Fetches every case's source page and checks it names the party and the amount
 on:
   pull_request:
-    paths: ['api/_case-library.js', 'scripts/**', '.github/workflows/case-library.yml']
+    paths: ['api/_case-library.js', 'api/_case-imports.js', 'scripts/**', '.github/workflows/case-library.yml']
   push:
     branches: [main]
-    paths: ['api/_case-library.js']
+    paths: ['api/_case-library.js', 'api/_case-imports.js']
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -65,16 +65,17 @@ const wholeSentences = s => { s = String(s).trim(); if (!/(\.\.\.|…)$/.test(s)
 const lc = s => String(s).toLowerCase();
 
 // Words a name must appear as on the source page (first distinctive word)
-const matchFor = name => String(name).split(/[\s(]/).find(w => w.replace(/[^\w]/g, '').length > 1)?.replace(/[^\w&-]/g, '') || name;
+const matchFor = name => String(name).split(/[\s(]/).find(w => w.replace(/[^\w]/g, '').length > 1)?.replace(/^[^\w]+|[^\w]+$/g, '') || name;
+const squash = s => String(s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 // ── Shared tagging rules: regulator wording → Sendwize finding types ──
 const TEXT_RULES = [
   [/time[- ]limited|countdown|urgen|pressure (sell|selling|tactic)|limited time/, 'fake_urgency'],
-  [/drip|hidden (fee|charge|cost)|booking fee|mandatory (fee|charge)|headline price|price transparen|additional (fee|charge)|delivery charge/, 'drip_pricing'],
-  [/fake review|online review|review(s)? (were|was) (fake|not genuine)|consumer review/, 'fake_reviews'],
+  [/drip|hidden (exit )?(fee|charge|cost)|booking fee|mandatory fee|mandatory charge|optional charge|pre-ticked|headline price|price transparen|additional (fee|charge)|delivery charge/, 'drip_pricing'],
+  [/fake review|online review|review(s)? (were|was) (fake|not genuine)|consumer review|customer review|misleading review/, 'fake_reviews'],
   [/reference pric|was price|savings? claim|discount claim|price comparison|sale price|price promotion|pricing practice/, 'misleading_reference_price'],
   [/greenwash|green claim|environmental (claim|impact|benefit)|eco[- ]friendly|sustainab|carbon neutral|recyclable/, 'misleading_claim'],
-  [/not (obviously )?identifiable as|hidden advertising|ad disclosure|#ad\b|affiliate link/, 'undisclosed_ad'],
+  [/not (obviously )?identifiable as|hidden advertising|ad disclosure|#ad\b|affiliate link|paid[- ]for endorsement|endorsements on social media|clearly labelled/, 'undisclosed_ad'],
 ];
 const textTypes = s => TEXT_RULES.filter(([re]) => re.test(lc(s))).map(([, t]) => t);
 
@@ -94,15 +95,16 @@ function csvRows(text) {
   return rows.filter(r => r.some(Boolean));
 }
 // Fines under the data protection laws only count when they are about marketing
-const ICO_MARKETING = /market|unsolicited|nuisance|wealth screening|data matching|data sharing|profil|lead gen|sold (personal )?data|selling (personal )?data/;
+const ICO_MARKETING = /\bmarketing|unsolicited|nuisance|wealth screening|data matching|data sharing|profil|lead gen|sold (personal )?data|selling (personal )?data/;
 function icoTypes(nature, pecr) {
   const n = lc(nature), t = new Set();
   if (/unsolicited|tps|telephone preference|without (the required |valid )?consent|not consented|had not consented|nuisance|direct marketing|marketing (call|text|email|message)s?|automated call/.test(n)) t.add('consent_missing');
   if (/third[- ]part(y|ies)|purchased|bought|supplier|list broker|lead gen/.test(n)) t.add('third_party_list');
   if (/concealed|withheld|withholding|caller line|did not identify|failed to identify|spoof/.test(n)) t.add('affiliate_sender_identity_breach');
   if (/wealth screening|data matching|profil/.test(n)) { t.add('legitimate_interest_abuse'); t.add('data_quality'); }
-  if (/data sharing|sold (personal )?data|selling (personal )?data|traded/.test(n)) t.add('dpa_breach');
-  if (!t.size && pecr && /market|call|text|email|message/.test(n)) t.add('consent_missing');
+  if (/data sharing|\bsold\b.{0,40}(data|details|records)|selling.{0,40}(data|details|records)|traded/.test(n)) t.add('dpa_breach');
+  if (/breach reporting|personal data breach/.test(n)) return []; // PECR security rules, not marketing
+  if (!t.size && pecr && /\bmarketing|call|text|email|message|regulation 2[1-3]\b/.test(n)) t.add('consent_missing');
   return [...t];
 }
 function icoSector(s) {
@@ -181,9 +183,14 @@ async function importCma(held) {
     const multi = /,| and /.test(name); // several firms: a single amount can't be pinned to one of them
     const pm = !multi && body.match(CMA_PENALTY);
     const penalty = pm ? Math.round(money(pm[2]) * (pm[3] ? 1e6 : 1)) : null;
-    const outcome = penalty ? null : CMA_OUTCOME[outcomeType] || null;
-    const date = (pm && pm[1] && isoFromWords(pm[1])) || x.closed_date || null;
-    const types = [...new Set(textTypes(`${x.title} ${x.description}`))];
+    // The date the penalty was recorded: the last dated entry before the penalty sentence
+    const before = pm ? [...body.slice(Math.max(0, pm.index - 800), pm.index + pm[0].length).matchAll(/\d{1,2} [A-Z][a-z]+ \d{4}/g)].pop() : null;
+    const date = (pm && pm[1] && isoFromWords(pm[1])) || (before && isoFromWords(before[0])) || x.closed_date || null;
+    // Before April 2014 these cases were the Office of Fair Trading's
+    const oft = date && date < '2014-04-01';
+    const outcome = penalty ? null : (CMA_OUTCOME[outcomeType] || '').replace('the CMA', oft ? 'the OFT' : 'the CMA') || null;
+    const tagText = `${x.title} ${x.description} ${body.slice(0, 1500)}`;
+    const types = [...new Set([...textTypes(tagText), ...(/\bmisleading\b/i.test(tagText) ? ['misleading_claim'] : [])])];
     const c = {
       id: `cma_${slug(name)}_${(date || x.opened_date || '').slice(0, 4)}`, ...base, match: matchFor(name), date, penalty, outcome,
       law: 'Consumer protection law', volume: null, refunds: null, sector: cmaSector(x.market_sector),
@@ -260,7 +267,7 @@ async function importAsa(held) {
       summary: wholeSentences(x.summary), types: [...new Set(types)], evidence: { rules, topic, decision: x.decision },
     };
     const problems = [];
-    if (!page.toLowerCase().includes(c.match.toLowerCase())) problems.push(`ruling page does not mention "${c.match}"`);
+    if (!squash(page).includes(squash(c.match))) problems.push(`ruling page does not mention "${c.match}"`);
     if (!/ASA Ruling on/i.test(page) || !/upheld/i.test(page)) problems.push('ruling page does not read as an upheld ASA ruling');
     if (!date) problems.push('no ruling date in the listing');
     if (!c.summary) problems.push('no summary in the listing');
@@ -285,7 +292,7 @@ async function verify(c) {
   const p = [];
   if (!r.ok) return ['source did not load: ' + (r.error || r.status)];
   if (!/^https:\/\/(www\.)?(ico\.org\.uk|asa\.org\.uk|gov\.uk)\//.test(r.url)) p.push('source redirected off the regulator site');
-  if (!r.text.toLowerCase().includes(String(c.match).toLowerCase())) p.push(`source does not mention "${c.match}"`);
+  if (!squash(r.text).includes(squash(c.match))) p.push(`source does not mention "${c.match}"`);
   if (c.penalty && !amountForms(c.penalty).some(f => r.text.includes(f))) p.push(`source does not state £${c.penalty.toLocaleString('en-GB')}`);
   return p;
 }

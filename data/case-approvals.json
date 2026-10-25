@@ -1,0 +1,5 @@
+{
+  "note": "Imported cases go live only when listed here. Ian approves a sample of each import batch; once the sample passes, the batch's ready cases are approved by id. Rejected ids are never published.",
+  "approved": [],
+  "rejected": []
+}

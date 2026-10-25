@@ -46,7 +46,7 @@
 // legal advice. Weights and case anchors are for the founder to review.
 // ─────────────────────────────────────────────────────────────
 import { createHash } from 'node:crypto';
-import { CASES, caseOutcome, sameIssueTypes, relatedTypes } from './_case-library.js';
+import { CASES, LIBRARY_STATS, caseOutcome, sameIssueTypes, relatedTypes } from './_case-library.js';
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
 // Keys are compared with spaces removed and hyphens as en dashes, so the
@@ -572,7 +572,7 @@ export function closestCases(fixType, volume) {
     .map(c => ({ c, rel: c.types.some(t => same.includes(t)) ? 0 : c.types.some(t => related.includes(t)) ? 1 : null }))
     .filter(x => x.rel !== null)
     .map(({ c, rel }) => ({ c, rel, d: rel * 10 + (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
-    .sort((a, b) => a.d - b.d)
+    .sort((a, b) => a.d - b.d || String(b.c.date).localeCompare(String(a.c.date)))
     .slice(0, 3)
     .map(({ c, rel }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, url: c.url || ICO_ACTION_URL, related: rel === 1 }));
 }
@@ -1087,7 +1087,10 @@ export function method() {
     severityWeight: SEVERITY_WEIGHT,
     selfAttestedCredit: SELF_ATTESTED_CREDIT,
     requiredProfile: REQUIRED_PROFILE,
-    cases: CASE_ANCHORS.map(c => ({ ...c, url: c.url || ICO_ACTION_URL })),
+    // Hand-checked cases and every case with a published amount; the rest of
+    // the imported rulings are counted in libraryStats
+    cases: CASE_ANCHORS.filter(c => !c.imported || c.penalty || c.refunds).map(c => ({ ...c, outcome: caseOutcome(c), url: c.url || ICO_ACTION_URL })),
+    libraryStats: LIBRARY_STATS,
     legal: { icoMax: ICO_LEGAL_MAX, cmaMax: CMA_LEGAL_MAX, duaaWarning: DUAA_WARNING, notLegalAdvice: NOT_LEGAL_ADVICE, commercialDisclaimer: COMMERCIAL_DISCLAIMER },
   };
 }

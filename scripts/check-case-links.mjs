@@ -37,24 +37,32 @@ function pdfText(buf, id) {
   } catch { return null; }
 }
 
+// One fetch per source: many imported ICO cases share the penalties register
+const pages = new Map();
+function load(c) {
+  if (!pages.has(c.url)) pages.set(c.url, (async () => {
+    let res;
+    try { res = await fetch(c.url, { headers: { 'User-Agent': UA }, redirect: 'follow', signal: AbortSignal.timeout(30000) }); }
+    catch (e) { return { problem: 'could not load: ' + e.message }; }
+    if (!res.ok) return { problem: 'HTTP ' + res.status };
+    const type = res.headers.get('content-type') || '';
+    if (/pdf/i.test(type) || /\.pdf$/i.test(c.url)) return { url: res.url, text: pdfText(Buffer.from(await res.arrayBuffer()), c.id) };
+    return { url: res.url, text: plain(await res.text()) };
+  })());
+  return pages.get(c.url);
+}
+const squash = s => String(s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
 async function check(c) {
   const out = { id: c.id, name: c.name, url: c.url, problems: [], note: '' };
   if (!OFFICIAL.test(c.url || '')) { out.problems.push('not an official regulator URL'); return out; }
-  let res;
-  try { res = await fetch(c.url, { headers: { 'User-Agent': UA }, redirect: 'follow', signal: AbortSignal.timeout(30000) }); }
-  catch (e) { out.problems.push('could not load: ' + e.message); return out; }
-  if (!res.ok) { out.problems.push('HTTP ' + res.status); return out; }
-  if (!OFFICIAL.test(res.url)) out.problems.push('redirected off the regulator site to ' + res.url);
-  const type = res.headers.get('content-type') || '';
-  let text;
-  if (/pdf/i.test(type) || /\.pdf$/i.test(c.url)) {
-    text = pdfText(Buffer.from(await res.arrayBuffer()), c.id);
-    if (text == null) { out.note = 'PDF: link works, contents not read (pdftotext missing)'; return out; }
-  } else {
-    text = plain(await res.text());
-  }
+  const page = await load(c);
+  if (page.problem) { out.problems.push(page.problem); return out; }
+  if (!OFFICIAL.test(page.url)) out.problems.push('redirected off the regulator site to ' + page.url);
+  const text = page.text;
+  if (text == null) { out.note = 'PDF: link works, contents not read (pdftotext missing)'; return out; }
   const words = matchWords(c);
-  if (!text.toLowerCase().includes(words.toLowerCase())) out.problems.push(`page does not mention "${words}"`);
+  if (!squash(text).includes(squash(words))) out.problems.push(`page does not mention "${words}"`);
   if (c.penalty && !amountForms(c.penalty).some(f => text.includes(f))) out.problems.push(`page does not state £${c.penalty.toLocaleString('en-GB')}`);
   return out;
 }
@@ -67,7 +75,8 @@ for (const r of results) console.log(`${r.problems.length ? 'FAIL' : 'ok  '}  ${
 console.log(`\n${results.length - bad.length} of ${results.length} cases verified against their source page.`);
 
 if (process.env.GITHUB_STEP_SUMMARY) {
-  const rows = results.map(r => `| ${r.problems.length ? '❌' : '✅'} | [${r.name.replace(/\|/g, '/')}](${r.url}) | ${r.problems.join('; ') || r.note || 'Party and amount found'} |`);
+  // Every failure, and the hand-checked cases; imported passes are only counted
+  const rows = results.filter(r => r.problems.length || !CASES.find(c => c.id === r.id)?.imported).map(r => `| ${r.problems.length ? '❌' : '✅'} | [${r.name.replace(/\|/g, '/')}](${r.url}) | ${r.problems.join('; ') || r.note || 'Party and amount found'} |`);
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Case library check\n\n${results.length - bad.length} of ${results.length} cases verified against their source page.\n\n| | Case | Result |\n|---|---|---|\n${rows.join('\n')}\n`);
 }
 process.exit(bad.length ? 1 : 0);

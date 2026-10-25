@@ -30,11 +30,13 @@
 // Last checked: October 2026.
 // ─────────────────────────────────────────────────────────────
 
+import { IMPORTED } from './_case-imports.js';
+
 const ICO = 'https://ico.org.uk';
 const ASA = 'https://www.asa.org.uk/rulings/';
 const CMA = 'https://www.gov.uk';
 
-export const CASES = [
+const CURATED = [
   // ── ICO: PECR email and SMS marketing ──
   { id: 'hellofresh_2024', regulator: 'ICO', name: 'HelloFresh (Grocery Delivery E-Services UK Ltd)', date: '2024-01-12', penalty: 140000, volume: 80893013, sector: 'ecommerce',
     summary: 'About 79M marketing emails and 1M texts. Consent was bundled with an age confirmation, never mentioned texts, and did not say marketing would continue for 24 months after cancellation. Some people were contacted after asking it to stop.',
@@ -196,6 +198,10 @@ export const CASES = [
     summary: 'Agreed to strengthen how it tackles fake reviews and sellers moving good reviews onto other products.',
     types: ['fake_reviews', 'misleading_claim'], url: CMA + '/government/news/amazon-gives-undertakings-to-cma-to-curb-fake-reviews' },
 ];
+
+// Hand-checked cases above, then the approved imports from the regulator
+// records (scripts/import-cases.mjs → data/case-review.json → publish-cases).
+export const CASES = [...CURATED, ...IMPORTED.map(c => ({ ...c, imported: true }))];
 
 // For the dashboard and the method page: how big the library is
 export const LIBRARY_STATS = CASES.reduce((s, c) => {
