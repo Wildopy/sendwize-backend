@@ -79,7 +79,7 @@
 <script>
 (function () {
   var API = 'https://sendwize-backend.vercel.app';
-  var DASH = window.SW_DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  var DASH = (window.SW && SW.dashboard) || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
   var userId = new URLSearchParams(location.search).get('userId');
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
