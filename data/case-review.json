@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-25T20:44:59.443Z",
+ "generated": "2026-10-26T19:04:06.831Z",
  "note": "Imported from regulator records. Not live: cases reach the product only once approved in data/case-approvals.json and published.",
  "counts": {
   "ready": {
@@ -1445,6 +1445,33 @@
    }
   },
   {
+   "id": "asa_bolt_healthcare_ltd_t_a_bolt_pharmacy_a26-1333536",
+   "regulator": "ASA",
+   "name": "Bolt Healthcare Ltd t/a Bolt Pharmacy",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/bolt-healthcare-ltd-a26-1333536-bolt-healthcare-ltd.html",
+   "match": "Bolt",
+   "date": "2026-07-29",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "29 July 2026",
+   "summary": "Two paid-for Facebook ads for an online pharmacy promoted weight loss prescription-only medicines to the public, against the law and our rules.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "12.12"
+    ],
+    "topic": "Weight and slimming",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_bolt_healthcare_ltd_t_a_bolt_pharmacy_a26-1335405",
    "regulator": "ASA",
    "name": "Bolt Healthcare Ltd t/a Bolt Pharmacy",
@@ -1467,33 +1494,6 @@
    "evidence": {
     "rules": [
      "2.3",
-     "12.12"
-    ],
-    "topic": "Weight and slimming",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_bolt_healthcare_ltd_t_a_bolt_pharmacy_a26-1333536",
-   "regulator": "ASA",
-   "name": "Bolt Healthcare Ltd t/a Bolt Pharmacy",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/bolt-healthcare-ltd-a26-1333536-bolt-healthcare-ltd.html",
-   "match": "Bolt",
-   "date": "2026-07-29",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "29 July 2026",
-   "summary": "Two paid-for Facebook ads for an online pharmacy promoted weight loss prescription-only medicines to the public, against the law and our rules.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
      "12.12"
     ],
     "topic": "Weight and slimming",
@@ -10896,33 +10896,6 @@
    }
   },
   {
-   "id": "asa_pegasus_homes_ltd_t_a_pegasus_homes_a24-1248715",
-   "regulator": "ASA",
-   "name": "Pegasus Homes Ltd t/a Pegasus Homes",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/pegasus-homes-ltd-a24-1248715-lifestory-group-ltd.html",
-   "match": "Pegasus",
-   "date": "2024-11-13",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "National newspaper (paid ad)",
-   "summary": "A national newspaper ad for a retirement property company failed to include the significant conditions of a promotion and misleadingly omitted information regarding the price of a service charge.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "8.17",
-     "8.17"
-    ],
-    "topic": "Property sales and lettings",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_prime_star_shop_ltd_t_a_branshaws_a24-1249990",
    "regulator": "ASA",
    "name": "Prime Star Shop Ltd t/a Branshaws",
@@ -10947,6 +10920,33 @@
      "12.1"
     ],
     "topic": "Medical devices",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_pegasus_homes_ltd_t_a_pegasus_homes_a24-1248715",
+   "regulator": "ASA",
+   "name": "Pegasus Homes Ltd t/a Pegasus Homes",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/pegasus-homes-ltd-a24-1248715-lifestory-group-ltd.html",
+   "match": "Pegasus",
+   "date": "2024-11-13",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "National newspaper (paid ad)",
+   "summary": "A national newspaper ad for a retirement property company failed to include the significant conditions of a promotion and misleadingly omitted information regarding the price of a service charge.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "8.17",
+     "8.17"
+    ],
+    "topic": "Property sales and lettings",
     "decision": "Upheld"
    }
   },
@@ -17131,33 +17131,6 @@
    }
   },
   {
-   "id": "asa_hutch_games_ltd_a23-1196857",
-   "regulator": "ASA",
-   "name": "Hutch Games Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/hutch-games-ltd-a23-1196857-hutch-games-ltd.html",
-   "match": "Hutch",
-   "date": "2023-10-04",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "App (own claim)",
-   "summary": "A listing for the game \"F1 Clash - Car Racing Manager\" on the Apple App store did not make it sufficiently clear that the game contained loot boxes.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.3"
-    ],
-    "topic": "Sports, leisure and hobbies",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_hutch_games_ltd_a23-1196862",
    "regulator": "ASA",
    "name": "Hutch Games Ltd",
@@ -17172,6 +17145,33 @@
    "sector": null,
    "media": "App (own claim)",
    "summary": "A listing for the game \"Rebel Racing\" on the Google Play store did not make it sufficiently clear that the game contained loot boxes.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.3"
+    ],
+    "topic": "Sports, leisure and hobbies",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_hutch_games_ltd_a23-1196857",
+   "regulator": "ASA",
+   "name": "Hutch Games Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/hutch-games-ltd-a23-1196857-hutch-games-ltd.html",
+   "match": "Hutch",
+   "date": "2023-10-04",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "App (own claim)",
+   "summary": "A listing for the game \"F1 Clash - Car Racing Manager\" on the Apple App store did not make it sufficiently clear that the game contained loot boxes.",
    "types": [
     "misleading_claim"
    ],
@@ -17301,6 +17301,33 @@
    }
   },
   {
+   "id": "asa_mep_llc_t_a_o2hyperhealth_a23-1198244",
+   "regulator": "ASA",
+   "name": "MEP LLC t/a O2HyperHealth",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/mep-llc-a23-1198244-mep-llc.html",
+   "match": "MEP",
+   "date": "2023-09-27",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content), Leaflet",
+   "summary": "A website and leaflet for hyperbaric oxygen therapy discouraged essential treatment for conditions for which medical supervision should be sought.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "12.2"
+    ],
+    "topic": "Medical procedures and services",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_hamilton_direct_ltd_a23-1185794",
    "regulator": "ASA",
    "name": "Hamilton Direct Ltd",
@@ -17326,33 +17353,6 @@
      "3.47"
     ],
     "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_mep_llc_t_a_o2hyperhealth_a23-1198244",
-   "regulator": "ASA",
-   "name": "MEP LLC t/a O2HyperHealth",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/mep-llc-a23-1198244-mep-llc.html",
-   "match": "MEP",
-   "date": "2023-09-27",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Internet (website content), Leaflet",
-   "summary": "A website and leaflet for hyperbaric oxygen therapy discouraged essential treatment for conditions for which medical supervision should be sought.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "12.2"
-    ],
-    "topic": "Medical procedures and services",
     "decision": "Upheld"
    }
   },
@@ -19199,37 +19199,6 @@
    }
   },
   {
-   "id": "asa_braincare_ltd_2023",
-   "regulator": "ASA",
-   "name": "Braincare Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/braincare-ltd-g23-1191017-braincare-ltd.html",
-   "match": "Braincare",
-   "date": "2023-05-31",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Email, Internet (website content), Social media (own site)",
-   "summary": "An email, website and Instagram post for an online food supplement provider, made unauthorised health claims and claimed to prevent, treat, or cure human disease.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "15.7",
-     "15.1",
-     "15.2",
-     "15.6",
-     "15.1"
-    ],
-    "topic": "Food, drink and supplements",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_intrepid_travel_group_uk_ltd_a22-1173927",
    "regulator": "ASA",
    "name": "Intrepid Travel Group UK Ltd",
@@ -19339,6 +19308,37 @@
      "3.4"
     ],
     "topic": null,
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_braincare_ltd_2023",
+   "regulator": "ASA",
+   "name": "Braincare Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/braincare-ltd-g23-1191017-braincare-ltd.html",
+   "match": "Braincare",
+   "date": "2023-05-31",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Email, Internet (website content), Social media (own site)",
+   "summary": "An email, website and Instagram post for an online food supplement provider, made unauthorised health claims and claimed to prevent, treat, or cure human disease.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "15.7",
+     "15.1",
+     "15.2",
+     "15.6",
+     "15.1"
+    ],
+    "topic": "Food, drink and supplements",
     "decision": "Upheld"
    }
   },
@@ -20001,6 +20001,35 @@
    }
   },
   {
+   "id": "asa_thg_nutrition_limited_t_a_my_protein_a22-1176831",
+   "regulator": "ASA",
+   "name": "THG Nutrition Limited t/a My Protein",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/thg-nutrition-limited-a22-1176831-thg-nutrition-limited.html",
+   "match": "THG",
+   "date": "2023-04-19",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content)",
+   "summary": "The website for a sports nutrition retailer made misleading savings claims which suggested that a significant proportion of products would be discounted by 80%.",
+   "types": [
+    "misleading_claim",
+    "misleading_reference_price"
+   ],
+   "evidence": {
+    "rules": [
+     "3.7",
+     "3.17",
+     "3.1"
+    ],
+    "topic": "Promotions and competitions",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_thg_nutrition_limited_t_a_my_protein_a22-1178724",
    "regulator": "ASA",
    "name": "THG Nutrition Limited t/a My Protein",
@@ -20025,35 +20054,6 @@
      "3.17",
      "8.17",
      "8.17"
-    ],
-    "topic": "Promotions and competitions",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_thg_nutrition_limited_t_a_my_protein_a22-1176831",
-   "regulator": "ASA",
-   "name": "THG Nutrition Limited t/a My Protein",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/thg-nutrition-limited-a22-1176831-thg-nutrition-limited.html",
-   "match": "THG",
-   "date": "2023-04-19",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Internet (website content)",
-   "summary": "The website for a sports nutrition retailer made misleading savings claims which suggested that a significant proportion of products would be discounted by 80%.",
-   "types": [
-    "misleading_claim",
-    "misleading_reference_price"
-   ],
-   "evidence": {
-    "rules": [
-     "3.7",
-     "3.17",
-     "3.1"
     ],
     "topic": "Promotions and competitions",
     "decision": "Upheld"
@@ -20384,33 +20384,6 @@
    "regulator": "ASA",
    "name": "Sophie Hinchliffe t/a Mrs Hinch",
    "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/sophie-hinchliffe-g22-1140953-sophie-hinchliffe.html",
-   "match": "Sophie",
-   "date": "2023-03-15",
-   "penalty": null,
-   "outcome": "ASA ruling upheld in part",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (influencer or affiliate ad)",
-   "summary": "An Instagram Story on influencer Mrs Hinch’s account was not obviously identifiable as an ad.",
-   "types": [
-    "undisclosed_ad"
-   ],
-   "evidence": {
-    "rules": [
-     "2.1",
-     "2.3"
-    ],
-    "topic": "Sophie Hinchliffe c/o",
-    "decision": "Upheld in part"
-   }
-  },
-  {
-   "id": "asa_sophie_hinchliffe_t_a_mrs_hinch_2023_2",
-   "regulator": "ASA",
-   "name": "Sophie Hinchliffe t/a Mrs Hinch",
-   "source": "ASA ruling",
    "url": "https://www.asa.org.uk/rulings/sophie-hinchliffe-g22-1155720-sophie-hinchliffe.html",
    "match": "Sophie",
    "date": "2023-03-15",
@@ -20430,6 +20403,33 @@
      "2.3"
     ],
     "topic": "Claims, endorsements and testimonials Sophie Hinchliffe c/o",
+    "decision": "Upheld in part"
+   }
+  },
+  {
+   "id": "asa_sophie_hinchliffe_t_a_mrs_hinch_2023_2",
+   "regulator": "ASA",
+   "name": "Sophie Hinchliffe t/a Mrs Hinch",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/sophie-hinchliffe-g22-1140953-sophie-hinchliffe.html",
+   "match": "Sophie",
+   "date": "2023-03-15",
+   "penalty": null,
+   "outcome": "ASA ruling upheld in part",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (influencer or affiliate ad)",
+   "summary": "An Instagram Story on influencer Mrs Hinch’s account was not obviously identifiable as an ad.",
+   "types": [
+    "undisclosed_ad"
+   ],
+   "evidence": {
+    "rules": [
+     "2.1",
+     "2.3"
+    ],
+    "topic": "Sophie Hinchliffe c/o",
     "decision": "Upheld in part"
    }
   },
@@ -21800,34 +21800,6 @@
    }
   },
   {
-   "id": "asa_valorous_sports_ltd_t_a_valorous_a22-1162127",
-   "regulator": "ASA",
-   "name": "Valorous Sports Ltd t/a Valorous",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/valorous-sports-ltd-a22-1162127-valorous-sports-ltd.html",
-   "match": "Valorous",
-   "date": "2022-11-23",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (influencer or affiliate ad)",
-   "summary": "An Instagram carousel post on a Memes’ page was not obviously identifiable as an ad.",
-   "types": [
-    "undisclosed_ad"
-   ],
-   "evidence": {
-    "rules": [
-     "2.1",
-     "2.3",
-     "2.4"
-    ],
-    "topic": "Clothing, shoes and jewellery",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_vodafone_ltd_a22-1148595",
    "regulator": "ASA",
    "name": "Vodafone Ltd",
@@ -21852,6 +21824,34 @@
      "3.33"
     ],
     "topic": "Computers, phones and telecoms",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_valorous_sports_ltd_t_a_valorous_a22-1162127",
+   "regulator": "ASA",
+   "name": "Valorous Sports Ltd t/a Valorous",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/valorous-sports-ltd-a22-1162127-valorous-sports-ltd.html",
+   "match": "Valorous",
+   "date": "2022-11-23",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (influencer or affiliate ad)",
+   "summary": "An Instagram carousel post on a Memes’ page was not obviously identifiable as an ad.",
+   "types": [
+    "undisclosed_ad"
+   ],
+   "evidence": {
+    "rules": [
+     "2.1",
+     "2.3",
+     "2.4"
+    ],
+    "topic": "Clothing, shoes and jewellery",
     "decision": "Upheld"
    }
   },
@@ -24404,33 +24404,6 @@
    }
   },
   {
-   "id": "asa_imc_toys_uk_ltd_a22-1144835",
-   "regulator": "ASA",
-   "name": "IMC Toys UK Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/imc-toys-uk-ltd-a22-1144835-imc-toys-uk-ltd.html",
-   "match": "IMC",
-   "date": "2022-06-15",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Internet (website content)",
-   "summary": "A banner ad was unlikely to be obviously identifiable as such by its audience, young children, and therefore ‘enhanced’ disclosure was required.",
-   "types": [
-    "undisclosed_ad"
-   ],
-   "evidence": {
-    "rules": [
-     "2.3",
-     "2.1"
-    ],
-    "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_imc_toys_uk_ltd_a22-1144836",
    "regulator": "ASA",
    "name": "IMC Toys UK Ltd",
@@ -24452,6 +24425,33 @@
     "rules": [
      "2.1",
      "2.3"
+    ],
+    "topic": null,
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_imc_toys_uk_ltd_a22-1144835",
+   "regulator": "ASA",
+   "name": "IMC Toys UK Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/imc-toys-uk-ltd-a22-1144835-imc-toys-uk-ltd.html",
+   "match": "IMC",
+   "date": "2022-06-15",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content)",
+   "summary": "A banner ad was unlikely to be obviously identifiable as such by its audience, young children, and therefore ‘enhanced’ disclosure was required.",
+   "types": [
+    "undisclosed_ad"
+   ],
+   "evidence": {
+    "rules": [
+     "2.3",
+     "2.1"
     ],
     "topic": null,
     "decision": "Upheld"
@@ -26184,6 +26184,34 @@
    }
   },
   {
+   "id": "asa_jamie_genevieve_2021",
+   "regulator": "ASA",
+   "name": "Jamie Genevieve",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/jamie-genevieve-g21-1110732-jamie-genevieve.html",
+   "match": "Jamie",
+   "date": "2021-12-22",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (own site)",
+   "summary": "An Instagram post by Jamie Genevieve was banned for not being obviously identifiable as an ad.",
+   "types": [
+    "undisclosed_ad"
+   ],
+   "evidence": {
+    "rules": [
+     "2.4",
+     "2.1",
+     "2.3"
+    ],
+    "topic": null,
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_just_simply_change_ltd_t_a_nirasha_ramlu_a21-1109189",
    "regulator": "ASA",
    "name": "Just Simply Change Ltd t/a Nirasha Ramlugan",
@@ -26208,34 +26236,6 @@
      "12.1",
      "12.2",
      "3.1"
-    ],
-    "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_jamie_genevieve_2021",
-   "regulator": "ASA",
-   "name": "Jamie Genevieve",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/jamie-genevieve-g21-1110732-jamie-genevieve.html",
-   "match": "Jamie",
-   "date": "2021-12-22",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (own site)",
-   "summary": "An Instagram post by Jamie Genevieve was banned for not being obviously identifiable as an ad.",
-   "types": [
-    "undisclosed_ad"
-   ],
-   "evidence": {
-    "rules": [
-     "2.4",
-     "2.1",
-     "2.3"
     ],
     "topic": null,
     "decision": "Upheld"
@@ -37434,11 +37434,11 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "asa_person_s_unknown_t_a_muse_2025",
+   "id": "asa_person_s_unknown_t_a_rosely_london_a24-1268786",
    "regulator": "ASA",
-   "name": "Person(s) unknown t/a Muse",
+   "name": "Person(s) unknown t/a Rosely London",
    "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/person-s--unknown-g24-1265365-person-s--unknown.html",
+   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1268786-person-s--unknown.html",
    "match": "Person",
    "date": "2025-04-09",
    "penalty": null,
@@ -37446,8 +37446,8 @@
    "law": "ASA ruling",
    "volume": null,
    "sector": null,
-   "media": "Internet (website content)",
-   "summary": "A website misleadingly implied they were a UK-based company and failed to include the geographical address from which they operated.",
+   "media": "Social media (paid ad)",
+   "summary": "A paid-for Facebook ad and website made misleading claims including about the materials used to make products and money-back guarantees and also failed to include the geographical address from which they operated.",
    "types": [],
    "evidence": {
     "rules": [],
@@ -37480,29 +37480,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "asa_person_s_unknown_t_a_rosely_london_a24-1268786",
-   "regulator": "ASA",
-   "name": "Person(s) unknown t/a Rosely London",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1268786-person-s--unknown.html",
-   "match": "Person",
-   "date": "2025-04-09",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "ASA ruling",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad)",
-   "summary": "A paid-for Facebook ad and website made misleading claims including about the materials used to make products and money-back guarantees and also failed to include the geographical address from which they operated.",
-   "types": [],
-   "evidence": {
-    "rules": [],
-    "topic": null,
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
    "id": "asa_person_s_unknown_t_a_luxelle_london_a24-1269132",
    "regulator": "ASA",
    "name": "Person(s) unknown t/a Luxelle-London",
@@ -37517,6 +37494,29 @@
    "sector": null,
    "media": "Social media (paid ad), Website (own site)",
    "summary": "Two paid-for Facebook ads and a website misleadingly implied they were a UK-based company and failed to include the geographical address from which they operated.",
+   "types": [],
+   "evidence": {
+    "rules": [],
+    "topic": null,
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
+   "id": "asa_person_s_unknown_t_a_muse_2025",
+   "regulator": "ASA",
+   "name": "Person(s) unknown t/a Muse",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/person-s--unknown-g24-1265365-person-s--unknown.html",
+   "match": "Person",
+   "date": "2025-04-09",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "ASA ruling",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content)",
+   "summary": "A website misleadingly implied they were a UK-based company and failed to include the geographical address from which they operated.",
    "types": [],
    "evidence": {
     "rules": [],
@@ -38441,32 +38441,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "asa_person_s_unknown_t_a_gauge_b_ready_locks_a24-1242111",
-   "regulator": "ASA",
-   "name": "Person(s) unknown t/a Gauge B-Ready Locks, Guardian Tech Locksmith Cranleigh, ApexCraft Locksmith Frimley and Alex the Locksmith West Molesey",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1242111-person-s--unknown.html",
-   "match": "Person",
-   "date": "2024-07-31",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Internet (website content)",
-   "summary": "Four websites for locksmiths misleadingly stated that they were a local business and that they had physical premises in certain locations when this wasn’t the case.",
-   "types": [],
-   "evidence": {
-    "rules": [
-     "1.7",
-     "1.7"
-    ],
-    "topic": "Delivery, construction and logistics Person(s) unknown 13",
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
    "id": "asa_person_s_unknown_t_a_mendio_life_a24-1245839",
    "regulator": "ASA",
    "name": "Person(s) unknown t/a Mendio Life",
@@ -38514,6 +38488,32 @@
      "1.7"
     ],
     "topic": "Health conditions Person(s) unknown 13",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
+   "id": "asa_person_s_unknown_t_a_gauge_b_ready_locks_a24-1242111",
+   "regulator": "ASA",
+   "name": "Person(s) unknown t/a Gauge B-Ready Locks, Guardian Tech Locksmith Cranleigh, ApexCraft Locksmith Frimley and Alex the Locksmith West Molesey",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1242111-person-s--unknown.html",
+   "match": "Person",
+   "date": "2024-07-31",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content)",
+   "summary": "Four websites for locksmiths misleadingly stated that they were a local business and that they had physical premises in certain locations when this wasn’t the case.",
+   "types": [],
+   "evidence": {
+    "rules": [
+     "1.7",
+     "1.7"
+    ],
+    "topic": "Delivery, construction and logistics Person(s) unknown 13",
     "decision": "Upheld"
    },
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
@@ -41499,31 +41499,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "asa_green_fun_alliance_ltd_t_a_elf_bar_a22-1162007",
-   "regulator": "ASA",
-   "name": "Green Fun Alliance Ltd t/a Elf Bar",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/green-fun-alliance-ltd-a22-1162007-green-fun-alliance-ltd.html",
-   "match": "Green",
-   "date": "2023-05-10",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (influencer or affiliate ad)",
-   "summary": "A TikTok post breached our rules by promoting e-cigarettes, which are not permitted to be promoted online and in some other forms of electronic media.",
-   "types": [],
-   "evidence": {
-    "rules": [
-     "22.12"
-    ],
-    "topic": "Vaping, smoking and drugs",
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
    "id": "asa_hqd_tech_uk_a22-1163022",
    "regulator": "ASA",
    "name": "HQD Tech UK",
@@ -41542,6 +41517,31 @@
    "evidence": {
     "rules": [
      "22.10",
+     "22.12"
+    ],
+    "topic": "Vaping, smoking and drugs",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
+   "id": "asa_green_fun_alliance_ltd_t_a_elf_bar_a22-1162007",
+   "regulator": "ASA",
+   "name": "Green Fun Alliance Ltd t/a Elf Bar",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/green-fun-alliance-ltd-a22-1162007-green-fun-alliance-ltd.html",
+   "match": "Green",
+   "date": "2023-05-10",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (influencer or affiliate ad)",
+   "summary": "A TikTok post breached our rules by promoting e-cigarettes, which are not permitted to be promoted online and in some other forms of electronic media.",
+   "types": [],
+   "evidence": {
+    "rules": [
      "22.12"
     ],
     "topic": "Vaping, smoking and drugs",
@@ -45006,33 +45006,6 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_dignity_2026",
-   "regulator": "CMA",
-   "name": "Dignity",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/dignity-consumer-protection-enforcement-case",
-   "match": "Dignity",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating Dignity Group Holdings Limited’s (‘Dignity’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews about crematoria.",
-   "types": [
-    "fake_reviews"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
    "id": "cma_autotrader_2026",
    "regulator": "CMA",
    "name": "Autotrader",
@@ -45047,6 +45020,61 @@
    "refunds": null,
    "sector": "media",
    "summary": "The Competition and Markets Authority (CMA) is investigating Autotrader Limited’s (‘Autotrader’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.   ",
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_viagogo_2025",
+   "regulator": "CMA",
+   "name": "viagogo",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
+   "match": "viagogo",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk) to UK consumers.",
+   "types": [
+    "drip_pricing",
+    "misleading_reference_price"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_dignity_2026",
+   "regulator": "CMA",
+   "name": "Dignity",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/dignity-consumer-protection-enforcement-case",
+   "match": "Dignity",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating Dignity Group Holdings Limited’s (‘Dignity’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews about crematoria.",
    "types": [
     "fake_reviews"
    ],
@@ -45100,34 +45128,6 @@
    "sector": null,
    "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of information to customers about changes to Microsoft 365 Personal and Family subscriptions made by Microsoft Ireland Operations Limited.",
    "types": [],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_viagogo_2025",
-   "regulator": "CMA",
-   "name": "viagogo",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
-   "match": "viagogo",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk) to UK consumers.",
-   "types": [
-    "drip_pricing",
-    "misleading_reference_price"
-   ],
    "evidence": {
     "outcome_type": null,
     "case_state": [
@@ -45192,23 +45192,21 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_pasta_evangelists_2026",
+   "id": "cma_adobe_2026",
    "regulator": "CMA",
-   "name": "Pasta Evangelists",
+   "name": "Adobe",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
-   "match": "Pasta",
+   "url": "https://www.gov.uk/cma-cases/adobe-consumer-protection-enforcement-case",
+   "match": "Adobe",
    "date": null,
    "penalty": null,
    "outcome": null,
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
-   "types": [
-    "fake_reviews"
-   ],
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer protection law in relation to an early termination fee term for certain products provided in the UK by Adobe Systems Software Ireland Limited (trading as Adobe).",
+   "types": [],
    "evidence": {
     "outcome_type": null,
     "case_state": [
@@ -45246,56 +45244,6 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_adobe_2026",
-   "regulator": "CMA",
-   "name": "Adobe",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/adobe-consumer-protection-enforcement-case",
-   "match": "Adobe",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer protection law in relation to an early termination fee term for certain products provided in the UK by Adobe Systems Software Ireland Limited (trading as Adobe).",
-   "types": [],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_leasehold_2019",
-   "regulator": "CMA",
-   "name": "Leasehold",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/leasehold",
-   "match": "Leasehold",
-   "date": null,
-   "penalty": null,
-   "outcome": "Gave undertakings to the CMA",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
-   "types": [],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-undertakings",
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no decision date in the record"
-  },
-  {
    "id": "cma_emma_group_2022",
    "regulator": "CMA",
    "name": "Emma Group",
@@ -45324,12 +45272,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_online_consumer_reviews_2025",
+   "id": "cma_pasta_evangelists_2026",
    "regulator": "CMA",
-   "name": "Online consumer reviews",
+   "name": "Pasta Evangelists",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/online-consumer-reviews",
-   "match": "Online",
+   "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
+   "match": "Pasta",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -45337,61 +45285,7 @@
    "volume": null,
    "refunds": null,
    "sector": "ecommerce",
-   "summary": "The Competition and Market Authority's (CMA’s) work to protect consumers who rely on online reviews.",
-   "types": [
-    "fake_reviews"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_online_hotel_booking_2017",
-   "regulator": "CMA",
-   "name": "Online hotel booking",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/online-hotel-booking",
-   "match": "Online",
-   "date": null,
-   "penalty": null,
-   "outcome": "Gave undertakings to the CMA",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "CMA launches consumer law investigation into hotel booking sites.",
-   "types": [
-    "drip_pricing"
-   ],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-undertakings",
-    "case_state": [
-     "closed"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no decision date in the record"
-  },
-  {
-   "id": "cma_online_reviews_2020",
-   "regulator": "CMA",
-   "name": "Online reviews",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/online-reviews",
-   "match": "Online",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "media",
-   "summary": "The Competition and Markets Authority (CMA) investigation into fake online reviews.",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
    "types": [
     "fake_reviews"
    ],
@@ -45432,6 +45326,85 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_online_reviews_2020",
+   "regulator": "CMA",
+   "name": "Online reviews",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/online-reviews",
+   "match": "Online",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "media",
+   "summary": "The Competition and Markets Authority (CMA) investigation into fake online reviews.",
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_leasehold_2019",
+   "regulator": "CMA",
+   "name": "Leasehold",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/leasehold",
+   "match": "Leasehold",
+   "date": null,
+   "penalty": null,
+   "outcome": "Gave undertakings to the CMA",
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
+   "types": [],
+   "evidence": {
+    "outcome_type": "consumer-enforcement-undertakings",
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no decision date in the record"
+  },
+  {
+   "id": "cma_online_consumer_reviews_2025",
+   "regulator": "CMA",
+   "name": "Online consumer reviews",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/online-consumer-reviews",
+   "match": "Online",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "ecommerce",
+   "summary": "The Competition and Market Authority's (CMA’s) work to protect consumers who rely on online reviews.",
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
    "id": "cma_fast_moving_consumer_goods_fmcg_2023",
    "regulator": "CMA",
    "name": "Fast Moving Consumer Goods (FMCG)",
@@ -45457,6 +45430,33 @@
     "penalty_sentence": null
    },
    "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_online_hotel_booking_2017",
+   "regulator": "CMA",
+   "name": "Online hotel booking",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/online-hotel-booking",
+   "match": "Online",
+   "date": null,
+   "penalty": null,
+   "outcome": "Gave undertakings to the CMA",
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "CMA launches consumer law investigation into hotel booking sites.",
+   "types": [
+    "drip_pricing"
+   ],
+   "evidence": {
+    "outcome_type": "consumer-enforcement-undertakings",
+    "case_state": [
+     "closed"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no decision date in the record"
   },
   {
    "id": "cma_secondary_ticketing_websites_2012",
@@ -46502,31 +46502,6 @@
    "reason": "no finding-type rule matched the CMA description"
   },
   {
-   "id": "cma_hanover_housing_association_retirement_p_2012",
-   "regulator": "CMA",
-   "name": "Hanover Housing Association retirement properties",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/hanover-housing-association-retirement-properties-hidden-transfer-fee-terms",
-   "match": "Hanover",
-   "date": "2012-04-01",
-   "penalty": null,
-   "outcome": "Agreed to change its business practices",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "Hidden transfer fee terms.",
-   "types": [],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-changes-to-business-practices-agreed",
-    "case_state": [
-     "closed"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no finding-type rule matched the CMA description"
-  },
-  {
    "id": "cma_friedrich_mueller_2012",
    "regulator": "CMA",
    "name": "Friedrich Mueller",
@@ -46544,6 +46519,31 @@
    "types": [],
    "evidence": {
     "outcome_type": "consumer-enforcement-court-order",
+    "case_state": [
+     "closed"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no finding-type rule matched the CMA description"
+  },
+  {
+   "id": "cma_hanover_housing_association_retirement_p_2012",
+   "regulator": "CMA",
+   "name": "Hanover Housing Association retirement properties",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/hanover-housing-association-retirement-properties-hidden-transfer-fee-terms",
+   "match": "Hanover",
+   "date": "2012-04-01",
+   "penalty": null,
+   "outcome": "Agreed to change its business practices",
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "Hidden transfer fee terms.",
+   "types": [],
+   "evidence": {
+    "outcome_type": "consumer-enforcement-changes-to-business-practices-agreed",
     "case_state": [
      "closed"
     ],
