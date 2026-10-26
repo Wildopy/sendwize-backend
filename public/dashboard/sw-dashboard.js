@@ -446,6 +446,19 @@
     if (c.regulator === 'ASA') return 'Upheld ASA ruling, published under their name' + when;
     return esc(c.outcome || c.regulator + ' action') + when;
   }
+  // A twin without a fine must never read as "no cost": put the finding's own £ cost,
+  // what the case meant for them, and (CMA) today's fining power beside it
+  function stakes(c, f, dark) {
+    if (!c || c.penalty || !f) return '';
+    var m = f.exposure && f.exposure.marketingCost, cma = c.regulator === 'CMA';
+    var cost = m && m.available
+      ? 'For you, a case like this would cost about <b>' + gbpK(m.mostLikely) + '</b> (likely ' + range(m.low, m.high) + ') in ' + (cma ? 'refunds and disputes' : 'redoing the ad and lost sales') + '.'
+      : 'No fine does not mean no cost. <button class="sw-link" data-act="why" data-id="' + esc(f.id) + '">Add your campaign figures</button> to see what it would cost you in £.';
+    var hit = cma ? 'They had to change how they sell, and the case sits on gov.uk under their name.'
+      : 'The ad had to come down, and the ruling sits on asa.org.uk under their name.';
+    var law = cma ? ' Since April 2025 the CMA can fine directly, up to 10% of global turnover, so older cases settled without a fine are not the ceiling.' : '';
+    return '<div class="sw-stakes' + (dark ? ' dk' : '') + '"><div class="sw-lbl">No fine in this case. What it still costs</div><div class="sw-hs">' + cost + ' ' + hit + law + '</div></div>';
+  }
   function twinCard() {
     var T = D.caseTwin, pend = D.fixes.pending || [];
     if (!T) return '';
@@ -457,6 +470,7 @@
     return '<div class="sw-twin"><div class="sw-twin-main"><div class="sw-lbl">Your closest case twin</div>' +
       '<div class="sw-twin-name">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div>' +
       '<div class="sw-hs">' + esc(c.summary) + '</div>' +
+      stakes(c, pend.filter(function (x) { return x.id === h.fixId; })[0], true) +
       '<div class="sw-chips">' + h.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
       '<div class="sw-twin-btns"><button class="sw-btn o" data-act="twin" data-id="' + esc(h.fixId) + '">See it side by side</button><button class="sw-btn q" data-act="twin-only">Show the ' + open + ' finding' + (open > 1 ? 's' : '') + '</button></div></div>' +
       '<div class="sw-twin-side"><div class="sw-meter" style="--p:' + h.match + '"><div><b>' + h.match + '%</b><span>match</span></div></div>' +
@@ -478,6 +492,7 @@
         (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + (c.source === 'curated' ? esc(c.regulator) + ' enforcement page' : 'Read the ruling') + '</a>' : '') + '</div>' +
       '<div class="sw-vs-mid" aria-hidden="true">vs</div>' +
       '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(f.description) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
+      stakes(c, f) +
       '<div class="sw-dr-sec"><div class="sw-lbl">Why they match</div><div class="sw-chips">' + tw.t.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div></div>' +
       '<div class="sw-dr-sec"><div class="sw-lbl">What you have already done differently</div>' + (done.length ? done.map(function (x) {
         var v = x.completionSource === 'improved_on_rerun' || x.completionSource === 'verified';
@@ -547,7 +562,7 @@
       (st.whatif ? '<label class="sw-pick" data-act="noop"><input type="checkbox" data-pick="' + esc(f.id) + '"' + (st.picked[f.id] ? ' checked' : '') + ' aria-label="Include in what-if"></label>' : '') +
       '<span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body">' +
       (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(f.description) + '">' + esc(f.description) + '</div>') +
-      '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : '') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
+      '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : f.exposure && f.exposure.marketingCost && f.exposure.marketingCost.available ? ', ~' + gbpK(f.exposure.marketingCost.mostLikely) + ' to you' : ', ' + esc(tw.c.regulator) + ' ruling') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
       valueChip(f) +
       (open || st.whatif ? '' : '<span class="sw-fx-quick"><button class="sw-btn o" data-act="quickfix" title="Open it with the fix written for you">Fix it</button><button class="sw-btn ok" data-act="done" data-src="' + (f.improvedOnRerun ? 'improved_on_rerun' : 'manual') + '" title="Mark fixed" aria-label="Mark fixed">✓</button></span>') +
       '<span class="sw-chev">' + (open ? '⌃' : '⌄') + '</span></div>';

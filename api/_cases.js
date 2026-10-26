@@ -139,18 +139,26 @@ export function matchCase(fix, c, ctx = {}) {
 
 const niceType = t => { const s = String(t || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); };
 
+// How many match points a fined case may trail by and still be chosen
+const FINE_PREFERENCE = 5;
+
 // Twin for every open finding, plus the account's headline twin
 export function caseTwins(pending, completed, library, ctx = {}) {
   const byFix = {}, used = {};
   for (const f of pending) {
     if (f.severity === 'low') continue;
-    let best = null;
+    const hits = [];
     for (const c of library) {
       const m = matchCase(f, c, ctx);
-      if (!m || m.score < TWIN_MIN) continue;
-      if (!best || m.score > best.match || (m.score === best.match && (c.penalty || 0) > (best.c.penalty || 0))) best = { c, match: m.score, reasons: m.reasons };
+      if (m && m.score >= TWIN_MIN) hits.push({ c, match: m.score, reasons: m.reasons });
     }
-    if (!best) continue;
+    if (!hits.length) continue;
+    // Strongest match; a case with a published fine wins if it matches about as well,
+    // so the twin shows a real figure wherever one exists
+    const top = Math.max(...hits.map(h => h.match));
+    const near = hits.filter(h => h.match >= top - FINE_PREFERENCE);
+    const best = near.filter(h => h.c.penalty).sort((a, b) => b.match - a.match || b.c.penalty - a.c.penalty)[0]
+      || near.sort((a, b) => b.match - a.match)[0];
     byFix[f.id] = { caseId: best.c.id, match: best.match, reasons: best.reasons };
     used[best.c.id] = best.c;
   }
