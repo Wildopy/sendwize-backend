@@ -8,10 +8,10 @@
    engine). "Why this number?" comes from /api/exposure. Briefing,
    campaigns and recent checks load after first paint.
 
-   v1.4: easier to use. A "My Sendwize portal" header; tools grouped by
-   job with a line on what each is for; "Your next steps" comes first;
-   three headline figures with the full breakdown one tap away; a
-   three-step start for new accounts; plainer wording throughout.
+   v1.4: easier to use. A "My Sendwize portal" header; Case Twin, then
+   "Start here" as one-line rows with Fix it; three headline figures with
+   the full breakdown one tap away; a three-step start for new accounts;
+   plainer wording throughout.
 
    v1.3: the business profile is required. Until turnover, list size,
    opt-in records and complaint / regulator history are answered, the
@@ -199,11 +199,10 @@
   function render() {
     rotateVisits();
     var changed = whatChanged(), first = firstRun();
-    // What to do next comes first; the money detail is one tap away
+    // Case Twin leads, then what to do next; the money detail is one tap away
     root.innerHTML =
-      portalHead() + toolsNav() + changed + (first || startHere()) + noticedCard() + summaryStrip() +
+      portalHead() + toolsNav() + changed + (first ? first : twinCard() + startHere()) + noticedCard() + summaryStrip() +
       (st.detail ? '<div class="sw-grid sw-g-top">' + scoreCard() + heroTiles() + '</div>' + clustersCard() : '') +
-      (first ? '' : twinCard()) +
       '<div class="sw-grid sw-g-3">' + expiryCard() + briefingCard() + listValueCard() + '</div>' +
       (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-card sw-pad" id="sw-fixes">' + fixesSection() + '</div>') +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
@@ -267,22 +266,24 @@
 
   // "My Sendwize portal": who is signed in, today's date and the account links
   function portalHead() {
-    var cf = (member && member.customFields) || {};
-    var name = cf['first-name'] || cf.firstName || cf.name || '';
+    var cf = (member && member.customFields) || {}, a = (D && D.profile && D.profile.answers) || {}, bits = [];
     var co = cf.company || cf['company-name'] || '';
-    var today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-    return '<header class="sw-portal"><div><div class="sw-lbl">My Sendwize portal</div>' +
-      '<div class="sw-portal-t">' + (name ? 'Hi ' + esc(String(name).split(' ')[0]) : 'Welcome back') + (co ? ' · ' + esc(co) : '') + '</div>' +
-      '<div class="sw-note">' + esc(today) + '</div></div>' +
-      '<nav class="sw-portal-links" aria-label="Account"><a class="sw-link" href="' + esc(link('/profile.html')) + '">Business profile</a>' +
-      '<a class="sw-link" href="' + esc(link('/exposure-algorithm.html')) + '">How we work out figures</a></nav></header>';
+    if (co) bits.push(co);
+    if (a.sector) bits.push(nice(a.sector));
+    if (a.annualTurnover) bits.push(gbpK(a.annualTurnover) + ' turnover');
+    if (a.listSize) bits.push(Number(a.listSize).toLocaleString('en-GB') + ' contacts');
+    return '<header class="sw-portal"><div><div class="sw-portal-t">My Sendwize portal</div>' +
+      (bits.length ? '<div class="sw-portal-s">' + esc(bits.join(' · ')) + '</div>' : '') + '</div>' +
+      '<nav class="sw-portal-links" aria-label="Account"><a href="' + esc(link('/profile.html')) + '">Business profile</a>' +
+      '<a href="' + esc(link('/exposure-algorithm.html')) + '">Method</a></nav></header>';
   }
 
   function toolsNav() {
+    // One bar, in the order of the groups; hover or long-press shows what each is for
     return '<nav class="sw-tools" aria-label="Tools">' + TOOL_GROUPS.map(function (g) {
-      return '<div class="sw-tg"><div class="sw-tg-l">' + esc(g.l) + '</div>' + g.tools.map(function (t) {
-        return '<button class="sw-nt' + (t.hot ? ' hot' : '') + '" data-act="tool" data-u="' + esc(t.u) + '"><b>' + esc(t.l) + '</b><span>' + esc(t.d) + '</span></button>';
-      }).join('') + '</div>';
+      return g.tools.map(function (t) {
+        return '<button class="sw-nt' + (t.hot ? ' hot' : '') + '" data-act="tool" data-u="' + esc(t.u) + '" title="' + esc(g.l + ': ' + t.d) + '">' + esc(t.l) + '</button>';
+      }).join('');
     }).join('') + '</nav>';
   }
 
@@ -299,7 +300,7 @@
     ];
     var done = steps.filter(function (s) { return s[0]; }).length;
     return '<div class="sw-card sw-pad sw-first"><div class="sw-first-h"><div><div class="sw-lbl">Get started · ' + done + ' of 3 done</div><div class="sw-h2">Three checks to see where you stand</div>' +
-      '<div class="sw-hs">Each takes a few minutes. Anything they find shows up here with what it could cost and how to fix it.</div></div>' +
+      '<div class="sw-hs">Findings appear here with their £ exposure and the fix.</div></div>' +
       '<button class="sw-link" data-act="first-hide">Hide this</button></div><div class="sw-first-steps">' + steps.map(function (s, i) {
         return '<div class="sw-first-s' + (s[0] ? ' done' : '') + '"><div class="sw-step-n">' + (s[0] ? '✓' : i + 1) + '</div><div class="sw-fx-body"><div class="sw-row-t">' + esc(s[1]) + '</div><div class="sw-row-s">' + esc(s[2]) + '</div>' +
           (s[0] ? '<div class="sw-note">Done</div>' : '<button class="sw-btn o" data-act="tool" data-u="' + esc(s[3]) + '">' + esc(s[4]) + '</button>') + '</div></div>';
@@ -466,14 +467,15 @@
   // Top three open findings by value for the time they take
   function startHere() {
     var top = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); }).slice(0, 3);
-    var body = top.length ? '<div class="sw-steps">' + top.map(function (f, i) {
+    var body = top.length ? top.map(function (f, i) {
       var r = removes(f);
-      return '<div class="sw-step sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><div class="sw-step-n">' + (i + 1) + '</div><div class="sw-fx-body"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(f.description.slice(0, 110)) + (f.description.length > 110 ? '…' : '') + '</div>' +
-        '<div class="sw-chips">' + effortChip(f) + (r >= 1000 ? '<span class="sw-chip good">Cuts fine risk by about ' + gbpK(r) + '</span>' : '') + '</div><div class="sw-step-go">Show me how ›</div></div></div>';
-    }).join('') + '</div>' : '<div class="sw-empty">Nothing to fix right now. Check your next campaign before it goes out. <button class="sw-btn o" data-act="tool" data-u="/send-verdict.html">Check a campaign</button></div>';
+      return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
+        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(f.description) + '</div></div>' +
+        effortChip(f) + '<span class="sw-nx-v">' + (r >= 1000 ? '−' + gbpK(r) : '') + '</span><span class="sw-btn o">Fix it</span></div>';
+    }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/send-verdict.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
-    return '<div class="sw-card sw-pad sw-next"><div class="sw-next-h"><div><div class="sw-lbl">Your next steps</div><div class="sw-h2">' + (top.length ? 'Fix these first: most risk removed for the time they take' : 'You are all caught up') + '</div></div>' +
-      (more > 0 ? '<button class="sw-link" data-act="all-fixes">See all ' + (more + top.length) + ' to fix</button>' : '') + '</div>' + body + '</div>';
+    return '<div class="sw-card sw-pad sw-next"><div class="sw-next-h"><div class="sw-lbl">Start here · best value for your time</div>' +
+      (more > 0 ? '<button class="sw-link" data-act="all-fixes">All ' + (more + top.length) + ' findings</button>' : '') + '</div>' + body + '</div>';
   }
 
   function expLine(f) {
@@ -542,7 +544,7 @@
         '<div class="sw-hs">We compare every open finding with ' + (T.librarySize || 0) + ' published ICO, ASA and CMA cases and only show one when the issue matches and so does your sector or audience size.</div></div></div>';
     }
     var h = T.hero, c = T.cases[h.caseId], open = h.openFixIds.length, done = h.doneFixIds.length, pct = Math.round(done / Math.max(1, open + done) * 100);
-    return '<div class="sw-twin"><div class="sw-twin-main"><div class="sw-lbl">Case Twin · the published case most like yours</div>' +
+    return '<div class="sw-twin"><div class="sw-twin-main"><div class="sw-lbl">Your closest case twin</div>' +
       '<div class="sw-twin-name">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div>' +
       '<div class="sw-hs">' + esc(c.summary) + '</div>' +
       '<div class="sw-chips">' + h.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
