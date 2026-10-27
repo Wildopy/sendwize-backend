@@ -305,6 +305,44 @@ async function verify(c) {
   return p;
 }
 
+// ── ICO: each case's own page on ico.org.uk ──
+// The register is a spreadsheet, which is no use to someone clicking "Read the case".
+// Find the ICO's page for each case from its sitemap, and only use a page that names
+// the party and states the same amount. Cases with no such page keep the register as
+// their source and are flagged noPage, so the product shows no link for them.
+const ICO_STOP = new Set(['ltd', 'limited', 'plc', 'llp', 'uk', 'the', 'and', 'of', 'ta', 'trading', 'as', 'group', 'services', 'company', 'co']);
+async function icoSitemap() {
+  const urls = new Set(), seen = new Set();
+  const queue = ['https://ico.org.uk/sitemap.xml'];
+  while (queue.length && seen.size < 60) {
+    const u = queue.shift(); if (seen.has(u)) continue; seen.add(u);
+    const r = await get(u); if (!r.ok) continue;
+    for (const m of r.text.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)) {
+      const loc = decode(m[1]);
+      if (/\.xml(\?|$)/.test(loc)) queue.push(loc);
+      else if (/\/action-weve-taken\/(enforcement|monetary-penalties)\//.test(loc)) urls.add(loc);
+    }
+  }
+  return { pages: [...urls], sitemaps: seen.size };
+}
+async function linkIcoPages(cases) {
+  const { pages, sitemaps } = await icoSitemap();
+  let linked = 0;
+  await pool(cases, 4, async c => {
+    const words = String(c.name).toLowerCase().replace(/\(.*?\)/g, ' ').split(/[^a-z0-9]+/).filter(w => w.length > 1 && !ICO_STOP.has(w));
+    const key = words.slice(0, 2).join('-');
+    const cands = key ? pages.filter(u => u.toLowerCase().includes(key) || (words[0] && words[0].length > 4 && u.toLowerCase().includes('/' + words[0]))) : [];
+    for (const u of cands.slice(0, 4)) {
+      const r = await get(u); if (!r.ok) continue;
+      const t = plain(r.text);
+      const tl = t.toLowerCase();
+      if (words.slice(0, 2).every(w => tl.includes(w)) && amountForms(c.penalty).some(f => t.includes(f))) { c.url = u; c.match = words[0]; linked++; return; }
+    }
+    c.noPage = true;
+  });
+  return { linked, of: cases.length, sitemapPages: pages.length, sitemaps };
+}
+
 // ── Run ──
 const held = [], found = [], report = {};
 const knownAsa = new Set(CASES.filter(c => c.regulator === 'ASA').map(c => c.url));
@@ -324,6 +362,7 @@ await pool(found, 6, async c => {
   if (c.regulator !== 'ASA') { const p = await verify(c); if (p.length) { held.push({ ...c, reason: p.join('; ') }); return; } }
   ready.push(c);
 });
+if (ready.some(c => c.regulator === 'ICO')) { report.icoPages = await linkIcoPages(ready.filter(c => c.regulator === 'ICO')); console.log('ICO case pages:', report.icoPages); }
 for (const c of ready) { const n = (ids.get(c.id) || 0) + 1; ids.set(c.id, n); if (n > 1) c.id += '_' + n; }
 const order = (a, b) => a.regulator.localeCompare(b.regulator) || String(b.date).localeCompare(String(a.date));
 ready.sort(order); held.sort(order);
@@ -338,7 +377,7 @@ mkdirSync('data', { recursive: true });
 writeFileSync('data/case-review.json', JSON.stringify({
   generated: new Date().toISOString(),
   note: 'Imported from regulator records. Not live: cases reach the product only once approved in data/case-approvals.json and published.',
-  counts, alreadyInLibrary: already.length, asaYears: report.asaYears || null, heldReasons: reasons, ready, held,
+  counts, alreadyInLibrary: already.length, icoPages: report.icoPages || null, asaYears: report.asaYears || null, heldReasons: reasons, ready, held,
 }, null, 1) + '\n');
 
 const line = `Ready for review: ${ready.length} (${Object.entries(counts.ready).map(([k, v]) => `${k} ${v}`).join(', ')}). Held back: ${held.length}. Already in the library: ${already.length}.`;

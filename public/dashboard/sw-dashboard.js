@@ -716,7 +716,7 @@
     cases = cases || [];
     if (!cases.length) return '';
     return '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
-      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + (c.related ? ' <span class="sw-src">Related issue</span>' : '') + '<div class="sw-hs">' + esc(c.summary) + '</div><a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a></div>';
+      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + (c.related ? ' <span class="sw-src">Related issue</span>' : '') + '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a>' : '<div class="sw-note">From the ' + esc(c.regulator) + '\u2019s published penalties register</div>') + '</div>';
     }).join('') + '</div>';
   }
 

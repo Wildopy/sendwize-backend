@@ -90,7 +90,7 @@ export function buildLibrary(feedRecords = []) {
     id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty || null,
     refunds: c.refunds || null, outcome: caseOutcome(c),
     volume: c.volume || null, summary: c.summary, types: c.types, sector: c.sector ?? null,
-    url: c.url || ICO_ACTION_URL, source: 'curated',
+    url: c.url || (c.imported ? null : ICO_ACTION_URL), source: c.imported ? 'imported' : 'curated',
   }));
   const seen = new Set(lib.map(c => slug(c.name).split('_')[0]));
   for (const r of feedRecords) {

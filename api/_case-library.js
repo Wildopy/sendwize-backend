@@ -201,7 +201,9 @@ const CURATED = [
 
 // Hand-checked cases above, then the approved imports from the regulator
 // records (scripts/import-cases.mjs → data/case-review.json → publish-cases).
-export const CASES = [...CURATED, ...IMPORTED.map(c => ({ ...c, imported: true }))];
+// An imported case with no page of its own keeps its source (the ICO register) for the
+// link check but shows no link: a spreadsheet is no use to someone reading the case.
+export const CASES = [...CURATED, ...IMPORTED.map(c => ({ ...c, imported: true, ...(c.noPage ? { sourceUrl: c.url, url: null } : {}) }))];
 
 // For the dashboard and the method page: how big the library is
 export const LIBRARY_STATS = CASES.reduce((s, c) => {

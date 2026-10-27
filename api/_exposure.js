@@ -574,7 +574,7 @@ export function closestCases(fixType, volume) {
     .map(({ c, rel }) => ({ c, rel, d: rel * 10 + (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
     .sort((a, b) => a.d - b.d || String(b.c.date).localeCompare(String(a.c.date)))
     .slice(0, 3)
-    .map(({ c, rel }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, url: c.url || ICO_ACTION_URL, related: rel === 1 }));
+    .map(({ c, rel }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, url: c.url || (c.imported ? null : ICO_ACTION_URL), related: rel === 1 }));
 }
 
 // ── Profile inputs that sharpen the figures (all optional) ──
@@ -1089,7 +1089,7 @@ export function method() {
     requiredProfile: REQUIRED_PROFILE,
     // Hand-checked cases and every case with a published amount; the rest of
     // the imported rulings are counted in libraryStats
-    cases: CASE_ANCHORS.filter(c => !c.imported || c.penalty || c.refunds).map(c => ({ ...c, outcome: caseOutcome(c), url: c.url || ICO_ACTION_URL })),
+    cases: CASE_ANCHORS.filter(c => !c.imported || c.penalty || c.refunds).map(c => ({ ...c, outcome: caseOutcome(c), url: c.url || (c.imported ? null : ICO_ACTION_URL) })),
     libraryStats: LIBRARY_STATS,
     legal: { icoMax: ICO_LEGAL_MAX, cmaMax: CMA_LEGAL_MAX, duaaWarning: DUAA_WARNING, notLegalAdvice: NOT_LEGAL_ADVICE, commercialDisclaimer: COMMERCIAL_DISCLAIMER },
   };

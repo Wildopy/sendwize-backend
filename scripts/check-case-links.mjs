@@ -54,9 +54,9 @@ function load(c) {
 const squash = s => String(s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 async function check(c) {
-  const out = { id: c.id, name: c.name, url: c.url, problems: [], note: '' };
-  if (!OFFICIAL.test(c.url || '')) { out.problems.push('not an official regulator URL'); return out; }
-  const page = await load(c);
+  const out = { id: c.id, name: c.name, url: c.sourceUrl || c.url, problems: [], note: '' };
+  if (!OFFICIAL.test(c.sourceUrl || c.url || '')) { out.problems.push('not an official regulator URL'); return out; }
+  const page = await load({ ...c, url: c.sourceUrl || c.url });
   if (page.problem) { out.problems.push(page.problem); return out; }
   if (!OFFICIAL.test(page.url)) out.problems.push('redirected off the regulator site to ' + page.url);
   const text = page.text;
