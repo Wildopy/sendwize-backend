@@ -106,7 +106,7 @@ const CURATED = [
     url: ICO + '/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv' },
   { id: 'easylife_pecr_2022', regulator: 'ICO', name: 'Easylife Ltd (PECR)', date: '2022-10', penalty: 130000, volume: 1345732, sector: 'ecommerce',
     summary: 'About 1.3M marketing calls to people registered with the Telephone Preference Service.',
-    types: ['suppression_breach'],
+    types: ['marketing_calls'],
     url: ICO + '/media2/migrated/4021802/easylife-limited-mpn-reg-21-20221004.pdf' },
   { id: 'capita_2025', regulator: 'ICO', name: 'Capita plc and Capita Pension Solutions Ltd', date: '2025-10-15', penalty: 14000000, volume: 6600000, sector: 'b2b',
     summary: 'A 2023 cyber attack exposed data on 6.6M people after security failings. A provisional £45M fine was settled at £14M.',
