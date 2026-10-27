@@ -203,8 +203,8 @@
     root.innerHTML =
       portalHead() + toolsNav() + changed + (first ? first : twinCard() + startHere()) + noticedCard() + summaryStrip() +
       (st.detail ? '<div class="sw-grid sw-g-top">' + scoreCard() + heroTiles() + '</div>' + clustersCard() : '') +
-      '<div class="sw-grid sw-g-3">' + expiryCard() + briefingCard() + listValueCard() + '</div>' +
-      (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-card sw-pad" id="sw-fixes">' + fixesSection() + '</div>') +
+      '<div class="sw-quiet">' + expiryCard() + briefingCard() + listValueCard() + '</div>' +
+      (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-open sw-fixes" id="sw-fixes">' + fixesSection() + '</div>') +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Recent checks</span><span>' +
         ['ai', 'verdict', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' }[k] + '</button>'; }).join('') +
@@ -299,7 +299,7 @@
       [ran('site sweep'), 'Sweep your website', 'Finds gaps in cookies, your privacy notice and sign-up forms across the whole site.', '/site-sweep.html', 'Sweep my site'],
     ];
     var done = steps.filter(function (s) { return s[0]; }).length;
-    return '<div class="sw-card sw-pad sw-first"><div class="sw-first-h"><div><div class="sw-lbl">Get started · ' + done + ' of 3 done</div><div class="sw-h2">Three checks to see where you stand</div>' +
+    return '<div class="sw-open sw-first"><div class="sw-first-h"><div><div class="sw-lbl">Get started · ' + done + ' of 3 done</div><div class="sw-h2">Three checks to see where you stand</div>' +
       '<div class="sw-hs">Findings appear here with their £ exposure and the fix.</div></div>' +
       '<button class="sw-link" data-act="first-hide">Hide this</button></div><div class="sw-first-steps">' + steps.map(function (s, i) {
         return '<div class="sw-first-s' + (s[0] ? ' done' : '') + '"><div class="sw-step-n">' + (s[0] ? '✓' : i + 1) + '</div><div class="sw-fx-body"><div class="sw-row-t">' + esc(s[1]) + '</div><div class="sw-row-s">' + esc(s[2]) + '</div>' +
@@ -417,7 +417,7 @@
     var body = cl.length ? cl.map(function (c) {
       return '<div class="sw-row sw-row-btn' + (st.area === c.area ? ' on' : '') + '" data-act="area" data-a="' + esc(c.area) + '" role="button" tabindex="0" title="Show these findings"><div class="sw-row-main"><div class="sw-row-t">' + esc(c.label) + '</div><div class="sw-row-s">' + c.count + ' finding' + (c.count > 1 ? 's' : '') + ' · see them</div></div><div class="sw-row-v">' + likely(c.mostLikely, c.low, c.high) + (c.mostLikely ? '<div class="sw-row-s">' + range(c.low, c.high) + '</div>' : '') + '</div><button class="sw-link" data-act="why" data-id="' + esc(c.leadFixId) + '">Why?</button></div>';
     }).join('') : '<div class="sw-empty">No open data protection findings.</div>';
-    return '<div class="sw-card sw-pad sw-areas"><div class="sw-lbl">Fine risk by area</div>' + body +
+    return '<div class="sw-open sw-areas"><div class="sw-lbl">Fine risk by area</div>' + body +
       (D.exposure.duaaWarning ? '<div class="sw-note" style="margin-top:10px">' + esc(D.exposure.duaaWarning) + '</div>' : '') +
       '<div style="margin-top:10px">' + algoLink() + '</div></div>';
   }
@@ -474,7 +474,7 @@
         effortChip(f) + '<span class="sw-nx-v">' + (r >= 1000 ? '−' + gbpK(r) : '') + '</span><span class="sw-btn o">Fix it</span></div>';
     }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/send-verdict.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
-    return '<div class="sw-card sw-pad sw-next"><div class="sw-next-h"><div class="sw-lbl">Start here · best value for your time</div>' +
+    return '<div class="sw-open sw-next"><div class="sw-next-h"><div class="sw-lbl">Start here · best value for your time</div>' +
       (more > 0 ? '<button class="sw-link" data-act="all-fixes">All ' + (more + top.length) + ' findings</button>' : '') + '</div>' + body + '</div>';
   }
 
