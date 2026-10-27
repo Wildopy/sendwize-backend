@@ -488,7 +488,7 @@
       var r = removes(f);
       return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
         '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(f.description) + '</div></div>' +
-        effortChip(f) + '<span class="sw-nx-v"><b>+' + pts(f) + ' pts</b>' + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
+        effortChip(f) + '<span class="sw-nx-v">' + (pts(f) ? '<b>+' + pts(f) + ' pts</b>' : '') + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
     }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/send-verdict.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
     return '<div class="sw-open sw-next"><div class="sw-next-h"><div class="sw-lbl">Start here · best value for your time</div>' +
