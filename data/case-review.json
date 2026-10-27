@@ -1,9 +1,9 @@
 {
- "generated": "2026-10-26T19:04:06.831Z",
+ "generated": "2026-10-27T22:29:05.965Z",
  "note": "Imported from regulator records. Not live: cases reach the product only once approved in data/case-approvals.json and published.",
  "counts": {
   "ready": {
-   "ASA": 938,
+   "ASA": 936,
    "CMA": 19,
    "ICO": 207
   },
@@ -14,6 +14,12 @@
   }
  },
  "alreadyInLibrary": 29,
+ "icoPages": {
+  "linked": 12,
+  "of": 207,
+  "sitemapPages": 229,
+  "sitemaps": 1
+ },
  "asaYears": [
   {
    "year": 2008,
@@ -82,8 +88,8 @@
   },
   {
    "year": 2021,
-   "listed": 66,
-   "read": 66
+   "listed": 64,
+   "read": 64
   },
   {
    "year": 2022,
@@ -1445,33 +1451,6 @@
    }
   },
   {
-   "id": "asa_bolt_healthcare_ltd_t_a_bolt_pharmacy_a26-1333536",
-   "regulator": "ASA",
-   "name": "Bolt Healthcare Ltd t/a Bolt Pharmacy",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/bolt-healthcare-ltd-a26-1333536-bolt-healthcare-ltd.html",
-   "match": "Bolt",
-   "date": "2026-07-29",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "29 July 2026",
-   "summary": "Two paid-for Facebook ads for an online pharmacy promoted weight loss prescription-only medicines to the public, against the law and our rules.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "12.12"
-    ],
-    "topic": "Weight and slimming",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_bolt_healthcare_ltd_t_a_bolt_pharmacy_a26-1335405",
    "regulator": "ASA",
    "name": "Bolt Healthcare Ltd t/a Bolt Pharmacy",
@@ -1494,6 +1473,33 @@
    "evidence": {
     "rules": [
      "2.3",
+     "12.12"
+    ],
+    "topic": "Weight and slimming",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_bolt_healthcare_ltd_t_a_bolt_pharmacy_a26-1333536",
+   "regulator": "ASA",
+   "name": "Bolt Healthcare Ltd t/a Bolt Pharmacy",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/bolt-healthcare-ltd-a26-1333536-bolt-healthcare-ltd.html",
+   "match": "Bolt",
+   "date": "2026-07-29",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "29 July 2026",
+   "summary": "Two paid-for Facebook ads for an online pharmacy promoted weight loss prescription-only medicines to the public, against the law and our rules.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
      "12.12"
     ],
     "topic": "Weight and slimming",
@@ -2820,35 +2826,6 @@
    }
   },
   {
-   "id": "asa_boots_uk_ltd_t_a_boots_com_a26-1326173",
-   "regulator": "ASA",
-   "name": "Boots UK Ltd t/a boots.com",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/boots-uk-ltd-a26-1326173-boots-uk-ltd.html",
-   "match": "Boots",
-   "date": "2026-05-20",
-   "penalty": null,
-   "outcome": "ASA ruling upheld in part",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Website (own site)",
-   "summary": "An online display ad for Boots made misleading savings claims. Another ad was investigated but it didn’t break the rules.",
-   "types": [
-    "misleading_claim",
-    "misleading_reference_price"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.7",
-     "3.17"
-    ],
-    "topic": "Pricing and charges",
-    "decision": "Upheld in Part"
-   }
-  },
-  {
    "id": "asa_dbz_marketplace_online_ltd_t_a_debenhams_a26-1326171",
    "regulator": "ASA",
    "name": "DBZ Marketplace Online Ltd t/a Debenhams",
@@ -2875,6 +2852,35 @@
     ],
     "topic": "Promotions and competitions",
     "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_boots_uk_ltd_t_a_boots_com_a26-1326173",
+   "regulator": "ASA",
+   "name": "Boots UK Ltd t/a boots.com",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/boots-uk-ltd-a26-1326173-boots-uk-ltd.html",
+   "match": "Boots",
+   "date": "2026-05-20",
+   "penalty": null,
+   "outcome": "ASA ruling upheld in part",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Website (own site)",
+   "summary": "An online display ad for Boots made misleading savings claims. Another ad was investigated but it didn’t break the rules.",
+   "types": [
+    "misleading_claim",
+    "misleading_reference_price"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.7",
+     "3.17"
+    ],
+    "topic": "Pricing and charges",
+    "decision": "Upheld in Part"
    }
   },
   {
@@ -5595,36 +5601,6 @@
    }
   },
   {
-   "id": "asa_jr_biomedical_ltd_t_a_selfcheck_a25-1303536",
-   "regulator": "ASA",
-   "name": "JR Biomedical Ltd t/a SELFCHECK",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/jr-biomedical-ltd-a25-1303536-jr-biomedical-ltd.html",
-   "match": "JR",
-   "date": "2025-12-10",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Search (paid)",
-   "summary": "Two paid-for Google ads for a medical device company made claims that their at home Prostate-Specific Antigen (PSA) tests could make an accurate medical diagnosis of prostate problems, including prostate cancer.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.9",
-     "12.1",
-     "12.2"
-    ],
-    "topic": "Medical devices",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_lifelab_testing_ltd_a25-1303554",
    "regulator": "ASA",
    "name": "Lifelab Testing Ltd",
@@ -5720,6 +5696,36 @@
    }
   },
   {
+   "id": "asa_jr_biomedical_ltd_t_a_selfcheck_a25-1303536",
+   "regulator": "ASA",
+   "name": "JR Biomedical Ltd t/a SELFCHECK",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/jr-biomedical-ltd-a25-1303536-jr-biomedical-ltd.html",
+   "match": "JR",
+   "date": "2025-12-10",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Search (paid)",
+   "summary": "Two paid-for Google ads for a medical device company made claims that their at home Prostate-Specific Antigen (PSA) tests could make an accurate medical diagnosis of prostate problems, including prostate cancer.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.9",
+     "12.1",
+     "12.2"
+    ],
+    "topic": "Medical devices",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_nutrisslim_d_o_o_t_a_nature_s_finest_by__a25-1303555",
    "regulator": "ASA",
    "name": "Nutrisslim d o o t/a Nature’s Finest by Nutrisslim UK",
@@ -5780,35 +5786,6 @@
    }
   },
   {
-   "id": "asa_starlink_internet_services_ltd_a25-1298384",
-   "regulator": "ASA",
-   "name": "Starlink Internet Services Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/starlink-internet-services-ltd-a25-1298384-starlink-internet-services-ltd.html",
-   "match": "Starlink",
-   "date": "2025-12-10",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Website (paid ad)",
-   "summary": "A banner ad for an internet provider omitted material information about a promotional price offer.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.3",
-     "3.4",
-     "3.4"
-    ],
-    "topic": "Computers, phones and telecoms",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_tayhli_ltd_t_a_c_a_t_a25-1303750",
    "regulator": "ASA",
    "name": "TAYHLI ltd t/a C.A.T.",
@@ -5835,6 +5812,35 @@
      "15.6"
     ],
     "topic": "Food, drink and supplements",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_starlink_internet_services_ltd_a25-1298384",
+   "regulator": "ASA",
+   "name": "Starlink Internet Services Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/starlink-internet-services-ltd-a25-1298384-starlink-internet-services-ltd.html",
+   "match": "Starlink",
+   "date": "2025-12-10",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Website (paid ad)",
+   "summary": "A banner ad for an internet provider omitted material information about a promotional price offer.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.3",
+     "3.4",
+     "3.4"
+    ],
+    "topic": "Computers, phones and telecoms",
     "decision": "Upheld"
    }
   },
@@ -6461,36 +6467,6 @@
    }
   },
   {
-   "id": "asa_hilton_worldwide_ltd_a25-1296973",
-   "regulator": "ASA",
-   "name": "Hilton Worldwide Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/hilton-worldwide-ltd-a25-1296973-hilton-worldwide-ltd.html",
-   "match": "Hilton",
-   "date": "2025-11-19",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Search (paid)",
-   "summary": "Two paid-for search ads for Hilton made misleading claims about the price of hotel rooms.",
-   "types": [
-    "misleading_claim",
-    "drip_pricing"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.7",
-     "3.17",
-     "3.22"
-    ],
-    "topic": "Holidays, travel and motoring",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_hutch_games_ltd_t_a_f1_clash_a25-1282245",
    "regulator": "ASA",
    "name": "Hutch Games Ltd t/a F1 Clash",
@@ -6586,6 +6562,36 @@
    "sector": null,
    "media": "Search (paid)",
    "summary": "Two paid-for search ads for Travelodge made misleading claims about the price of hotel rooms.",
+   "types": [
+    "misleading_claim",
+    "drip_pricing"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.7",
+     "3.17",
+     "3.22"
+    ],
+    "topic": "Holidays, travel and motoring",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_hilton_worldwide_ltd_a25-1296973",
+   "regulator": "ASA",
+   "name": "Hilton Worldwide Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/hilton-worldwide-ltd-a25-1296973-hilton-worldwide-ltd.html",
+   "match": "Hilton",
+   "date": "2025-11-19",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Search (paid)",
+   "summary": "Two paid-for search ads for Hilton made misleading claims about the price of hotel rooms.",
    "types": [
     "misleading_claim",
     "drip_pricing"
@@ -10459,6 +10465,33 @@
    }
   },
   {
+   "id": "asa_churchill_retirement_living_ltd_a24-1248717",
+   "regulator": "ASA",
+   "name": "Churchill Retirement Living Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/churchill-retirement-living-ltd-a24-1248717-churchill-retirement-living-ltd.html",
+   "match": "Churchill",
+   "date": "2024-12-04",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "National newspaper (paid ad)",
+   "summary": "A national newspaper ad failed to include the significant conditions of a promotion, including a closing date.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "8.17",
+     "8.17"
+    ],
+    "topic": null,
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_bodystreet_franchise_uk_ltd_a24-1253486",
    "regulator": "ASA",
    "name": "Bodystreet Franchise (UK) Ltd",
@@ -10483,33 +10516,6 @@
      "3.11"
     ],
     "topic": "Sports, leisure and hobbies Bodystreet Franchise (UK)",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_churchill_retirement_living_ltd_a24-1248717",
-   "regulator": "ASA",
-   "name": "Churchill Retirement Living Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/churchill-retirement-living-ltd-a24-1248717-churchill-retirement-living-ltd.html",
-   "match": "Churchill",
-   "date": "2024-12-04",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "National newspaper (paid ad)",
-   "summary": "A national newspaper ad failed to include the significant conditions of a promotion, including a closing date.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "8.17",
-     "8.17"
-    ],
-    "topic": null,
     "decision": "Upheld"
    }
   },
@@ -10869,6 +10875,33 @@
    }
   },
   {
+   "id": "asa_pegasus_homes_ltd_t_a_pegasus_homes_a24-1248715",
+   "regulator": "ASA",
+   "name": "Pegasus Homes Ltd t/a Pegasus Homes",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/pegasus-homes-ltd-a24-1248715-lifestory-group-ltd.html",
+   "match": "Pegasus",
+   "date": "2024-11-13",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "National newspaper (paid ad)",
+   "summary": "A national newspaper ad for a retirement property company failed to include the significant conditions of a promotion and misleadingly omitted information regarding the price of a service charge.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "8.17",
+     "8.17"
+    ],
+    "topic": "Property sales and lettings",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_pegasus_homes_ltd_t_a_pegasus_homes_a24-1248718",
    "regulator": "ASA",
    "name": "Pegasus Homes Ltd t/a Pegasus Homes",
@@ -10920,33 +10953,6 @@
      "12.1"
     ],
     "topic": "Medical devices",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_pegasus_homes_ltd_t_a_pegasus_homes_a24-1248715",
-   "regulator": "ASA",
-   "name": "Pegasus Homes Ltd t/a Pegasus Homes",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/pegasus-homes-ltd-a24-1248715-lifestory-group-ltd.html",
-   "match": "Pegasus",
-   "date": "2024-11-13",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "National newspaper (paid ad)",
-   "summary": "A national newspaper ad for a retirement property company failed to include the significant conditions of a promotion and misleadingly omitted information regarding the price of a service charge.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "8.17",
-     "8.17"
-    ],
-    "topic": "Property sales and lettings",
     "decision": "Upheld"
    }
   },
@@ -17131,33 +17137,6 @@
    }
   },
   {
-   "id": "asa_hutch_games_ltd_a23-1196862",
-   "regulator": "ASA",
-   "name": "Hutch Games Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/hutch-games-ltd-a23-1196862-hutch-games-ltd.html",
-   "match": "Hutch",
-   "date": "2023-10-04",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "App (own claim)",
-   "summary": "A listing for the game \"Rebel Racing\" on the Google Play store did not make it sufficiently clear that the game contained loot boxes.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.3"
-    ],
-    "topic": "Sports, leisure and hobbies",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_hutch_games_ltd_a23-1196857",
    "regulator": "ASA",
    "name": "Hutch Games Ltd",
@@ -17172,6 +17151,33 @@
    "sector": null,
    "media": "App (own claim)",
    "summary": "A listing for the game \"F1 Clash - Car Racing Manager\" on the Apple App store did not make it sufficiently clear that the game contained loot boxes.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.3"
+    ],
+    "topic": "Sports, leisure and hobbies",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_hutch_games_ltd_a23-1196862",
+   "regulator": "ASA",
+   "name": "Hutch Games Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/hutch-games-ltd-a23-1196862-hutch-games-ltd.html",
+   "match": "Hutch",
+   "date": "2023-10-04",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "App (own claim)",
+   "summary": "A listing for the game \"Rebel Racing\" on the Google Play store did not make it sufficiently clear that the game contained loot boxes.",
    "types": [
     "misleading_claim"
    ],
@@ -17301,33 +17307,6 @@
    }
   },
   {
-   "id": "asa_mep_llc_t_a_o2hyperhealth_a23-1198244",
-   "regulator": "ASA",
-   "name": "MEP LLC t/a O2HyperHealth",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/mep-llc-a23-1198244-mep-llc.html",
-   "match": "MEP",
-   "date": "2023-09-27",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Internet (website content), Leaflet",
-   "summary": "A website and leaflet for hyperbaric oxygen therapy discouraged essential treatment for conditions for which medical supervision should be sought.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "12.2"
-    ],
-    "topic": "Medical procedures and services",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_hamilton_direct_ltd_a23-1185794",
    "regulator": "ASA",
    "name": "Hamilton Direct Ltd",
@@ -17353,6 +17332,33 @@
      "3.47"
     ],
     "topic": null,
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_mep_llc_t_a_o2hyperhealth_a23-1198244",
+   "regulator": "ASA",
+   "name": "MEP LLC t/a O2HyperHealth",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/mep-llc-a23-1198244-mep-llc.html",
+   "match": "MEP",
+   "date": "2023-09-27",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content), Leaflet",
+   "summary": "A website and leaflet for hyperbaric oxygen therapy discouraged essential treatment for conditions for which medical supervision should be sought.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "12.2"
+    ],
+    "topic": "Medical procedures and services",
     "decision": "Upheld"
    }
   },
@@ -19199,6 +19205,37 @@
    }
   },
   {
+   "id": "asa_braincare_ltd_2023",
+   "regulator": "ASA",
+   "name": "Braincare Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/braincare-ltd-g23-1191017-braincare-ltd.html",
+   "match": "Braincare",
+   "date": "2023-05-31",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Email, Internet (website content), Social media (own site)",
+   "summary": "An email, website and Instagram post for an online food supplement provider, made unauthorised health claims and claimed to prevent, treat, or cure human disease.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "15.7",
+     "15.1",
+     "15.2",
+     "15.6",
+     "15.1"
+    ],
+    "topic": "Food, drink and supplements",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_intrepid_travel_group_uk_ltd_a22-1173927",
    "regulator": "ASA",
    "name": "Intrepid Travel Group UK Ltd",
@@ -19308,37 +19345,6 @@
      "3.4"
     ],
     "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_braincare_ltd_2023",
-   "regulator": "ASA",
-   "name": "Braincare Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/braincare-ltd-g23-1191017-braincare-ltd.html",
-   "match": "Braincare",
-   "date": "2023-05-31",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Email, Internet (website content), Social media (own site)",
-   "summary": "An email, website and Instagram post for an online food supplement provider, made unauthorised health claims and claimed to prevent, treat, or cure human disease.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "15.7",
-     "15.1",
-     "15.2",
-     "15.6",
-     "15.1"
-    ],
-    "topic": "Food, drink and supplements",
     "decision": "Upheld"
    }
   },
@@ -20001,35 +20007,6 @@
    }
   },
   {
-   "id": "asa_thg_nutrition_limited_t_a_my_protein_a22-1176831",
-   "regulator": "ASA",
-   "name": "THG Nutrition Limited t/a My Protein",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/thg-nutrition-limited-a22-1176831-thg-nutrition-limited.html",
-   "match": "THG",
-   "date": "2023-04-19",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Internet (website content)",
-   "summary": "The website for a sports nutrition retailer made misleading savings claims which suggested that a significant proportion of products would be discounted by 80%.",
-   "types": [
-    "misleading_claim",
-    "misleading_reference_price"
-   ],
-   "evidence": {
-    "rules": [
-     "3.7",
-     "3.17",
-     "3.1"
-    ],
-    "topic": "Promotions and competitions",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_thg_nutrition_limited_t_a_my_protein_a22-1178724",
    "regulator": "ASA",
    "name": "THG Nutrition Limited t/a My Protein",
@@ -20054,6 +20031,35 @@
      "3.17",
      "8.17",
      "8.17"
+    ],
+    "topic": "Promotions and competitions",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_thg_nutrition_limited_t_a_my_protein_a22-1176831",
+   "regulator": "ASA",
+   "name": "THG Nutrition Limited t/a My Protein",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/thg-nutrition-limited-a22-1176831-thg-nutrition-limited.html",
+   "match": "THG",
+   "date": "2023-04-19",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content)",
+   "summary": "The website for a sports nutrition retailer made misleading savings claims which suggested that a significant proportion of products would be discounted by 80%.",
+   "types": [
+    "misleading_claim",
+    "misleading_reference_price"
+   ],
+   "evidence": {
+    "rules": [
+     "3.7",
+     "3.17",
+     "3.1"
     ],
     "topic": "Promotions and competitions",
     "decision": "Upheld"
@@ -20384,33 +20390,6 @@
    "regulator": "ASA",
    "name": "Sophie Hinchliffe t/a Mrs Hinch",
    "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/sophie-hinchliffe-g22-1155720-sophie-hinchliffe.html",
-   "match": "Sophie",
-   "date": "2023-03-15",
-   "penalty": null,
-   "outcome": "ASA ruling upheld in part",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (influencer or affiliate ad)",
-   "summary": "An Instagram Story on influencer Mrs Hinch’s account was not obviously identifiable as an ad.",
-   "types": [
-    "undisclosed_ad"
-   ],
-   "evidence": {
-    "rules": [
-     "2.1",
-     "2.3"
-    ],
-    "topic": "Claims, endorsements and testimonials Sophie Hinchliffe c/o",
-    "decision": "Upheld in part"
-   }
-  },
-  {
-   "id": "asa_sophie_hinchliffe_t_a_mrs_hinch_2023_2",
-   "regulator": "ASA",
-   "name": "Sophie Hinchliffe t/a Mrs Hinch",
-   "source": "ASA ruling",
    "url": "https://www.asa.org.uk/rulings/sophie-hinchliffe-g22-1140953-sophie-hinchliffe.html",
    "match": "Sophie",
    "date": "2023-03-15",
@@ -20434,31 +20413,30 @@
    }
   },
   {
-   "id": "asa_tonic_nutrition_ltd_t_a_tonic_health_a22-1172445",
+   "id": "asa_sophie_hinchliffe_t_a_mrs_hinch_2023_2",
    "regulator": "ASA",
-   "name": "Tonic Nutrition Ltd t/a Tonic Health",
+   "name": "Sophie Hinchliffe t/a Mrs Hinch",
    "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/tonic-nutrition-ltd-a22-1172445-tonic-nutrition-ltd.html",
-   "match": "Tonic",
+   "url": "https://www.asa.org.uk/rulings/sophie-hinchliffe-g22-1155720-sophie-hinchliffe.html",
+   "match": "Sophie",
    "date": "2023-03-15",
    "penalty": null,
-   "outcome": "Upheld ASA ruling",
+   "outcome": "ASA ruling upheld in part",
    "law": "CAP Code (Edition",
    "volume": null,
    "sector": null,
-   "media": "Social media (own site)",
-   "summary": "A TikTok post by vitamin drinks company broke the rules by implying that their food products could prevent, treat or cure human disease.",
+   "media": "Social media (influencer or affiliate ad)",
+   "summary": "An Instagram Story on influencer Mrs Hinch’s account was not obviously identifiable as an ad.",
    "types": [
-    "misleading_claim",
-    "asa_liability"
+    "undisclosed_ad"
    ],
    "evidence": {
     "rules": [
-     "15.6",
-     "15.6"
+     "2.1",
+     "2.3"
     ],
-    "topic": "Food, drink and supplements",
-    "decision": "Upheld"
+    "topic": "Claims, endorsements and testimonials Sophie Hinchliffe c/o",
+    "decision": "Upheld in part"
    }
   },
   {
@@ -20486,6 +20464,34 @@
      "15.2",
      "15.6",
      "15.1"
+    ],
+    "topic": "Food, drink and supplements",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_tonic_nutrition_ltd_t_a_tonic_health_a22-1172445",
+   "regulator": "ASA",
+   "name": "Tonic Nutrition Ltd t/a Tonic Health",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/tonic-nutrition-ltd-a22-1172445-tonic-nutrition-ltd.html",
+   "match": "Tonic",
+   "date": "2023-03-15",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (own site)",
+   "summary": "A TikTok post by vitamin drinks company broke the rules by implying that their food products could prevent, treat or cure human disease.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "15.6",
+     "15.6"
     ],
     "topic": "Food, drink and supplements",
     "decision": "Upheld"
@@ -21800,34 +21806,6 @@
    }
   },
   {
-   "id": "asa_vodafone_ltd_a22-1148595",
-   "regulator": "ASA",
-   "name": "Vodafone Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/vodafone-ltd-a22-1148595-vodafone-ltd.html",
-   "match": "Vodafone",
-   "date": "2022-11-23",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "National press, Internet (website content)",
-   "summary": "A website banner and a press ad for a Telecommunications service provider, misleadingly implied that they were the most reliable network or the only reliable network.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.7",
-     "3.33"
-    ],
-    "topic": "Computers, phones and telecoms",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_valorous_sports_ltd_t_a_valorous_a22-1162127",
    "regulator": "ASA",
    "name": "Valorous Sports Ltd t/a Valorous",
@@ -21852,6 +21830,34 @@
      "2.4"
     ],
     "topic": "Clothing, shoes and jewellery",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_vodafone_ltd_a22-1148595",
+   "regulator": "ASA",
+   "name": "Vodafone Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/vodafone-ltd-a22-1148595-vodafone-ltd.html",
+   "match": "Vodafone",
+   "date": "2022-11-23",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "National press, Internet (website content)",
+   "summary": "A website banner and a press ad for a Telecommunications service provider, misleadingly implied that they were the most reliable network or the only reliable network.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.7",
+     "3.33"
+    ],
+    "topic": "Computers, phones and telecoms",
     "decision": "Upheld"
    }
   },
@@ -21906,33 +21912,6 @@
      "1.7",
      "3.1",
      "3.11"
-    ],
-    "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_anp_medical_aesthetics_a22-1163981",
-   "regulator": "ASA",
-   "name": "ANP Medical Aesthetics",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/anp-medical-aesthetics-a22-1163981-anp-medical-aesthetics.html",
-   "match": "ANP",
-   "date": "2022-11-09",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad)",
-   "summary": "Two Facebook posts for an aesthetic clinic promoted hydrocortisone injections which are prescription only medicines that must not be promoted to the general public.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "12.12"
     ],
     "topic": null,
     "decision": "Upheld"
@@ -22002,6 +21981,33 @@
    }
   },
   {
+   "id": "asa_anp_medical_aesthetics_a22-1163981",
+   "regulator": "ASA",
+   "name": "ANP Medical Aesthetics",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/anp-medical-aesthetics-a22-1163981-anp-medical-aesthetics.html",
+   "match": "ANP",
+   "date": "2022-11-09",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (paid ad)",
+   "summary": "Two Facebook posts for an aesthetic clinic promoted hydrocortisone injections which are prescription only medicines that must not be promoted to the general public.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "12.12"
+    ],
+    "topic": null,
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_myleene_klass_a22-1160222",
    "regulator": "ASA",
    "name": "Myleene Klass",
@@ -22053,35 +22059,6 @@
      "2.4"
     ],
     "topic": "Clothing, shoes and jewellery",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_oriflame_cosmetics_sa_t_a_oriflame_a22-1159531",
-   "regulator": "ASA",
-   "name": "Oriflame Cosmetics SA t/a Oriflame",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/oriflame-cosmetics-sa-a22-1159531-oriflame-cosmetics-sa.html",
-   "match": "Oriflame",
-   "date": "2022-11-02",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (own site)",
-   "summary": "Two posts on a recruitment company’s Facebook page were misleading as they did not include sufficient information to make consumers aware that the outlined incentives were based on specific earnings and recruitment targets.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.3",
-     "3.10",
-     "3.9"
-    ],
-    "topic": "Beauty products, grooming and hygiene",
     "decision": "Upheld"
    }
   },
@@ -22169,6 +22146,35 @@
      "11.4"
     ],
     "topic": "Animals and farming",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_oriflame_cosmetics_sa_t_a_oriflame_a22-1159531",
+   "regulator": "ASA",
+   "name": "Oriflame Cosmetics SA t/a Oriflame",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/oriflame-cosmetics-sa-a22-1159531-oriflame-cosmetics-sa.html",
+   "match": "Oriflame",
+   "date": "2022-11-02",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (own site)",
+   "summary": "Two posts on a recruitment company’s Facebook page were misleading as they did not include sufficient information to make consumers aware that the outlined incentives were based on specific earnings and recruitment targets.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.3",
+     "3.10",
+     "3.9"
+    ],
+    "topic": "Beauty products, grooming and hygiene",
     "decision": "Upheld"
    }
   },
@@ -23627,6 +23633,36 @@
    }
   },
   {
+   "id": "asa_jc_atkinson_son_ltd_a21-1114723",
+   "regulator": "ASA",
+   "name": "JC Atkinson & Son Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/jc-atkinson---son-ltd-a21-1114723-jc-atkinson--son-ltd.html",
+   "match": "JC",
+   "date": "2022-08-03",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content)",
+   "summary": "An ad on the company’s website misleadingly implied that their MDF coffins were more eco-friendly than other options, without sufficient evidence.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.7",
+     "11.4",
+     "11.1",
+     "11.3"
+    ],
+    "topic": null,
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_golden_leaves_ltd_a21-1128535",
    "regulator": "ASA",
    "name": "Golden Leaves Ltd",
@@ -23654,36 +23690,6 @@
      "11.1"
     ],
     "topic": "Utilities, energy and environment",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_jc_atkinson_son_ltd_a21-1114723",
-   "regulator": "ASA",
-   "name": "JC Atkinson & Son Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/jc-atkinson---son-ltd-a21-1114723-jc-atkinson--son-ltd.html",
-   "match": "JC",
-   "date": "2022-08-03",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Internet (website content)",
-   "summary": "An ad on the company’s website misleadingly implied that their MDF coffins were more eco-friendly than other options, without sufficient evidence.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.7",
-     "11.4",
-     "11.1",
-     "11.3"
-    ],
-    "topic": null,
     "decision": "Upheld"
    }
   },
@@ -26098,33 +26104,30 @@
    }
   },
   {
-   "id": "asa_british_telecommunications_plc_t_a_bt_bt_a21-1109653",
+   "id": "asa_chloe_ferry_t_a_chloegshore1_chloe1ferry_a21-1117945",
    "regulator": "ASA",
-   "name": "British Telecommunications plc t/a BT, BT Sport",
+   "name": "Chloe Ferry t/a chloegshore1, Chloe1ferry",
    "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/british-telecommunications-plc-a21-1109653-british-telecommunications-plc.html",
-   "match": "British",
+   "url": "https://www.asa.org.uk/rulings/chloe-ferry-a21-1117945-chloe-ferry.html",
+   "match": "Chloe",
    "date": "2021-12-22",
    "penalty": null,
    "outcome": "Upheld ASA ruling",
    "law": "CAP Code (Edition",
    "volume": null,
    "sector": null,
-   "media": "Internet (website content)",
-   "summary": "A website ad for BT was banned for making misleading internet speed claims.",
+   "media": "Social media (influencer or affiliate ad)",
+   "summary": "An Instagram story post by Chloe Ferry was banned for not being obviously identifiable as an ad.",
    "types": [
-    "misleading_claim"
+    "undisclosed_ad"
    ],
    "evidence": {
     "rules": [
-     "3.1",
-     "3.54",
-     "3.3",
-     "3.10",
-     "3.9",
-     "3.11"
+     "2.3",
+     "2.4",
+     "2.1"
     ],
-    "topic": "Computers, phones and telecoms",
+    "topic": null,
     "decision": "Upheld"
    }
   },
@@ -26156,30 +26159,33 @@
    }
   },
   {
-   "id": "asa_chloe_ferry_t_a_chloegshore1_chloe1ferry_a21-1117945",
+   "id": "asa_british_telecommunications_plc_t_a_bt_bt_a21-1109653",
    "regulator": "ASA",
-   "name": "Chloe Ferry t/a chloegshore1, Chloe1ferry",
+   "name": "British Telecommunications plc t/a BT, BT Sport",
    "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/chloe-ferry-a21-1117945-chloe-ferry.html",
-   "match": "Chloe",
+   "url": "https://www.asa.org.uk/rulings/british-telecommunications-plc-a21-1109653-british-telecommunications-plc.html",
+   "match": "British",
    "date": "2021-12-22",
    "penalty": null,
    "outcome": "Upheld ASA ruling",
    "law": "CAP Code (Edition",
    "volume": null,
    "sector": null,
-   "media": "Social media (influencer or affiliate ad)",
-   "summary": "An Instagram story post by Chloe Ferry was banned for not being obviously identifiable as an ad.",
+   "media": "Internet (website content)",
+   "summary": "A website ad for BT was banned for making misleading internet speed claims.",
    "types": [
-    "undisclosed_ad"
+    "misleading_claim"
    ],
    "evidence": {
     "rules": [
-     "2.3",
-     "2.4",
-     "2.1"
+     "3.1",
+     "3.54",
+     "3.3",
+     "3.10",
+     "3.9",
+     "3.11"
     ],
-    "topic": null,
+    "topic": "Computers, phones and telecoms",
     "decision": "Upheld"
    }
   },
@@ -27178,64 +27184,6 @@
    }
   },
   {
-   "id": "asa_primark_stores_ltd_a21-1118770",
-   "regulator": "ASA",
-   "name": "Primark Stores Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/primark-stores-ltd-a21-1118770-primark-stores-ltd.html",
-   "match": "Primark",
-   "date": "2021-10-27",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (influencer or affiliate ad)",
-   "summary": "An Instagram post by influencer Gabby Allen promoting Primark products was banned for not being obviously identifiable as an ad.",
-   "types": [
-    "undisclosed_ad"
-   ],
-   "evidence": {
-    "rules": [
-     "2.1",
-     "2.3",
-     "2.4"
-    ],
-    "topic": "Primark",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_tomwill_holdings_ltd_2021",
-   "regulator": "ASA",
-   "name": "Tomwill (Holdings) Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/tomwill--holdings--ltd-g21-1116080-tomwill--holdings--ltd.html",
-   "match": "Tomwill",
-   "date": "2021-10-27",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad), Email, Internet (website content)",
-   "summary": "Six ads promoting a strategy for treating anxiety were banned for not holding evidence to support the claims and for discouraging essential treatment for conditions for which medical advice should be sought.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.7",
-     "12.1",
-     "12.2"
-    ],
-    "topic": "Health conditions Tomwill (Holdings)",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "cma_automobile_association_developments_limi_2026",
    "regulator": "CMA",
    "name": "Automobile Association Developments Limited",
@@ -27760,15 +27708,16 @@
      "Unpaid",
      "Recovery ongoing"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_money_bubble_ltd_2024",
    "regulator": "ICO",
    "name": "Money Bubble Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Money Bubble Ltd",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/12/money-bubble-ltd-en/",
+   "match": "money",
    "date": "2024-12-05",
    "penalty": 120000,
    "law": "PECR",
@@ -27796,8 +27745,8 @@
    "regulator": "ICO",
    "name": "WerepairUK Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "WerepairUK Ltd",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/10/werepairuk-ltd-mpn/",
+   "match": "werepairuk",
    "date": "2024-09-18",
    "penalty": 80000,
    "law": "PECR",
@@ -27847,15 +27796,16 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_service_box_group_ltd_2024",
    "regulator": "ICO",
    "name": "Service Box Group Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Service Box Group Ltd",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/10/service-box-group-limited-en/",
+   "match": "service",
    "date": "2024-08-13",
    "penalty": 40000,
    "law": "PECR",
@@ -27905,7 +27855,8 @@
      "Unpaid",
      "Recovery ongoing - Compulsory Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_dr_telemarketing_ltd_2024",
@@ -27934,15 +27885,16 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_grocery_delivery_e_services_uk_ltd_t_a_h_2024",
    "regulator": "ICO",
    "name": "Grocery Delivery E-Services UK Ltd t/a HelloFresh",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Grocery Delivery E-Services UK Ltd t/a HelloFresh",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/01/grocery-delivery-e-services-uk-ltd-ta-hellofresh/",
+   "match": "grocery",
    "date": "2024-01-11",
    "penalty": 140000,
    "law": "PECR",
@@ -27992,7 +27944,8 @@
      "Unpaid",
      "Recovery ongoing"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_argentum_data_solutions_ltd_2023",
@@ -28022,7 +27975,8 @@
      "Appeal",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_outsource_strategies_ltd_2023",
@@ -28051,7 +28005,8 @@
      "Partial payment",
      "Payment plan"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_digivo_media_limited_2023",
@@ -28080,7 +28035,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_mcp_online_ltd_2023",
@@ -28109,15 +28065,16 @@
      "Unpaid",
      "Insufficient assets"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_rhap_ltd_2023",
    "regulator": "ICO",
    "name": "RHAP Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "RHAP Ltd",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/rhap-ltd-mpn/",
+   "match": "rhap",
    "date": "2023-09-13",
    "penalty": 65000,
    "law": "PECR",
@@ -28145,8 +28102,8 @@
    "regulator": "ICO",
    "name": "Simply Connecting Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Simply Connecting Ltd",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/simply-connecting-ltd-mpn/",
+   "match": "simply",
    "date": "2023-08-03",
    "penalty": 40000,
    "law": "PECR",
@@ -28174,8 +28131,8 @@
    "regulator": "ICO",
    "name": "House Hold Appliances 247 Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "House Hold Appliances 247 Ltd",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/house-hold-appliances-247-ltd-mpn/",
+   "match": "house",
    "date": "2023-08-03",
    "penalty": 55000,
    "law": "PECR",
@@ -28225,15 +28182,16 @@
      "Unpaid",
      "Recovery ongoing - Compulsory Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_sgs_home_protect_ltd_2023",
    "regulator": "ICO",
    "name": "SGS Home Protect Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "SGS Home Protect Ltd",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/sgs-home-protect-ltd-mpn/",
+   "match": "sgs",
    "date": "2023-08-02",
    "penalty": 70000,
    "law": "PECR",
@@ -28261,8 +28219,8 @@
    "regulator": "ICO",
    "name": "Cover Appliance Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Cover Appliance Ltd",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/cover-appliance-ltd-mpn/",
+   "match": "cover",
    "date": "2023-08-02",
    "penalty": 200000,
    "law": "PECR",
@@ -28290,8 +28248,8 @@
    "regulator": "ICO",
    "name": "F12 Management Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "F12 Management Ltd",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/f12-management-ltd-mpn/",
+   "match": "f12",
    "date": "2023-08-02",
    "penalty": 200000,
    "law": "PECR",
@@ -28319,8 +28277,8 @@
    "regulator": "ICO",
    "name": "Fortis Insolvency Limited",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Fortis Insolvency Limited",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/06/fortis-insolvency-limited-mpn/",
+   "match": "fortis",
    "date": "2023-06-27",
    "penalty": 30000,
    "law": "PECR",
@@ -28348,8 +28306,8 @@
    "regulator": "ICO",
    "name": "Maxen Power Supply Limited",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Maxen Power Supply Limited",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/06/maxen-power-supply-limited-mpn/",
+   "match": "maxen",
    "date": "2023-05-30",
    "penalty": 120000,
    "law": "PECR",
@@ -28399,7 +28357,8 @@
      "Partial payment",
      "Recovery ongoing - Creditors Voluntary Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_uk_direct_business_solutions_limited_2023",
@@ -28428,7 +28387,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_ice_telecommunications_ltd_2023",
@@ -28457,7 +28417,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_join_the_triboo_limited_2023",
@@ -28486,7 +28447,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_it_s_ok_limited_2023",
@@ -28515,7 +28477,8 @@
      "Partial payment",
      "Recovery ongoing - Compulsory Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_ryan_hill_partners_2022",
@@ -28544,7 +28507,8 @@
      "Partial payment",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_utility_guard_limited_2022",
@@ -28573,7 +28537,8 @@
      "Unpaid",
      "Insufficient assets - Dissolved"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_repair_plans_uk_limited_2022",
@@ -28603,7 +28568,8 @@
      "Unpaid",
      "Compulsory Liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_allapplianceservices_uk_ltd_2022",
@@ -28632,7 +28598,8 @@
      "Partial payment",
      "Payment plan"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_zuwyco_limited_2022",
@@ -28661,7 +28628,8 @@
      "Unpaid",
      "Compulsory Liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_apex_assure_limited_2022",
@@ -28690,7 +28658,8 @@
      "Unpaid",
      "Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_green_logic_uk_ltd_2022",
@@ -28719,7 +28688,8 @@
      "Partial payment",
      "Insufficient assets"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_posh_windows_uk_limited_2022",
@@ -28748,7 +28718,8 @@
      "Unpaid",
      "Recovery ongoing - Creditors Voluntary Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_boiler_cover_breakdown_limited_2022",
@@ -28777,7 +28748,8 @@
      "Partial payment",
      "Payment plan"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_boiler_breakdown_limited_2022",
@@ -28806,7 +28778,8 @@
      "Partial payment",
      "Payment plan"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_eco_spray_insulations_limited_2022",
@@ -28835,7 +28808,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_finance_giant_ltd_2022",
@@ -28864,7 +28838,8 @@
      "Unpaid",
      "Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_bizfella_limited_2022",
@@ -28893,7 +28868,8 @@
      "Unpaid",
      "Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_h_l_business_consulting_limited_2022",
@@ -28922,7 +28898,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_uk_appliance_cover_ltd_2022",
@@ -28951,7 +28928,8 @@
      "Unpaid",
      "Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_home_sure_solutions_ltd_2022",
@@ -28980,7 +28958,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_domestic_support_ltd_2022",
@@ -29009,7 +28988,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_seaview_brokers_ltd_2022",
@@ -29038,7 +29018,8 @@
      "Appeal",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_the_money_hive_ltd_2022",
@@ -29067,7 +29048,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_tempcover_ltd_2022",
@@ -29096,7 +29078,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_home2sense_ltd_2022",
@@ -29125,7 +29108,8 @@
      "Unpaid",
      "Recovery ongoing - Compulsory Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_uk_platinum_home_care_services_ltd_2022",
@@ -29154,7 +29138,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_energy_suite_ltd_2022",
@@ -29183,7 +29168,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_northern_gas_power_2021",
@@ -29212,7 +29198,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_virgin_media_ltd_2021",
@@ -29241,7 +29228,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_eb_associates_group_ltd_2021",
@@ -29270,7 +29258,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_unite_the_union_2021",
@@ -29299,7 +29288,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_your_home_improvements_ltd_2021",
@@ -29328,7 +29318,8 @@
      "Unpaid",
      "Dissolved"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_sportsdirect_com_retail_ltd_2021",
@@ -29357,7 +29348,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_dialadeal_scotland_ltd_2021",
@@ -29386,7 +29378,8 @@
      "Unpaid",
      "Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_yes_consumer_solutions_ltd_2021",
@@ -29415,7 +29408,8 @@
      "Partially paid",
      "Recovery ongoing - Compulsory Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_brazier_consulting_services_limited_2021",
@@ -29444,7 +29438,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_colourcoat_ltd_2021",
@@ -29473,7 +29468,8 @@
      "Partially paid",
      "Recovery ongoing - Compulsory Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_papa_john_s_gb_limited_2021",
@@ -29502,7 +29498,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_global_one_2015_2021",
@@ -29531,7 +29528,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_solarwave_limited_2021",
@@ -29560,7 +29558,8 @@
      "Unpaid",
      "Recovery ongoing - creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_lth_holdings_ltd_2021",
@@ -29589,7 +29588,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_the_conservative_party_2021",
@@ -29618,7 +29618,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_colour_car_sales_limited_2021",
@@ -29647,7 +29648,8 @@
      "Unpaid",
      "Recovery ongoing - Compulsory Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_american_express_services_europe_limited_2021",
@@ -29676,7 +29678,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_tested_me_limited_2021",
@@ -29705,7 +29708,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_muscle_foods_limited_2021",
@@ -29734,7 +29738,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_leads_work_limited_2021",
@@ -29763,7 +29768,8 @@
      "Unpaid",
      "Recovery ongoing - Creditors Voluntary Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_valca_vehicle_life_cover_agency_ltd_2021",
@@ -29792,7 +29798,8 @@
      "Unpaid",
      "Dissolved following Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_house_guard_uk_limited_2021",
@@ -29821,7 +29828,8 @@
      "Unpaid",
      "Recovery ongoing - Creditors' Voluntary Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_call_centre_ops_limited_2021",
@@ -29850,7 +29858,8 @@
      "Unpaid",
      "Dissolved following Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_seafish_importers_limited_2021",
@@ -29879,7 +29888,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_rancom_security_limited_2021",
@@ -29908,7 +29918,8 @@
      "Appeal",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_solar_style_solutions_limited_2021",
@@ -29937,7 +29948,8 @@
      "Unpaid",
      "Recovery ongoing - creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_chameleon_marleting_h_i_ltd_2021",
@@ -29966,7 +29978,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_repair_assure_ltd_2021",
@@ -29995,7 +30008,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_pownall_marketing_limited_2020",
@@ -30024,7 +30038,8 @@
      "Unpaid",
      "Company dissolved"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_pension_house_exchange_limited_2020",
@@ -30053,7 +30068,8 @@
      "Unpaid",
      "Dissolved following Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_osl_financial_consultancy_limited_2020",
@@ -30082,7 +30098,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_reliance_advisory_limited_2020",
@@ -30111,7 +30128,8 @@
      "Unpaid",
      "Recovery ongoing - creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_studios_mg_limited_2020",
@@ -30140,7 +30158,8 @@
      "Unpaid",
      "Recovery ongoing - Compulsory Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_digital_growth_experts_limited_2020",
@@ -30169,7 +30188,8 @@
      "Unpaid",
      "Insufficient assets"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_cps_advisory_ltd_2020",
@@ -30198,7 +30218,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_koypo_laboratories_ltd_2020",
@@ -30227,7 +30248,8 @@
      "Unpaid",
      "Dissolved - Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_rain_trading_ltd_2020",
@@ -30256,7 +30278,8 @@
      "Partial payment",
      "Insufficient assets"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_decision_technologies_limited_2020",
@@ -30285,7 +30308,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_black_lion_marketing_ltd_2020",
@@ -30314,7 +30338,8 @@
      "Unpaid",
      "Dissolved following Creditors Voluntary Liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_crdnn_limited_2020",
@@ -30343,7 +30368,8 @@
      "Unpaid",
      "Compulsory liquidation - dividend paid"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_making_it_easy_ltd_2019",
@@ -30372,7 +30398,8 @@
      "Unpaid",
      "Recovery ongoing - creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_ee_limited_2019",
@@ -30401,7 +30428,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_smart_homes_protection_limited_2019",
@@ -30430,7 +30458,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_hall_and_hanley_ltd_2019",
@@ -30459,7 +30488,8 @@
      "Unpaid",
      "Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_avalon_direct_ltd_2019",
@@ -30488,7 +30518,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_grove_pension_solutions_limited_2019",
@@ -30517,7 +30548,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_vote_leave_limited_2019",
@@ -30546,7 +30578,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_eldon_insurance_services_limited_trading_2019",
@@ -30575,7 +30608,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_leave_eu_group_limited_incident_1_2019",
@@ -30604,7 +30638,8 @@
      "Unpaid",
      "Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_leave_eu_group_limited_incident_2_2019",
@@ -30633,7 +30668,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_alistar_green_legal_services_limited_2019",
@@ -30662,7 +30698,8 @@
      "Partial payment",
      "Dissolved following Compulsory liquidation - dividend paid"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_tax_returned_limited_2018",
@@ -30691,7 +30728,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_solartech_north_east_ltd_2018",
@@ -30720,7 +30758,8 @@
      "Unpaid",
      "Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_dm_design_bedrooms_ltd_2018",
@@ -30749,7 +30788,8 @@
      "Partial payment",
      "Compulsory Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_act_response_limited_2018",
@@ -30778,7 +30818,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_secure_home_systems_2018",
@@ -30807,7 +30848,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_everything_dm_ltd_2018",
@@ -30836,7 +30878,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_lifestyle_marketing_mother_and_baby_ltd_2018",
@@ -30865,7 +30908,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_ams_marketing_limited_2018",
@@ -30894,7 +30938,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_british_telecommunications_ltd_2018",
@@ -30923,7 +30968,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_our_vault_ltd_2018",
@@ -30952,7 +30998,8 @@
      "Unpaid",
      "Nil assets"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_iag_nationwide_ltd_2018",
@@ -30981,7 +31028,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_costelloe_kelly_ltd_2018",
@@ -31010,7 +31058,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_the_energy_saving_centre_ltd_2018",
@@ -31039,7 +31088,8 @@
      "Unpaid",
      "Dissolved following Creditors Voluntary Liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_mr_alex_goldthorpe_trading_as_approved_g_2018",
@@ -31068,7 +31118,8 @@
      "Unpaid",
      "Bankrupt - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_royal_mail_group_limited_2018",
@@ -31097,7 +31148,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_holmes_financial_solutions_ltd_2018",
@@ -31126,7 +31178,8 @@
      "Unpaid",
      "Dissolved following Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_sse_energy_supply_ltd_2018",
@@ -31155,7 +31208,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_miss_sold_products_uk_ltd_2018",
@@ -31184,7 +31238,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_newday_limited_2018",
@@ -31213,7 +31268,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_tfli_ltd_2018",
@@ -31242,7 +31298,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_barrington_claims_ltd_2018",
@@ -31271,7 +31328,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_goody_market_uk_ltd_2018",
@@ -31300,7 +31358,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_hamilton_digital_solutions_ltd_2017",
@@ -31329,7 +31388,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_the_lead_experts_limited_2017",
@@ -31358,7 +31418,8 @@
      "Unpaid",
      "Dissolved following strike off of company"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_xerpla_ltd_2017",
@@ -31387,7 +31448,8 @@
      "Appeal",
      "ICO lost Tribunal appeal"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_easyleads_limited_2017",
@@ -31416,7 +31478,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation. Nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_your_money_rights_ltd_2017",
@@ -31445,7 +31508,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation. Nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_true_telecom_ltd_2017",
@@ -31474,7 +31538,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_cab_guru_limited_2017",
@@ -31503,7 +31568,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_vanquis_bank_ltd_2017",
@@ -31532,7 +31598,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_home_logic_uk_limited_2017",
@@ -31561,7 +31628,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_h_p_a_s_limited_t_a_safestyle_uk_2017",
@@ -31590,7 +31658,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_laura_anderson_limited_t_a_virgo_home_im_2017",
@@ -31619,7 +31688,8 @@
      "Partial payment",
      "£22,222.20. Dissolved following creditors voluntary liquidation. Nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_moneysupermarket_com_ltd_2017",
@@ -31648,7 +31718,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_provident_personal_credit_limited_2017",
@@ -31677,7 +31748,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_myhome_installations_limited_2017",
@@ -31706,7 +31778,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_wm_morrison_supermarkets_plc_2017",
@@ -31735,7 +31808,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_concept_car_credit_ltd_2017",
@@ -31764,7 +31838,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_brighter_home_solutions_ltd_2017",
@@ -31793,7 +31868,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_onecom_limited_2017",
@@ -31822,7 +31898,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_keurboom_communications_ltd_2017",
@@ -31851,7 +31928,8 @@
      "Unpaid",
      "Creditors voluntary liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_monevo_limited_2017",
@@ -31881,7 +31959,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_macmillan_cancer_support_2017",
@@ -31912,7 +31991,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_nspcc_2017",
@@ -31943,7 +32023,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_oxfam_2017",
@@ -31974,7 +32055,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_cancer_research_uk_2017",
@@ -32005,7 +32087,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_international_fund_for_animal_welfare_2017",
@@ -32036,7 +32119,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_royal_british_legion_2017",
@@ -32067,7 +32151,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_guide_dogs_for_the_blind_2017",
@@ -32098,7 +32183,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_wwf_2017",
@@ -32129,7 +32215,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_cancer_support_uk_2017",
@@ -32160,7 +32247,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_great_ormond_street_hospital_children_s__2017",
@@ -32191,7 +32279,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_battersea_dogs_and_cats_home_2017",
@@ -32222,7 +32311,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_xternal_property_renovations_2017",
@@ -32251,7 +32341,8 @@
      "Unpaid",
      "Dissolved following Creditors Voluntary Liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_prs_media_limited_t_a_purus_digital_2017",
@@ -32280,7 +32371,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_honda_motor_europe_limited_2017",
@@ -32309,7 +32401,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_flybe_limited_2017",
@@ -32338,7 +32431,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_munee_hut_llp_2017",
@@ -32367,7 +32461,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_road_accident_consult_ltd_t_a_media_tact_2017",
@@ -32396,7 +32491,8 @@
      "Unpaid",
      "Dissolved following Creditors Voluntary Liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_digitonomy_limited_2017",
@@ -32425,7 +32521,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_lad_media_limited_2017",
@@ -32454,7 +32551,8 @@
      "Unpaid",
      "Dissolved following Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_it_protect_ltd_2017",
@@ -32483,7 +32581,8 @@
      "Unpaid",
      "Dissolved following complusory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_silver_city_tech_limited_2016",
@@ -32513,7 +32612,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_oracle_insurance_brokers_limited_2016",
@@ -32542,7 +32642,8 @@
      "Unpaid",
      "Dissolved following strike off of company"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_nouveau_finance_ltd_2016",
@@ -32571,7 +32672,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_assist_law_limited_2016",
@@ -32600,7 +32702,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_intelligent_lending_limited_t_a_ocean_fi_2016",
@@ -32629,7 +32732,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_carfinance_247_limited_2016",
@@ -32658,7 +32762,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_omega_marketing_services_limited_2016",
@@ -32687,7 +32792,8 @@
      "Unpaid",
      "Dissolved following Creditors Voluntary Liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_vincent_bond_co_limited_2016",
@@ -32716,7 +32822,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_advanced_voip_solutions_limited_2016",
@@ -32745,7 +32852,8 @@
      "Unpaid",
      "Dissolved following Creditors Voluntary Liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_check_point_claims_ltd_2016",
@@ -32774,7 +32882,8 @@
      "Unpaid",
      "Dissolved following creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_better_for_the_country_ltd_2016",
@@ -32803,7 +32912,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_quigley_carter_limited_2016",
@@ -32832,7 +32942,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_nevis_home_improvements_ltd_2016",
@@ -32861,7 +32972,8 @@
      "Unpaid",
      "Dissolved following complusory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_advice_direct_limited_2016",
@@ -32890,7 +33002,8 @@
      "Unpaid",
      "Dissolved following strike off of company"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_direct_choice_home_improvements_limited_2016",
@@ -32919,7 +33032,8 @@
      "Partial payment",
      "£40,500 payment received. Company dissolved following Creditors voluntary liquidation. No dividend paid"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_falcon_pointer_limited_2016",
@@ -32948,7 +33062,8 @@
      "Unpaid",
      "Dissolved following Creditors Voluntary Liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_fep_heatcare_ltd_2016",
@@ -32977,7 +33092,8 @@
      "Unpaid",
      "Compulsory liquidation - nil dividend"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_david_lammy_mp_2016",
@@ -33006,7 +33122,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_prodial_ltd_2016",
@@ -33035,7 +33152,8 @@
      "Unpaid",
      "Dissolved following creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_myiml_ltd_2016",
@@ -33064,7 +33182,8 @@
      "Unpaid",
      "Recovery ongoing - compulsory liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_direct_security_marketing_limited_2016",
@@ -33093,7 +33212,8 @@
      "Unpaid",
      "Recovery ongoing - compulsory liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_telegraph_media_group_ltd_2015",
@@ -33122,7 +33242,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_nuisance_call_blocker_ltd_2015",
@@ -33151,7 +33272,8 @@
      "Unpaid",
      "Dissolved following strike off of company"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_telecom_protection_service_ltd_2015",
@@ -33180,7 +33302,8 @@
      "Unpaid",
      "Dissolved following compulsory liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_ukms_money_solutions_ltd_2015",
@@ -33209,7 +33332,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_oxygen_ltd_2015",
@@ -33238,7 +33362,8 @@
      "Unpaid",
      "Dissloved following strike off of company"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_help_direct_uk_limited_2015",
@@ -33267,7 +33392,8 @@
      "Unpaid",
      "Dissolved following creditor voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_pharmacy_2u_limited_2015",
@@ -33296,7 +33422,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_home_energy_lifestyle_management_ltd_2015",
@@ -33325,7 +33452,8 @@
      "Partial payment",
      "£2,035 payment received. Dissolved following creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_cold_call_elimination_limited_2015",
@@ -33354,7 +33482,8 @@
      "Unpaid",
      "Dissolved following Creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_point_one_marketing_ltd_2015",
@@ -33383,7 +33512,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_direct_assist_ltd_2015",
@@ -33412,7 +33542,8 @@
      "Unpaid",
      "Dissolved following compulsory liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_parklife_manchester_limited_2014",
@@ -33441,7 +33572,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_emc_advisory_services_limited_2014",
@@ -33470,7 +33602,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_kwik_fix_plumbers_limited_previously_kno_2014",
@@ -33499,7 +33632,8 @@
      "Partial payment",
      "Dissolved following Creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_reactiv_media_limited_2014",
@@ -33528,7 +33662,8 @@
      "Unpaid",
      "Dissolved following Creditors voluntary liquidation"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_amber_upvc_fabrications_limited_2014",
@@ -33557,7 +33692,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_first_financial_uk_limited_2013",
@@ -33586,7 +33722,8 @@
      "Unpaid",
      "Dissolved following strike off of company"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_tameside_energy_services_ltd_2013",
@@ -33615,7 +33752,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_nationwide_energy_services_ltd_2013",
@@ -33644,7 +33782,8 @@
      "Partial payment",
      "£7,500 dividend received through insolvency"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_we_claim_u_gain_2013",
@@ -33673,7 +33812,8 @@
      "Partial payment",
      "£1,529.49 dividend received through insolvency"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_dm_design_bedrooms_ltd_2013",
@@ -33702,7 +33842,8 @@
      "Paid",
      ""
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_christopher_niebel_2012",
@@ -33731,7 +33872,8 @@
      "",
      "Appeal allowed - Upper Tier Tribunal cancelled the CMP so fine was not paid."
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_gary_mcneish_2012",
@@ -33760,7 +33902,8 @@
      "",
      "ICO did not pursue payment as the Upper Tier Tribunal decision above related to the same circumstances as this CMP."
     ]
-   }
+   },
+   "noPage": true
   }
  ],
  "held": [
@@ -38441,32 +38584,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "asa_person_s_unknown_t_a_mendio_life_a24-1245839",
-   "regulator": "ASA",
-   "name": "Person(s) unknown t/a Mendio Life",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1245839-person-s--unknown.html",
-   "match": "Person",
-   "date": "2024-07-31",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad)",
-   "summary": "A paid-for Meta ad which claimed that an acupressure clip could treat prostate issues made medical claims for a device that didn’t hold the applicable conformity marking and was not registered with the MHRA.",
-   "types": [],
-   "evidence": {
-    "rules": [
-     "1.7",
-     "1.7"
-    ],
-    "topic": "Medical procedures and services Person(s) unknown 13",
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
    "id": "asa_person_s_unknown_t_a_nultqh_gb_a24-1245840",
    "regulator": "ASA",
    "name": "Person(s) unknown t/a Nultqh GB",
@@ -38514,6 +38631,32 @@
      "1.7"
     ],
     "topic": "Delivery, construction and logistics Person(s) unknown 13",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
+   "id": "asa_person_s_unknown_t_a_mendio_life_a24-1245839",
+   "regulator": "ASA",
+   "name": "Person(s) unknown t/a Mendio Life",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1245839-person-s--unknown.html",
+   "match": "Person",
+   "date": "2024-07-31",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (paid ad)",
+   "summary": "A paid-for Meta ad which claimed that an acupressure clip could treat prostate issues made medical claims for a device that didn’t hold the applicable conformity marking and was not registered with the MHRA.",
+   "types": [],
+   "evidence": {
+    "rules": [
+     "1.7",
+     "1.7"
+    ],
+    "topic": "Medical procedures and services Person(s) unknown 13",
     "decision": "Upheld"
    },
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
@@ -41499,6 +41642,31 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
+   "id": "asa_green_fun_alliance_ltd_t_a_elf_bar_a22-1162007",
+   "regulator": "ASA",
+   "name": "Green Fun Alliance Ltd t/a Elf Bar",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/green-fun-alliance-ltd-a22-1162007-green-fun-alliance-ltd.html",
+   "match": "Green",
+   "date": "2023-05-10",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (influencer or affiliate ad)",
+   "summary": "A TikTok post breached our rules by promoting e-cigarettes, which are not permitted to be promoted online and in some other forms of electronic media.",
+   "types": [],
+   "evidence": {
+    "rules": [
+     "22.12"
+    ],
+    "topic": "Vaping, smoking and drugs",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
    "id": "asa_hqd_tech_uk_a22-1163022",
    "regulator": "ASA",
    "name": "HQD Tech UK",
@@ -41517,31 +41685,6 @@
    "evidence": {
     "rules": [
      "22.10",
-     "22.12"
-    ],
-    "topic": "Vaping, smoking and drugs",
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
-   "id": "asa_green_fun_alliance_ltd_t_a_elf_bar_a22-1162007",
-   "regulator": "ASA",
-   "name": "Green Fun Alliance Ltd t/a Elf Bar",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/green-fun-alliance-ltd-a22-1162007-green-fun-alliance-ltd.html",
-   "match": "Green",
-   "date": "2023-05-10",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (influencer or affiliate ad)",
-   "summary": "A TikTok post breached our rules by promoting e-cigarettes, which are not permitted to be promoted online and in some other forms of electronic media.",
-   "types": [],
-   "evidence": {
-    "rules": [
      "22.12"
     ],
     "topic": "Vaping, smoking and drugs",
@@ -42994,32 +43137,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "asa_meikles_of_scotland_ltd_t_a_stag_s_breat_a22-1158773",
-   "regulator": "ASA",
-   "name": "Meikles of Scotland Ltd t/a Stag's Breath Liqueur",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/meikles-of-scotland-ltd-a22-1158773-meikles-of-scotland-ltd.html",
-   "match": "Meikles",
-   "date": "2022-09-21",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (own site)",
-   "summary": "A post on a Whisky brand’s Facebook page implied that drinking alcohol could help people overcome problems and suggested that drinking alcohol had therapeutic qualities.",
-   "types": [],
-   "evidence": {
-    "rules": [
-     "18.6",
-     "18.7"
-    ],
-    "topic": "Alcohol",
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
    "id": "asa_pernod_ricard_uk_ltd_a22-1158771",
    "regulator": "ASA",
    "name": "Pernod Ricard UK Ltd",
@@ -43069,6 +43186,32 @@
      "11.4"
     ],
     "topic": "Medicines, remedies and therapies",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
+   "id": "asa_meikles_of_scotland_ltd_t_a_stag_s_breat_a22-1158773",
+   "regulator": "ASA",
+   "name": "Meikles of Scotland Ltd t/a Stag's Breath Liqueur",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/meikles-of-scotland-ltd-a22-1158773-meikles-of-scotland-ltd.html",
+   "match": "Meikles",
+   "date": "2022-09-21",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (own site)",
+   "summary": "A post on a Whisky brand’s Facebook page implied that drinking alcohol could help people overcome problems and suggested that drinking alcohol had therapeutic qualities.",
+   "types": [],
+   "evidence": {
+    "rules": [
+     "18.6",
+     "18.7"
+    ],
+    "topic": "Alcohol",
     "decision": "Upheld"
    },
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
@@ -44927,33 +45070,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "cma_trainline_2026",
-   "regulator": "CMA",
-   "name": "Trainline",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/trainline-consumer-protection-enforcement-case",
-   "match": "Trainline",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for train and coach tickets by Trainline in the UK. ",
-   "types": [
-    "drip_pricing"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
    "id": "cma_euro_car_parks_2026",
    "regulator": "CMA",
    "name": "Euro Car Parks",
@@ -44979,12 +45095,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_ryanair_2026",
+   "id": "cma_trainline_2026",
    "regulator": "CMA",
-   "name": "Ryanair",
+   "name": "Trainline",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/ryanair-consumer-protection-enforcement-case",
-   "match": "Ryanair",
+   "url": "https://www.gov.uk/cma-cases/trainline-consumer-protection-enforcement-case",
+   "match": "Trainline",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -44992,7 +45108,7 @@
    "volume": null,
    "refunds": null,
    "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to Ryanair’s use of a potentially unfair mandatory fee, and the presentation of that fee on its UK website.",
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for train and coach tickets by Trainline in the UK. ",
    "types": [
     "drip_pricing"
    ],
@@ -45033,12 +45149,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_viagogo_2025",
+   "id": "cma_ryanair_2026",
    "regulator": "CMA",
-   "name": "viagogo",
+   "name": "Ryanair",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
-   "match": "viagogo",
+   "url": "https://www.gov.uk/cma-cases/ryanair-consumer-protection-enforcement-case",
+   "match": "Ryanair",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -45046,10 +45162,9 @@
    "volume": null,
    "refunds": null,
    "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk) to UK consumers.",
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to Ryanair’s use of a potentially unfair mandatory fee, and the presentation of that fee on its UK website.",
    "types": [
-    "drip_pricing",
-    "misleading_reference_price"
+    "drip_pricing"
    ],
    "evidence": {
     "outcome_type": null,
@@ -45113,6 +45228,61 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_viagogo_2025",
+   "regulator": "CMA",
+   "name": "viagogo",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
+   "match": "viagogo",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk) to UK consumers.",
+   "types": [
+    "drip_pricing",
+    "misleading_reference_price"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_just_eat_2026",
+   "regulator": "CMA",
+   "name": "Just Eat",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/just-eat-consumer-protection-enforcement-case",
+   "match": "Just",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating Just Eat.co.uk Limited’s (‘Just Eat’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer review information like star ratings.",
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
    "id": "cma_microsoft_2026",
    "regulator": "CMA",
    "name": "Microsoft",
@@ -45138,20 +45308,20 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_just_eat_2026",
+   "id": "cma_pasta_evangelists_2026",
    "regulator": "CMA",
-   "name": "Just Eat",
+   "name": "Pasta Evangelists",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/just-eat-consumer-protection-enforcement-case",
-   "match": "Just",
+   "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
+   "match": "Pasta",
    "date": null,
    "penalty": null,
    "outcome": null,
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating Just Eat.co.uk Limited’s (‘Just Eat’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer review information like star ratings.",
+   "sector": "ecommerce",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
    "types": [
     "fake_reviews"
    ],
@@ -45244,6 +45414,31 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_leasehold_2019",
+   "regulator": "CMA",
+   "name": "Leasehold",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/leasehold",
+   "match": "Leasehold",
+   "date": null,
+   "penalty": null,
+   "outcome": "Gave undertakings to the CMA",
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
+   "types": [],
+   "evidence": {
+    "outcome_type": "consumer-enforcement-undertakings",
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no decision date in the record"
+  },
+  {
    "id": "cma_emma_group_2022",
    "regulator": "CMA",
    "name": "Emma Group",
@@ -45261,33 +45456,6 @@
    "types": [
     "fake_urgency",
     "misleading_reference_price"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_pasta_evangelists_2026",
-   "regulator": "CMA",
-   "name": "Pasta Evangelists",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
-   "match": "Pasta",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
-   "types": [
-    "fake_reviews"
    ],
    "evidence": {
     "outcome_type": null,
@@ -45326,6 +45494,58 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_fast_moving_consumer_goods_fmcg_2023",
+   "regulator": "CMA",
+   "name": "Fast Moving Consumer Goods (FMCG)",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/fast-moving-consumer-goods-fmcg",
+   "match": "Fast",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "ecommerce",
+   "summary": "The Competition and Markets Authority (CMA) investigated Unilever UK Limited’s compliance with consumer protection law.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "closed"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_secondary_ticketing_websites_2012",
+   "regulator": "CMA",
+   "name": "Secondary ticketing websites",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/secondary-ticketing-websites",
+   "match": "Secondary",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The CMA is investigating suspected breaches of consumer protection law in the online secondary tickets market.",
+   "types": [],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
    "id": "cma_online_reviews_2020",
    "regulator": "CMA",
    "name": "Online reviews",
@@ -45353,31 +45573,6 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_leasehold_2019",
-   "regulator": "CMA",
-   "name": "Leasehold",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/leasehold",
-   "match": "Leasehold",
-   "date": null,
-   "penalty": null,
-   "outcome": "Gave undertakings to the CMA",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
-   "types": [],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-undertakings",
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no decision date in the record"
-  },
-  {
    "id": "cma_online_consumer_reviews_2025",
    "regulator": "CMA",
    "name": "Online consumer reviews",
@@ -45399,33 +45594,6 @@
     "outcome_type": null,
     "case_state": [
      "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_fast_moving_consumer_goods_fmcg_2023",
-   "regulator": "CMA",
-   "name": "Fast Moving Consumer Goods (FMCG)",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/fast-moving-consumer-goods-fmcg",
-   "match": "Fast",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The Competition and Markets Authority (CMA) investigated Unilever UK Limited’s compliance with consumer protection law.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "closed"
     ],
     "penalty_sentence": null
    },
@@ -45457,31 +45625,6 @@
     "penalty_sentence": null
    },
    "reason": "no decision date in the record"
-  },
-  {
-   "id": "cma_secondary_ticketing_websites_2012",
-   "regulator": "CMA",
-   "name": "Secondary ticketing websites",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/secondary-ticketing-websites",
-   "match": "Secondary",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The CMA is investigating suspected breaches of consumer protection law in the online secondary tickets market.",
-   "types": [],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
    "id": "cma_fake_and_misleading_online_reviews_tradi_2019",
@@ -46502,31 +46645,6 @@
    "reason": "no finding-type rule matched the CMA description"
   },
   {
-   "id": "cma_friedrich_mueller_2012",
-   "regulator": "CMA",
-   "name": "Friedrich Mueller",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/friedrich-mueller-misleading-prize-draw-mailings",
-   "match": "Friedrich",
-   "date": "2012-04-01",
-   "penalty": null,
-   "outcome": "Court order obtained by the OFT",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "Misleading prize draw mailings.",
-   "types": [],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-court-order",
-    "case_state": [
-     "closed"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no finding-type rule matched the CMA description"
-  },
-  {
    "id": "cma_hanover_housing_association_retirement_p_2012",
    "regulator": "CMA",
    "name": "Hanover Housing Association retirement properties",
@@ -46544,6 +46662,31 @@
    "types": [],
    "evidence": {
     "outcome_type": "consumer-enforcement-changes-to-business-practices-agreed",
+    "case_state": [
+     "closed"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no finding-type rule matched the CMA description"
+  },
+  {
+   "id": "cma_friedrich_mueller_2012",
+   "regulator": "CMA",
+   "name": "Friedrich Mueller",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/friedrich-mueller-misleading-prize-draw-mailings",
+   "match": "Friedrich",
+   "date": "2012-04-01",
+   "penalty": null,
+   "outcome": "Court order obtained by the OFT",
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "Misleading prize draw mailings.",
+   "types": [],
+   "evidence": {
+    "outcome_type": "consumer-enforcement-court-order",
     "case_state": [
      "closed"
     ],
