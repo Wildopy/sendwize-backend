@@ -264,8 +264,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <div class="av-card" id="listCard">
     <div class="av-card-t">Audience</div>
-    <div class="av-card-s">Which list are you sending to? Sendwize links the most recent List Intelligence check for this list name.</div>
-    <div class="fg"><label>List name</label><input id="aList" placeholder="e.g. Main Newsletter, Black Friday Segment"><div class="hint">Must match the name used in List Intelligence. Only required for email/SMS channels.</div></div>
+    <div class="av-card-s">Which list are you sending to? Sendwize links the most recent List health check for this list name.</div>
+    <div class="fg"><label>List name</label><input id="aList" placeholder="e.g. Main Newsletter, Black Friday Segment"><div class="hint">Must match the name used in List health. Only required for email/SMS channels.</div></div>
   </div>
 
   <div class="av-card">
@@ -308,6 +308,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="toast" id="toast"></div>
 
 <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script src="https://sendwize-backend.vercel.app/sw-tool-nav.js" defer></script>
 <script>
 const swFetch=window.swFetch||((u,o)=>fetch(u,o)); // sends the sign-in token (sw-auth.js)
 const A='https://sendwize-backend.vercel.app';let U=null,CID=null,D=null,SCAN=false,SCANID=null,CT='evidence';
@@ -464,7 +465,7 @@ function renderCF(d){
     else if(ps){const t=ps.totals||{},n=t.needsAttention||0;ev.push({l:'Page scan',d:t.pages+' page'+(t.pages!==1?'s':'')+' scanned · '+(t.findings||0)+' potential area'+(t.findings!==1?'s':'')+' requiring review'+(t.conflicts?' · '+t.conflicts+' conflict'+(t.conflicts!==1?'s':'')+' with campaign claims':''),s:n?'Needs attention':t.errors?'Partial':'Passed',c:n?'ev-warn':t.errors?'ev-na':'ev-ok',tab:'urls'});}
     else ev.push({l:'Page scan',d:'Connected pages not yet scanned',s:'Not evidenced',c:'ev-gap',tab:'urls'});
   }
-  if(needC){if(lSum)ev.push({l:'List Intelligence',d:(lSum.totalContacts||0).toLocaleString()+' contacts · '+lSum.gateVerdict,s:lSum.gateVerdict||'—',c:lSum.gateVerdict==='SAFE'?'ev-ok':'ev-warn',link:d.ListCertificateId?'list-intelligence.html?certId='+d.ListCertificateId:null});else ev.push({l:'List Intelligence',d:'No list linked',s:'Not linked',c:'ev-na',link:'list-intelligence.html'});}
+  if(needC){if(lSum)ev.push({l:'List health',d:(lSum.totalContacts||0).toLocaleString()+' contacts · '+lSum.gateVerdict,s:lSum.gateVerdict||'—',c:lSum.gateVerdict==='SAFE'?'ev-ok':'ev-warn',link:d.ListCertificateId?'list-intelligence.html?certId='+d.ListCertificateId:null});else ev.push({l:'List health',d:'No list linked',s:'Not linked',c:'ev-na',link:'list-intelligence.html'});}
   if(needC){const c=mf.ConsentMechanism||{};ev.push({l:'Consent basis',d:c.lawfulBasis||'Not documented',s:c.consentWording?'Documented':c.lawfulBasis?'Incomplete':'Not evidenced',c:c.consentWording?'ev-ok':c.lawfulBasis?'ev-warn':'ev-gap'});}
   if(needC){const s=mf.Suppression||{};const ok=s.suppressionApplied?.includes('Yes');ev.push({l:'Suppression',d:ok?'Applied '+fD(s.dateApplied):'Not applied',s:ok?'Applied':'Not evidenced',c:ok?'ev-ok':'ev-gap'});}
   if(needS){const si=mf.SenderIdentity||{};ev.push({l:'Sender identity',d:si.fromName?(si.fromName+' <'+si.fromEmail+'>'):'Not documented',s:si.matchesTradingName==='Yes'?'Verified':si.fromName?'Review':'Not evidenced',c:si.matchesTradingName==='Yes'?'ev-ok':si.fromName?'ev-warn':'ev-gap'});}
@@ -669,7 +670,7 @@ Thank you for your correspondence regarding the Summer Sale 2026 campaign sent b
 We take our data protection obligations seriously and maintain a comprehensive compliance defence for every marketing campaign. Please find our response below.
 
 CONSENT BASIS
-All 47,820 recipients provided explicit opt-in consent under PECR Regulation 22 via our website registration form. Consent wording: "I agree to receive marketing emails from Summer Style Ltd about sales, new arrivals and promotions." Consent records are maintained in our List Intelligence system with individual timestamps.
+All 47,820 recipients provided explicit opt-in consent under PECR Regulation 22 via our website registration form. Consent wording: "I agree to receive marketing emails from Summer Style Ltd about sales, new arrivals and promotions." Consent records are maintained in our List health system with individual timestamps.
 
 SUPPRESSION
 TPS and internal suppression lists were applied on ${fD(d(-21*day))}, prior to campaign launch. Suppression is documented and hashed in our evidence trail.

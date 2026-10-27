@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script src="https://sendwize-backend.vercel.app/sw-tool-nav.js" defer></script>
   <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>List Intelligence &mdash; Sendwize</title>
+<title>List health &mdash; Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -316,7 +317,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div class="gate-card">
     <div class="gate-logo">sendwize</div>
     <div class="gate-icon">&#128203;</div>
-    <div class="gate-title">List Intelligence</div>
+    <div class="gate-title">List health</div>
     <div class="gate-sub">Upload your contact list. We calculate its commercial value, map your compliance exposure, and tell you exactly what needs fixing before your next send.</div>
     <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a>
     <button class="gate-demo-btn" onclick="hideGateAndDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ol);color:var(--o)">DEMO</span> See an example valuation</button>
@@ -326,7 +327,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <!-- ─── NEW: LISTS LANDING SCREEN ─── -->
 <div class="page" id="lists-landing-screen">
   <div class="landing-hdr">
-    <div class="tool-tag">List Intelligence</div>
+    <div class="tool-tag">List health</div>
     <h1>Your lists</h1>
     <p>Each list is tracked separately. Consent and deliverability decay over time &mdash; re-upload to keep the picture current.</p>
   </div>
@@ -339,17 +340,17 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <div class="page" id="upload-screen">
   <div style="margin-bottom:32px;animation:fadeUp .4s ease">
-    <div class="tool-tag">List Intelligence</div>
+    <div class="tool-tag">List health</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.2;margin-bottom:10px">Check your list before you send</h1>
     <p style="font-size:15px;color:var(--tm);line-height:1.6;max-width:520px;margin-bottom:18px">Upload your contact list. We'll tell you who you can legally email, who needs re-consenting, and who to suppress — with the files ready to drop into your ESP.</p>
     <div class="intro-distinction">
       <div class="dist-col dist-this">
-        <div class="dist-label">This tool &mdash; List Intelligence</div>
+        <div class="dist-label">This tool &mdash; List health</div>
         <div class="dist-desc">Your <strong>pre-send compliance gate</strong>. Use before every major send to check consent health, suppress liability contacts, and create a dated evidence record proving you checked.</div>
       </div>
       <div class="dist-divider"></div>
       <div class="dist-col" style="padding-left:14px">
-        <div class="dist-label">Different tool &mdash; Audience Read</div>
+        <div class="dist-label">Different tool &mdash; Audience read</div>
         <div class="dist-desc">Diagnoses how your <strong>segments are behaving</strong> over time. Use when reviewing campaign performance or planning your next send strategy.</div>
       </div>
     </div>
@@ -712,7 +713,7 @@ function renderSmartImportFailure(detection, container, onUploadAnother, onManua
   document.getElementById('smartFailReview').onclick = onManualReview;
 }
 
-// ── Smart Import flow helpers for List Intelligence ──
+// ── Smart Import flow helpers for List health ──
 function showOldMappingScreenLI(json) {
   detectedMapping = json.mapping || {};
   // Pre-fill list name

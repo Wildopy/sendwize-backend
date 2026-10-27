@@ -146,7 +146,7 @@ export default async function handler(req, res) {
         change: snap?.scoreChange ?? 0,
         trend: (history?.snapshots || []).map(s => ({ date: s.date, score: s.score })).reverse(),
         model: scoreModel,
-        note: 'Severity-weighted share of findings fixed. Fixes verified by a re-run count in full; fixes marked by hand count 75%.',
+        note: 'The share of your findings that are fixed, with serious ones counting more. A fix confirmed by re-running the check counts in full; one you mark yourself counts 75%.',
       },
       counts: fx.counts,
       exposure: {
