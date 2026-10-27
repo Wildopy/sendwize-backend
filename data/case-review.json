@@ -1,11 +1,11 @@
 {
- "generated": "2026-10-27T22:29:05.965Z",
+ "generated": "2026-10-27T22:41:10.557Z",
  "note": "Imported from regulator records. Not live: cases reach the product only once approved in data/case-approvals.json and published.",
  "counts": {
   "ready": {
    "ASA": 936,
-   "CMA": 19,
-   "ICO": 207
+   "CMA": 18,
+   "ICO": 197
   },
   "held": {
    "ASA": 432,
@@ -13,10 +13,10 @@
    "ICO": 12
   }
  },
- "alreadyInLibrary": 29,
+ "alreadyInLibrary": 40,
  "icoPages": {
-  "linked": 12,
-  "of": 207,
+  "linked": 7,
+  "of": 197,
   "sitemapPages": 229,
   "sitemaps": 1
  },
@@ -2826,35 +2826,6 @@
    }
   },
   {
-   "id": "asa_dbz_marketplace_online_ltd_t_a_debenhams_a26-1326171",
-   "regulator": "ASA",
-   "name": "DBZ Marketplace Online Ltd t/a Debenhams",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/dbz-marketplace-online-ltd--a26-1326171-dbz-marketplace-online-ltd.html",
-   "match": "DBZ",
-   "date": "2026-05-20",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Website (own site)",
-   "summary": "Two video display banners for Debenhams made misleading savings claims.",
-   "types": [
-    "misleading_claim",
-    "misleading_reference_price"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.7",
-     "3.17"
-    ],
-    "topic": "Promotions and competitions",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_boots_uk_ltd_t_a_boots_com_a26-1326173",
    "regulator": "ASA",
    "name": "Boots UK Ltd t/a boots.com",
@@ -2881,6 +2852,35 @@
     ],
     "topic": "Pricing and charges",
     "decision": "Upheld in Part"
+   }
+  },
+  {
+   "id": "asa_dbz_marketplace_online_ltd_t_a_debenhams_a26-1326171",
+   "regulator": "ASA",
+   "name": "DBZ Marketplace Online Ltd t/a Debenhams",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/dbz-marketplace-online-ltd--a26-1326171-dbz-marketplace-online-ltd.html",
+   "match": "DBZ",
+   "date": "2026-05-20",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Website (own site)",
+   "summary": "Two video display banners for Debenhams made misleading savings claims.",
+   "types": [
+    "misleading_claim",
+    "misleading_reference_price"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.7",
+     "3.17"
+    ],
+    "topic": "Promotions and competitions",
+    "decision": "Upheld"
    }
   },
   {
@@ -5601,6 +5601,36 @@
    }
   },
   {
+   "id": "asa_jr_biomedical_ltd_t_a_selfcheck_a25-1303536",
+   "regulator": "ASA",
+   "name": "JR Biomedical Ltd t/a SELFCHECK",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/jr-biomedical-ltd-a25-1303536-jr-biomedical-ltd.html",
+   "match": "JR",
+   "date": "2025-12-10",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Search (paid)",
+   "summary": "Two paid-for Google ads for a medical device company made claims that their at home Prostate-Specific Antigen (PSA) tests could make an accurate medical diagnosis of prostate problems, including prostate cancer.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.9",
+     "12.1",
+     "12.2"
+    ],
+    "topic": "Medical devices",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_lifelab_testing_ltd_a25-1303554",
    "regulator": "ASA",
    "name": "Lifelab Testing Ltd",
@@ -5696,36 +5726,6 @@
    }
   },
   {
-   "id": "asa_jr_biomedical_ltd_t_a_selfcheck_a25-1303536",
-   "regulator": "ASA",
-   "name": "JR Biomedical Ltd t/a SELFCHECK",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/jr-biomedical-ltd-a25-1303536-jr-biomedical-ltd.html",
-   "match": "JR",
-   "date": "2025-12-10",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Search (paid)",
-   "summary": "Two paid-for Google ads for a medical device company made claims that their at home Prostate-Specific Antigen (PSA) tests could make an accurate medical diagnosis of prostate problems, including prostate cancer.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.9",
-     "12.1",
-     "12.2"
-    ],
-    "topic": "Medical devices",
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_nutrisslim_d_o_o_t_a_nature_s_finest_by__a25-1303555",
    "regulator": "ASA",
    "name": "Nutrisslim d o o t/a Nature’s Finest by Nutrisslim UK",
@@ -5786,6 +5786,35 @@
    }
   },
   {
+   "id": "asa_starlink_internet_services_ltd_a25-1298384",
+   "regulator": "ASA",
+   "name": "Starlink Internet Services Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/starlink-internet-services-ltd-a25-1298384-starlink-internet-services-ltd.html",
+   "match": "Starlink",
+   "date": "2025-12-10",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Website (paid ad)",
+   "summary": "A banner ad for an internet provider omitted material information about a promotional price offer.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.3",
+     "3.4",
+     "3.4"
+    ],
+    "topic": "Computers, phones and telecoms",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_tayhli_ltd_t_a_c_a_t_a25-1303750",
    "regulator": "ASA",
    "name": "TAYHLI ltd t/a C.A.T.",
@@ -5812,35 +5841,6 @@
      "15.6"
     ],
     "topic": "Food, drink and supplements",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_starlink_internet_services_ltd_a25-1298384",
-   "regulator": "ASA",
-   "name": "Starlink Internet Services Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/starlink-internet-services-ltd-a25-1298384-starlink-internet-services-ltd.html",
-   "match": "Starlink",
-   "date": "2025-12-10",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Website (paid ad)",
-   "summary": "A banner ad for an internet provider omitted material information about a promotional price offer.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.3",
-     "3.4",
-     "3.4"
-    ],
-    "topic": "Computers, phones and telecoms",
     "decision": "Upheld"
    }
   },
@@ -6467,6 +6467,36 @@
    }
   },
   {
+   "id": "asa_hilton_worldwide_ltd_a25-1296973",
+   "regulator": "ASA",
+   "name": "Hilton Worldwide Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/hilton-worldwide-ltd-a25-1296973-hilton-worldwide-ltd.html",
+   "match": "Hilton",
+   "date": "2025-11-19",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Search (paid)",
+   "summary": "Two paid-for search ads for Hilton made misleading claims about the price of hotel rooms.",
+   "types": [
+    "misleading_claim",
+    "drip_pricing"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.7",
+     "3.17",
+     "3.22"
+    ],
+    "topic": "Holidays, travel and motoring",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_hutch_games_ltd_t_a_f1_clash_a25-1282245",
    "regulator": "ASA",
    "name": "Hutch Games Ltd t/a F1 Clash",
@@ -6562,36 +6592,6 @@
    "sector": null,
    "media": "Search (paid)",
    "summary": "Two paid-for search ads for Travelodge made misleading claims about the price of hotel rooms.",
-   "types": [
-    "misleading_claim",
-    "drip_pricing"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.7",
-     "3.17",
-     "3.22"
-    ],
-    "topic": "Holidays, travel and motoring",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_hilton_worldwide_ltd_a25-1296973",
-   "regulator": "ASA",
-   "name": "Hilton Worldwide Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/hilton-worldwide-ltd-a25-1296973-hilton-worldwide-ltd.html",
-   "match": "Hilton",
-   "date": "2025-11-19",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Search (paid)",
-   "summary": "Two paid-for search ads for Hilton made misleading claims about the price of hotel rooms.",
    "types": [
     "misleading_claim",
     "drip_pricing"
@@ -9765,34 +9765,6 @@
    }
   },
   {
-   "id": "asa_better_health_and_wellness_a24-1253883",
-   "regulator": "ASA",
-   "name": "Better Health and Wellness",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/better-health-and-wellness-a24-1253883-better-health-and-wellness.html",
-   "match": "Better",
-   "date": "2024-12-18",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad)",
-   "summary": "A paid-for Facebook ad was misleading as it didn’t make clear the nature of the content people would be served if they engaged with the ad.",
-   "types": [
-    "undisclosed_ad",
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "2.3",
-     "3.1"
-    ],
-    "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_health_and_wellness_a24-1253882",
    "regulator": "ASA",
    "name": "Health and Wellness",
@@ -9818,6 +9790,34 @@
      "3.1",
      "3.7",
      "3.11"
+    ],
+    "topic": null,
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_better_health_and_wellness_a24-1253883",
+   "regulator": "ASA",
+   "name": "Better Health and Wellness",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/better-health-and-wellness-a24-1253883-better-health-and-wellness.html",
+   "match": "Better",
+   "date": "2024-12-18",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (paid ad)",
+   "summary": "A paid-for Facebook ad was misleading as it didn’t make clear the nature of the content people would be served if they engaged with the ad.",
+   "types": [
+    "undisclosed_ad",
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "2.3",
+     "3.1"
     ],
     "topic": null,
     "decision": "Upheld"
@@ -10465,33 +10465,6 @@
    }
   },
   {
-   "id": "asa_churchill_retirement_living_ltd_a24-1248717",
-   "regulator": "ASA",
-   "name": "Churchill Retirement Living Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/churchill-retirement-living-ltd-a24-1248717-churchill-retirement-living-ltd.html",
-   "match": "Churchill",
-   "date": "2024-12-04",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "National newspaper (paid ad)",
-   "summary": "A national newspaper ad failed to include the significant conditions of a promotion, including a closing date.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "8.17",
-     "8.17"
-    ],
-    "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_bodystreet_franchise_uk_ltd_a24-1253486",
    "regulator": "ASA",
    "name": "Bodystreet Franchise (UK) Ltd",
@@ -10516,6 +10489,33 @@
      "3.11"
     ],
     "topic": "Sports, leisure and hobbies Bodystreet Franchise (UK)",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_churchill_retirement_living_ltd_a24-1248717",
+   "regulator": "ASA",
+   "name": "Churchill Retirement Living Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/churchill-retirement-living-ltd-a24-1248717-churchill-retirement-living-ltd.html",
+   "match": "Churchill",
+   "date": "2024-12-04",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "National newspaper (paid ad)",
+   "summary": "A national newspaper ad failed to include the significant conditions of a promotion, including a closing date.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "8.17",
+     "8.17"
+    ],
+    "topic": null,
     "decision": "Upheld"
    }
   },
@@ -20440,6 +20440,34 @@
    }
   },
   {
+   "id": "asa_tonic_nutrition_ltd_t_a_tonic_health_a22-1172445",
+   "regulator": "ASA",
+   "name": "Tonic Nutrition Ltd t/a Tonic Health",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/tonic-nutrition-ltd-a22-1172445-tonic-nutrition-ltd.html",
+   "match": "Tonic",
+   "date": "2023-03-15",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (own site)",
+   "summary": "A TikTok post by vitamin drinks company broke the rules by implying that their food products could prevent, treat or cure human disease.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "15.6",
+     "15.6"
+    ],
+    "topic": "Food, drink and supplements",
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_willys_ltd_t_a_willy_s_acv_a22-1145461",
    "regulator": "ASA",
    "name": "Willys Ltd t/a Willy's ACV",
@@ -20464,34 +20492,6 @@
      "15.2",
      "15.6",
      "15.1"
-    ],
-    "topic": "Food, drink and supplements",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_tonic_nutrition_ltd_t_a_tonic_health_a22-1172445",
-   "regulator": "ASA",
-   "name": "Tonic Nutrition Ltd t/a Tonic Health",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/tonic-nutrition-ltd-a22-1172445-tonic-nutrition-ltd.html",
-   "match": "Tonic",
-   "date": "2023-03-15",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (own site)",
-   "summary": "A TikTok post by vitamin drinks company broke the rules by implying that their food products could prevent, treat or cure human disease.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "15.6",
-     "15.6"
     ],
     "topic": "Food, drink and supplements",
     "decision": "Upheld"
@@ -21918,6 +21918,33 @@
    }
   },
   {
+   "id": "asa_anp_medical_aesthetics_a22-1163981",
+   "regulator": "ASA",
+   "name": "ANP Medical Aesthetics",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/anp-medical-aesthetics-a22-1163981-anp-medical-aesthetics.html",
+   "match": "ANP",
+   "date": "2022-11-09",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (paid ad)",
+   "summary": "Two Facebook posts for an aesthetic clinic promoted hydrocortisone injections which are prescription only medicines that must not be promoted to the general public.",
+   "types": [
+    "misleading_claim",
+    "asa_liability"
+   ],
+   "evidence": {
+    "rules": [
+     "12.12"
+    ],
+    "topic": null,
+    "decision": "Upheld"
+   }
+  },
+  {
    "id": "asa_pelham_health_ltd_a22-1156730",
    "regulator": "ASA",
    "name": "Pelham Health Ltd",
@@ -21981,33 +22008,6 @@
    }
   },
   {
-   "id": "asa_anp_medical_aesthetics_a22-1163981",
-   "regulator": "ASA",
-   "name": "ANP Medical Aesthetics",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/anp-medical-aesthetics-a22-1163981-anp-medical-aesthetics.html",
-   "match": "ANP",
-   "date": "2022-11-09",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad)",
-   "summary": "Two Facebook posts for an aesthetic clinic promoted hydrocortisone injections which are prescription only medicines that must not be promoted to the general public.",
-   "types": [
-    "misleading_claim",
-    "asa_liability"
-   ],
-   "evidence": {
-    "rules": [
-     "12.12"
-    ],
-    "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_myleene_klass_a22-1160222",
    "regulator": "ASA",
    "name": "Myleene Klass",
@@ -22059,6 +22059,35 @@
      "2.4"
     ],
     "topic": "Clothing, shoes and jewellery",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_oriflame_cosmetics_sa_t_a_oriflame_a22-1159531",
+   "regulator": "ASA",
+   "name": "Oriflame Cosmetics SA t/a Oriflame",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/oriflame-cosmetics-sa-a22-1159531-oriflame-cosmetics-sa.html",
+   "match": "Oriflame",
+   "date": "2022-11-02",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (own site)",
+   "summary": "Two posts on a recruitment company’s Facebook page were misleading as they did not include sufficient information to make consumers aware that the outlined incentives were based on specific earnings and recruitment targets.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.3",
+     "3.10",
+     "3.9"
+    ],
+    "topic": "Beauty products, grooming and hygiene",
     "decision": "Upheld"
    }
   },
@@ -22146,35 +22175,6 @@
      "11.4"
     ],
     "topic": "Animals and farming",
-    "decision": "Upheld"
-   }
-  },
-  {
-   "id": "asa_oriflame_cosmetics_sa_t_a_oriflame_a22-1159531",
-   "regulator": "ASA",
-   "name": "Oriflame Cosmetics SA t/a Oriflame",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/oriflame-cosmetics-sa-a22-1159531-oriflame-cosmetics-sa.html",
-   "match": "Oriflame",
-   "date": "2022-11-02",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (own site)",
-   "summary": "Two posts on a recruitment company’s Facebook page were misleading as they did not include sufficient information to make consumers aware that the outlined incentives were based on specific earnings and recruitment targets.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.3",
-     "3.10",
-     "3.9"
-    ],
-    "topic": "Beauty products, grooming and hygiene",
     "decision": "Upheld"
    }
   },
@@ -23633,36 +23633,6 @@
    }
   },
   {
-   "id": "asa_jc_atkinson_son_ltd_a21-1114723",
-   "regulator": "ASA",
-   "name": "JC Atkinson & Son Ltd",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/jc-atkinson---son-ltd-a21-1114723-jc-atkinson--son-ltd.html",
-   "match": "JC",
-   "date": "2022-08-03",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Internet (website content)",
-   "summary": "An ad on the company’s website misleadingly implied that their MDF coffins were more eco-friendly than other options, without sufficient evidence.",
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "rules": [
-     "3.1",
-     "3.7",
-     "11.4",
-     "11.1",
-     "11.3"
-    ],
-    "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_golden_leaves_ltd_a21-1128535",
    "regulator": "ASA",
    "name": "Golden Leaves Ltd",
@@ -23690,6 +23660,36 @@
      "11.1"
     ],
     "topic": "Utilities, energy and environment",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_jc_atkinson_son_ltd_a21-1114723",
+   "regulator": "ASA",
+   "name": "JC Atkinson & Son Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/jc-atkinson---son-ltd-a21-1114723-jc-atkinson--son-ltd.html",
+   "match": "JC",
+   "date": "2022-08-03",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Internet (website content)",
+   "summary": "An ad on the company’s website misleadingly implied that their MDF coffins were more eco-friendly than other options, without sufficient evidence.",
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "rules": [
+     "3.1",
+     "3.7",
+     "11.4",
+     "11.1",
+     "11.3"
+    ],
+    "topic": null,
     "decision": "Upheld"
    }
   },
@@ -26104,34 +26104,6 @@
    }
   },
   {
-   "id": "asa_chloe_ferry_t_a_chloegshore1_chloe1ferry_a21-1117945",
-   "regulator": "ASA",
-   "name": "Chloe Ferry t/a chloegshore1, Chloe1ferry",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/chloe-ferry-a21-1117945-chloe-ferry.html",
-   "match": "Chloe",
-   "date": "2021-12-22",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (influencer or affiliate ad)",
-   "summary": "An Instagram story post by Chloe Ferry was banned for not being obviously identifiable as an ad.",
-   "types": [
-    "undisclosed_ad"
-   ],
-   "evidence": {
-    "rules": [
-     "2.3",
-     "2.4",
-     "2.1"
-    ],
-    "topic": null,
-    "decision": "Upheld"
-   }
-  },
-  {
    "id": "asa_charlotte_dawson_t_a_charlottedawsy_a21-1122943",
    "regulator": "ASA",
    "name": "Charlotte Dawson t/a charlottedawsy",
@@ -26186,6 +26158,34 @@
      "3.11"
     ],
     "topic": "Computers, phones and telecoms",
+    "decision": "Upheld"
+   }
+  },
+  {
+   "id": "asa_chloe_ferry_t_a_chloegshore1_chloe1ferry_a21-1117945",
+   "regulator": "ASA",
+   "name": "Chloe Ferry t/a chloegshore1, Chloe1ferry",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/chloe-ferry-a21-1117945-chloe-ferry.html",
+   "match": "Chloe",
+   "date": "2021-12-22",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (influencer or affiliate ad)",
+   "summary": "An Instagram story post by Chloe Ferry was banned for not being obviously identifiable as an ad.",
+   "types": [
+    "undisclosed_ad"
+   ],
+   "evidence": {
+    "rules": [
+     "2.3",
+     "2.4",
+     "2.1"
+    ],
+    "topic": null,
     "decision": "Upheld"
    }
   },
@@ -27184,32 +27184,6 @@
    }
   },
   {
-   "id": "cma_automobile_association_developments_limi_2026",
-   "regulator": "CMA",
-   "name": "Automobile Association Developments Limited",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/automobile-association-developments-limited-consumer-protection-enforcement-case",
-   "match": "Automobile",
-   "date": "2026-04-15",
-   "penalty": 4200000,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) investigated suspected infringements of consumer law in relation to the presentation of mandatory booking fees by Automobile Association Developments Limited in the UK and gave a Final Infringement Notice reflecting the settlement of the case.",
-   "types": [
-    "drip_pricing"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "closed"
-    ],
-    "penalty_sentence": "15 April 2026: The CMA has given a Final Infringement Notice to Automobile Association Developments Limited, trading as the AA and the AA Driving School and as BSM and BSM Driving School and has imposed a financial penalty of £4.2 million"
-   }
-  },
-  {
    "id": "cma_worcester_bosch_2024",
    "regulator": "CMA",
    "name": "Worcester Bosch",
@@ -27694,8 +27668,7 @@
    "sector": null,
    "summary": "Breathe Services Ltd (BSL), a debt advice company based in Bolton, first came to the attention of the ICO as part of a wider investigation into complaints received about unsolicited phone calls to potentially vulnerable individuals.",
    "types": [
-    "consent_missing",
-    "affiliate_sender_identity_breach"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -27712,40 +27685,11 @@
    "noPage": true
   },
   {
-   "id": "ico_money_bubble_ltd_2024",
-   "regulator": "ICO",
-   "name": "Money Bubble Ltd",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/12/money-bubble-ltd-en/",
-   "match": "money",
-   "date": "2024-12-05",
-   "penalty": 120000,
-   "law": "PECR",
-   "volume": null,
-   "sector": null,
-   "summary": "It was found that between October – November 2022, the company made 168,852 spam calls resulting in several further complaints being made to the ICO and TPS. MBL did not provide evidence that anyone whose number had been called had consented to receiving calls from the company. The ICO has issued a £120,000 fine.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Money Bubble Ltd",
-     "",
-     "It was found that between October – November 2022, the company made 168,852 spam calls resulting in several further complaints being made to the ICO and TPS. MBL did not provide evidence that anyone whose number had been called had consented to receiving calls from the company. The ICO has issued a £120,000 fine.",
-     "05/12/2024",
-     "",
-     "120,000",
-     "Unpaid",
-     "Recovery ongoing - Creditors Voluntary Liquidation"
-    ]
-   }
-  },
-  {
    "id": "ico_werepairuk_ltd_2024",
    "regulator": "ICO",
    "name": "WerepairUK Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/10/werepairuk-ltd-mpn/",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/10/werepairuk-ltd-enforcement-notice/",
    "match": "werepairuk",
    "date": "2024-09-18",
    "penalty": 80000,
@@ -27754,7 +27698,7 @@
    "sector": null,
    "summary": "WerepairUK Ltd made 42,688 marketing calls to individuals in breach of regulation 21 of PECR. The company has been fined £80,000 and issued with an enforcement notice.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -27783,7 +27727,7 @@
    "sector": "ecommerce",
    "summary": "Coastal Windows & Conservatories Limited made over 18,000 unsolicited marketing calls between 1 January and 1 June 2023 to numbers registered with the TPS. The ICO and TPS received numerous complaints from people variously saying they had not consented to receiving such calls or received repeated calls despite requests to stop.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -27813,7 +27757,7 @@
    "sector": null,
    "summary": "Service Box Group Limited made 5,361 marketing calls to individuals in breach of regulation 21 of PECR. The company has been fined £40,000 and issued with an enforcement notice.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -27842,7 +27786,7 @@
    "sector": "finance",
    "summary": "Between 5 May 2021 to 5 May 2022, there were 47,998 connected calls unsolicited direct marketing calls being made to subscribers who were registered with the TPS and who had not notified Pinnacle Life Limited that they were willing to receive such calls, and four complaints being submitted as a result.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -27872,7 +27816,7 @@
    "sector": null,
    "summary": "Between 11 February 2021 to 24 January 2022, there were 80,240 connected calls unsolicited direct marketing calls being made to subscribers who were registered with the TPS and who had not notified DRT that they were willing to receive such calls, and two complaints being submitted as a result.Calls were about the Irish Lottery.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -27889,35 +27833,6 @@
    "noPage": true
   },
   {
-   "id": "ico_grocery_delivery_e_services_uk_ltd_t_a_h_2024",
-   "regulator": "ICO",
-   "name": "Grocery Delivery E-Services UK Ltd t/a HelloFresh",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/01/grocery-delivery-e-services-uk-ltd-ta-hellofresh/",
-   "match": "grocery",
-   "date": "2024-01-11",
-   "penalty": 140000,
-   "law": "PECR",
-   "volume": null,
-   "sector": "ecommerce",
-   "summary": "The Information Commissioner’s Office (ICO) has fined food delivery company HelloFresh £140,000 for a campaign of 79 million spam emails and 1 million spam texts over a seven-month period.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Grocery Delivery E-Services UK Ltd t/a HelloFresh",
-     "Retail and manufacture",
-     "The Information Commissioner’s Office (ICO) has fined food delivery company HelloFresh £140,000 for a campaign of 79 million spam emails and 1 million spam texts over a seven-month period. The marketing messages were sent based on an opt-in statement which did not make any reference to the sending of marketing via text, and which was also bundled with an age confirmation statement which was likely to unfairly incentivise customers to agree. Customers were also not given sufficient information that their data would continue to be used for marketing purposes for up to 24 months after cancelling their subscriptions.",
-     "11/01/2024",
-     "",
-     "140,000",
-     "Paid",
-     ""
-    ]
-   }
-  },
-  {
    "id": "ico_skean_homes_ltd_2024",
    "regulator": "ICO",
    "name": "Skean Homes Ltd",
@@ -27931,7 +27846,7 @@
    "sector": null,
    "summary": "Skean first came to the attention of the Commissioner in 2022 as part of an operation formed to assess and analyse complaint trends in relation to the energy and home improvement sector. The Commissioner identified a number of complaints against \"Eco Hub\", \"Driveway Solutions\" and \"Eco Driveways\", in which complainants stated that the calls were promoting energy grants for resin driveways.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -27992,7 +27907,7 @@
    "sector": null,
    "summary": "Outsource Strategies Ltd made 1,346,503 unwanted marketing calls between 11 February 2021 and 22 March 2022 to numbers registered with the TPS. The ICO received 74 complaints from people variously saying they received repeated calls despite requests to stop and that the callers were aggressive.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28052,7 +27967,7 @@
    "sector": "finance",
    "summary": "Between 1 January 2022 and 28 September 2022 there were 20,939 calls made to CTPS or TPS registered numbers – breach of Reg 21 and 24 of PECR. MCP came to the ICO’s attention following a review of complaints made to the Telephone Preference Service (TPS) in November 2021 as part of Operation Torc, which has been set up to investigate unsolicited pensions calls.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28073,7 +27988,7 @@
    "regulator": "ICO",
    "name": "RHAP Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/rhap-ltd-mpn/",
+   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/rhap-ltd-en/",
    "match": "rhap",
    "date": "2023-09-13",
    "penalty": 65000,
@@ -28082,7 +27997,7 @@
    "sector": null,
    "summary": "RHAP Ltd made 15,288 marketing calls to individuals in breach of regulation 21 of PECR. The company was fined £65,000 and issued with an enforcement notice.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28102,8 +28017,8 @@
    "regulator": "ICO",
    "name": "Simply Connecting Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/simply-connecting-ltd-mpn/",
-   "match": "simply",
+   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
+   "match": "Simply Connecting Ltd",
    "date": "2023-08-03",
    "penalty": 40000,
    "law": "PECR",
@@ -28124,7 +28039,8 @@
      "Unpaid",
      "Insufficient assets"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_house_hold_appliances_247_ltd_2023",
@@ -28140,7 +28056,7 @@
    "sector": null,
    "summary": "House Hold Appliances 247 Ltd made 19,069 marketing calls to individuals in breach of regulation 21 of PECR. The company was fined £55,000 and issued with an enforcement notice.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28169,7 +28085,7 @@
    "sector": null,
    "summary": "Poxell first came to the attention of the Commissioner in April 2022 as part of an investigation formed to assess and analyse complaint trends in relation to the energy and home improvements sector. The investigation established that between 31 March 2022 and 20 July 2022, Poxell made 2,647,805 unsolicited direct marketing calls in breach of regulations 21 and 24 of PECR.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28199,7 +28115,7 @@
    "sector": null,
    "summary": "SGS Home Protect Ltd made 24,214 marketing calls to individuals in breach of regulation 21 of PECR. The company was fined £70,000 and issued with an enforcement notice.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28219,8 +28135,8 @@
    "regulator": "ICO",
    "name": "Cover Appliance Ltd",
    "source": "ICO penalties register",
-   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/09/cover-appliance-ltd-mpn/",
-   "match": "cover",
+   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
+   "match": "Cover Appliance Ltd",
    "date": "2023-08-02",
    "penalty": 200000,
    "law": "PECR",
@@ -28228,7 +28144,7 @@
    "sector": null,
    "summary": "Cover Appliance Ltd made 511,499 marketing calls to individuals in breach of regulation 21 of PECR. The company was fined £200,000 and issued with an enforcement notice.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28241,7 +28157,8 @@
      "Unpaid",
      "Insufficient assets"
     ]
-   }
+   },
+   "noPage": true
   },
   {
    "id": "ico_f12_management_ltd_2023",
@@ -28257,7 +28174,7 @@
    "sector": null,
    "summary": "F12 Management Ltd made 1,346,019 marketing calls to individuals in breach of regulation 21 of PECR. The company was fined £200,000 and issued with an enforcement notice.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28269,35 +28186,6 @@
      "200,000",
      "Unpaid",
      "Recovery ongoing - Compulsory Liquidation"
-    ]
-   }
-  },
-  {
-   "id": "ico_fortis_insolvency_limited_2023",
-   "regulator": "ICO",
-   "name": "Fortis Insolvency Limited",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/action-weve-taken/enforcement/2023/06/fortis-insolvency-limited-mpn/",
-   "match": "fortis",
-   "date": "2023-06-27",
-   "penalty": 30000,
-   "law": "PECR",
-   "volume": null,
-   "sector": null,
-   "summary": "Fortis Insolvency Limited sent 558,354 direct marketing SMS messages without valid consent with 527,481 received by subscribers between 26 July 2020 and 26 July 2021 in contravention of regulation 22 of PECR. The company was fined £30,000 and issued with an enforcement notice.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Fortis Insolvency Limited",
-     "",
-     "Fortis Insolvency Limited sent 558,354 direct marketing SMS messages without valid consent with 527,481 received by subscribers between 26 July 2020 and 26 July 2021 in contravention of regulation 22 of PECR. The company was fined £30,000 and issued with an enforcement notice.",
-     "27/06/2023",
-     "",
-     "30,000",
-     "Paid",
-     ""
     ]
    }
   },
@@ -28315,7 +28203,7 @@
    "sector": null,
    "summary": "Maxen Power Supply Limited used overseas call centres to make unsolicited marketing calls to businesses in contravention of regulations 21 and 24 of PECR. The company was fined £120,000 and issued with an enforcement notice.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28344,7 +28232,7 @@
    "sector": null,
    "summary": "The case was part of Operation Tinago which was formed to assess and analyse complaint trends in relation to the energy and home improvements sector. The organisation made 503,445 unsolicited calls to TPS registered numbers between 4 January to 11 November 2021. The calls were about energy products to reduce household bills and resulted in a total of 37 complaints.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28374,7 +28262,7 @@
    "sector": null,
    "summary": "UK Direct Business Solutions Limited made 410,369 unsolicited marketing calls to businesses registered with the CTPS or TPS between 1 March 2020 and 31 October 2021.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28404,7 +28292,7 @@
    "sector": null,
    "summary": "Ice Telecommunications Ltd made 72,682 unsolicited marketing calls to businesses registered with the CTPS or TPS between 13 September 2021 and 31 January 2022.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28464,7 +28352,7 @@
    "sector": "ecommerce",
    "summary": "Between 1 July 2019 and 1 June 2020, It’s OK Limited engaged in the transmission of 1,752,149 unsolicited calls for direct marketing purposes to subscribers who had been registered with the TPS for not less than 28 days, and who had not notified It's OK Limited that they did not object to receiving such calls, contrary to regulation 21 of PECR.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28524,7 +28412,7 @@
    "sector": null,
    "summary": "Utility Guard Limited (UGL), based in Chichester, West Sussex made 1,932 unsolicited direct marketing calls to people registered with the TPS between 4 August 2020 and 28 July 2021. The ICO investigation found the company did not hold a TPS licence, were calling customers, some of which were designated by “trueCall” as vulnerable, and had taken money from a person who has dementia.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28554,8 +28442,7 @@
    "sector": null,
    "summary": "Repair Plans UK Limited (RPUK), based in Brighton made 21,347 unsolicited direct marketing calls to people registered with the TPS between 18 January 2021 and 7 September 2021. RPUK came to the attention of the ICO via West Sussex Trading Standards.",
    "types": [
-    "consent_missing",
-    "third_party_list"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28567,36 +28454,6 @@
      "70,000",
      "Unpaid",
      "Compulsory Liquidation - nil dividend"
-    ]
-   },
-   "noPage": true
-  },
-  {
-   "id": "ico_allapplianceservices_uk_ltd_2022",
-   "regulator": "ICO",
-   "name": "Allapplianceservices UK Ltd",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Allapplianceservices UK Ltd",
-   "date": "2022-11-28",
-   "penalty": 85000,
-   "law": "PECR",
-   "volume": null,
-   "sector": null,
-   "summary": "Allapplianceservices UK Ltd (AUKL), based in Brighton, made 99,313 unsolicited direct marketing calls to people registered with the TPS between 1 January 2021 and 28 June 2021. AUKL came to the attention of the ICO via the Financial Conduct Authority.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Allapplianceservices UK Ltd",
-     "Marketing",
-     "Allapplianceservices UK Ltd (AUKL), based in Brighton, made 99,313 unsolicited direct marketing calls to people registered with the TPS between 1 January 2021 and 28 June 2021. AUKL came to the attention of the ICO via the Financial Conduct Authority. The ICO’s investigation found AUKL appeared to use pressure tactics during the calls insisting card details were given, with one person saying they “just wanted AUKL to go away” and so handed over their payment details. The ICO concluded the company contravened electronic marketing law in order to maximise turnover and profit. One of the complainants had reduced capacity as a result of a stroke, with a second having dementia. The ICO has fined AUKL £85,000.",
-     "28/11/2022",
-     "",
-     "85,000",
-     "Partial payment",
-     "Payment plan"
     ]
    },
    "noPage": true
@@ -28615,7 +28472,7 @@
    "sector": "finance",
    "summary": "Between 1 January 2021 and 1 August 2021, Zuwyco Limited used a public telecommunications service for the purposes of making 93,558 unsolicited calls for direct marketing purposes to subscribers who had been listed on the TPS register for not less than 28 days, contrary to regulation 21(1)(b) of PECR. This resulted in seven complaints being made to the TPS and the Commissioner.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28645,7 +28502,7 @@
    "sector": "ecommerce",
    "summary": "Between 1 February 2021 to 31 July 2021, Apex Assure Limited used a public telecommunications service for the purposes of making 122 unsolicited calls for direct marketing purposes to subscribers where the number allocated to the subscriber in respect of the called line was a number listed on the register of numbers kept by the Commissioner in accordance with regulation 26, contrary to regulation …",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28675,7 +28532,7 @@
    "sector": "ecommerce",
    "summary": "Between 1 January 2020 and 31 December 2020, Green Logic UK Ltd used a public telecommunications service for the purposes of making 11,825 unsolicited calls for direct marketing purposes.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28705,7 +28562,7 @@
    "sector": "ecommerce",
    "summary": "Between 1 August 2020 and 30 April 2021, Posh Windows UK Ltd used a public telecommunications service for the purposes of making, on the balance of probabilities, 461,062 unsolicited calls for direct marketing purposes.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28735,7 +28592,7 @@
    "sector": null,
    "summary": "Boiler Cover Breakdown Limited (BCBL), based in Sutton, Surrey made 9,075 unsolicited direct marketing calls to people registered with the TPS between 1 January 2020 and 31 August 2020. Boiler Breakdown Limited (BBL) also based in Sutton, Surrey made 348,724 unsolicited direct marketing calls to people registered with the TPS during the same time period.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28765,7 +28622,7 @@
    "sector": null,
    "summary": "Boiler Cover Breakdown Limited (BCBL), based in Sutton, Surrey made 9,075 unsolicited direct marketing calls to people registered with the TPS between 1 January 2020 and 31 August 2020. Boiler Breakdown Limited (BBL) also based in Sutton, Surrey made 348,724 unsolicited direct marketing calls to people registered with the TPS during the same time period.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28795,7 +28652,7 @@
    "sector": "ecommerce",
    "summary": "Between 2 January 2020 and 30 September 2020, Eco Spray used a public telecommunications service for the purposes of making 178,190 unsolicited calls for direct marketing purposes.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28837,36 +28694,6 @@
      "60,000",
      "Unpaid",
      "Compulsory liquidation - nil dividend"
-    ]
-   },
-   "noPage": true
-  },
-  {
-   "id": "ico_bizfella_limited_2022",
-   "regulator": "ICO",
-   "name": "Bizfella Limited",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Bizfella Limited",
-   "date": "2022-04-06",
-   "penalty": 30000,
-   "law": "PECR",
-   "volume": null,
-   "sector": "finance",
-   "summary": "Between 15 November 2019 and 15 July 2020 Bizfella Limited instigated the sending of 224,550 unsolicited direct marketing SMS messages that were received by subscribers contrary to regulation 22 of PECR. They have been issued with a penalty notice for £30 000.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Bizfella Limited",
-     "Finance insurance and credit",
-     "Between 15 November 2019 and 15 July 2020 Bizfella Limited instigated the sending of 224,550 unsolicited direct marketing SMS messages that were received by subscribers contrary to regulation 22 of PECR. They have been issued with a penalty notice for £30 000.",
-     "06/04/2022",
-     "",
-     "30,000",
-     "Unpaid",
-     "Creditors voluntary liquidation - nil dividend"
     ]
    },
    "noPage": true
@@ -28915,7 +28742,7 @@
    "sector": "finance",
    "summary": "Between 1 June 2020 and 31 December 2020, UK Appliance Cover Limited made 39,167 unsolicited calls for direct marketing purposes in contravention of Regulation 21 of PECR, and also failed to provide the necessary caller information in contravention of Regulation 24 of PECR. The company has been fined £100,000.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28945,7 +28772,7 @@
    "sector": "finance",
    "summary": "Between 3 March 2020 and 30 September 2020, Home Sure Solutions Limited made 229,483 unsolicited calls for direct marketing purposes in contravention of Regulation 21 PECR. The company has been fined £100,000.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -28975,7 +28802,7 @@
    "sector": null,
    "summary": "Between 1 January 2020 and 31 July 2020, Domestic Support Limited made 69,133 unsolicited calls for direct marketing purposes in contravention of Regulation 21 of PECR, and also failed to provide the necessary caller information in contravention of Regulation 24 of PECR. The company has been fined £80,000.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29005,7 +28832,7 @@
    "sector": "finance",
    "summary": "Between 1 June 2020 and 30 June 2020, Seaview Brokers Limited instigated the making of 4,737 unsolicited calls for direct marketing purposes in contravention of regulation 21 PECR. The company has been fined £15,000.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29052,36 +28879,6 @@
    "noPage": true
   },
   {
-   "id": "ico_tempcover_ltd_2022",
-   "regulator": "ICO",
-   "name": "Tempcover Ltd",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Tempcover Ltd",
-   "date": "2022-02-07",
-   "penalty": 85000,
-   "law": "PECR",
-   "volume": null,
-   "sector": "finance",
-   "summary": "Between 26 May 2019 and 26 May 2020, a total of 29,970,419 unsolicited direct marketing messages were received by subscribers, having been sent by Tempcover Ltd without valid consent. The ICO has fined them £85,000.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Tempcover Ltd",
-     "Finance, insurance and credit",
-     "Between 26 May 2019 and 26 May 2020, a total of 29,970,419 unsolicited direct marketing messages were received by subscribers, having been sent by Tempcover Ltd without valid consent. The ICO has fined them £85,000.",
-     "07/02/2022",
-     "",
-     "£85,000",
-     "Paid",
-     ""
-    ]
-   },
-   "noPage": true
-  },
-  {
    "id": "ico_home2sense_ltd_2022",
    "regulator": "ICO",
    "name": "Home2sense Ltd",
@@ -29095,7 +28892,7 @@
    "sector": null,
    "summary": "The Information Commissioner’s Office (ICO) has fined a home improvement firm £200,000 for making more than half a million unsolicited marketing calls.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29125,7 +28922,7 @@
    "sector": "finance",
    "summary": "Between 4 March and 8 October 2020, UK Platinum Home Care Services Limited instigated the making of 412,556 unsolicited calls for direct marketing purposes in contravention of regulation 21 PECR. The company has been fined £110,000.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29155,7 +28952,7 @@
    "sector": null,
    "summary": "Energy Suite have been fined for making over 1,000 unsolicited direct marketing calls to subscribers who were registered with the TPS and who had not notified Energy Suite that they were willing to receive such calls, and to three complaints being made as a result.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29165,36 +28962,6 @@
      "18/01/2022",
      "",
      "£2,000",
-     "Paid",
-     ""
-    ]
-   },
-   "noPage": true
-  },
-  {
-   "id": "ico_northern_gas_power_2021",
-   "regulator": "ICO",
-   "name": "Northern Gas & Power",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Northern Gas & Power",
-   "date": "2021-12-16",
-   "penalty": 75000,
-   "law": "PECR",
-   "volume": null,
-   "sector": null,
-   "summary": "Organisation made direct marketing calls to subscribers who were registered with the TPS or CTPS in contravention of Regulation 21",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Northern Gas & Power",
-     "Utilities",
-     "Organisation made direct marketing calls to subscribers who were registered with the TPS or CTPS in contravention of Regulation 21",
-     "16/12/2021",
-     "",
-     "£75,000",
      "Paid",
      ""
     ]
@@ -29245,7 +29012,7 @@
    "sector": null,
    "summary": "Between 11 January 2019 and 30 September 2019 there were 107,003 unsolicited direct marketing calls made to subscribers in relation to occupational pension schemes or personal pension schemes, with those calls being instigated without valid consent",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29275,7 +29042,7 @@
    "sector": null,
    "summary": "Multiple breaches of Regulation 21 arising from the organisation's activities over a 12-mth period, resulting in 57,665 unsolicited direct marketing calls to subscribers who were registered with the TPS, which led to 27 complaints",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29305,7 +29072,7 @@
    "sector": "ecommerce",
    "summary": "1718 unsolicited calls were made by the Company for direct marketing purposes to people who were registered with the TPS. This resulted in 4 complaints being made to the TPS and the Commissioner.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29352,36 +29119,6 @@
    "noPage": true
   },
   {
-   "id": "ico_dialadeal_scotland_ltd_2021",
-   "regulator": "ICO",
-   "name": "DialADeal Scotland Ltd",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "DialADeal Scotland Ltd",
-   "date": "2021-09-05",
-   "penalty": 150000,
-   "law": "PECR",
-   "volume": null,
-   "sector": "ecommerce",
-   "summary": "Between 11 August 2019 and 12 March 2020, DialADeal Scotland Ltd made 558,250 unsolicited calls for direct marketing purposes to subscribers whose number was registered with the TPS. This resulted in 527 complaints being made to the Commissioner",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "DialADeal Scotland Ltd",
-     "Retail and manufacture",
-     "Between 11 August 2019 and 12 March 2020, DialADeal Scotland Ltd made 558,250 unsolicited calls for direct marketing purposes to subscribers whose number was registered with the TPS. This resulted in 527 complaints being made to the Commissioner",
-     "05/09/2021",
-     "",
-     "£150,000",
-     "Unpaid",
-     "Creditors voluntary liquidation - nil dividend"
-    ]
-   },
-   "noPage": true
-  },
-  {
    "id": "ico_yes_consumer_solutions_ltd_2021",
    "regulator": "ICO",
    "name": "Yes Consumer Solutions Ltd",
@@ -29395,7 +29132,7 @@
    "sector": null,
    "summary": "Between 29 October 2018 and 29 October 2019, Yes Consumer Solutions Ltd used a public telecommunications service for the purpose of making 188,493 unsolicited calls for direct marketing purposes. This resulted in 12 complaints to the Commissioner",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29407,36 +29144,6 @@
      "£170,000",
      "Partially paid",
      "Recovery ongoing - Compulsory Liquidation"
-    ]
-   },
-   "noPage": true
-  },
-  {
-   "id": "ico_brazier_consulting_services_limited_2021",
-   "regulator": "ICO",
-   "name": "Brazier Consulting Services Limited",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "Brazier Consulting Services Limited",
-   "date": "2021-06-25",
-   "penalty": 200000,
-   "law": "PECR",
-   "volume": null,
-   "sector": null,
-   "summary": "Over 11 million unlawful claims management calls were made",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "Brazier Consulting Services Limited",
-     "Marketing",
-     "Over 11 million unlawful claims management calls were made",
-     "25/06/2021",
-     "",
-     "£200,000",
-     "Paid",
-     ""
     ]
    },
    "noPage": true
@@ -29455,7 +29162,7 @@
    "sector": null,
    "summary": "There have been multiple breaches of Regulations 21 and 24 of PECR by ColourCoat Limited arising from its activities over an eight month period and this led to a substantial number of unsolicited direct marketing calls being made. Between 1 August 2019 and 31 March 2020 there were 969,273 connected calls, equating to an average of 121,159 calls per month or 29,372 calls per week.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29545,7 +29252,7 @@
    "sector": null,
    "summary": "Solarwave of Grays, Essex, has been fined £100,000 for making 73,217 unsolicited marketing calls about solar panel maintenance between January and October 2020. These were made to people who were registered with the Telephone Preference Service (TPS) list and who should not have received them.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29575,7 +29282,7 @@
    "sector": null,
    "summary": "LTH Holdings, a telephone marketing company from Cardiff, have been fined £145,000 for making 1.4 million calls selling funeral plans to people who were also registered with the TPS for a year between May 2019 to May 2020. The ICO received 41 complaints.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29802,36 +29509,6 @@
    "noPage": true
   },
   {
-   "id": "ico_house_guard_uk_limited_2021",
-   "regulator": "ICO",
-   "name": "House Guard UK Limited",
-   "source": "ICO penalties register",
-   "url": "https://ico.org.uk/media2/svrh3hyl/cmps-unpaid-paid-23-01425.csv",
-   "match": "House Guard UK Limited",
-   "date": "2021-02-09",
-   "penalty": 150000,
-   "law": "PECR",
-   "volume": null,
-   "sector": "ecommerce",
-   "summary": "Between 8 May 2018 and 31 December 2018 House Guard UK Limited indicated that it had conducted a direct marketing telephone campaign in respect of which they admit that approximately 669,966 were connected to subscribers. Of these calls 371,958 were made to TPS registered numbers, without conducting any due diligence on the data provided to them.",
-   "types": [
-    "consent_missing"
-   ],
-   "evidence": {
-    "register_row": [
-     "House Guard UK Limited",
-     "Retail and manufacture",
-     "Between 8 May 2018 and 31 December 2018 House Guard UK Limited indicated that it had conducted a direct marketing telephone campaign in respect of which they admit that approximately 669,966 were connected to subscribers. Of these calls 371,958 were made to TPS registered numbers, without conducting any due diligence on the data provided to them.",
-     "09/02/2021",
-     "",
-     "£150,000",
-     "Unpaid",
-     "Recovery ongoing - Creditors' Voluntary Liquidation"
-    ]
-   },
-   "noPage": true
-  },
-  {
    "id": "ico_call_centre_ops_limited_2021",
    "regulator": "ICO",
    "name": "Call Centre Ops Limited",
@@ -29845,7 +29522,7 @@
    "sector": null,
    "summary": "There have been multiple breaches of regulation 21 by Call Centre Ops Limited arising from the organisation’s activities over a six-month period, and this led to a substantial number (159,461) of unsolicited direct marketing calls being made to subscribers who were registered with the TPS.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29905,7 +29582,7 @@
    "sector": null,
    "summary": "The ICO and TPS received 94 complaints about the West Midlands security systems company for calls it made between 1 June 2017 and 31 May 2018. Of the 851,392 calls made 565,344 were to TPS registered users.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29935,7 +29612,7 @@
    "sector": "ecommerce",
    "summary": "Over a four month period SSSL made 188,665 calls of which 126,019 were to TPS registered users and generated 29 complaints.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29965,7 +29642,7 @@
    "sector": null,
    "summary": "Between 17 March and 2 July 2019, Leeds based CML made 617,323 direct marketing calls to people registered with the TPS. The calls promoted boiler replacements and resulted in 52 complaints from the public.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -29995,7 +29672,7 @@
    "sector": "ecommerce",
    "summary": "Repair & Assure Ltd were responsible for making 1,103,292 nuisance calls between 2 January and 11 June 2019. The ICO and TPS received 88 complaints about the calls, which all related to washing machine warranties.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30025,7 +29702,7 @@
    "sector": null,
    "summary": "Between 1 January 2019 and 28 May 2019 Pownall Marketing Limited used a public electronic communications service for the purpose of making 365,369 unsolicited calls for direct marketing purposes to subscribers in relation to claims management services, resulting in 63 complaints.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30055,7 +29732,7 @@
    "sector": "finance",
    "summary": "The Information Commissioner’s Office (ICO) has fined Pension House Exchange Limited has been fined £45,000 for making 39,722 connected unsolicited calls for the purposes of direct marketing in relation to occupational pension schemes or personal pension schemes contrary to regulation 21B of PECR",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30115,7 +29792,7 @@
    "sector": null,
    "summary": "Reliance Advisory Limited fined £250,000 for breaking electronic marketing law. Over a six month period from the start of 2019, the Bury-based company made 15.1 million calls in relation to claims management services such as mis-sold PPI. All of the calls, of which 1.1 million connected, were made to people who had not consented to receive them.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30205,7 +29882,7 @@
    "sector": "finance",
    "summary": "Swansea company CPS Advisory Ltd was fined £130,000 for making more than 100,000 unauthorised direct marketing calls to people about their pensions",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30265,7 +29942,7 @@
    "sector": null,
    "summary": "Organisation responsible for making 270,774 unsolicited direct marketing calls to subscribers on the TPS register without valid consent between 1 January 2018 and 29 November 2018.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30325,7 +30002,7 @@
    "sector": null,
    "summary": "Black Lion Marketing Ltd fined £171,000 for making unsolicited direct marketing calls.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30355,7 +30032,7 @@
    "sector": null,
    "summary": "CRDNN Limited fined with the maximum £500,000 fine for making more than 193 million automated nuisance calls.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30385,7 +30062,7 @@
    "sector": "ecommerce",
    "summary": "Making it Easy Ltd has been fined £160,000 by the Information Commissioner’s Office (ICO) for making spam calls to people registered with the Telephone Preference Service (TPS).",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30445,7 +30122,7 @@
    "sector": null,
    "summary": "ICO fines home security company for making thousands of nuisance calls",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30505,7 +30182,7 @@
    "sector": "finance",
    "summary": "Avalon Direct Ltd made almost 52,000 calls to people who were registered with the Telephone Preference Service (TPS) between 1 March and 20 November 2017.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30685,7 +30362,7 @@
    "sector": null,
    "summary": "Company made nuisance calls to TPS subscribers.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30745,7 +30422,7 @@
    "sector": null,
    "summary": "Company fined £90,000 for making calls to numbers registered with the TPS.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30775,7 +30452,7 @@
    "sector": null,
    "summary": "Company fined £160,000 for making nuisance calls to TPS subscribers",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30805,7 +30482,7 @@
    "sector": null,
    "summary": "Company fined £140,000 for making marketing calls to TPS subscribers.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30835,7 +30512,7 @@
    "sector": null,
    "summary": "Company fined £80,000 for making calls to numbers registered with the TPS.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30925,7 +30602,7 @@
    "sector": null,
    "summary": "AMS Marketing Ltd, of Peacehaven, made the calls to people who had opted out of receiving marketing calls by registering with the Telephone Preference Service (TPS).",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -30985,7 +30662,7 @@
    "sector": "finance",
    "summary": "Our Vault was fined £70,000 for making 55,534 unsolicited marketing calls to people who had registered with the Telephone Preference Service (TPS) and had not consented to being contacted by the company.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31015,7 +30692,7 @@
    "sector": null,
    "summary": "Unsolicited calls for direct marketing purposes to subscribers who had registered with the Telephone Preference Service in contravention of Regulations 21 and 24 of the Privacy and Electronic Communications (EC Directive) Regulations 2003.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31075,7 +30752,7 @@
    "sector": null,
    "summary": "Unsolicited calls for direct marketing purposes to subscribers who had registered with the Telephone Preference Service in contravention of Regulation 21 of the Privacy and Electronic Communications (EC Directive) Regulations 2003.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31105,7 +30782,7 @@
    "sector": null,
    "summary": "Unsolicited calls for direct marketing purposes to subscribers who had registered with the Telephone Preference Service in contravention of Regulation 21 of the Privacy and Electronic Communications (EC Directive) Regulations 2003.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31165,7 +30842,7 @@
    "sector": "finance",
    "summary": "Holmes Financial Solutions Ltd fined £300,000 after they instigated the transmission of automated marketing calls to individuals without their prior consent.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31225,7 +30902,7 @@
    "sector": "finance",
    "summary": "Miss-Sold Products UK Ltd fined £350,000 after they failed to ensure that marketing calls sent to individuals who had consented to receive marketing.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31315,7 +30992,7 @@
    "sector": null,
    "summary": "Barrington Claims Ltd fined £250,000 after they failed to ensure automated marketing calls were sent to individuals who had consented to receive marketing.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31405,7 +31082,7 @@
    "sector": null,
    "summary": "The Lead Experts Limited instigated the transmission of automated marketing calls to subscribers without prior consent.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31465,7 +31142,7 @@
    "sector": null,
    "summary": "Easyleads Limited made unsolicited automated marketing calls without consent of recipients",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31495,7 +31172,7 @@
    "sector": "finance",
    "summary": "Your Money Rights Ltd. Made unsolicited automated marketing calls without consent of recipients",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31525,7 +31202,7 @@
    "sector": null,
    "summary": "True Telecom Ltd made unsolicited direct marketing calls without consent of recipients.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31615,7 +31292,7 @@
    "sector": null,
    "summary": "The company made unsolicited calls for direct marketing pusposes without consent of the recipients",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31645,7 +31322,7 @@
    "sector": null,
    "summary": "Company made unsolicited direct marketing calls without the consent of the recipients.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31675,7 +31352,7 @@
    "sector": null,
    "summary": "Company made unsolicited direct marketing calls without the consent of the      recipients.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31765,7 +31442,7 @@
    "sector": "ecommerce",
    "summary": "The company made unsolicited direct marketing calls without the consent of recipients and failed to take reasonable steps to record the information of subscribers who had not given their prior consent to receiving marketing calls",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31855,7 +31532,7 @@
    "sector": "ecommerce",
    "summary": "The company made unsolicited calls for the purpose of direct marketing without the consent of the recipients",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -31915,7 +31592,7 @@
    "sector": null,
    "summary": "A company behind 99.5 million nuisance calls has been fined a record £400,000 by the Information Commissioner’s Office (ICO).",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -32328,7 +32005,7 @@
    "sector": null,
    "summary": "Nuisance calls",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -32478,7 +32155,7 @@
    "sector": null,
    "summary": "Marketing Company made unsolicited automated marketing calls without the consent of the recipients",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -32568,7 +32245,7 @@
    "sector": null,
    "summary": "A marketing company made unsolicited direct marketing calls without the consent of the recipients",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -32689,7 +32366,7 @@
    "sector": null,
    "summary": "A company that provides will making and related services made unsolicited direct marketing telephone calls to members of the public.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -32779,7 +32456,7 @@
    "sector": null,
    "summary": "Unsolicited marketing calls being made relating to installation of solar panels",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -32839,7 +32516,7 @@
    "sector": null,
    "summary": "Automated calls being made relating to PPI, packaged bank accounts and flight delays",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -32869,7 +32546,7 @@
    "sector": null,
    "summary": "A company who made over 6 million automated marketing calls relating to hearing loss claims",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -32959,7 +32636,7 @@
    "sector": null,
    "summary": "Automated calls being made promoting the firm’s home improvement services.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -32989,7 +32666,7 @@
    "sector": null,
    "summary": "Live calls being made with a view to generating leads for potential claims for damages in respect of hearing loss caused by working in a noisy environment",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33019,7 +32696,7 @@
    "sector": null,
    "summary": "Unsolicited marketing calls being made relating to installation of home improvement products such as doors, windows, conservatories, kitchens and bathrooms",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33049,7 +32726,7 @@
    "sector": "finance",
    "summary": "Automated calls being made relating to PPI and packaged bank accounts",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33079,7 +32756,7 @@
    "sector": null,
    "summary": "Automated calls being made relating to boiler replacements.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33109,7 +32786,7 @@
    "sector": null,
    "summary": "Automated calls being made urging people to back a mayoral candidate",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33139,7 +32816,7 @@
    "sector": null,
    "summary": "Automated calls being made relating to PPI claims",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33169,7 +32846,7 @@
    "sector": null,
    "summary": "Cold calls being made to those who were registered with the TPS to try and sell solar panels and other green energy saving equipment.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33199,7 +32876,7 @@
    "sector": null,
    "summary": "40,000 automated calls made in one day in an attempt to sell burglar alarms, almost a quarter of which were made between 1am and 6am.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33259,7 +32936,7 @@
    "sector": null,
    "summary": "Marketing call blocking devices and services to stop unsolicited calls",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33289,7 +32966,7 @@
    "sector": null,
    "summary": "Marketing call blocking devices and services to stop unsolicited calls",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33439,7 +33116,7 @@
    "sector": null,
    "summary": "A green energy company who made over six million calls as part of a automated call marketing campaign offering ‘free’ solar panels.",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33469,7 +33146,7 @@
    "sector": null,
    "summary": "Making unsolicited marketing calls to individuals registered with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33499,7 +33176,7 @@
    "sector": null,
    "summary": "Making unsolicited marketing calls to individuals registered with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33529,7 +33206,7 @@
    "sector": null,
    "summary": "Making direct marketing calls to people without their consent",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33589,7 +33266,7 @@
    "sector": null,
    "summary": "Making unsolicited marketing calls to individuals registered with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33619,7 +33296,7 @@
    "sector": null,
    "summary": "Making unsolicited marketing calls to individuals registered with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33649,7 +33326,7 @@
    "sector": null,
    "summary": "Making unsolicited marketing calls to individuals with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33679,7 +33356,7 @@
    "sector": null,
    "summary": "Making unsolicited marketing calls to individuals registered with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33739,7 +33416,7 @@
    "sector": null,
    "summary": "Making unsolicited marketing calls to individuals registered with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33769,7 +33446,7 @@
    "sector": null,
    "summary": "Making unsolicited marketing calls to individuals registered with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33799,7 +33476,7 @@
    "sector": "finance",
    "summary": "Making unsolicited marketing calls to individuals registered with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -33829,7 +33506,7 @@
    "sector": null,
    "summary": "Making unsolicited marketing calls to individuals registered with the TPS",
    "types": [
-    "consent_missing"
+    "marketing_calls"
    ],
    "evidence": {
     "register_row": [
@@ -38584,32 +38261,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "asa_person_s_unknown_t_a_nultqh_gb_a24-1245840",
-   "regulator": "ASA",
-   "name": "Person(s) unknown t/a Nultqh GB",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1245840-person-s--unknown.html",
-   "match": "Person",
-   "date": "2024-07-31",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad)",
-   "summary": "A paid-for Meta ad for a prostate patch made medicinal claims for an unlicensed product.",
-   "types": [],
-   "evidence": {
-    "rules": [
-     "1.7",
-     "1.7"
-    ],
-    "topic": "Health conditions Person(s) unknown 13",
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
    "id": "asa_person_s_unknown_t_a_gauge_b_ready_locks_a24-1242111",
    "regulator": "ASA",
    "name": "Person(s) unknown t/a Gauge B-Ready Locks, Guardian Tech Locksmith Cranleigh, ApexCraft Locksmith Frimley and Alex the Locksmith West Molesey",
@@ -38657,6 +38308,32 @@
      "1.7"
     ],
     "topic": "Medical procedures and services Person(s) unknown 13",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
+   "id": "asa_person_s_unknown_t_a_nultqh_gb_a24-1245840",
+   "regulator": "ASA",
+   "name": "Person(s) unknown t/a Nultqh GB",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1245840-person-s--unknown.html",
+   "match": "Person",
+   "date": "2024-07-31",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (paid ad)",
+   "summary": "A paid-for Meta ad for a prostate patch made medicinal claims for an unlicensed product.",
+   "types": [],
+   "evidence": {
+    "rules": [
+     "1.7",
+     "1.7"
+    ],
+    "topic": "Health conditions Person(s) unknown 13",
     "decision": "Upheld"
    },
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
@@ -43137,6 +42814,32 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
+   "id": "asa_meikles_of_scotland_ltd_t_a_stag_s_breat_a22-1158773",
+   "regulator": "ASA",
+   "name": "Meikles of Scotland Ltd t/a Stag's Breath Liqueur",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/meikles-of-scotland-ltd-a22-1158773-meikles-of-scotland-ltd.html",
+   "match": "Meikles",
+   "date": "2022-09-21",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (own site)",
+   "summary": "A post on a Whisky brand’s Facebook page implied that drinking alcohol could help people overcome problems and suggested that drinking alcohol had therapeutic qualities.",
+   "types": [],
+   "evidence": {
+    "rules": [
+     "18.6",
+     "18.7"
+    ],
+    "topic": "Alcohol",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
    "id": "asa_pernod_ricard_uk_ltd_a22-1158771",
    "regulator": "ASA",
    "name": "Pernod Ricard UK Ltd",
@@ -43186,32 +42889,6 @@
      "11.4"
     ],
     "topic": "Medicines, remedies and therapies",
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
-   "id": "asa_meikles_of_scotland_ltd_t_a_stag_s_breat_a22-1158773",
-   "regulator": "ASA",
-   "name": "Meikles of Scotland Ltd t/a Stag's Breath Liqueur",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/meikles-of-scotland-ltd-a22-1158773-meikles-of-scotland-ltd.html",
-   "match": "Meikles",
-   "date": "2022-09-21",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (own site)",
-   "summary": "A post on a Whisky brand’s Facebook page implied that drinking alcohol could help people overcome problems and suggested that drinking alcohol had therapeutic qualities.",
-   "types": [],
-   "evidence": {
-    "rules": [
-     "18.6",
-     "18.7"
-    ],
-    "topic": "Alcohol",
     "decision": "Upheld"
    },
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
@@ -45095,6 +44772,33 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_ryanair_2026",
+   "regulator": "CMA",
+   "name": "Ryanair",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/ryanair-consumer-protection-enforcement-case",
+   "match": "Ryanair",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to Ryanair’s use of a potentially unfair mandatory fee, and the presentation of that fee on its UK website.",
+   "types": [
+    "drip_pricing"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
    "id": "cma_trainline_2026",
    "regulator": "CMA",
    "name": "Trainline",
@@ -45149,33 +44853,6 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_ryanair_2026",
-   "regulator": "CMA",
-   "name": "Ryanair",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/ryanair-consumer-protection-enforcement-case",
-   "match": "Ryanair",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to Ryanair’s use of a potentially unfair mandatory fee, and the presentation of that fee on its UK website.",
-   "types": [
-    "drip_pricing"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
    "id": "cma_dignity_2026",
    "regulator": "CMA",
    "name": "Dignity",
@@ -45193,31 +44870,6 @@
    "types": [
     "fake_reviews"
    ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_heating_oil_review_2026",
-   "regulator": "CMA",
-   "name": "Heating oil review",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/heating-oil-review-consumer-protection-enforcement-case",
-   "match": "Heating",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) commenced a consumer protection review of the supply of heating oil to consumers.",
-   "types": [],
    "evidence": {
     "outcome_type": null,
     "case_state": [
@@ -45256,6 +44908,31 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_heating_oil_review_2026",
+   "regulator": "CMA",
+   "name": "Heating oil review",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/heating-oil-review-consumer-protection-enforcement-case",
+   "match": "Heating",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) commenced a consumer protection review of the supply of heating oil to consumers.",
+   "types": [],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
    "id": "cma_just_eat_2026",
    "regulator": "CMA",
    "name": "Just Eat",
@@ -45270,6 +44947,33 @@
    "refunds": null,
    "sector": null,
    "summary": "The Competition and Markets Authority (CMA) is investigating Just Eat.co.uk Limited’s (‘Just Eat’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer review information like star ratings.",
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_feefo_2026",
+   "regulator": "CMA",
+   "name": "Feefo",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/feefo-consumer-protection-enforcement-case",
+   "match": "Feefo",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "media",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Feefo Holdings Limited’s (‘Feefo’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.  ",
    "types": [
     "fake_reviews"
    ],
@@ -45335,22 +45039,23 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_feefo_2026",
+   "id": "cma_emma_group_2022",
    "regulator": "CMA",
-   "name": "Feefo",
+   "name": "Emma Group",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/feefo-consumer-protection-enforcement-case",
-   "match": "Feefo",
+   "url": "https://www.gov.uk/cma-cases/emma-group-consumer-protection-case",
+   "match": "Emma",
    "date": null,
    "penalty": null,
    "outcome": null,
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
-   "sector": "media",
-   "summary": "The Competition and Markets Authority (CMA) is investigating Feefo Holdings Limited’s (‘Feefo’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.  ",
+   "sector": "ecommerce",
+   "summary": "The CMA is investigating the use of urgency claims by the Emma Group. ",
    "types": [
-    "fake_reviews"
+    "fake_urgency",
+    "misleading_reference_price"
    ],
    "evidence": {
     "outcome_type": null,
@@ -45360,6 +45065,31 @@
     "penalty_sentence": null
    },
    "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_leasehold_2019",
+   "regulator": "CMA",
+   "name": "Leasehold",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/leasehold",
+   "match": "Leasehold",
+   "date": null,
+   "penalty": null,
+   "outcome": "Gave undertakings to the CMA",
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
+   "types": [],
+   "evidence": {
+    "outcome_type": "consumer-enforcement-undertakings",
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no decision date in the record"
   },
   {
    "id": "cma_adobe_2026",
@@ -45414,37 +45144,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_leasehold_2019",
+   "id": "cma_online_consumer_reviews_2025",
    "regulator": "CMA",
-   "name": "Leasehold",
+   "name": "Online consumer reviews",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/leasehold",
-   "match": "Leasehold",
-   "date": null,
-   "penalty": null,
-   "outcome": "Gave undertakings to the CMA",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
-   "types": [],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-undertakings",
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no decision date in the record"
-  },
-  {
-   "id": "cma_emma_group_2022",
-   "regulator": "CMA",
-   "name": "Emma Group",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/emma-group-consumer-protection-case",
-   "match": "Emma",
+   "url": "https://www.gov.uk/cma-cases/online-consumer-reviews",
+   "match": "Online",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -45452,10 +45157,36 @@
    "volume": null,
    "refunds": null,
    "sector": "ecommerce",
-   "summary": "The CMA is investigating the use of urgency claims by the Emma Group. ",
+   "summary": "The Competition and Market Authority's (CMA’s) work to protect consumers who rely on online reviews.",
    "types": [
-    "fake_urgency",
-    "misleading_reference_price"
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_online_reviews_2020",
+   "regulator": "CMA",
+   "name": "Online reviews",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/online-reviews",
+   "match": "Online",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "media",
+   "summary": "The Competition and Markets Authority (CMA) investigation into fake online reviews.",
+   "types": [
+    "fake_reviews"
    ],
    "evidence": {
     "outcome_type": null,
@@ -45521,85 +45252,6 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_secondary_ticketing_websites_2012",
-   "regulator": "CMA",
-   "name": "Secondary ticketing websites",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/secondary-ticketing-websites",
-   "match": "Secondary",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The CMA is investigating suspected breaches of consumer protection law in the online secondary tickets market.",
-   "types": [],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_online_reviews_2020",
-   "regulator": "CMA",
-   "name": "Online reviews",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/online-reviews",
-   "match": "Online",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "media",
-   "summary": "The Competition and Markets Authority (CMA) investigation into fake online reviews.",
-   "types": [
-    "fake_reviews"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_online_consumer_reviews_2025",
-   "regulator": "CMA",
-   "name": "Online consumer reviews",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/online-consumer-reviews",
-   "match": "Online",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The Competition and Market Authority's (CMA’s) work to protect consumers who rely on online reviews.",
-   "types": [
-    "fake_reviews"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
    "id": "cma_online_hotel_booking_2017",
    "regulator": "CMA",
    "name": "Online hotel booking",
@@ -45625,6 +45277,31 @@
     "penalty_sentence": null
    },
    "reason": "no decision date in the record"
+  },
+  {
+   "id": "cma_secondary_ticketing_websites_2012",
+   "regulator": "CMA",
+   "name": "Secondary ticketing websites",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/secondary-ticketing-websites",
+   "match": "Secondary",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The CMA is investigating suspected breaches of consumer protection law in the online secondary tickets market.",
+   "types": [],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
    "id": "cma_fake_and_misleading_online_reviews_tradi_2019",
