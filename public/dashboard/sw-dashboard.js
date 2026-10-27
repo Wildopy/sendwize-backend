@@ -199,10 +199,11 @@
   function render() {
     rotateVisits();
     var changed = whatChanged(), first = firstRun();
-    // Case Twin leads, then what to do next; the money detail is one tap away
+    // The scoreboard leads, then Case Twin and what to do next
     root.innerHTML =
-      portalHead() + toolsNav() + changed + (first ? first : twinCard() + startHere()) + noticedCard() + summaryStrip() +
-      (st.detail ? '<div class="sw-grid sw-g-top">' + scoreCard() + heroTiles() + '</div>' + clustersCard() : '') +
+      portalHead() + toolsNav() + changed + scoreboard() +
+      (st.detail ? '<div class="sw-det"><div class="sw-det-tiles">' + heroTiles() + '</div>' + '<div class="sw-open"><div class="sw-lbl">Score trend</div><div id="sw-spark"></div></div>' + clustersCard() + '</div>' : '') +
+      (first ? first : twinCard() + startHere()) + noticedCard() +
       '<div class="sw-quiet">' + expiryCard() + briefingCard() + listValueCard() + '</div>' +
       (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-open sw-fixes" id="sw-fixes">' + fixesSection() + '</div>') +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
@@ -307,21 +308,49 @@
       }).join('') + '</div></div>';
   }
 
-  // Three figures a marketer needs at a glance; the full breakdown opens below
-  function summaryStrip() {
+  // Levels on the way to 100, so each fix visibly moves you up
+  var LEVELS = [[0, 'Exposed'], [40, 'Getting there'], [60, 'Solid'], [80, 'Strong'], [95, 'Audit-ready']];
+  function level(v) {
+    var i = LEVELS.length - 1;
+    while (i > 0 && v < LEVELS[i][0]) i--;
+    return { i: i, name: LEVELS[i][1], next: LEVELS[i + 1] || null, from: LEVELS[i][0] };
+  }
+  // Score points one fix would add
+  function pts(f) { var o = {}; o[f.id] = 1; return Math.max(0, projScore(o) - (D.score.value || 0)); }
+  // Weeks in a row (ending this week or last) with at least one fix
+  function streakWeeks() {
+    var wk = function (d) { var t = new Date(d); t.setHours(0, 0, 0, 0); t.setDate(t.getDate() - ((t.getDay() + 6) % 7)); return t.getTime(); };
+    var seen = {};
+    (D.fixes.completed || []).forEach(function (f) { if (f.completedDate) seen[wk(f.completedDate)] = 1; });
+    var w = wk(new Date()), WEEK = 7 * 864e5, n = 0;
+    if (!seen[w]) w -= WEEK;
+    while (seen[w]) { n++; w -= WEEK; }
+    return n;
+  }
+
+  // The scoreboard: score, fine risk and risk cleared, side by side at the top
+  function scoreboard() {
     var s = D.score, e = D.exposure, ra = D.riskAddressed || {}, n = D.counts || {};
     var other = (e.asaPending || 0) + (e.cmaPending || 0);
-    var ch = s.change ? ' <span class="sw-note">' + (s.change > 0 ? '▲ ' : '▼ ') + Math.abs(s.change) + ' since last check</span>' : '';
     var fresh = !((n.pending || 0) + (n.completed || 0)) && !(D.listValue && D.listValue.hasData);
-    return '<div class="sw-sum">' +
-      '<div class="sw-sum-t"><div class="sw-hl">Compliance score</div>' + (fresh ? '<div class="sw-hn">–</div><div class="sw-hs">Appears after your first check.</div></div>' : '<div class="sw-hn">' + cu('s_score', s.value || 0, 'int') + '<small>/100</small></div>' +
-        '<div class="sw-hs"><span class="sw-pill" style="background:' + esc(s.colour || '#EA7317') + '22;color:' + esc(s.colour || '#EA7317') + '">' + esc(s.band || '') + '</span>' + ch + '</div></div>') +
-      '<div class="sw-sum-t"><div class="sw-hl">ICO fine risk</div><div class="sw-hn">' + (e.totalHigh && e.totalMostLikely ? cu('s_ico', e.totalMostLikely, 'about') : e.totalHigh ? range(e.totalLow, e.totalHigh) : '£0') + '</div>' +
+    var v = s.value || 0, lv = level(v), c = 2 * Math.PI * 52, off = c * (1 - Math.max(0, Math.min(100, v)) / 100);
+    var toNext = lv.next ? Math.round((v - lv.from) / (lv.next[0] - lv.from) * 100) : 100;
+    var open = e.totalMostLikely || 0, cleared = ra.allTotal || 0, pct = cleared + open ? Math.round(cleared / (cleared + open) * 100) : 0;
+    var streak = streakWeeks();
+    var score = fresh ? '<div class="sw-bd-ring"><div class="sw-sc-num">–</div></div><div class="sw-bd-lv">No score yet</div><div class="sw-hs">Appears after your first check.</div>'
+      : '<div class="sw-bd-ring"><svg width="124" height="124" viewBox="0 0 124 124"><circle class="sw-ring-bg" cx="62" cy="62" r="52"/><circle class="sw-ring-fg" id="sw-ring-fg" cx="62" cy="62" r="52" stroke="' + esc(s.colour || '#EA7317') + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (REDUCED ? off : lastRing == null ? c : lastRing).toFixed(1) + '" data-to="' + off.toFixed(1) + '"/></svg>' +
+        '<div class="sw-sc-num">' + cu('s_score', v, 'int') + '<small>score</small></div></div>' +
+        '<div class="sw-bd-lv">' + esc(lv.name) + (s.change ? ' <span class="sw-note">' + (s.change > 0 ? '▲ ' : '▼ ') + Math.abs(s.change) + '</span>' : '') + '</div>' +
+        (lv.next ? '<div class="sw-bd-bar"><i style="width:' + toNext + '%"></i></div><div class="sw-note">' + (lv.next[0] - v) + ' points to <b>' + esc(lv.next[1]) + '</b></div>' : '<div class="sw-note">Top level. Keep it there.</div>');
+    return '<div class="sw-board">' +
+      '<div class="sw-bd-col sw-bd-score">' + score + '</div>' +
+      '<div class="sw-bd-col"><div class="sw-hl">ICO fine risk</div><div class="sw-bd-n">' + (e.totalHigh && e.totalMostLikely ? cu('s_ico', e.totalMostLikely, 'about') : e.totalHigh ? range(e.totalLow, e.totalHigh) : '£0') + '</div>' +
         '<div class="sw-hs">' + (e.totalHigh ? 'Likely ' + range(e.totalLow, e.totalHigh) + ', from similar published fines. ' : 'Nothing open that the ICO fines for. ') +
         (other ? other + ' advertising or consumer law finding' + (other > 1 ? 's' : '') + ' on top. ' : '') +
         (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">Why?</button>' : '') + '</div></div>' +
-      '<div class="sw-sum-t"><div class="sw-hl">Fixed this month</div><div class="sw-hn">' + cu('s_ra', ra.monthTotal || 0, 'gbpK') + '</div>' +
-        '<div class="sw-hs">Fine risk removed. ' + (n.completed || 0) + ' fixed, ' + (n.pending || 0) + ' still open.</div></div>' +
+      '<div class="sw-bd-col"><div class="sw-hl">Risk cleared</div><div class="sw-bd-n good">' + cu('s_ra', cleared, 'gbpK') + '</div>' +
+        '<div class="sw-bd-bar good"><i style="width:' + pct + '%"></i></div><div class="sw-note">' + pct + '% of your fine risk cleared · ' + gbpK(ra.monthTotal || 0) + ' this month</div>' +
+        '<div class="sw-bd-chips"><span class="sw-chip">' + (n.completed || 0) + ' fixed · ' + (n.pending || 0) + ' to go</span>' + (streak ? '<span class="sw-chip streak">🔥 ' + streak + '-week fixing streak</span>' : '') + '</div></div>' +
       '<button class="sw-sum-more" data-act="detail" aria-expanded="' + st.detail + '">' + (st.detail ? 'Hide the breakdown ⌃' : 'See the full breakdown ⌄') + '</button></div>';
   }
 
@@ -342,18 +371,6 @@
     if (Math.abs(ex - prev.exposure) >= 1000) { bits.push('worst-case fine risk ' + (ex < prev.exposure ? 'down' : 'up') + ' to <b>' + gbpK(ex) + '</b>'); if (ex > prev.exposure) good = false; }
     if (!bits.length) return '';
     return '<div class="sw-changed' + (good ? ' good' : '') + '"><span>Since ' + esc(date(prev.at)) + ': ' + bits.join(', ') + '.</span><button class="sw-changed-x" data-act="close-changed" aria-label="Dismiss">✕</button></div>';
-  }
-
-  function scoreCard() {
-    var s = D.score, c = 2 * Math.PI * 44, off = c * (1 - Math.max(0, Math.min(100, s.value || 0)) / 100);
-    var ch = s.change ? '<div class="sw-note" style="margin-bottom:6px">' + (s.change > 0 ? '▲ ' : '▼ ') + Math.abs(s.change) + ' since last snapshot</div>' : '';
-    var n = D.counts || {};
-    return '<div class="sw-card sw-sc"><div class="sw-lbl">Compliance score</div>' +
-      '<div class="sw-ring"><svg width="100" height="100" viewBox="0 0 100 100"><circle class="sw-ring-bg" cx="50" cy="50" r="44"/><circle class="sw-ring-fg" id="sw-ring-fg" cx="50" cy="50" r="44" stroke="' + esc(s.colour || '#EA7317') + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (REDUCED ? off : lastRing == null ? c : lastRing).toFixed(1) + '" data-to="' + off.toFixed(1) + '"/></svg>' +
-      '<div class="sw-sc-num">' + cu('score', s.value || 0, 'int') + '<small>/ 100</small></div></div>' +
-      '<span class="sw-pill" style="background:' + esc(s.colour || '#EA7317') + '22;color:' + esc(s.colour || '#EA7317') + '">' + esc(s.band || '') + '</span>' + ch +
-      '<div class="sw-sc-counts"><div><div class="sw-scc-n">' + cu('open', n.pending || 0, 'int') + '</div><div class="sw-scc-l">Open</div></div><div><div class="sw-scc-n">' + cu('fixed', n.completed || 0, 'int') + '</div><div class="sw-scc-l">Fixed</div></div></div>' +
-      '<div class="sw-note">' + esc(s.note) + '</div><div class="sw-spark" id="sw-spark"></div></div>';
   }
 
   // Score trend: hover or tap a point to see what happened that day
@@ -471,7 +488,7 @@
       var r = removes(f);
       return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
         '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(f.description) + '</div></div>' +
-        effortChip(f) + '<span class="sw-nx-v">' + (r >= 1000 ? '−' + gbpK(r) : '') + '</span><span class="sw-btn o">Fix it</span></div>';
+        effortChip(f) + '<span class="sw-nx-v"><b>+' + pts(f) + ' pts</b>' + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
     }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/send-verdict.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
     return '<div class="sw-open sw-next"><div class="sw-next-h"><div class="sw-lbl">Start here · best value for your time</div>' +
@@ -898,13 +915,16 @@
 
   async function complete(fixId, src, btn) {
     btn.disabled = true;
+    var f = (D.fixes.pending || []).filter(function (x) { return x.id === fixId; })[0], gain = f ? pts(f) : 0, was = level(D.score.value || 0).i;
     try {
       await api('/api/fixes?action=complete', { method: 'POST', body: { userId: userId, fixId: fixId, completionSource: src } });
-      toast(src === 'improved_on_rerun' ? 'Confirmed. Full credit added.' : 'Marked fixed. Re-run the check for full credit.', 'ok');
+      toast((src === 'improved_on_rerun' ? 'Confirmed. Full credit added.' : 'Marked fixed.') + (gain ? ' +' + gain + ' points.' : '') + (src === 'improved_on_rerun' ? '' : ' Re-run the check for full credit.'), 'ok');
       celebrate(btn, src === 'improved_on_rerun');
       delete st.open[fixId]; delete st.picked[fixId];
       await refreshQuiet();
-      var top = $('.sw-sum'); if (top && top.scrollIntoView && top.getBoundingClientRect().top < 0) top.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+      var now = level(D.score.value || 0);
+      if (now.i > was) { toast('Level up: ' + now.name, 'ok'); celebrate($('.sw-board'), true); }
+      var top = $('.sw-board'); if (top && top.scrollIntoView && top.getBoundingClientRect().top < 0) top.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
     } catch (e) { btn.disabled = false; toast(e.message, 'er'); }
   }
 
@@ -969,7 +989,7 @@
       case 'save-band': saveBand(t); break;
       case 'save-gate': saveGate(t); break;
       case 'flt': st.filter = t.getAttribute('data-f'); $('#sw-fixes').innerHTML = fixesSection(); break;
-      case 'ra': st.raMode = t.getAttribute('data-m'); var g = $('.sw-g-top'); g.innerHTML = scoreCard() + heroTiles(); drawSpark(); animate(); break;
+      case 'ra': st.raMode = t.getAttribute('data-m'); rerender(); break;
       case 'hist': st.histTab = t.getAttribute('data-k'); root.querySelectorAll('[data-act=hist]').forEach(function (b) { b.classList.toggle('on', b === t); }); loadHistory(); break;
       case 'pg': st.page[st.histTab] += +t.getAttribute('data-d'); loadHistory(); break;
       case 'brf-more': $('#sw-brf').classList.remove('clip'); t.hidden = true; break;
