@@ -254,6 +254,7 @@ const SAME_ISSUE = {
   purpose_creep: ['legitimate_interest_abuse'],
 };
 const RELATED = {
+  suppressed_contact: ['marketing_calls'],
   missing_terms: ['misleading_claim', 'drip_pricing'],
   missing_unsubscribe: ['suppression_breach'],
   unreviewed_joint_ads: ['misleading_claim', 'undisclosed_ad'],

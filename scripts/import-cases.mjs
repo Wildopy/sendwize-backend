@@ -98,6 +98,11 @@ function csvRows(text) {
 const ICO_MARKETING = /\bmarketing|unsolicited|nuisance|wealth screening|data matching|data sharing|profil|lead gen|sold (personal )?data|selling (personal )?data/;
 function icoTypes(nature, pecr) {
   const n = lc(nature), t = new Set();
+  // Phone-only cases (live or automated calls, TPS) are a different channel from the
+  // email and SMS Sendwize checks: tag them as calls so they never twin an email finding
+  const calls = /\bcalls?\b|\btps\b|ctps|telephone preference|telephone marketing|call blocking/.test(n);
+  const messages = /\btexts?\b|\bsms\b|e-?mails?\b|messages?\b/.test(n);
+  if (calls && !messages) return ['marketing_calls'];
   if (/unsolicited|tps|telephone preference|without (the required |valid )?consent|not consented|had not consented|nuisance|direct marketing|marketing (call|text|email|message)s?|automated call/.test(n)) t.add('consent_missing');
   if (/third[- ]part(y|ies)|purchased|bought|supplier|list broker|lead gen/.test(n)) t.add('third_party_list');
   if (/concealed|withheld|withholding|caller line|did not identify|failed to identify|spoof/.test(n)) t.add('affiliate_sender_identity_breach');
@@ -332,7 +337,10 @@ async function linkIcoPages(cases) {
     const words = String(c.name).toLowerCase().replace(/\(.*?\)/g, ' ').split(/[^a-z0-9]+/).filter(w => w.length > 1 && !ICO_STOP.has(w));
     const key = words.slice(0, 2).join('-');
     const cands = key ? pages.filter(u => u.toLowerCase().includes(key) || (words[0] && words[0].length > 4 && u.toLowerCase().includes('/' + words[0]))) : [];
-    for (const u of cands.slice(0, 4)) {
+    // Older ICO pages are not in the sitemap but live at /enforcement/<name>/
+    const base = String(c.name).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/&/g, ' and ').replace(/['’.]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const guesses = [...new Set([base, base.replace(/-limited$/, '-ltd'), base.replace(/-ltd$/, '-limited')])].map(g => `https://ico.org.uk/action-weve-taken/enforcement/${g}/`);
+    for (const u of [...cands.slice(0, 4), ...guesses.filter(g => !cands.includes(g))]) {
       const r = await get(u); if (!r.ok) continue;
       const t = plain(r.text);
       const tl = t.toLowerCase();
@@ -349,6 +357,8 @@ const knownAsa = new Set(CASES.filter(c => c.regulator === 'ASA').map(c => c.url
 // Same regulator, same first word of the name, within a year: the hand-checked case wins
 const first = s => squash(String(s).split(/[\s(]/)[0]);
 const isKnown = c => c.regulator === 'ASA' ? knownAsa.has(c.url)
+  : CASES.some(k => k.regulator === c.regulator && k.url === c.url && !/\.csv$/.test(c.url)) ? true
+  : CASES.some(k => k.regulator === c.regulator && k.penalty && k.penalty === c.penalty && String(k.date).slice(0, 4) === String(c.date).slice(0, 4)) ? true
   : CASES.some(k => k.regulator === c.regulator && first(k.name) === first(c.name) && Math.abs(Number(String(k.date).slice(0, 4)) - Number(String(c.date).slice(0, 4))) <= 1);
 
 if (ONLY.includes('ico')) { const x = await importIco(held); report.ICO = x.length; found.push(...x); }
