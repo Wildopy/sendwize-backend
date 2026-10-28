@@ -32,7 +32,7 @@ Notes:
 - Cases from before April 2014 were run by the OFT, the CMA's predecessor, and say so.
 
 ${sample.map((c, i) => `**${i + 1}. ${c.name}** (${c.regulator}, ${c.date})  
-${c.penalty ? 'Fined £' + n(c.penalty) : c.outcome}. ${c.summary.length > 240 ? c.summary.slice(0, 240) + '…' : c.summary}  
+${c.penalty ? 'Fined £' + n(c.penalty) : c.outcome}. ${c.summary}  
 Matched to: ${c.types.map(nice).join(', ')}  
 [Open the regulator page](${c.url})${c.url.endsWith('.csv') ? `  \nIn the ICO register (a spreadsheet): search for "${(c.evidence?.register_row || [])[0] || c.name}" and check the row says ${(c.evidence?.register_row || [])[3] || c.date} under Date of Final Notice and £${n(c.penalty)} under ${c.law === 'PECR' ? 'PECR fine' : 'DPA fine'}.` : ''}`).join('\n\n')}
 `);
