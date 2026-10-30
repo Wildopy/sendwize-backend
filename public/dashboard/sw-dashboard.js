@@ -469,7 +469,7 @@
     var h = T.hero, c = T.cases[h.caseId], open = h.openFixIds.length, done = h.doneFixIds.length, pct = Math.round(done / Math.max(1, open + done) * 100);
     return '<div class="sw-twin"><div class="sw-twin-main"><div class="sw-lbl">Your closest case twin</div>' +
       '<div class="sw-twin-name">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div>' +
-      '<div class="sw-hs">' + esc(c.summary) + '</div>' +
+      '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') +
       stakes(c, pend.filter(function (x) { return x.id === h.fixId; })[0], true) +
       '<div class="sw-chips">' + h.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
       '<div class="sw-twin-btns"><button class="sw-btn o" data-act="twin" data-id="' + esc(h.fixId) + '">See it side by side</button><button class="sw-btn q" data-act="twin-only">Show the ' + open + ' finding' + (open > 1 ? 's' : '') + '</button></div></div>' +
@@ -488,7 +488,7 @@
     if (f.contactVolume) you.push('Audience: ' + Number(f.contactVolume).toLocaleString('en-GB') + (c.volume ? ' (theirs: ' + Number(c.volume).toLocaleString('en-GB') + ')' : ''));
     if (D.profile && D.profile.sector) you.push('Sector: ' + nice(D.profile.sector));
     var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Case Twin · ' + tw.t.match + '% match</div><div class="sw-h2">You and ' + esc(c.name) + '</div></div>' +
-      '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' +
+      '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') +
         (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + (c.source === 'curated' ? esc(c.regulator) + ' enforcement page' : 'Read the ruling') + '</a>' : '') + '</div>' +
       '<div class="sw-vs-mid" aria-hidden="true">vs</div>' +
       '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(f.description) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
@@ -716,7 +716,7 @@
     cases = cases || [];
     if (!cases.length) return '';
     return '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
-      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + (c.related ? ' <span class="sw-src">Related issue</span>' : '') + '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a>' : '<div class="sw-note">From the ' + esc(c.regulator) + '\u2019s published penalties register</div>') + '</div>';
+      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + (c.related ? ' <span class="sw-src">Related issue</span>' : '') + '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') + (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a>' : '<div class="sw-note">From the ' + esc(c.regulator) + '\u2019s published penalties register</div>') + '</div>';
     }).join('') + '</div>';
   }
 

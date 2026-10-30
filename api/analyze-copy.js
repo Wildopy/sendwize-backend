@@ -516,7 +516,7 @@ function withClosestCase(v, channel) {
   const c = fixType ? closestCases(fixType, null, { text, channel })[0] : null;
   if (!c) return rest;
   return { ...rest,
-    enforcement_note: `${c.related ? 'Related' : 'Closest'} published case: ${c.name} (${c.regulator}, ${caseWhen(c.date)}). ${c.outcome}. ${c.summary}`,
+    enforcement_note: `${c.related ? 'Related' : 'Closest'} published case: ${c.name} (${c.regulator}, ${caseWhen(c.date)}). ${c.outcome}. ${c.summary}${c.action ? ` What they had to change: ${c.action}` : ''}`,
     enforcement_url: c.url, case_id: c.id };
 }
 

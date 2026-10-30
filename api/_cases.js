@@ -89,7 +89,7 @@ export function buildLibrary(feedRecords = []) {
   const lib = CASE_ANCHORS.map(c => ({
     id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty || null,
     refunds: c.refunds || null, outcome: caseOutcome(c),
-    volume: c.volume || null, summary: c.summary, types: c.types, sector: c.sector ?? null,
+    volume: c.volume || null, summary: c.summary, action: c.action || null, types: c.types, sector: c.sector ?? null,
     url: c.url || (c.imported ? null : ICO_ACTION_URL), source: c.imported ? 'imported' : 'curated',
     subjects: c.subjects, channels: c.channels, curated: !!c.curated,
   }));

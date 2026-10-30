@@ -67,6 +67,25 @@ const lc = s => String(s).toLowerCase();
 // heading ("Wealth screening / data matching / data sharing", "Pricing practices."), the opening
 // of the regulator's own page is used word for word; failing that, the case is held.
 const THIN = 80;
+// What the firm had to change, word for word from the regulator's page: the CMA's dated
+// outcome entry and the commitments listed under it, or the ASA ruling's Action paragraph
+const clip = (t, n = 700) => { if (t.length <= n) return t; const cut = t.slice(0, n), i = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('; ')); return i > 40 ? cut.slice(0, i) + '.' : null; };
+function cmaAction(html) {
+  const blocks = [...String(html).matchAll(/<(p|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m => ({ tag: m[1].toLowerCase(), t: plain(m[2]) }));
+  const i = blocks.findIndex(b => b.tag === 'p' && /^\d{1,2} [A-Z][a-z]+ \d{4}:/.test(b.t) && /undertakings|commit|agreed|fined|penalty|court order|enforcement order|changed|change its/i.test(b.t));
+  if (i < 0) return null;
+  const lead = blocks[i].t.replace(/^\d{1,2} [A-Z][a-z]+ \d{4}:\s*/, '');
+  let intro = '';
+  const items = [];
+  for (let j = i + 1; j < blocks.length && items.length < 3; j++) {
+    if (blocks[j].tag === 'li') items.push(blocks[j].t.replace(/[;,.]?$/, ''));
+    else if (items.length || intro || !/commit|include|amongst other things|following/i.test(blocks[j].t)) break;
+    else intro = blocks[j].t.replace(/:$/, '');
+  }
+  const out = items.length ? `${lead} ${intro ? intro + ': ' : ''}${items.join('; ')}.` : lead;
+  return out.length >= 40 ? clip(out) : null;
+}
+const asaAction = page => { const m = String(page).match(/\bAction\s+((?:The ad|The ads|The claims?|The promotion|The marketing)[^]*?)(?=\s+(?:CAP Code|BCAP Code|More on|Is this page|Back to top)\b|$)/); return m ? clip(m[1].trim(), 400) : null; };
 const isThin = s => !s || String(s).trim().length < THIN;
 const pageLead = (html, mustHave = []) => {
   const p = [...String(html).matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(m => plain(m[1]))
@@ -224,7 +243,7 @@ async function importCma(held) {
     const c = {
       id: `cma_${slug(name)}_${(date || x.opened_date || '').slice(0, 4)}`, ...base, match: matchFor(name), date, penalty, outcome,
       law: 'Consumer protection law', volume: null, refunds: null, sector: cmaSector(x.market_sector),
-      summary, types, evidence: { outcome_type: outcomeType || null, case_state: x.case_state, penalty_sentence: pm ? pm[0] : null, ...(lead ? { listed_summary: listed, summary_from: 'case page' } : {}) },
+      summary, action: cmaAction(bodyHtml), types, evidence: { outcome_type: outcomeType || null, case_state: x.case_state, penalty_sentence: pm ? pm[0] : null, ...(lead ? { listed_summary: listed, summary_from: 'case page' } : {}) },
     };
     if (isThin(summary)) { held.push({ ...c, reason: 'summary does not say what the firm did, and the case page has no fuller description' }); return; }
     if (!penalty && !outcome) { held.push({ ...c, reason: 'no outcome published yet (open investigation, no finding made)' }); return; }
@@ -300,7 +319,7 @@ async function importAsa(held) {
       id: `asa_${slug(x.name)}_${(x.url.match(/-(a\d{2}-\d+)-/i) || [, date?.slice(0, 4)])[1]}`.toLowerCase(), ...base,
       match: matchFor(x.name), date, penalty: null, outcome: /in part/i.test(x.decision) ? 'ASA ruling upheld in part' : 'Upheld ASA ruling',
       law: code ? code[0].split(/\s+\d/)[0] : 'ASA ruling', volume: null, sector: null, media: x.media || null,
-      summary: wholeSentences(x.summary), types: [...new Set(types)], evidence: { rules, topic, decision: x.decision },
+      summary: wholeSentences(x.summary), action: asaAction(page), types: [...new Set(types)], evidence: { rules, topic, decision: x.decision },
     };
     const problems = [];
     if (!squash(page).includes(squash(c.match))) problems.push(`ruling page does not mention "${c.match}"`);

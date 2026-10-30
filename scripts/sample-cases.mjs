@@ -46,7 +46,7 @@ Notes:
 
 ${sample.map((c, i) => `**${i + 1}. ${c.name}** (${c.regulator}, ${c.date})  
 ${c.penalty ? 'Fined £' + n(c.penalty) : c.outcome}. ${c.summary}  
-Matched to: ${c.types.map(nice).join(', ')}  
+${c.action ? `What they had to change: ${c.action}  \n` : ''}Matched to: ${c.types.map(nice).join(', ')}  
 [Open the regulator page](${c.url})${c.url.endsWith('.csv') ? `  \nIn the ICO register (a spreadsheet): search for "${(c.evidence?.register_row || [])[0] || c.name}" and check the row says ${(c.evidence?.register_row || [])[3] || c.date} under Date of Final Notice and £${n(c.penalty)} under ${c.law === 'PECR' ? 'PECR fine' : 'DPA fine'}.` : ''}`).join('\n\n')}
 `);
 writeFileSync(join(out, 'all-ready-cases.csv'), ['regulator,name,date,amount,outcome,matched_to,url,summary',
