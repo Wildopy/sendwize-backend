@@ -46,7 +46,7 @@
 // legal advice. Weights and case anchors are for the founder to review.
 // ─────────────────────────────────────────────────────────────
 import { createHash } from 'node:crypto';
-import { CASES, LIBRARY_STATS, caseOutcome, sameIssueTypes, relatedTypes } from './_case-library.js';
+import { CASES, LIBRARY_STATS, caseOutcome, sameIssueTypes, relatedTypes, subjectsOf, channelsOf, subjectFit, sharedSubjects } from './_case-library.js';
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
 // Keys are compared with spaces removed and hyphens as en dashes, so the
@@ -563,15 +563,20 @@ export const AI_FACTOR_IDS = Object.keys(FACTORS).filter(k => FACTORS[k].source 
 export const CASE_ANCHORS = CASES;
 export const ICO_ACTION_URL = 'https://ico.org.uk/action-weve-taken/enforcement/';
 
-// Closest cases for a finding, from any regulator: same issue first, then
-// a related issue, then nearest audience size, fines before rulings.
-export function closestCases(fixType, volume) {
+// Closest cases for a finding, from any regulator: same issue and same
+// subject (a green claim beside a green-claim case, never a health one),
+// then a related issue, then same channel and nearest audience size,
+// fines before rulings. ctx.text is the finding's own wording; ctx.channel
+// the channel it was found in (email, sms, social...).
+export function closestCases(fixType, volume, ctx = {}) {
   const same = sameIssueTypes(fixType), related = relatedTypes(fixType);
   const v = Number(volume) || null;
+  const subjects = subjectsOf(ctx.text), channels = ctx.channel ? [ctx.channel] : channelsOf(ctx.text);
   return CASE_ANCHORS
     .map(c => ({ c, rel: c.types.some(t => same.includes(t)) ? 0 : c.types.some(t => related.includes(t)) ? 1 : null }))
-    .filter(x => x.rel !== null)
-    .map(({ c, rel }) => ({ c, rel, d: rel * 10 + (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
+    .filter(x => x.rel !== null && subjectFit(x.c, subjects, fixType))
+    .map(({ c, rel }) => ({ c, rel, d: rel * 10 - sharedSubjects(c, subjects) + (channels.length && !c.channels.some(ch => channels.includes(ch)) ? 0.5 : 0)
+      + (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
     .sort((a, b) => a.d - b.d || String(b.c.date).localeCompare(String(a.c.date)))
     .slice(0, 3)
     .map(({ c, rel }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, url: c.url || (c.imported ? null : ICO_ACTION_URL), related: rel === 1 }));
@@ -801,7 +806,7 @@ export function refineExposure(exposure, fix, sector, assessment, inputs = {}) {
     tighten: conf.tighten,
     position: Math.round(position * 100) / 100,
     factors: all.map(f => ({ id: f.id, label: FACTORS[f.id].label, direction: FACTORS[f.id].weight > 0 ? 'up' : 'down', evidence: f.evidence, source: f.source })),
-    closestCases: closestCases(fix.fixType, vol?.count),
+    closestCases: closestCases(fix.fixType, vol?.count, { text: fix.description }),
     basis: ai.length ? 'assessed' : ids.length ? 'rules' : 'standard',
     aiSummary: assessment?.summary || '',
     rangeLabel: 'Comparable published cases · adjusted for your evidence and profile · not a prediction · not legal advice',
@@ -1053,7 +1058,7 @@ export function formatFixRecord(r, revenueBand, sector, inputs = {}) {
   if (base.category === 'ASA' || base.category === 'CMA') {
     fix.campaignInputs = safeParse(f.CommercialInputs) || null;
     fix.exposure = { ...fix.exposure, marketingCost: marketingCost(base.category, inputs || {}, fix.campaignInputs || {}, fixType),
-      closestCases: closestCases(fixType, fix.contactVolume || inputs?.listSize) };
+      closestCases: closestCases(fixType, fix.contactVolume || inputs?.listSize, { text: fix.description }) };
   }
   fix.assessment = current ? { assessedAt: assessment.assessedAt || null, confidence: assessment.confidence || null } : null;
   fix.assessmentStale = !!(assessment && !current);

@@ -10,8 +10,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const review = JSON.parse(readFileSync('data/case-review.json', 'utf8'));
 const { approved = [], rejected = [] } = JSON.parse(readFileSync('data/case-approvals.json', 'utf8'));
 const ok = new Set(approved), no = new Set(rejected);
-const FIELDS = ['id', 'regulator', 'name', 'match', 'date', 'penalty', 'refunds', 'outcome', 'volume', 'sector', 'summary', 'types', 'url', 'noPage'];
+const FIELDS = ['id', 'regulator', 'name', 'match', 'date', 'penalty', 'refunds', 'outcome', 'volume', 'sector', 'media', 'topic', 'summary', 'types', 'url', 'noPage'];
 const live = review.ready.filter(c => ok.has(c.id) && !no.has(c.id))
+  .map(c => ({ ...c, topic: c.evidence?.topic || null }))
   .map(c => Object.fromEntries(FIELDS.filter(k => c[k] !== undefined && c[k] !== null).map(k => [k, c[k]])));
 
 const missing = approved.filter(id => !review.ready.some(c => c.id === id));

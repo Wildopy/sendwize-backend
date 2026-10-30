@@ -509,10 +509,11 @@ function mapViolationToFixType(violation) {
 // library, never from the model, so every case shown has a source link.
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const caseWhen = d => { const m = String(d || '').match(/^(\d{4})(?:-(\d{2}))?/); return m ? (m[2] ? MONTHS[Number(m[2]) - 1] + ' ' : '') + m[1] : ''; };
-function withClosestCase(v) {
+function withClosestCase(v, channel) {
   const { enforcement_note, enforcement_url, case_id, ...rest } = v;
   const fixType = rest.requiresEvidence ? null : mapViolationToFixType(rest);
-  const c = fixType ? closestCases(fixType)[0] : null;
+  const text = [rest.issue, rest.regulation, rest.recommendation, rest.text, rest.quote].filter(Boolean).join(' ');
+  const c = fixType ? closestCases(fixType, null, { text, channel })[0] : null;
   if (!c) return rest;
   return { ...rest,
     enforcement_note: `${c.related ? 'Related' : 'Closest'} published case: ${c.name} (${c.regulator}, ${caseWhen(c.date)}). ${c.outcome}. ${c.summary}`,
@@ -718,7 +719,7 @@ export default async function handler(req, res) {
 
     const contextFixTypes = new Set(contextViolations.map(v => v._fixType));
     const aiViolations    = taggedAiViolations.filter(v => !contextFixTypes.has(mapViolationToFixType(v)));
-    const allViolations   = [...contextViolations, ...aiViolations].map(withClosestCase);
+    const allViolations   = [...contextViolations, ...aiViolations].map(v => withClosestCase(v, contentType));
 
     let finalScore = aiAnalysis?.score ?? 50;
     for (const v of contextViolations) {

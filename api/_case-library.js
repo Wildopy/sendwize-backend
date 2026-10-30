@@ -203,7 +203,47 @@ const CURATED = [
 // records (scripts/import-cases.mjs → data/case-review.json → publish-cases).
 // An imported case with no page of its own keeps its source (the ICO register) for the
 // link check but shows no link: a spreadsheet is no use to someone reading the case.
-export const CASES = [...CURATED, ...IMPORTED.map(c => ({ ...c, imported: true, ...(c.noPage ? { sourceUrl: c.url, url: null } : {}) }))];
+// ── What a case or a finding is about, finer than its type ──
+// Two "misleading claim" findings can be about entirely different things (a
+// green claim and a health claim), so a case is only set beside a finding
+// about the same subject. Read from the regulator's own summary, never guessed.
+const SUBJECTS = {
+  environmental: /\b(green|environment\w*|eco[- ]?friendly|carbon|sustainab\w*|recycl\w*|net[- ]zero|climate|biodegrad\w*|emissions?)\b/i,
+  health:        /\b(health|healthcare|medic\w*|cures?|treat(s|ment)?|weight[- ]loss|slimming|supplements?|vitamins?|nutrition\w*|immun\w*|cosmetic|botox|aesthetic|clinics?|pharmac\w*|cbd|diet\w*|prescription)\b/i,
+  finance:       /\b(loans?|credit|invest(ment|ments|or|ors|ing)|crypto\w*|mortgages?|insurance|pensions?|apr|returns|trading (platform|app)|day trading|forex|fca|cobs|ppi|debt|financial)\b/i,
+  price:         /\b(prices?|pricing|savings?|discounts?|reference price|was\s*£|cheapest|fees?|charges?|£\s?\d)/i,
+  urgency:       /\b(urgency|limited[- ]time|ends (soon|today|tonight|midnight)|countdown|scarcity|only \d+ left|last chance|hurry|time[- ]limited|deadline)\b/i,
+  reviews:       /\b(reviews?|testimonials?|ratings?|trustpilot|endorse\w*)\b/i,
+  disclosure:    /\b(influencers?|#ad|sponsored|affiliate|paid partnership|obviously identifiable|identifiable as)\b/i,
+  comparative:   /\b(comparative|competitors?|comparisons?|number one|no\.? ?1|best[- ]selling|(uk|world|britain|country)['’]?s (best|biggest|leading|favourite|cheapest))\b/i,
+  gambling:      /\b(gambl\w*|betting|bets?|casino|slots|bingo|lottery)\b/i,
+  alcohol:       /\b(alcohol\w*|beer|wine|spirits|gin|vodka)\b/i,
+  food:          /\b(less healthy food|hfss|food|snacks?)\b/i,
+  data:          /\b(wealth screening|data matching|data sharing|profil\w*|tele-?matching|personal data|data broker|bought data|purchased data|lists?)\b/i,
+};
+export const subjectsOf = text => Object.keys(SUBJECTS).filter(k => SUBJECTS[k].test(String(text || '')));
+const CHANNELS = {
+  email: /\be-?mails?\b/i,
+  sms:   /\b(sms|texts?|text messages?)\b/i,
+  calls: /\b(calls?|telephone|tps)\b/i,
+  social:/\b(facebook|instagram|tiktok|meta|linkedin|social media|influencers?|youtube|snapchat|pinterest|x \(twitter\)|twitter)\b/i,
+  web:   /\b(websites?|web ?pages?|product (pages?|listings?)|online|app)\b/i,
+  directmail: /\b(leaflets?|direct mail|mailings?|brochures?|catalogues?|posters?|press ad)\b/i,
+};
+export const channelsOf = text => Object.keys(CHANNELS).filter(k => CHANNELS[k].test(String(text || '')));
+// Types too broad to match on alone ("misleading claim" covers green, health,
+// finance...): for these a case must share the finding's subject. A broad
+// finding with no readable subject gets no case rather than a loose one.
+export const BROAD_TYPES = new Set(['misleading_claim', 'asa_liability', 'missing_terms', 'sector_risk_unreviewed', 'partner_brand_risk']);
+export function subjectFit(c, findingSubjects, fixType) {
+  if (!BROAD_TYPES.has(fixType)) return true;
+  if (findingSubjects.length) return (c.subjects || []).some(s => findingSubjects.includes(s));
+  return false;
+}
+export const sharedSubjects = (c, findingSubjects) => (c.subjects || []).filter(s => findingSubjects.includes(s)).length;
+
+const withSubjects = c => ({ ...c, subjects: subjectsOf(c.summary), channels: channelsOf(`${c.media || ''} ${c.summary || ''}`) });
+export const CASES = [...CURATED.map(c => ({ ...c, curated: true })), ...IMPORTED.map(c => ({ ...c, imported: true, ...(c.noPage ? { sourceUrl: c.url, url: null } : {}) }))].map(withSubjects);
 
 // For the dashboard and the method page: how big the library is
 export const LIBRARY_STATS = CASES.reduce((s, c) => {

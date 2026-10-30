@@ -62,7 +62,7 @@ async function loadFix(fixId) {
 // ── Claude: pick factors from the menu, quoting the evidence ──
 async function askClaude(fix, profile) {
   const text = evidenceText(fix, bandSector(profile));
-  const cases = closestCases(fix.fixType, fix.contactVolume);
+  const cases = closestCases(fix.fixType, fix.contactVolume, { text: fix.description });
   const menu = AI_FACTOR_IDS.map(id => `- ${id}: ${FACTORS[id].label}`).join('\n');
   const schema = {
     type: 'object',

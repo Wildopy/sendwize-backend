@@ -18,7 +18,7 @@
 // wins" and ranking "Start here" by value for time.
 // ─────────────────────────────────────────────────────────────
 import { CASE_ANCHORS, ICO_ACTION_URL, areaOf } from './_exposure.js';
-import { caseOutcome, sameIssueTypes } from './_case-library.js';
+import { caseOutcome, sameIssueTypes, subjectsOf, subjectFit } from './_case-library.js';
 
 // Feed claim types (regulatory-feed-update.js) → the finding types they match
 export const CLAIM_TO_FIX = {
@@ -91,6 +91,7 @@ export function buildLibrary(feedRecords = []) {
     refunds: c.refunds || null, outcome: caseOutcome(c),
     volume: c.volume || null, summary: c.summary, types: c.types, sector: c.sector ?? null,
     url: c.url || (c.imported ? null : ICO_ACTION_URL), source: c.imported ? 'imported' : 'curated',
+    subjects: c.subjects, curated: !!c.curated,
   }));
   const seen = new Set(lib.map(c => slug(c.name).split('_')[0]));
   for (const r of feedRecords) {
@@ -110,7 +111,7 @@ export function buildLibrary(feedRecords = []) {
       outcome: caseOutcome({ penalty: Number(f.FineAmount) > 0 ? Number(f.FineAmount) : null, regulator: f.Regulator || '' }),
       summary: String(f.RulingSummary || '').slice(0, 300), types,
       sector: sectorKey(f.Sector),
-      url: f.RulingUrl, source: 'feed',
+      url: f.RulingUrl, source: 'feed', subjects: subjectsOf(f.RulingSummary),
     });
   }
   return lib;
@@ -124,6 +125,9 @@ export const TWIN_MIN = 75;
 // Match strength 0-98 with the reasons behind it
 export function matchCase(fix, c, ctx = {}) {
   if (!c.types.some(t => sameIssueTypes(fix.fixType).includes(t))) return null;
+  // Same subject too: a green-claim finding is never twinned with a health-claim case
+  const subjects = subjectsOf(fix.description);
+  if (c.subjects && !subjectFit(c, subjects, fix.fixType)) return null;
   const v = Number(fix.contactVolume) || Number(ctx.listSize) || null;
   const gap = v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : null;
   if (gap != null && gap > 2) return null;
