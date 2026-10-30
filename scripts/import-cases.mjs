@@ -72,8 +72,10 @@ const pageLead = (html, mustHave = []) => {
   const p = [...String(html).matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(m => plain(m[1]))
     .find(t => t.length >= THIN && /[.!?”"]$/.test(t)
       && !/^(\d{1,2} [A-Z][a-z]+ \d{4}|Updated|Published|Cookies|We use|We'd like|Find out|This (page|publication)|Contents|Is this page)/.test(t)
+      && !/\b(Case Reference|Complainant|Investigation into)\s*:/i.test(t)
       && mustHave.every(w => lc(t).includes(w)));
-  return p ? (p.length > 400 ? wholeSentences(p.slice(0, 400) + '...') : p) : null;
+  const out = p ? (p.length > 400 ? wholeSentences(p.slice(0, 400) + '...') : p) : null;
+  return out && !/…$/.test(out) ? out : null; // no whole sentence to show: not a description
 };
 
 // Words a name must appear as on the source page (first distinctive word)
