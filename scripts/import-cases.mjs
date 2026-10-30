@@ -85,6 +85,19 @@ function cmaAction(html) {
   const out = items.length ? `${lead} ${intro ? intro + ': ' : ''}${items.join('; ')}.` : lead;
   return out.length >= 40 ? clip(out) : null;
 }
+// The firm(s) a CMA case is about, as the case page names them. Many CMA cases are titled by
+// topic ("Fake online reviews", "Social media endorsements"), which is not who the case was against.
+const FIRM = "[A-Z][\\w&'’.-]*(?: (?:[A-Z&][\\w&'’.-]*|of|and(?= [A-Z][\\w'’.-]* (?:Limited|Ltd|plc|LLP)\\b)))*";
+function cmaFirms(body) {
+  const t = String(body), found = [];
+  const add = s => { s = s.replace(/^(The|This|In|On|Today|Following|After)\s+/, '').trim(); if (s.length > 2 && !/^(CMA|Competition|Markets|Authority|OFT|UK|Office|Consumer|Facebook Ireland Limited \(Facebook\))$/.test(s) && !found.includes(s)) found.push(s); };
+  for (const m of t.matchAll(new RegExp(`undertakings (?:from|by) (${FIRM})`, 'g'))) add(m[1]);
+  for (const m of t.matchAll(new RegExp(`(${FIRM})(?: \\([^)]{1,40}\\))?,?(?: a [a-z ]{3,40},)? (?:has|have) (?:all |now |formally )?(?:signed|given|provided|agreed|committed|offered)`, 'g'))) add(m[1]);
+  for (const m of t.matchAll(new RegExp(`((?:${FIRM}, )+${FIRM} and ${FIRM}) (?:have|had) (?:all )?(?:signed|given|provided|agreed|committed)`, 'g'))) { found.length = 0; m[1].split(/, | and /).forEach(add); break; }
+  return found.filter(f => !/^(The|It|They|We|He|She)$/.test(f)).slice(0, 4);
+}
+const TOPIC_TITLE = /\b(reviews?|endorsements?|pricing|practices|retailers?|online|websites?|sector|market|marketing|advertising|consumers?|investigation|sales|offers?|platforms?|social media|influencers?|secondary ticketing|holidays?|cars?|homes?)\b/i;
+const FIRM_WORD = /\b(Ltd|Limited|plc|LLP|Inc|Group|& Co)\b/;
 const asaAction = page => { const m = String(page).match(/\bAction\s+((?:The ad|The ads|The claims?|The promotion|The marketing)[^]*?)(?=\s+(?:CAP Code|BCAP Code|More on|Is this page|Back to top)\b|$)/); return m ? clip(m[1].trim(), 400) : null; };
 const isThin = s => !s || String(s).trim().length < THIN;
 const pageLead = (html, mustHave = []) => {
@@ -238,13 +251,17 @@ async function importCma(held) {
     const about = x.title.split(':').slice(1).join(':').trim() || x.title.trim();
     let summary = /^(Office of Fair Trading \(OFT\) closed|Five closed Office of Fair Trading|Competition and Markets Authority \(CMA\) open consumer enforcement case)/.test(x.description || '') && about
       ? about[0].toUpperCase() + about.slice(1) + '.' : x.description;
+    // Name the firm, not the topic: a topic-titled case takes the firms its page names, or is held
+    const firms = cmaFirms(body), topicTitle = TOPIC_TITLE.test(name) && !FIRM_WORD.test(name);
+    const firmName = topicTitle ? (firms.length ? firms.join(', ').replace(/, ([^,]+)$/, ' and $1') : null) : name;
     const listed = summary, lead = isThin(summary) ? pageLead(bodyHtml) : null;
     if (lead) summary = lead;
     const c = {
-      id: `cma_${slug(name)}_${(date || x.opened_date || '').slice(0, 4)}`, ...base, match: matchFor(name), date, penalty, outcome,
+      id: `cma_${slug(name)}_${(date || x.opened_date || '').slice(0, 4)}`, ...base, name: firmName || name, caseTitle: firmName && firmName !== name ? name : undefined, match: matchFor(firmName || name), date, penalty, outcome,
       law: 'Consumer protection law', volume: null, refunds: null, sector: cmaSector(x.market_sector),
       summary, action: cmaAction(bodyHtml), types, evidence: { outcome_type: outcomeType || null, case_state: x.case_state, penalty_sentence: pm ? pm[0] : null, ...(lead ? { listed_summary: listed, summary_from: 'case page' } : {}) },
     };
+    if (!firmName) { held.push({ ...c, reason: 'the CMA titles this case by topic and the page text does not name the firm in a way the importer can read' }); return; }
     if (isThin(summary)) { held.push({ ...c, reason: 'summary does not say what the firm did, and the case page has no fuller description' }); return; }
     if (!penalty && !outcome) { held.push({ ...c, reason: 'no outcome published yet (open investigation, no finding made)' }); return; }
     if (!date) { held.push({ ...c, reason: 'no decision date in the record' }); return; }
