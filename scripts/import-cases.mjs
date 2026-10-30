@@ -96,7 +96,7 @@ function cmaFirms(body) {
   for (const m of t.matchAll(new RegExp(`((?:${FIRM}, )+${FIRM} and ${FIRM}) (?:have|had) (?:all )?(?:signed|given|provided|agreed|committed)`, 'g'))) { found.length = 0; m[1].split(/, | and /).forEach(add); break; }
   return found.filter(f => !/^(The|It|They|We|He|She)$/.test(f)).slice(0, 4);
 }
-const TOPIC_TITLE = /\b(reviews?|endorsements?|pricing|practices|retailers?|online|websites?|sector|market|marketing|advertising|consumers?|investigation|sales|offers?|platforms?|social media|influencers?|secondary ticketing|holidays?|cars?|homes?)\b/i;
+const TOPIC_TITLE = /\b(reviews?|endorsements?|pricing|practices|retailers?|online|websites?|sector|market|marketing|advertising|consumers?|investigation|sales|offers?|platforms?|social media|influencers?|secondary ticketing|holidays?|homes?)\b/i;
 const FIRM_WORD = /\b(Ltd|Limited|plc|LLP|Inc|Group|& Co)\b/;
 const asaAction = page => { const m = String(page).match(/\bAction\s+((?:The ad|The ads|The claims?|The promotion|The marketing)[^]*?)(?=\s+(?:CAP Code|BCAP Code|More on|Is this page|Back to top)\b|$)/); return m ? clip(m[1].trim(), 400) : null; };
 const isThin = s => !s || String(s).trim().length < THIN;
@@ -261,7 +261,6 @@ async function importCma(held) {
       law: 'Consumer protection law', volume: null, refunds: null, sector: cmaSector(x.market_sector),
       summary, action: cmaAction(bodyHtml), types, evidence: { outcome_type: outcomeType || null, case_state: x.case_state, penalty_sentence: pm ? pm[0] : null, ...(lead ? { listed_summary: listed, summary_from: 'case page' } : {}) },
     };
-    if (!firmName) { held.push({ ...c, reason: 'the CMA titles this case by topic and the page text does not name the firm in a way the importer can read' }); return; }
     if (isThin(summary)) { held.push({ ...c, reason: 'summary does not say what the firm did, and the case page has no fuller description' }); return; }
     if (!penalty && !outcome) { held.push({ ...c, reason: 'no outcome published yet (open investigation, no finding made)' }); return; }
     if (!date) { held.push({ ...c, reason: 'no decision date in the record' }); return; }
@@ -270,6 +269,7 @@ async function importCma(held) {
     // and unfair-terms cases are not marketing at all
     if (oft) { held.push({ ...c, reason: 'OFT case from before April 2014: older law, and not about the marketing Sendwize checks' }); return; }
     if (/unfair (contract )?terms|UTCCR|transfer fee terms|doorstep|door-to-door|in-home sales|home visits|sales representatives? visit/i.test(tagText)) { held.push({ ...c, reason: 'about sales practices or contract terms, not the marketing Sendwize checks' }); return; }
+    if (!firmName) { held.push({ ...c, reason: 'the CMA titles this case by topic and the page text does not name the firm in a way the importer can read' }); return; }
     if (!types.length) { held.push({ ...c, reason: 'no finding-type rule matched the CMA description' }); return; }
     out.push(c);
   });
