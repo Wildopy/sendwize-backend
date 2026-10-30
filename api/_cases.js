@@ -18,7 +18,7 @@
 // wins" and ranking "Start here" by value for time.
 // ─────────────────────────────────────────────────────────────
 import { CASE_ANCHORS, ICO_ACTION_URL, areaOf } from './_exposure.js';
-import { caseOutcome, sameIssueTypes, subjectsOf, subjectFit } from './_case-library.js';
+import { caseOutcome, sameIssueTypes, subjectsOf, channelsOf, subjectFit } from './_case-library.js';
 
 // Feed claim types (regulatory-feed-update.js) → the finding types they match
 export const CLAIM_TO_FIX = {
@@ -91,7 +91,7 @@ export function buildLibrary(feedRecords = []) {
     refunds: c.refunds || null, outcome: caseOutcome(c),
     volume: c.volume || null, summary: c.summary, types: c.types, sector: c.sector ?? null,
     url: c.url || (c.imported ? null : ICO_ACTION_URL), source: c.imported ? 'imported' : 'curated',
-    subjects: c.subjects, curated: !!c.curated,
+    subjects: c.subjects, channels: c.channels, curated: !!c.curated,
   }));
   const seen = new Set(lib.map(c => slug(c.name).split('_')[0]));
   for (const r of feedRecords) {
@@ -134,6 +134,10 @@ export function matchCase(fix, c, ctx = {}) {
   const reasons = ['Same issue: ' + niceType(fix.fixType)];
   let score = c.source === 'curated' ? 55 : 48;
   if (c.sector && c.sector === sectorKey(ctx.sector)) { score += 15; reasons.push('Same sector'); }
+  const shared = (c.subjects || []).filter(s => subjects.includes(s));
+  if (shared.length) { score += 15; reasons.push('Same subject: ' + shared.join(', ')); }
+  const channels = channelsOf(fix.description);
+  if (channels.length && (c.channels || []).some(ch => channels.includes(ch))) { score += 5; reasons.push('Same channel'); }
   if (gap != null && gap <= 1) { score += 15; reasons.push('Similar audience size'); }
   const y = yearOf(c.date), now = ctx.now ? yearOf(ctx.now) : new Date().getFullYear() + new Date().getMonth() / 12;
   if (y && now - y <= 2) { score += 10; reasons.push('Recent ruling'); }

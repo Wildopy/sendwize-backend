@@ -242,7 +242,23 @@ export function subjectFit(c, findingSubjects, fixType) {
 }
 export const sharedSubjects = (c, findingSubjects) => (c.subjects || []).filter(s => findingSubjects.includes(s)).length;
 
-const withSubjects = c => ({ ...c, subjects: subjectsOf(c.summary), channels: channelsOf(`${c.media || ''} ${c.summary || ''}`) });
+// Sector and audience size, read from the regulator's own wording where the
+// record has no field for them ("a supplement brand", "752,425 messages")
+const SECTOR_WORDS = [
+  ['gambling', /\b(gambl\w*|betting|bookmaker|casino|slots|bingo|lottery|sportsbook)\b/i],
+  ['charity', /\b(charit\w*|fundrais\w*|non-profit)\b/i],
+  ['finance', /\b(financial|finance|loans?|lender|credit|bank\w*|insur\w*|invest\w*|pensions?|mortgages?|crypto\w*|trading platform|debt|claims management|ppi)\b/i],
+  ['health', /\b(pharmac\w*|clinic|medic\w*|supplements?|vitamins?|health ?care|aesthetic\w*|cosmetic surgery|weight[- ]loss|dental|optician)\b/i],
+  ['media', /\b(broadcaster|streaming|publisher|newspaper|magazine|telecoms?|mobile network|broadband)\b/i],
+  ['ecommerce', /\b(retailers?|online (shop|store|retailer)|shop|store|fashion|clothing|jewellery|furniture|beauty brand|cosmetics brand|supermarkets?|marketplace|product listings?)\b/i],
+  ['b2b', /\b(b2b|software|saas|business services|marketing agency|lead generation)\b/i],
+];
+export const sectorOf = text => (SECTOR_WORDS.find(([, re]) => re.test(String(text || ''))) || [null])[0];
+const VOLUME = /\b(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(million|m)?\s+(?:[a-z-]+\s+){0,4}?(calls|texts|text messages|messages|e-?mails|sms|communications)\b/gi;
+export const volumeOf = text => Math.max(0, ...[...String(text || '').matchAll(VOLUME)].map(m => Math.round(Number(m[1].replace(/,/g, '')) * (m[2] ? 1e6 : 1)))) || null;
+
+const withSubjects = c => ({ ...c, subjects: subjectsOf(c.summary), channels: channelsOf(`${c.media || ''} ${c.summary || ''}`),
+  ...(c.imported ? { sector: c.sector || sectorOf(c.summary), volume: c.volume || volumeOf(c.summary) } : {}) });
 export const CASES = [...CURATED.map(c => ({ ...c, curated: true })), ...IMPORTED.map(c => ({ ...c, imported: true, ...(c.noPage ? { sourceUrl: c.url, url: null } : {}) }))].map(withSubjects);
 
 // For the dashboard and the method page: how big the library is
