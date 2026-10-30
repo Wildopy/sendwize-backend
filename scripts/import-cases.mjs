@@ -229,6 +229,11 @@ async function importCma(held) {
     if (isThin(summary)) { held.push({ ...c, reason: 'summary does not say what the firm did, and the case page has no fuller description' }); return; }
     if (!penalty && !outcome) { held.push({ ...c, reason: 'no outcome published yet (open investigation, no finding made)' }); return; }
     if (!date) { held.push({ ...c, reason: 'no decision date in the record' }); return; }
+    // Sendwize checks marketing (ads, emails, texts, web pages, social posts). OFT-era cases
+    // predate today's law and are mostly sales practices or contract terms; doorstep selling
+    // and unfair-terms cases are not marketing at all
+    if (oft) { held.push({ ...c, reason: 'OFT case from before April 2014: older law, and not about the marketing Sendwize checks' }); return; }
+    if (/unfair (contract )?terms|UTCCR|transfer fee terms|doorstep|door-to-door|in-home sales|home visits|sales representatives? visit/i.test(tagText)) { held.push({ ...c, reason: 'about sales practices or contract terms, not the marketing Sendwize checks' }); return; }
     if (!types.length) { held.push({ ...c, reason: 'no finding-type rule matched the CMA description' }); return; }
     out.push(c);
   });
