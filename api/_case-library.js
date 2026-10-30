@@ -209,13 +209,14 @@ const CURATED = [
 // about the same subject. Read from the regulator's own summary, never guessed.
 const SUBJECTS = {
   environmental: /\b(green|environment\w*|eco[- ]?friendly|carbon|sustainab\w*|recycl\w*|net[- ]zero|climate|biodegrad\w*|emissions?)\b/i,
-  health:        /\b(health|healthcare|medic\w*|cures?|treat(s|ment)?|weight[- ]loss|slimming|supplements?|vitamins?|nutrition\w*|immun\w*|cosmetic|botox|aesthetic|clinics?|pharmac\w*|cbd|diet\w*|prescription)\b/i,
+  health:        /\b(health|healthcare|medic\w*|cures?|treat(s|ment)?|weight[- ]loss|slimming|supplements?|vitamins?|nutrition\w*|immun\w*|cosmetic|botox|aesthetic|skin ?care|wrinkles?|anti-?ageing|clinics?|pharmac\w*|cbd|diet\w*|prescription)\b/i,
   finance:       /\b(loans?|credit|invest(ment|ments|or|ors|ing)|crypto\w*|mortgages?|insurance|pensions?|apr|returns|trading (platform|app)|day trading|forex|fca|cobs|ppi|debt|financial)\b/i,
   price:         /\b(prices?|pricing|savings?|discounts?|reference price|was\s*£|cheapest|fees?|charges?|£\s?\d)/i,
   urgency:       /\b(urgency|limited[- ]time|ends (soon|today|tonight|midnight)|countdown|scarcity|only \d+ left|last chance|hurry|time[- ]limited|deadline)\b/i,
   reviews:       /\b(reviews?|testimonials?|ratings?|trustpilot|endorse\w*)\b/i,
   disclosure:    /\b(influencers?|#ad|sponsored|affiliate|paid partnership|obviously identifiable|identifiable as)\b/i,
-  comparative:   /\b(comparative|competitors?|comparisons?|number one|no\.? ?1|best[- ]selling|(uk|world|britain|country)['’]?s (best|biggest|leading|favourite|cheapest))\b/i,
+  comparative:   /\b(comparative|competitors?|comparisons?|number one|no\.? ?1|any other( brand)?|than (any|other) \w+|twice (the|as)|best[- ]selling|best|biggest|leading|superior\w*|\w+est (in|on) (the )?(uk|britain|market|world|country)|(uk|world|britain|country)['’]?s (best|biggest|leading|favourite|cheapest|\w+est))\b/i,
+  performance:   /\b(\w*substantiat\w*|(without|no|lacked|enough) evidence|exaggerat\w*|efficacy|effectiveness|performance|quality|durab\w*|long[- ]lasting|guarantee[ds]?|proven|clinically|comfort\w*)\b/i,
   gambling:      /\b(gambl\w*|betting|bets?|casino|slots|bingo|lottery)\b/i,
   alcohol:       /\b(alcohol\w*|beer|wine|spirits|gin|vodka)\b/i,
   food:          /\b(less healthy food|hfss|food|snacks?)\b/i,

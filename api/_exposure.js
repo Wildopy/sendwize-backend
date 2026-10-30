@@ -575,7 +575,7 @@ export function closestCases(fixType, volume, ctx = {}) {
   return CASE_ANCHORS
     .map(c => ({ c, rel: c.types.some(t => same.includes(t)) ? 0 : c.types.some(t => related.includes(t)) ? 1 : null }))
     .filter(x => x.rel !== null && subjectFit(x.c, subjects, fixType))
-    .map(({ c, rel }) => ({ c, rel, d: rel * 10 - sharedSubjects(c, subjects) + (channels.length && !c.channels.some(ch => channels.includes(ch)) ? 0.5 : 0)
+    .map(({ c, rel }) => ({ c, rel, d: rel * 10 - sharedSubjects(c, subjects) + 0.5 * ((c.subjects || []).length - sharedSubjects(c, subjects)) + (channels.length && !c.channels.some(ch => channels.includes(ch)) ? 0.5 : 0)
       + (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
     .sort((a, b) => a.d - b.d || String(b.c.date).localeCompare(String(a.c.date)))
     .slice(0, 3)
