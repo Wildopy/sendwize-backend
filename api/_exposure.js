@@ -568,14 +568,30 @@ export const ICO_ACTION_URL = 'https://ico.org.uk/action-weve-taken/enforcement/
 // then a related issue, then same channel and nearest audience size,
 // fines before rulings. ctx.text is the finding's own wording; ctx.channel
 // the channel it was found in (email, sms, social...).
+// Distinctive words the finding and the case share ("sunbeds", "parking",
+// "diamonds"): words found in more than 2% of cases ("claim", "email") don't count
+const stem = w => w.replace(/(ies)$/, 'y').replace(/(ing|ed|es|s)$/, '');
+const wordsOf = t => new Set((String(t || '').toLowerCase().match(/[a-z][a-z-]{3,}/g) || []).map(stem));
+let WORD_DF = null;
+function sharedWords(c, words) {
+  if (!WORD_DF) {
+    WORD_DF = new Map();
+    for (const k of CASE_ANCHORS) for (const w of wordsOf(`${k.name} ${k.summary}`)) WORD_DF.set(w, (WORD_DF.get(w) || 0) + 1);
+  }
+  const max = CASE_ANCHORS.length * 0.02;
+  let n = 0;
+  for (const w of wordsOf(`${c.name} ${c.summary}`)) if (words.has(w) && (WORD_DF.get(w) || 0) <= max) n++;
+  return Math.min(n, 3);
+}
 export function closestCases(fixType, volume, ctx = {}) {
   const same = sameIssueTypes(fixType), related = relatedTypes(fixType);
   const v = Number(volume) || null;
+  const words = wordsOf(ctx.text);
   const subjects = subjectsOf(ctx.text), channels = ctx.channel ? [ctx.channel] : channelsOf(ctx.text);
   return CASE_ANCHORS
     .map(c => ({ c, rel: c.types.some(t => same.includes(t)) ? 0 : c.types.some(t => related.includes(t)) ? 1 : null }))
     .filter(x => x.rel !== null && subjectFit(x.c, subjects, fixType))
-    .map(({ c, rel }) => ({ c, rel, d: rel * 10 - sharedSubjects(c, subjects) + 0.5 * ((c.subjects || []).length - sharedSubjects(c, subjects)) + (channels.length && !c.channels.some(ch => channels.includes(ch)) ? 0.5 : 0)
+    .map(({ c, rel }) => ({ c, rel, d: rel * 10 - sharedSubjects(c, subjects) - 0.75 * sharedWords(c, words) + 0.5 * ((c.subjects || []).length - sharedSubjects(c, subjects)) + (channels.length && !c.channels.some(ch => channels.includes(ch)) ? 0.5 : 0)
       + (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
     .sort((a, b) => a.d - b.d || String(b.c.date).localeCompare(String(a.c.date)))
     .slice(0, 3)
