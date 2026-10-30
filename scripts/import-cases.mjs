@@ -63,6 +63,18 @@ const money = s => { const n = Number(String(s).replace(/[£,\s]/g, '')); return
 // Up to the last full sentence, so a cut-off listing summary never ends mid-thought
 const wholeSentences = s => { s = String(s).trim(); if (!/(\.\.\.|…)$/.test(s)) return s; const i = s.lastIndexOf('. '); return i > 0 ? s.slice(0, i + 1) : s.replace(/(\.\.\.|…)$/, '…'); };
 const lc = s => String(s).toLowerCase();
+// A summary has to say what the firm did. Where the register or search listing only gives a
+// heading ("Wealth screening / data matching / data sharing", "Pricing practices."), the opening
+// of the regulator's own page is used word for word; failing that, the case is held.
+const THIN = 80;
+const isThin = s => !s || String(s).trim().length < THIN;
+const pageLead = (html, mustHave = []) => {
+  const p = [...String(html).matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(m => plain(m[1]))
+    .find(t => t.length >= THIN && /[.!?”"]$/.test(t)
+      && !/^(\d{1,2} [A-Z][a-z]+ \d{4}|Updated|Published|Cookies|We use|We'd like|Find out|This (page|publication)|Contents|Is this page)/.test(t)
+      && mustHave.every(w => lc(t).includes(w)));
+  return p ? (p.length > 400 ? wholeSentences(p.slice(0, 400) + '...') : p) : null;
+};
 
 // Words a name must appear as on the source page (first distinctive word)
 const matchFor = name => String(name).split(/[\s(]/).find(w => w.replace(/[^\w]/g, '').length > 1)?.replace(/^[^\w]+|[^\w]+$/g, '') || name;
@@ -188,7 +200,8 @@ async function importCma(held) {
     if (outcomeType === 'consumer-enforcement-no-action') return;
     const r = await get('https://www.gov.uk/api/content' + x.link);
     if (!r.ok) { held.push({ ...base, reason: 'case page did not load: ' + (r.error || r.status) }); return; }
-    const body = plain(JSON.parse(r.text).details?.body || '');
+    const bodyHtml = JSON.parse(r.text).details?.body || '';
+    const body = plain(bodyHtml);
     const multi = /,| and /.test(name); // several firms: a single amount can't be pinned to one of them
     const pm = !multi && body.match(CMA_PENALTY);
     const penalty = pm ? Math.round(money(pm[2]) * (pm[3] ? 1e6 : 1)) : null;
@@ -202,13 +215,16 @@ async function importCma(held) {
     const types = [...new Set([...textTypes(tagText), ...(/misleading (advertising|ads?\b|claims?|marketing|practices|statements|information|descriptions?|promotions?)/i.test(tagText) ? ['misleading_claim'] : [])])];
     // Older cases carry a stock description; the title after the colon says what the case was about
     const about = x.title.split(':').slice(1).join(':').trim() || x.title.trim();
-    const summary = /^(Office of Fair Trading \(OFT\) closed|Five closed Office of Fair Trading|Competition and Markets Authority \(CMA\) open consumer enforcement case)/.test(x.description || '') && about
+    let summary = /^(Office of Fair Trading \(OFT\) closed|Five closed Office of Fair Trading|Competition and Markets Authority \(CMA\) open consumer enforcement case)/.test(x.description || '') && about
       ? about[0].toUpperCase() + about.slice(1) + '.' : x.description;
+    const listed = summary, lead = isThin(summary) ? pageLead(bodyHtml) : null;
+    if (lead) summary = lead;
     const c = {
       id: `cma_${slug(name)}_${(date || x.opened_date || '').slice(0, 4)}`, ...base, match: matchFor(name), date, penalty, outcome,
       law: 'Consumer protection law', volume: null, refunds: null, sector: cmaSector(x.market_sector),
-      summary, types, evidence: { outcome_type: outcomeType || null, case_state: x.case_state, penalty_sentence: pm ? pm[0] : null },
+      summary, types, evidence: { outcome_type: outcomeType || null, case_state: x.case_state, penalty_sentence: pm ? pm[0] : null, ...(lead ? { listed_summary: listed, summary_from: 'case page' } : {}) },
     };
+    if (isThin(summary)) { held.push({ ...c, reason: 'summary does not say what the firm did, and the case page has no fuller description' }); return; }
     if (!penalty && !outcome) { held.push({ ...c, reason: 'no outcome published yet (open investigation, no finding made)' }); return; }
     if (!date) { held.push({ ...c, reason: 'no decision date in the record' }); return; }
     if (!types.length) { held.push({ ...c, reason: 'no finding-type rule matched the CMA description' }); return; }
@@ -339,12 +355,13 @@ async function linkIcoPages(cases) {
     const cands = key ? pages.filter(u => u.toLowerCase().includes(key) || (words[0] && words[0].length > 4 && u.toLowerCase().includes('/' + words[0]))) : [];
     // Older ICO pages are not in the sitemap but live at /enforcement/<name>/
     const base = String(c.name).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/&/g, ' and ').replace(/['’.]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const guesses = [...new Set([base, base.replace(/-limited$/, '-ltd'), base.replace(/-ltd$/, '-limited')])].map(g => `https://ico.org.uk/action-weve-taken/enforcement/${g}/`);
+    const alt = String(c.name).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const guesses = [...new Set([base, alt, base.replace(/-limited$/, '-ltd'), base.replace(/-ltd$/, '-limited')])].map(g => `https://ico.org.uk/action-weve-taken/enforcement/${g}/`);
     for (const u of [...cands.slice(0, 4), ...guesses.filter(g => !cands.includes(g))]) {
       const r = await get(u); if (!r.ok) continue;
       const t = plain(r.text);
       const tl = t.toLowerCase();
-      if (words.slice(0, 2).every(w => tl.includes(w)) && amountForms(c.penalty).some(f => t.includes(f))) { c.url = u; c.match = words[0]; linked++; return; }
+      if (words.slice(0, 2).every(w => tl.includes(w)) && amountForms(c.penalty).some(f => t.includes(f))) { c.url = u; c.match = words[0]; c.pageLead = pageLead(r.text, words.slice(0, 1)); linked++; return; }
     }
     c.noPage = true;
   });
@@ -373,6 +390,14 @@ await pool(found, 6, async c => {
   ready.push(c);
 });
 if (ready.some(c => c.regulator === 'ICO')) { report.icoPages = await linkIcoPages(ready.filter(c => c.regulator === 'ICO')); console.log('ICO case pages:', report.icoPages); }
+// ICO register descriptions that are only a heading: use the ICO page's opening, or hold
+for (const c of ready.filter(c => c.regulator === 'ICO')) {
+  const lead = c.pageLead; delete c.pageLead;
+  if (!isThin(c.summary)) continue;
+  if (lead) { c.evidence.listed_summary = c.summary; c.evidence.summary_from = 'ICO case page'; c.summary = lead; continue; }
+  ready.splice(ready.indexOf(c), 1);
+  held.push({ ...c, reason: 'summary does not say what the firm did, and no ICO case page was found with a fuller description' });
+}
 for (const c of ready) { const n = (ids.get(c.id) || 0) + 1; ids.set(c.id, n); if (n > 1) c.id += '_' + n; }
 const order = (a, b) => a.regulator.localeCompare(b.regulator) || String(b.date).localeCompare(String(a.date));
 ready.sort(order); held.sort(order);
