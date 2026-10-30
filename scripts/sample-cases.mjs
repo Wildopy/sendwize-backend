@@ -3,18 +3,31 @@
 // Picks a random sample from data/case-review.json for a person to check
 // against the regulator pages before a batch is approved, and writes the
 // full ready and held lists as CSV.
-//   node scripts/sample-cases.mjs <out-dir> [seed]
+//   node scripts/sample-cases.mjs <out-dir> [seed] [keep-ids-file]
+// A keep file (one case id per line) carries cases over from an earlier
+// sample; the rest are picked fresh. At most one ICO phone-call case is
+// picked, since those only sit beside the TPS question.
 // ─────────────────────────────────────────────────────────────
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const [out = 'data/sample', seedArg] = process.argv.slice(2);
+const [out = 'data/sample', seedArg, keepFile] = process.argv.slice(2);
 const r = JSON.parse(readFileSync('data/case-review.json', 'utf8'));
 let seed = Number(seedArg) || Date.now() % 2147483648;
 const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
 const pick = (arr, n) => { const a = arr.slice(), o = []; while (o.length < n && a.length) o.push(a.splice(Math.floor(rnd() * a.length), 1)[0]); return o; };
-const by = g => r.ready.filter(c => c.regulator === g);
-const sample = [...pick(by('ICO'), 7), ...pick(by('CMA'), 5), ...pick(by('ASA'), 8)];
+const keepIds = keepFile ? readFileSync(keepFile, 'utf8').split(/\s+/).filter(Boolean) : [];
+const kept = keepIds.map(id => r.ready.find(c => c.id === id)).filter(Boolean);
+const isCall = c => c.types.includes('marketing_calls');
+const by = (g, f = () => true) => r.ready.filter(c => c.regulator === g && !kept.includes(c) && f(c));
+const fill = (g, n) => {
+  const have = kept.filter(c => c.regulator === g);
+  if (g !== 'ICO') return [...have, ...pick(by(g), n - have.length)];
+  const calls = have.some(isCall) ? 0 : 1;
+  const o = [...have, ...pick(by(g, isCall), Math.min(calls, n - have.length))];
+  return [...o, ...pick(by(g, c => !isCall(c)), n - o.length)];
+};
+const sample = [...fill('ICO', 7), ...fill('CMA', 5), ...fill('ASA', 8)];
 const nice = t => t.replace(/_/g, ' ');
 const n = x => x.toLocaleString('en-GB');
 const cell = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
