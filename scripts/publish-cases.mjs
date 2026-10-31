@@ -11,8 +11,17 @@ const review = JSON.parse(readFileSync('data/case-review.json', 'utf8'));
 const { approved = [], rejected = [] } = JSON.parse(readFileSync('data/case-approvals.json', 'utf8'));
 const ok = new Set(approved), no = new Set(rejected);
 const FIELDS = ['id', 'regulator', 'name', 'match', 'date', 'penalty', 'refunds', 'outcome', 'volume', 'sector', 'media', 'topic', 'summary', 'action', 'types', 'url', 'noPage'];
+// ASA rulings speak as the ASA ("We told X to...", "our rules"). Sendwize quotes them to its own
+// users, so the speaker is named instead; nothing else in the wording changes
+const VERBS = 'told|also|referred|banned|further|reminded|upheld|partially|passed|didn’t|didn\'t|did not|considered|noted|acknowledged|understood';
+const asaVoice = t => !t ? t : String(t)
+  .replace(new RegExp(`(^|[.!?]\\s+)We (${VERBS})\\b`, 'g'), '$1The ASA $2')
+  .replace(new RegExp(`\\b[Ww]e (${VERBS})\\b`, 'g'), 'the ASA $1')
+  .replace(/\bour rules\b/g, 'the advertising rules')
+  .replace(/\bour (Compliance team|CAP Compliance team)\b/g, 'the CAP Compliance team');
 const live = review.ready.filter(c => ok.has(c.id) && !no.has(c.id))
-  .map(c => ({ ...c, topic: c.evidence?.topic || null }))
+  .map(c => ({ ...c, topic: c.evidence?.topic || null, ...(c.regulator === 'ASA' ? { summary: asaVoice(c.summary), action: asaVoice(c.action) } : {}),
+    ...(c.regulator === 'ICO' ? { summary: String(c.summary || '').replace(/\bour attention\b/g, "the ICO's attention") } : {}) }))
   .map(c => Object.fromEntries(FIELDS.filter(k => c[k] !== undefined && c[k] !== null).map(k => [k, c[k]])));
 
 const missing = approved.filter(id => !review.ready.some(c => c.id === id));
