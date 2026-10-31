@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31T11:56:58.416Z",
+ "generated": "2026-10-31T12:06:46.412Z",
  "note": "Imported from regulator records. Not live: cases reach the product only once approved in data/case-approvals.json and published.",
  "counts": {
   "ready": {},
@@ -5017,6 +5017,33 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
+   "id": "asa_person_s_unknown_t_a_nultqh_gb_a24-1245840",
+   "regulator": "ASA",
+   "name": "Person(s) unknown t/a Nultqh GB",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1245840-person-s--unknown.html",
+   "match": "Person",
+   "date": "2024-07-31",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (paid ad)",
+   "summary": "A paid-for Meta ad for a prostate patch made medicinal claims for an unlicensed product.",
+   "action": "The ad must not appear again in its current form. We told Person(s) unknown t/a Nultqh GB not to make medicinal claims for unlicensed products. We referred the matter to CAP’s Compliance team.",
+   "types": [],
+   "evidence": {
+    "rules": [
+     "1.7",
+     "1.7"
+    ],
+    "topic": "Health conditions Person(s) unknown 13",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
    "id": "asa_person_s_unknown_t_a_gauge_b_ready_locks_a24-1242111",
    "regulator": "ASA",
    "name": "Person(s) unknown t/a Gauge B-Ready Locks, Guardian Tech Locksmith Cranleigh, ApexCraft Locksmith Frimley and Alex the Locksmith West Molesey",
@@ -5066,33 +5093,6 @@
      "1.7"
     ],
     "topic": "Medical procedures and services Person(s) unknown 13",
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
-   "id": "asa_person_s_unknown_t_a_nultqh_gb_a24-1245840",
-   "regulator": "ASA",
-   "name": "Person(s) unknown t/a Nultqh GB",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/person-s--unknown-a24-1245840-person-s--unknown.html",
-   "match": "Person",
-   "date": "2024-07-31",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "CAP Code (Edition",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad)",
-   "summary": "A paid-for Meta ad for a prostate patch made medicinal claims for an unlicensed product.",
-   "action": "The ad must not appear again in its current form. We told Person(s) unknown t/a Nultqh GB not to make medicinal claims for unlicensed products. We referred the matter to CAP’s Compliance team.",
-   "types": [],
-   "evidence": {
-    "rules": [
-     "1.7",
-     "1.7"
-    ],
-    "topic": "Health conditions Person(s) unknown 13",
     "decision": "Upheld"
    },
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
@@ -11750,6 +11750,34 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
+   "id": "cma_dignity_2026",
+   "regulator": "CMA",
+   "name": "Dignity",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/dignity-consumer-protection-enforcement-case",
+   "match": "Dignity",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating Dignity Group Holdings Limited’s (‘Dignity’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews about crematoria.",
+   "action": null,
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
    "id": "cma_trainline_2026",
    "regulator": "CMA",
    "name": "Trainline",
@@ -11778,12 +11806,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_dignity_2026",
+   "id": "cma_euro_car_parks_2026",
    "regulator": "CMA",
-   "name": "Dignity",
+   "name": "Euro Car Parks",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/dignity-consumer-protection-enforcement-case",
-   "match": "Dignity",
+   "url": "https://www.gov.uk/cma-cases/euro-car-parks-consumer-protection-enforcement-case",
+   "match": "Euro",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -11791,11 +11819,9 @@
    "volume": null,
    "refunds": null,
    "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating Dignity Group Holdings Limited’s (‘Dignity’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews about crematoria.",
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to Euro Car Parks Limited’s (ECP) practices at petrol stations and their appeals processes.",
    "action": null,
-   "types": [
-    "fake_reviews"
-   ],
+   "types": [],
    "evidence": {
     "outcome_type": null,
     "case_state": [
@@ -11851,60 +11877,6 @@
    "action": null,
    "types": [
     "drip_pricing"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_euro_car_parks_2026",
-   "regulator": "CMA",
-   "name": "Euro Car Parks",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/euro-car-parks-consumer-protection-enforcement-case",
-   "match": "Euro",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to Euro Car Parks Limited’s (ECP) practices at petrol stations and their appeals processes.",
-   "action": null,
-   "types": [],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_feefo_2026",
-   "regulator": "CMA",
-   "name": "Feefo",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/feefo-consumer-protection-enforcement-case",
-   "match": "Feefo",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "media",
-   "summary": "The Competition and Markets Authority (CMA) is investigating Feefo Holdings Limited’s (‘Feefo’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.  ",
-   "action": null,
-   "types": [
-    "fake_reviews"
    ],
    "evidence": {
     "outcome_type": null,
@@ -11996,12 +11968,40 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_adobe_2026",
+   "id": "cma_feefo_2026",
    "regulator": "CMA",
-   "name": "Adobe",
+   "name": "Feefo",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/adobe-consumer-protection-enforcement-case",
-   "match": "Adobe",
+   "url": "https://www.gov.uk/cma-cases/feefo-consumer-protection-enforcement-case",
+   "match": "Feefo",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "media",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Feefo Holdings Limited’s (‘Feefo’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.  ",
+   "action": null,
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_viagogo_2025",
+   "regulator": "CMA",
+   "name": "viagogo",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
+   "match": "viagogo",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -12009,9 +12009,12 @@
    "volume": null,
    "refunds": null,
    "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer protection law in relation to an early termination fee term for certain products provided in the UK by Adobe Systems Software Ireland Limited (trading as Adobe).",
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk) to UK consumers.",
    "action": null,
-   "types": [],
+   "types": [
+    "drip_pricing",
+    "misleading_reference_price"
+   ],
    "evidence": {
     "outcome_type": null,
     "case_state": [
@@ -12081,12 +12084,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_viagogo_2025",
+   "id": "cma_adobe_2026",
    "regulator": "CMA",
-   "name": "viagogo",
+   "name": "Adobe",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
-   "match": "viagogo",
+   "url": "https://www.gov.uk/cma-cases/adobe-consumer-protection-enforcement-case",
+   "match": "Adobe",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -12094,12 +12097,9 @@
    "volume": null,
    "refunds": null,
    "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk) to UK consumers.",
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer protection law in relation to an early termination fee term for certain products provided in the UK by Adobe Systems Software Ireland Limited (trading as Adobe).",
    "action": null,
-   "types": [
-    "drip_pricing",
-    "misleading_reference_price"
-   ],
+   "types": [],
    "evidence": {
     "outcome_type": null,
     "case_state": [
@@ -12194,6 +12194,34 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_red_driving_school_2026",
+   "regulator": "CMA",
+   "name": "Red Driving School",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/red-driving-school-consumer-protection-enforcement-case",
+   "match": "Red",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for driving lessons by Red Driving School in the UK.",
+   "action": null,
+   "types": [
+    "drip_pricing"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
    "id": "cma_online_reviews_2020",
    "regulator": "CMA",
    "name": "Amazon Europe Core SARL, Amazon and Google LLC",
@@ -12277,34 +12305,6 @@
     "penalty_sentence": null
    },
    "reason": "no decision date in the record"
-  },
-  {
-   "id": "cma_red_driving_school_2026",
-   "regulator": "CMA",
-   "name": "Red Driving School",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/red-driving-school-consumer-protection-enforcement-case",
-   "match": "Red",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for driving lessons by Red Driving School in the UK.",
-   "action": null,
-   "types": [
-    "drip_pricing"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
    "id": "cma_secondary_ticketing_websites_2012",
