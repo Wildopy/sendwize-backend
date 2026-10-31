@@ -24,6 +24,7 @@ import crypto from 'crypto';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { fq } from './_airtable.js';
+import { closestCases } from './_exposure.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -189,13 +190,7 @@ Reg 22 -- Unsubscribe (every marketing message must have simple, free, working o
 Reg 23 -- Sender identity (must not be disguised or concealed).
 Reg 6 -- Cookies and tracking (DUAA 2025 updates).
 
-Recent ICO PECR cases (illustrative):
-[ALLAY CLAIMS LTD -- GBP120,000 -- January 2026 -- Reg 22 PECR] ~4m unsolicited SMS
-[ZMLUK LIMITED -- GBP105,000 -- December 2025 -- Reg 22 PECR] ~67.8m emails using purchased data
-[HELLOFRESH -- GBP140,000 -- January 2024 -- Reg 22 PECR] Bundled consent
-[WE BUY ANY CAR -- GBP200,000 -- September 2021 -- Reg 22 PECR] Soft opt-in failure
-[SAGA -- GBP150,000 + GBP75,000 -- September 2021 -- Reg 22 PECR] Indirect consent via affiliates
-[EASYLIFE -- GBP130,000 (PECR) + GBP250,000 (UK GDPR) -- October 2022] TPS breach
+Do not name or cite enforcement cases. Sendwize attaches the closest published case to each issue itself, from its verified case library.
 
 ------------------------------------------------------------
 
@@ -359,7 +354,7 @@ Respond ONLY in this exact JSON. No preamble. No markdown fences.
       "location": "Subject line -- 'Flash sale ends soon'",
       "recommendation": "Replace 'ends soon' with exact date and time.",
       "requiresEvidence": false,
-      "enforcement_note": "Only when case is virtually identical. Omit if uncertain."
+      "enforcement_note": "Always leave empty. Sendwize adds the closest published case."
     },
     {
       "regulation": "CAP Code 12.1 / GB NHC Register",
@@ -461,19 +456,19 @@ function getContextViolations(ctx) {
   if (!ctx) return [];
   const violations = [];
   if (ctx.listSource === 'purchased') {
-    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List purchased or rented from a third party. Recipients must have specifically consented to receive marketing from your organisation by name.', location: 'Sending context -- list source', recommendation: 'Do not send to this list until you can verify valid consent.', enforcement_note: 'ZMLUK (GBP105,000, December 2025) sent 67.8 million emails using purchased data.', requiresEvidence: false, _fixType: 'third_party_list', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List purchased or rented from a third party. Recipients must have specifically consented to receive marketing from your organisation by name.', location: 'Sending context -- list source', recommendation: 'Do not send to this list until you can verify valid consent.', requiresEvidence: false, _fixType: 'third_party_list', _fromContext: true });
   }
   if (ctx.listSource === 'partner') {
-    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List provided by a partner or affiliate -- indirect consent is insufficient for email or SMS marketing.', location: 'Sending context -- list source', recommendation: 'Each organisation sending marketing must have consent obtained specifically for their own communications.', enforcement_note: 'Saga Services (GBP225,000 combined, 2021) were fined for relying on indirect consent.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List provided by a partner or affiliate -- indirect consent is insufficient for email or SMS marketing.', location: 'Sending context -- list source', recommendation: 'Each organisation sending marketing must have consent obtained specifically for their own communications.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
   }
   if (ctx.consentSpecificity === 'thirdParty') {
-    violations.push({ regulation: 'PECR Reg 22 / UK GDPR Article 7', severity: 'critical', issue: 'Recipients consented to a third party or "our partners" -- not to your organisation by name.', location: 'Sending context -- consent specificity', recommendation: 'Stop sending to this list. Consent must specifically name your organisation.', enforcement_note: 'ZMLUK (GBP105,000, 2025): consent covering 361 unnamed companies was invalid.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22 / UK GDPR Article 7', severity: 'critical', issue: 'Recipients consented to a third party or "our partners" -- not to your organisation by name.', location: 'Sending context -- consent specificity', recommendation: 'Stop sending to this list. Consent must specifically name your organisation.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
   }
   if (ctx.consentSpecificity === 'notSure') {
     violations.push({ regulation: 'PECR Reg 22', severity: 'high', issue: 'Consent basis is unclear. Do not send unless you can confirm valid consent.', location: 'Sending context -- consent specificity', recommendation: 'Verify your consent records before sending.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
   }
   if (ctx.senderRelationship === 'thirdParty' && ctx.fromNameMatch === 'no') {
-    violations.push({ regulation: 'PECR Reg 23', severity: 'critical', issue: 'A third-party agency is sending on your behalf and the From name does not match the organisation that collected consent.', location: 'Sending context -- sender relationship and From name mismatch', recommendation: 'The From name must clearly identify the brand that collected consent.', enforcement_note: 'Join the Triboo (GBP130,000, 2023) sent emails appearing to come from third-party brands.', requiresEvidence: false, _fixType: 'concealed_sender', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 23', severity: 'critical', issue: 'A third-party agency is sending on your behalf and the From name does not match the organisation that collected consent.', location: 'Sending context -- sender relationship and From name mismatch', recommendation: 'The From name must clearly identify the brand that collected consent.', requiresEvidence: false, _fixType: 'concealed_sender', _fromContext: true });
   }
   if (ctx.fromNameMatch === 'no' && ctx.senderRelationship !== 'thirdParty') {
     violations.push({ regulation: 'PECR Reg 23', severity: 'high', issue: 'The From name does not match the organisation that collected consent.', location: 'Sending context -- From name mismatch', recommendation: 'Ensure the From name clearly identifies the organisation that collected consent.', requiresEvidence: false, _fixType: 'concealed_sender', _fromContext: true });
@@ -508,6 +503,21 @@ function mapViolationToFixType(violation) {
   if (combined.match(/postal address|registered address/))                               return 'missing_address';
   if (combined.match(/third.party.*list|purchased.*data/))                               return 'third_party_list';
   return 'misleading_claim';
+}
+
+// The closest published case for an issue comes from the verified case
+// library, never from the model, so every case shown has a source link.
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const caseWhen = d => { const m = String(d || '').match(/^(\d{4})(?:-(\d{2}))?/); return m ? (m[2] ? MONTHS[Number(m[2]) - 1] + ' ' : '') + m[1] : ''; };
+function withClosestCase(v, channel) {
+  const { enforcement_note, enforcement_url, case_id, ...rest } = v;
+  const fixType = rest.requiresEvidence ? null : mapViolationToFixType(rest);
+  const text = [rest.issue, rest.regulation, rest.recommendation, rest.text, rest.quote].filter(Boolean).join(' ');
+  const c = fixType ? closestCases(fixType, null, { text, channel })[0] : null;
+  if (!c) return rest;
+  return { ...rest,
+    enforcement_note: `${c.related ? 'Related' : 'Closest'} published case: ${c.name} (${c.regulator}, ${caseWhen(c.date)}). ${c.outcome}. ${c.summary}${c.action ? ` What they had to change: ${c.action}` : ''}`,
+    enforcement_url: c.url, case_id: c.id };
 }
 
 function mapViolationToSeverity(v) {
@@ -709,7 +719,7 @@ export default async function handler(req, res) {
 
     const contextFixTypes = new Set(contextViolations.map(v => v._fixType));
     const aiViolations    = taggedAiViolations.filter(v => !contextFixTypes.has(mapViolationToFixType(v)));
-    const allViolations   = [...contextViolations, ...aiViolations];
+    const allViolations   = [...contextViolations, ...aiViolations].map(v => withClosestCase(v, contentType));
 
     let finalScore = aiAnalysis?.score ?? 50;
     for (const v of contextViolations) {
@@ -755,7 +765,7 @@ export default async function handler(req, res) {
           FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
           Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
           FixedVersion:   aiAnalysis?.fixedVersion ?? '',
-          RelatedCases:   '',
+          RelatedCases:   [...new Set(allViolations.map(v => v.case_id).filter(Boolean))].join(','),
           SendingContext: contextBlock || '',
         }}]})
       });

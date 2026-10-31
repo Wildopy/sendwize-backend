@@ -551,7 +551,20 @@
     var when = c.date ? ' · ' + esc(date(c.date.length === 4 ? c.date + '-06-01' : c.date.length === 7 ? c.date + '-01' : c.date).replace(/^\d+ /, '')) : '';
     if (c.penalty) return 'Fined <b>' + gbp(c.penalty) + '</b> by the ' + esc(c.regulator) + when;
     if (c.regulator === 'ASA') return 'Upheld ASA ruling, published under their name' + when;
-    return esc(c.regulator) + ' action' + when;
+    return esc(c.outcome || c.regulator + ' action') + when;
+  }
+  // A twin without a fine must never read as "no cost": put the finding's own £ cost,
+  // what the case meant for them, and (CMA) today's fining power beside it
+  function stakes(c, f, dark) {
+    if (!c || c.penalty || !f) return '';
+    var m = f.exposure && f.exposure.marketingCost, cma = c.regulator === 'CMA';
+    var cost = m && m.available
+      ? 'For you, a case like this would cost about <b>' + gbpK(m.mostLikely) + '</b> (likely ' + range(m.low, m.high) + ') in ' + (cma ? 'refunds and disputes' : 'redoing the ad and lost sales') + '.'
+      : 'No fine does not mean no cost. <button class="sw-link" data-act="why" data-id="' + esc(f.id) + '">Add your campaign figures</button> to see what it would cost you in £.';
+    var hit = cma ? 'They had to change how they sell, and the case sits on gov.uk under their name.'
+      : 'The ad had to come down, and the ruling sits on asa.org.uk under their name.';
+    var law = cma ? ' Since April 2025 the CMA can fine directly, up to 10% of global turnover, so older cases settled without a fine are not the ceiling.' : '';
+    return '<div class="sw-stakes' + (dark ? ' dk' : '') + '"><div class="sw-lbl">No fine in this case. What it still costs</div><div class="sw-hs">' + cost + ' ' + hit + law + '</div></div>';
   }
   function twinCard() {
     var T = D.caseTwin, pend = D.fixes.pending || [];
@@ -563,7 +576,8 @@
     var h = T.hero, c = T.cases[h.caseId], open = h.openFixIds.length, done = h.doneFixIds.length, pct = Math.round(done / Math.max(1, open + done) * 100);
     return '<div class="sw-twin"><div class="sw-twin-main"><div class="sw-lbl">Your closest case twin</div>' +
       '<div class="sw-twin-name">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div>' +
-      '<div class="sw-hs">' + esc(c.summary) + '</div>' +
+      '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') +
+      stakes(c, pend.filter(function (x) { return x.id === h.fixId; })[0], true) +
       '<div class="sw-chips">' + h.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div>' +
       '<div class="sw-twin-btns"><button class="sw-btn o" data-act="twin" data-id="' + esc(h.fixId) + '">See it side by side</button><button class="sw-btn q" data-act="twin-only">Show the ' + open + ' finding' + (open > 1 ? 's' : '') + '</button></div></div>' +
       '<div class="sw-twin-side"><div class="sw-meter" style="--p:' + h.match + '"><div><b>' + h.match + '%</b><span>match</span></div></div>' +
@@ -581,10 +595,11 @@
     if (f.contactVolume) you.push('Audience: ' + Number(f.contactVolume).toLocaleString('en-GB') + (c.volume ? ' (theirs: ' + Number(c.volume).toLocaleString('en-GB') + ')' : ''));
     if (D.profile && D.profile.sector) you.push('Sector: ' + nice(D.profile.sector));
     var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Case Twin · ' + tw.t.match + '% match</div><div class="sw-h2">You and ' + esc(c.name) + '</div></div>' +
-      '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' +
+      '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') +
         (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + (c.source === 'curated' ? esc(c.regulator) + ' enforcement page' : 'Read the ruling') + '</a>' : '') + '</div>' +
       '<div class="sw-vs-mid" aria-hidden="true">vs</div>' +
       '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(f.description) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
+      stakes(c, f) +
       '<div class="sw-dr-sec"><div class="sw-lbl">Why they match</div><div class="sw-chips">' + tw.t.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div></div>' +
       '<div class="sw-dr-sec"><div class="sw-lbl">What you have already done differently</div>' + (done.length ? done.map(function (x) {
         var v = x.completionSource === 'improved_on_rerun' || x.completionSource === 'verified';
@@ -654,7 +669,7 @@
       (st.whatif ? '<label class="sw-pick" data-act="noop"><input type="checkbox" data-pick="' + esc(f.id) + '"' + (st.picked[f.id] ? ' checked' : '') + ' aria-label="Include in what-if"></label>' : '') +
       '<span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body">' +
       (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(f.description) + '">' + esc(f.description) + '</div>') +
-      '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : '') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
+      '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : f.exposure && f.exposure.marketingCost && f.exposure.marketingCost.available ? ', ~' + gbpK(f.exposure.marketingCost.mostLikely) + ' to you' : ', ' + esc(tw.c.regulator) + ' ruling') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
       valueChip(f) +
       (open || st.whatif ? '' : '<span class="sw-fx-quick"><button class="sw-btn o" data-act="quickfix" title="Open it with the fix written for you">Fix it</button><button class="sw-btn ok" data-act="done" data-src="' + (f.improvedOnRerun ? 'improved_on_rerun' : 'manual') + '" title="Mark fixed" aria-label="Mark fixed">✓</button></span>') +
       '<span class="sw-chev">' + (open ? '⌃' : '⌄') + '</span></div>';
@@ -785,23 +800,31 @@
       if (e.aiSummary) h += '<div class="sw-dr-sec"><div class="sw-lbl">In plain English</div><div class="sw-hs">' + esc(e.aiSummary) + '</div></div>';
       if (x.canAssess) h += '<div class="sw-dr-sec">' + (x.assessment ? '<div class="sw-note">AI read this evidence on ' + esc(date(x.assessment.assessedAt)) + ' (' + esc(x.assessment.confidence) + ' confidence).</div>' : x.assessmentStale ? '<div class="sw-note">The evidence has changed since the last AI reading.</div>' : '') +
         '<button class="sw-wide-btn" data-act="assess" data-id="' + esc(f.id) + '">' + (x.assessment ? 'Re-assess with AI' : 'Assess with AI') + '</button><div class="sw-note" style="margin-top:6px">AI can only pick from a fixed list of factors, and each must quote your evidence word for word. It never writes the number.</div></div>';
-      var cases = e.closestCases || [];
-      if (cases.length) h += '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
-        return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + gbp(c.penalty) + '<div class="sw-hs">' + esc(c.summary) + '</div><a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">ICO enforcement page</a></div>';
-      }).join('') + '</div>';
+      h += casesBlock(e.closestCases);
       if ((x.tips || []).length) h += '<div class="sw-dr-sec"><div class="sw-lbl">What would bring it down</div>' + x.tips.map(function (t) { return '<div class="sw-fac"><span class="sw-fac-ic down">↓</span><div>' + esc(t) + '</div></div>'; }).join('') + '</div>';
       h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(e.rangeLabel || '') + '. Legal maximum: ' + esc(x.legalMax) + '. ' + esc(x.duaaWarning || '') + '</div></div>';
     } else if (e.category === 'ASA') {
       h += '<div class="sw-dr-sec"><div class="sw-hs">The ASA does not fine. The risk is an upheld ruling published under your brand name.</div>' + (e.referralNote ? '<div class="sw-note" style="margin-top:8px">' + esc(e.referralNote) + '</div>' : '') + '</div>';
+      h += casesBlock(e.closestCases);
       h += costSection(e.marketingCost, x, f.id);
     } else if (e.category === 'CMA') {
       h += '<div class="sw-dr-sec"><div class="sw-hs">Under the DMCCA 2024 the CMA can fine directly. We show the statutory maximum for your size only, because there are not yet enough published cases to estimate a realistic range.</div>' + (D && D.exposure.cmaMax ? '<div class="sw-note" style="margin-top:8px">' + esc(D.exposure.cmaMax.label) + '</div>' : '') + '</div>';
+      h += casesBlock(e.closestCases);
       h += costSection(e.marketingCost, x, f.id);
     } else {
       h += '<div class="sw-dr-sec"><div class="sw-hs">This is a commercial figure (lost revenue), shown separately and never added to regulatory exposure.</div></div>';
     }
     h += '<div class="sw-dr-sec"><div class="sw-note">' + esc(x.disclaimer || '') + '</div><div style="margin-top:8px">' + algoLink('Read the full method: the Sendwize exposure algorithm') + '</div></div>';
     drawer.innerHTML = h;
+  }
+
+  // Closest published ICO, ASA or CMA cases, each linked to the regulator's own page
+  function casesBlock(cases) {
+    cases = cases || [];
+    if (!cases.length) return '';
+    return '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
+      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + (c.related ? ' <span class="sw-src">Related issue</span>' : '') + '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') + (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a>' : '<div class="sw-note">From the ' + esc(c.regulator) + '\u2019s published penalties register</div>') + '</div>';
+    }).join('') + '</div>';
   }
 
   // Only the details we don't have yet, so the figure can be placed more precisely
@@ -830,13 +853,19 @@
     var h = '<div class="sw-dr-sec"><div class="sw-lbl">Commercial cost</div>';
     if (m.available) {
       h += '<div class="sw-hn">About ' + gbpK(m.mostLikely) + '</div><div class="sw-hs">' + esc(m.label) + '. Likely ' + range(m.low, m.high) + '.</div>' +
-        (m.lines || []).map(function (l) { return '<div class="sw-cost-l"><span>' + esc(l.label) + '<div class="sw-note">' + esc(l.basis) + '</div></span><b>' + gbpK(l.amount) + '</b></div>'; }).join('') +
+        (m.lines || []).map(function (l) {
+          var refs = (l.cases || []).map(function (c) { return '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.name) + ' ' + gbp(c.perCustomer) + '</a>'; }).join(' · ');
+          return '<div class="sw-cost-l"><span>' + esc(l.label) + (l.assumption ? ' <span class="sw-src">Assumption</span>' : '') + '<div class="sw-note">' + esc(l.basis) + '</div>' + (refs ? '<div class="sw-note">Per customer: ' + refs + '</div>' : '') + '</span><b>' + gbpK(l.amount) + '</b></div>';
+        }).join('') +
         '<div class="sw-note" style="margin-top:6px">Worked out from ' + (m.source === 'campaign' ? 'the figures you gave for this campaign' : 'your usual campaign figures') + '. Never added to regulatory exposure.</div>';
     } else {
       h += '<div class="sw-hs">Add this campaign’s figures to see what it could cost ' + (m.category === 'ASA' ? 'if the ad had to be withdrawn' : 'if customers had to be refunded') + '.</div>';
     }
+    var pr = m.publicRecord;
+    if (pr) h += '<div class="sw-cost-l"><span>Reputation<div class="sw-note">' + esc(pr.text) + (pr.example ? ' For example: <a class="sw-link" href="' + esc(pr.example.url) + '" target="_blank" rel="noopener">' + esc(pr.example.name) + '</a>.' : '') + ' No £ figure: nothing published supports one.</div></span><b>Public</b></div>';
     h += '<div class="sw-tf"><label for="sw-c-bud">Campaign budget (£)</label><input id="sw-c-bud" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignBudget || m.budget || '') + '" placeholder="Media and creative, e.g. 8000"></div>' +
       '<div class="sw-tf"><label for="sw-c-rev">Expected sales from the campaign (£)</label><input id="sw-c-rev" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignRevenue || m.revenue || '') + '" placeholder="e.g. 40000"></div>' +
+      (m.category === 'CMA' ? '<div class="sw-tf"><label for="sw-c-aov">Average order value (£)</label><input id="sw-c-aov" type="number" min="1" inputmode="numeric" value="' + esc(ci.averageOrderValue || m.averageOrderValue || '') + '" placeholder="e.g. 60"></div>' : '') +
       '<button class="sw-wide-btn" data-act="save-campaign" data-id="' + esc(fixId) + '" style="margin-top:12px">' + (m.available ? 'Update' : 'Show the cost') + '</button>' +
       '<div class="sw-note" style="margin-top:6px">' + esc(m.disclaimer || '') + '</div></div>';
     return h;
@@ -860,12 +889,12 @@
   }
 
   async function saveCampaign(fixId, btn) {
-    var b = parseFloat(val('sw-c-bud')) || null, r = parseFloat(val('sw-c-rev')) || null;
+    var b = parseFloat(val('sw-c-bud')) || null, r = parseFloat(val('sw-c-rev')) || null, a = parseFloat(val('sw-c-aov')) || null;
     if (!b && !r) { toast('Enter a budget or expected sales', 'er'); return; }
     var label = btn.textContent;
     btn.disabled = true; btn.textContent = 'Working it out…';
     try {
-      drawWhy(await api('/api/exposure?action=inputs', { method: 'POST', body: { userId: userId, fixId: fixId, campaignBudget: b, campaignRevenue: r } }));
+      drawWhy(await api('/api/exposure?action=inputs', { method: 'POST', body: { userId: userId, fixId: fixId, campaignBudget: b, campaignRevenue: r, averageOrderValue: a } }));
       toast('Cost updated', 'ok'); refreshQuiet();
     } catch (e) { btn.disabled = false; btn.textContent = label; toast(e.message, 'er'); }
   }
