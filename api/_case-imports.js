@@ -5,7 +5,7 @@
 // Cases imported from the ICO, CMA and ASA records by
 // scripts/import-cases.mjs, checked against their source and approved in
 // data/case-approvals.json. Regenerate with scripts/publish-cases.mjs.
-// Review list generated 2026-10-31T00:05:52.926Z.
+// Review list generated 2026-10-31T11:56:58.416Z.
 // ─────────────────────────────────────────────────────────────
 export const IMPORTED = [
   {"id":"asa_attraction_tickets_ltd_t_a_attraction_ti_2026","regulator":"ASA","name":"Attraction Tickets Ltd t/a Attraction Tickets","match":"Attraction","date":"2026-10-28","outcome":"Upheld ASA ruling","media":"Search (paid)","topic":"Sports, leisure and hobbies","summary":"A paid-for Google ad for an online seller of theme-park, sightseeing and excursion tickets made misleading claims about a price match promise.","types":["misleading_claim"],"url":"https://www.asa.org.uk/rulings/attraction-tickets-ltd.html"},

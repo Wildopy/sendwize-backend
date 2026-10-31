@@ -19,12 +19,17 @@ const asaVoice = t => !t ? t : String(t)
   .replace(new RegExp(`\\b[Ww]e (${VERBS})\\b`, 'g'), 'the ASA $1')
   .replace(/\bour rules\b/g, 'the advertising rules')
   .replace(/\bour (Compliance team|CAP Compliance team)\b/g, 'the CAP Compliance team');
-const live = review.ready.filter(c => ok.has(c.id) && !no.has(c.id))
+const fresh = review.ready.filter(c => ok.has(c.id) && !no.has(c.id))
   .map(c => ({ ...c, topic: c.evidence?.topic || null, ...(c.regulator === 'ASA' ? { summary: asaVoice(c.summary), action: asaVoice(c.action) } : {}),
     ...(c.regulator === 'ICO' ? { summary: String(c.summary || '').replace(/\bour attention\b/g, "the ICO's attention") } : {}) }))
   .map(c => Object.fromEntries(FIELDS.filter(k => c[k] !== undefined && c[k] !== null).map(k => [k, c[k]])));
 
-const missing = approved.filter(id => !review.ready.some(c => c.id === id));
+// The importer leaves out cases already in the library, so cases published in earlier batches
+// are carried over from the current file (unless since rejected) and new approvals are added
+const { IMPORTED: before = [] } = await import(new URL('../api/_case-imports.js', import.meta.url)).catch(() => ({}));
+const freshIds = new Set(fresh.map(c => c.id));
+const live = [...before.filter(c => !no.has(c.id) && !freshIds.has(c.id)), ...fresh];
+const missing = approved.filter(id => !live.some(c => c.id === id));
 if (missing.length) console.warn(`Approved but not in the ready list (left out): ${missing.join(', ')}`);
 
 writeFileSync('api/_case-imports.js', `// ─────────────────────────────────────────────────────────────
