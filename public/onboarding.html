@@ -11,310 +11,423 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 :root{
-  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
-  --bg:#F4F3F0;--w:#ffffff;--b:#e8e5de;--bm:#d8d4cb;
-  --t:#0c0c0a;--tm:#4a4740;--mu:#9a9590;
-  --g:#16a34a;--gb:#f0fdf4;--gc:#bbf7d0;
-  --rad:12px;--rad-lg:16px;
-  --sh:0 1px 3px rgba(0,0,0,.06);
-  --shm:0 4px 16px rgba(0,0,0,.08);
-  --shl:0 12px 40px rgba(0,0,0,.12);
+  --o:#EA7317;--od:#c85f0f;--ol:#ffb27a;
+  --ink:#0c0b09;--deep:#16121f;--plum:#3b2a63;
+  --t:#fff;--tm:#d6d3e4;--mu:#a8a3bb;--line:rgba(255,255,255,.12);--glass:rgba(255,255,255,.06);
+  --r:#f87171;--y:#facc15;--g:#4ade80;
+  --ease:cubic-bezier(.2,.8,.2,1);
 }
-body{font-family:'DM Sans',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--t);line-height:1.6}
+body{font-family:'DM Sans',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;color:var(--t);line-height:1.6;
+  background:radial-gradient(90% 120% at 100% 0%,#3b2a63 0%,#1d1730 42%,#0c0b09 100%)}
+body::before{content:"";position:fixed;right:-160px;top:-160px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(234,115,23,.28),transparent 68%);pointer-events:none}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:44px 44px;
+  -webkit-mask-image:radial-gradient(ellipse at 70% 40%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse at 70% 40%,#000 0%,transparent 70%)}
+.mono{font-family:'DM Mono',ui-monospace,monospace}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 
-/* ── SLIDE CONTAINER ── */
-.slides{width:100%;height:100vh;position:relative;overflow:hidden}
-.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 24px 100px;opacity:0;pointer-events:none;transition:opacity .45s cubic-bezier(.4,0,.2,1),transform .45s cubic-bezier(.4,0,.2,1);transform:translateX(40px)}
-.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
-.slide.out{opacity:0;transform:translateX(-40px)}
+/* ── TOP ── */
+.top{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 28px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.3px}
+.brand img{width:26px;height:26px;border-radius:7px}
+.skip-top{background:none;border:1px solid var(--line);color:var(--mu);font-size:12px;cursor:pointer;font-family:inherit;padding:7px 12px;border-radius:999px;transition:all .2s}
+.skip-top:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+.progress{position:fixed;top:0;left:0;right:0;height:2px;background:rgba(255,255,255,.06);z-index:101}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--o),var(--ol));transition:width .5s var(--ease);box-shadow:0 0 12px rgba(234,115,23,.6)}
 
-/* Each slide keeps the same background — accent is in content */
-.slide{background:var(--bg)}
+/* ── SLIDES ── */
+.slides{position:relative;width:100%;height:100vh;height:100dvh}
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:84px 40px 110px;opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease),transform .5s var(--ease);transform:translateX(36px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:auto;transform:none}
+.slide.out{opacity:0;transform:translateX(-36px)}
+.grid{width:100%;max-width:1080px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center;margin:auto}
+.copy>*{opacity:0;transform:translateY(10px)}
+.slide.active .copy>*{animation:rise .6s var(--ease) forwards}
+.slide.active .copy>*:nth-child(2){animation-delay:.06s}.slide.active .copy>*:nth-child(3){animation-delay:.12s}
+.slide.active .copy>*:nth-child(4){animation-delay:.18s}.slide.active .copy>*:nth-child(5){animation-delay:.24s}
+@keyframes rise{to{opacity:1;transform:none}}
 
-/* ── SLIDE INNER ── */
-.slide-inner{max-width:640px;width:100%;text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--ol);margin-bottom:18px}
+.eyebrow b{font-family:'DM Mono',monospace;font-weight:500;color:var(--mu);letter-spacing:.05em}
+.eyebrow::before{content:"";width:18px;height:1px;background:var(--o)}
+h1{font-size:clamp(30px,4.2vw,48px);font-weight:700;letter-spacing:-.035em;line-height:1.06;margin-bottom:16px}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{font-size:16px;color:var(--tm);line-height:1.65;max-width:470px;margin-bottom:26px}
 
-/* ── TOOL BADGE ── */
-.tool-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:20px;background:var(--ol);border:1px solid var(--om);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);margin-bottom:20px}
+/* tool rows */
+.tools{display:flex;flex-direction:column;gap:10px;max-width:480px}
+.tool{display:flex;gap:14px;padding:14px 16px;border-radius:14px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(6px)}
+.tool .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:rgba(234,115,23,.14);color:var(--ol);flex-shrink:0}
+.tool-n{font-size:14px;font-weight:700;margin-bottom:2px}
+.tool-d{font-size:12.5px;color:var(--mu);line-height:1.5}
 
-/* ── EMOJI ── */
-.slide-emoji{font-size:52px;margin-bottom:16px;display:block;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards}
-@keyframes popIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+/* group rail */
+.rail{display:flex;gap:6px;margin-top:22px;flex-wrap:wrap}
+.rail span{font-size:11px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mu)}
+.rail span.on{color:#fff;border-color:var(--o);background:rgba(234,115,23,.16)}
 
-/* ── HEADINGS ── */
-.slide-h1{font-size:clamp(26px,4.5vw,40px);font-weight:700;letter-spacing:-.7px;line-height:1.15;margin-bottom:14px;color:var(--t)}
-.slide-h1 em{color:var(--o);font-style:normal}
-.slide-sub{font-size:15px;color:var(--tm);line-height:1.75;margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto}
+/* ── VIGNETTE (product preview card) ── */
+.vig{position:relative;border-radius:20px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.035));border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);opacity:0;transform:translateY(16px) scale(.98)}
+.slide.active .vig{animation:rise .8s .15s var(--ease) forwards}
+.vig-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+.dots3{display:flex;gap:5px}.dots3 i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18)}
+.card{background:rgba(12,11,9,.55);border:1px solid var(--line);border-radius:14px;padding:14px}
+.lbl{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+.big{font-family:'DM Mono',monospace;font-size:26px;font-weight:500;line-height:1.1;margin-top:4px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+.pill.r{background:rgba(248,113,113,.14);color:var(--r)}.pill.y{background:rgba(250,204,21,.14);color:var(--y)}.pill.g{background:rgba(74,222,128,.14);color:var(--g)}.pill.o{background:rgba(234,115,23,.18);color:var(--ol)}
+.row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;color:var(--tm)}
+.row:first-child{border-top:0}
+.row .pill{margin-left:auto}
+.row .v{margin-left:auto;font-family:'DM Mono',monospace;font-size:12px;color:#fff;white-space:nowrap}
+.stagger>*{opacity:0;transform:translateX(8px)}
+.slide.active .stagger>*{animation:rise .5s var(--ease) forwards}
+.slide.active .stagger>*:nth-child(1){animation-delay:.5s}.slide.active .stagger>*:nth-child(2){animation-delay:.7s}
+.slide.active .stagger>*:nth-child(3){animation-delay:.9s}.slide.active .stagger>*:nth-child(4){animation-delay:1.1s}
 
-/* ── PRODUCES CARD ── */
-.produces{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:var(--rad);border:1px solid var(--b);background:var(--w);font-size:13px;color:var(--tm);margin-bottom:24px;box-shadow:var(--sh)}
-.produces-icon{font-size:16px}
-.produces strong{color:var(--t)}
+/* ring */
+.ring{--p:0;width:120px;height:120px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--o) calc(var(--p)*1%),rgba(255,255,255,.1) 0);transition:--p 1.4s var(--ease)}
+@property --p{syntax:'<number>';inherits:false;initial-value:0}
+.slide.active .ring{--p:var(--to)}
+.ring>div{width:96px;height:96px;border-radius:50%;background:#16121f;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring b{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;line-height:1}.ring span{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;margin-top:3px}
 
-/* ── CHAIN ── */
-.chain{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin-bottom:8px}
-.chain-node{font-size:11px;font-weight:500;padding:4px 10px;border-radius:6px;border:1px solid var(--b);color:var(--mu);background:var(--w);white-space:nowrap;transition:all .3s}
-.chain-node.active-node{color:var(--o);border-color:var(--o);background:var(--ol);font-weight:700}
-.chain-arrow{color:var(--bm);font-size:11px}
+/* welcome orbit */
+.orbit{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.orbit .card{display:flex;flex-direction:column;gap:10px;min-height:118px}
+.orbit .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(234,115,23,.14);color:var(--ol)}
+.orbit .n{font-size:13.5px;font-weight:700}.orbit .d{font-size:11.5px;color:var(--mu);line-height:1.45}
 
-/* ── WELCOME SPECIFIC ── */
-.sw-logo{font-size:24px;font-weight:700;color:var(--o);letter-spacing:-.5px;margin-bottom:28px;display:block}
-.welcome-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px;text-align:left}
-@media(max-width:500px){.welcome-cards{grid-template-columns:1fr}}
-.wc{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:16px;box-shadow:var(--sh)}
-.wc-step{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--o);margin-bottom:6px}
-.wc-txt{font-size:12px;color:var(--tm);line-height:1.5}
+/* dashboard vignette */
+.dash{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;margin-bottom:12px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.whatif{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--mu)}
+.tg{width:28px;height:16px;border-radius:999px;background:rgba(255,255,255,.15);position:relative;flex-shrink:0}
+.tg::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .3s}
+.slide.active .tg{animation:tgOn .01s 1.8s forwards}.slide.active .tg::after{animation:knob .3s 1.8s forwards}
+@keyframes tgOn{to{background:var(--o)}}@keyframes knob{to{left:14px}}
+.drop{position:relative;display:inline-block}
+.drop .a,.drop .b{transition:opacity .3s}
+.drop .b{position:absolute;left:0;top:0;opacity:0;color:var(--g)}
+.slide.active .drop .a{animation:fadeOut .3s 1.9s forwards}.slide.active .drop .b{animation:fadeIn .3s 1.9s forwards}
+@keyframes fadeOut{to{opacity:0}}@keyframes fadeIn{to{opacity:1}}
+.chk{width:16px;height:16px;border-radius:5px;border:1.5px solid rgba(255,255,255,.3);display:grid;place-items:center;flex-shrink:0}
+.slide.active .chk.tick{animation:tick .2s 1.7s forwards}
+.chk svg{width:11px;height:11px;stroke:#fff;stroke-width:3;fill:none;opacity:0}
+.slide.active .chk.tick svg{animation:fadeIn .2s 1.7s forwards}
+@keyframes tick{to{background:var(--o);border-color:var(--o)}}
 
-/* ── COMPLETE CHAIN DIAGRAM ── */
-.chain-diagram{display:flex;flex-direction:column;gap:6px;margin-bottom:28px;text-align:left;width:100%}
-.cd-row{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:var(--rad);border:1px solid var(--b);background:var(--w);box-shadow:var(--sh)}
-.cd-emoji{font-size:20px;flex-shrink:0;margin-top:2px}
-.cd-body{flex:1;min-width:0}
-.cd-name{font-size:13px;font-weight:700;color:var(--t);margin-bottom:2px}
-.cd-desc{font-size:11px;color:var(--mu);line-height:1.4}
-.cd-arrow{text-align:center;color:var(--bm);font-size:13px;padding:1px 0}
+/* copy check vignette */
+.mail{font-size:13px;line-height:1.7;color:var(--tm)}
+.mail .subj{font-weight:700;color:#fff;margin-bottom:6px}
+.hl{position:relative;border-radius:3px;background-image:linear-gradient(rgba(248,113,113,.28),rgba(248,113,113,.28));background-size:0% 100%;background-repeat:no-repeat;transition:background-size .6s}
+.slide.active .hl{animation:mark .6s forwards}
+.slide.active .hl.h1{animation-delay:.7s}.slide.active .hl.h2{animation-delay:1.0s}.slide.active .hl.h3{animation-delay:1.3s}
+@keyframes mark{to{background-size:100% 100%}}
+.verdict{display:flex;gap:8px;margin-top:14px}
+.verdict span{flex:1;text-align:center;font-size:11px;font-weight:700;letter-spacing:.06em;padding:9px 0;border-radius:10px;border:1px solid var(--line);color:var(--mu)}
+.slide.active .verdict .fx{animation:pick .4s 1.8s forwards}
+@keyframes pick{to{background:rgba(250,204,21,.16);border-color:var(--y);color:var(--y);box-shadow:0 0 24px rgba(250,204,21,.2)}}
 
-/* ── PROGRESS BAR ── */
-.progress-bar{height:3px;background:var(--b);border-radius:2px;position:fixed;top:0;left:0;right:0;z-index:100}
-.progress-fill{height:100%;background:var(--o);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+/* list vignette */
+.bar{display:flex;height:14px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.08);margin:10px 0 14px}
+.bar i{display:block;height:100%;width:0;transition:width 1.2s var(--ease)}
+.slide.active .bar .g1{width:62%;transition-delay:.5s}.slide.active .bar .y1{width:21%;transition-delay:.7s}.slide.active .bar .r1{width:17%;transition-delay:.9s}
+.bar .g1{background:var(--g)}.bar .y1{background:var(--y)}.bar .r1{background:var(--r)}
+.legend{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.legend div{font-size:11px;color:var(--mu)}.legend b{display:block;font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:#fff}
+.spark{width:100%;height:56px;margin-top:6px}
+.spark path{fill:none;stroke:var(--ol);stroke-width:2;stroke-dasharray:400;stroke-dashoffset:400}
+.slide.active .spark path{animation:draw 1.6s .8s var(--ease) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
 
-/* ── NAV BAR ── */
-.nav-bar{position:fixed;bottom:0;left:0;right:0;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to top,var(--bg) 80%,transparent);z-index:50}
-.dots{display:flex;gap:5px;align-items:center}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--b);transition:all .3s;cursor:pointer;border:none;padding:0}
-.dot.on{width:22px;border-radius:3px;background:var(--o)}
-.dot:hover:not(.on){background:var(--bm)}
+/* site vignette */
+.browser{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:rgba(12,11,9,.6)}
+.browser .bar2{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:11px;color:var(--mu)}
+.browser .url{flex:1;background:rgba(255,255,255,.06);border-radius:6px;padding:3px 8px;font-family:'DM Mono',monospace;font-size:10.5px}
+.browser .page{position:relative;padding:14px;height:92px;overflow:hidden}
+.ph{height:8px;border-radius:4px;background:rgba(255,255,255,.08);margin-bottom:8px}
+.scan{position:absolute;left:0;right:0;top:0;height:2px;background:var(--o);box-shadow:0 0 16px 2px rgba(234,115,23,.7);opacity:0}
+.slide.active .scan{animation:scan 1.8s .4s ease-in-out 2}
+@keyframes scan{0%{top:0;opacity:1}100%{top:100%;opacity:1}}
+.res{margin-top:12px}
+.res .row svg{width:15px;height:15px}
+
+/* records vignette */
+.stack{position:relative;height:300px}
+.doc{position:absolute;border-radius:14px;background:#f6f3ee;color:#1d1a16;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.doc.back{right:0;top:0;width:78%;transform:rotate(3deg);background:#ece7df}
+.doc.front{left:0;bottom:0;width:82%;transform:rotate(-2deg);padding-bottom:62px}
+.doc .lbl{color:#7a7368}
+.doc h4{font-size:15px;letter-spacing:-.01em;margin:4px 0 10px}
+.doc .ln{height:6px;border-radius:3px;background:#ddd6cb;margin-bottom:7px}
+.doc .row{border-top-color:#e4ddd2;color:#4a453e;font-size:12px;padding:7px 0}
+.doc .row .v{color:#1d1a16}
+.stamp{position:absolute;right:16px;bottom:14px;white-space:nowrap;border:2px solid #16a34a;color:#16a34a;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transform:rotate(-8deg) scale(1.8);opacity:0}
+.stamp small{display:block;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0;text-transform:none;font-weight:500}
+.slide.active .stamp{animation:stamp .35s 1.3s cubic-bezier(.3,1.6,.5,1) forwards}
+@keyframes stamp{to{opacity:1;transform:rotate(-8deg) scale(1)}}
+
+/* finish */
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:14px;background:var(--glass);border:1px solid var(--line)}
+.step .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:'DM Mono',monospace;font-size:13px;background:rgba(234,115,23,.16);color:var(--ol);border:1px solid rgba(234,115,23,.4);flex-shrink:0}
+.step .n{font-size:14px;font-weight:700}.step .d{font-size:12.5px;color:var(--mu);line-height:1.5}
+.btn-cta{margin-top:4px;background:var(--o);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;padding:15px 26px;border-radius:12px;display:inline-flex;align-items:center;gap:10px;transition:all .2s var(--ease);box-shadow:0 10px 30px rgba(234,115,23,.35)}
+.btn-cta:hover{background:var(--od);transform:translateY(-1px)}
+
+/* ── NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:50;background:linear-gradient(to top,rgba(12,11,9,.9) 40%,transparent)}
+.pips{display:flex;gap:6px;align-items:center}
+.pip{width:7px;height:7px;border-radius:999px;background:rgba(255,255,255,.18);border:none;padding:0;cursor:pointer;transition:all .35s var(--ease)}
+.pip.on{width:26px;background:var(--o)}
+.pip:hover:not(.on){background:rgba(255,255,255,.4)}
 .nav-btns{display:flex;gap:8px;align-items:center}
-.btn-skip{background:none;border:none;color:var(--mu);font-size:13px;cursor:pointer;font-family:inherit;padding:8px 10px;transition:color .15s}
-.btn-skip:hover{color:var(--tm)}
-.btn-back{background:var(--w);border:1px solid var(--b);color:var(--tm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;padding:10px 18px;border-radius:var(--rad-sm,8px);transition:all .15s}
-.btn-back:hover{border-color:var(--bm);color:var(--t)}
-.btn-next{background:var(--o);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;padding:11px 26px;border-radius:var(--rad-sm,8px);transition:all .2s;letter-spacing:-.1px;display:inline-flex;align-items:center;gap:8px}
-.btn-next:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 4px 14px rgba(234,115,23,.35)}
-.btn-next:active{transform:none}
+.btn-back{background:transparent;border:1px solid var(--line);color:var(--tm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;padding:11px 18px;border-radius:10px;transition:all .2s}
+.btn-back:hover{border-color:rgba(255,255,255,.35);color:#fff}
+.btn-next{background:#fff;border:none;color:var(--ink);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;padding:12px 22px;border-radius:10px;display:inline-flex;align-items:center;gap:8px;transition:all .2s var(--ease)}
+.btn-next:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,255,255,.18)}
+.btn-next svg.i{width:16px;height:16px}
 
-/* ── CTA on complete screen ── */
-.cta-wrap{margin-top:4px}
-.btn-cta{background:var(--o);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;padding:14px 32px;border-radius:var(--rad);transition:all .2s;letter-spacing:-.2px;display:inline-flex;align-items:center;gap:10px}
-.btn-cta:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 6px 20px rgba(234,115,23,.35)}
-
-/* ── SKIP TOP ── */
-.skip-top{position:fixed;top:16px;right:20px;background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;font-family:inherit;transition:color .15s;z-index:200;padding:6px 10px;border-radius:6px}
-.skip-top:hover{color:var(--tm);background:var(--w)}
-
-@media(max-width:500px){
-  .slide-h1{font-size:24px}
-  .slide-sub{font-size:13px}
-  .chain{display:none}
-  .welcome-cards{gap:8px}
-  .nav-bar{padding:14px 16px}
+@media (max-width:860px){
+  .slide{padding:70px 18px 100px;align-items:flex-start}
+  .grid{grid-template-columns:minmax(0,1fr);gap:22px}
+  .tiles .big{font-size:22px}
+  .vig{order:-1;padding:16px}
+  .lede{font-size:14.5px;margin-bottom:18px}
+  h1{font-size:30px}
+  .top{padding:14px 16px}
+  .nav{padding:14px 16px}
+  .stack{height:240px}
+  .rail{display:none}
+  .hide-m{display:none}
 }
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important;transition-duration:.01s!important}}
 </style>
 </head>
 <body>
 
-<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-<button class="skip-top" onclick="finish()">Skip tour</button>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M5 21h14"/><path d="m5 8-3 7a4 4 0 0 0 6 0Z"/><path d="m19 8-3 7a4 4 0 0 0 6 0Z"/><path d="M5 8h14"/><path d="M12 3 5 8"/><path d="m12 3 7 5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></symbol>
+    <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </defs>
+</svg>
+
+<div class="progress"><i id="progressFill" style="width:0%"></i></div>
+<div class="top">
+  <div class="brand"><img src="https://sendwize-backend.vercel.app/favicon.svg" alt="">sendwize</div>
+  <button class="skip-top" onclick="finish()">Skip tour</button>
+</div>
 
 <div class="slides" id="slides">
 
-  <!-- ── SLIDE 0 — WELCOME ── -->
-  <div class="slide active" data-idx="0">
-    <div class="slide-inner">
-      <span class="sw-logo">sendwize</span>
-      <div class="tool-badge">Welcome</div>
-      <div class="slide-h1">Your complete UK marketing<br><em>compliance picture.</em></div>
-      <div class="slide-sub">Six tools. Each one builds on the last. By the end you will have a live compliance score, a regulatory risk picture, and a clear action list — all updated every time you use Sendwize.</div>
-      <div class="welcome-cards">
-        <div class="wc"><div class="wc-step">Tools 1–3</div><div class="wc-txt">Scan your copy, check your vendors, and document every campaign before it goes out.</div></div>
-        <div class="wc"><div class="wc-step">Tools 4–5</div><div class="wc-txt">Understand your audience health and find out what your contact database is really worth.</div></div>
-        <div class="wc"><div class="wc-step">Tool 6</div><div class="wc-txt">See exactly how a regulator would investigate your business today — and what to fix first.</div></div>
+  <!-- 0 WELCOME -->
+  <section class="slide active">
+    <div class="grid">
+      <div class="copy">
+        <div class="eyebrow">Welcome</div>
+        <h1>Know what your marketing <em>could cost you.</em> Then fix it.</h1>
+        <p class="lede">Eight tools check your campaigns, your lists, your website and your records against UK rules: PECR, UK GDPR, the CAP Code and consumer law. Everything they find lands on one dashboard with a £ figure and a fix.</p>
+        <p class="lede" style="font-size:13px;color:var(--mu)">Takes about a minute. Use the arrow keys if you like.</p>
+      </div>
+      <div class="vig">
+        <div class="vig-h"><span>Four groups, eight tools</span><span class="dots3"><i></i><i></i><i></i></span></div>
+        <div class="orbit stagger">
+          <div class="card"><div class="ic"><svg class="i"><use href="#i-send"/></svg></div><div><div class="n">Before you send</div><div class="d">Send-day verdict · Copy checker</div></div></div>
+          <div class="card"><div class="ic"><svg class="i"><use href="#i-users"/></svg></div><div><div class="n">Your list</div><div class="d">List health · Audience read</div></div></div>
+          <div class="card"><div class="ic"><svg class="i"><use href="#i-globe"/></svg></div><div><div class="n">Website and suppliers</div><div class="d">Site sweep · Third parties</div></div></div>
+          <div class="card"><div class="ic"><svg class="i"><use href="#i-shield"/></svg></div><div><div class="n">Records and practice</div><div class="d">Campaign defence · Regulator simulator</div></div></div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ── SLIDE 1 — AI SCANNER ── -->
-  <div class="slide" data-idx="1">
-    <div class="slide-inner">
-      <span class="slide-emoji">🤖</span>
-      <div class="tool-badge">Tool 1 of 6 — AI Scanner</div>
-      <div class="slide-h1">Start here.<br><em>Scan your marketing copy.</em></div>
-      <div class="slide-sub">Paste any email, ad, or campaign copy. The AI Scanner checks it against ICO, ASA, and CMA rules and flags exactly what needs fixing — before you send it to a single contact.</div>
-      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>compliance fixes</strong> that feed your score and exposure tracker</span></div>
-      <div class="chain">
-        <div class="chain-node active-node">🤖 AI Scanner</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🏢 Vendors</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📁 Dossier</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📊 Audience</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📋 List</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🔍 Simulator</div>
+  <!-- 1 DASHBOARD -->
+  <section class="slide">
+    <div class="grid">
+      <div class="copy">
+        <div class="eyebrow">Your dashboard</div>
+        <h1>One place for the score, <em>the £ and the fixes.</em></h1>
+        <p class="lede">First, a few questions about your business so every figure is sized to you. Then you see your score, what poor practice has already cost you, your open regulatory exposure and an action list from every tool.</p>
+        <div class="tools">
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-scale"/></svg></div><div><div class="tool-n">Why this number?</div><div class="tool-d">Every item shows its evidence and the real enforcement cases behind it, including the closest match to you.</div></div></div>
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-trend"/></svg></div><div><div class="tool-n">What-if mode</div><div class="tool-d">Tick off fixes to see how far your exposure drops before you do the work.</div></div></div>
+        </div>
+      </div>
+      <div class="vig">
+        <div class="vig-h"><span>Dashboard</span><span class="dots3"><i></i><i></i><i></i></span></div>
+        <div class="dash">
+          <div class="ring" style="--to:68"><div><b>68</b><span>Score</span></div></div>
+          <div class="tiles">
+            <div class="card"><div class="lbl">Open exposure</div><div class="big drop"><span class="a">£54k</span><span class="b">£31k</span></div></div>
+            <div class="card"><div class="lbl">Already lost</div><div class="big">£8.2k</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row" style="padding-top:0"><span class="lbl">Action items</span><span class="whatif" style="margin-left:auto"><span class="tg"></span>What-if</span></div>
+          <div class="stagger">
+            <div class="row"><span class="chk tick"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>Purchased contacts on main list<span class="v">£14k</span></div>
+            <div class="row"><span class="chk tick"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>Cookies set before consent<span class="v">£9k</span></div>
+            <div class="row"><span class="chk"></span>"Clinically proven" claim<span class="v">£6k</span></div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ── SLIDE 2 — VENDOR CHECKER ── -->
-  <div class="slide" data-idx="2">
-    <div class="slide-inner">
-      <span class="slide-emoji">🏢</span>
-      <div class="tool-badge">Tool 2 of 6 — Vendor Checker</div>
-      <div class="slide-h1">Check every tool<br><em>you share data with.</em></div>
-      <div class="slide-sub">Every ESP, CRM, and ad platform you use processes personal data on your behalf. Vendor Checker scores each one for ICO registration, DPA status, and data transfer compliance — gaps become fixes on your dashboard.</div>
-      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>vendor risk scores</strong> and DPA gap fixes</span></div>
-      <div class="chain">
-        <div class="chain-node">🤖 AI Scanner</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node active-node">🏢 Vendors</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📁 Dossier</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📊 Audience</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📋 List</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🔍 Simulator</div>
+  <!-- 2 BEFORE YOU SEND -->
+  <section class="slide">
+    <div class="grid">
+      <div class="copy">
+        <div class="eyebrow">Before you send <b>1 / 4</b></div>
+        <h1>Check a campaign <em>before it goes out.</em></h1>
+        <p class="lede">Catch problems while they are still cheap to fix, before a single contact sees the email, ad or post.</p>
+        <div class="tools">
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-send"/></svg></div><div><div class="tool-n">Send-day verdict</div><div class="tool-d">Checks the copy, the landing pages and the send list together. One answer: Go, Fix first or Hold, saved as a dated record.</div></div></div>
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-pen"/></svg></div><div><div class="tool-n">Copy checker</div><div class="tool-d">Flags fake urgency, unproven claims, hidden fees and missing ad labels in any email, SMS, ad or post, with a rewrite for each.</div></div></div>
+        </div>
+        <div class="rail"><span class="on">Before you send</span><span>Your list</span><span>Website and suppliers</span><span>Records and practice</span></div>
+      </div>
+      <div class="vig">
+        <div class="vig-h"><span>Send-day verdict</span><span class="pill o">3 issues</span></div>
+        <div class="card mail">
+          <div class="subj">FINAL HOURS: 70% off everything</div>
+          Our biggest sale ends <span class="hl h1">at midnight tonight</span>. Our bamboo bedding is <span class="hl h2">clinically proven</span> to improve your sleep.
+          <span class="hl h3">FREE delivery*</span> on everything.
+        </div>
+        <div class="verdict"><span>GO</span><span class="fx">FIX FIRST</span><span>HOLD</span></div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ── SLIDE 3 — CAMPAIGN DOSSIER ── -->
-  <div class="slide" data-idx="3">
-    <div class="slide-inner">
-      <span class="slide-emoji">📁</span>
-      <div class="tool-badge">Tool 3 of 6 — Campaign Dossier</div>
-      <div class="slide-h1">Build evidence files<br><em>for every campaign.</em></div>
-      <div class="slide-sub">If the ICO, ASA, or CMA ever investigate a campaign, you need to prove you checked it before it went out. Campaign Dossier creates a structured evidence file covering list provenance, consent basis, content sign-off, and suppression confirmation.</div>
-      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>a signed compliance record</strong> for every campaign you run</span></div>
-      <div class="chain">
-        <div class="chain-node">🤖 AI Scanner</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🏢 Vendors</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node active-node">📁 Dossier</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📊 Audience</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📋 List</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🔍 Simulator</div>
+  <!-- 3 YOUR LIST -->
+  <section class="slide">
+    <div class="grid">
+      <div class="copy">
+        <div class="eyebrow">Your list <b>2 / 4</b></div>
+        <h1>Know who you can <em>legally email.</em></h1>
+        <p class="lede">Upload an export from any email platform. Klaviyo, Mailchimp and the rest all work.</p>
+        <div class="tools">
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-users"/></svg></div><div><div class="tool-n">List health</div><div class="tool-d">Scores every contact for consent, deliverability and value. Flags old consent, risky sources and unsubscribes leaking across lists.</div></div></div>
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-trend"/></svg></div><div><div class="tool-n">Audience read</div><div class="tool-d">Compares your send history with UK benchmarks: a 12-month forecast, your next-send call and a Black Friday plan.</div></div></div>
+        </div>
+        <div class="rail"><span>Before you send</span><span class="on">Your list</span><span>Website and suppliers</span><span>Records and practice</span></div>
+      </div>
+      <div class="vig">
+        <div class="vig-h"><span>Main Newsletter · 315 contacts</span><span class="dots3"><i></i><i></i><i></i></span></div>
+        <div class="card">
+          <div class="lbl">Who you can email</div>
+          <div class="bar"><i class="g1"></i><i class="y1"></i><i class="r1"></i></div>
+          <div class="legend"><div><b>62%</b>Safe to send</div><div><b>21%</b>Re-consent</div><div><b>17%</b>Remove</div></div>
+        </div>
+        <div class="card" style="margin-top:10px">
+          <div class="row" style="padding-top:0"><span class="lbl">12-month list forecast</span><span class="v">£18.4k value</span></div>
+          <svg class="spark" viewBox="0 0 300 56" preserveAspectRatio="none"><path d="M0 40 C30 36 50 44 80 34 S130 20 160 26 S210 12 240 16 S280 8 300 6"/></svg>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ── SLIDE 4 — AUDIENCE READ ── -->
-  <div class="slide" data-idx="4">
-    <div class="slide-inner">
-      <span class="slide-emoji">📊</span>
-      <div class="tool-badge">Tool 4 of 6 — Audience read</div>
-      <div class="slide-h1">Find out how your<br><em>audience actually feels.</em></div>
-      <div class="slide-sub">Upload your send history and seven deterministic algorithms analyse every segment — trust velocity, relationship capital, frequency tolerance. You get a plain English verdict on each segment and exactly what to do before your next send.</div>
-      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>per-segment verdicts</strong> and send recommendations</span></div>
-      <div class="chain">
-        <div class="chain-node">🤖 AI Scanner</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🏢 Vendors</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📁 Dossier</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node active-node">📊 Audience</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📋 List</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🔍 Simulator</div>
+  <!-- 4 WEBSITE AND SUPPLIERS -->
+  <section class="slide">
+    <div class="grid">
+      <div class="copy">
+        <div class="eyebrow">Website and suppliers <b>3 / 4</b></div>
+        <h1>Check where data is <em>collected and shared.</em></h1>
+        <p class="lede">Much of your risk sits outside the email itself: on your website, and with the companies you share data with.</p>
+        <div class="tools">
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-globe"/></svg></div><div><div class="tool-n">Site sweep</div><div class="tool-d">Verify your domain and it scans the whole site: cookies before consent, the banner, your privacy notice and sign-up forms.</div></div></div>
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-link"/></svg></div><div><div class="tool-n">Third parties</div><div class="tool-d">One register for suppliers, data partners, affiliates and influencers, each with a risk score. It reads their privacy terms for you.</div></div></div>
+        </div>
+        <div class="rail"><span>Before you send</span><span>Your list</span><span class="on">Website and suppliers</span><span>Records and practice</span></div>
+      </div>
+      <div class="vig">
+        <div class="vig-h"><span>Site sweep</span><span class="dots3"><i></i><i></i><i></i></span></div>
+        <div class="browser">
+          <div class="bar2"><span class="dots3"><i></i><i></i><i></i></span><span class="url">yourshop.co.uk</span></div>
+          <div class="page"><div class="ph" style="width:40%"></div><div class="ph" style="width:85%"></div><div class="ph" style="width:70%"></div><div class="ph" style="width:55%"></div><div class="scan"></div></div>
+        </div>
+        <div class="card res">
+          <div class="stagger">
+            <div class="row"><svg class="i" style="color:var(--r)"><use href="#i-x"/></svg>3 cookies set before consent<span class="pill r">Fix</span></div>
+            <div class="row"><svg class="i" style="color:var(--g)"><use href="#i-ok"/></svg>Banner has a reject option<span class="pill g">OK</span></div>
+            <div class="row"><svg class="i" style="color:var(--y)"><use href="#i-x"/></svg>Partner consent doesn't name you<span class="pill y">High risk</span></div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ── SLIDE 5 — LIST INTELLIGENCE ── -->
-  <div class="slide" data-idx="5">
-    <div class="slide-inner">
-      <span class="slide-emoji">📋</span>
-      <div class="tool-badge">Tool 5 of 6 — List health</div>
-      <div class="slide-h1">Find out what your<br><em>database is really worth.</em></div>
-      <div class="slide-sub">Upload your contact list. Every address is scored across four dimensions — consent health, deliverability, commercial value, and ICO risk. You see which contacts are assets, which are liabilities, and exactly what to do about each group.</div>
-      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>list value, suppression flags,</strong> and pre-send certificates</span></div>
-      <div class="chain">
-        <div class="chain-node">🤖 AI Scanner</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🏢 Vendors</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📁 Dossier</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📊 Audience</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node active-node">📋 List</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🔍 Simulator</div>
+  <!-- 5 RECORDS AND PRACTICE -->
+  <section class="slide">
+    <div class="grid">
+      <div class="copy">
+        <div class="eyebrow">Records and practice <b>4 / 4</b></div>
+        <h1>Be ready if a <em>regulator asks.</em></h1>
+        <p class="lede">If the ICO, ASA or CMA get in touch, what you can prove matters as much as what you did.</p>
+        <div class="tools">
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-shield"/></svg></div><div><div class="tool-n">Campaign defence</div><div class="tool-d">An evidence file for each campaign: findings, a scan of every linked page, approval with your name and time, then page monitoring after launch.</div></div></div>
+          <div class="tool"><div class="ic"><svg class="i"><use href="#i-scale"/></svg></div><div><div class="tool-n">Regulator simulator</div><div class="tool-d">Rehearse an ICO, ASA or CMA investigation using your real profile and findings, from first-contact letter to penalty estimate.</div></div></div>
+        </div>
+        <div class="rail"><span>Before you send</span><span>Your list</span><span>Website and suppliers</span><span class="on">Records and practice</span></div>
+      </div>
+      <div class="vig" style="background:none;border:0;box-shadow:none;padding:0">
+        <div class="stack">
+          <div class="doc back">
+            <div class="lbl">Information Commissioner's Office</div>
+            <h4>Simulated first-contact letter</h4>
+            <div class="ln" style="width:90%"></div><div class="ln" style="width:75%"></div><div class="ln" style="width:82%"></div><div class="ln hide-m" style="width:60%"></div>
+          </div>
+          <div class="doc front">
+            <div class="lbl">Campaign defence</div>
+            <h4>Black Friday 2026</h4>
+            <div class="row" style="border-top:0">Copy findings<span class="v mono">4 resolved</span></div>
+            <div class="row">Linked pages scanned<span class="v mono">6</span></div>
+            <div class="row">Page monitoring<span class="v mono">On</span></div>
+            <div class="stamp">Approved<small>H. Brightside · 14:32</small></div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ── SLIDE 6 — REGULATOR SIMULATOR ── -->
-  <div class="slide" data-idx="6">
-    <div class="slide-inner">
-      <span class="slide-emoji">🔍</span>
-      <div class="tool-badge">Tool 6 of 6 — Regulator simulator</div>
-      <div class="slide-h1">See yourself through<br><em>a regulator's eyes.</em></div>
-      <div class="slide-sub">Choose ICO, ASA, or CMA. The simulator runs a five-stage investigation using your actual compliance posture — background check, escalation probability, a real-format first-contact letter, documentation checklist, and penalty estimate.</div>
-      <div class="produces"><span class="produces-icon">⚡</span><span>Produces: <strong>a full simulated investigation</strong> based on your live compliance data</span></div>
-      <div class="chain">
-        <div class="chain-node">🤖 AI Scanner</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">🏢 Vendors</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📁 Dossier</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📊 Audience</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node">📋 List</div>
-        <div class="chain-arrow">→</div>
-        <div class="chain-node active-node">🔍 Simulator</div>
+  <!-- 6 FINISH -->
+  <section class="slide">
+    <div class="grid">
+      <div class="copy">
+        <div class="eyebrow">You're ready</div>
+        <h1>Start with <em>three checks.</em></h1>
+        <p class="lede">These give you the clearest picture fastest. Your dashboard keeps track of them for you.</p>
+        <button class="btn-cta" onclick="finish()">Go to my dashboard <svg class="i"><use href="#i-arrow"/></svg></button>
+      </div>
+      <div class="steps stagger">
+        <div class="step"><div class="num">1</div><div><div class="n">Upload your marketing list</div><div class="d">See who you can legally email, whose consent is running out and what the list is worth.</div></div></div>
+        <div class="step"><div class="num">2</div><div><div class="n">Check your next campaign</div><div class="d">Paste the email or ad before it goes out. You get one answer: go, fix first or hold.</div></div></div>
+        <div class="step"><div class="num">3</div><div><div class="n">Sweep your website</div><div class="d">Finds gaps in cookies, your privacy notice and sign-up forms across the whole site.</div></div></div>
       </div>
     </div>
-  </div>
-
-  <!-- ── SLIDE 7 — COMPLETE ── -->
-  <div class="slide" data-idx="7">
-    <div class="slide-inner">
-      <span class="slide-emoji">✅</span>
-      <div class="tool-badge">You're ready</div>
-      <div class="slide-h1">Your compliance picture,<br><em>all in one place.</em></div>
-      <div class="slide-sub" style="margin-bottom:18px">Every tool feeds the next. Together they give you a live score, a real regulatory risk picture, and a clear action list — updated every time you use Sendwize.</div>
-      <div class="chain-diagram">
-        <div class="cd-row"><div class="cd-emoji">🤖</div><div class="cd-body"><div class="cd-name">AI Scanner</div><div class="cd-desc">Flags copy issues → creates compliance fixes → raises your score</div></div></div>
-        <div class="cd-arrow">↓</div>
-        <div class="cd-row"><div class="cd-emoji">🏢</div><div class="cd-body"><div class="cd-name">Vendor Checker</div><div class="cd-desc">Audits your data processors → closes DPA gaps → reduces ICO risk</div></div></div>
-        <div class="cd-arrow">↓</div>
-        <div class="cd-row"><div class="cd-emoji">📁</div><div class="cd-body"><div class="cd-name">Campaign Dossier</div><div class="cd-desc">Documents every send → creates evidence files → protects you if investigated</div></div></div>
-        <div class="cd-arrow">↓</div>
-        <div class="cd-row"><div class="cd-emoji">📊</div><div class="cd-body"><div class="cd-name">Audience read</div><div class="cd-desc">Analyses send history → surfaces fatigue signals → tells you when to send</div></div></div>
-        <div class="cd-arrow">↓</div>
-        <div class="cd-row"><div class="cd-emoji">📋</div><div class="cd-body"><div class="cd-name">List health</div><div class="cd-desc">Scores every contact → identifies ICO risk → shows your list value</div></div></div>
-        <div class="cd-arrow">↓</div>
-        <div class="cd-row"><div class="cd-emoji">🔍</div><div class="cd-body"><div class="cd-name">Regulator simulator</div><div class="cd-desc">Uses all your data → shows real regulatory exposure → tells you what to fix first</div></div></div>
-      </div>
-      <div class="cta-wrap">
-        <button class="btn-cta" onclick="finish()">
-          <span>Start building my compliance picture</span>
-          <span>→</span>
-        </button>
-      </div>
-    </div>
-  </div>
+  </section>
 
 </div>
 
-<!-- ── NAV BAR ── -->
-<div class="nav-bar">
-  <div class="dots" id="dots"></div>
+<div class="nav">
+  <div class="pips" id="dots"></div>
   <div class="nav-btns">
-    <button class="btn-skip" onclick="finish()" id="btnSkip">Skip</button>
-    <button class="btn-back" id="btnBack" onclick="go(-1)" style="display:none">← Back</button>
-    <button class="btn-next" id="btnNext" onclick="go(1)">Next →</button>
+    <button class="btn-back" id="btnBack" onclick="go(-1)" style="display:none">Back</button>
+    <button class="btn-next" id="btnNext" onclick="go(1)">Next <svg class="i"><use href="#i-arrow"/></svg></button>
   </div>
 </div>
 
@@ -326,12 +439,12 @@ var slides    = document.querySelectorAll('.slide');
 var TOTAL     = slides.length;
 var current   = 0;
 
-// Build dots
 var dotsEl = document.getElementById('dots');
 for (var i = 0; i < TOTAL; i++) {
   (function(idx) {
     var d = document.createElement('button');
-    d.className = 'dot' + (idx === 0 ? ' on' : '');
+    d.className = 'pip' + (idx === 0 ? ' on' : '');
+    d.setAttribute('aria-label', 'Go to step ' + (idx + 1));
     d.onclick = function() { jumpTo(idx); };
     dotsEl.appendChild(d);
   })(i);
@@ -344,31 +457,19 @@ function go(dir) {
 }
 
 function jumpTo(idx) {
-  slides[current].classList.remove('active');
-  slides[current].classList.add('out');
+  if (idx === current) return;
   var prev = current;
-  setTimeout(function() { slides[prev].classList.remove('out'); }, 450);
-
+  slides[prev].classList.remove('active');
+  slides[prev].classList.add('out');
+  setTimeout(function() { slides[prev].classList.remove('out'); }, 500);
   current = idx;
   slides[current].classList.add('active');
-
-  // Dots
-  document.querySelectorAll('.dot').forEach(function(d, i) {
-    d.classList.toggle('on', i === current);
-  });
-
-  // Progress bar
+  slides[current].scrollTop = 0;
+  document.querySelectorAll('.pip').forEach(function(d, i) { d.classList.toggle('on', i === current); });
   document.getElementById('progressFill').style.width = ((current / (TOTAL - 1)) * 100) + '%';
-
-  // Buttons
   var isLast = current === TOTAL - 1;
-  document.getElementById('btnBack').style.display  = current > 0 ? '' : 'none';
-  document.getElementById('btnNext').style.display  = isLast ? 'none' : '';
-  document.getElementById('btnSkip').style.display  = isLast ? 'none' : '';
-
-  // Re-trigger emoji animation
-  var emoji = slides[current].querySelector('.slide-emoji');
-  if (emoji) { emoji.style.animation = 'none'; emoji.offsetHeight; emoji.style.animation = ''; }
+  document.getElementById('btnBack').style.display = current > 0 ? '' : 'none';
+  document.getElementById('btnNext').style.display = isLast ? 'none' : '';
 }
 
 async function finish() {
