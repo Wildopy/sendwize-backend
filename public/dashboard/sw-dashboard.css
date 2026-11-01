@@ -153,6 +153,8 @@
 .sw-twin-name{font-size:22px;font-weight:700;letter-spacing:-.015em;line-height:1.2}
 .sw-twin-out{font-size:13px;margin:4px 0 6px;color:#fde4cf}.sw-twin-out b{color:#fff;font-family:'DM Mono',monospace}
 .sw-twin .sw-chip{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16);color:#ede9fe}
+.sw-stakes{margin:10px 0 2px;padding:10px 12px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa}.sw-stakes .sw-hs{color:#7c2d12;font-size:12.5px}.sw-stakes b{font-family:'DM Mono',monospace}
+.sw-stakes.dk{background:rgba(234,115,23,.14);border-color:rgba(234,115,23,.4)}.sw-twin .sw-stakes.dk .sw-hs{color:#fde4cf}.sw-stakes.dk b{color:#fff}.sw-stakes.dk .sw-link{color:#fdba74}
 .sw-twin-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}.sw-twin-btns .sw-btn{padding:8px 14px;font-size:12px}
 .sw-twin .sw-btn.q{color:#ede9fe;border-color:rgba(255,255,255,.25)}
 .sw-twin-side{text-align:center;position:relative;z-index:1}

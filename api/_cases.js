@@ -6,8 +6,8 @@
 // it most resembles, so a member sees who was caught doing the same
 // thing, what it cost them, and how far they are from clear.
 //
-// Library = the curated anchors in _exposure.js (CASE_ANCHORS) plus
-// the rulings the daily regulator feed writes to
+// Library = the verified case library (_case-library.js, via
+// CASE_ANCHORS) plus the rulings the daily regulator feed writes to
 // Sector_Intelligence_Feed, so the twins sharpen as rulings land.
 //
 // Matching is deterministic: same issue type, same sector, similar
@@ -18,18 +18,16 @@
 // wins" and ranking "Start here" by value for time.
 // ─────────────────────────────────────────────────────────────
 import { CASE_ANCHORS, ICO_ACTION_URL, areaOf } from './_exposure.js';
-
-// Sectors for the curated anchors (null where the record doesn't say)
-const ANCHOR_SECTORS = { hellofresh_2024: 'ecommerce', allay_2026: 'finance', zmluk_2025: null, saga_2021: 'finance', jtt_2021: null };
+import { caseOutcome, sameIssueTypes, subjectsOf, channelsOf, subjectFit } from './_case-library.js';
 
 // Feed claim types (regulatory-feed-update.js) → the finding types they match
 export const CLAIM_TO_FIX = {
   fake_urgency:      ['fake_urgency'],
   misleading_claim:  ['misleading_claim', 'asa_liability', 'affiliate_misleading_claims', 'unreviewed_joint_ads'],
-  fake_reviews:      ['misleading_claim'],
+  fake_reviews:      ['misleading_claim', 'fake_reviews'],
   health_claim:      ['misleading_claim', 'asa_liability'],
   reference_pricing: ['misleading_reference_price', 'partner_pricing_claims'],
-  drip_pricing:      ['misleading_reference_price', 'partner_pricing_claims'],
+  drip_pricing:      ['misleading_reference_price', 'partner_pricing_claims', 'drip_pricing'],
   undisclosed_ad:    ['undisclosed_ad', 'affiliate_ad_disclosure'],
   consent_missing:   ['consent_missing', 'consent_expired', 'invalid_consent_mechanism', 'third_party_list', 'lead_gen_consent_gap', 'affiliate_consent_unverified'],
   suppression_breach:['suppression_breach'],
@@ -84,12 +82,16 @@ function parseList(v) {
   try { const p = JSON.parse(v || '[]'); return Array.isArray(p) ? p : []; } catch { return []; }
 }
 
+export const OFFICIAL_URL = /^https:\/\/(www\.)?(ico\.org\.uk|asa\.org\.uk|gov\.uk)\//;
+
 // One shape for every case, curated or from the feed
 export function buildLibrary(feedRecords = []) {
   const lib = CASE_ANCHORS.map(c => ({
     id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty || null,
-    volume: c.volume || null, summary: c.summary, types: c.types, sector: ANCHOR_SECTORS[c.id] ?? null,
-    url: ICO_ACTION_URL, source: 'curated',
+    refunds: c.refunds || null, outcome: caseOutcome(c),
+    volume: c.volume || null, summary: c.summary, action: c.action || null, types: c.types, sector: c.sector ?? null,
+    url: c.url || (c.imported ? null : ICO_ACTION_URL), source: c.imported ? 'imported' : 'curated',
+    subjects: c.subjects, channels: c.channels, curated: !!c.curated,
   }));
   const seen = new Set(lib.map(c => slug(c.name).split('_')[0]));
   for (const r of feedRecords) {
@@ -98,15 +100,18 @@ export function buildLibrary(feedRecords = []) {
     if (!name || f.RelevantToSendwize === false) continue;
     const types = [...new Set(parseList(f.ClaimTypes).flatMap(t => CLAIM_TO_FIX[t] || []))];
     if (!types.length) continue;
+    // Only rulings the regulator itself published, so nothing unverifiable is matched
+    if (!OFFICIAL_URL.test(f.RulingUrl || '')) continue;
     const key = slug(name).split('_')[0];
     if (seen.has(key)) continue;
     seen.add(key);
     lib.push({
       id: 'feed_' + r.id, name, regulator: f.Regulator || '', date: f.PublishedDate || '',
       penalty: Number(f.FineAmount) > 0 ? Number(f.FineAmount) : null, volume: null,
+      outcome: caseOutcome({ penalty: Number(f.FineAmount) > 0 ? Number(f.FineAmount) : null, regulator: f.Regulator || '' }),
       summary: String(f.RulingSummary || '').slice(0, 300), types,
       sector: sectorKey(f.Sector),
-      url: /^https:\/\//.test(f.RulingUrl || '') ? f.RulingUrl : null, source: 'feed',
+      url: f.RulingUrl, source: 'feed', subjects: subjectsOf(f.RulingSummary),
     });
   }
   return lib;
@@ -119,13 +124,20 @@ export const TWIN_MIN = 75;
 
 // Match strength 0-98 with the reasons behind it
 export function matchCase(fix, c, ctx = {}) {
-  if (!c.types.includes(fix.fixType)) return null;
+  if (!c.types.some(t => sameIssueTypes(fix.fixType).includes(t))) return null;
+  // Same subject too: a green-claim finding is never twinned with a health-claim case
+  const subjects = subjectsOf(fix.description);
+  if (c.subjects && !subjectFit(c, subjects, fix.fixType)) return null;
   const v = Number(fix.contactVolume) || Number(ctx.listSize) || null;
   const gap = v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : null;
   if (gap != null && gap > 2) return null;
   const reasons = ['Same issue: ' + niceType(fix.fixType)];
   let score = c.source === 'curated' ? 55 : 48;
   if (c.sector && c.sector === sectorKey(ctx.sector)) { score += 15; reasons.push('Same sector'); }
+  const shared = (c.subjects || []).filter(s => subjects.includes(s));
+  if (shared.length) { score += 15; reasons.push('Same subject: ' + shared.join(', ')); }
+  const channels = channelsOf(fix.description);
+  if (channels.length && (c.channels || []).some(ch => channels.includes(ch))) { score += 5; reasons.push('Same channel'); }
   if (gap != null && gap <= 1) { score += 15; reasons.push('Similar audience size'); }
   const y = yearOf(c.date), now = ctx.now ? yearOf(ctx.now) : new Date().getFullYear() + new Date().getMonth() / 12;
   if (y && now - y <= 2) { score += 10; reasons.push('Recent ruling'); }
@@ -135,18 +147,26 @@ export function matchCase(fix, c, ctx = {}) {
 
 const niceType = t => { const s = String(t || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); };
 
+// How many match points a fined case may trail by and still be chosen
+const FINE_PREFERENCE = 5;
+
 // Twin for every open finding, plus the account's headline twin
 export function caseTwins(pending, completed, library, ctx = {}) {
   const byFix = {}, used = {};
   for (const f of pending) {
     if (f.severity === 'low') continue;
-    let best = null;
+    const hits = [];
     for (const c of library) {
       const m = matchCase(f, c, ctx);
-      if (!m || m.score < TWIN_MIN) continue;
-      if (!best || m.score > best.match || (m.score === best.match && (c.penalty || 0) > (best.c.penalty || 0))) best = { c, match: m.score, reasons: m.reasons };
+      if (m && m.score >= TWIN_MIN) hits.push({ c, match: m.score, reasons: m.reasons });
     }
-    if (!best) continue;
+    if (!hits.length) continue;
+    // Strongest match; a case with a published fine wins if it matches about as well,
+    // so the twin shows a real figure wherever one exists
+    const top = Math.max(...hits.map(h => h.match));
+    const near = hits.filter(h => h.match >= top - FINE_PREFERENCE);
+    const best = near.filter(h => h.c.penalty).sort((a, b) => b.match - a.match || b.c.penalty - a.c.penalty)[0]
+      || near.sort((a, b) => b.match - a.match)[0];
     byFix[f.id] = { caseId: best.c.id, match: best.match, reasons: best.reasons };
     used[best.c.id] = best.c;
   }
@@ -158,7 +178,7 @@ export function caseTwins(pending, completed, library, ctx = {}) {
   }
   if (hero) {
     const c = used[hero.caseId];
-    const related = f => c.types.includes(f.fixType);
+    const related = f => c.types.some(t => sameIssueTypes(f.fixType).includes(t));
     const open = pending.filter(related), done = completed.filter(related);
     hero.openFixIds = open.map(f => f.id);
     hero.doneFixIds = done.map(f => f.id);
