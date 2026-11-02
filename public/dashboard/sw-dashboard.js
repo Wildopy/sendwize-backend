@@ -351,15 +351,26 @@
         : plural(c.alsoAsa, 'advertising finding') + ' on practices the CMA has fined for.';
       cb += ' The CMA can now fine directly.';
       if (c.fines) cb += ' Its published fines ' + (c.fines.sameIssue ? 'for these issues' : 'so far') + ' run ' + range(c.fines.low, c.fines.high) + (c.fines.cases.length ? ', most recently ' + caseLink(c.fines.cases[0]) : '') + '.';
-      if (c.refunds && c.refunds.priced) cb += ' Refunding customers could add about <b>' + gbpK(c.refunds.mostLikely) + '</b>.';
-      else if (c.refunds && c.refunds.needInputs) cb += ' Add campaign figures to price refunds.';
       rows.push(row('cma', 'CMA', 'Consumer law', c.max && c.max.amount ? 'Up to ' + gbpK(c.max.amount) : 'Up to 10% of turnover', cb, c.count ? 'CMA' : 'ASA', c.leadFixId));
     }
     if (a.count) {
       var ab = plural(a.count, 'advertising finding') + '. An upheld ruling is published under your name and the ad has to come down. Repeat cases go to Trading Standards.';
-      if (a.withdrawal && a.withdrawal.priced) ab += ' Pulling the ads could cost about <b>' + gbpK(a.withdrawal.mostLikely) + '</b>.';
       if (a.example) ab += ' Recent ruling on the same issue: ' + caseLink(a.example) + '.';
       rows.push(row('asa', 'ASA', 'Advertising', 'No fines', ab, 'ASA', null));
+    }
+    // Business cost: what the findings could cost in sales and refunds, apart
+    // from any fine. Added up with each other, never with the fines above.
+    var parts = [], total = 0, unpriced = 0;
+    if (a.withdrawal) { if (a.withdrawal.priced) { parts.push('pulling ads ' + gbpK(a.withdrawal.mostLikely)); total += a.withdrawal.mostLikely; } unpriced += a.withdrawal.needInputs || 0; }
+    if (c.refunds) { if (c.refunds.priced) { parts.push('refunding customers ' + gbpK(c.refunds.mostLikely)); total += c.refunds.mostLikely; } unpriced += c.refunds.needInputs || 0; }
+    var com = D.commercial;
+    if (com && com.count && com.totalHigh) { var cm = Math.round((com.totalLow + com.totalHigh) / 2); parts.push(plural(com.count, 'list or partner issue') + ' ' + gbpK(cm)); total += cm; }
+    var al = D.alreadyLost;
+    if (parts.length || unpriced || (al && al.amount)) {
+      var bb = parts.length ? 'Apart from any fine: ' + parts.join(', ') + '.' : 'What these findings could cost in lost sales and refunds, apart from any fine.';
+      if (unpriced) bb += ' ' + plural(unpriced, 'advertising or consumer law finding') + ' not priced yet. <a class="sw-link" href="' + esc(link('/profile.html')) + '">Add your usual campaign budget and sales</a> to price ' + (unpriced === 1 ? 'it' : 'them') + '.';
+      if (al && al.amount) bb += ' Already lost: ' + gbpK(al.amount) + ' in list value to extra unsubscribes.';
+      rows.push(row('biz', 'Business', 'Lost sales and refunds', total ? (unpriced ? 'At least ' : 'About ') + gbpK(total) : 'Not priced yet', bb, null, null));
     }
     if (!rows.length) return '<div class="sw-bd-n">£0</div><div class="sw-hs">Nothing open that the ICO, CMA or ASA acts on.</div>';
     return rows.join('');
@@ -381,7 +392,7 @@
         (lv.next ? '<div class="sw-bd-bar"><i style="width:' + toNext + '%"></i></div><div class="sw-note">' + (lv.next[0] - v) + ' points to <b>' + esc(lv.next[1]) + '</b></div>' : '<div class="sw-note">Top level. Keep it there.</div>');
     return '<div class="sw-board">' +
       '<div class="sw-bd-col sw-bd-score">' + score + '</div>' +
-      (reg != null ? '<div class="sw-bd-col sw-bd-risk"><div class="sw-hl">Your risk by regulator</div>' + reg + '<div class="sw-note sw-rr-foot">Each regulator is shown on its own, from published cases. Not a prediction. ' + algoLink('How we work this out') + '</div></div>' :
+      (reg != null ? '<div class="sw-bd-col sw-bd-risk"><div class="sw-hl">Your risk</div>' + reg + '<div class="sw-note sw-rr-foot">Each figure is shown on its own and never added to the others. From published cases, not a prediction. ' + algoLink('How we work this out') + '</div></div>' :
       '<div class="sw-bd-col"><div class="sw-hl">ICO fine risk</div><div class="sw-bd-n">' + (e.totalHigh && e.totalMostLikely ? cu('s_ico', e.totalMostLikely, 'about') : e.totalHigh ? range(e.totalLow, e.totalHigh) : '£0') + '</div>' +
         '<div class="sw-hs">' + (e.totalHigh ? 'Likely ' + range(e.totalLow, e.totalHigh) + ', from similar published fines. ' : 'Nothing open that the ICO fines for. ') +
         (other ? other + ' advertising or consumer law finding' + (other > 1 ? 's' : '') + ' on top. ' : '') +
