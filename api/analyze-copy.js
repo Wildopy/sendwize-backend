@@ -375,6 +375,7 @@ EVERY violation MUST have a requiresEvidence boolean. Do not omit this field.
 
 SECTION 12 -- CUSTOMER-FACING WORDING
 The "issue", "recommendation", "enforcement_note" and "summary" fields are shown to customers. Internal words in this prompt such as "violation" and "breach" describe your task; they must not appear in those fields.
+In those fields write normal sentences: never use "--" or dashes as punctuation, and no markdown.
 ${LEGAL_RULES}
 `;
 

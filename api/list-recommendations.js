@@ -124,7 +124,7 @@ export default async function handler(req, res) {
     // 2. Fallback: legacy List_Opportunities rows
     if (!opportunities.length) {
       const legacy = await atGet('List_Opportunities', `AND({UserID}='${userId}',{Status}='Open')`, 'sort[0][field]=EstimatedValue&sort[0][direction]=desc', 50);
-      opportunities = legacy.records.map(o => {
+      opportunities = legacy.records.filter(o => (Number(o.fields.EstimatedValue) || 0) > 0).map(o => {
         const f = o.fields; const rate = f.DecayRate || 2.5; const d = decay(f.EstimatedValue || 0, rate, f.CreatedDate);
         return { id: o.id, type: f.OpportunityType || '', description: f.Description || '', estimatedValue: f.EstimatedValue || 0, currentValue: d.currentValue, decayRate: rate, recommendedAction: f.RecommendedAction || '', status: f.Status || 'Open', createdDate: f.CreatedDate || null, monthsOld: d.monthsOld };
       });

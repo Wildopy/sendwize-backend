@@ -85,6 +85,8 @@
   var CONF = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' };
   function confChip(c) { return c ? '<span class="sw-conf ' + esc(c) + '">' + esc(CONF[c] || c) + '</span>' : ''; }
   function date(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  // AI text: drop markdown and double hyphens so it reads as plain prose
+  function plain(s) { return String(s == null ? '' : s).replace(/\*\*|__/g, '').replace(/^#+\s*/gm, '').replace(/\s+--+\s+/g, ', ').replace(/--+/g, ', '); }
   function nice(s) { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
   function $(sel, el) { return (el || root).querySelector(sel); }
   function link(path, query) { var u = API + path + '?' + (userId ? 'userId=' + encodeURIComponent(userId) : '') + (query ? '&' + query : ''); return window.SW && SW.withToken ? SW.withToken(u) : u; }
@@ -536,7 +538,7 @@
     var body = top.length ? top.map(function (f, i) {
       var r = removes(f);
       return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
-        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(f.description) + '</div></div>' +
+        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(plain(f.description)) + '</div></div>' +
         effortChip(f) + '<span class="sw-nx-v">' + (pts(f) ? '<b>+' + pts(f) + ' pts</b>' : '') + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
     }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/send-verdict.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
@@ -574,10 +576,12 @@
 
   function listValueCard() {
     var v = D.listValue;
-    var body = v && v.hasData && v.total ? '<div class="sw-hn">' + gbpK(v.total) + '</div><div class="sw-hs">Unrealised value in your lists.</div>' +
-      (v.top || []).map(function (o) { return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(o.title || o.name || nice(o.type)) + '</div></div><div class="sw-row-v">' + gbpK(o.value || o.estimatedValue || 0) + '</div></div>'; }).join('') +
+    var worth = function (o) { return Number(o.currentValue != null ? o.currentValue : o.value || o.estimatedValue) || 0; };
+    var top = ((v && v.top) || []).filter(function (o) { return worth(o) >= 1; });
+    var body = v && v.hasData && v.total >= 1 && top.length ? '<div class="sw-hn">' + gbpK(v.total) + '</div><div class="sw-hs">Unrealised value in your lists.</div>' +
+      top.map(function (o) { return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(o.title || o.name || nice(o.type) || 'Opportunity') + '</div>' + (o.listName ? '<div class="sw-row-s">' + esc(o.listName) + '</div>' : '') + '</div><div class="sw-row-v">' + gbpK(worth(o)) + '</div></div>'; }).join('') +
       (v.basis ? '<div class="sw-note">' + esc(v.basis) + '</div>' : '')
-      : '<div class="sw-empty">Upload a list in List health to see where the value is.</div>';
+      : '<div class="sw-empty">' + (v && v.hasData ? 'No value worth chasing in your latest list checks.' : 'Upload a list in List health to see where the value is.') + '</div>';
     return '<div class="sw-card sw-pad"><div class="sw-lbl">List value</div>' + body + '</div>';
   }
 
@@ -647,7 +651,7 @@
       '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') +
         (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + (c.source === 'curated' ? esc(c.regulator) + ' enforcement page' : 'Read the ruling') + '</a>' : '') + '</div>' +
       '<div class="sw-vs-mid" aria-hidden="true">vs</div>' +
-      '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(f.description) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
+      '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(plain(f.description)) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
       stakes(c, f) +
       '<div class="sw-dr-sec"><div class="sw-lbl">Why they match</div><div class="sw-chips">' + tw.t.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div></div>' +
       '<div class="sw-dr-sec"><div class="sw-lbl">What you have already done differently</div>' + (done.length ? done.map(function (x) {
@@ -717,7 +721,7 @@
     var head = '<div class="sw-fx-head" data-act="expand" role="button" tabindex="0" aria-expanded="' + open + '">' +
       (st.whatif ? '<label class="sw-pick" data-act="noop"><input type="checkbox" data-pick="' + esc(f.id) + '"' + (st.picked[f.id] ? ' checked' : '') + ' aria-label="Include in what-if"></label>' : '') +
       '<span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body">' +
-      (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(f.description) + '">' + esc(f.description) + '</div>') +
+      (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(plain(f.description)) + '">' + esc(plain(f.description)) + '</div>') +
       '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : f.exposure && f.exposure.marketingCost && f.exposure.marketingCost.available ? ', ~' + gbpK(f.exposure.marketingCost.mostLikely) + ' to you' : ', ' + esc(tw.c.regulator) + ' ruling') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
       valueChip(f) +
       (open || st.whatif ? '' : '<span class="sw-fx-quick"><button class="sw-btn o" data-act="quickfix" title="Open it with the fix written for you">Fix it</button><button class="sw-btn ok" data-act="done" data-src="' + (f.improvedOnRerun ? 'improved_on_rerun' : 'manual') + '" title="Mark fixed" aria-label="Mark fixed">✓</button></span>') +
@@ -730,7 +734,7 @@
       : d && d.loading ? '<div class="sw-draft"><div class="sw-ld"><div class="sw-spin"></div>Writing the fix…</div></div>'
       : '<div class="sw-draft empty"><div><div class="sw-row-t">Want the fix written for you?</div><div class="sw-row-s">Steps plus text you can paste straight into your email, form or page.</div></div><button class="sw-btn g" data-act="draft">Write the fix for me</button></div>';
     return '<div class="sw-fx open" data-id="' + esc(f.id) + '">' + head + '<div class="sw-fx-more">' +
-      '<div class="sw-fx-desc">' + esc(f.description) + '</div>' +
+      '<div class="sw-fx-desc">' + esc(plain(f.description)) + '</div>' +
       '<div class="sw-fx-meta">' + (f.tool ? '<span class="sw-fx-tool">' + esc(f.tool) + '</span> · ' : '') + esc(nice(f.severity)) + (f.createdDate ? ' · found ' + esc(date(f.createdDate)) : '') + '</div>' +
       (f.improvedOnRerun ? '<div class="sw-improved">A re-run shows this has improved. Confirm to get full credit.</div>' : '') + expLine(f) +
       (tw ? '<div class="sw-twin-mini"><span><b>Case Twin:</b> ' + esc(tw.c.name) + ' · ' + outcome(tw.c) + ' · ' + tw.t.match + '% match</span><button class="sw-link" data-act="twin">Side by side</button></div>' : '') +
@@ -758,12 +762,21 @@
   }
 
   // ── deferred sections ──
+  // The briefing may arrive as markdown: bold stays bold, the title line goes
+  function briefingHtml(t) {
+    var lines = String(t).replace(/\r/g, '').split('\n');
+    if (lines.length > 1 && /^\s*(#+\s*|\*\*)?\s*weekly[^\n]*briefing/i.test(lines[0])) lines.shift();
+    var h = esc(lines.join('\n').trim().replace(/\s+--+\s+/g, ', ').replace(/^#+\s*/gm, ''))
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*\*/g, '')
+      .replace(/^\s*[-*]\s+/gm, '• ');
+    return h.replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
+  }
   async function loadBriefing() {
     var el = $('#sw-brf');
     try {
       var b = await api('/api/data?action=briefing&userId=' + encodeURIComponent(userId));
       if (!el) return;
-      el.innerHTML = b.briefing ? esc(b.briefing).replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>') : '<div class="sw-empty">Your briefing appears once you have run a check.</div>';
+      el.innerHTML = b.briefing ? briefingHtml(b.briefing) : '<div class="sw-empty">Your briefing appears once you have run a check.</div>';
       if (b.briefing && b.briefing.length > 320) $('#sw-brf-more').hidden = false; else el.classList.remove('clip');
     } catch (e) { if (el) el.innerHTML = '<div class="sw-empty">Briefing unavailable right now.</div>'; }
   }
@@ -775,7 +788,7 @@
       var ds = d.dossiers || [];
       el.className = '';
       el.innerHTML = ds.length ? '<div class="sw-cards">' + ds.map(function (c) {
-        return '<a class="sw-tile" style="display:block;text-decoration:none;color:inherit" href="' + esc(link('/campaign-defence.html', 'dossierId=' + encodeURIComponent(c.dossierId))) + '"><div class="sw-tile-k">' + esc(c.defenceStatus || c.status) + (c.needsReview ? ' · needs review' : '') + '</div><div class="sw-tile-t">' + esc(c.campaignTitle) + '</div>' +
+        return '<a class="sw-tile" style="display:block;text-decoration:none;color:inherit" href="' + esc(link('/campaign-defence.html', 'dossierId=' + encodeURIComponent(c.dossierId))) + '"><div class="sw-tile-k">' + esc(nice(c.defenceStatus || c.status)) + (c.needsReview ? ' · needs review' : '') + '</div><div class="sw-tile-t">' + esc(c.campaignTitle) + '</div>' +
           '<div class="sw-prog"><i style="width:' + Math.max(0, Math.min(100, c.modulesPct || 0)) + '%"></i></div><div class="sw-note">' + (c.modulesPct || 0) + '% evidence recorded' + (c.launchDate ? ' · launches ' + esc(date(c.launchDate)) : '') + '</div></a>';
       }).join('') + '</div>' : '<div class="sw-empty">No campaigns yet. Start one in Campaign Defence to keep your evidence in one place.</div>';
     } catch (e) { el.className = ''; el.innerHTML = '<div class="sw-empty">Campaigns unavailable right now.</div>'; }
@@ -832,7 +845,7 @@
 
   function drawWhy(x) {
     var e = x.exposure || {}, f = x.fix || {};
-    var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Why this number?</div><div class="sw-h2">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(f.description) + '</div></div>';
+    var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Why this number?</div><div class="sw-h2">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(plain(f.description)) + '</div></div>';
     if (e.category === 'ICO' && e.realisticHigh) {
       var span = (e.frameHigh - e.frameLow) || 1;
       var l = ((e.realisticLow - e.frameLow) / span) * 100, w = ((e.realisticHigh - e.realisticLow) / span) * 100;
@@ -1042,6 +1055,10 @@
   function gotoFix(id) {
     closeLayers();
     st.open[id] = true; st.area = null; st.twinOnly = false; if (st.filter !== 'all') st.filter = 'all';
+    // Only the riskiest area is open by default and lanes show three rows, so
+    // open this finding's area in full or the row is never drawn
+    var f = (D.fixes.pending || []).filter(function (x) { return x.id === id; })[0];
+    if (f) { var g = groupOf(f); st.lane[g] = true; st.laneMore[g] = true; }
     redrawFixes();
     var row = root.querySelector('.sw-fx[data-id="' + id + '"]');
     if (row) { row.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'center' }); row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600); }
