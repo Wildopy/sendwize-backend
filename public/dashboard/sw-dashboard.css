@@ -305,7 +305,7 @@ a.sw-link{text-decoration:none}
 .sw-open.sw-areas .sw-row{background:var(--w)}
 @media(max-width:680px){.sw-quiet{grid-template-columns:1fr}.sw-quiet>.sw-card{border-right:none;margin-right:0;padding-right:0;border-bottom:1px solid var(--b)}.sw-quiet>.sw-card:last-child{border-bottom:none}}
 /* Scoreboard: the three central figures */
-.sw-board{display:grid;grid-template-columns:260px 1fr 1fr;gap:0;margin-bottom:18px;background:var(--w);border:1px solid var(--b);border-radius:16px;box-shadow:var(--shm);overflow:hidden}
+.sw-board{display:grid;grid-template-columns:240px minmax(0,1.6fr) minmax(0,1fr);gap:0;margin-bottom:18px;background:var(--w);border:1px solid var(--b);border-radius:16px;box-shadow:var(--shm);overflow:hidden}
 .sw-bd-col{padding:22px 26px;border-left:1px solid var(--b)}
 .sw-bd-col:first-child{border-left:none}
 .sw-bd-score{display:flex;flex-direction:column;align-items:center;text-align:center;background:linear-gradient(180deg,#fff,#fbfaf8)}
@@ -326,3 +326,20 @@ a.sw-link{text-decoration:none}
 .sw-nx-v b{font-size:13px;color:var(--o)}.sw-nx-v small{font-size:11px;color:var(--g);font-weight:700}
 @media(max-width:900px){.sw-board{grid-template-columns:1fr 1fr}.sw-bd-score{grid-column:1/-1;border-bottom:1px solid var(--b)}.sw-bd-col:nth-child(2){border-left:none}}
 @media(max-width:600px){.sw-board{grid-template-columns:1fr}.sw-bd-col{border-left:none;border-top:1px solid var(--b)}.sw-bd-score{border-top:none;border-bottom:none}.sw-bd-n{font-size:28px}}
+
+/* Risk by regulator, in the scoreboard */
+.sw-bd-risk .sw-hl{margin-bottom:4px}
+.sw-rr{padding:12px 0;border-bottom:1px solid var(--b)}
+.sw-rr:last-of-type{border-bottom:none}
+.sw-rr-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.sw-rr-k{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:5px;margin-right:8px;vertical-align:2px}
+.sw-rr.ico .sw-rr-k{background:#fee2e2;color:#991b1b}.sw-rr.cma .sw-rr-k{background:#fef3c7;color:#92400e}.sw-rr.asa .sw-rr-k{background:var(--purb);color:var(--pur)}
+.sw-rr-w{font-size:13px;font-weight:600;color:var(--t)}
+.sw-rr-n{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap;line-height:1.15}
+.sw-rr.asa .sw-rr-n{font-size:15px;color:var(--tm)}
+.sw-rr-s{font-size:11.5px;color:var(--tm);margin-top:4px;line-height:1.55}
+.sw-rr-s .sw-link{font-size:11.5px;margin-left:6px}
+.sw-rr-case{color:inherit;text-decoration:underline;text-decoration-color:var(--bm);text-underline-offset:2px}.sw-rr-case:hover{color:var(--o)}
+.sw-rr-foot{margin-top:6px}.sw-rr-foot .sw-link{font-size:10px}
+@media(max-width:900px){.sw-bd-risk{grid-column:1/-1}.sw-bd-risk+.sw-bd-col{grid-column:1/-1;border-left:none;border-top:1px solid var(--b)}}
+@media(max-width:600px){.sw-rr-h{flex-direction:column;gap:2px}.sw-rr-n{font-size:21px}}

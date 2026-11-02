@@ -328,10 +328,47 @@
     return n;
   }
 
-  // The scoreboard: score, fine risk and risk cleared, side by side at the top
+  // Risk by regulator for the scoreboard: ICO fine, CMA cap and published
+  // fines, ASA consequences. Each regulator keeps its own figure; they are
+  // never added together because they measure different things.
+  function monthYear(s) { s = String(s || ''); if (s.length <= 4) return s; var d = new Date(s.length === 7 ? s + '-01' : s); return isNaN(d) ? s : d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }); }
+  function caseLink(c) { var t = esc(c.name) + ', ' + esc(monthYear(c.date)); return c.url ? '<a class="sw-rr-case" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + t + '</a>' : t; }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+  function regRisk(e) {
+    var r = e.regulators;
+    if (!r) return null;
+    function row(cls, k, what, fig, body, flt, id) {
+      return '<div class="sw-rr ' + cls + '"><div class="sw-rr-h"><div><span class="sw-rr-k">' + k + '</span><span class="sw-rr-w">' + what + '</span></div><div class="sw-rr-n">' + fig + '</div></div>' +
+        '<div class="sw-rr-s">' + body + (flt ? ' <button class="sw-link" data-act="reg-flt" data-f="' + flt + '">See them</button>' : '') + (id ? ' <button class="sw-link" data-act="why" data-id="' + esc(id) + '">Why?</button>' : '') + '</div></div>';
+    }
+    var i = r.ico, c = r.cma, a = r.asa, rows = [];
+    if (i.count) rows.push(row('ico', 'ICO', 'Data protection and marketing consent',
+      i.mostLikely ? cu('s_ico', i.mostLikely, 'about') : range(i.low, i.high),
+      plural(i.count, 'finding') + '. Likely ' + range(i.low, i.high) + ', from similar published fines.', 'ICO', i.leadFixId));
+    var cmaN = c.count + c.alsoAsa;
+    if (cmaN) {
+      var cb = c.count ? plural(c.count, 'consumer law finding') + (c.alsoAsa ? ', plus ' + plural(c.alsoAsa, 'advertising finding') + ' on practices the CMA has fined for' : '') + '.'
+        : plural(c.alsoAsa, 'advertising finding') + ' on practices the CMA has fined for.';
+      cb += ' The CMA can now fine directly.';
+      if (c.fines) cb += ' Its published fines ' + (c.fines.sameIssue ? 'for these issues' : 'so far') + ' run ' + range(c.fines.low, c.fines.high) + (c.fines.cases.length ? ', most recently ' + caseLink(c.fines.cases[0]) : '') + '.';
+      if (c.refunds && c.refunds.priced) cb += ' Refunding customers could add about <b>' + gbpK(c.refunds.mostLikely) + '</b>.';
+      else if (c.refunds && c.refunds.needInputs) cb += ' Add campaign figures to price refunds.';
+      rows.push(row('cma', 'CMA', 'Consumer law', c.max && c.max.amount ? 'Up to ' + gbpK(c.max.amount) : 'Up to 10% of turnover', cb, c.count ? 'CMA' : 'ASA', c.leadFixId));
+    }
+    if (a.count) {
+      var ab = plural(a.count, 'advertising finding') + '. An upheld ruling is published under your name and the ad has to come down. Repeat cases go to Trading Standards.';
+      if (a.withdrawal && a.withdrawal.priced) ab += ' Pulling the ads could cost about <b>' + gbpK(a.withdrawal.mostLikely) + '</b>.';
+      if (a.example) ab += ' Recent ruling on the same issue: ' + caseLink(a.example) + '.';
+      rows.push(row('asa', 'ASA', 'Advertising', 'No fines', ab, 'ASA', null));
+    }
+    if (!rows.length) return '<div class="sw-bd-n">£0</div><div class="sw-hs">Nothing open that the ICO, CMA or ASA acts on.</div>';
+    return rows.join('');
+  }
+
+  // The scoreboard: score, risk by regulator and risk cleared, side by side at the top
   function scoreboard() {
     var s = D.score, e = D.exposure, ra = D.riskAddressed || {}, n = D.counts || {};
-    var other = (e.asaPending || 0) + (e.cmaPending || 0);
+    var other = (e.asaPending || 0) + (e.cmaPending || 0), reg = regRisk(e);
     var fresh = !((n.pending || 0) + (n.completed || 0)) && !(D.listValue && D.listValue.hasData);
     var v = s.value || 0, lv = level(v), c = 2 * Math.PI * 52, off = c * (1 - Math.max(0, Math.min(100, v)) / 100);
     var toNext = lv.next ? Math.round((v - lv.from) / (lv.next[0] - lv.from) * 100) : 100;
@@ -344,12 +381,13 @@
         (lv.next ? '<div class="sw-bd-bar"><i style="width:' + toNext + '%"></i></div><div class="sw-note">' + (lv.next[0] - v) + ' points to <b>' + esc(lv.next[1]) + '</b></div>' : '<div class="sw-note">Top level. Keep it there.</div>');
     return '<div class="sw-board">' +
       '<div class="sw-bd-col sw-bd-score">' + score + '</div>' +
+      (reg != null ? '<div class="sw-bd-col sw-bd-risk"><div class="sw-hl">Your risk by regulator</div>' + reg + '<div class="sw-note sw-rr-foot">Each regulator is shown on its own, from published cases. Not a prediction. ' + algoLink('How we work this out') + '</div></div>' :
       '<div class="sw-bd-col"><div class="sw-hl">ICO fine risk</div><div class="sw-bd-n">' + (e.totalHigh && e.totalMostLikely ? cu('s_ico', e.totalMostLikely, 'about') : e.totalHigh ? range(e.totalLow, e.totalHigh) : '£0') + '</div>' +
         '<div class="sw-hs">' + (e.totalHigh ? 'Likely ' + range(e.totalLow, e.totalHigh) + ', from similar published fines. ' : 'Nothing open that the ICO fines for. ') +
         (other ? other + ' advertising or consumer law finding' + (other > 1 ? 's' : '') + ' on top. ' : '') +
-        (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">Why?</button>' : '') + '</div></div>' +
+        (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">Why?</button>' : '') + '</div></div>') +
       '<div class="sw-bd-col"><div class="sw-hl">Risk cleared</div><div class="sw-bd-n good">' + cu('s_ra', cleared, 'gbpK') + '</div>' +
-        '<div class="sw-bd-bar good"><i style="width:' + pct + '%"></i></div><div class="sw-note">' + pct + '% of your fine risk cleared · ' + gbpK(ra.monthTotal || 0) + ' this month</div>' +
+        '<div class="sw-bd-bar good"><i style="width:' + pct + '%"></i></div><div class="sw-note">' + pct + '% of your ICO fine risk cleared · ' + gbpK(ra.monthTotal || 0) + ' this month</div>' +
         '<div class="sw-bd-chips"><span class="sw-chip">' + (n.completed || 0) + ' fixed · ' + (n.pending || 0) + ' to go</span>' + (streak ? '<span class="sw-chip streak">' + streak + '-week fixing streak</span>' : '') + '</div></div>' +
       '<button class="sw-sum-more" data-act="detail" aria-expanded="' + st.detail + '">' + (st.detail ? 'Hide the breakdown ⌃' : 'See the full breakdown ⌄') + '</button></div>';
   }
@@ -1017,6 +1055,7 @@
       case 'do-dismiss': var r = overlay.querySelector('input[name=sw-dis]:checked'); if (r) dismiss(id, r.value, t); break;
       case 'save-band': saveBand(t); break;
       case 'save-gate': saveGate(t); break;
+      case 'reg-flt': st.filter = t.getAttribute('data-f'); st.area = null; st.twinOnly = false; redrawFixes(); $('#sw-fixes').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); break;
       case 'flt': st.filter = t.getAttribute('data-f'); $('#sw-fixes').innerHTML = fixesSection(); break;
       case 'ra': st.raMode = t.getAttribute('data-m'); rerender(); break;
       case 'hist': st.histTab = t.getAttribute('data-k'); root.querySelectorAll('[data-act=hist]').forEach(function (b) { b.classList.toggle('on', b === t); }); loadHistory(); break;

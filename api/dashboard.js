@@ -1,5 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // SENDWIZE — dashboard.js v1.4
+// v1.5: exposure.regulators, the risk by regulator (ICO fine, CMA cap and
+//   published fines, ASA consequences) for the dashboard headline.
 // v1.4: alerts from _memory.js (consent lapsed since the last upload,
 //   complaints, new rulings touching a list), shown as "Sendwize noticed".
 // GET /api/dashboard   (signed-in member)
@@ -159,6 +161,7 @@ export default async function handler(req, res) {
         asaPending: fx.categoryCounts?.pending?.asa || 0,
         cmaPending: fx.categoryCounts?.pending?.cma || 0,
         cmaMax: fx.exposure?.cmaMax || null,
+        regulators: fx.exposure?.regulators || null,
         basis: fx.exposure?.basis || '',
         legalMax: fx.actioned?.legalMax || '',
         duaaWarning: fx.actioned?.duaaWarning || '',
