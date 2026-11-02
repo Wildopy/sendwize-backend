@@ -46,7 +46,7 @@
 // legal advice. Weights and case anchors are for the founder to review.
 // ─────────────────────────────────────────────────────────────
 import { createHash } from 'node:crypto';
-import { CASES, LIBRARY_STATS, caseOutcome, sameIssueTypes, relatedTypes, subjectsOf, channelsOf, subjectFit, sharedSubjects } from './_case-library.js';
+import { CASES, LIBRARY_STATS, BROAD_TYPES, caseOutcome, sameIssueTypes, relatedTypes, subjectsOf, channelsOf, subjectFit, sharedSubjects } from './_case-library.js';
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
 // Keys are compared with spaces removed and hyphens as en dashes, so the
@@ -989,6 +989,80 @@ export function cmaStatutoryMax(revenueBand) {
   const t = BAND_TURNOVER[normaliseBand(revenueBand)];
   if (t === null) return { amount: null, label: 'Higher of £300,000 or 10% of global turnover' };
   return { amount: Math.max(300000, Math.round(t * 0.1)), label: `Up to £${Math.max(300000, Math.round(t * 0.1)).toLocaleString('en-GB')} for a business your size (higher of £300k or 10% of turnover, DMCCA 2024)` };
+}
+
+// An exact turnover gives the real cap: the higher of £300k or 10% of it
+export function cmaMaxFor(revenueBand, turnover) {
+  const t = num(turnover);
+  if (!t) return cmaStatutoryMax(revenueBand);
+  const amount = Math.max(300000, Math.round(t * 0.1));
+  return { amount, label: `Up to £${amount.toLocaleString('en-GB')} for a business your size (higher of £300k or 10% of turnover, DMCCA 2024)` };
+}
+
+// ── Risk by regulator: one entry per regulator for the headline ──
+// ICO: the clustered fine figure. CMA: no modelled fine (the CMA has only
+// fined a handful of businesses under DMCCA 2024, all far larger than most
+// customers), so the cap for the customer's size plus the fines it has
+// published for the same issues, and refunds from the customer's own
+// figures. ASA: never £ for a fine, because it has none; the count, what an
+// upheld ruling means, published rulings on the same issues and the cost
+// of pulling the ad. Never added together.
+const caseRef = c => ({ name: c.name, date: c.date, url: c.url || null, penalty: c.penalty || null });
+const newest = (a, b) => String(b.date).localeCompare(String(a.date));
+function matchingCases(regulator, fixes) {
+  const types = new Set(fixes.flatMap(f => sameIssueTypes(f.fixType)));
+  return CASES.filter(c => c.regulator === regulator && c.types.some(t => types.has(t)));
+}
+function costTotal(fixes) {
+  const t = marketingCostTotals(fixes);
+  return t.count ? { priced: t.priced, needInputs: t.needInputs, low: t.low, mostLikely: t.mostLikely, high: t.high } : null;
+}
+export function regulatorOverview(pending, revenueBand, inputs = {}) {
+  const by = cat => pending.filter(f => f.exposure?.category === cat);
+  const ico = clusterExposure(pending);
+  const icoFixes = by('ICO'), asaFixes = by('ASA'), cmaFixes = by('CMA');
+
+  // CMA fines on the same issues as any open ASA or CMA finding
+  const cmaFined = CASES.filter(c => c.regulator === 'CMA' && c.penalty);
+  const finedTypes = new Set(cmaFined.flatMap(c => c.types));
+  const asaAlsoCma = asaFixes.filter(f => sameIssueTypes(f.fixType).some(t => finedTypes.has(t)));
+  const cmaPool = [...cmaFixes, ...asaAlsoCma];
+  let fines = matchingCases('CMA', cmaPool).filter(c => c.penalty);
+  const sameIssue = fines.length > 0;
+  if (!fines.length && cmaFixes.length) fines = cmaFined;
+  fines = [...fines].sort(newest);
+  const amounts = fines.map(c => c.penalty);
+
+  // Example ruling: a specific issue (countdown timers, #ad) beats a broad one
+  const rulings = matchingCases('ASA', asaFixes).sort(newest);
+  const specific = matchingCases('ASA', asaFixes.filter(f => !BROAD_TYPES.has(f.fixType))).filter(c => !c.types.every(t => BROAD_TYPES.has(t))).sort(newest);
+  const rank = { high: 3, medium: 2, low: 1 };
+  const topReferral = asaFixes.map(f => f.exposure?.referralRisk).filter(Boolean).sort((a, b) => rank[b] - rank[a])[0] || null;
+
+  return {
+    ico: {
+      count: icoFixes.length,
+      low: ico.totalLow, high: ico.totalHigh, mostLikely: ico.totalMostLikely, confidence: ico.confidence,
+      leadFixId: ico.clusters[0]?.leadFixId || null,
+    },
+    cma: {
+      count: cmaFixes.length,
+      alsoAsa: asaAlsoCma.length,
+      max: cmaMaxFor(revenueBand, inputs.turnover),
+      fines: amounts.length ? { count: amounts.length, low: Math.min(...amounts), high: Math.max(...amounts), sameIssue, cases: fines.slice(0, 3).map(caseRef) } : null,
+      refunds: costTotal(cmaFixes),
+      leadFixId: (cmaFixes[0] || asaAlsoCma[0])?.id || null,
+    },
+    asa: {
+      count: asaFixes.length,
+      topReferral,
+      highReferral: asaFixes.filter(f => f.exposure?.referralRisk === 'high').length,
+      rulings: rulings.length,
+      example: (specific[0] || rulings[0]) ? caseRef(specific[0] || rulings[0]) : null,
+      withdrawal: costTotal(asaFixes),
+      leadFixId: asaFixes[0]?.id || null,
+    },
+  };
 }
 
 // ── Attention likelihood (shown beside the range, never multiplied in) ──

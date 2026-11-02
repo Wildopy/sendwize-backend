@@ -79,7 +79,7 @@ import {
   normaliseBand, normaliseSector, getRealisticMidpoint, buildExposureForFix,
   refineExposure, evidenceHash, clusterExposure, riskAddressed, computeScore,
   attentionLikelihood, cmaStatutoryMax, DISMISS_REASONS, formatFixRecord,
-  profileContext, marketingCostTotals,
+  profileContext, marketingCostTotals, regulatorOverview,
   ICO_LEGAL_MAX, NOT_LEGAL_ADVICE, COMMERCIAL_DISCLAIMER, DUAA_WARNING,
 } from './_exposure.js';
 
@@ -202,6 +202,7 @@ async function handleGet(req, res) {
       confidence: openExposure.confidence,
       likelihood: attentionLikelihood(pendingFormatted, sector),
       cmaMax:     cmaStatutoryMax(revenueBand),
+      regulators: regulatorOverview(pendingFormatted, revenueBand, inputs),
       basis:      'Comparable published cases, grouped the way a regulator would investigate them. Not a prediction. Not legal advice.',
     },
     riskAddressed: addressed,
