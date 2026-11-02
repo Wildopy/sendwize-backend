@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Campaign Defence — Sendwize</title>
+<title>Campaign Defence | Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -214,7 +214,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="lv" id="listView">
   <div class="lv-hero">
     <div class="lv-hero-t">Your compliance evidence. Built before launch. Watched after.</div>
-    <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize links your existing compliance data, scans every page your campaign points to against your claims, and freezes the defence at approval. After launch, it monitors those pages — landing pages, offer pages, affiliate pages — and watches for regulatory enforcement that matches your claim types. If a price changes or a ruling drops, you know before a regulator asks.</div>
+    <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize links your existing compliance data, scans every page your campaign points to against your claims, and freezes the defence at approval. After launch, it monitors those pages, landing pages, offer pages, affiliate pages, and watches for regulatory enforcement that matches your claim types. If a price changes or a ruling drops, you know before a regulator asks.</div>
     <a href="#" onclick="event.preventDefault();loadDemo('true')" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--o);font-weight:600;text-decoration:none">See a demo campaign →</a>
   </div>
   <div class="lv-head">
@@ -243,7 +243,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <div class="av-card">
     <div class="av-card-t">Channels</div>
-    <div class="av-card-s">Which channels is this campaign running on? This determines what evidence Sendwize requires — consent and suppression are only needed for direct channels like email and SMS.</div>
+    <div class="av-card-s">Which channels is this campaign running on? This determines what evidence Sendwize requires, consent and suppression are only needed for direct channels like email and SMS.</div>
     <div class="ch-grid" id="chGrid">
       <label class="ch-opt on" onclick="togCh(this)"><input type="checkbox" value="email" checked>Email</label>
       <label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="sms">SMS</label>
@@ -253,12 +253,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="influencer">Influencer</label>
       <label class="ch-opt" onclick="togCh(this)"><input type="checkbox" value="landing_page">Landing Page</label>
     </div>
-    <div class="hint" id="chHint">Email selected — consent, suppression, and sender identity evidence required.</div>
+    <div class="hint" id="chHint">Email selected: consent, suppression, and sender identity evidence required.</div>
   </div>
 
   <div class="av-card">
     <div class="av-card-t">Campaign creative</div>
-    <div class="av-card-s">Paste your final copy — subject line, body, footer, ad copy. Sendwize extracts every claim that needs evidence and runs the AI compliance check automatically. This becomes an immutable snapshot at approval.</div>
+    <div class="av-card-s">Paste your final copy: subject line, body, footer, ad copy. Sendwize extracts every claim that needs evidence and runs the AI compliance check automatically. This becomes an immutable snapshot at approval.</div>
     <div class="fg"><label>Creative / copy</label><textarea id="aCopy" placeholder="Paste the full text here…" oninput="updBtn()"></textarea></div>
   </div>
 
@@ -270,7 +270,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <div class="av-card">
     <div class="av-card-t">Connected URLs</div>
-    <div class="av-card-s">Landing pages, offer pages, affiliate pages, terms pages. Each page is scanned when you assemble — pricing, urgency, fees, offer terms and ad disclosure — and checked against the claims in your creative. Site-wide issues such as cookies and privacy notices are covered by Site Sweep. Pages are then snapshotted at approval and monitored daily after launch.</div>
+    <div class="av-card-s">Landing pages, offer pages, affiliate pages, terms pages. Each page is scanned when you assemble, pricing, urgency, fees, offer terms and ad disclosure, and checked against the claims in your creative. Site-wide issues such as cookies and privacy notices are covered by Site Sweep. Pages are then snapshotted at approval and monitored daily after launch.</div>
     <div class="url-list" id="urlList"></div>
     <button class="add-url" onclick="addUrl()">+ Add URL</button>
   </div>
@@ -290,7 +290,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div class="cf-hero" id="cfH"><div class="ld"><div class="spin"></div>Loading defence…</div></div>
   <div class="cf-tabs" id="cfT"></div>
   <div id="cfP"></div>
-  <p class="disc">Information only — not legal advice. Evidence hashes provide tamper-evident timestamps but are not a legal guarantee.</p>
+  <p class="disc">Information only: not legal advice. Evidence hashes provide tamper-evident timestamps but are not a legal guarantee.</p>
 </div>
 
 </div>
@@ -342,7 +342,7 @@ function updCh(){
   if(ch.includes('email'))n.push('sender identity');
   if(ch.some(c=>['affiliate','influencer'].includes(c)))n.push('relationship verification');
   n.push('claims evidence','URL monitoring');
-  $('chHint').textContent=ch.length?ch.join(', ')+' — '+n.join(', ')+' required.':'Select at least one channel.';
+  $('chHint').textContent=ch.length?ch.join(', ')+', '+n.join(', ')+' required.':'Select at least one channel.';
   const lc=$('listCard');if(lc)lc.style.display=ch.some(c=>['email','sms'].includes(c))?'':'none';
 }
 
@@ -355,7 +355,7 @@ function updBtn(){
   if(!ch.length)missing.push('at least one channel');
   if(copy.length<10)missing.push('your campaign creative');
   b.disabled=missing.length>0;
-  if(h)h.textContent=missing.length?'Add '+missing.join(' and ')+' to continue.':'Ready — hit Assemble to run the compliance check, extract claims and scan your pages.';
+  if(h)h.textContent=missing.length?'Add '+missing.join(' and ')+' to continue.':'Ready: hit Assemble to run the compliance check, extract claims and scan your pages.';
 }
 
 // ── URLs ──
@@ -376,7 +376,7 @@ async function loadList(){
       const dl=dt?new Date(dt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
       return`<div class="lv-card" onclick="CID='${c.dossierId}';loadCF('${c.dossierId}')"><div class="lv-card-top"><span class="lv-card-title">${E(c.campaignTitle)}</span><span class="sb sb-${ds}">${ds}</span></div><div class="lv-card-owner">${E(c.ownerName||'')}</div>${ch.length?'<div class="lv-card-ch">'+ch.map(x=>'<span class="cht">'+E(x.replace(/_/g,' '))+'</span>').join('')+'</div>':''}${dl?'<div class="lv-card-date">'+dl+'</div>':''}</div>`;
     }).join('')+'</div>';
-  }catch(e){$('listC').innerHTML='<div style="color:var(--r);padding:20px">Failed — '+E(e.message)+'</div>';}
+  }catch(e){$('listC').innerHTML='<div style="color:var(--r);padding:20px">Failed: '+E(e.message)+'</div>';}
 }
 
 // ── Assemble ──
@@ -390,11 +390,11 @@ async function assemble(){
     const r=await swFetch(`${A}/api/submit-check?action=defence-assemble`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,campaignCopy:copy,listName:list,connectedUrls:urls,campaignTitle:title,ownerName:owner,channels:ch})});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();CID=d.dossierId;
-    toast(`Defence assembled — ${d.claimsExtracted} claims extracted`,'ok');
+    toast(`Defence assembled: ${d.claimsExtracted} claims extracted`,'ok');
     if(urls.length)runScan(CID); // sets SCAN before the case file renders
     loadCF(CID);
     b.disabled=false;b.textContent='Assemble defence →';
-  }catch(e){toast('Failed — '+e.message,'er');b.disabled=false;b.textContent='Assemble defence →';}
+  }catch(e){toast('Failed: '+e.message,'er');b.disabled=false;b.textContent='Assemble defence →';}
 }
 
 // ── Page scan (v11) ──
@@ -410,8 +410,8 @@ async function runScan(id){
     if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
     const t=j.totals;
     if(!t)toast('No connected URLs to scan');
-    else toast(`${t.pages} page${t.pages!==1?'s':''} scanned — ${t.findings} potential area${t.findings!==1?'s':''} requiring review`,t.findings?'':'ok');
-  }catch(e){toast('Page scan failed — '+e.message,'er');}
+    else toast(`${t.pages} page${t.pages!==1?'s':''} scanned: ${t.findings} potential area${t.findings!==1?'s':''} requiring review`,t.findings?'':'ok');
+  }catch(e){toast('Page scan failed: '+e.message,'er');}
   finally{SCAN=false;SCANID=null;if(CID===id)loadCF(id,true);}
 }
 
@@ -421,7 +421,7 @@ async function loadCF(id,keepTab){
   showCF();
   if(!keepTab){$('cfH').innerHTML='<div class="ld"><div class="spin"></div>Loading defence…</div>';$('cfT').innerHTML='';$('cfP').innerHTML='';}
   try{const r=await swFetch(`${A}/api/submit-check?action=dossier-get&dossierId=${id}&userId=${U}`);if(!r.ok)throw new Error('HTTP '+r.status);D=await r.json();renderCF(D);}
-  catch(e){$('cfH').innerHTML='<div style="color:var(--r);padding:20px">Failed — '+E(e.message)+'</div>';}
+  catch(e){$('cfH').innerHTML='<div style="color:var(--r);padding:20px">Failed: '+E(e.message)+'</div>';}
 }
 
 function renderCF(d){
@@ -471,7 +471,7 @@ function renderCF(d){
   if(needS){const si=mf.SenderIdentity||{};ev.push({l:'Sender identity',d:si.fromName?(si.fromName+' <'+si.fromEmail+'>'):'Not documented',s:si.matchesTradingName==='Yes'?'Verified':si.fromName?'Review':'Not evidenced',c:si.matchesTradingName==='Yes'?'ev-ok':si.fromName?'ev-warn':'ev-gap'});}
   for(const r of rels){const ok=r.type==='affiliate'?r.consentVerified:r.article26Confirmed;ev.push({l:(r.type==='affiliate'?'Affiliate':'Partner')+': '+r.name,d:r.type==='affiliate'?(r.consentVerified?'Consent chain verified':'Consent not verified'):(r.article26Confirmed?'Art 26 confirmed':'No Art 26 agreement'),s:ok?'Verified':'Gap',c:ok?'ev-ok':'ev-gap'});}
 
-  P+=`<div class="cf-panel on" id="tab-evidence"><div class="sec"><div class="sec-t">Evidence <span class="cnt">${ev.length}</span></div>${ev.map(e=>`<div class="ev-item"><div class="ev-body"><div class="ev-label">${E(e.l)}${e.link?` <a href="${e.link}" style="font-size:11px;color:var(--o);font-weight:500;text-decoration:none">Open →</a>`:''}${e.tab?` <a href="#" onclick="event.preventDefault();sTab('${e.tab}')" style="font-size:11px;color:var(--o);font-weight:500;text-decoration:none">View →</a>`:''}</div><div class="ev-detail">${E(e.d)}</div></div><span class="ev-st ${e.c}">${E(e.s)}</span></div>`).join('')}</div>${d.EvidenceHash?`<div style="font-size:11px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Evidence hash: ${d.EvidenceHash.slice(0,16)}…</div>`:''}</div>`;
+  P+=`<div class="cf-panel on" id="tab-evidence"><div class="sec"><div class="sec-t">Evidence <span class="cnt">${ev.length}</span></div>${ev.map(e=>`<div class="ev-item"><div class="ev-body"><div class="ev-label">${E(e.l)}${e.link?` <a href="${e.link}" style="font-size:11px;color:var(--o);font-weight:500;text-decoration:none">Open →</a>`:''}${e.tab?` <a href="#" onclick="event.preventDefault();sTab('${e.tab}')" style="font-size:11px;color:var(--o);font-weight:500;text-decoration:none">View →</a>`:''}</div><div class="ev-detail">${E(e.d)}</div></div><span class="ev-st ${e.c}">${E(e.s)}</span></div>`).join('')}</div>${d.EvidenceHash?`<div style="font-size:11px;color:var(--mu);margin-top:10px;font-family:inherit;font-variant-numeric:tabular-nums">Evidence hash: ${d.EvidenceHash.slice(0,16)}…</div>`:''}</div>`;
 
   // Copy
   if(d.CampaignCopySnapshot)P+=`<div class="cf-panel" id="tab-copy"><div class="sec"><div class="sec-t">Approved campaign copy</div><div class="copy-snap"><span class="copy-tag">IMMUTABLE SNAPSHOT${d.ApprovedAt?' · '+fD(d.ApprovedAt):''}</span>${E(d.CampaignCopySnapshot)}</div></div></div>`;
@@ -480,13 +480,13 @@ function renderCF(d){
   P+=`<div class="cf-panel" id="tab-claims"><div class="sec"><div class="sec-t">Claims requiring evidence <span class="cnt">${claims.length}</span></div>${claims.length?claims.map(c=>{const tc=c.claimType?.includes('pricing')?'cl-pricing':c.claimType?.includes('urgency')||c.claimType?.includes('scarcity')?'cl-urgency':c.claimType?.includes('health')?'cl-health':'cl-other';return`<div class="cl-item"><span class="cl-type ${tc}">${E((c.claimType||'').replace(/_/g,' '))}</span><div class="cl-body"><div class="cl-text">"${E((c.claim||'').slice(0,120))}"</div><div class="cl-rule">${E(c.ruleRef||'')}</div>${c.evidenceNeeded?`<div class="cl-ev">Evidence needed: ${E(c.evidenceNeeded)}</div>`:''}</div></div>`;}).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No claims extracted from the campaign copy.</div>'}</div></div>`;
 
   // Response pack
-  if(rp){const regs=[['ico','ICO — Information Commissioner\'s Office'],['asa','ASA — Advertising Standards Authority'],['cma','CMA — Competition and Markets Authority']].filter(([k])=>rp[k]);P+=`<div class="cf-panel" id="tab-response"><div class="sec"><div class="sec-t">Complaint-Ready Response Pack</div><div class="rp-banner"><strong>Draft responses — not legal advice.</strong> Review with legal counsel before sending to any regulator. Each response cites the specific evidence in your defence file.</div>${regs.map(([k,l])=>`<div class="rp-card" onclick="this.classList.toggle('open')"><div class="rp-head"><span class="rp-reg">${l}</span><span class="rp-toggle">▾</span></div><div class="rp-body">${E(rp[k])}</div></div>`).join('')}</div></div>`;}
+  if(rp){const regs=[['ico','ICO: Information Commissioner\'s Office'],['asa','ASA: Advertising Standards Authority'],['cma','CMA: Competition and Markets Authority']].filter(([k])=>rp[k]);P+=`<div class="cf-panel" id="tab-response"><div class="sec"><div class="sec-t">Complaint-Ready Response Pack</div><div class="rp-banner"><strong>Draft responses: not legal advice.</strong> Review with legal counsel before sending to any regulator. Each response cites the specific evidence in your defence file.</div>${regs.map(([k,l])=>`<div class="rp-card" onclick="this.classList.toggle('open')"><div class="rp-head"><span class="rp-reg">${l}</span><span class="rp-toggle">▾</span></div><div class="rp-body">${E(rp[k])}</div></div>`).join('')}</div></div>`;}
 
   // URLs + page scan
   const au=mergeU(urls,snaps);
   const psMap={};if(ps?.pages)for(const p of ps.pages){psMap[p.url]=p;if(p.finalUrl&&!psMap[p.finalUrl])psMap[p.finalUrl]=p;}
   let up='';
-  if(scanning)up+=`<div class="ps-running"><div class="spin"></div><div>Scanning ${au.length} page${au.length!==1?'s':''} — checking pricing, urgency, fees, offer terms and ad disclosure against your campaign claims. This can take up to a minute.</div></div>`;
+  if(scanning)up+=`<div class="ps-running"><div class="spin"></div><div>Scanning ${au.length} page${au.length!==1?'s':''}: checking pricing, urgency, fees, offer terms and ad disclosure against your campaign claims. This can take up to a minute.</div></div>`;
   else if(ps){const t=ps.totals||{};up+=`<div class="ps-head"><div><div class="ps-head-t">${t.findings?t.findings+' potential area'+(t.findings!==1?'s':'')+' requiring review':'No potential areas requiring review identified'}</div><div class="ps-head-s">Page scan ${fDT(ps.scannedAt)} · ${t.pages} page${t.pages!==1?'s':''} · ${t.passed||0} passed${t.needsAttention?' · '+t.needsAttention+' need attention':''}${t.errors?' · '+t.errors+' could not be scanned':''}</div></div><button class="btn btn-w btn-sm" onclick="runScan(CID)">Re-scan pages</button></div>`;}
   else if(au.length)up+=`<div class="ps-head"><div><div class="ps-head-t">Pages not yet scanned</div><div class="ps-head-s">Check each page against your campaign claims before you approve.</div></div><button class="btn btn-o btn-sm" onclick="runScan(CID)">Scan pages</button></div>`;
   if(au.length)up+=`<p class="ps-scope">The scan reads each page as it is served and checks it against the claims in your creative. Content added by JavaScript after the page loads may not be captured. Site-wide checks (cookies, privacy notice, sign-up consent) are covered once by <a href="site-sweep.html?userId=${encodeURIComponent(U||'')}" style="color:var(--o)">Site Sweep</a>, not repeated per campaign. Evidence-based assessment, not legal advice.</p>`;
@@ -494,7 +494,7 @@ function renderCF(d){
   P+=`<div class="cf-panel" id="tab-urls"><div class="sec"><div class="sec-t">Connected URLs <span class="cnt">${au.length}</span></div>${up}</div></div>`;
 
   // Letter
-  if(d.letter){if(d.letter.type==='clearance')P+=`<div class="cf-panel" id="tab-letter"><div class="clearance-bar"><div style="font-size:28px">✅</div><div><div class="clearance-t">Campaign cleared</div><div class="clearance-s">Strong evidence across all modules. Defence approved.</div></div></div></div>`;else{const ln=(d.letter.content||'').split('\n');P+=`<div class="cf-panel" id="tab-letter"><div class="letter-card"><div class="letter-banner">${E(ln[0]||'SIMULATION')}</div><div class="letter-body">${E(ln.slice(2).join('\n'))}</div></div></div>`;}}
+  if(d.letter){if(d.letter.type==='clearance')P+=`<div class="cf-panel" id="tab-letter"><div class="clearance-bar"><div><div class="clearance-t">Campaign cleared</div><div class="clearance-s">Strong evidence across all modules. Defence approved.</div></div></div></div>`;else{const ln=(d.letter.content||'').split('\n');P+=`<div class="cf-panel" id="tab-letter"><div class="letter-card"><div class="letter-banner">${E(ln[0]||'SIMULATION')}</div><div class="letter-body">${E(ln.slice(2).join('\n'))}</div></div></div>`;}}
 
   // Timeline
   P+=`<div class="cf-panel" id="tab-timeline"><div class="sec"><div class="sec-t">Timeline</div><div class="tl">${allEv.length?allEv.map(e=>{const sv=e.severity==='warning'||e.type?.includes('drift')||e.type?.includes('amended')?'warning':e.severity==='alert'?'alert':e.type?.includes('approved')||e.type?.includes('launched')?'success':'info';return`<div class="tl-item ${sv}"><div class="tl-dot"></div><div class="tl-date">${fDT(e.date)}</div><div class="tl-title">${E(e.title||e.type?.replace(/_/g,' ')||'Event')}</div>${e.detail?`<div class="tl-detail">${E(e.detail)}</div>`:''}</div>`;}).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No events recorded yet.</div>'}</div></div></div>`;
@@ -526,8 +526,8 @@ function fD(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',
 function fDT(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return d;}}
 
 // ── Actions ──
-async function approve(){if(!CID)return;if(SCAN){toast('Wait for the page scan to finish before approving','er');return;}const b=document.querySelector('.cf-actions .btn-g');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await swFetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved — monitoring started','ok');loadCF(CID);}catch(e){toast('Failed — '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve defence →';}}}
-async function addEv(t,d){if(!CID)return;try{await swFetch(`${A}/api/submit-check?action=defence-add-event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,eventType:t,detail:d||''})});toast(t.replace(/_/g,' ')+' recorded','ok');loadCF(CID,true);}catch(e){toast('Failed — '+e.message,'er');}}
+async function approve(){if(!CID)return;if(SCAN){toast('Wait for the page scan to finish before approving','er');return;}const b=document.querySelector('.cf-actions .btn-g');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await swFetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved: monitoring started','ok');loadCF(CID);}catch(e){toast('Failed: '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve defence →';}}}
+async function addEv(t,d){if(!CID)return;try{await swFetch(`${A}/api/submit-check?action=defence-add-event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,eventType:t,detail:d||''})});toast(t.replace(/_/g,' ')+' recorded','ok');loadCF(CID,true);}catch(e){toast('Failed: '+e.message,'er');}}
 function logNote(){const n=prompt('What changed?\n\nExamples:\n• Landing page pricing updated\n• Affiliate modified subject line\n• A/B test variant went live');if(n?.trim())addEv('manual_note',n.trim());}
 
 // ── Demo Mode ──

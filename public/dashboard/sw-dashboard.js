@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   SENDWIZE — sw-dashboard.js v1.4  (browser)
+   SENDWIZE: sw-dashboard.js v1.4  (browser)
    The member dashboard, served from Vercel so the Webflow embed stays
    a few lines long. Needs sw-auth.js in the Webflow site head and
    sw-dashboard.css on the page. Renders into <div id="sw-dashboard">.
@@ -350,7 +350,7 @@
         (e.clusters && e.clusters.length ? '<button class="sw-link" data-act="why" data-id="' + esc(e.clusters[0].leadFixId) + '">Why?</button>' : '') + '</div></div>' +
       '<div class="sw-bd-col"><div class="sw-hl">Risk cleared</div><div class="sw-bd-n good">' + cu('s_ra', cleared, 'gbpK') + '</div>' +
         '<div class="sw-bd-bar good"><i style="width:' + pct + '%"></i></div><div class="sw-note">' + pct + '% of your fine risk cleared · ' + gbpK(ra.monthTotal || 0) + ' this month</div>' +
-        '<div class="sw-bd-chips"><span class="sw-chip">' + (n.completed || 0) + ' fixed · ' + (n.pending || 0) + ' to go</span>' + (streak ? '<span class="sw-chip streak">🔥 ' + streak + '-week fixing streak</span>' : '') + '</div></div>' +
+        '<div class="sw-bd-chips"><span class="sw-chip">' + (n.completed || 0) + ' fixed · ' + (n.pending || 0) + ' to go</span>' + (streak ? '<span class="sw-chip streak">' + streak + '-week fixing streak</span>' : '') + '</div></div>' +
       '<button class="sw-sum-more" data-act="detail" aria-expanded="' + st.detail + '">' + (st.detail ? 'Hide the breakdown ⌃' : 'See the full breakdown ⌄') + '</button></div>';
   }
 
@@ -473,7 +473,7 @@
   function effort(f) { return f.effort || { mins: 60, label: 'About an hour' }; }
   function effortChip(f) {
     var e = effort(f);
-    return '<span class="sw-chip ' + (e.quick || e.mins <= 30 ? 'quick' : e.dev ? 'dev' : '') + '" title="Rough time for a typical team">' + (e.quick || e.mins <= 30 ? '⚡ ' : '') + esc(e.label) + (e.dev ? ' · may need a developer' : '') + '</span>';
+    return '<span class="sw-chip ' + (e.quick || e.mins <= 30 ? 'quick' : e.dev ? 'dev' : '') + '" title="Rough time for a typical team">' + esc(e.label) + (e.dev ? ' · may need a developer' : '') + '</span>';
   }
   // Value for time: £ removed (ICO) or a stand-in from severity, per minute
   function valueForTime(f) {
@@ -633,7 +633,7 @@
       if (st.filter === 'quick') return effort(f).mins <= 30;
       return f.exposure && f.exposure.category === st.filter;
     });
-    var flt = [['all', 'All'], ['quick', '⚡ Quick wins'], ['ICO', 'ICO'], ['ASA', 'ASA'], ['CMA', 'CMA'], ['improved', 'Improved on re-run']].map(function (x) {
+    var flt = [['all', 'All'], ['quick', 'Quick wins'], ['ICO', 'ICO'], ['ASA', 'ASA'], ['CMA', 'CMA'], ['improved', 'Improved on re-run']].map(function (x) {
       return '<button class="sw-flt' + (st.filter === x[0] ? ' on' : '') + '" data-act="flt" data-f="' + x[0] + '">' + x[1] + '</button>';
     }).join('');
     var tags = (st.area ? '<button class="sw-tag" data-act="area-clear">' + esc(AREA_LABELS[st.area] || nice(st.area)) + ' ✕</button>' : '') +

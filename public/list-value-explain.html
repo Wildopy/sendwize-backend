@@ -4,9 +4,9 @@
   <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
   <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>How your list value is calculated — Sendwize</title>
+<title>How your list value is calculated | Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -45,7 +45,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .yn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
 .yn-item{padding:14px 16px;background:var(--bg);border-radius:var(--rad-sm);border:1px solid var(--b)}
 .yn-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:4px}
-.yn-val{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t)}
+.yn-val{font-size:20px;font-weight:700;font-family:inherit;font-variant-numeric:tabular-nums;color:var(--t)}
 .yn-val.green{color:var(--g)}
 .yn-val.orange{color:var(--o)}
 .yn-note{font-size:11px;color:var(--mu);margin-top:12px;padding-top:12px;border-top:1px solid var(--b);line-height:1.5}
@@ -58,7 +58,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 /* ── FORMULA BLOCK ── */
 .formula-wrap{background:var(--t);border-radius:var(--rad);padding:24px;margin-bottom:20px;overflow-x:auto}
-.formula{font-family:'DM Mono',monospace;font-size:13px;color:#fff;white-space:nowrap;line-height:2}
+.formula{font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;color:#fff;white-space:nowrap;line-height:2}
 .formula .var{color:#fbbf24}
 .formula .op{color:#9ca3af}
 .formula .eq{color:#34d399}
@@ -72,7 +72,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .step-body{flex:1}
 .step-title{font-size:13px;font-weight:700;margin-bottom:3px}
 .step-desc{font-size:12px;color:var(--tm);line-height:1.6}
-.step-example{font-family:'DM Mono',monospace;font-size:11px;color:var(--o);background:var(--ol);padding:4px 8px;border-radius:4px;display:inline-block;margin-top:6px}
+.step-example{font-family:inherit;font-variant-numeric:tabular-nums;font-size:11px;color:var(--o);background:var(--ol);padding:4px 8px;border-radius:4px;display:inline-block;margin-top:6px}
 
 /* ── BENCHMARKS TABLE ── */
 .bench-table{width:100%;border-collapse:collapse;border:1px solid var(--b);border-radius:var(--rad);overflow:hidden;font-size:12px}
@@ -82,22 +82,22 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .bench-table tr.active-row td{background:var(--ol)}
 .bench-table tr.active-row .sector-badge{background:var(--o);color:#fff}
 .sector-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--bg);border:1px solid var(--b);color:var(--mu)}
-.mono{font-family:'DM Mono',monospace}
+.mono{font-family:inherit;font-variant-numeric:tabular-nums}
 
 /* ── ENGAGEMENT TABLE ── */
 .eng-table{width:100%;border-collapse:collapse;border:1px solid var(--b);border-radius:var(--rad);overflow:hidden;font-size:12px;margin-bottom:12px}
 .eng-table th{background:var(--bg);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);border-bottom:1px solid var(--b)}
 .eng-table td{padding:10px 14px;border-bottom:1px solid var(--b);color:var(--t)}
 .eng-table tr:last-child td{border-bottom:none}
-.mult-high{color:var(--g);font-weight:700;font-family:'DM Mono',monospace}
-.mult-mid{color:var(--y);font-weight:700;font-family:'DM Mono',monospace}
-.mult-low{color:var(--r);font-weight:700;font-family:'DM Mono',monospace}
+.mult-high{color:var(--g);font-weight:700;font-family:inherit;font-variant-numeric:tabular-nums}
+.mult-mid{color:var(--y);font-weight:700;font-family:inherit;font-variant-numeric:tabular-nums}
+.mult-low{color:var(--r);font-weight:700;font-family:inherit;font-variant-numeric:tabular-nums}
 
 /* ── DECAY SECTION ── */
 .decay-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:22px;box-shadow:var(--sh)}
 .decay-chart{margin:16px 0;position:relative}
 .decay-svg{width:100%;display:block}
-.decay-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--mu);margin-top:4px;font-family:'DM Mono',monospace}
+.decay-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--mu);margin-top:4px;font-family:inherit;font-variant-numeric:tabular-nums}
 
 /* ── TIERS ── */
 .tiers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
@@ -113,7 +113,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .tier.at-risk .tier-name{color:var(--y)}
 .tier.liability .tier-name{color:var(--r)}
 .tier-desc{font-size:11px;color:var(--tm);line-height:1.5}
-.tier-rule{font-family:'DM Mono',monospace;font-size:10px;color:var(--mu);margin-top:6px;background:rgba(0,0,0,.04);padding:3px 7px;border-radius:4px;display:inline-block}
+.tier-rule{font-family:inherit;font-variant-numeric:tabular-nums;font-size:10px;color:var(--mu);margin-top:6px;background:rgba(0,0,0,.04);padding:3px 7px;border-radius:4px;display:inline-block}
 
 /* ── DISCLAIMER ── */
 .disclaimer{background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;font-size:11px;color:var(--mu);line-height:1.6;margin-bottom:40px}
@@ -124,7 +124,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .example-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--o);margin-bottom:14px}
 .example-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--b);font-size:13px}
 .example-row:last-child{border-bottom:none;font-weight:700;font-size:14px;padding-top:12px}
-.example-row span:last-child{font-family:'DM Mono',monospace;color:var(--t)}
+.example-row span:last-child{font-family:inherit;font-variant-numeric:tabular-nums;color:var(--t)}
 .example-row.result span:last-child{color:var(--g);font-size:16px}
 
 /* ── BACK LINK ── */
@@ -146,9 +146,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="page">
 
   <div class="hero">
-    <div class="hero-eyebrow">List health — Methodology</div>
+    <div class="hero-eyebrow">List health: Methodology</div>
     <div class="hero-title">How your list value<br>is calculated</div>
-    <div class="hero-sub">Every figure shown in List health is derived from your actual contact data using a four-dimensional model. This page explains exactly what goes into the number — and why it decays over time.</div>
+    <div class="hero-sub">Every figure shown in List health is derived from your actual contact data using a four-dimensional model. This page explains exactly what goes into the number, and why it decays over time.</div>
   </div>
 
   <!-- YOUR NUMBERS -->
@@ -162,8 +162,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <!-- STEP 1: THE FORMULA -->
   <div class="section">
-    <div class="section-title">Step 1 — The core formula</div>
-    <div class="section-sub">Every contact in your list gets a commercial value score. The formula is the same for everyone — what changes is the inputs, which come from your sector, your average order value, and that contact's engagement history.</div>
+    <div class="section-title">Step 1: The core formula</div>
+    <div class="section-sub">Every contact in your list gets a commercial value score. The formula is the same for everyone, what changes is the inputs, which come from your sector, your average order value, and that contact's engagement history.</div>
     <div class="formula-wrap">
       <div class="formula">
         <span class="var">commercialValue</span> <span class="op">=</span><br>
@@ -175,8 +175,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <!-- STEP 2: SECTOR BENCHMARKS -->
   <div class="section">
-    <div class="section-title">Step 2 — Sector conversion rates</div>
-    <div class="section-sub">The conversion rate is the starting assumption for what proportion of contacts in your sector will purchase from a given campaign. These are industry benchmarks — your actual rate may differ, but they give a consistent, comparable baseline.</div>
+    <div class="section-title">Step 2: Sector conversion rates</div>
+    <div class="section-sub">The conversion rate is the starting assumption for what proportion of contacts in your sector will purchase from a given campaign. These are industry benchmarks: your actual rate may differ, but they give a consistent, comparable baseline.</div>
     <div style="overflow-x:auto;margin-bottom:8px">
       <table class="bench-table" id="benchTable">
         <thead>
@@ -196,12 +196,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         </tbody>
       </table>
     </div>
-    <div class="formula-note">The order multiplier accounts for typical deal sizes relative to the base AOV. Finance contacts tend to convert less often but at much higher value — so both factors are needed to reflect the real commercial picture.</div>
+    <div class="formula-note">The order multiplier accounts for typical deal sizes relative to the base AOV. Finance contacts tend to convert less often but at much higher value, so both factors are needed to reflect the real commercial picture.</div>
   </div>
 
   <!-- STEP 3: ENGAGEMENT MULTIPLIER -->
   <div class="section">
-    <div class="section-title">Step 3 — Engagement multiplier</div>
+    <div class="section-title">Step 3: Engagement multiplier</div>
     <div class="section-sub">The base value is then adjusted upward or downward based on each contact's most recent engagement. A contact who purchased last month is worth significantly more than one who last opened an email two years ago.</div>
     <table class="eng-table">
       <thead>
@@ -212,10 +212,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <tr><td>Click</td><td class="mult-high">1.5×</td><td class="mult-mid">1.1×</td><td class="mult-low">0.8×</td></tr>
         <tr><td>Open</td><td class="mult-mid">1.1×</td><td class="mult-low">0.9×</td><td class="mult-low">0.6×</td></tr>
         <tr><td>Other engagement</td><td class="mult-low">0.9×</td><td class="mult-low">0.7×</td><td class="mult-low">0.4×</td></tr>
-        <tr><td>No engagement data</td><td colspan="3" style="color:var(--mu);font-family:'DM Mono',monospace">0.5× (conservative base)</td></tr>
+        <tr><td>No engagement data</td><td colspan="3" style="color:var(--mu);font-family:inherit;font-variant-numeric:tabular-nums">0.5× (conservative base)</td></tr>
       </tbody>
     </table>
-    <div class="formula-note">Multipliers are applied to the base value from Step 2. A contact with no data defaults to 0.5× — below base — because the absence of engagement data is itself a signal of lower conversion likelihood.</div>
+    <div class="formula-note">Multipliers are applied to the base value from Step 2. A contact with no data defaults to 0.5×: below base: because the absence of engagement data is itself a signal of lower conversion likelihood.</div>
   </div>
 
   <!-- WORKED EXAMPLE -->
@@ -236,7 +236,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   <!-- STEP 4: TIERS -->
   <div class="section">
-    <div class="section-title">Step 4 — Contact tiers</div>
+    <div class="section-title">Step 4: Contact tiers</div>
     <div class="section-sub">Contacts are then sorted into four tiers based on two dimensions: consent strength (which decays over time since signup) and deliverability score (derived from email address signals). Only active and recoverable contacts contribute to your list value figure.</div>
     <div class="tiers">
       <div class="tier active">
@@ -246,12 +246,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </div>
       <div class="tier recoverable">
         <div class="tier-name">Recoverable</div>
-        <div class="tier-desc">Consent declining but above ICO threshold. Value is the intervention value — what you can recover with a re-engagement campaign.</div>
+        <div class="tier-desc">Consent declining but above ICO threshold. Value is the intervention value: what you can recover with a re-engagement campaign.</div>
         <div class="tier-rule">consent 20–60 · deliverability ≥40</div>
       </div>
       <div class="tier at-risk">
         <div class="tier-name">At risk</div>
-        <div class="tier-desc">Above consent threshold but poor deliverability signals. Not included in list value — deliverability risk outweighs commercial potential.</div>
+        <div class="tier-desc">Above consent threshold but poor deliverability signals. Not included in list value: deliverability risk outweighs commercial potential.</div>
         <div class="tier-rule">consent ≥20 · deliverability &lt;40</div>
       </div>
       <div class="tier liability">
@@ -260,13 +260,13 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <div class="tier-rule">consent &lt;20</div>
       </div>
     </div>
-    <div class="formula-note">Consent strength decays exponentially from signup date — it halves every 12 months with no engagement. Purchases, clicks, and opens reset the decay clock, with purchases having the strongest reset effect.</div>
+    <div class="formula-note">Consent strength decays exponentially from signup date, it halves every 12 months with no engagement. Purchases, clicks, and opens reset the decay clock, with purchases having the strongest reset effect.</div>
   </div>
 
   <!-- STEP 5: DECAY -->
   <div class="section">
-    <div class="section-title">Step 5 — Why the value decays over time</div>
-    <div class="section-sub">The unrealised value shown on your dashboard is not static. Each opportunity decays at a set rate per month — because the longer you wait to act, the lower the conversion likelihood becomes as engagement fades.</div>
+    <div class="section-title">Step 5: Why the value decays over time</div>
+    <div class="section-sub">The unrealised value shown on your dashboard is not static. Each opportunity decays at a set rate per month, because the longer you wait to act, the lower the conversion likelihood becomes as engagement fades.</div>
     <div class="decay-card">
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">Opportunity value over time</div>
       <div style="font-size:11px;color:var(--mu);margin-bottom:12px">Re-engagement campaign opportunity at 2.5% monthly decay rate</div>
@@ -294,22 +294,22 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
           <!-- 12mo marker -->
           <circle cx="600" cy="138" r="4" fill="#9C9890" stroke="#fff" stroke-width="2"/>
           <!-- Labels -->
-          <text x="4" y="14" font-family="DM Mono,monospace" font-size="10" fill="#EA7317" font-weight="600">100%</text>
-          <text x="304" y="70" font-family="DM Mono,monospace" font-size="10" fill="#EA7317">~86%</text>
-          <text x="552" y="133" font-family="DM Mono,monospace" font-size="10" fill="#9C9890">~74%</text>
-          <text x="2" y="37" font-family="DM Mono,monospace" font-size="9" fill="#9C9890">75%</text>
-          <text x="2" y="77" font-family="DM Mono,monospace" font-size="9" fill="#9C9890">50%</text>
-          <text x="2" y="117" font-family="DM Mono,monospace" font-size="9" fill="#9C9890">25%</text>
+          <text x="4" y="14" font-family="DM Sans,sans-serif" font-size="10" fill="#EA7317" font-weight="600">100%</text>
+          <text x="304" y="70" font-family="DM Sans,sans-serif" font-size="10" fill="#EA7317">~86%</text>
+          <text x="552" y="133" font-family="DM Sans,sans-serif" font-size="10" fill="#9C9890">~74%</text>
+          <text x="2" y="37" font-family="DM Sans,sans-serif" font-size="9" fill="#9C9890">75%</text>
+          <text x="2" y="77" font-family="DM Sans,sans-serif" font-size="9" fill="#9C9890">50%</text>
+          <text x="2" y="117" font-family="DM Sans,sans-serif" font-size="9" fill="#9C9890">25%</text>
         </svg>
         <div class="decay-labels"><span>Now</span><span>3 months</span><span>6 months</span><span>9 months</span><span>12 months</span></div>
       </div>
-      <div style="font-size:11px;color:var(--mu);line-height:1.6;margin-top:8px">Each opportunity has its own decay rate stored at creation. Re-engagement opportunities decay at 2.5%/month. Priority send windows decay faster at 3%/month — because high-engagement windows close quickly. The value shown on your dashboard reflects today's decayed figure, not the original estimate.</div>
+      <div style="font-size:11px;color:var(--mu);line-height:1.6;margin-top:8px">Each opportunity has its own decay rate stored at creation. Re-engagement opportunities decay at 2.5%/month. Priority send windows decay faster at 3%/month, because high-engagement windows close quickly. The value shown on your dashboard reflects today's decayed figure, not the original estimate.</div>
     </div>
   </div>
 
   <!-- DISCLAIMER -->
   <div class="disclaimer">
-    <strong>Important:</strong> List value figures are estimates based on sector benchmark conversion rates and your stated average order value. They are not a guarantee of revenue. Actual results depend on campaign quality, send timing, offer relevance, and market conditions. Sendwize list value figures are intended as a comparative tool to prioritise contact segments — not as a financial projection. They should not be used as the basis for financial reporting or investor presentations without independent validation.
+    <strong>Important:</strong> List value figures are estimates based on sector benchmark conversion rates and your stated average order value. They are not a guarantee of revenue. Actual results depend on campaign quality, send timing, offer relevance, and market conditions. Sendwize list value figures are intended as a comparative tool to prioritise contact segments, not as a financial projection. They should not be used as the basis for financial reporting or investor presentations without independent validation.
   </div>
 
   <div class="back-wrap">
@@ -362,7 +362,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     var engMult = 1.5; // click within 90 days — illustrative
     var result = base * engMult;
     var el = document.getElementById('workedExample');
-    el.innerHTML = '<div class="example-title">Single contact calculation — your sector & AOV</div>'
+    el.innerHTML = '<div class="example-title">Single contact calculation: your sector & AOV</div>'
       + '<div class="example-row"><span>Sector conversion rate (' + cap(sector) + ')</span><span>' + fmtPct(b.conversionRate) + '</span></div>'
       + '<div class="example-row"><span>Your average order value</span><span>' + fmtGBP(aov) + '</span></div>'
       + '<div class="example-row"><span>Sector order multiplier</span><span>' + b.avgOrderMultiplier.toFixed(1) + '\u00d7</span></div>'
@@ -373,7 +373,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
   async function load() {
     if (!userId) {
-      document.getElementById('ynGrid').innerHTML = '<div class="yn-loading">No user session — open from the Sendwize dashboard.</div>';
+      document.getElementById('ynGrid').innerHTML = '<div class="yn-loading">No user session: open from the Sendwize dashboard.</div>';
       return;
     }
     try {
@@ -398,12 +398,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         yn('Last uploaded', d.checkDate ? new Date(d.checkDate).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—');
 
       document.getElementById('ynNote').textContent =
-        'These are the exact inputs used to calculate your list value. Sector and AOV are taken from your profile — update them in List health if they have changed.';
+        'These are the exact inputs used to calculate your list value. Sector and AOV are taken from your profile, update them in List health if they have changed.';
 
       highlightSector(sector);
       updateWorkedExample(sector, aov);
     } catch(e) {
-      document.getElementById('ynGrid').innerHTML = '<div class="yn-loading">Could not load your data — please refresh.</div>';
+      document.getElementById('ynGrid').innerHTML = '<div class="yn-loading">Could not load your data: please refresh.</div>';
       console.warn(e);
     }
   }

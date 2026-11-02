@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Site Sweep — Sendwize</title>
+<title>Site Sweep | Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -47,7 +47,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .method-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}.method-h b{font-size:14px}
 .tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--gb);color:var(--g);text-transform:uppercase;letter-spacing:.04em}
 .method p{font-size:12px;color:var(--tm);margin-bottom:8px}
-.code{display:flex;align-items:center;gap:8px;background:#faf9f7;border:1px solid var(--b);border-radius:7px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:12px;overflow-x:auto}
+.code{display:flex;align-items:center;gap:8px;background:#faf9f7;border:1px solid var(--b);border-radius:7px;padding:8px 10px;font-family:inherit;font-variant-numeric:tabular-nums;font-size:12px;overflow-x:auto}
 .code span{flex:1;white-space:nowrap}
 .code button{flex-shrink:0;font-family:inherit;font-size:11px;font-weight:600;background:var(--w);border:1px solid var(--bm);border-radius:5px;padding:3px 9px;cursor:pointer}
 .fail{background:var(--yb);border-radius:8px;padding:12px 14px;font-size:12px;color:#854d0e;margin-top:12px;line-height:1.6}
@@ -171,7 +171,7 @@ async function start(){
 }
 
 function codeRow(text){return`<div class="code"><span>${E(text)}</span><button onclick="copyText(this,'${encodeURIComponent(text)}')">Copy</button></div>`;}
-function copyText(btn,enc){navigator.clipboard?.writeText(decodeURIComponent(enc)).then(()=>{btn.textContent='Copied';setTimeout(()=>btn.textContent='Copy',1500);}).catch(()=>toast('Copy failed — select the text instead','er'));}
+function copyText(btn,enc){navigator.clipboard?.writeText(decodeURIComponent(enc)).then(()=>{btn.textContent='Copied';setTimeout(()=>btn.textContent='Copy',1500);}).catch(()=>toast('Copy failed: select the text instead','er'));}
 
 function renderVerify(){
   const v=S.verification||{};
@@ -202,7 +202,7 @@ function renderReady(){
 }
 
 function renderRunning(){
-  $('app').innerHTML=`<div class="card view" style="text-align:center;padding:56px 32px"><div class="spin"></div><div class="card-t">Reviewing ${E(S?.domain||'your site')}</div><p class="card-s" style="margin:6px auto 0;max-width:420px">Reading your key pages and checking what loads before anyone accepts cookies. Keep this page open — it takes about a minute.</p></div>`;
+  $('app').innerHTML=`<div class="card view" style="text-align:center;padding:56px 32px"><div class="spin"></div><div class="card-t">Reviewing ${E(S?.domain||'your site')}</div><p class="card-s" style="margin:6px auto 0;max-width:420px">Reading your key pages and checking what loads before anyone accepts cookies. Keep this page open: it takes about a minute.</p></div>`;
 }
 
 async function run(){
@@ -222,7 +222,7 @@ function renderResults(){
   const groups=CATS.map(([id,label])=>{
     const fs=(w.findings||[]).filter(f=>f.category===id).sort((a,b)=>RANK[a.severity]-RANK[b.severity]);
     if(!fs.length)return'';
-    return`<div class="sec-t">${label} <span class="cnt">${fs.length}</span></div>`+fs.map(f=>`<div class="f ${E(f.severity)}"><div class="f-top"><span class="f-sev">${E(f.severity)}</span>${f.regulator?`<span class="f-reg">${E(f.regulator)}</span>`:''}${newSet.has(f.key)?'<span class="f-new">New</span>':''}<span class="f-t">${E(f.title)}</span></div><div class="f-d">${E(f.detail)}</div>${f.excerpt?`<div class="f-ex">"${E(f.excerpt)}"</div>`:''}<div class="f-meta">${[f.ruleRef,f.page?'Page: '+f.page:'',f.confidence==='low'?'Low confidence — not added to dashboard':''].filter(Boolean).map(E).join(' · ')}</div></div>`).join('');
+    return`<div class="sec-t">${label} <span class="cnt">${fs.length}</span></div>`+fs.map(f=>`<div class="f ${E(f.severity)}"><div class="f-top"><span class="f-sev">${E(f.severity)}</span>${f.regulator?`<span class="f-reg">${E(f.regulator)}</span>`:''}${newSet.has(f.key)?'<span class="f-new">New</span>':''}<span class="f-t">${E(f.title)}</span></div><div class="f-d">${E(f.detail)}</div>${f.excerpt?`<div class="f-ex">"${E(f.excerpt)}"</div>`:''}<div class="f-meta">${[f.ruleRef,f.page?'Page: '+f.page:'',f.confidence==='low'?'Low confidence: not added to dashboard':''].filter(Boolean).map(E).join(' · ')}</div></div>`).join('');
   }).join('');
   const pages=(w.pages||[]).map(p=>`<div class="li"><a href="${E(p.url)}" target="_blank" rel="noopener">${E(p.url)}</a><span class="muted">${E(p.role)}${p.ok?'':' · could not load'}</span></div>`).join('');
   const third=(w.thirdParties||[]).length?`<div class="sec-t">Third parties detected <span class="cnt">${w.thirdParties.length}</span></div><div class="list">${w.thirdParties.map(n=>`<div class="li"><span>${E(n)}</span><a href="vendor-checker.html?userId=${encodeURIComponent(U)}">Add to Vendor Register →</a></div>`).join('')}</div>`:'';

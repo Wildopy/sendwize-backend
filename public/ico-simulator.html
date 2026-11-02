@@ -7,7 +7,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Regulator simulator &mdash; Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -123,7 +123,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .letter-dept{font-size:16px;font-weight:700}
 .letter-ref{text-align:right}
 .letter-ref-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.6;margin-bottom:2px}
-.letter-ref-val{font-size:12px;font-weight:600;font-family:'DM Mono',monospace}
+.letter-ref-val{font-size:12px;font-weight:600;font-family:inherit;font-variant-numeric:tabular-nums}
 .letter-divider{height:1px;background:rgba(255,255,255,.2);margin-bottom:14px}
 .letter-subject{font-size:13px;font-weight:600;opacity:.9}
 .letter-body{padding:28px}
@@ -159,7 +159,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .penalty-realistic{background:var(--w);border:2px solid var(--rc);border-radius:var(--rad-lg);padding:24px 28px;margin-bottom:12px;text-align:center}
 .penalty-realistic-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--r);margin-bottom:10px}
 .penalty-range-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
-.penalty-amt{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1;font-family:'DM Mono',monospace;color:var(--r)}
+.penalty-amt{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1;font-family:inherit;font-variant-numeric:tabular-nums;color:var(--r)}
 .penalty-to{font-size:16px;font-weight:400;color:var(--mu)}
 .penalty-basis{font-size:12px;color:var(--mu);margin-top:10px;font-style:italic;line-height:1.5}
 .penalty-ceiling{background:var(--bg);border:1px solid var(--b);border-radius:var(--rad);padding:12px 16px;display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
@@ -171,7 +171,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .penalty-reputational-sub{font-size:13px;color:var(--tm);line-height:1.5;margin-bottom:12px}
 .sanction-list{display:flex;flex-direction:column;gap:8px}
 .sanction-item{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--tm);line-height:1.4}
-.sanction-icon{flex-shrink:0;font-size:14px;margin-top:1px}
+.sanction-icon{display:none}
+.factor-icon.fi-red,.factor-icon.fi-amber,.factor-icon.fi-grey{width:3px!important;min-width:3px;height:16px;border-radius:2px;margin-top:3px;font-size:0;background:#94a3b8}.factor-icon.fi-red{background:#dc2626}.factor-icon.fi-amber{background:#d97706}
 .rep-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tm);margin:20px 0 10px}
 .rep-items{display:flex;flex-direction:column;gap:8px}
 .rep-item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:#f8f7f4;border-radius:8px;border:1px solid var(--b)}
@@ -408,17 +409,17 @@ var DEMO = {
     stage2:{
       band:'serious', bandLabel:'Serious Risk',
       bandColour:'#dc2626', bandBg:'#fef2f2', bandBorder:'#fecaca',
-      bandDescription:'The demo scenario shows critical compliance gaps — the type of issues that have formed the basis of ICO enforcement action in published cases. This does not mean an investigation is certain, but these gaps should be treated as an urgent business priority.',
+      bandDescription:'The demo scenario shows critical compliance gaps, the type of issues that have formed the basis of ICO enforcement action in published cases. This does not mean an investigation is certain, but these gaps should be treated as an urgent business priority.',
       factors:[
-        {icon:'⛔',text:'Critical unresolved violations — these would be the primary basis for ICO enforcement action if a complaint is received.'},
-        {icon:'📊',text:'Compliance score of 42/100 indicates a systemic pattern rather than an isolated incident.'},
-        {icon:'⚠️',text:'12 unresolved fix items suggests ongoing rather than isolated non-compliance.'},
-        {icon:'💬',text:'The ICO investigates when it receives complaints or identifies patterns. Valid consent and reliable opt-out are the most direct ways to reduce investigation exposure.'},
+        {icon:'red',text:'Critical unresolved violations: these would be the primary basis for ICO enforcement action if a complaint is received.'},
+        {icon:'grey',text:'Compliance score of 42/100 indicates a systemic pattern rather than an isolated incident.'},
+        {icon:'amber',text:'12 unresolved fix items suggests ongoing rather than isolated non-compliance.'},
+        {icon:'grey',text:'The ICO investigates when it receives complaints or identifies patterns. Valid consent and reliable opt-out are the most direct ways to reduce investigation exposure.'},
       ],
     },
     stage3:{letter:{
       reference:'ICO-ENF-24891',
-      subject:'Preliminary enquiry into direct marketing practices — PECR compliance',
+      subject:'Preliminary enquiry into direct marketing practices, PECR compliance',
       opening:'The Information Commissioner\'s Office has received information suggesting that your organisation may have sent electronic marketing communications without the required valid consent under the Privacy and Electronic Communications Regulations 2003 (PECR). We are writing to understand your current compliance position before determining whether a formal investigation is appropriate.',
       context:'This enquiry is made under our regulatory powers. Your response will inform our assessment of whether further action is required.',
       closing:'Please respond within 14 days of the date of this letter. Failure to respond, or providing a misleading response, may itself form the basis of regulatory action. We encourage full and prompt co-operation, which is a significant mitigating factor in any subsequent regulatory decision.',
@@ -433,19 +434,19 @@ var DEMO = {
     }},
     stage4:{documents:[
       {name:'Consent Records',status:'missing',detail:'Critical fix pending: no valid consent documentation identified for marketing sends.'},
-      {name:'Data Processing Agreement (Email Platform)',status:'partial',detail:'DPA flagged for review — not yet confirmed as fully Article 28 compliant.'},
+      {name:'Data Processing Agreement (Email Platform)',status:'partial',detail:'DPA flagged for review: not yet confirmed as fully Article 28 compliant.'},
       {name:'Legitimate Interest Assessment',status:'missing',detail:'LI abuse flagged as a pending fix. No documented LIA found.'},
       {name:'Suppression Log',status:'partial',detail:'Suppression breach flagged. Opt-out processing records incomplete.'},
-      {name:'Data Retention Policy',status:'available',detail:'No data quality fix pending. Assumed in place — verify before submitting.'},
+      {name:'Data Retention Policy',status:'available',detail:'No data quality fix pending. Assumed in place: verify before submitting.'},
       {name:'Privacy Notice',status:'available',detail:'No specific privacy notice fix pending. Verify it accurately describes current practices.'},
-      {name:'Opt-out Mechanism Evidence',status:'available',detail:'No flagged issues. Assumed in place — verify before submitting.'},
+      {name:'Opt-out Mechanism Evidence',status:'available',detail:'No flagged issues. Assumed in place: verify before submitting.'},
     ]},
     stage5:{
       penalty:{low:28000,high:90000,context:'Realistic ICO penalty range built from demo compliance data. Anchored to comparable published ICO enforcement decisions. Statutory maximum under DUAA 2025: £17.5M or 4% of global annual turnover. Full and prompt co-operation is the single most significant mitigating factor.'},
       representations:[
-        'Address the consent_missing issue before responding — this is the primary basis for any ICO action. Produce your consent records or immediately cease sending to contacts without verified consent.',
-        'Address the suppression_breach issue — producing evidence of prompt remediation after discovery is a significant mitigating factor in ICO penalty decisions.',
-        '0 resolved fixes on record. Consider actioning your highest-severity pending items now — evidence of prompt remediation before the regulator response is due carries significant mitigating weight.',
+        'Address the consent_missing issue before responding, this is the primary basis for any ICO action. Produce your consent records or immediately cease sending to contacts without verified consent.',
+        'Address the suppression_breach issue: producing evidence of prompt remediation after discovery is a significant mitigating factor in ICO penalty decisions.',
+        '0 resolved fixes on record. Consider actioning your highest-severity pending items now, evidence of prompt remediation before the regulator response is due carries significant mitigating weight.',
         'Co-operate fully and respond promptly. The ICO\'s published penalty guidance explicitly gives significant credit to businesses that engage openly and remediate quickly.',
       ],
     },
@@ -461,19 +462,19 @@ var DEMO = {
     stage2:{
       band:'serious', bandLabel:'Serious Risk',
       bandColour:'#dc2626', bandBg:'#fef2f2', bandBorder:'#fecaca',
-      bandDescription:'The demo scenario shows critical CAP Code concerns — the type of issues that have resulted in upheld ASA rulings in published cases. Voluntary withdrawal or amendment of flagged ads before a ruling is issued is a significant mitigating factor.',
+      bandDescription:'The demo scenario shows critical CAP Code concerns, the type of issues that have resulted in upheld ASA rulings in published cases. Voluntary withdrawal or amendment of flagged ads before a ruling is issued is a significant mitigating factor.',
       factors:[
-        {icon:'⛔',text:'4 CAP Code issues identified. Competitors as well as consumers can file ASA complaints — this is common in retail and ecommerce.'},
-        {icon:'📊',text:'Multiple compliance gaps increase the likelihood the ASA would find the ad broke the rules rather than treating it as a borderline case.'},
-        {icon:'📋',text:'The ASA resolves around 80% of complaints without formal investigation — but formal investigation is more likely where evidence was not held before the campaign ran (CAP 4.1).'},
+        {icon:'red',text:'4 CAP Code issues identified. Competitors as well as consumers can file ASA complaints, this is common in retail and ecommerce.'},
+        {icon:'grey',text:'Multiple compliance gaps increase the likelihood the ASA would find the ad broke the rules rather than treating it as a borderline case.'},
+        {icon:'grey',text:'The ASA resolves around 80% of complaints without formal investigation, but formal investigation is more likely where evidence was not held before the campaign ran (CAP 4.1).'},
       ],
     },
     stage3:{letter:{
       reference:'ASA-ENQ-7721',
-      subject:'Formal complaint investigation — CAP Code compliance',
+      subject:'Formal complaint investigation: CAP Code compliance',
       opening:'The Advertising Standards Authority has received a complaint about marketing communications attributed to your organisation. We are investigating whether the advertising complies with the UK Code of Non-broadcast Advertising and Direct & Promotional Marketing (the CAP Code).',
       context:'The specific concerns relate to urgency claims and comparative pricing practices in your email marketing. Under CAP Code Rule 3.17, claims must not materially mislead or be likely to mislead.',
-      closing:'Please respond within 10 working days with the information requested below. We encourage voluntary withdrawal of the ads in question pending the outcome of this investigation — this is a material factor in our assessment.',
+      closing:'Please respond within 10 working days with the information requested below. We encourage voluntary withdrawal of the ads in question pending the outcome of this investigation, this is a material factor in our assessment.',
       signatory:'Investigations Executive, Advertising Standards Authority',
       questions:[
         {question:'Can you provide technical documentation confirming that any countdown timers used in your emails reflect genuine scarcity or time-limited offers?', yesNote:'Technical documentation substantiating the countdown is your strongest defence on this point (CAP 4.1).',noNote:'An inability to substantiate the countdown timer is likely to result in an upheld ruling under CAP 3.17.'},
@@ -487,7 +488,7 @@ var DEMO = {
       {name:'Reference Price Evidence',status:'missing',detail:'Misleading reference price fix pending. 28-day pricing history records required.'},
       {name:'Countdown Timer Technical Documentation',status:'missing',detail:'Fake urgency fix pending. Technical documentation confirming genuine scarcity required.'},
       {name:'Claim Substantiation File',status:'partial',detail:'Misleading claim fix pending. Pre-campaign evidence file incomplete.'},
-      {name:'Ad Labelling Records',status:'available',detail:'No undisclosed ad fix pending. Assumed in place — verify.'},
+      {name:'Ad Labelling Records',status:'available',detail:'No undisclosed ad fix pending. Assumed in place: verify.'},
       {name:'Pre-Campaign Evidence File (CAP 4.1)',status:'missing',detail:'CAP 4.1 requires all evidence to be held before the campaign runs. No evidence file confirmed.'},
       {name:'Campaign Creative Materials',status:'available',detail:'No flagged issues. Have creative versions ready to provide.'},
       {name:'Written Response to Complaint',status:'available',detail:'Draft a clear, factual response. ASA rewards transparency and co-operation.'},
@@ -495,7 +496,7 @@ var DEMO = {
     stage5:{
       penalty:{low:0,high:0,context:'The ASA does not impose direct financial fines. Based on 4 pending ASA-relevant issues in the demo data, likely sanctions are: mandatory ad withdrawal or amendment; an upheld ruling published permanently on asa.org.uk; and potential referral to Trading Standards under DMCCA 2024 for persistent or serious breach.'},
       representations:[
-        'Withdraw or amend flagged ads immediately — voluntary withdrawal before the ruling is issued is the single most powerful mitigating action.',
+        'Withdraw or amend flagged ads immediately, voluntary withdrawal before the ruling is issued is the single most powerful mitigating action.',
         'Produce your pre-campaign evidence file for any remaining claims. ASA rewards businesses that can demonstrate compliance culture.',
         'Co-operate fully. The ASA prefers informal resolution and rewards voluntary withdrawal of the ad before the ruling is issued.',
       ],
@@ -505,30 +506,30 @@ var DEMO = {
     stage1:{checks:[
       {label:'DMCCA Compliance Sweep',detail:'CMA swept 400+ businesses since April 2025. Demo data shows 3 DMCCA-relevant issues matching the sweep profile.',status:'red'},
       {label:'Pricing Practice Risk',detail:'Drip pricing and misleading reference price issues identified.',status:'red'},
-      {label:'Review Practices',detail:'Review manipulation flagged — Schedule 20 DMCCA banned practice. No context defence.',status:'red'},
+      {label:'Review Practices',detail:'Review manipulation flagged: Schedule 20 DMCCA banned practice. No context defence.',status:'red'},
       {label:'Compliance Score',detail:'Demo score: 42/100. Multiple consumer law concerns identified.',status:'red'},
       {label:'Prior CMA Engagement',detail:'No prior CMA investigation identified. First-time cases with genuine co-operation attract lower penalties.',status:'green'},
     ]},
     stage2:{
       band:'serious', bandLabel:'Serious Risk',
       bandColour:'#dc2626', bandBg:'#fef2f2', bandBorder:'#fecaca',
-      bandDescription:'The demo scenario shows practices that may constitute Schedule 1 banned practices under DMCCA 2024 — automatically unfair, with no proportionality defence. The CMA can fine directly without court proceedings.',
+      bandDescription:'The demo scenario shows practices that may constitute Schedule 1 banned practices under DMCCA 2024, automatically unfair, with no proportionality defence. The CMA can fine directly without court proceedings.',
       factors:[
-        {icon:'⛔',text:'3 DMCCA-relevant issues identified. The CMA launched its first DMCCA enforcement cases in November 2025.'},
-        {icon:'🔍',text:'The CMA conducted proactive sweeps of over 400 businesses in 2025. Businesses do not need to receive a complaint to be investigated.'},
-        {icon:'📊',text:'Compliance score of 42/100 indicates a pattern of consumer law concerns — the CMA prioritises systemic non-compliance.'},
-        {icon:'⚖️',text:'DMCCA 2024 statutory maximum: the higher of £300,000 or 10% of global annual turnover, imposable without court proceedings. First-time co-operative cases attracted undertakings in the CMA\'s first DMCCA decisions.'},
+        {icon:'red',text:'3 DMCCA-relevant issues identified. The CMA launched its first DMCCA enforcement cases in November 2025.'},
+        {icon:'grey',text:'The CMA conducted proactive sweeps of over 400 businesses in 2025. Businesses do not need to receive a complaint to be investigated.'},
+        {icon:'grey',text:'Compliance score of 42/100 indicates a pattern of consumer law concerns, the CMA prioritises systemic non-compliance.'},
+        {icon:'grey',text:'DMCCA 2024 statutory maximum: the higher of £300,000 or 10% of global annual turnover, imposable without court proceedings. First-time co-operative cases attracted undertakings in the CMA\'s first DMCCA decisions.'},
       ],
     },
     stage3:{letter:{
       reference:'CMA-CP-2024-112',
-      subject:'Preliminary enquiry under DMCCA 2024 — pricing and review practices',
+      subject:'Preliminary enquiry under DMCCA 2024: pricing and review practices',
       opening:'The Competition and Markets Authority is conducting a review of consumer-facing marketing practices in your sector under the Digital Markets, Competition and Consumers Act 2024 (DMCCA). Information available to the CMA suggests your organisation may be engaging in practices that are unfair or prohibited under the Act.',
       context:'This is a preliminary enquiry under section 224 DMCCA 2024. The CMA has the power to impose financial penalties directly without court proceedings where a breach is established.',
       closing:'Please respond within 14 days. The CMA notes that businesses which engage promptly and constructively with our enquiries, and which take remedial action where required, are treated significantly more favourably in any penalty assessment.',
       signatory:'Senior Director, Consumer Protection, Competition and Markets Authority',
       questions:[
-        {question:'Does your website or marketing clearly display the full total price of any product or service before the customer commits to purchase, without adding mandatory charges at later stages?', yesNote:'Full price transparency from the outset complies with Schedule 1 DMCCA. Provide screenshots of your purchase journey.',noNote:'Drip pricing — adding mandatory charges at later stages — is a Schedule 1 banned practice under DMCCA 2024, automatically unfair with no proportionality defence.'},
+        {question:'Does your website or marketing clearly display the full total price of any product or service before the customer commits to purchase, without adding mandatory charges at later stages?', yesNote:'Full price transparency from the outset complies with Schedule 1 DMCCA. Provide screenshots of your purchase journey.',noNote:'Drip pricing: adding mandatory charges at later stages, is a Schedule 1 banned practice under DMCCA 2024, automatically unfair with no proportionality defence.'},
         {question:'Can you confirm that all countdown timers or limited-time claims in your marketing reflect genuine, verifiable scarcity or time limits?', yesNote:'Technical documentation confirming genuine scarcity is your strongest defence.',noNote:'Countdown timers that reset or do not reflect genuine scarcity are a Schedule 1 banned practice under DMCCA 2024.'},
         {question:'Can you confirm that all customer reviews displayed on your website or in marketing are genuine, verified, and not filtered to exclude negative reviews?', yesNote:'A documented review programme that includes negative reviews and verifies purchasers demonstrates compliance.',noNote:'Fake reviews or filtering of negative reviews are Schedule 20 DMCCA banned practices. These are automatically unfair and have no proportionality or context defence.'},
         {question:'Do you have a documented DMCCA compliance framework or consumer protection policy in place?', yesNote:'A documented framework demonstrates proactive compliance and is a significant mitigating factor.',noNote:'Absence of any documented compliance framework is an aggravating factor in CMA penalty decisions.'},
@@ -547,7 +548,7 @@ var DEMO = {
     stage5:{
       penalty:{low:35000,high:120000,context:'Estimated CMA/DMCCA range based on demo compliance data (3 CMA-category fixes: 1 critical, 2 high). DMCCA 2024 statutory maximum: the higher of £300,000 or 10% of global annual turnover, imposable without court proceedings. Settlement discounts of 20–40% available for full and prompt co-operation.'},
       representations:[
-        'Remove all countdown timers that do not reflect genuine, verifiable scarcity. This is the highest-priority action — Schedule 1 banned practices attract automatic unfairness findings.',
+        'Remove all countdown timers that do not reflect genuine, verifiable scarcity. This is the highest-priority action: Schedule 1 banned practices attract automatic unfairness findings.',
         'Review and remediate your pricing display across all purchase journeys. Drip pricing is a specific CMA enforcement priority.',
         'Address your review practices. Fake reviews or filtering of negative reviews are Schedule 20 banned practices with no context defence.',
         'Co-operate fully. The CMA\'s first DMCCA cases show co-operative businesses received undertakings rather than maximum penalties. Settlement discounts of 20–40% are available.',
@@ -857,10 +858,10 @@ function renderStage5() {
       +'<div class="penalty-reputational-title">Reputational &amp; Operational Sanctions</div>'
       +'<div class="penalty-reputational-sub">'+escH(pen.context||'The ASA does not impose direct financial fines.')+'</div>'
       +'<div class="sanction-list">'
-      +'<div class="sanction-item"><div class="sanction-icon">📢</div><div>Mandatory ad withdrawal or amendment — immediate and public</div></div>'
-      +'<div class="sanction-item"><div class="sanction-icon">📋</div><div>Upheld ruling published permanently on asa.org.uk — visible to consumers and competitors</div></div>'
-      +'<div class="sanction-item"><div class="sanction-icon">⚖️</div><div>Referral to Trading Standards under DMCCA 2024 for persistent or serious breach</div></div>'
-      +'<div class="sanction-item"><div class="sanction-icon">🔁</div><div>Compliance monitoring — the ASA may require you to have future campaigns pre-cleared before publication</div></div>'
+      +'<div class="sanction-item"><div>Mandatory ad withdrawal or amendment: immediate and public</div></div>'
+      +'<div class="sanction-item"><div>Upheld ruling published permanently on asa.org.uk: visible to consumers and competitors</div></div>'
+      +'<div class="sanction-item"><div>Referral to Trading Standards under DMCCA 2024 for persistent or serious breach</div></div>'
+      +'<div class="sanction-item"><div>Compliance monitoring: the ASA may require you to have future campaigns pre-cleared before publication</div></div>'
       +'</div></div>';
   } else if (pen.low != null && pen.high != null && pen.high > 0) {
     html += '<div class="penalty-block">'

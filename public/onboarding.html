@@ -6,7 +6,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Welcome to Sendwize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -18,12 +18,8 @@ html,body{height:100%;overflow:hidden}
   --ease:cubic-bezier(.2,.8,.2,1);
 }
 body{font-family:'DM Sans',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;color:var(--t);line-height:1.6;
-  background:radial-gradient(90% 120% at 100% 0%,#3b2a63 0%,#1d1730 42%,#0c0b09 100%)}
-body::before{content:"";position:fixed;right:-160px;top:-160px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(234,115,23,.28),transparent 68%);pointer-events:none}
-body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
-  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:44px 44px;
-  -webkit-mask-image:radial-gradient(ellipse at 70% 40%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse at 70% 40%,#000 0%,transparent 70%)}
-.mono{font-family:'DM Mono',ui-monospace,monospace}
+  background:#141317}
+.mono{font-family:inherit;font-variant-numeric:tabular-nums}
 svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 
 /* ── TOP ── */
@@ -49,15 +45,15 @@ svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 @keyframes rise{to{opacity:1;transform:none}}
 
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--ol);margin-bottom:18px}
-.eyebrow b{font-family:'DM Mono',monospace;font-weight:500;color:var(--mu);letter-spacing:.05em}
+.eyebrow b{font-family:inherit;font-variant-numeric:tabular-nums;font-weight:500;color:var(--mu);letter-spacing:.05em}
 .eyebrow::before{content:"";width:18px;height:1px;background:var(--o)}
 h1{font-size:clamp(30px,4.2vw,48px);font-weight:700;letter-spacing:-.035em;line-height:1.06;margin-bottom:16px}
-h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 em{font-style:normal;color:var(--o)}
 .lede{font-size:16px;color:var(--tm);line-height:1.65;max-width:470px;margin-bottom:26px}
 
 /* tool rows */
 .tools{display:flex;flex-direction:column;gap:10px;max-width:480px}
-.tool{display:flex;gap:14px;padding:14px 16px;border-radius:14px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(6px)}
+.tool{display:flex;gap:14px;padding:14px 16px;border-radius:14px;background:var(--glass);border:1px solid var(--line)}
 .tool .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:rgba(234,115,23,.14);color:var(--ol);flex-shrink:0}
 .tool-n{font-size:14px;font-weight:700;margin-bottom:2px}
 .tool-d{font-size:12.5px;color:var(--mu);line-height:1.5}
@@ -72,16 +68,15 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
   box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);opacity:0;transform:translateY(16px) scale(.98)}
 .slide.active .vig{animation:rise .8s .15s var(--ease) forwards}
 .vig-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;font-weight:700}
-.dots3{display:flex;gap:5px}.dots3 i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18)}
 .card{background:rgba(12,11,9,.55);border:1px solid var(--line);border-radius:14px;padding:14px}
 .lbl{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;font-weight:700}
-.big{font-family:'DM Mono',monospace;font-size:26px;font-weight:500;line-height:1.1;margin-top:4px}
+.big{font-family:inherit;font-variant-numeric:tabular-nums;font-size:26px;font-weight:500;line-height:1.1;margin-top:4px}
 .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
 .pill.r{background:rgba(248,113,113,.14);color:var(--r)}.pill.y{background:rgba(250,204,21,.14);color:var(--y)}.pill.g{background:rgba(74,222,128,.14);color:var(--g)}.pill.o{background:rgba(234,115,23,.18);color:var(--ol)}
 .row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;color:var(--tm)}
 .row:first-child{border-top:0}
 .row .pill{margin-left:auto}
-.row .v{margin-left:auto;font-family:'DM Mono',monospace;font-size:12px;color:#fff;white-space:nowrap}
+.row .v{margin-left:auto;font-family:inherit;font-variant-numeric:tabular-nums;font-size:12px;color:#fff;white-space:nowrap}
 .stagger>*{opacity:0;transform:translateX(8px)}
 .slide.active .stagger>*{animation:rise .5s var(--ease) forwards}
 .slide.active .stagger>*:nth-child(1){animation-delay:.5s}.slide.active .stagger>*:nth-child(2){animation-delay:.7s}
@@ -92,7 +87,7 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
 @property --p{syntax:'<number>';inherits:false;initial-value:0}
 .slide.active .ring{--p:var(--to)}
 .ring>div{width:96px;height:96px;border-radius:50%;background:#16121f;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ring b{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;line-height:1}.ring span{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;margin-top:3px}
+.ring b{font-family:inherit;font-variant-numeric:tabular-nums;font-size:28px;font-weight:500;line-height:1}.ring span{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;margin-top:3px}
 
 /* welcome orbit */
 .orbit{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -137,7 +132,7 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
 .slide.active .bar .g1{width:62%;transition-delay:.5s}.slide.active .bar .y1{width:21%;transition-delay:.7s}.slide.active .bar .r1{width:17%;transition-delay:.9s}
 .bar .g1{background:var(--g)}.bar .y1{background:var(--y)}.bar .r1{background:var(--r)}
 .legend{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.legend div{font-size:11px;color:var(--mu)}.legend b{display:block;font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:#fff}
+.legend div{font-size:11px;color:var(--mu)}.legend b{display:block;font-family:inherit;font-variant-numeric:tabular-nums;font-size:18px;font-weight:500;color:#fff}
 .spark{width:100%;height:56px;margin-top:6px}
 .spark path{fill:none;stroke:var(--ol);stroke-width:2;stroke-dasharray:400;stroke-dashoffset:400}
 .slide.active .spark path{animation:draw 1.6s .8s var(--ease) forwards}
@@ -146,7 +141,7 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
 /* site vignette */
 .browser{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:rgba(12,11,9,.6)}
 .browser .bar2{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:11px;color:var(--mu)}
-.browser .url{flex:1;background:rgba(255,255,255,.06);border-radius:6px;padding:3px 8px;font-family:'DM Mono',monospace;font-size:10.5px}
+.browser .url{flex:1;background:rgba(255,255,255,.06);border-radius:6px;padding:3px 8px;font-family:inherit;font-variant-numeric:tabular-nums;font-size:10.5px}
 .browser .page{position:relative;padding:14px;height:92px;overflow:hidden}
 .ph{height:8px;border-radius:4px;background:rgba(255,255,255,.08);margin-bottom:8px}
 .scan{position:absolute;left:0;right:0;top:0;height:2px;background:var(--o);box-shadow:0 0 16px 2px rgba(234,115,23,.7);opacity:0}
@@ -166,14 +161,14 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
 .doc .row{border-top-color:#e4ddd2;color:#4a453e;font-size:12px;padding:7px 0}
 .doc .row .v{color:#1d1a16}
 .stamp{position:absolute;right:16px;bottom:14px;white-space:nowrap;border:2px solid #16a34a;color:#16a34a;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transform:rotate(-8deg) scale(1.8);opacity:0}
-.stamp small{display:block;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0;text-transform:none;font-weight:500}
+.stamp small{display:block;font-family:inherit;font-variant-numeric:tabular-nums;font-size:9px;letter-spacing:0;text-transform:none;font-weight:500}
 .slide.active .stamp{animation:stamp .35s 1.3s cubic-bezier(.3,1.6,.5,1) forwards}
 @keyframes stamp{to{opacity:1;transform:rotate(-8deg) scale(1)}}
 
 /* finish */
 .steps{display:flex;flex-direction:column;gap:12px}
 .step{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:14px;background:var(--glass);border:1px solid var(--line)}
-.step .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:'DM Mono',monospace;font-size:13px;background:rgba(234,115,23,.16);color:var(--ol);border:1px solid rgba(234,115,23,.4);flex-shrink:0}
+.step .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;background:rgba(234,115,23,.16);color:var(--ol);border:1px solid rgba(234,115,23,.4);flex-shrink:0}
 .step .n{font-size:14px;font-weight:700}.step .d{font-size:12.5px;color:var(--mu);line-height:1.5}
 .btn-cta{margin-top:4px;background:var(--o);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;padding:15px 26px;border-radius:12px;display:inline-flex;align-items:center;gap:10px;transition:all .2s var(--ease);box-shadow:0 10px 30px rgba(234,115,23,.35)}
 .btn-cta:hover{background:var(--od);transform:translateY(-1px)}
@@ -181,8 +176,8 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
 /* ── NAV ── */
 .nav{position:fixed;bottom:0;left:0;right:0;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:50;background:linear-gradient(to top,rgba(12,11,9,.9) 40%,transparent)}
 .pips{display:flex;gap:6px;align-items:center}
-.pip{width:7px;height:7px;border-radius:999px;background:rgba(255,255,255,.18);border:none;padding:0;cursor:pointer;transition:all .35s var(--ease)}
-.pip.on{width:26px;background:var(--o)}
+.pip{width:18px;height:3px;border-radius:2px;background:rgba(255,255,255,.18);border:none;padding:0;cursor:pointer;transition:all .35s var(--ease)}
+.pip.on{background:var(--o)}
 .pip:hover:not(.on){background:rgba(255,255,255,.4)}
 .nav-btns{display:flex;gap:8px;align-items:center}
 .btn-back{background:transparent;border:1px solid var(--line);color:var(--tm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;padding:11px 18px;border-radius:10px;transition:all .2s}
@@ -244,7 +239,7 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
         <p class="lede" style="font-size:13px;color:var(--mu)">Takes about a minute. Use the arrow keys if you like.</p>
       </div>
       <div class="vig">
-        <div class="vig-h"><span>Four groups, eight tools</span><span class="dots3"><i></i><i></i><i></i></span></div>
+        <div class="vig-h"><span>Four groups, eight tools</span></div>
         <div class="orbit stagger">
           <div class="card"><div class="ic"><svg class="i"><use href="#i-send"/></svg></div><div><div class="n">Before you send</div><div class="d">Send-day verdict · Copy checker</div></div></div>
           <div class="card"><div class="ic"><svg class="i"><use href="#i-users"/></svg></div><div><div class="n">Your list</div><div class="d">List health · Audience read</div></div></div>
@@ -268,7 +263,7 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
         </div>
       </div>
       <div class="vig">
-        <div class="vig-h"><span>Dashboard</span><span class="dots3"><i></i><i></i><i></i></span></div>
+        <div class="vig-h"><span>Dashboard</span></div>
         <div class="dash">
           <div class="ring" style="--to:68"><div><b>68</b><span>Score</span></div></div>
           <div class="tiles">
@@ -327,7 +322,7 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
         <div class="rail"><span>Before you send</span><span class="on">Your list</span><span>Website and suppliers</span><span>Records and practice</span></div>
       </div>
       <div class="vig">
-        <div class="vig-h"><span>Main Newsletter · 315 contacts</span><span class="dots3"><i></i><i></i><i></i></span></div>
+        <div class="vig-h"><span>Main Newsletter · 315 contacts</span></div>
         <div class="card">
           <div class="lbl">Who you can email</div>
           <div class="bar"><i class="g1"></i><i class="y1"></i><i class="r1"></i></div>
@@ -355,9 +350,9 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--o),var(--ol));-we
         <div class="rail"><span>Before you send</span><span>Your list</span><span class="on">Website and suppliers</span><span>Records and practice</span></div>
       </div>
       <div class="vig">
-        <div class="vig-h"><span>Site sweep</span><span class="dots3"><i></i><i></i><i></i></span></div>
+        <div class="vig-h"><span>Site sweep</span></div>
         <div class="browser">
-          <div class="bar2"><span class="dots3"><i></i><i></i><i></i></span><span class="url">yourshop.co.uk</span></div>
+          <div class="bar2"><span class="url">yourshop.co.uk</span></div>
           <div class="page"><div class="ph" style="width:40%"></div><div class="ph" style="width:85%"></div><div class="ph" style="width:70%"></div><div class="ph" style="width:55%"></div><div class="scan"></div></div>
         </div>
         <div class="card res">

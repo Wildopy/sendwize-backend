@@ -5,9 +5,9 @@
   <script src="https://sendwize-backend.vercel.app/sw-tool-nav.js" defer></script>
   <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Third parties — Sendwize</title>
+<title>Third parties | Sendwize</title>
 <link rel="preconnect" href="http//fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -55,7 +55,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .ss-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--mu);margin-bottom:4px}
 .ss-tile.total .ss-label{color:var(--od)}
 .ss-row{display:flex;align-items:baseline;gap:8px}
-.ss-num{font-size:24px;font-weight:800;font-family:'DM Mono',monospace;line-height:1}
+.ss-num{font-size:24px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;line-height:1}
 .ss-num.g{color:var(--g)}.ss-num.y{color:var(--y)}.ss-num.r{color:var(--r)}.ss-num.mu{color:var(--mu)}.ss-num.o{color:var(--o)}
 .ss-num.na{font-size:14px;color:var(--mu);font-weight:600}
 .ss-verdict{font-size:12px;font-weight:600;color:var(--tm)}
@@ -85,7 +85,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .type-card-desc{font-size:11.5px;color:var(--tm);line-height:1.5;flex:1}
 .type-card-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:8px;border-top:1px solid var(--b)}
 .type-card.on .type-card-meta{border-top-color:var(--om)}
-.type-card-count{font-size:11px;color:var(--tm);font-family:'DM Mono',monospace}
+.type-card-count{font-size:11px;color:var(--tm);font-family:inherit;font-variant-numeric:tabular-nums}
 .type-card-count strong{color:var(--t);font-size:12px;font-weight:600}
 .type-card-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;text-transform:uppercase;letter-spacing:.05em;display:inline-flex;align-items:center;gap:4px}
 .tc-status-clear{background:var(--gb);color:var(--g)}
@@ -107,7 +107,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .steps-guide{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:22px}
 @media(max-width:640px){.steps-guide{grid-template-columns:repeat(2,1fr)}}
 .step-guide-item{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:12px 13px;position:relative}
-.step-guide-num{font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:var(--o);letter-spacing:.03em;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.step-guide-num{font-family:inherit;font-variant-numeric:tabular-nums;font-size:10px;font-weight:600;color:var(--o);letter-spacing:.03em;margin-bottom:4px;display:flex;align-items:center;gap:6px}
 .step-guide-num-dot{width:16px;height:16px;border-radius:50%;background:var(--ol);color:var(--o);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:9px}
 .step-guide-title{font-size:12.5px;font-weight:700;margin-bottom:3px}
 .step-guide-desc{font-size:11px;color:var(--tm);line-height:1.5}
@@ -129,7 +129,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .chip{padding:6px 12px;border:1px solid var(--b);border-radius:20px;font-size:11.5px;font-weight:500;background:var(--w);color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
 .chip:hover{border-color:var(--bm)}
 .chip.on{background:var(--t);color:#fff;border-color:var(--t)}
-.chip-count{font-family:'DM Mono',monospace;font-size:10px;opacity:.7}
+.chip-count{font-family:inherit;font-variant-numeric:tabular-nums;font-size:10px;opacity:.7}
 .rel-list{display:flex;flex-direction:column;gap:8px}
 .rel-item{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
 .rel-item:hover{border-color:var(--bm);box-shadow:var(--sh)}
@@ -203,7 +203,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .clause-item{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;margin-bottom:7px;border-left:3px solid var(--bm);transition:border-color .15s}
 .clause-item.pass{border-left-color:var(--g)}.clause-item.fail{border-left-color:var(--r)}.clause-item.warn{border-left-color:var(--y)}
 .clause-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-.clause-num{font-size:10px;font-weight:700;color:var(--mu);flex-shrink:0;font-family:'DM Mono',monospace;padding:1px 6px;background:var(--bg);border-radius:3px}
+.clause-num{font-size:10px;font-weight:700;color:var(--mu);flex-shrink:0;font-family:inherit;font-variant-numeric:tabular-nums;padding:1px 6px;background:var(--bg);border-radius:3px}
 .clause-title{font-size:13px;font-weight:600;flex:1}
 .clause-req{font-size:11.5px;color:var(--tm);line-height:1.55;margin-bottom:8px}
 .clause-btns{display:flex;gap:5px;flex-wrap:wrap}
@@ -228,7 +228,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .file-drop strong{display:block;font-size:13px;color:var(--t);margin-bottom:3px}
 .file-drop input[type=file]{display:none}
 .file-chosen{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:10px 12px;font-size:12px;display:flex;align-items:center;gap:8px;flex:1}
-.file-chosen-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'DM Mono',monospace;font-size:11.5px}
+.file-chosen-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:inherit;font-variant-numeric:tabular-nums;font-size:11.5px}
 .file-clear{background:none;border:none;cursor:pointer;color:var(--mu);font-family:inherit;padding:2px 6px;display:inline-flex;align-items:center}
 .file-clear:hover{color:var(--r)}
 .scan-spin-wrap{text-align:center;padding:22px;color:var(--mu);font-size:13px}
@@ -321,7 +321,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .loading-bg{position:fixed;inset:0;background:rgba(244,243,240,.88);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(2px)}
 .loading-bg.open{display:flex}
 .loading-spin{width:28px;height:28px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}
-.loading-msg{font-size:13px;color:var(--tm);font-family:'DM Mono',monospace}
+.loading-msg{font-size:13px;color:var(--tm);font-family:inherit;font-variant-numeric:tabular-nums}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:var(--rad-sm);font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:340px;line-height:1.4}
 .toast.on{transform:translateY(0);opacity:1}
 .toast.ok{background:var(--g)}.toast.er{background:var(--r)}
@@ -351,7 +351,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .exposure-card.risk{border-left:3px solid var(--r)}
 .exposure-card.ok{border-left:3px solid var(--g)}
 .exposure-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--mu);margin-bottom:4px}
-.exposure-value{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;line-height:1}
+.exposure-value{font-size:22px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;line-height:1}
 .exposure-value.risk{color:var(--r)}
 .exposure-value.ok{color:var(--g)}
 .exposure-sub{font-size:11px;color:var(--mu);margin-top:3px}
@@ -371,7 +371,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .passport-icon{font-size:36px;flex-shrink:0}
 .passport-title{font-size:15px;font-weight:700;color:var(--g);margin-bottom:3px}
 .passport-sub{font-size:12px;color:var(--tm);line-height:1.55}
-.passport-date{font-size:11px;color:var(--mu);margin-top:4px;font-family:'DM Mono',monospace}
+.passport-date{font-size:11px;color:var(--mu);margin-top:4px;font-family:inherit;font-variant-numeric:tabular-nums}
 
 .verif-stepper{display:flex;flex-direction:column;gap:0}
 .verif-step{border:1px solid var(--b);border-radius:var(--rad-sm);margin-bottom:8px;overflow:hidden;background:var(--w)}
@@ -770,7 +770,7 @@ function marketingStatus(f) {
 
 function partnerAgreement(f) {
   var rel = f.DataRelationship || 'unknown';
-  if (rel==='none') return { rel:rel, required:null, ok:true, statusField:null, label:'No personal data shared — no agreement needed' };
+  if (rel==='none') return { rel:rel, required:null, ok:true, statusField:null, label:'No personal data shared: no agreement needed' };
   if (rel==='joint_controller') return { rel:rel, required:'Article 26 arrangement', ok:isDPAConfirmed(f.Article26Status), statusField:'Article26Status' };
   if (rel==='independent_controllers') return { rel:rel, required:'Data sharing agreement', ok:isDPAConfirmed(f.DataAgreementStatus), statusField:'DataAgreementStatus' };
   if (rel==='processor') return { rel:rel, required:'Article 28 DPA', ok:isDPAConfirmed(f.DataAgreementStatus), statusField:'DataAgreementStatus' };
@@ -1334,7 +1334,7 @@ function renderDetailOverview(rec) {
     var allClear = dpaOk && scanned && !stale && m.complete && !m.gaps.length;
 
     var mHtml = '<div class="narrative-card"><div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
-      + '<div style="font-size:32px;font-weight:800;font-family:DM Mono,monospace;color:'+(m.answered?scoreColour(m.score):'var(--mu)')+'">'+(m.answered?m.score:'\u2014')+'</div>'
+      + '<div style="font-size:32px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;color:'+(m.answered?scoreColour(m.score):'var(--mu)')+'">'+(m.answered?m.score:'\u2014')+'</div>'
       + '<div style="flex:1;min-width:180px"><div style="font-size:14px;font-weight:700">How you use it \u2014 '+escH(MKT_CATEGORIES[m.category])+'</div>'
       + '<div style="font-size:11px;color:var(--mu)">'+m.answered+' of '+m.total+' checks answered'+(m.gaps.length?' \u00b7 '+m.gaps.length+' need attention':'')+' \u00b7 self-assessed</div></div>'
       + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'marketing\')">'+(m.answered?'Review':'Start')+' checks</button></div>';
@@ -1558,7 +1558,7 @@ function renderDPAReview(rec) {
     ? '<div class="scan-row"><div class="file-chosen"><i class="ph ph-file-pdf icon-16"></i><span class="file-chosen-name">'+escH(file.name)+'</span><button class="file-clear" onclick="clearScanFile()"><i class="ph ph-x icon-16"></i></button></div><button class="btn btn-primary btn-sm" onclick="runDPAScan(\''+rec.id+'\',\'file\')">Scan <i class="ph ph-arrow-right icon-16"></i></button></div>'
     : '<label class="file-drop" id="fileDrop"><strong>Click to choose a PDF</strong>Or drag and drop the DPA here<input type="file" accept=".pdf,application/pdf" onchange="chooseScanFile(this)"></label>';
 
-  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Evidence-based DPA review — check this vendor\'s agreement against the Article 28 UK GDPR requirements and the UK transfer rules. Paste a URL, upload the PDF, or self-certify each clause.</p>'
+  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Evidence-based DPA review: check this vendor\'s agreement against the Article 28 UK GDPR requirements and the UK transfer rules. Paste a URL, upload the PDF, or self-certify each clause.</p>'
     + '<div class="scan-controls">'
     + '<div class="scan-controls-label">Scan the DPA</div>'
     + '<div class="scan-tabs">'
@@ -1797,7 +1797,7 @@ function renderPrivacyReview(rec) {
   var passed = Object.values(stored).filter(function(v){return v==='yes';}).length;
   var partial = Object.values(stored).filter(function(v){return v==='partial';}).length;
   var scoreHtml = Object.keys(stored).length
-    ? '<div style="margin-bottom:14px;padding:12px 14px;background:var(--bg);border-radius:var(--rad-sm);border:1px solid var(--b)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--tm);margin-bottom:4px">UK GDPR transparency check</div><div style="font-size:20px;font-weight:800;font-family:DM Mono,monospace">'+passed+'/'+PRIVACY.length+'</div><div style="font-size:11px;color:var(--mu)">requirements met'+(partial?' \u00b7 '+partial+' partial':'')+'</div></div>'
+    ? '<div style="margin-bottom:14px;padding:12px 14px;background:var(--bg);border-radius:var(--rad-sm);border:1px solid var(--b)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--tm);margin-bottom:4px">UK GDPR transparency check</div><div style="font-size:20px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums">'+passed+'/'+PRIVACY.length+'</div><div style="font-size:11px;color:var(--mu)">requirements met'+(partial?' \u00b7 '+partial+' partial':'')+'</div></div>'
     : '';
   var rows = PRIVACY.map(function(c){
     var r = stored[c.key]||'unknown';
@@ -2768,7 +2768,7 @@ function vendorAssuranceHtml(f, name) {
   }
   var html = '<div class="narrative-card" style="padding:0;overflow:hidden">';
   html += '<div style="padding:16px 20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--b)">';
-  html += '<div style="font-size:26px;font-weight:800;font-family:DM Mono,monospace;color:'+scoreColour(f.ComplianceScore||0)+'">'+(f.ComplianceScore||0)+'</div>';
+  html += '<div style="font-size:26px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;color:'+scoreColour(f.ComplianceScore||0)+'">'+(f.ComplianceScore||0)+'</div>';
   html += '<div><div style="font-size:14px;font-weight:700">Vendor assurance</div><div style="font-size:11px;color:var(--mu)">Due diligence on the company itself \u2014 separate from how you use it'+(intel && intel.confidence ? ' \u00b7 confidence: '+escH(intel.confidence) : '')+'</div></div></div>';
   if (bd) {
     html += '<div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px">';
@@ -2795,7 +2795,7 @@ function vendorAssuranceHtml(f, name) {
         + '<div style="font-size:10px;color:var(--mu);margin-top:3px;font-style:italic">Source: '+escH(typeLabels[fd.type]||fd.type||'')+'</div></div>'
         + '<span class="pill '+p[0]+'" style="flex-shrink:0">'+p[1]+'</span></div>';
     });
-    if (intel.lastChecked) html += '<div style="font-size:10px;color:var(--mu);margin-top:10px;font-family:DM Mono,monospace">Last assessed: '+fmtDate(intel.lastChecked)+(intel.source==='sendwize_curated' ? ' \u00b7 Sendwize curated data' : ' \u00b7 Automated assessment')+'</div>';
+    if (intel.lastChecked) html += '<div style="font-size:10px;color:var(--mu);margin-top:10px;font-family:inherit;font-variant-numeric:tabular-nums">Last assessed: '+fmtDate(intel.lastChecked)+(intel.source==='sendwize_curated' ? ' \u00b7 Sendwize curated data' : ' \u00b7 Automated assessment')+'</div>';
     html += '</div>';
   }
   return html + '</div>';
