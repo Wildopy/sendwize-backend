@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   SENDWIZE — sw-tool-nav.js v1.0  (browser)
+   SENDWIZE: sw-tool-nav.js v1.0  (browser)
    The same strip under the header of every tool page: a way back to the
    dashboard and a switcher to the other tools, grouped as they are on
    the dashboard. Load it after sw-auth.js:

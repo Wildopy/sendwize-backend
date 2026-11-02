@@ -7,7 +7,7 @@
 <title>The Sendwize exposure algorithm</title>
 <meta name="description" content="How every exposure figure in Sendwize is calculated: published enforcement cases, your business profile and fixed rules.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -36,22 +36,22 @@ h1{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.8px;line-heig
 .toc ol{padding-left:20px;columns:2;column-gap:28px}.toc li{margin:3px 0}
 section{margin-bottom:48px;scroll-margin-top:70px}
 h2{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:8px;display:flex;align-items:baseline;gap:10px}
-h2 .n{font-family:'DM Mono',monospace;font-size:13px;color:var(--o);font-weight:500}
+h2 .n{font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;color:var(--o);font-weight:500}
 h3{font-size:14px;font-weight:700;margin:22px 0 8px}
 p{font-size:14px;color:var(--tm);margin-bottom:10px;max-width:680px}
 p b{color:var(--t)}
 .card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px;box-shadow:var(--sh);margin:14px 0}
-.formula{background:var(--t);color:#f5f5f4;border-radius:var(--rad);padding:18px 20px;font-family:'DM Mono',monospace;font-size:13px;line-height:1.9;margin:14px 0;overflow-x:auto;white-space:pre}
+.formula{background:var(--t);color:#f5f5f4;border-radius:var(--rad);padding:18px 20px;font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;line-height:1.9;margin:14px 0;overflow-x:auto;white-space:pre}
 .formula .c{color:#a8a29e}.formula .k{color:#fbbf24}
 .tbl-wrap{overflow-x:auto;border:1px solid var(--b);border-radius:var(--rad);background:var(--w);margin:12px 0}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--b);vertical-align:top}
 th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);font-weight:700;background:#faf9f7;white-space:nowrap}
 tr:last-child td{border-bottom:none}
-td.num{font-family:'DM Mono',monospace;white-space:nowrap}
+td.num{font-family:inherit;font-variant-numeric:tabular-nums;white-space:nowrap}
 .yours{background:var(--ol)}
 th.yours{color:var(--od)}
-.up{color:var(--r);font-family:'DM Mono',monospace;font-weight:600}.down{color:var(--g);font-family:'DM Mono',monospace;font-weight:600}
+.up{color:var(--r);font-family:inherit;font-variant-numeric:tabular-nums;font-weight:600}.down{color:var(--g);font-family:inherit;font-variant-numeric:tabular-nums;font-weight:600}
 .tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
 .tag.profile{background:var(--ol);color:var(--od)}.tag.rule{background:#e7e5e4;color:#44403c}.tag.ai{background:var(--purb);color:var(--pur)}
 .tag.high{background:#fee2e2;color:#991b1b}.tag.medium{background:#fef3c7;color:#92400e}.tag.low{background:var(--gb);color:var(--g)}
@@ -59,7 +59,7 @@ th.yours{color:var(--od)}
 .you-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}
 .you-item{background:var(--bg);border-radius:var(--rad-sm);padding:10px 12px}
 .you-k{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu)}
-.you-v{font-size:15px;font-weight:700;font-family:'DM Mono',monospace}
+.you-v{font-size:15px;font-weight:700;font-family:inherit;font-variant-numeric:tabular-nums}
 .you-v.miss{color:var(--r);font-family:inherit;font-size:13px}
 .steps{list-style:none;counter-reset:s}
 .steps li{counter-increment:s;position:relative;padding:8px 0 8px 34px;font-size:13px;color:var(--tm);border-bottom:1px dashed var(--b)}
@@ -69,11 +69,11 @@ th.yours{color:var(--od)}
 .bar{position:relative;height:12px;background:#ece9e3;border-radius:6px;margin:18px 0 6px}
 .bar i{position:absolute;top:0;bottom:0;background:var(--o);border-radius:6px;opacity:.85}
 .bar s{position:absolute;top:-5px;width:3px;height:22px;background:var(--t);border-radius:2px}
-.bar-l{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}
+.bar-l{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);font-family:inherit;font-variant-numeric:tabular-nums}
 .callout{background:#fff7ed;border:1px solid var(--om);border-left:3px solid var(--o);border-radius:var(--rad-sm);padding:14px 16px;font-size:13px;color:#7c2d12;margin:14px 0}
 .cases{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .case{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px}
-.case-f{font-family:'DM Mono',monospace;font-size:17px;font-weight:600;color:#991b1b}
+.case-f{font-family:inherit;font-variant-numeric:tabular-nums;font-size:17px;font-weight:600;color:#991b1b}
 .case-n{font-size:13px;font-weight:700;margin:2px 0}
 .case-s{font-size:12px;color:var(--tm)}
 .case-m{font-size:11px;color:var(--mu);margin-top:6px}

@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   SENDWIZE — sw-auth.js v1.0  (browser)
+   SENDWIZE: sw-auth.js v1.0  (browser)
    Sends the signed-in member's Memberstack token with every API call,
    so the backend knows who is calling instead of trusting ?userId=.
 
