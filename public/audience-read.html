@@ -1057,7 +1057,7 @@ function renderARInsights(ins){
   var calls=names.filter(function(n){return segs[n].nextSend;});
   if(calls.length){
     h+='<div class="res-sec">What to do now</div><div class="ins-calls">'+calls.map(function(n){var ns=segs[n].nextSend;
-      return'<div class="ins-call '+escH(ns.call)+'"><div class="ins-call-seg">'+escH(n)+'</div><div class="ins-call-word">'+escH(CALL_WORDS[ns.call]||ns.call)+'</div><div class="ins-call-txt">'+escH(ns.text)+'</div>'
+      return'<div class="ins-call '+escH(ns.call)+'"><div class="ins-call-seg">'+escH(n)+'</div><div class="ins-call-word">'+escH(CALL_WORDS[ns.call]||ns.call)+'</div><div class="ins-call-txt">'+escH(String(ns.text||'').replace(/^Good to send\.\s*/,''))+'</div>'
         +'<div class="btn-row"><button class="btn btn-primary btn-sm" data-s="'+escH(n)+'" onclick="checkPlannedSend(this.dataset.s)">Check a planned send</button><button class="btn btn-ghost btn-sm" onclick="openModal()">Log a send</button></div></div>';
     }).join('')+'</div>';
   }
