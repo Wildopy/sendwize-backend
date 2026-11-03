@@ -17,7 +17,7 @@
 // ─────────────────────────────────────────────────────────────
 import crypto from 'crypto';
 import { claudeFetch, parseJson } from './_claude.js';
-import { SYSTEM_PROMPT, ANALYSIS_SCHEMA, CHANNEL_RULES } from './analyze-copy.js';
+import { SYSTEM_PROMPT, ANALYSIS_SCHEMA, CHANNEL_RULES, cleanWriting } from './analyze-copy.js';
 import { requireAuth } from './_auth.js';
 import { atFetch } from './_airtable.js';
 
@@ -207,6 +207,7 @@ export default async function handler(req, res) {
         ? 'Go. The copy check found no potential areas requiring review.'
         : `${verdict === 'hold' ? 'Hold this send.' : 'Fix first.'} We found ${hold.length + fix.length} potential area${hold.length + fix.length === 1 ? '' : 's'} requiring review.`,
       issueCount: hold.length + fix.length,
+      writingCount: cleanWriting(a.writing).length,
       glimpse,
       notice: 'This checks the copy only, not your list or landing pages. It is not legal advice. We do not keep the text you paste.',
     });

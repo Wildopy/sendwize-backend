@@ -142,6 +142,7 @@
       h += '<div class="swfc-lock">' +
         (v.issueCount ? '<strong>' + v.issueCount + ' item' + (v.issueCount === 1 ? '' : 's') + ' found.</strong> The full details, the fix for each one and a rewritten version are in the Sendwize report.' :
                         'Check your list and landing pages too, and keep a dated record that you checked, with Sendwize.') +
+        (v.writingCount ? '<br>We also spotted ' + v.writingCount + ' spelling or grammar slip' + (v.writingCount === 1 ? '' : 's') + '. The report shows each one with the fix.' : '') +
         '<br><a class="swfc-cta" href="' + esc(SIGNUP) + '">See the full report</a></div>';
       h += '<p class="swfc-small">' + esc(v.notice) + '</p></div>';
       out.innerHTML = h;
