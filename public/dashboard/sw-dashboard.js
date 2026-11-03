@@ -35,7 +35,7 @@
   'use strict';
   var API = 'https://sendwize-backend.vercel.app';
   var root, userId, member = null, D = null;
-  var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
+  var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { list: 0, ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'list' };
   var drafts = {}, nums = {}, lastRing = null;
   var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var AREA_LABELS = { consent: 'Marketing consent', suppression: 'Opt-outs and suppression', processors: 'Processors and data sharing', transparency: 'Transparency and identity', lawful_basis: 'Legitimate interests', ASA: 'Advertising claims (ASA)', CMA: 'Consumer law (CMA)', Commercial: 'Commercial', other: 'Other' };
@@ -208,7 +208,7 @@
       (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-open sw-fixes" id="sw-fixes">' + fixesSection() + '</div>') +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Recent checks</span><span>' +
-        ['ai', 'verdict', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' }[k] + '</button>'; }).join('') +
+        ['list', 'ai', 'verdict', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { list: 'Lists', ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' }[k] + '</button>'; }).join('') +
       '</span></div><div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/exposure-algorithm.html')) + '">The Sendwize exposure algorithm</a> · <a href="' + esc(link('/profile.html')) + '">Your business profile</a></div>';
     drawSpark(); animate();
@@ -788,7 +788,9 @@
     try {
       if (!histCache[k]) {
         el.className = 'sw-ld'; el.innerHTML = '<div class="sw-spin"></div>';
-        histCache[k] = k === 'verdict'
+        histCache[k] = k === 'list'
+          ? ((await api('/api/list-intelligence?action=lists&userId=' + encodeURIComponent(userId))).lists || []).slice().sort(function (a, b) { return String(b.checkDate || '').localeCompare(String(a.checkDate || '')); }).map(function (l) { return { id: l.listName, fields: l }; })
+          : k === 'verdict'
           ? ((await api('/api/verdict?action=list&userId=' + encodeURIComponent(userId))).verdicts || []).map(function (v) { return { id: v.id, fields: { CampaignName: v.campaign, Verdict: v.verdict, CreatedAt: v.createdAt, Channel: v.channel } }; })
           : (await api('/api/data?action=history&type=' + k + '&userId=' + encodeURIComponent(userId))).records || [];
       }
@@ -802,7 +804,8 @@
   }
   function histRow(k, f, id) {
     var t, s, d, href;
-    if (k === 'ai') { t = f.FileName || 'Copy check'; s = f.Verdict || ''; d = f.CheckDate; href = link('/ai-checker.html', 'checkId=' + encodeURIComponent(id)); }
+    if (k === 'list') { t = f.listName || 'List check'; s = (f.totalContacts ? Number(f.totalContacts).toLocaleString('en-GB') + ' contacts' : '') + (f.liabilityCount ? ' · ' + Number(f.liabilityCount).toLocaleString('en-GB') + ' below consent threshold' : ''); d = f.checkDate; href = link('/list-intelligence.html', 'listName=' + encodeURIComponent(f.listName || '')); }
+    else if (k === 'ai') { t = f.FileName || 'Copy check'; s = f.Verdict || ''; d = f.CheckDate; href = link('/ai-checker.html', 'checkId=' + encodeURIComponent(id)); }
     else if (k === 'verdict') { t = f.CampaignName || 'Send-day verdict'; s = f.Verdict || ''; d = f.CreatedAt; href = link('/send-verdict.html', 'verdictId=' + encodeURIComponent(id)); }
     else if (k === 'simulation') { t = (f.Regulator || '') + ' simulation'; s = f.Band || ''; d = f.CreatedAt; href = link('/ico-simulator.html', 'simulationId=' + encodeURIComponent(id)); }
     else if (k === 'vendor') { t = f.VendorName || f.Vendor || 'Vendor'; s = f.RiskLevel || f.Status || ''; d = f.LastChecked; href = link('/vendor-checker.html'); }
