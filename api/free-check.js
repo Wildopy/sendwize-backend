@@ -134,7 +134,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   if (process.env.SENDWIZE_FREE_CHECK !== 'true' || !process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return res.status(503).json({ error: 'The free check is not available right now.', code: 'free_check_off' });
+    return res.status(503).json({ error: 'The free check is paused right now. Create an account to check your copy.', code: 'free_check_off' });
   }
 
   const { copy, subject, channel, email } = req.body ?? {};
