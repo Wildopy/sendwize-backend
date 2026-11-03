@@ -39,6 +39,7 @@ import { validateListUpload, normaliseListRow } from './_normalise.js';
 import { buildListInsights, emailKey, DEFAULT_CONSENT_MONTHS } from './_list-insights.js';
 import { buildLibrary } from './_cases.js';
 import { lapsedBetween } from './_memory.js';
+import { buildExposureForFix, refineExposure, clusterExposure, profileContext, normaliseSector, BAND_LABELS, ICO_LEGAL_MAX, NOT_LEGAL_ADVICE } from './_exposure.js';
 
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -112,17 +113,11 @@ function hashEmail(email) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// EXPOSURE CONSTANTS — v1.8
-// Anchored to published enforcement cases
+// EXPOSURE CONSTANTS — ASA and CMA labels only.
+// ICO £ figures come from the shared engine in _exposure.js (v2.1)
 // ─────────────────────────────────────────────────────────────
 
 const EXPOSURE_ANCHORS = {
-  ico: {
-    perContactLiability: 0.28,   // HelloFresh £140k / ~500k contacts
-    perContactAtRisk:    0.14,   // 50% — approaching but not yet below threshold
-    label: 'ICO (PECR)',
-    basis: 'Anchored to HelloFresh £140,000 (2024), scaled by contact volume',
-  },
   asa: {
     roleBasedPerContact: 0.05,
     disposablePerContact: 0.02,
@@ -267,6 +262,11 @@ const DISPOSABLE_DOMAINS = new Set(['mailinator.com','guerrillamail.com','10minu
 const ROLE_PREFIXES = new Set(['admin','info','support','help','contact','sales','marketing','noreply','no-reply','postmaster','webmaster','abuse','hello','office','team','billing','accounts','enquiries','enquiry','mail','email']);
 const SPAM_TRAP_INDICATORS = ['spam','trap','test','fake','invalid','bounce'];
 const TYPO_DOMAINS = {'gmai.com':'gmail.com','gmial.com':'gmail.com','gamil.com':'gmail.com','hotmial.com':'hotmail.com','hotmai.com':'hotmail.com','yahooo.com':'yahoo.com','yaho.com':'yahoo.com','outlok.com':'outlook.com','outloo.com':'outlook.com','livee.com':'live.com','iclod.com':'icloud.com'};
+// v2.1: a contact's value is a year of email revenue, not one send. The
+// benchmark gives the value of one campaign to one contact; a list that
+// sends one campaign a month earns twelve of those a year. One campaign a
+// month is deliberately conservative (most ecommerce lists send weekly).
+const CAMPAIGNS_PER_YEAR = 12;
 const SECTOR_BENCHMARKS = { ecommerce:{conversionRate:0.025,avgOrderMultiplier:1.0}, finance:{conversionRate:0.008,avgOrderMultiplier:4.0}, healthcare:{conversionRate:0.012,avgOrderMultiplier:2.5}, agency:{conversionRate:0.015,avgOrderMultiplier:3.0}, other:{conversionRate:0.018,avgOrderMultiplier:1.2} };
 
 // ─────────────────────────────────────────────────────────────
@@ -323,9 +323,9 @@ function dimension3_commercial(contact, sector, aov) {
     else if (engType.includes('open')) engMultiplier = daysSinceEng < 90 ? 1.1 : daysSinceEng < 180 ? 0.9 : 0.6;
     else engMultiplier = daysSinceEng < 90 ? 0.9 : daysSinceEng < 365 ? 0.7 : 0.4;
   }
-  const commercialValue = parseFloat((baseValue * engMultiplier).toFixed(2));
+  const commercialValue = parseFloat((baseValue * engMultiplier * CAMPAIGNS_PER_YEAR).toFixed(2));
   const decayedMultiplier = engMultiplier * 0.85;
-  const interventionValue = parseFloat((baseValue * (engMultiplier - decayedMultiplier)).toFixed(2));
+  const interventionValue = parseFloat((baseValue * (engMultiplier - decayedMultiplier) * CAMPAIGNS_PER_YEAR).toFixed(2));
   const direction = engMultiplier > 1.0 ? 'growing' : engMultiplier > 0.7 ? 'stable' : 'declining';
   return { commercialValue, interventionValue, direction };
 }
@@ -398,7 +398,7 @@ function analyseList(contacts, sector, aov, validityDays = DEFAULT_VALIDITY_DAYS
 
 function generateOpportunities(analysis) {
   const opps = []; const { recoverable, active, scored } = analysis;
-  if (recoverable.length > 0) { const totalValue = recoverable.reduce((s, c) => s + c.interventionValue, 0); opps.push({ type: 'Re-engagement campaign', description: `${recoverable.length.toLocaleString()} contacts have declining consent but are still above the ICO threshold.`, estimatedValue: parseFloat(totalValue.toFixed(2)), currentValue: parseFloat(totalValue.toFixed(2)), decayRate: 2.5, recommendedAction: 'Send a preference-update or re-consent email to this segment within the next 30 days.', templateAvailable: false }); }
+  if (recoverable.length > 0) { const totalValue = recoverable.reduce((s, c) => s + c.commercialValue, 0); opps.push({ type: 'Re-engagement campaign', description: `${recoverable.length.toLocaleString()} contacts have declining consent but are still above the ICO threshold. Between them they are worth about £${Math.round(totalValue).toLocaleString('en-GB')} a year in email revenue, which is lost if their consent runs out.`, estimatedValue: parseFloat(totalValue.toFixed(2)), currentValue: parseFloat(totalValue.toFixed(2)), decayRate: 2.5, recommendedAction: 'Send a preference-update or re-consent email to this segment within the next 30 days.', templateAvailable: false }); }
   if (analysis.liabilityCount > 0) { opps.push({ type: 'Suppression \u2014 liability contacts', description: `${analysis.liabilityCount.toLocaleString()} contacts below consent threshold. Suppress immediately.`, estimatedValue: 0, currentValue: 0, decayRate: 0, recommendedAction: 'Add these contacts to your suppression registry. Do not send marketing until re-consent is obtained.', templateAvailable: false }); }
   const approachingRisk = active.filter(c => c.daysToThreshold !== null && c.daysToThreshold < 90);
   if (approachingRisk.length > 0) { const totalValue = approachingRisk.reduce((s, c) => s + c.commercialValue, 0); opps.push({ type: 'Priority send window', description: `${approachingRisk.length.toLocaleString()} high-value contacts with < 90 days before consent drops.`, estimatedValue: parseFloat(totalValue.toFixed(2)), currentValue: parseFloat(totalValue.toFixed(2)), decayRate: 3.0, recommendedAction: 'Run a promotional campaign to this segment within 30 days.', templateAvailable: false }); }
@@ -411,16 +411,72 @@ function generateOpportunities(analysis) {
 // EXPOSURE CALCULATION — v1.8
 // ─────────────────────────────────────────────────────────────
 
-function calculateListExposure(analysis) {
-  const { totalContacts, activeCount, recoverableCount, atRiskCount, liabilityCount, asaNote, cmaNote, scored } = analysis;
+// v2.1: priced with the shared case-based engine (_exposure.js), the same
+// way the dashboard prices the fixes this list raises. Each finding gets the
+// published-case range for its issue type, scaled by the member's turnover
+// band and sector and positioned by their profile. Findings are clustered
+// the way a regulator would investigate them. The old per-contact rate
+// (£0.28 a contact) produced figures like £7 that no regulator would issue.
+const LIST_EXPOSURE_ENGINE = 'cases-1';
 
-  // ICO
+const FINDING_LABELS = {
+  consent_expired: 'Contacts past your consent period',
+  suppression_breach: 'Unsubscribed contacts still active',
+  consent_missing: 'Soft opt-in contacts who never bought',
+  third_party_list: 'Bought, rented or partner data',
+  invalid_consent_mechanism: 'Contacts from a sign-up form with issues',
+};
+
+// The ICO findings in this upload: the same ones emitted as fixes below
+function listFindings(listName, analysis, insights, consentMonths) {
+  const out = [];
+  const add = (fixType, count, description) => { if (count > 0) out.push({ fixType, contactVolume: count, description }); };
+  add('consent_expired', analysis.liabilityCount, `${analysis.liabilityCount} contacts in "${listName}" have had no sign-up or engagement within the ${consentMonths}-month consent period.`);
+  if (insights) {
+    add('suppression_breach', insights.leaks?.count || 0, `${insights.leaks?.count} contacts unsubscribed in an earlier upload but are active here.`);
+    if (insights.softOptIn?.checked) add('consent_missing', insights.softOptIn.noPurchase || 0, `${insights.softOptIn.noPurchase} contacts held on soft opt-in have never bought.`);
+    add('third_party_list', insights.thirdParty || 0, `${insights.thirdParty} contacts came from bought, rented or partner data.`);
+    const badForm = (insights.provenance?.sources || []).find(g => g.sweepFindings && g.sweepFindings.length);
+    if (insights.provenance?.available && badForm) add('invalid_consent_mechanism', badForm.count || 0, `${badForm.count} contacts came from a sign-up form where Site Sweep found: ${badForm.sweepFindings[0].title}.`);
+  }
+  return out;
+}
+
+async function loadProfileContext(userId, uploadSector) {
+  try {
+    const rec = (await atGet('User_Profile', `{UserID}='${userId}'`, '', 1))[0];
+    if (rec) return { ...profileContext(rec.fields || {}), hasProfile: true };
+  } catch (e) { console.warn('User_Profile read skipped:', e.message); }
+  return { revenueBand: 'under_1m', sector: normaliseSector(uploadSector || 'general'), inputs: {}, hasProfile: false };
+}
+
+function calculateListExposure(analysis, findings = [], profile = null) {
+  const { activeCount, recoverableCount, atRiskCount, liabilityCount, asaNote, cmaNote, scored } = analysis;
+  const ctx = profile || { revenueBand: 'under_1m', sector: 'general', inputs: {}, hasProfile: false };
+
+  // ICO: each finding priced from comparable published cases, then clustered
+  const priced = findings.map((f, i) => {
+    const fix = { id: `li-${i}`, fixType: f.fixType, description: f.description, contactVolume: f.contactVolume, status: 'pending' };
+    fix.exposure = refineExposure(buildExposureForFix(f.fixType, ctx.revenueBand, null, null, ctx.sector), fix, ctx.sector, null, ctx.inputs || {});
+    return fix;
+  });
+  const cluster = clusterExposure(priced);
+  const lead = [...priced].sort((a, b) => (b.exposure.realisticHigh || 0) - (a.exposure.realisticHigh || 0))[0];
   const icoExposure = {
     liabilityContacts: liabilityCount,
     atRiskContacts: atRiskCount,
     expiring30: analysis.expiring30, expiring60: analysis.expiring60, expiring90: analysis.expiring90,
-    estimatedExposure: parseFloat((liabilityCount * EXPOSURE_ANCHORS.ico.perContactLiability + atRiskCount * EXPOSURE_ANCHORS.ico.perContactAtRisk).toFixed(2)),
-    label: EXPOSURE_ANCHORS.ico.label, basis: EXPOSURE_ANCHORS.ico.basis,
+    estimatedExposure: priced.length ? cluster.totalMostLikely : 0,
+    low: priced.length ? cluster.totalLow : 0,
+    high: priced.length ? cluster.totalHigh : 0,
+    mostLikely: priced.length ? cluster.totalMostLikely : 0,
+    confidence: cluster.confidence,
+    findings: priced.map(f => ({ fixType: f.fixType, label: FINDING_LABELS[f.fixType] || f.fixType, contacts: f.contactVolume, low: f.exposure.realisticLow, high: f.exposure.realisticHigh, mostLikely: f.exposure.mostLikely })),
+    closestCases: lead?.exposure?.closestCases || [],
+    tighten: lead?.exposure?.tighten || [],
+    legalMax: ICO_LEGAL_MAX,
+    label: 'ICO (PECR)',
+    basis: 'Comparable published ICO cases for the same issue, scaled by your turnover band and sector. The same method as your dashboard.',
   };
 
   // ASA
@@ -444,16 +500,26 @@ function calculateListExposure(analysis) {
     label: EXPOSURE_ANCHORS.cma.label, basis: EXPOSURE_ANCHORS.cma.basis, signals: cmaNote || null,
   };
 
-  const estimatedValue = parseFloat(((activeCount + recoverableCount) * DEFAULT_REVENUE_PER_CONTACT).toFixed(2));
-  const recoverableValue = parseFloat((recoverableCount * DEFAULT_REVENUE_PER_CONTACT * DEFAULT_RECONSENT_SUCCESS_RATE).toFixed(2));
+  const estimatedValue = analysis.assetValue != null ? analysis.assetValue : parseFloat(((activeCount + recoverableCount) * DEFAULT_REVENUE_PER_CONTACT).toFixed(2));
+  // A year of the recoverable contacts' own value, times the share a re-consent email typically wins back
+  const recoverableValue = parseFloat(((analysis.recoverable || []).reduce((t, c) => t + (c.commercialValue || 0), 0) * DEFAULT_RECONSENT_SUCCESS_RATE).toFixed(2));
   // ICO only: ASA and CMA never carry a £ figure, and are never added in
-  const totalExposure = parseFloat(icoExposure.estimatedExposure.toFixed(2));
+  const totalExposure = icoExposure.estimatedExposure;
 
-  return { totalExposure, estimatedValue, recoverableValue, ico: icoExposure, asa: asaExposure, cma: cmaExposure, methodology: 'Indicative estimates based on published UK enforcement benchmarks. Not a prediction of regulatory outcome.' };
+  return {
+    engine: LIST_EXPOSURE_ENGINE,
+    totalExposure, totalLow: icoExposure.low, totalHigh: icoExposure.high,
+    estimatedValue, recoverableValue, ico: icoExposure, asa: asaExposure, cma: cmaExposure,
+    profile: { hasProfile: !!ctx.hasProfile, revenueBand: ctx.revenueBand, revenueBandLabel: BAND_LABELS[ctx.revenueBand] || null, sector: ctx.sector },
+    methodology: NOT_LEGAL_ADVICE,
+  };
 }
 
+// £ figures from the old per-contact method can't be compared with these
+const sameExposureEngine = (a, b) => !!a && !!b && a.engine === LIST_EXPOSURE_ENGINE && b.engine === LIST_EXPOSURE_ENGINE;
+
 function buildExposureComparison(currentExposure, previousExposure) {
-  if (!previousExposure) return null;
+  if (!sameExposureEngine(currentExposure, previousExposure)) return null;
   const totalDelta = parseFloat((currentExposure.totalExposure - (previousExposure.totalExposure || 0)).toFixed(2));
   const valueDelta = parseFloat((currentExposure.estimatedValue - (previousExposure.estimatedValue || 0)).toFixed(2));
   const direction = totalDelta > 5 ? 'increased' : totalDelta < -5 ? 'decreased' : 'stable';
@@ -527,6 +593,7 @@ async function getListSnapshots(userId, listName, max = 12) {
     assetValue: r.fields.AssetValue != null ? r.fields.AssetValue : 0,
     expiring30: r.fields.Expiring30 || 0, expiring60: r.fields.Expiring60 || 0, expiring90: r.fields.Expiring90 || 0,
     estimatedExposure: r.fields.EstimatedExposure || null,
+    exposureEngine: (() => { try { return JSON.parse(r.fields.ExposureJson || 'null')?.engine || null; } catch { return null; } })(),
     _exposureJson: r.fields.ExposureJson || null,
   }));
 }
@@ -548,20 +615,22 @@ function buildListComparison(cur, prev) {
 
   const curExposure = cur.estimatedExposure || 0;
   const prevExposure = prev.estimatedExposure || 0;
-  const exposureDelta = parseFloat((curExposure - prevExposure).toFixed(2));
+  // Only compare £ when both checks were priced the same way
+  const comparable = cur.exposureEngine === LIST_EXPOSURE_ENGINE && prev.exposureEngine === LIST_EXPOSURE_ENGINE;
+  const exposureDelta = comparable ? parseFloat((curExposure - prevExposure).toFixed(2)) : null;
 
   const parts = [];
   if (liabilityDelta > 0) parts.push(`${liabilityDelta} more contact${liabilityDelta !== 1 ? 's' : ''} crossed the consent threshold`);
   if (liabilityDelta < 0) parts.push(`${Math.abs(liabilityDelta)} contact${Math.abs(liabilityDelta) !== 1 ? 's' : ''} moved back above the consent threshold`);
-  if (exposureDelta > 5) parts.push(`Estimated exposure increased £${Math.abs(exposureDelta).toFixed(0)}`);
-  if (exposureDelta < -5) parts.push(`Estimated exposure decreased £${Math.abs(exposureDelta).toFixed(0)}`);
+  if (exposureDelta > 5) parts.push(`Estimated exposure increased £${Math.round(Math.abs(exposureDelta)).toLocaleString('en-GB')}`);
+  if (exposureDelta < -5) parts.push(`Estimated exposure decreased £${Math.round(Math.abs(exposureDelta)).toLocaleString('en-GB')}`);
   const exposureSummary = parts.length ? parts.join('. ') + '.' : null;
 
   return {
     direction, daysSincePrevious: daysBetween(new Date().toISOString(), prev.timestamp),
     valueDelta, liabilityDelta, activeDelta, totalDelta, expiring30Delta,
     exposureDelta, exposureSummary,
-    previous: { assetValue: prev.assetValue, liabilityCount: prev.liabilityCount, activeCount: prev.activeCount, totalContacts: prev.totalContacts, expiring30: prev.expiring30, date: prev.date, estimatedExposure: prevExposure }
+    previous: { assetValue: prev.assetValue, liabilityCount: prev.liabilityCount, activeCount: prev.activeCount, totalContacts: prev.totalContacts, expiring30: prev.expiring30, date: prev.date, estimatedExposure: comparable ? prevExposure : null }
   };
 }
 
@@ -831,8 +900,9 @@ export default async function handler(req, res) {
           const daysSinceIssue = Math.round((new Date() - new Date(cert.IssuedDate)) / 86400000);
           if (daysSinceIssue >= CERT_EXPIRY_DAYS) {
             certificateStatus = { status: 'Expired', reason: `Certificate issued ${daysSinceIssue} days ago. Upload a current list to reassess.`, daysSinceIssue, daysUntilExpiry: 0 };
-          } else if (exposure && cert.ExposureAtIssue != null && (exposure.totalExposure - cert.ExposureAtIssue) >= 50) {
-            certificateStatus = { status: 'Review Required', reason: `Estimated exposure increased £${Math.round(exposure.totalExposure - cert.ExposureAtIssue)} since certificate was issued.`, daysSinceIssue, daysUntilExpiry: CERT_EXPIRY_DAYS - daysSinceIssue };
+          } else if (exposure?.engine === LIST_EXPOSURE_ENGINE && cert.ExposureAtIssue != null && !(cert.ExposureAtIssue > 0 && cert.ExposureAtIssue < 1000) && (exposure.totalExposure - cert.ExposureAtIssue) >= 1000) {
+            // Figures under £1,000 at issue came from the old per-contact method, so they aren't compared
+            certificateStatus = { status: 'Review Required', reason: `Estimated exposure increased £${Math.round(exposure.totalExposure - cert.ExposureAtIssue).toLocaleString('en-GB')} since certificate was issued.`, daysSinceIssue, daysUntilExpiry: CERT_EXPIRY_DAYS - daysSinceIssue };
           } else {
             certificateStatus = { status: 'Current', reason: null, daysSinceIssue, daysUntilExpiry: CERT_EXPIRY_DAYS - daysSinceIssue };
           }
@@ -923,12 +993,13 @@ export default async function handler(req, res) {
       const freshnessData = mapped.some(c=>c.dateAdded) ? analyseListFreshness(mapped) : null;
       const gapData = (mapped.some(c=>c.dateAdded) && mapped.some(c=>c.lastEngagement)) ? analyseEngagementGaps(mapped) : null;
 
-      // v1.8: exposure calculation
-      const exposure = calculateListExposure(analysis);
+      // v2.1: exposure from the shared case-based engine, using the member's profile
+      const profileCtx = await loadProfileContext(userId, sector);
+      const exposure = calculateListExposure(analysis, listFindings(listName, analysis, insights, consentMonths), profileCtx);
 
       // Snapshots + comparison
       const snapshots = await getListSnapshots(userId, listName, 12);
-      const changes = snapshots.length > 0 ? buildListComparison({ ...analysis, estimatedExposure: exposure.totalExposure }, snapshots[0]) : null;
+      const changes = snapshots.length > 0 ? buildListComparison({ ...analysis, estimatedExposure: exposure.totalExposure, exposureEngine: exposure.engine }, snapshots[0]) : null;
 
       let previousExposure = null;
       if (snapshots.length > 0 && snapshots[0]._exposureJson) {
@@ -970,7 +1041,7 @@ export default async function handler(req, res) {
       await emitLIFix(userId, listName, { fixType: 'consent_expired', sourceRecordId: liabSrc, presentNow: analysis.liabilityCount > 0, description: `${analysis.liabilityCount.toLocaleString()} contacts in "${listName}" have had no sign-up or engagement within your ${consentMonths}-month consent period. Suppress or re-permission them before sending.`, severity: analysis.liabilityPct > 0.2 ? 'High' : analysis.liabilityPct > 0.05 ? 'Medium' : 'Low', contactVolume: analysis.liabilityCount, resolvedSummary: `Liability contacts resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).` });
       const commercialLoss = analysis.liabilityCount > 0 ? parseFloat((analysis.liability.reduce((s, c) => s + c.commercialValue, 0)).toFixed(2)) : 0;
       await emitInsightFixes(userId, listName, insights);
-      await emitLIFix(userId, listName, { fixType: 'commercial_loss', sourceRecordId: comSrc, presentNow: commercialLoss > 50, description: `Estimated £${commercialLoss.toLocaleString()} in commercial value at risk from liability contacts in "${listName}".`, severity: commercialLoss > 500 ? 'High' : commercialLoss > 100 ? 'Medium' : 'Low', exposureLow: Math.round(commercialLoss * 0.5), exposureHigh: Math.round(commercialLoss * 1.5), resolvedSummary: `Commercial loss resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).` });
+      await emitLIFix(userId, listName, { fixType: 'commercial_loss', sourceRecordId: comSrc, presentNow: commercialLoss > 50, description: `About £${Math.round(commercialLoss).toLocaleString('en-GB')} a year in email revenue sits with contacts in "${listName}" you can no longer market to.`, severity: commercialLoss > 500 ? 'High' : commercialLoss > 100 ? 'Medium' : 'Low', exposureLow: Math.round(commercialLoss * 0.5), exposureHigh: Math.round(commercialLoss * 1.5), resolvedSummary: `Commercial loss resolved on rerun of "${listName}" (${new Date().toISOString().split('T')[0]}).` });
 
       return res.json({
         success: true, listName, totalContacts: analysis.totalContacts, duplicatesRemoved: analysis.duplicatesRemoved,
@@ -1007,21 +1078,23 @@ export default async function handler(req, res) {
           try { listExposure = JSON.parse(snap._exposureJson); } catch (e) {}
         }
 
-        if (!listExposure) {
+        // Checks priced with the old per-contact rate show no £ figure until re-run
+        const priced = listExposure?.engine === LIST_EXPOSURE_ENGINE;
+        if (!priced) {
           const liab = list.liabilityCount || 0;
           const total = list.totalContacts || 0;
           listExposure = {
-            totalExposure: parseFloat((liab * EXPOSURE_ANCHORS.ico.perContactLiability).toFixed(2)),
-            estimatedValue: parseFloat(((total - liab) * DEFAULT_REVENUE_PER_CONTACT).toFixed(2)),
-            recoverableValue: 0,
-            ico: { estimatedExposure: parseFloat((liab * EXPOSURE_ANCHORS.ico.perContactLiability).toFixed(2)), liabilityContacts: liab },
+            totalExposure: null, needsRerun: true,
+            estimatedValue: listExposure?.estimatedValue ?? parseFloat(((total - liab) * DEFAULT_REVENUE_PER_CONTACT).toFixed(2)),
+            recoverableValue: listExposure?.recoverableValue || 0,
+            ico: { estimatedExposure: null, liabilityContacts: liab },
           };
         }
 
         exposureByList.push({
           listName: list.listName, lastCheckDate: list.checkDate, daysSinceLastCheck: list.daysSinceLastCheck,
           totalContacts: list.totalContacts, liabilityContacts: listExposure.ico?.liabilityContacts || list.liabilityCount || 0,
-          totalExposure: listExposure.totalExposure || 0, estimatedValue: listExposure.estimatedValue || 0,
+          totalExposure: listExposure.totalExposure, totalLow: listExposure.totalLow ?? null, totalHigh: listExposure.totalHigh ?? null, needsRerun: !!listExposure.needsRerun, estimatedValue: listExposure.estimatedValue || 0,
           recoverableValue: listExposure.recoverableValue || 0, state: list.icoStatus, needsAttention: list.needsAttention,
         });
         totalExposure += listExposure.totalExposure || 0;
@@ -1046,7 +1119,7 @@ export default async function handler(req, res) {
       parts.push(`List: ${listName||'Unknown'}, ${totalContacts||0} contacts, sector: ${sector||'ecommerce'}`);
       parts.push(`Tiers: ${activeCount||0} active, ${recoverableCount||0} recoverable, ${atRiskCount||0} at-risk, ${liabilityCount||0} liability`);
       if(assetValue)parts.push(`Estimated value: £${Math.round(assetValue).toLocaleString()}`);
-      if(exposure?.totalExposure)parts.push(`Regulatory exposure: £${Math.round(exposure.totalExposure).toLocaleString()} (ICO £${Math.round(exposure.ico?.estimatedExposure||0)}, ASA £${Math.round(exposure.asa?.estimatedExposure||0)}, CMA £${Math.round(exposure.cma?.estimatedExposure||0)})`);
+      if(exposure?.engine===LIST_EXPOSURE_ENGINE&&exposure.totalExposure>0)parts.push(`ICO exposure if the regulator acted: £${Math.round(exposure.totalLow||0).toLocaleString('en-GB')} to £${Math.round(exposure.totalHigh||0).toLocaleString('en-GB')}, most likely about £${Math.round(exposure.totalExposure).toLocaleString('en-GB')} (comparable published fines, not a prediction). ASA and CMA findings carry no £ figure.`);
       if(domainAnalysis?.insight)parts.push(`Domains: ${domainAnalysis.insight}`);if(freshness?.verdict)parts.push(`Freshness: ${freshness.verdict}`);if(engagementGaps?.insight)parts.push(`Engagement gaps: ${engagementGaps.insight}`);
       const prompt=`You are a UK email marketing data strategist. Based on this contact list analysis, write a health brief in three short paragraphs:\n\n1. LIST QUALITY — assess the overall quality based on tier distribution, domain composition, and freshness. Be specific with numbers.\n2. RISKS — flag consent decay, engagement gaps, domain issues, or exposure. If the list is clean, say so.\n3. ACTIONS — give 2-3 specific next steps. Be concrete and use £ figures where available.\n\n${parts.join('\n')}\n\nWrite for a marketing manager. Be direct. Three paragraphs, 150 words maximum. No headers or bullet points.`;
       try{const aiRes=await claudeFetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({max_tokens:400,messages:[{role:'user',content:prompt}]})});if(!aiRes.ok)return res.status(500).json({success:false,error:'Brief generation failed'});const msg=await aiRes.json();return res.json({success:true,brief:msg.content?.[0]?.text||''});}catch(e){return res.status(500).json({success:false,error:'Brief generation failed'});}
