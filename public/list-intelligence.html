@@ -305,6 +305,51 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .consent-period{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:14px 16px;margin-bottom:14px;font-size:13px}
 .consent-period input{width:70px;font-family:inherit;font-size:14px;font-weight:600;padding:6px 8px;border:1px solid var(--bm);border-radius:6px}
 @media(max-width:640px){.ins-headline{font-size:21px}.ins-hero{padding:20px 16px}}
+
+/* v2.2 — one answer first, then what to do, then detail on demand */
+.presend-gate-icon,.action-card-icon,.cb-icon,.pecr-icon,.li-countdown-icon,.li-change-stale>div:first-child{display:none}
+.res-sec{font-size:13px;font-weight:700;color:var(--tm);margin:30px 0 12px}
+.ins-wrap{margin-bottom:0}
+.ins-hero{box-shadow:var(--sh)}
+.ins-chip.extra{display:none}.ins-reasons.all .ins-chip.extra{display:inline-block}
+.ins-chip-more{font-family:inherit;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;border:1px dashed var(--bm);background:none;color:var(--tm);cursor:pointer}
+.ins-chip-more:hover{border-color:var(--t);color:var(--t)}
+.ins-actions{grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:640px){.ins-actions{grid-template-columns:1fr}}
+.ins-act{padding:18px;border-radius:var(--rad-lg);border-top:3px solid var(--b)}
+.ins-act.g{border-top-color:var(--g)}.ins-act.a{border-top-color:#f59e0b}.ins-act.r{border-top-color:var(--r)}.ins-act.e{border-top-color:var(--blue)}
+.ins-act h4{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.ins-act h4 span{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.ins-act.g h4 span{color:var(--g)}.ins-act.a h4 span{color:#b45309}.ins-act.r h4 span{color:var(--r)}
+.ins-act .btn-row{margin-top:2px}
+.notice-list{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);overflow:hidden}
+.notice{display:flex;gap:12px;padding:14px 18px;border-top:1px solid var(--b);font-size:14px;line-height:1.55;color:var(--tm)}
+.notice:first-child{border-top:none}
+.notice-dot{width:8px;height:8px;border-radius:50%;margin-top:8px;flex-shrink:0;background:var(--blue)}
+.notice.red .notice-dot{background:var(--r)}.notice.amber .notice-dot{background:#f59e0b}.notice.quiet .notice-dot{background:var(--bm)}
+.notice-lbl{display:block;font-size:13px;font-weight:700;color:var(--t);margin-bottom:1px}
+.notice.quiet{font-size:12px;color:var(--mu)}
+.more-list{display:flex;flex-direction:column;gap:8px}
+details.more{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg)}
+details.more[hidden]{display:none}
+details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:16px 20px;border-radius:var(--rad-lg)}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary:hover .more-title{color:var(--o)}
+details.more>summary:focus-visible{outline:2px solid var(--o);outline-offset:2px}
+details.more>summary::after{content:'';width:7px;height:7px;border-right:2px solid var(--mu);border-bottom:2px solid var(--mu);transform:rotate(45deg);margin:-4px 2px 0 4px;transition:transform .15s;flex-shrink:0}
+details.more[open]>summary::after{transform:rotate(225deg);margin-top:4px}
+.more-title{font-size:15px;font-weight:700;flex:1;min-width:0;transition:color .15s}
+.more-meta{font-size:13px;color:var(--mu);text-align:right}
+.more-meta.red{color:var(--r);font-weight:600}.more-meta.amber{color:#b45309;font-weight:600}.more-meta.green{color:var(--g);font-weight:600}
+.more-body{padding:0 20px 20px;border-top:1px solid var(--b)}
+.more-body>div:not(:empty):first-child,.more-body>div:empty+div:not(:empty){margin-top:16px}
+.more-body .tiers-card,.more-body .pecr-section,.more-body .dq-card,.more-body .dl-section,.more-body .clearance-box,.more-body .ins-card,.more-body .li-change,.more-body .li-countdown,.more-body .val-hero,.more-body .opp-card{box-shadow:none}
+.more-body .clearance-box{margin-top:16px;border:none;padding:0}
+.more-body .opp-card:hover{transform:none}
+#gateSlot .presend-gate{padding:18px 20px}#gateSlot .presend-gate-verdict{font-size:16px}
+.sub-hdr{font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:22px 0 10px}
+.src-sub{font-size:13px;color:var(--tm);margin:16px 0 10px;line-height:1.5}
+@media(max-width:640px){details.more>summary{flex-wrap:wrap;padding:14px 16px;gap:4px 10px}.more-title{flex-basis:calc(100% - 30px)}.more-meta{order:3;text-align:left;flex-basis:100%;font-size:12px}.more-body{padding:0 14px 16px}}
 </style>
 </head>
 <body>
@@ -446,7 +491,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </div>
 <div class="page" id="results-screen">
   <div id="listDemoBanner" class="demo-banner">
-    <div class="demo-banner-txt">&#128203; Example valuation &mdash; showing what your real analysis looks like. Upload your own list to see your actual compliance picture.</div>
+    <div class="demo-banner-txt">Example list. This is what your own results look like. Upload your list to see your real picture.</div>
     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
       <a class="demo-dl" id="listDemoDlLink" href="#" download="sendwize-example-contact-list.csv">Download CSV &#8595;</a>
       <button class="demo-dismiss" onclick="startNewList()">Upload your own &rarr;</button>
@@ -454,77 +499,103 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
   <div class="results-hdr">
     <div class="results-hdr-left">
-      <h1 id="resultsTitle">List Valuation &amp; Compliance Audit</h1>
+      <h1 id="resultsTitle">List health</h1>
       <div id="resultsMeta" style="font-size:13px;color:var(--mu)"></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <div id="listPickerHost"></div>
       <button class="btn btn-ghost btn-sm" onclick="startNewList()">+ New list</button>
-      <button class="btn btn-primary btn-sm" onclick="generateHealthBrief()">AI Health Brief</button>
+      <button class="btn btn-ghost btn-sm" onclick="generateHealthBrief()">Write a summary</button>
     </div>
   </div>
+
+  <!-- 1. The answer: who you can email today, and what to do about the rest -->
   <div id="insightsSection"></div>
-  <div id="presendGate"></div>
-  <div id="actionCards"></div>
+  <div id="legacyTop"><div id="presendGate"></div><div id="actionCards"></div></div>
   <div id="reconsentDraft" class="reconsent-draft"></div>
-  <div style="margin-bottom:28px">
-    <div id="valHero"></div>
-    <div id="changeCountdownSection"></div>
-    <div id="complianceBanner"></div>
-  </div>
-  <div style="margin-bottom:28px">
-    <div class="sec-hdr">Contact breakdown by tier</div>
-    <div class="tiers-card" id="tiersCard"></div>
-  </div>
-  <div style="margin-bottom:28px" id="domainSection"></div>
-  <div style="margin-bottom:28px" id="freshnessSection"></div>
-  <div style="margin-bottom:28px" id="engagementGapSection"></div>
-  <div style="margin-bottom:28px">
-    <div class="sec-hdr">Regulatory compliance picture</div>
-    <div class="reg-tabs">
-      <button class="reg-tab active-ico" id="reg-tab-ico" onclick="switchRegTab('ico')">&#127963;&#65039; ICO / PECR</button>
-      <button class="reg-tab" id="reg-tab-asa" onclick="switchRegTab('asa')">&#128250; ASA</button>
-      <button class="reg-tab" id="reg-tab-cma" onclick="switchRegTab('cma')">&#9878;&#65039; CMA</button>
-    </div>
-    <div class="reg-panel active" id="reg-panel-ico">
-      <div id="pecrSection"></div>
-      <div class="dq-card" id="dqCard"></div>
-    </div>
-    <div class="reg-panel" id="reg-panel-asa">
-      <div id="asaSection"></div>
-    </div>
-    <div class="reg-panel" id="reg-panel-cma">
-      <div id="cmaSection"></div>
-    </div>
-  </div>
-  <div style="margin-bottom:28px">
-    <div class="sec-hdr">What to do next</div>
-    <div id="oppsSection"></div>
-  </div>
-  <div style="margin-bottom:28px" id="downloadSection" style="display:none">
-    <div class="sec-hdr">Download your segmented lists</div>
-    <div class="dl-section">
-      <div class="dl-section-title">Download by tier</div>
-      <div class="dl-section-sub">Available after upload. Each file contains the original columns from your CSV, filtered to the relevant tier. Use for ESP suppression uploads, re-consent campaigns, or CRM clean-up. Downloads are generated in your browser &mdash; no data is sent to our servers.</div>
-      <div class="dl-grid" id="dlGrid"></div>
-    </div>
-  </div>
-  <div style="margin-bottom:28px">
-    <div class="sec-hdr">Compliance clearance</div>
-    <div class="clearance-box">
-      <h3>Generate a pre-send compliance clearance</h3>
-      <p>Creates a compliance record for this send. Green = safe to proceed. Review = check before sending. Red = do not send until issues are resolved. Saved as evidence on your dashboard.</p>
-      <div class="cert-form">
-        <div class="fgrp"><label>Segment name</label><input type="text" id="certSeg" placeholder="e.g. Active customers"></div>
-        <div class="fgrp"><label>Campaign type</label><select id="certType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div>
-        <button class="btn btn-primary" onclick="generateCert()">Generate &rarr;</button>
+  <div id="briefSlot"></div>
+
+  <!-- 2. Worth knowing: the few things we spotted -->
+  <div id="insightsNotes"></div>
+
+  <!-- 3. Detail, opened on demand -->
+  <div class="res-sec">More detail</div>
+  <div class="more-list">
+    <details class="more" id="more-sources">
+      <summary><span class="more-title">Where your contacts come from</span><span class="more-meta" id="meta-sources"></span></summary>
+      <div class="more-body" id="insightsSources"></div>
+    </details>
+    <details class="more" id="more-consent">
+      <summary><span class="more-title">Consent clock and evidence</span><span class="more-meta" id="meta-consent"></span></summary>
+      <div class="more-body">
+        <div id="changeCountdownSection"></div>
+        <div id="insightsEvidence"></div>
       </div>
-      <div class="cert-result" id="certResult"></div>
-    </div>
+    </details>
+    <details class="more" id="more-value">
+      <summary><span class="more-title">List value and risk</span><span class="more-meta" id="meta-value"></span></summary>
+      <div class="more-body">
+        <div id="gateSlot"></div>
+        <div id="valHero"></div>
+        <div class="sub-hdr">Recommended next steps</div>
+        <div id="oppsSection"></div>
+      </div>
+    </details>
+    <details class="more" id="more-makeup">
+      <summary><span class="more-title">What your list is made of</span><span class="more-meta" id="meta-makeup"></span></summary>
+      <div class="more-body">
+        <div class="tiers-card" id="tiersCard"></div>
+        <div id="domainSection"></div>
+        <div id="freshnessSection"></div>
+        <div id="engagementGapSection"></div>
+        <div id="downloadSection" style="display:none">
+          <div class="dl-section">
+            <div class="dl-section-title">Download by tier</div>
+            <div class="dl-section-sub">Each file has the original columns from your CSV, filtered to one tier. Files are built in your browser, so no data is sent to our servers.</div>
+            <div class="dl-grid" id="dlGrid"></div>
+          </div>
+        </div>
+      </div>
+    </details>
+    <details class="more" id="more-reg">
+      <summary><span class="more-title">By regulator: ICO, ASA and CMA</span><span class="more-meta" id="meta-reg"></span></summary>
+      <div class="more-body">
+        <div id="complianceBanner"></div>
+        <div class="reg-tabs">
+          <button class="reg-tab active-ico" id="reg-tab-ico" onclick="switchRegTab('ico')">ICO / PECR</button>
+          <button class="reg-tab" id="reg-tab-asa" onclick="switchRegTab('asa')">ASA</button>
+          <button class="reg-tab" id="reg-tab-cma" onclick="switchRegTab('cma')">CMA</button>
+        </div>
+        <div class="reg-panel active" id="reg-panel-ico">
+          <div id="pecrSection"></div>
+          <div class="dq-card" id="dqCard"></div>
+        </div>
+        <div class="reg-panel" id="reg-panel-asa">
+          <div id="asaSection"></div>
+        </div>
+        <div class="reg-panel" id="reg-panel-cma">
+          <div id="cmaSection"></div>
+        </div>
+      </div>
+    </details>
+    <details class="more" id="more-record">
+      <summary><span class="more-title">Save a dated pre-send record</span><span class="more-meta">Proof you checked before you sent</span></summary>
+      <div class="more-body">
+        <div class="clearance-box">
+          <p>Saves this check to your dashboard as dated evidence. Green means safe to proceed, amber means check before sending, red means do not send until the issues are fixed.</p>
+          <div class="cert-form">
+            <div class="fgrp"><label>Segment name</label><input type="text" id="certSeg" placeholder="e.g. Active customers"></div>
+            <div class="fgrp"><label>Campaign type</label><select id="certType"><option>Newsletter</option><option>Promotional</option><option>Re-engagement</option><option>Transactional</option></select></div>
+            <button class="btn btn-primary" onclick="generateCert()">Save record &rarr;</button>
+          </div>
+          <div class="cert-result" id="certResult"></div>
+        </div>
+      </div>
+    </details>
   </div>
-  <p style="font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.6">
-    Analysis uses deterministic models on your own data only. Commercial values are estimates based on sector benchmarks &mdash; not guarantees.<br>
-    Compliance picture reflects consent decay modelling only. Not legal advice. Obtain independent legal advice before making compliance decisions.
+  <p style="font-size:11px;color:var(--mu);text-align:center;margin-top:32px;line-height:1.6">
+    Analysis runs on your own data only. Money figures are estimates from sector benchmarks, not guarantees.<br>
+    Not legal advice. Get independent legal advice before making compliance decisions.
   </p>
 </div>
 <div class="toast" id="toast"></div>
@@ -960,8 +1031,8 @@ async function submitUpload(){
 }
 async function generateHealthBrief(){
   if(!lastResults){showToast('Run an analysis first','er');return;}
-  showLoading('Generating health brief…');
-  try{var resp=await swFetch(API+'?userId='+userId+'&action=health-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:currentListName||'Main list',totalContacts:lastResults.totalContacts,activeCount:lastResults.activeCount,recoverableCount:lastResults.recoverableCount,liabilityCount:lastResults.liabilityCount,atRiskCount:lastResults.atRiskCount,assetValue:lastResults.assetValue,exposure:lastResults.exposure,domainAnalysis:lastResults.domainAnalysis,freshness:lastResults.freshness,engagementGaps:lastResults.engagementGaps,sector:lastResults.sector})});var json=await resp.json();hideLoading();if(!json.success)throw new Error(json.error||'Brief generation failed');var host=document.getElementById('healthBrief');if(!host){host=document.createElement('div');host.id='healthBrief';el('valHero').after(host);}host.innerHTML='<div style="background:var(--purl);border:1px solid var(--purc);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:20px;position:relative;animation:fadeUp .35s ease"><span style="position:absolute;top:10px;right:12px;font-size:8px;font-weight:800;letter-spacing:.1em;color:var(--pur);background:var(--purc);padding:2px 6px;border-radius:3px">AI HEALTH BRIEF</span><div style="font-size:15px;font-weight:700;margin-bottom:10px;color:#581c87">List health assessment</div><div style="font-size:13px;color:#581c87;line-height:1.7;white-space:pre-wrap">'+escH(json.brief)+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-ghost btn-sm" onclick="copyHealthBrief()">Copy to clipboard</button><button class="btn btn-ghost btn-sm" onclick="generateHealthBrief()">Regenerate</button></div></div>';host.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(err){hideLoading();showToast('Health brief failed: '+err.message,'er');}
+  showLoading('Writing a summary of this list…');
+  try{var resp=await swFetch(API+'?userId='+userId+'&action=health-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listName:currentListName||'Main list',totalContacts:lastResults.totalContacts,activeCount:lastResults.activeCount,recoverableCount:lastResults.recoverableCount,liabilityCount:lastResults.liabilityCount,atRiskCount:lastResults.atRiskCount,assetValue:lastResults.assetValue,exposure:lastResults.exposure,domainAnalysis:lastResults.domainAnalysis,freshness:lastResults.freshness,engagementGaps:lastResults.engagementGaps,sector:lastResults.sector})});var json=await resp.json();hideLoading();if(!json.success)throw new Error(json.error||'Brief generation failed');var host=document.getElementById('healthBrief');if(!host){host=document.createElement('div');host.id='healthBrief';el('briefSlot').appendChild(host);}host.innerHTML='<div style="background:var(--w);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:16px;animation:fadeUp .35s ease"><div style="font-size:15px;font-weight:700;margin-bottom:10px">Summary of this list</div><div style="font-size:13px;color:var(--tm);line-height:1.7;white-space:pre-wrap">'+escH(json.brief)+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-ghost btn-sm" onclick="copyHealthBrief()">Copy to clipboard</button><button class="btn btn-ghost btn-sm" onclick="generateHealthBrief()">Regenerate</button></div></div>';host.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(err){hideLoading();showToast('Summary failed: '+err.message,'er');}
 }
 function copyHealthBrief(){var elb=document.getElementById('healthBrief');if(!elb)return;var text=elb.querySelector('div[style*="white-space"]');if(text)navigator.clipboard.writeText(text.textContent).then(function(){showToast('Copied','ok');});}
 async function loadResults(listName){
@@ -1078,75 +1149,116 @@ var REASON_LABELS={invalid:'Invalid email',disposable:'Disposable address',opted
 function insPct(n,t){return t>0?Math.round(n/t*100):0;}
 function fmtDateShort(x){var t=new Date(x);return isNaN(t)?String(x||''):t.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
 function renderInsights(d){
-  var host=el('insightsSection');if(!host)return;
+  var host=el('insightsSection'),notesHost=el('insightsNotes'),srcHost=el('insightsSources'),evHost=el('insightsEvidence');
+  if(!host)return;
+  [host,notesHost,srcHost,evHost].forEach(function(h){if(h)h.innerHTML='';});
   var ins=d.insights||(d.results&&d.results.insights)||null;
-  if(!ins||!ins.realList){host.innerHTML='';return;}
   rowFlagMap=null;
+  if(!ins||!ins.realList)return;
   if(d.rowFlags&&d.rowFlags.length){rowFlagMap={};d.rowFlags.forEach(function(f){rowFlagMap[f[0]]=[f[1],f[2]];});}
   var rl=ins.realList,t=rl.total||0;
   var html='<div class="ins-wrap">';
   // Memory: what changed since this list was uploaded, with no new file
   var su=ins.sinceUpload;
   if(su&&su.days>=1&&(su.lapsed||su.next30)){
-    html+='<div class="ins-reveal '+(su.lapsed?'red':'amber')+'"><span class="lbl">Since you uploaded this on '+escH(fmtDateShort(su.checkDate))+'</span>'
+    html+='<div class="ins-reveal '+(su.lapsed?'red':'amber')+'" style="margin-bottom:14px"><span class="lbl">Since you uploaded this on '+escH(fmtDateShort(su.checkDate))+'</span>'
       +(su.lapsed?fmt(su.lapsed)+' contacts have passed your consent period, so you can now market to about '+fmt(Math.max(0,su.marketable-su.lapsed))+'. ':'')
       +(su.next30?fmt(su.next30)+' more lose consent in the next 30 days. ':'')+'Upload your latest export to refresh the files below.</div>';
   }
-  // Headline
-  html+='<div class="ins-hero"><div class="ins-kicker">Your real list</div>'
+  // 1. The answer
+  var reasons=rl.reasons||[],SHOW=4;
+  html+='<div class="ins-hero"><div class="ins-kicker">Your list today</div>'
     +'<div class="ins-headline"><em>'+fmt(rl.green)+'</em> of your '+fmt(t)+' contacts are safe to market today.</div>'
     +'<div class="ins-bar"><span class="g" style="width:'+rl.greenPct+'%"></span><span class="a" style="width:'+rl.amberPct+'%"></span><span class="r" style="width:'+rl.redPct+'%"></span></div>'
     +'<div class="ins-legend"><span><i style="background:var(--g)"></i><b>'+fmt(rl.green)+'</b> safe to market</span><span><i style="background:#f59e0b"></i><b>'+fmt(rl.amber)+'</b> need attention</span><span><i style="background:var(--r)"></i><b>'+fmt(rl.red)+'</b> can’t legally or usefully contact</span></div>'
-    +'<div class="ins-reasons">'+(rl.reasons||[]).slice(0,8).map(function(r){return'<span class="ins-chip '+r.band+'">'+escH(r.label)+' · '+fmt(r.count)+'</span>';}).join('')+'</div>'
+    +(reasons.length?'<div class="ins-reasons" id="insReasons">'+reasons.slice(0,8).map(function(r,i){return'<span class="ins-chip '+r.band+(i>=SHOW?' extra':'')+'">'+escH(r.label)+' · '+fmt(r.count)+'</span>';}).join('')
+      +(Math.min(reasons.length,8)>SHOW?'<button class="ins-chip-more" onclick="var w=el(\'insReasons\');w.classList.add(\'all\');this.remove()">+'+(Math.min(reasons.length,8)-SHOW)+' more reasons</button>':'')+'</div>':'')
     +'<div class="ins-note">Consent counted as valid for '+(ins.consentMonths||24)+' months after sign-up or the last open, click or purchase. Change this on the upload screen.</div></div>';
-  // Reveals
-  if(ins.reveals&&ins.reveals.length){
-    var lbl={leak:'Unsubscribe leak',soft_opt_in:'Soft opt-in',third_party:'Third-party data',expiring:'Consent running out',source:'Where your good contacts come from',case_twin:'Who was fined for this'};
-    html+='<div class="ins-reveals">'+ins.reveals.filter(function(r){return r.kind!=='case_twin'||!ins.caseTwin;}).map(function(r){return'<div class="ins-reveal '+(r.severity==='red'?'red':r.severity==='amber'?'amber':'')+'"><span class="lbl">'+escH(lbl[r.kind]||'Insight')+'</span>'+escH(r.text)+'</div>';}).join('')+'</div>';
-  }
-  // Fixes, one click each
+  // 2. What to do now, one click each
   var canDl=!!(parsedCSV&&rowFlagMap!==null);
   var dlNote=canDl?'':'<p style="color:var(--y)">Re-upload the list to download this file.</p>';
-  html+='<div class="ins-actions">'
-    +'<div class="ins-act"><h4>Clean file ('+fmt(rl.green)+')</h4><p>Everyone you can safely market to today, ready to import into any platform or ad audience.</p>'+dlNote+'<button class="btn btn-primary btn-sm" '+(canDl?'':'disabled ')+'onclick="downloadBand(\'green\')">Download</button></div>'
-    +'<div class="ins-act"><h4>Keep them ('+fmt(rl.amber)+')</h4><p>Contacts whose consent is ageing or who’ve gone quiet. Send them a re-permission email.</p>'+dlNote+'<div class="btn-row"><button class="btn btn-ghost btn-sm" '+(canDl?'':'disabled ')+'onclick="downloadBand(\'amber\')">Download</button><button class="btn btn-primary btn-sm" onclick="generateReconsentDraft()">Write the email</button></div></div>'
-    +'<div class="ins-act"><h4>Suppress ('+fmt(rl.red)+')</h4><p>Everyone you shouldn’t email, with the reason for each. Add them to your platform’s suppression list.</p>'+dlNote+'<button class="btn btn-ghost btn-sm" '+(canDl?'':'disabled ')+'onclick="downloadBand(\'red\')">Download</button></div>'
-    +'<div class="ins-act"><h4>Evidence pack</h4><p>Your full list with each contact’s consent status and reasons, dated today. Keep it as your record if the ICO asks.</p>'+dlNote+'<button class="btn btn-ghost btn-sm" '+(canDl?'':'disabled ')+'onclick="downloadEvidence()">Download</button></div>'
+  var dis=canDl?'':'disabled ';
+  html+='<div class="res-sec">What to do now</div><div class="ins-actions">'
+    +'<div class="ins-act g"><h4>Email these <span>'+fmt(rl.green)+'</span></h4><p>Everyone you can safely market to today, ready to import into any platform or ad audience.</p>'+dlNote+'<div class="btn-row"><button class="btn btn-primary btn-sm" '+dis+'onclick="downloadBand(\'green\')">Download clean file</button></div></div>'
+    +'<div class="ins-act a"><h4>Win these back <span>'+fmt(rl.amber)+'</span></h4><p>Consent is ageing or they’ve gone quiet. Ask them to opt in again before you lose them.</p>'+dlNote+'<div class="btn-row"><button class="btn btn-primary btn-sm" onclick="generateReconsentDraft()">Write the email</button><button class="btn btn-ghost btn-sm" '+dis+'onclick="downloadBand(\'amber\')">Download</button></div></div>'
+    +'<div class="ins-act r"><h4>Stop emailing these <span>'+fmt(rl.red)+'</span></h4><p>Everyone you shouldn’t email, with the reason for each. Add them to your platform’s suppression list.</p>'+dlNote+'<div class="btn-row"><button class="btn btn-ghost btn-sm" '+dis+'onclick="downloadBand(\'red\')">Download suppression file</button></div></div>'
+    +'<div class="ins-act e"><h4>Keep the proof</h4><p>Your full list with each contact’s status and reasons, dated today, plus a record on your dashboard. Your answer if the ICO asks.</p>'+dlNote+'<div class="btn-row"><button class="btn btn-ghost btn-sm" '+dis+'onclick="downloadEvidence()">Download evidence</button><button class="btn btn-ghost btn-sm" onclick="openMore(\'more-record\')">Save record</button></div></div>'
     +'</div>';
-  // Sources
-  var pv=ins.provenance||{};
-  if(pv.available&&pv.sources&&pv.sources.length){
-    var showBuy=pv.sources.some(function(g){return g.buyersPct!=null;}),showNever=pv.sources.some(function(g){return g.neverEngagedPct!=null;});
-    html+='<div class="ins-card"><h3>Where your contacts come from</h3><div class="sub">Each sign-up source, how much of it you can market to'+(showBuy?', and how many bought':'')+'. Flagged sources need a look.</div>'
-      +'<div style="overflow-x:auto"><table class="ins-table"><thead><tr><th>Source</th><th>Contacts</th><th>Safe / attention / blocked</th>'+(showNever?'<th>Never engaged</th>':'')+(showBuy?'<th>Bought</th>':'')+'<th>Main issue</th></tr></thead><tbody>'
-      +pv.sources.slice(0,12).map(function(g){
-        var sweep=(g.sweepFindings||[]).length?'<div style="color:var(--r);font-size:11px;margin-top:3px">Site Sweep: '+escH(g.sweepFindings[0].title)+' ('+escH(g.sweepFindings[0].page)+')</div>':'';
-        return'<tr class="'+(g.flagged?'flag':'')+'"><td>'+(g.flagged?'Flagged: ':'')+escH(g.source)+sweep+'</td><td>'+fmt(g.count)+'</td><td><span class="ins-mini"><span style="width:'+g.greenPct+'%;background:var(--g)"></span><span style="width:'+g.amberPct+'%;background:#f59e0b"></span><span style="width:'+g.redPct+'%;background:var(--r)"></span></span>'+g.greenPct+'% safe</td>'+(showNever?'<td>'+(g.neverEngagedPct!=null?g.neverEngagedPct+'%':'—')+'</td>':'')+(showBuy?'<td>'+(g.buyersPct!=null?g.buyersPct+'%':'—')+'</td>':'')+'<td>'+escH(g.topReasonLabel||'—')+'</td></tr>';
-      }).join('')+'</tbody></table></div>'
-      +((pv.formIssues||[]).length&&!pv.sources.some(function(g){return(g.sweepFindings||[]).length;})?'<div class="ins-note">Site Sweep also found sign-up form issues: '+pv.formIssues.slice(0,3).map(function(f){return escH(f.title)+' ('+escH(f.page)+')';}).join('; ')+'. Contacts collected there may not have valid consent.</div>':'')
-      +'</div>';
-  } else if(pv.note){
-    html+='<div class="ins-card"><h3>Where your contacts come from</h3><div class="sub" style="margin:0">'+escH(pv.note)+' Most platforms include one: Klaviyo “Initial Source”, HubSpot “Original Source”, or your form name.</div></div>';
-  }
-  // Evidence
-  var ev=ins.evidence||{};
-  if(ev.coverage){
-    var c=ev.coverage,cell=function(label,v){return v==null?'':'<div><b>'+v+'%</b>'+label+'</div>';};
-    html+='<div class="ins-card"><h3>Your consent evidence: '+escH(ev.grade==='strong'?'strong':ev.grade==='partial'?'partial':'weak')+'</h3><div class="sub">'+escH(ev.sentence||'')+'</div><div class="ins-ev">'
-      +cell('have a sign-up date',c.signupDate)+cell('have a source',c.source)+cell('have an opt-in time',c.optinTimestamp)+cell('have an opt-in IP',c.optinIp)+cell('confirmed double opt-in',c.doubleOptIn)+'</div></div>';
-  }
-  // Soft opt-in / leaks notes when they couldn't be checked
+  html+='</div>';
+  host.innerHTML=html;
+
+  // 3. Worth knowing: the reveals, the case twin and the peak, as one short list
+  var lbl={leak:'Unsubscribe leak',soft_opt_in:'Soft opt-in',third_party:'Third-party data',expiring:'Consent running out',source:'Where your good contacts come from',case_twin:'Who was fined for this'};
+  var items=[];
+  (ins.reveals||[]).filter(function(r){return r.kind!=='case_twin'||!ins.caseTwin;}).forEach(function(r){
+    items.push({cls:r.severity==='red'?'red':r.severity==='amber'?'amber':'',label:lbl[r.kind]||'Worth knowing',text:escH(r.text)});
+  });
+  if(ins.caseTwin){var tw=ins.caseTwin;items.push({cls:'red',label:'Closest fine: '+tw.name,
+    text:escH(tw.sentence)+'<div class="ins-note" style="margin-top:4px">'+escH(tw.regulator)+(tw.date?' · '+escH(tw.date):'')+(tw.penalty?' · £'+fmt(tw.penalty):'')+' · '+tw.match+'% match ('+escH((tw.reasons||[]).join(', '))+')'+(tw.summary?'. '+escH(tw.summary):'')+'</div>'});}
+  if(ins.peak){items.push({cls:'',label:'Black Friday',text:escH(ins.peak.sentence)});}
   var notes=[];
   if(ins.softOptIn&&!ins.softOptIn.checked&&ins.softOptIn.note)notes.push(ins.softOptIn.note);
   if(ins.leaks&&!ins.leaks.checked)notes.push('Unsubscribe leaks across your lists could not be checked this time.');
   else if(ins.leaks&&ins.leaks.checked&&!ins.leaks.count)notes.push('No unsubscribe leaks: nobody who opted out in your earlier uploads is active on this list.');
-  // Case twin
-  if(ins.caseTwin){var tw=ins.caseTwin;html+='<div class="ins-card ins-twin"><h3>'+escH(tw.name)+'</h3><div class="sub">'+escH(tw.regulator)+(tw.date?' · '+escH(tw.date):'')+(tw.penalty?' · £'+fmt(tw.penalty):'')+' · '+tw.match+'% match ('+escH((tw.reasons||[]).join(', '))+')</div><div style="font-size:13px;line-height:1.6">'+escH(tw.sentence)+'</div>'+(tw.summary?'<div class="ins-note">'+escH(tw.summary)+'</div>':'')+'</div>';}
-  // Peak
-  if(ins.peak){html+='<div class="ins-card"><h3>Black Friday</h3><div class="sub" style="margin:0;font-size:13px;color:var(--tm)">'+escH(ins.peak.sentence)+'</div></div>';}
-  if(notes.length)html+='<div class="ins-note">'+notes.map(escH).join(' ')+'</div>';
-  html+='</div><div class="sec-hdr" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin:8px 0 14px">Full valuation and compliance audit</div>';
-  host.innerHTML=html;
+  if(notes.length)items.push({cls:'quiet',label:'',text:notes.map(escH).join(' ')});
+  if(notesHost&&items.length){
+    notesHost.innerHTML='<div class="res-sec">Worth knowing</div><div class="notice-list">'+items.map(function(it){
+      return'<div class="notice '+it.cls+'"><span class="notice-dot"></span><div>'+(it.label?'<span class="notice-lbl">'+escH(it.label)+'</span>':'')+it.text+'</div></div>';
+    }).join('')+'</div>';
+  }
+
+  // Detail: sources
+  var pv=ins.provenance||{};
+  if(srcHost){
+    if(pv.available&&pv.sources&&pv.sources.length){
+      var showBuy=pv.sources.some(function(g){return g.buyersPct!=null;}),showNever=pv.sources.some(function(g){return g.neverEngagedPct!=null;});
+      srcHost.innerHTML='<div class="src-sub">Each sign-up source, how much of it you can market to'+(showBuy?', and how many bought':'')+'. Flagged sources need a look.</div>'
+        +'<div style="overflow-x:auto"><table class="ins-table"><thead><tr><th>Source</th><th>Contacts</th><th>Safe / attention / blocked</th>'+(showNever?'<th>Never engaged</th>':'')+(showBuy?'<th>Bought</th>':'')+'<th>Main issue</th></tr></thead><tbody>'
+        +pv.sources.slice(0,12).map(function(g){
+          var sweep=(g.sweepFindings||[]).length?'<div style="color:var(--r);font-size:11px;margin-top:3px">Site Sweep: '+escH(g.sweepFindings[0].title)+' ('+escH(g.sweepFindings[0].page)+')</div>':'';
+          return'<tr class="'+(g.flagged?'flag':'')+'"><td>'+(g.flagged?'Flagged: ':'')+escH(g.source)+sweep+'</td><td>'+fmt(g.count)+'</td><td><span class="ins-mini"><span style="width:'+g.greenPct+'%;background:var(--g)"></span><span style="width:'+g.amberPct+'%;background:#f59e0b"></span><span style="width:'+g.redPct+'%;background:var(--r)"></span></span>'+g.greenPct+'% safe</td>'+(showNever?'<td>'+(g.neverEngagedPct!=null?g.neverEngagedPct+'%':'—')+'</td>':'')+(showBuy?'<td>'+(g.buyersPct!=null?g.buyersPct+'%':'—')+'</td>':'')+'<td>'+escH(g.topReasonLabel||'—')+'</td></tr>';
+        }).join('')+'</tbody></table></div>'
+        +((pv.formIssues||[]).length&&!pv.sources.some(function(g){return(g.sweepFindings||[]).length;})?'<div class="ins-note">Site Sweep also found sign-up form issues: '+pv.formIssues.slice(0,3).map(function(f){return escH(f.title)+' ('+escH(f.page)+')';}).join('; ')+'. Contacts collected there may not have valid consent.</div>':'');
+    } else if(pv.note){
+      srcHost.innerHTML='<div class="src-sub">'+escH(pv.note)+' Most platforms include one: Klaviyo “Initial Source”, HubSpot “Original Source”, or your form name.</div>';
+    }
+  }
+  // Detail: consent evidence
+  var ev=ins.evidence||{};
+  if(evHost&&ev.coverage){
+    var c=ev.coverage,cell=function(label,v){return v==null?'':'<div><b>'+v+'%</b>'+label+'</div>';};
+    evHost.innerHTML='<div class="ins-card" style="margin-top:14px"><h3>Your consent evidence: '+escH(ev.grade==='strong'?'strong':ev.grade==='partial'?'partial':'weak')+'</h3><div class="sub">'+escH(ev.sentence||'')+'</div><div class="ins-ev">'
+      +cell('have a sign-up date',c.signupDate)+cell('have a source',c.source)+cell('have an opt-in time',c.optinTimestamp)+cell('have an opt-in IP',c.optinIp)+cell('confirmed double opt-in',c.doubleOptIn)+'</div></div>';
+  }
+}
+// v2.2: put the legacy verdict where it belongs, label each detail panel, hide empty ones
+function openMore(id){var d=el(id);if(!d)return;d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});}
+function setMeta(id,text,cls){var m=el(id);if(!m)return;m.textContent=text||'';m.className='more-meta'+(cls?' '+cls:'');}
+function layoutResults(d){
+  var ins=d.insights||(d.results&&d.results.insights)||null;
+  var hasIns=!!(ins&&ins.realList);
+  // With the real-list answer on top, the older verdict and its action cards
+  // move into "List value and risk". Without it, they stay at the top.
+  var gate=el('presendGate'),ac=el('actionCards');
+  if(hasIns){el('gateSlot').appendChild(gate);el('gateSlot').appendChild(ac);ac.style.display='none';}
+  else{el('legacyTop').appendChild(gate);el('legacyTop').appendChild(ac);ac.style.display='';}
+  // Panel labels
+  var pv=(ins&&ins.provenance)||{};
+  if(pv.available&&pv.sources&&pv.sources.length){
+    var fl=pv.sources.filter(function(g){return g.flagged;}).length;
+    setMeta('meta-sources',pv.sources.length+' source'+(pv.sources.length!==1?'s':'')+(fl?' · '+fl+' flagged':''),fl?'red':'');
+  } else setMeta('meta-sources',pv.note?'No source column in your file':'');
+  el('more-sources').hidden=!el('insightsSources').innerHTML;
+  var ce=d.consentExpiring||null,soon=ce?(ce.in30||0)+(ce.in60||0)+(ce.in90||0):0;
+  var ev=(ins&&ins.evidence)||{};
+  var cParts=[];if(soon)cParts.push(fmt(soon)+' lose consent within 90 days');if(ev.grade)cParts.push('evidence '+ev.grade);
+  setMeta('meta-consent',cParts.join(' · '),soon&&ce.in30?'amber':'');
+  el('more-consent').hidden=!(el('changeCountdownSection').innerHTML||el('insightsEvidence').innerHTML);
+  setMeta('meta-value',d.assetValue?'About '+fmtGBP(d.assetValue)+' a year':'');
+  var dq=(d.dataQualityFlags||[]).length;
+  setMeta('meta-makeup','Tiers, email domains, age and engagement');
+  var st=d.icoStatus||'Good standing';
+  setMeta('meta-reg','ICO: '+(st.includes('Good')?'good standing':st.includes('High')?'high risk':'review')+(dq?' · '+dq+' data issue'+(dq!==1?'s':''):''),st.includes('Good')?'green':st.includes('High')?'red':'amber');
 }
 function csvCell(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 function saveCsv(name,lines){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));a.download=name;a.click();}
@@ -1198,8 +1310,8 @@ function renderResults(d){
   // Title reflects the named list
   var titleName=d.listName||currentListName||'';
   el('resultsTitle').innerHTML=titleName
-    ?'<span>'+escH(titleName)+'</span><span style="font-size:13px;font-weight:500;color:var(--mu)">List Valuation &amp; Compliance Audit</span>'
-    :'List Valuation &amp; Compliance Audit';
+    ?'<span>'+escH(titleName)+'</span>'
+    :'List health';
   renderListPicker();
   renderInsights(d);
   var metaParts=[];
@@ -1304,7 +1416,7 @@ function renderResults(d){
   var bannerTitle=bannerCls==='good'?'Your list is in good standing for direct marketing':bannerCls==='bad'?fmt(liabCount)+' contacts ('+liabPct+'%) are below consent threshold \u2014 do not send':'Some contacts are approaching the consent threshold';
   var bannerDesc=bannerCls==='good'?'The majority of your contacts are above the consent strength threshold. Continue monitoring as consent decays over time.':bannerCls==='bad'?'Sending to these '+fmt(liabCount)+' contacts carries significant ICO enforcement risk under PECR Regulation 22. They must be suppressed or re-consented before your next send.':'Review the at-risk tier below. '+fmt(d.atRiskCount||0)+' contacts are approaching the consent threshold.';
   var bannerActionHtml='';
-  if(bannerCls!=='good'){bannerActionHtml='<div class="cb-action"><button class="cb-action-btn" onclick="generateFixRecord()">&#128279; Create fix record on dashboard</button></div>';}
+  if(bannerCls!=='good'){bannerActionHtml='<div class="cb-action"><button class="cb-action-btn" onclick="generateFixRecord()">Add to my dashboard fixes</button></div>';}
   el('complianceBanner').innerHTML='<div class="compliance-banner '+bannerCls+'">'+
     '<div class="cb-icon">'+bannerIcon+'</div>'+
     '<div class="cb-body">'+
@@ -1333,7 +1445,7 @@ function renderResults(d){
     }).join('');
   renderPerformanceLayer(d);
   var pecrRows=[
-    {icon:'\uD83D\uDD52',label:'Consent threshold contacts',detail:liabCount>0?fmt(liabCount)+' contacts ('+liabPct+'%) are below the consent strength threshold. You cannot lawfully send marketing to these contacts without re-consent.':'All contacts are above the consent threshold. Continue monitoring.', isRisk:liabCount>0, fixLabel:liabCount>0?'Create consent_expired fix record':''},
+    {icon:'\uD83D\uDD52',label:'Consent threshold contacts',detail:liabCount>0?fmt(liabCount)+' contacts ('+liabPct+'%) are below the consent strength threshold. You cannot lawfully send marketing to these contacts without re-consent.':'All contacts are above the consent threshold. Continue monitoring.', isRisk:liabCount>0, fixLabel:liabCount>0?'Add to my dashboard fixes':''},
     {icon:'\uD83D\uDCC5',label:'Contacts expiring in next 90 days',detail:fmt(d.recoverableCount||0)+' contacts are in the recoverable tier and will cross the consent threshold within 90 days without engagement. Run a re-consent campaign now.', isRisk:(d.recoverableCount||0)>0, fixLabel:''},
     {icon:'\u2709\uFE0F',label:'Net sendable list',detail:'After removing liability contacts and deliverability risks, your net usable list is '+fmt(Math.max(0,usableCount-(d.atRiskCount||0)))+' contacts. This is your safe send pool for promotional campaigns.', isRisk:false, fixLabel:''},
   ];
@@ -1432,6 +1544,7 @@ function renderResults(d){
   } else if(dlSection){
     dlSection.style.display='none';
   }
+  layoutResults(d);
 }
 function renderChangeAndCountdown(d){
   var host=el('changeCountdownSection');if(!host)return;
