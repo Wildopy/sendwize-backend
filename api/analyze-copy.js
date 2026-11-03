@@ -365,6 +365,9 @@ Respond ONLY in this exact JSON. No preamble. No markdown fences.
       "requiresEvidence": true
     }
   ],
+  "writing": [
+    { "original": "your going to love it", "suggestion": "you're going to love it", "why": "Spelling: \"you're\" means \"you are\"." }
+  ],
   "fixedVersion": "FULL REWRITTEN COMPLIANT VERSION. Follow Section 2B rules. Fix critical violations by rewriting. Do NOT include [EVIDENCE REQUIRED:] markers. Clean sendable copy.",
   "summary": "One sentence plain English assessment."
 }
@@ -374,7 +377,19 @@ EVERY violation MUST have a requiresEvidence boolean. Do not omit this field.
 ------------------------------------------------------------
 
 SECTION 12 -- CUSTOMER-FACING WORDING
-The "issue", "recommendation", "enforcement_note" and "summary" fields are shown to customers. Internal words in this prompt such as "violation" and "breach" describe your task; they must not appear in those fields.
+The "issue", "recommendation", "enforcement_note", "summary" and "why" fields are shown to customers. Internal words in this prompt such as "violation" and "breach" describe your task; they must not appear in those fields.
+
+------------------------------------------------------------
+
+SECTION 13 -- WRITING CHECK (spelling, grammar, clarity)
+Separately from compliance, list plain writing mistakes in the "writing" array, in UK English:
+* spelling mistakes and typos, including US spellings in UK copy ("color", "organize")
+* grammar mistakes ("your" / "you're", "less" / "fewer", subject-verb agreement)
+* punctuation that changes or muddles the meaning (a missing apostrophe, a stray comma)
+* a sentence so unclear a reader could misread the offer
+Do NOT flag deliberate style: capitals or exclamation marks in a subject line, fragments, emojis, slang, brand and product names, or the brand's tone. If the copy is clean, return an empty array. List at most 10, most important first.
+"original" is the exact text from the copy (a few words, enough to find it). "suggestion" is the corrected text. "why" is one short sentence.
+These never count as compliance issues and never change the score or verdict. When you write a fixedVersion, fix these too.
 ${LEGAL_RULES}
 `;
 
@@ -398,6 +413,19 @@ export const ANALYSIS_SCHEMA = {
           enforcement_note: { type: 'string' },
         },
         required: ['regulation', 'severity', 'issue', 'location', 'recommendation', 'requiresEvidence'],
+        additionalProperties: false,
+      },
+    },
+    writing: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          original: { type: 'string' },
+          suggestion: { type: 'string' },
+          why: { type: 'string' },
+        },
+        required: ['original', 'suggestion', 'why'],
         additionalProperties: false,
       },
     },
@@ -641,6 +669,15 @@ async function closeResolvedFixes(userId, sourceIds, fixTypes) {
   return closed;
 }
 
+// Spelling and grammar notes: keep well-formed ones that actually change something.
+export function cleanWriting(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter(w => w && typeof w.original === 'string' && typeof w.suggestion === 'string' && w.original.trim() && w.original.trim() !== w.suggestion.trim())
+    .slice(0, 10)
+    .map(w => ({ original: w.original.trim().slice(0, 300), suggestion: w.suggestion.trim().slice(0, 300), why: String(w.why || '').trim().slice(0, 300) }));
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -706,6 +743,8 @@ export default async function handler(req, res) {
       aiAnalysis = { score: 50, verdict: 'Analysis Error', violations: [], summary: 'The analysis could not be read. Please run the check again.' };
     }
 
+    aiAnalysis.writing = cleanWriting(aiAnalysis.writing);
+
     // v5.5: strip any leftover [EVIDENCE REQUIRED:] markers from AI output
     if (aiAnalysis.fixedVersion) aiAnalysis.fixedVersion = stripEvidenceMarkers(aiAnalysis.fixedVersion);
 
@@ -763,7 +802,7 @@ export default async function handler(req, res) {
           Warnings:       warningCount,
           MarketingCopy:  content?.slice(0, 10000) ?? '',
           FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
-          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
+          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', writing: aiAnalysis.writing, ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
           FixedVersion:   aiAnalysis?.fixedVersion ?? '',
           RelatedCases:   [...new Set(allViolations.map(v => v.case_id).filter(Boolean))].join(','),
           SendingContext: contextBlock || '',
