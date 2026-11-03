@@ -1174,6 +1174,23 @@ function downloadEvidence(){
   saveCsv('sendwize-'+listSlugName()+'-consent-evidence-'+today+'.csv',lines);
   showToast('Evidence pack downloaded','ok');
 }
+// v2.1: exposure comes from the case-based engine. Older checks used a
+// per-contact rate (e.g. £7) and have no engine marker: show no £ figure for them.
+function gbpShort(n){n=Math.round(n||0);if(n>=1e6)return'\u00a3'+(Math.round(n/1e5)/10)+'M';if(n>=1e3)return'\u00a3'+Math.round(n/1e3)+'k';return'\u00a3'+fmt(n);}
+function exposureView(exp){
+  if(!exp)return null;
+  if(exp.engine!=='cases-1')return{legacy:true,value:'Re-run',sub:'Upload this list again for a figure based on comparable ICO cases.'};
+  if(!(exp.totalExposure>0))return null;
+  var ico=exp.ico||{};
+  var lo=exp.totalLow||ico.low||0,hi=exp.totalHigh||ico.high||0;
+  var value=(lo&&hi&&lo!==hi)?gbpShort(lo)+'\u2013'+gbpShort(hi):gbpShort(exp.totalExposure);
+  var band=exp.profile&&exp.profile.revenueBandLabel;
+  var sub='If the ICO acted: most likely about \u00a3'+fmt(Math.round(exp.totalExposure))+', from comparable published fines'+(band?' scaled to your '+band+' turnover band':'')+'.';
+  var n=(ico.findings||[]).reduce(function(s,f){return s+(f.contacts||0);},0);
+  if(n&&n<1000)sub+=' At '+fmt(n)+' contacts the ICO rarely acts unprompted; complaints are what usually start an investigation.';
+  if(exp.profile&&!exp.profile.hasProfile)sub+=' Add your business profile on the dashboard to sharpen this.';
+  return{value:value,sub:sub};
+}
 function renderResults(d){
   var total=d.totalContacts||0;
   var pct=function(n){return total>0?Math.round(n/total*100):0;};
@@ -1214,18 +1231,15 @@ function renderResults(d){
     // v10.1: Use backend exposure data
     
     var expHtml='';
-    if(exp&&exp.totalExposure>0){
+    var ev=exposureView(exp);
+    if(_liab>0||ev){
       expHtml='<div class="presend-gate-exposure">'
         +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Contacts to suppress</div><div class="presend-gate-exp-val" style="color:var(--r)">'+fmt(_liab)+'</div></div>'
-        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Estimated exposure</div><div class="presend-gate-exp-val" style="color:var(--r)">\u00a3'+fmt(Math.round(exp.totalExposure))+'</div></div>'
+        +(ev?'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Estimated exposure</div><div class="presend-gate-exp-val" style="color:'+(ev.legacy?'var(--mu)':'var(--r)')+'">'+escH(ev.value)+'</div></div>':'')
         +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Safe send pool</div><div class="presend-gate-exp-val" style="color:var(--g)">'+fmt(total-_liab)+'</div></div>'
         +'</div>'
-        +'<div style="font-size:10px;color:var(--mu);margin-top:8px">ICO \u00a3'+fmt(Math.round(exp.ico.estimatedExposure))+' \u00b7 ASA: '+fmt((exp.asa&&exp.asa.flaggedContacts)||0)+' contacts flagged (reputational, no \u00a3 figure) \u00b7 CMA: '+fmt((exp.cma&&exp.cma.flaggedContacts)||0)+' contacts flagged (statutory maximum only)</div>';
-    } else if(_liab>0){
-      expHtml='<div class="presend-gate-exposure">'
-        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Contacts to suppress</div><div class="presend-gate-exp-val" style="color:var(--r)">'+fmt(_liab)+'</div></div>'
-        +'<div class="presend-gate-exp"><div class="presend-gate-exp-label">Safe send pool</div><div class="presend-gate-exp-val" style="color:var(--g)">'+fmt(total-_liab)+'</div></div>'
-        +'</div>';
+        +(ev?'<div style="font-size:11px;color:var(--mu);margin-top:8px;line-height:1.5">'+escH(ev.sub)+'</div>':'')
+        +((exp&&((exp.asa&&exp.asa.flaggedContacts)||(exp.cma&&exp.cma.flaggedContacts)))?'<div style="font-size:10px;color:var(--mu);margin-top:4px">ASA: '+fmt((exp.asa&&exp.asa.flaggedContacts)||0)+' contacts flagged (reputational, no \u00a3 figure) \u00b7 CMA: '+fmt((exp.cma&&exp.cma.flaggedContacts)||0)+' contacts flagged (statutory maximum only)</div>':'');
     }
     gateEl.innerHTML='<div class="presend-gate '+gateCls+'"><div class="presend-gate-icon">'+gateIcon+'</div><div class="presend-gate-body"><div class="presend-gate-verdict">'+gateVerdict+'</div><div class="presend-gate-sub">'+gateSub+'</div>'+expHtml+'</div></div>';
   }
@@ -1254,9 +1268,9 @@ function renderResults(d){
   var narrativeHtml=d.narrative?'<div class="li-narrative">'+escH(d.narrative)+'</div>':'';
   el('valHero').innerHTML=narrativeHtml+'<div class="val-hero">'+
     '<div class="val-hero-bg"></div>'+
-    '<div class="val-eyebrow">Estimated list value (actionable contacts only)</div>'+
+    '<div class="val-eyebrow">Estimated yearly email revenue (contacts you can market to)</div>'+
     '<div class="val-amount">'+fmtGBP(d.assetValue)+'</div>'+
-    '<div class="val-sub">Based on your sector benchmarks \u00b7 '+escH(capFirst(d.sector||''))+(d.aov?' \u00b7 AOV \u00a3'+d.aov:'')+'</div>'+
+    '<div class="val-sub">Sector benchmarks, assuming one campaign a month \u00b7 '+escH(capFirst(d.sector||''))+(d.aov?' \u00b7 AOV \u00a3'+d.aov:'')+'</div>'+
     '<div class="val-stats">'+
     '<div class="val-stat"><div class="val-stat-num">'+fmt(total)+'</div><div class="val-stat-lbl">Total contacts</div></div>'+
     '<div class="val-stat"><div class="val-stat-num">'+fmt(usableCount)+'</div><div class="val-stat-lbl">Legally usable</div></div>'+
@@ -1273,8 +1287,8 @@ function renderResults(d){
     }
     var expRowHtml='<div style="background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:18px 22px;margin-bottom:16px;box-shadow:var(--sh)">'
       +'<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">'
-      +'<div style="flex:1;min-width:140px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px">Estimated regulatory exposure</div><div style="font-size:28px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;color:var(--r)">\u00a3'+fmt(Math.round(exp.totalExposure))+'</div><div style="font-size:10px;color:var(--mu);margin-top:2px">ICO \u00a3'+fmt(Math.round(exp.ico.estimatedExposure))+' \u00b7 ASA \u00a3'+fmt(Math.round(exp.asa.estimatedExposure))+' \u00b7 CMA \u00a3'+fmt(Math.round(exp.cma.estimatedExposure))+'</div></div>'
-      +'<div style="flex:1;min-width:140px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px">Potentially recoverable value</div><div style="font-size:28px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;color:var(--o)">\u00a3'+fmt(Math.round(exp.recoverableValue))+'</div><div style="font-size:10px;color:var(--mu);margin-top:2px">Via re-consent campaigns (est. 30% success rate)</div></div>'
+      +(function(){var v=exposureView(exp)||{value:'\u00a30',sub:'No ICO findings on this list.'};return'<div style="flex:1;min-width:180px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px">Estimated regulatory exposure</div><div style="font-size:28px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;color:'+(v.legacy||!(exp.totalExposure>0)?'var(--mu)':'var(--r)')+'">'+escH(v.value)+'</div><div style="font-size:11px;color:var(--mu);margin-top:2px;line-height:1.5">'+escH(v.sub)+' ASA and CMA findings carry no \u00a3 figure.</div></div>';})()
+      +'<div style="flex:1;min-width:140px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:4px">Recoverable revenue a year</div><div style="font-size:28px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;color:var(--o)">\u00a3'+fmt(Math.round(exp.recoverableValue))+'</div><div style="font-size:10px;color:var(--mu);margin-top:2px">If a re-consent email wins back the usual 30% of contacts whose consent is fading</div></div>'
       +'</div>'
       +expChangeHtml
       +'<div style="font-size:10px;color:var(--mu);margin-top:10px;font-style:italic">'+escH(exp.methodology||'')+'</div>'
@@ -1391,7 +1405,7 @@ function renderResults(d){
       var hasValue=o.currentValue>0;
       return'<div class="opp-card">'+
         '<div class="opp-top"><div class="opp-type">'+escH(o.type)+'</div>'+
-        (hasValue?'<div class="opp-value">'+fmtGBP(o.currentValue)+'</div>':'<div class="opp-value zero">Action required</div>')+
+        (hasValue?'<div class="opp-value">'+fmtGBP(o.currentValue)+'<span style="font-size:.55em;font-weight:600;opacity:.7"> a year</span></div>':'<div class="opp-value zero">Action required</div>')+
         '</div>'+
         '<div class="opp-desc">'+escH(o.description)+'</div>'+
         '<div class="opp-action"><div class="opp-action-lbl">What to do</div><div class="opp-action-txt">'+escH(o.recommendedAction)+'</div></div>'+
@@ -1433,7 +1447,7 @@ function renderChangeAndCountdown(d){
   if(ce&&((ce.in30||0)+(ce.in60||0)+(ce.in90||0))>0){
     var urgent=(ce.in30||0)>0;
     var valTxt='';
-    if(ce.valueAtRisk){valTxt='<div class="li-cd-foot"><strong>'+fmtGBP(ce.valueAtRisk)+'</strong> of estimated list value sits with contacts expiring inside 90 days. A re-consent campaign now protects it.</div>';}
+    if(ce.valueAtRisk){valTxt='<div class="li-cd-foot"><strong>'+fmtGBP(ce.valueAtRisk)+'</strong> a year in email revenue sits with contacts whose consent ends inside 90 days. A re-consent campaign now protects it.</div>';}
     else{valTxt='<div class="li-cd-foot">These contacts are still legally usable today, but will cross the consent threshold within the windows shown unless they re-engage or re-consent.</div>';}
     html+='<div class="li-countdown'+(urgent?'':' soft')+'">'+
       '<div class="li-countdown-hdr">'+
