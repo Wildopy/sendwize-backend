@@ -1,4 +1,8 @@
-// api/analyze-copy.js  v5.6
+// api/analyze-copy.js  v5.7
+// v5.7: influencer and creator posts (contentType 'influencer'). Rules run
+//   first on the post and the brand relationship (paid, gifted, affiliate,
+//   own brand): no clear ad label, an unclear label such as #sp or
+//   #collab, or a label hidden at the end. Claude then reviews the rest.
 // v5.6 (security): every request authenticated via _auth.js; the verified
 //   member id replaces any userId from the browser. Calls to generate-fix
 //   and profile carry the internal secret.
@@ -430,6 +434,13 @@ DO NOT apply PECR Reg 22.
 Check: #ad disclosure, misleading claims, fake urgency/scarcity, reference pricing, testimonials, greenwashing.
 Rewrite: follow Section 2B SOCIAL rules. Hook sacred. Same length ±20%.`,
 
+  influencer: `CHANNEL: INFLUENCER / CREATOR POST
+Apply: ASA CAP Code 2.1, 2.3 and 2.4 (ads must be obviously identifiable), the CMA's guidance for social media endorsements, the Consumer Protection from Unfair Trading rules in DMCCA 2024, plus all CAP claims rules.
+DO NOT apply PECR Reg 22.
+Check: is the post obviously an ad from the first glance (a clear "Ad" or "#ad" label up front, not buried in hashtags or after "more")? Unclear labels such as #sp, #spon, #collab, "thanks to", "in partnership with" or "gifted" used for content the brand paid for or controlled. Affiliate links without an ad label. Claims, testimonials, before/after images, discount codes and urgency.
+The [INFLUENCER CONTEXT] block says what the brand gave the creator. Labelling rules already checked by Sendwize appear in it; do not repeat them, review everything else.
+Rewrite: put "Ad" or "#ad" at the very start, keep the creator's voice and hook, same length ±20%.`,
+
   directmail: `CHANNEL: DIRECT MAIL
 Apply: UK GDPR (LI most common basis), ASA CAP Code, CMA/DMCCA.
 DO NOT apply PECR Reg 22.
@@ -450,6 +461,64 @@ function buildSendingContextBlock(ctx) {
   if (ctx.fromNameMatch)      lines.push(`From name match: ${fromMap[ctx.fromNameMatch] || ctx.fromNameMatch}`);
   lines.push('[END CONTEXT]');
   return lines.join('\n');
+}
+
+// ── Influencer labelling rules (deterministic, run before Claude) ──
+// relationship: paid | gifted_conditions | gifted_free | affiliate | own_brand | none
+// platform: instagram | tiktok | youtube | facebook | x | linkedin | other
+const INFLUENCER_RELATIONSHIPS = {
+  paid: 'The brand paid the creator or controls the content',
+  gifted_conditions: 'The product was gifted on condition of a post, or the brand approved the content',
+  gifted_free: 'The product was gifted with no conditions and no control over the post',
+  affiliate: 'The creator earns commission through an affiliate link or code',
+  own_brand: "The post is on the brand's own account, or the creator owns the brand",
+  none: 'No relationship with the brand',
+};
+const CLEAR_LABEL = /(^|[\s([{|])(#ad|#advert|#advertisement|ad|advert|advertisement|paid partnership|paid ad)(?=$|[\s:,.!|)\]}-])/im;
+const UNCLEAR_LABEL = /(#sp\b|#spon\b|#sponsored\b|#collab\b|#partner\b|#ambassador\b|#gifted\b|#affiliate\b|#aff\b|\bthanks to\b|\bin partnership with\b|\bin collaboration with\b|\bsponsored by\b|\bgifted\b|\baffiliate link\b)/i;
+// Characters shown before Instagram/TikTok/Facebook cut a caption to "more"
+const VISIBLE_CHARS = { instagram: 125, tiktok: 100, facebook: 140, linkedin: 210, youtube: 100, x: 280, other: 125 };
+
+export function influencerViolations(content, ctx) {
+  const rel = ctx && ctx.relationship;
+  if (!rel || !INFLUENCER_RELATIONSHIPS[rel] || rel === 'none' || rel === 'own_brand' || rel === 'gifted_free') return [];
+  const text = String(content || '');
+  const clear = text.match(CLEAR_LABEL);
+  const unclear = text.match(UNCLEAR_LABEL);
+  const visible = VISIBLE_CHARS[ctx.platform] || VISIBLE_CHARS.other;
+  const why = rel === 'affiliate'
+    ? 'The creator earns commission from this post, so the regulator expects it to be labelled as an ad.'
+    : 'The brand paid for or controlled this post, so the regulator expects it to be labelled as an ad.';
+  const base = { regulation: 'ASA CAP Code 2.1 / 2.4, CMA influencer guidance', requiresEvidence: false, _fixType: 'undisclosed_ad', _fromContext: true };
+  if (!clear) {
+    return [{ ...base, severity: 'critical',
+      issue: `We can't find a clear ad label in this post. ${why}${unclear ? ` "${unclear[0].trim()}" on its own is a potential area requiring review: the ASA has found labels like this unclear.` : ''}`,
+      location: 'Influencer post: disclosure',
+      recommendation: 'Put "Ad" or "#ad" at the very start of the caption, before anything else, and use the platform\'s paid partnership tool as well where it has one.' }];
+  }
+  const at = clear.index + (clear[1] ? clear[1].length : 0);
+  if (at > visible) {
+    return [{ ...base, severity: 'high',
+      issue: `The ad label appears ${at} characters in, so it is likely hidden behind "more" on ${ctx.platform && ctx.platform !== 'other' ? nicePlatform(ctx.platform) : 'most platforms'}. The regulator expects people to know it is an ad before they engage with it.`,
+      location: 'Influencer post: label position',
+      recommendation: 'Move "Ad" or "#ad" to the start of the caption, not among the hashtags at the end.' }];
+  }
+  const tags = (text.slice(0, at).match(/#\w+/g) || []).length;
+  if (tags >= 3) {
+    return [{ ...base, severity: 'medium',
+      issue: `The ad label sits among ${tags} other hashtags, where it is easy to miss. This is a potential area requiring review.`,
+      location: 'Influencer post: label position',
+      recommendation: 'Put "Ad" or "#ad" first, on its own, before the other hashtags.' }];
+  }
+  return [];
+}
+function nicePlatform(p) { return { instagram: 'Instagram', tiktok: 'TikTok', youtube: 'YouTube', facebook: 'Facebook', x: 'X', linkedin: 'LinkedIn' }[p] || p; }
+function buildInfluencerContextBlock(ctx, rulesFound) {
+  if (!ctx || !INFLUENCER_RELATIONSHIPS[ctx.relationship]) return '';
+  return ['[INFLUENCER CONTEXT]', `Relationship: ${INFLUENCER_RELATIONSHIPS[ctx.relationship]}`,
+    ctx.platform ? `Platform: ${nicePlatform(ctx.platform)}` : '',
+    rulesFound.length ? `Already found by Sendwize rules (do not repeat): ${rulesFound.map(v => v.issue).join(' | ')}` : 'Sendwize rules found no labelling problem.',
+    '[END CONTEXT]'].filter(Boolean).join('\n');
 }
 
 function getContextViolations(ctx) {
@@ -653,16 +722,19 @@ export default async function handler(req, res) {
     const auth = await requireAuth(req, res);
     if (!auth) return;
     if (!(await checkLimit(req, res, auth, 'copy_scan'))) return;
-    const { contentType, content, subject, userId, autoFix, sendingContext, images, recheckOf } = req.body ?? {};
+    const { contentType, content, subject, userId, autoFix, sendingContext, influencerContext, images, recheckOf } = req.body ?? {};
     if (!userId)      return res.status(400).json({ error: 'Missing userId' });
     if (!contentType) return res.status(400).json({ error: 'Missing contentType' });
-    if (!['email','sms','push','social','directmail'].includes(contentType)) return res.status(400).json({ error: 'Invalid contentType' });
+    if (!['email','sms','push','social','influencer','directmail'].includes(contentType)) return res.status(400).json({ error: 'Invalid contentType' });
     if (!content)     return res.status(400).json({ error: 'Missing content' });
 
     const checkHash         = contentHash(userId, contentType, content);
-    const contextViolations = getContextViolations(sendingContext);
+    const infCtx            = contentType === 'influencer' && influencerContext && typeof influencerContext === 'object' ? influencerContext : null;
+    const labelViolations   = infCtx ? influencerViolations(content, infCtx) : [];
+    // Email-style sending questions don't apply to a creator's post
+    const contextViolations = [...(contentType === 'influencer' ? [] : getContextViolations(sendingContext)), ...labelViolations];
     const copyText          = contentType === 'email' && subject ? `Subject: ${subject}\n\nEmail body:\n${content}` : content;
-    const contextBlock      = buildSendingContextBlock(sendingContext);
+    const contextBlock      = contentType === 'influencer' ? buildInfluencerContextBlock(infCtx, labelViolations) : buildSendingContextBlock(sendingContext);
     const analysisContent   = contextBlock ? `${contextBlock}\n\n[COPY TO ANALYSE]\n${copyText}` : copyText;
 
     const userMessage = `${CHANNEL_RULES[contentType]}\n\nCONTENT TO ANALYSE:\n${analysisContent}${autoFix ? '\nGenerate a fixedVersion field in the JSON following the Section 2B rewrite rules exactly. Fix compliance issues. Preserve brand voice, energy, and marketing punch. Do NOT include [EVIDENCE REQUIRED:] markers in the rewrite.' : ''}`;
@@ -762,7 +834,7 @@ export default async function handler(req, res) {
           CriticalIssues: criticalCount,
           Warnings:       warningCount,
           MarketingCopy:  content?.slice(0, 10000) ?? '',
-          FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
+          FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : contentType === 'influencer' ? 'Influencer post' : `${contentType} scan`,
           Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
           FixedVersion:   aiAnalysis?.fixedVersion ?? '',
           RelatedCases:   [...new Set(allViolations.map(v => v.case_id).filter(Boolean))].join(','),

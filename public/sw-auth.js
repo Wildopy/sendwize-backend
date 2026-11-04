@@ -16,6 +16,10 @@
 
    Where the token comes from, in order: Memberstack on this page →
    #swt= fragment → this tab's sessionStorage.
+
+   v1.1: client workspaces (agency plan). SW.setWorkspace(id) picks the
+   client every API call is about (X-Sendwize-Workspace header). Links
+   into the tools carry it as #sww=, like the token. '' = own account.
    ───────────────────────────────────────────────────────────── */
 (function () {
   var KEY = 'sw_token';
@@ -26,9 +30,26 @@
   var STAGING_DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
   var DASHBOARD = window.SW_DASHBOARD_URL || STAGING_DASHBOARD;
   var cached = null;
+  var WS_KEY = 'sw_ws';
+  var ON_BACKEND = BACKEND.test(location.href);
+  // The dashboard (Webflow) remembers the open client; tool pages keep it per tab
+  function wsStore() { try { return ON_BACKEND ? sessionStorage : localStorage; } catch (e) { return null; } }
+  var workspace = (function () { var st = wsStore(); try { return (st && st.getItem(WS_KEY)) || ''; } catch (e) { return ''; } })();
+  function setWorkspace(id) {
+    workspace = /^ws[a-z0-9]{10}$/.test(id || '') ? id : '';
+    var st = wsStore();
+    try { if (st) { if (workspace) st.setItem(WS_KEY, workspace); else st.removeItem(WS_KEY); } } catch (e) {}
+    return workspace;
+  }
 
   // Token handed over in the URL fragment by a Webflow link
   (function readFragment() {
+    var w = location.hash.match(/[#&]sww=([^&]*)/);
+    if (w) {
+      setWorkspace(decodeURIComponent(w[1]));
+      var restW = location.hash.replace(/[#&]sww=[^&]*/, '').replace(/^&/, '#');
+      try { history.replaceState(null, '', location.pathname + location.search + (restW === '#' ? '' : restW)); } catch (e) {}
+    }
     var m = location.hash.match(/[#&]swt=([^&]+)/);
     if (!m) return;
     cached = decodeURIComponent(m[1]);
@@ -81,8 +102,14 @@
     var ours = target.origin === 'https://sendwize-backend.vercel.app' || target.origin === location.origin && /^\/api\//.test(target.pathname);
     var t = ours ? await getToken() : null;
     if (t && !headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + t);
+    if (ours && workspace && !headers.has('X-Sendwize-Workspace')) headers.set('X-Sendwize-Workspace', workspace);
     var res = await fetch(url, Object.assign({}, opts, { headers: headers }));
     if (res.status === 401) showExpired();
+    if (res.status === 403 && workspace) {
+      // The client was archived or isn't on this account: go back to the member's own
+      var body = await res.clone().json().catch(function () { return {}; });
+      if (body && body.code === 'workspace_not_found') { setWorkspace(''); location.reload(); }
+    }
     if (res.status === 402) showPlanRequired();
     return res;
   }
@@ -104,8 +131,8 @@
       var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
       if (!a || !BACKEND.test(a.href) || !cached) return;
       var base = a.href.replace(/#.*$/, '');
-      var hash = a.hash ? a.hash.slice(1) + '&' : '';
-      a.href = base + '#' + hash + 'swt=' + encodeURIComponent(cached);
+      var hash = a.hash ? a.hash.slice(1).replace(/(^|&)(swt|sww)=[^&]*/g, '').replace(/^&/, '') : '';
+      a.href = base + '#' + (hash ? hash + '&' : '') + 'sww=' + encodeURIComponent(workspace) + '&swt=' + encodeURIComponent(cached);
     }, true);
   }
 
@@ -118,11 +145,12 @@
     if (!cached || !BACKEND.test(abs)) return u;
     var hashAt = abs.indexOf('#');
     var base = hashAt === -1 ? abs : abs.slice(0, hashAt);
-    var hash = hashAt === -1 ? '' : abs.slice(hashAt + 1) + '&';
-    return base + '#' + hash + 'swt=' + encodeURIComponent(cached);
+    var hash = hashAt === -1 ? '' : abs.slice(hashAt + 1).replace(/(^|&)(swt|sww)=[^&]*/g, '').replace(/^&/, '');
+    return base + '#' + (hash ? hash + '&' : '') + 'sww=' + encodeURIComponent(workspace) + '&swt=' + encodeURIComponent(cached);
   }
 
-  window.SW = { getToken: getToken, fetch: swFetch, decorateLinks: decorateLinks, withToken: withToken, dashboard: DASHBOARD };
+  window.SW = { getToken: getToken, fetch: swFetch, decorateLinks: decorateLinks, withToken: withToken, dashboard: DASHBOARD,
+    workspace: function () { return workspace; }, setWorkspace: setWorkspace };
 
   // Tool pages: point hard-coded dashboard links at DASHBOARD
   function retargetDashboardLinks() {

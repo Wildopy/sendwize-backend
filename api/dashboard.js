@@ -1,5 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — dashboard.js v1.4
+// SENDWIZE — dashboard.js v1.6
+// v1.6: each open finding carries basedOn, the published cases (name,
+//   regulator, date, outcome, source link) its figure is anchored to, so
+//   the dashboard can show the case beside the number, not behind a click.
 // v1.5: exposure.regulators, the risk by regulator (ICO fine, CMA cap and
 //   published fines, ASA consequences) for the dashboard headline.
 // v1.4: alerts from _memory.js (consent lapsed since the last upload,
@@ -27,7 +30,7 @@
 // ─────────────────────────────────────────────────────────────
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { atFetch } from './_airtable.js';
-import { areaOf, SEVERITY_WEIGHT, SELF_ATTESTED_CREDIT } from './_exposure.js';
+import { areaOf, SEVERITY_WEIGHT, SELF_ATTESTED_CREDIT, closestCases } from './_exposure.js';
 import { buildLibrary, caseTwins, effortFor } from './_cases.js';
 import { buildAlerts } from './_memory.js';
 
@@ -73,6 +76,19 @@ const slimFix = f => ({
   } : null,
   assessed: !!f.assessment,
 });
+
+// The published cases behind a finding's figure, with their source pages
+function basedOn(f) {
+  try {
+    const list = (f.exposure && f.exposure.closestCases) || closestCases(f.fixType, f.contactVolume, { text: f.description });
+    return (list || []).filter(c => c.url).slice(0, 3).map(c => ({
+      name: c.name, regulator: c.regulator, date: c.date, outcome: c.outcome, url: c.url, related: !!c.related,
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+const slimOpenFix = f => ({ ...slimFix(f), basedOn: f.exposure && f.exposure.category !== 'Commercial' ? basedOn(f) : [] });
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -174,7 +190,7 @@ export default async function handler(req, res) {
       listValue: listValue && !listValue._error ? { hasData: !!listValue.hasData, total: listValue.unrealisedTotal || 0, top: (listValue.opportunities || []).slice(0, 3), basis: listValue.basis || '' } : null,
       caseTwin: twins,
       fixes: {
-        pending: pending.map(slimFix),
+        pending: pending.map(slimOpenFix),
         completed: completed.slice(0, 50).map(slimFix),
       },
       disclaimer: 'Illustrative risk indicators based on published ICO, ASA and CMA enforcement. Not a prediction. Not legal advice.',
