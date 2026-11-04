@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script src="https://sendwize-backend.vercel.app/sw-tool-nav.js" defer></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monthly compliance report</title>
+<meta name="description" content="A one-page monthly report of your marketing compliance: score, fixes closed, what is still open, the cases behind every figure and the full activity log.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!--
+  SENDWIZE: report.html v1.0
+  The monthly report a marketer forwards to their boss or board, or an
+  agency sends its client (Hannah, Chris and Sophie in the customer panel).
+  Built only from figures Sendwize already shows: /api/dashboard for the
+  score, fixes and exposure, /api/report?action=audit for the activity log,
+  /api/workspaces?action=current for the client's name, logo and colour.
+  Regulatory figures and business cost stay separate, as everywhere else.
+  Print or "Save as PDF" gives an A4 page; the activity log downloads as CSV.
+-->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--brand:#EA7317;--od:#c85f0f;--ol:#fff4ec;
+  --bg:#F4F3F0;--w:#ffffff;--b:#E8E6E1;--bm:#D8D5CE;
+  --t:#0C0B09;--tm:#5C5852;--mu:#8A867E;
+  --g:#16a34a;--gb:#f0fdf4;--r:#b91c1c;--rb:#fef2f2;--y:#a16207;
+  --rad:12px;--rad-sm:8px;
+}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:var(--od);font-weight:600}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;max-width:880px;margin:20px auto 0;padding:0 16px}
+.bar label{font-size:13px;font-weight:600;color:var(--tm)}
+.bar select{font:inherit;font-size:13px;padding:8px 12px;border:1px solid var(--bm);border-radius:8px;background:#fff;color:var(--t)}
+.bar .sp{flex:1}
+.btn{font:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:999px;border:1px solid var(--bm);background:#fff;color:var(--t);cursor:pointer}
+.btn:hover{border-color:var(--o);color:var(--od)}
+.btn.o{background:var(--o);border-color:var(--o);color:#fff}.btn.o:hover{background:var(--od);color:#fff}
+.sheet{max-width:880px;margin:16px auto 60px;background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:36px 40px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:3px solid var(--brand)}
+.hd-id{display:flex;align-items:center;gap:14px;min-width:0}
+.hd-logo{width:52px;height:52px;object-fit:contain;border-radius:8px;border:1px solid var(--b);flex:none;background:#fff}
+.hd-eb{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--brand)}
+.hd h1{font-size:26px;font-weight:700;letter-spacing:-.6px;line-height:1.15}
+.hd-r{text-align:right;font-size:12px;color:var(--tm)}
+.hd-r b{display:block;font-size:15px;color:var(--t)}
+.lead{font-size:16px;margin:20px 0 6px;color:var(--t)}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 8px}
+.tile{border:1px solid var(--b);border-radius:var(--rad-sm);padding:12px 14px}
+.tile .k{font-size:11px;font-weight:600;color:var(--tm)}
+.tile .v{font-family:'DM Mono',monospace;font-size:24px;font-weight:500;letter-spacing:-.5px;margin-top:2px}
+.tile .s{font-size:11.5px;color:var(--tm);margin-top:2px}
+.up{color:var(--g)}.down{color:var(--r)}
+h2{font-size:15px;font-weight:700;margin:26px 0 8px;letter-spacing:-.2px}
+.note{font-size:12px;color:var(--mu)}
+.money{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.money .tile .v{font-size:20px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--bm)}
+td{padding:7px 8px;border-bottom:1px solid var(--b);vertical-align:top}
+td.d{white-space:nowrap;font-family:'DM Mono',monospace;font-size:11.5px;color:var(--tm)}
+.sev{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;background:var(--mu)}
+.sev.critical{background:var(--r)}.sev.high{background:#ea580c}.sev.medium{background:#ca8a04}.sev.low{background:var(--g)}
+.case{font-size:11.5px;color:var(--tm);margin-top:2px}
+.case a{font-weight:600}
+.empty{font-size:13px;color:var(--tm);padding:8px 0}
+.foot{margin-top:28px;padding-top:12px;border-top:1px solid var(--b);font-size:11px;color:var(--mu);line-height:1.6}
+.msg{max-width:880px;margin:40px auto;padding:0 16px;font-size:15px;color:var(--tm);text-align:center}
+.spin{width:22px;height:22px;border:3px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:s 0.8s linear infinite;margin:0 auto 10px}
+@keyframes s{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--t);color:#fff;font-size:13px;padding:10px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+@media (max-width:720px){
+  .sheet{padding:22px 18px;border-radius:0;border-left:none;border-right:none}
+  .tiles{grid-template-columns:1fr 1fr}.money{grid-template-columns:1fr}
+  .hd{flex-direction:column;align-items:flex-start}.hd-r{text-align:left}
+  .log td:nth-child(2),.log th:nth-child(2){display:none}
+}
+@media print{
+  @page{size:A4;margin:14mm}
+  body{background:#fff}
+  .bar,.swtn,.toast,.no-print{display:none!important}
+  .sheet{border:none;box-shadow:none;margin:0;padding:0;max-width:none}
+  a{color:var(--t);text-decoration:none}
+  h2{break-after:avoid}tr{break-inside:avoid}
+  .log-more{display:none}
+}
+</style>
+</head>
+<body>
+<div class="bar no-print">
+  <label for="month">Month</label>
+  <select id="month"></select>
+  <span class="sp"></span>
+  <button class="btn" id="copyBtn" type="button">Copy summary for an email</button>
+  <button class="btn" id="csvBtn" type="button">Download activity log (CSV)</button>
+  <button class="btn o" id="printBtn" type="button">Print or save as PDF</button>
+</div>
+<div id="out"><div class="msg"><div class="spin"></div>Building your report…</div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function () {
+  'use strict';
+  var API = 'https://sendwize-backend.vercel.app';
+  var userId = new URLSearchParams(location.search).get('userId') || '';
+  var D = null, WSP = null, LOG = null, month = '';
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function gbp(n) { n = Math.round(Number(n) || 0); return '£' + n.toLocaleString('en-GB'); }
+  function gbpK(n) { n = Number(n) || 0; return n >= 1e6 ? '£' + (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e4 ? '£' + Math.round(n / 1e3) + 'k' : gbp(n); }
+  function nice(s) { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function day(s) { return String(s || '').slice(0, 10); }
+  function fmtDay(s) { var d = new Date(s); return isNaN(d) ? (s || 'Not recorded') : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  function monthName(m) { var d = new Date(m + '-01T12:00:00'); return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); }
+  function monthYear(s) { s = String(s || ''); if (s.length <= 4) return s; var d = new Date(s.length === 7 ? s + '-01' : s); return isNaN(d) ? s : d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }); }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+  function range(m) {
+    var y = +m.slice(0, 4), mo = +m.slice(5, 7);
+    var last = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    return { from: m + '-01', to: m + '-' + String(last).padStart(2, '0') };
+  }
+  function inMonth(s) { return day(s).slice(0, 7) === month; }
+  function toast(t) { var el = document.getElementById('toast'); el.textContent = t; el.classList.add('on'); setTimeout(function () { el.classList.remove('on'); }, 2600); }
+
+  async function api(path) {
+    var r = await swFetch(API + path);
+    var j = null; try { j = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error((j && j.error) || 'Request failed (' + r.status + ')');
+    return j || {};
+  }
+
+  // ── The numbers for the month, all from data the dashboard already shows ──
+  function compute() {
+    var pending = D.fixes.pending || [], completed = D.fixes.completed || [];
+    var ev = (LOG && LOG.events) || [];
+    var raised = ev.filter(function (e) { return e.event === 'Finding raised'; }).length;
+    var fixedEv = ev.filter(function (e) { return e.event === 'Finding fixed'; });
+    var verified = fixedEv.filter(function (e) { return /re-running/.test(e.detail || ''); }).length;
+    var dismissed = ev.filter(function (e) { return e.event === 'Finding dismissed'; }).length;
+    var verdicts = ev.filter(function (e) { return e.area === 'Send-day verdict'; }).length;
+    var checks = ev.filter(function (e) { return /checked|swept/i.test(e.event); }).length;
+    // Score: today, and the first daily snapshot inside the month
+    var trend = (D.score.trend || []).filter(function (p) { return typeof p.score === 'number'; });
+    var inM = trend.filter(function (p) { return inMonth(p.date); });
+    var isCurrent = month === new Date().toISOString().slice(0, 7);
+    var scoreEnd = isCurrent ? D.score.value : (inM.length ? inM[inM.length - 1].score : null);
+    var scoreStart = inM.length ? inM[0].score : null;
+    var closed = completed.filter(function (f) { return inMonth(f.completedDate); });
+    // Business cost avoided: only ASA/CMA fixes with the member's own campaign figures
+    var bizAvoided = closed.reduce(function (s, f) { var m = f.exposure && f.exposure.marketingCost; return s + (m && m.available && m.mostLikely ? m.mostLikely : 0); }, 0);
+    var ra = D.riskAddressed || {};
+    var sevRank = { critical: 0, high: 1, medium: 2, low: 3 };
+    var open = pending.filter(function (f) { return !(f.exposure && f.exposure.category === 'Commercial'); }).slice().sort(function (a, b) {
+      var rank = function (f) { return f.severity in sevRank ? sevRank[f.severity] : 2; };
+      var s = rank(a) - rank(b);
+      if (s) return s;
+      var v = function (f) { var e = f.exposure || {}; return e.mostLikely || e.realisticHigh || (e.marketingCost && e.marketingCost.mostLikely) || 0; };
+      return v(b) - v(a);
+    });
+    return {
+      raised: raised, fixed: fixedEv.length, verified: verified, dismissed: dismissed, verdicts: verdicts, checks: checks,
+      scoreEnd: scoreEnd, scoreStart: scoreStart, isCurrent: isCurrent, closed: closed, bizAvoided: bizAvoided,
+      riskThisMonth: isCurrent && ra.month === month ? ra.monthTotal || 0 : null,
+      openCount: pending.length, critical: pending.filter(function (f) { return f.severity === 'critical'; }).length,
+      open: open.slice(0, 6), exposureNow: D.exposure.totalMostLikely || 0,
+    };
+  }
+
+  // The client's name in a workspace, otherwise the company name the dashboard passed
+  function who() {
+    if (WSP) return WSP.name;
+    return (new URLSearchParams(location.search).get('name') || '').slice(0, 80);
+  }
+
+  // The agency's own name, on a client's report
+  function by() { return WSP ? (new URLSearchParams(location.search).get('by') || '').slice(0, 80) : ''; }
+
+  function summaryText(c) {
+    var name = who();
+    var bits = [];
+    bits.push('Marketing compliance report' + (name ? ' for ' + name : '') + ', ' + monthName(month) + '.');
+    if (c.scoreEnd != null) bits.push('Compliance score: ' + c.scoreEnd + '/100' + (c.scoreStart != null && c.scoreStart !== c.scoreEnd ? ' (' + (c.scoreEnd > c.scoreStart ? 'up' : 'down') + ' from ' + c.scoreStart + ')' : '') + '.');
+    bits.push(plural(c.fixed, 'issue') + ' fixed' + (c.verified ? ' (' + c.verified + ' confirmed by re-running the check)' : '') + ', ' + plural(c.raised, 'new issue') + ' found, ' + plural(c.verdicts, 'campaign') + ' checked before sending.');
+    if (c.riskThisMonth) bits.push('Regulatory fine risk reduced by about ' + gbpK(c.riskThisMonth) + ' this month, based on published ICO cases.');
+    if (c.bizAvoided) bits.push('Business cost avoided on fixed ad and pricing issues: about ' + gbpK(c.bizAvoided) + ', from our own campaign figures (kept separate from fine risk).');
+    bits.push(plural(c.openCount, 'issue') + ' still open' + (c.critical ? ', ' + c.critical + ' of them critical' : '') + '.');
+    if (c.open[0]) bits.push('Top priority: ' + nice(c.open[0].fixType) + '.');
+    bits.push('Risk indicators based on published ICO, ASA and CMA enforcement. Not legal advice.');
+    return bits.join('\n');
+  }
+
+  function figure(f) {
+    var e = f.exposure || {};
+    if (e.category === 'ICO' && e.realisticHigh) return 'ICO: about ' + gbpK(e.mostLikely || (e.realisticLow + e.realisticHigh) / 2) + ' (' + gbpK(e.realisticLow) + '–' + gbpK(e.realisticHigh) + ')';
+    if (e.category === 'ASA') return 'ASA: published ruling risk, no fine' + (e.marketingCost && e.marketingCost.available ? '. Business cost about ' + gbpK(e.marketingCost.mostLikely) : '');
+    if (e.category === 'CMA') return 'CMA: statutory maximum applies' + (e.marketingCost && e.marketingCost.available ? '. Business cost about ' + gbpK(e.marketingCost.mostLikely) : '');
+    return '';
+  }
+  function caseLine(f) {
+    var c = f.basedOn && f.basedOn[0];
+    if (!c) return '';
+    return '<div class="case">Based on ' + (c.url ? '<a href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(String(c.name).split(' (')[0]) + '</a>' : esc(c.name)) + ', ' + esc(c.regulator) + ' ' + esc(monthYear(c.date)) + ': ' + esc(c.outcome) + '</div>';
+  }
+
+  function render() {
+    var c = compute(), out = document.getElementById('out');
+    var brand = (WSP && WSP.brandColour) || '#EA7317';
+    document.documentElement.style.setProperty('--brand', brand);
+    var name = who();
+    var delta = c.scoreStart != null && c.scoreEnd != null ? c.scoreEnd - c.scoreStart : null;
+    var ev = (LOG && LOG.events) || [];
+    var LOG_SHOWN = 40;
+    out.innerHTML = '<div class="sheet">' +
+      '<div class="hd"><div class="hd-id">' + (WSP && WSP.logoUrl ? '<img class="hd-logo" src="' + esc(WSP.logoUrl) + '" alt="" onerror="this.remove()">' : '') +
+        '<div><div class="hd-eb">Marketing compliance report</div><h1>' + esc(name || 'Your business') + '</h1></div></div>' +
+        '<div class="hd-r"><b>' + esc(monthName(month)) + '</b>Prepared ' + esc(fmtDay(new Date().toISOString())) + (by() ? ' by ' + esc(by()) : '') + ' with Sendwize</div></div>' +
+      '<p class="lead">' + esc(plural(c.fixed, 'issue')) + ' fixed and ' + esc(plural(c.raised, 'new issue')) + ' found in ' + esc(monthName(month)) + '. ' +
+        (c.openCount ? esc(plural(c.openCount, 'issue')) + ' still open' + (c.critical ? ', ' + c.critical + ' critical' : '') + '.' : 'Nothing is open.') + '</p>' +
+      '<div class="tiles">' +
+        '<div class="tile"><div class="k">Compliance score</div><div class="v">' + (c.scoreEnd != null ? c.scoreEnd + '<span class="note">/100</span>' : '–') + '</div><div class="s">' +
+          (delta ? '<span class="' + (delta > 0 ? 'up' : 'down') + '">' + (delta > 0 ? '+' : '') + delta + '</span> this month' : c.scoreEnd != null ? 'No change recorded' : 'No score recorded this month') + '</div></div>' +
+        '<div class="tile"><div class="k">Issues fixed</div><div class="v">' + c.fixed + '</div><div class="s">' + (c.verified ? c.verified + ' confirmed by a re-run' : 'Marked fixed by the team') + '</div></div>' +
+        '<div class="tile"><div class="k">Campaigns checked before sending</div><div class="v">' + c.verdicts + '</div><div class="s">' + plural(c.checks, 'other check') + ' run</div></div>' +
+        '<div class="tile"><div class="k">Still open</div><div class="v">' + c.openCount + '</div><div class="s">' + (c.critical ? c.critical + ' critical' : 'None critical') + '</div></div>' +
+      '</div>' +
+      (c.riskThisMonth || c.bizAvoided ? '<h2>What the fixes were worth</h2><div class="money">' +
+        (c.riskThisMonth ? '<div class="tile"><div class="k">Regulatory fine risk reduced this month</div><div class="v">About ' + gbpK(c.riskThisMonth) + '</div><div class="s">ICO figures anchored to published cases. ' + (D.exposure.duaaWarning ? 'A conservative floor.' : '') + '</div></div>' : '') +
+        (c.bizAvoided ? '<div class="tile"><div class="k">Business cost avoided</div><div class="v">About ' + gbpK(c.bizAvoided) + '</div><div class="s">Ad rework, lost sales and refunds on fixed ASA and CMA issues, from your own campaign figures. Not added to fine risk.</div></div>' : '') +
+        '</div>' : '') +
+      '<h2>Fixed in ' + esc(monthName(month)) + '</h2>' +
+      (c.closed.length ? '<table><thead><tr><th>Date</th><th>Issue</th><th>How it was closed</th></tr></thead><tbody>' + c.closed.slice(0, 10).map(function (f) {
+        return '<tr><td class="d">' + esc(fmtDay(f.completedDate)) + '</td><td><span class="sev ' + esc(f.severity) + '"></span>' + esc(nice(f.fixType)) + '</td><td>' + ((f.completionSource === 'improved_on_rerun' || f.completionSource === 'verified') ? 'Confirmed by re-running the check' : 'Marked fixed by the team') + '</td></tr>';
+      }).join('') + '</tbody></table>' + (c.closed.length > 10 ? '<div class="note" style="margin-top:6px">And ' + (c.closed.length - 10) + ' more in the activity log.</div>' : '') : '<div class="empty">Nothing was fixed this month.</div>') +
+      '<h2>Still open, most important first</h2>' +
+      (c.open.length ? '<table><thead><tr><th>Issue</th><th>Risk</th></tr></thead><tbody>' + c.open.map(function (f) {
+        return '<tr><td><span class="sev ' + esc(f.severity) + '"></span><b>' + esc(nice(f.fixType)) + '</b><div class="note">' + esc(String(f.description || '').slice(0, 160)) + '</div></td><td>' + esc(figure(f)) + caseLine(f) + '</td></tr>';
+      }).join('') + '</tbody></table>' : '<div class="empty">Nothing is open.</div>') +
+      '<h2>Activity log</h2>' +
+      (ev.length ? '<table class="log"><thead><tr><th>Date</th><th>Area</th><th>Event</th><th>Detail</th></tr></thead><tbody>' + ev.map(function (e, i) {
+        return '<tr' + (i >= LOG_SHOWN ? ' class="log-more" hidden' : '') + '><td class="d">' + esc(e.date ? fmtDay(e.date) : 'Not recorded') + '</td><td>' + esc(e.area) + '</td><td><b>' + esc(e.event) + '</b><div class="note">' + esc(e.item) + '</div></td><td>' + esc(e.detail) + '</td></tr>';
+      }).join('') + '</tbody></table>' +
+        (ev.length > LOG_SHOWN ? '<button class="btn no-print" id="moreLog" type="button" style="margin-top:10px">Show all ' + ev.length + ' entries</button><div class="note" style="margin-top:6px">The printed report shows the first ' + LOG_SHOWN + '. The CSV has every entry.</div>' : '')
+        : '<div class="empty">No activity recorded this month.</div>') +
+      (LOG && LOG.skipped && LOG.skipped.length ? '<div class="note" style="margin-top:6px">Some records could not be read this time (' + esc(LOG.skipped.join(', ')) + ').</div>' : '') +
+      '<div class="foot">' + esc(D.disclaimer || 'Illustrative risk indicators based on published ICO, ASA and CMA enforcement. Not a prediction. Not legal advice.') +
+        (D.exposure.duaaWarning ? ' ' + esc(D.exposure.duaaWarning) : '') +
+        ' How the figures are worked out: <a href="' + esc(API + '/exposure-algorithm.html') + '">sendwize-backend.vercel.app/exposure-algorithm.html</a>.</div>' +
+      '</div>';
+    var more = document.getElementById('moreLog');
+    if (more) more.onclick = function () { document.querySelectorAll('.log-more').forEach(function (r) { r.hidden = false; r.classList.remove('log-more'); }); more.remove(); };
+    document.title = (name ? name + ' · ' : '') + 'Compliance report · ' + monthName(month);
+  }
+
+  async function loadMonth() {
+    var r = range(month);
+    document.getElementById('out').innerHTML = '<div class="msg"><div class="spin"></div>Building your report…</div>';
+    try {
+      LOG = await api('/api/report?action=audit&userId=' + encodeURIComponent(userId) + '&from=' + r.from + '&to=' + r.to);
+    } catch (e) { LOG = { events: [], skipped: ['activity log'] }; }
+    render();
+  }
+
+  async function init() {
+    if (!userId) { document.getElementById('out').innerHTML = '<div class="msg">Open this report from your Sendwize dashboard.</div>'; return; }
+    var sel = document.getElementById('month'), now = new Date();
+    for (var i = 0; i < 12; i++) {
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 15);
+      var m = d.toISOString().slice(0, 7);
+      sel.insertAdjacentHTML('beforeend', '<option value="' + m + '">' + esc(monthName(m)) + '</option>');
+    }
+    month = sel.value;
+    sel.onchange = function () { month = sel.value; loadMonth(); };
+    try {
+      var both = await Promise.all([
+        api('/api/dashboard?userId=' + encodeURIComponent(userId)),
+        api('/api/workspaces?action=current').catch(function () { return {}; }),
+      ]);
+      D = both[0]; WSP = both[1] && both[1].workspace || null;
+    } catch (e) {
+      document.getElementById('out').innerHTML = '<div class="msg">Could not build the report: ' + esc(e.message) + '</div>';
+      return;
+    }
+    if (D.profile && D.profile.complete === false) {
+      document.getElementById('out').innerHTML = '<div class="msg">Finish the business profile on your dashboard first, so the figures in this report are scaled to the business.</div>';
+      return;
+    }
+    await loadMonth();
+  }
+
+  document.getElementById('printBtn').onclick = function () { window.print(); };
+  document.getElementById('copyBtn').onclick = function () {
+    if (!D) return;
+    var t = summaryText(compute());
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast('Summary copied. Paste it into your email.'); }, function () { toast('Copying is blocked in this browser. Select the report text instead.'); });
+  };
+  document.getElementById('csvBtn').onclick = async function () {
+    var btn = this; btn.disabled = true;
+    try {
+      var r = range(month);
+      var res = await swFetch(API + '/api/report?action=audit&format=csv&userId=' + encodeURIComponent(userId) + '&from=' + r.from + '&to=' + r.to);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var blob = await res.blob(), a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'sendwize-activity-log-' + month + (who() ? '-' + who().toLowerCase().replace(/[^a-z0-9]+/g, '-') : '') + '.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    } catch (e) { toast('The log could not be downloaded. Try again.'); }
+    btn.disabled = false;
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+</body>
+</html>

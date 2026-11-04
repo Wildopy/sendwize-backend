@@ -324,9 +324,37 @@
             <option value="sms">SMS</option>
             <option value="push">Push notification</option>
             <option value="social">Social ad</option>
+            <option value="influencer">Influencer or creator post</option>
             <option value="directmail">Direct mail</option>
           </select>
         </div>
+      </div>
+      <div id="influencerGroup" style="display:none">
+        <div class="controls-row">
+          <div class="control-group">
+            <div class="control-label">Platform</div>
+            <select id="infPlatform">
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="youtube">YouTube</option>
+              <option value="facebook">Facebook</option>
+              <option value="x">X</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <div class="control-label">What did the brand give the creator?</div>
+            <select id="infRelationship">
+              <option value="paid">Payment, or the brand controls or approves the post</option>
+              <option value="gifted_conditions">A gift, on condition they post or with the brand approving it</option>
+              <option value="affiliate">Commission through an affiliate link or code</option>
+              <option value="gifted_free">A gift with no conditions and no say over the post</option>
+              <option value="own_brand">Nothing: it's the brand's own account, or the creator owns the brand</option>
+            </select>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin:-8px 0 16px;line-height:1.5">Sendwize checks the ad label first (is there one, is it clear, can people see it before &ldquo;more&rdquo;), then reviews the claims, codes and offers in the post.</div>
       </div>
       <div class="form-group">
         <label for="campaignName">Campaign / file name</label>
@@ -459,6 +487,7 @@
     }
     var checkId = new URLSearchParams(window.location.search).get('checkId');
     if (checkId) openPastCheck(checkId);
+    prefillFromLink();
     loadPastChecks();
   }
 
@@ -489,10 +518,10 @@
         if (!rec || !rec.fields) throw new Error('not found');
         var f = rec.fields, a = {};
         try { a = JSON.parse(f.Analysis || '{}'); } catch (e) {}
-        var types = ['email', 'sms', 'push', 'social', 'directmail'];
+        var types = ['email', 'sms', 'push', 'social', 'influencer', 'directmail'];
         if (types.indexOf(f.ContentType) !== -1) {
-          currentContentType = f.ContentType;
           var sel = document.getElementById('contentType'); if (sel) sel.value = f.ContentType;
+          onContentTypeChange();
         }
         lastCopy = f.MarketingCopy || '';
         document.getElementById('copyText').value = lastCopy;
@@ -590,12 +619,34 @@
     sms: 'Paste your SMS message text here\u2026',
     push: 'Paste your push notification title and body here\u2026',
     social: 'Paste your social ad headline and copy here\u2026',
+    influencer: 'Paste the caption exactly as it will be posted, hashtags included\u2026',
     directmail: 'Paste your direct mail copy here\u2026',
   };
   function onContentTypeChange() {
     currentContentType = document.getElementById('contentType').value;
     document.getElementById('copyText').placeholder = typePlaceholders[currentContentType] || typePlaceholders.email;
-    document.getElementById('copyLabel').textContent = currentContentType === 'email' ? 'Email copy (subject + body text)' : 'Marketing copy';
+    document.getElementById('copyLabel').textContent = currentContentType === 'email' ? 'Email copy (subject + body text)' : currentContentType === 'influencer' ? 'Caption' : 'Marketing copy';
+    // A creator's post has no list or From name: swap the sending questions for the creator ones
+    var inf = currentContentType === 'influencer';
+    document.getElementById('influencerGroup').style.display = inf ? '' : 'none';
+    document.getElementById('contextPanel').style.display = inf ? 'none' : '';
+  }
+
+  // Raj: "Check with Sendwize" sends selected copy here (via the dashboard,
+  // which adds the login) as #copy=…&src=<site it came from>
+  function prefillFromLink() {
+    var h = new URLSearchParams(location.hash.slice(1));
+    var copy = h.get('copy');
+    if (!copy) return;
+    var src = (h.get('src') || '').toLowerCase();
+    var type = /instagram|tiktok|youtube/.test(src) ? 'influencer'
+      : /facebook|meta|linkedin|twitter|x\.com|ads\.google|pinterest|snapchat/.test(src) ? 'social'
+      : /mailchimp|klaviyo|hubspot|brevo|sendinblue|campaignmonitor|dotdigital|mail\.google|outlook/.test(src) ? 'email'
+      : /textlocal|twilio|esendex|attentive|postscript/.test(src) ? 'sms' : '';
+    if (type) { document.getElementById('contentType').value = type; onContentTypeChange(); }
+    document.getElementById('copyText').value = copy;
+    if (src) document.getElementById('campaignName').value = 'Copy from ' + src;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
   }
 
   var loadingSteps = [
@@ -682,7 +733,8 @@
       var sendingContext = getSendingContext();
       var payload = { userId: userId, contentType: currentContentType, content: copy, autoFix: true };
       if (opts.recheckOf) payload.recheckOf = opts.recheckOf;
-      if (sendingContext) payload.sendingContext = sendingContext;
+      if (sendingContext && currentContentType !== 'influencer') payload.sendingContext = sendingContext;
+      if (currentContentType === 'influencer') payload.influencerContext = { platform: document.getElementById('infPlatform').value, relationship: document.getElementById('infRelationship').value };
       if (uploadedImages.length > 0) payload.images = uploadedImages.map(function(i) { return { data: i.data, mediaType: i.mediaType }; });
       var res = await swFetch(APP_URL + '/api/analyze-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) { var err = await res.json().catch(function() { return {}; }); throw new Error(err.error || 'Server error ' + res.status); }

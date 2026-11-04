@@ -8,6 +8,10 @@
    engine). "Why this number?" comes from /api/exposure. Briefing,
    campaigns and recent checks load after first paint.
 
+   v1.7: client workspaces for agencies (switcher, add/edit client, the
+   client's name and logo in the header), "Check copy from any page"
+   bookmarklet, and the published case behind each figure shown beside it.
+
    v1.4: easier to use. A "My Sendwize portal" header; Case Twin, then
    "Start here" as one-line rows with Fix it; three headline figures with
    the full breakdown one tap away; a three-step start for new accounts;
@@ -37,6 +41,8 @@
   var root, userId, member = null, D = null;
   var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { list: 0, sweep: 0, ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'list' };
   var drafts = {}, nums = {}, lastRing = null;
+  // Client workspaces (agency plan): the member's clients and which one is open
+  var WS = { list: [], canAdd: false, agency: false };
   var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var AREA_LABELS = { consent: 'Marketing consent', suppression: 'Opt-outs and suppression', processors: 'Processors and data sharing', transparency: 'Transparency and identity', lawful_basis: 'Legitimate interests', ASA: 'Advertising claims (ASA)', CMA: 'Consumer law (CMA)', Commercial: 'Commercial', other: 'Other' };
 
@@ -178,7 +184,94 @@
     member = m.data;
     st.detail = !!store('detail_' + userId);
     await waitFor(function () { return window.swFetch; }, 5000);
+    if (await checkHandoff()) return;
+    loadWorkspaces();
     load();
+  }
+
+  // "Check with Sendwize" bookmarklet: copy selected on another site arrives
+  // here as #swcheck=…, and goes on to the copy checker with the login added
+  async function checkHandoff() {
+    var m = location.hash.match(/[#&]swcheck=([^&]*)/);
+    if (!m) return false;
+    var src = (location.hash.match(/[#&]swsrc=([^&]*)/) || [])[1] || '';
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    root.innerHTML = '<div class="sw-ld"><div class="sw-spin"></div>Opening the copy checker…</div>';
+    if (window.SW && SW.getToken) await SW.getToken();
+    var u = API + '/ai-checker.html?userId=' + encodeURIComponent(userId) + '#copy=' + m[1] + '&src=' + src;
+    location.href = window.SW && SW.withToken ? SW.withToken(u) : u;
+    return true;
+  }
+
+  // ── Client workspaces ──
+  function activeWs() {
+    var id = window.SW && SW.workspace ? SW.workspace() : '';
+    return id ? WS.list.filter(function (w) { return w.id === id; })[0] || null : null;
+  }
+  async function loadWorkspaces() {
+    try {
+      var r = await api('/api/workspaces?action=list');
+      WS = { list: r.workspaces || [], canAdd: !!r.canAdd, agency: !!r.agency, max: r.max || 0 };
+    } catch (e) { return; }
+    var head = root && root.querySelector('.sw-portal');
+    if (head) head.outerHTML = portalHead();
+  }
+  function switchWs(id) {
+    if (!window.SW || !SW.setWorkspace) return;
+    SW.setWorkspace(id);
+    st.open = {}; st.picked = {}; st.whatif = false; st.area = null; st.filter = 'all'; drafts = {};
+    root.innerHTML = '<div class="sw-ld"><div class="sw-spin"></div>Loading ' + esc((activeWs() || {}).name || 'your dashboard') + '…</div>';
+    load();
+  }
+  function wsModal(w) {
+    w = w || {};
+    modal('<div class="sw-h2">' + (w.id ? 'Edit client' : 'Add a client') + '</div>' +
+      '<div class="sw-hs" style="margin:6px 0 4px">Each client gets their own business profile, checks, fixes and score. Their name and logo go on the reports you send them.</div>' +
+      '<div class="sw-tf"><label for="sw-ws-name">Client name</label><input id="sw-ws-name" maxlength="80" value="' + esc(w.name || '') + '" placeholder="e.g. Brightside Home"></div>' +
+      '<div class="sw-tf"><label for="sw-ws-logo">Logo link (optional)</label><input id="sw-ws-logo" value="' + esc(w.logoUrl || '') + '" placeholder="https://…/logo.png"><div class="sw-note">An https link to a PNG, JPG or SVG.</div></div>' +
+      '<div class="sw-tf"><label for="sw-ws-col">Brand colour for reports (optional)</label><input id="sw-ws-col" type="color" value="' + esc(w.brandColour || '#ea7317') + '" style="height:40px;padding:4px"></div>' +
+      '<button class="sw-wide-btn" data-act="save-ws" data-id="' + esc(w.id || '') + '">' + (w.id ? 'Save' : 'Add client and open it') + '</button>' +
+      (w.id ? '<button class="sw-link" style="margin-top:12px" data-act="archive-ws" data-id="' + esc(w.id) + '">Archive this client</button><div class="sw-note">Archiving hides the client. Their records are kept.</div>' : ''));
+  }
+  async function saveWs(btn) {
+    var id = btn.getAttribute('data-id');
+    var body = { name: overlay.querySelector('#sw-ws-name').value, logoUrl: overlay.querySelector('#sw-ws-logo').value, brandColour: overlay.querySelector('#sw-ws-col').value };
+    if (!body.name.trim()) { toast('Give the client a name.', 'err'); return; }
+    if (id) body.id = id;
+    btn.disabled = true;
+    try {
+      var r = await api('/api/workspaces?action=' + (id ? 'update' : 'create'), { method: 'POST', body: body });
+      closeLayers();
+      await loadWorkspaces();
+      if (!id) switchWs(r.workspace.id); else { toast('Saved'); rerender(); }
+    } catch (e) { btn.disabled = false; toast(e.message, 'err'); }
+  }
+  async function archiveWs(btn) {
+    btn.disabled = true;
+    try {
+      await api('/api/workspaces?action=archive', { method: 'POST', body: { id: btn.getAttribute('data-id') } });
+      closeLayers();
+      await loadWorkspaces();
+      switchWs('');
+    } catch (e) { btn.disabled = false; toast(e.message, 'err'); }
+  }
+
+  // Raj: a bookmark that checks selected copy from any site (ad managers, ESPs, socials)
+  function bookmarkletHref() {
+    var dash = location.origin + location.pathname;
+    var code = '(function(){var s=String(window.getSelection?getSelection():"").trim(),a=document.activeElement;' +
+      'if(!s&&a&&typeof a.value==="string"){s=(a.selectionEnd>a.selectionStart?a.value.slice(a.selectionStart,a.selectionEnd):a.value).trim();}' +
+      'if(!s&&a&&a.isContentEditable){s=a.innerText.trim();}' +
+      'if(!s){alert("Select the copy you want to check, then click Check with Sendwize again.");return;}' +
+      'window.open(' + JSON.stringify(dash) + '+"#swcheck="+encodeURIComponent(s.slice(0,6000))+"&swsrc="+encodeURIComponent(location.hostname),"_blank");})()';
+    return 'javascript:' + encodeURIComponent(code);
+  }
+  function bookmarkletModal() {
+    modal('<div class="sw-h2">Check copy from any page</div>' +
+      '<div class="sw-hs" style="margin:6px 0 14px">Add this button to your bookmarks bar once. Then, in Ads Manager, Klaviyo, Canva or anywhere else, select the copy and click it. The copy checker opens with the copy already in, for the client you have open here.</div>' +
+      '<div style="text-align:center;margin:8px 0 14px"><a class="sw-bm" href="' + esc(bookmarkletHref()) + '" data-act="bm-click" title="Drag me to your bookmarks bar">✓ Check with Sendwize</a></div>' +
+      '<ol class="sw-steps"><li>Show your bookmarks bar (Ctrl+Shift+B, or ⌘+Shift+B on a Mac).</li><li>Drag the orange button onto it.</li><li>Select copy on any page and click the bookmark.</li></ol>' +
+      '<div class="sw-note">Works in Chrome, Edge, Firefox and Safari on a computer. It only reads the text you select, and only when you click it.</div>');
   }
 
   async function load() {
@@ -188,7 +281,9 @@
       root.innerHTML = '<div class="sw-err">Could not load your dashboard: ' + esc(e.message) + '. <a class="sw-link" href="#" data-act="reload">Try again</a></div>';
       return;
     }
-    if (D.profile && D.profile.onboardingComplete === false) { go('/onboarding.html'); return; }
+    // A new client workspace goes straight to the profile questions here, so the client switcher stays in reach
+    var inWs = window.SW && SW.workspace && SW.workspace();
+    if (D.profile && D.profile.onboardingComplete === false && !inWs) { go('/onboarding.html'); return; }
     if (D.profile && D.profile.complete === false) { renderGate(); return; }
     render();
     if (D.profile && !D.profile.revenueBandSet) bandModal();
@@ -268,14 +363,25 @@
   // "My Sendwize portal": who is signed in, today's date and the account links
   function portalHead() {
     var cf = (member && member.customFields) || {}, a = (D && D.profile && D.profile.answers) || {}, bits = [];
-    var co = cf.company || cf['company-name'] || '';
-    if (co) bits.push(co);
+    var co = cf.company || cf['company-name'] || '', ws = activeWs();
+    if (co && !ws) bits.push(co);
+    if (ws && co) bits.push('Managed by ' + co);
     if (a.sector) bits.push(nice(a.sector));
     if (a.annualTurnover) bits.push(gbpK(a.annualTurnover) + ' turnover');
     if (a.listSize) bits.push(Number(a.listSize).toLocaleString('en-GB') + ' contacts');
-    return '<header class="sw-portal"><div><div class="sw-portal-t">My Sendwize portal</div>' +
-      (bits.length ? '<div class="sw-portal-s">' + esc(bits.join(' · ')) + '</div>' : '') + '</div>' +
-      '<nav class="sw-portal-links" aria-label="Account"><a href="' + esc(link('/profile.html')) + '">Business profile</a>' +
+    var picker = WS.agency ? '<label class="sw-ws"><span>Client</span><select data-ws aria-label="Choose a client">' +
+      '<option value="">' + esc(co || 'Your own business') + '</option>' +
+      WS.list.map(function (w) { return '<option value="' + esc(w.id) + '"' + (ws && ws.id === w.id ? ' selected' : '') + '>' + esc(w.name) + '</option>'; }).join('') +
+      (WS.canAdd ? '<option value="__add">+ Add a client</option>' : '') + '</select></label>' +
+      (ws ? '<button class="sw-link" data-act="edit-ws">Edit client</button>' : '') : '';
+    return '<header class="sw-portal"><div class="sw-portal-id">' +
+      (ws && ws.logoUrl ? '<img class="sw-ws-logo" src="' + esc(ws.logoUrl) + '" alt="" onerror="this.remove()">' : '') +
+      '<div><div class="sw-portal-t">' + esc(ws ? ws.name : 'My Sendwize portal') + '</div>' +
+      (bits.length ? '<div class="sw-portal-s">' + esc(bits.join(' · ')) + '</div>' : '') + '</div></div>' +
+      '<nav class="sw-portal-links" aria-label="Account">' + picker +
+      '<a href="' + esc(link('/report.html', co ? (ws ? 'by=' : 'name=') + encodeURIComponent(co) : '')) + '">Monthly report</a>' +
+      '<button class="sw-link" data-act="bookmarklet">Check copy from any page</button>' +
+      '<a href="' + esc(link('/profile.html')) + '">Business profile</a>' +
       '<a href="' + esc(link('/exposure-algorithm.html')) + '">Method</a></nav></header>';
   }
 
@@ -536,12 +642,27 @@
     var body = top.length ? top.map(function (f, i) {
       var r = removes(f);
       return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
-        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(f.description) + '</div></div>' +
+        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(f.description) + '</div>' + (f.basedOn && f.basedOn[0] ? '<div class="sw-nx-case">' + basedOnChip(f) + '</div>' : '') + '</div>' +
         effortChip(f) + '<span class="sw-nx-v">' + (pts(f) ? '<b>+' + pts(f) + ' pts</b>' : '') + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
     }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/send-verdict.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
     return '<div class="sw-open sw-next"><div class="sw-next-h"><div class="sw-lbl">Start here · best value for your time</div>' +
       (more > 0 ? '<button class="sw-link" data-act="all-fixes">All ' + (more + top.length) + ' findings</button>' : '') + '</div>' + body + '</div>';
+  }
+
+  // Ben: the published cases a figure is anchored to, shown beside it
+  function caseShort(c) { return String(c.name || '').split(' (')[0]; }
+  function basedOnChip(f) {
+    var c = f.basedOn && f.basedOn[0];
+    if (!c || !c.url) return '';
+    return '<a class="sw-chip case" data-act="noop" href="' + esc(c.url) + '" target="_blank" rel="noopener" title="' + esc((c.related ? 'Related' : 'Closest') + ' published case: ' + c.name + ', ' + c.outcome) + '">Based on ' + esc(caseShort(c)) + ', ' + esc(c.regulator) + ' ' + esc(monthYear(c.date)) + ' ↗</a>';
+  }
+  function basedOnBlock(f) {
+    var cs = (f.basedOn || []).filter(function (c) { return c.url; });
+    if (!cs.length) return '';
+    return '<div class="sw-cases"><div class="sw-lbl">The published cases behind this figure</div>' + cs.map(function (c) {
+      return '<div class="sw-case-row"><a href="' + esc(c.url) + '" target="_blank" rel="noopener" data-act="noop">' + esc(c.name) + ' ↗</a><span>' + esc(c.regulator) + ', ' + esc(monthYear(c.date)) + ' · ' + esc(c.outcome) + (c.related ? ' · related issue' : '') + '</span></div>';
+    }).join('') + '<div class="sw-note">Each link opens the regulator\'s own page. ' + algoLink('How the figure is worked out') + '</div></div>';
   }
 
   function expLine(f) {
@@ -718,7 +839,7 @@
       (st.whatif ? '<label class="sw-pick" data-act="noop"><input type="checkbox" data-pick="' + esc(f.id) + '"' + (st.picked[f.id] ? ' checked' : '') + ' aria-label="Include in what-if"></label>' : '') +
       '<span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body">' +
       (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(f.description) + '">' + esc(f.description) + '</div>') +
-      '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : f.exposure && f.exposure.marketingCost && f.exposure.marketingCost.available ? ', ~' + gbpK(f.exposure.marketingCost.mostLikely) + ' to you' : ', ' + esc(tw.c.regulator) + ' ruling') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
+      '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : f.exposure && f.exposure.marketingCost && f.exposure.marketingCost.available ? ', ~' + gbpK(f.exposure.marketingCost.mostLikely) + ' to you' : ', ' + esc(tw.c.regulator) + ' ruling') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + (tw ? '' : basedOnChip(f)) + '</div></div>' +
       valueChip(f) +
       (open || st.whatif ? '' : '<span class="sw-fx-quick"><button class="sw-btn o" data-act="quickfix" title="Open it with the fix written for you">Fix it</button><button class="sw-btn ok" data-act="done" data-src="' + (f.improvedOnRerun ? 'improved_on_rerun' : 'manual') + '" title="Mark fixed" aria-label="Mark fixed">✓</button></span>') +
       '<span class="sw-chev">' + (open ? '⌃' : '⌄') + '</span></div>';
@@ -732,7 +853,7 @@
     return '<div class="sw-fx open" data-id="' + esc(f.id) + '">' + head + '<div class="sw-fx-more">' +
       '<div class="sw-fx-desc">' + esc(f.description) + '</div>' +
       '<div class="sw-fx-meta">' + (f.tool ? '<span class="sw-fx-tool">' + esc(f.tool) + '</span> · ' : '') + esc(nice(f.severity)) + (f.createdDate ? ' · found ' + esc(date(f.createdDate)) : '') + '</div>' +
-      (f.improvedOnRerun ? '<div class="sw-improved">A re-run shows this has improved. Confirm to get full credit.</div>' : '') + expLine(f) +
+      (f.improvedOnRerun ? '<div class="sw-improved">A re-run shows this has improved. Confirm to get full credit.</div>' : '') + expLine(f) + basedOnBlock(f) +
       (tw ? '<div class="sw-twin-mini"><span><b>Case Twin:</b> ' + esc(tw.c.name) + ' · ' + outcome(tw.c) + ' · ' + tw.t.match + '% match</span><button class="sw-link" data-act="twin">Side by side</button></div>' : '') +
       fixBox +
       '<div class="sw-fx-act">' +
@@ -1098,6 +1219,11 @@
       case 'wi-clear': st.picked = {}; redrawFixes(); break;
       case 'draft': draft(id, t.getAttribute('data-fresh') === '1'); break;
       case 'copy': copyDraft(id, t); break;
+      case 'edit-ws': wsModal(activeWs()); break;
+      case 'save-ws': saveWs(t); break;
+      case 'archive-ws': archiveWs(t); break;
+      case 'bookmarklet': bookmarkletModal(); break;
+      case 'bm-click': ev.preventDefault(); toast('Drag this button to your bookmarks bar.'); break;
       case 'close-changed': store('dismiss_changed_' + userId, D.generatedAt.slice(0, 10)); t.parentNode.remove(); break;
     }
   }
@@ -1114,6 +1240,11 @@
       root.addEventListener('click', onClick);
       // What-if ticks update the bar without redrawing the list
       root.addEventListener('change', function (ev) {
+        if (ev.target.hasAttribute && ev.target.hasAttribute('data-ws')) {
+          var v = ev.target.value;
+          if (v === '__add') { ev.target.value = (activeWs() || {}).id || ''; wsModal(); } else switchWs(v);
+          return;
+        }
         var id = ev.target.getAttribute && ev.target.getAttribute('data-pick');
         if (!id) return;
         if (ev.target.checked) st.picked[id] = true; else delete st.picked[id];
