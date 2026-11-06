@@ -1,4 +1,5 @@
-/* Sendwize free check: embed for the marketing site.
+/* Sendwize preview check: embed for the marketing site. Shows the verdict and a
+ * snippet of the report; the full report needs an account.
  *
  * Paste into a Webflow Code Embed:
  *   <div id="sw-free-check"></div>
@@ -106,9 +107,9 @@
       '<label for="swfc-copy' + u + '">Your campaign copy</label>' +
       '<textarea id="swfc-copy' + u + '" maxlength="6000" placeholder="Paste the email, SMS or post you are about to send"></textarea>' +
       '<label for="swfc-email' + u + '">Your work email</label><input id="swfc-email' + u + '" type="email" autocomplete="email" maxlength="254" placeholder="you@company.com">' +
-      '<button class="swfc-go" type="submit">Check it free</button>' +
+      '<button class="swfc-go" type="submit">Run the check</button>' +
       '<div class="swfc-err" role="alert"></div>' +
-      '<p class="swfc-small">One free check a day. Checked against ICO, ASA and CMA rules. We use your email only to limit free checks, never for marketing. We do not keep the text you paste. Not legal advice.</p>' +
+      '<p class="swfc-small">A preview of the Sendwize copy checker, one check a day. We use your email only to limit checks, never for marketing. We do not keep the text you paste. Not legal advice.</p>' +
     '</form><div class="swfc-out" aria-live="polite"></div></div>';
 
   var form = root.querySelector('form');
@@ -150,7 +151,7 @@
       err.innerHTML = esc((d && d.error) || 'The check could not run. Please try again.') +
         (d && (d.status === 429 || d.status === 503) ? ' <a href="' + esc(SIGNUP) + '">Sign up here</a>' : '');
     }).finally(function () {
-      btn.disabled = false; btn.textContent = 'Check it free';
+      btn.disabled = false; btn.textContent = 'Run the check';
     });
   });
   /* Demo mode: while nobody is using the form, play a scripted example check
@@ -267,13 +268,13 @@
         return chain.then(function () { outEl.querySelector('.swfc-text').classList.add('done'); return wait(700, id); });
       })
       .then(function () {
-        goBtn.textContent = 'Check it free';
+        goBtn.textContent = 'Run the check';
         cur.style.opacity = '';
         var h = '<div class="swfc-res swfc-pop ' + sc.verdict + '"><div class="swfc-vl">' + esc(sc.label) + ' · example</div><div class="swfc-vh">' + esc(sc.headline) + '</div>';
         if (sc.glimpse) h += '<div class="swfc-item">' + esc(sc.glimpse) + '… <span class="swfc-blur" aria-hidden="true">the rule it falls under and how to fix it</span></div>';
         h += '<div class="swfc-lock">' + (sc.count ? '<strong>' + sc.count + ' item' + (sc.count === 1 ? '' : 's') + ' found.</strong> The full report has the fix for each one and a rewritten version.' :
           'Clear to send. Sendwize keeps a dated record that you checked.') +
-          '<br><a class="swfc-cta swfc-try" href="#swfc-copy' + u + '">Check your own copy free</a></div></div>';
+          '<br><a class="swfc-cta swfc-try" href="#swfc-copy' + u + '">Check your own copy</a></div></div>';
         outEl.innerHTML = h;
         return wait(4800, id);
       })
@@ -284,7 +285,7 @@
   function clearForm() {
     fields.forEach(function (f) { f.value = ''; f.classList.remove('swfc-live'); });
     outEl.innerHTML = '';
-    goBtn.textContent = 'Check it free';
+    goBtn.textContent = 'Run the check';
   }
 
   function play() {

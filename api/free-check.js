@@ -134,22 +134,22 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   if (process.env.SENDWIZE_FREE_CHECK !== 'true' || !process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return res.status(503).json({ error: 'The free check is paused right now. Create an account to check your copy.', code: 'free_check_off' });
+    return res.status(503).json({ error: 'The preview check is paused right now. Create an account to check your copy.', code: 'free_check_off' });
   }
 
   const { copy, subject, channel, email } = req.body ?? {};
   const mail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-  if (!EMAIL_RE.test(mail)) return res.status(400).json({ error: 'Enter your work email to run the free check.' });
+  if (!EMAIL_RE.test(mail)) return res.status(400).json({ error: 'Enter your work email to run the check.' });
   const ch = CHANNELS.includes(channel) ? channel : 'email';
   const text = typeof copy === 'string' ? copy.trim() : '';
   if (text.length < 20) return res.status(400).json({ error: 'Paste the full message, at least a sentence or two.' });
-  if (text.length > MAX_COPY) return res.status(400).json({ error: `Keep it under ${MAX_COPY.toLocaleString('en-GB')} characters for the free check.` });
+  if (text.length > MAX_COPY) return res.status(400).json({ error: `Keep it under ${MAX_COPY.toLocaleString('en-GB')} characters for the preview check.` });
 
   const day = new Date().toISOString().slice(0, 10);
   try {
     if (await bump(`sw:free:email:${hash(mail)}:${day}`) > cap('SENDWIZE_FREE_CHECK_PER_EMAIL', 1)
       || await bump(`sw:free:ip:${hash(clientIp(req))}:${day}`) > cap('SENDWIZE_FREE_CHECK_PER_IP', 1)) {
-      return res.status(429).json({ error: "You've used today's free check. Create an account to see the full report and keep checking.", code: 'visitor_limit' });
+      return res.status(429).json({ error: "You've used today's preview check. Create an account to see the full report and keep checking.", code: 'visitor_limit' });
     }
     const total = await bump(`sw:free:all:${day}`);
     const daily = cap('SENDWIZE_FREE_CHECK_DAILY', 30);
@@ -158,11 +158,11 @@ export default async function handler(req, res) {
         `<p>All ${daily} free checks for today have been used. Visitors now see "busy today" and a sign-up link until midnight UTC.</p><p>Tomorrow morning's report shows who used them. If it looks like real demand, raise SENDWIZE_FREE_CHECK_DAILY in Vercel. If it looks like one person, the cap has already stopped them, and it is the most the check can cost you in a day.</p>`);
     }
     if (total > daily) {
-      return res.status(429).json({ error: 'The free check is busy today. Create an account to check now, or try again tomorrow.', code: 'daily_limit' });
+      return res.status(429).json({ error: 'The preview check is busy today. Create an account to check now, or try again tomorrow.', code: 'daily_limit' });
     }
   } catch (e) {
     console.error('[free-check] limiter unavailable:', e.message);
-    return res.status(503).json({ error: 'The free check is not available right now.', code: 'limiter_down' });
+    return res.status(503).json({ error: 'The preview check is not available right now.', code: 'limiter_down' });
   }
 
   const sub = ch === 'email' && typeof subject === 'string' ? subject.trim().slice(0, 300) : '';
