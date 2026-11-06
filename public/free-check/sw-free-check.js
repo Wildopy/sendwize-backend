@@ -48,7 +48,6 @@
     // Auto-playing demo: shown while nobody is using the form.
     '.swfc{position:relative}' +
     '.swfc-badge{position:absolute;top:-11px;right:16px;z-index:3;display:none;align-items:center;gap:7px;background:var(--t);color:#fff;font-size:11px;font-weight:600;letter-spacing:.04em;padding:5px 11px;border-radius:999px;box-shadow:0 4px 12px rgba(0,0,0,.15);pointer-events:none}' +
-    '.swfc-badge i{width:7px;height:7px;border-radius:50%;background:#ef4444;animation:swfcp 1.4s ease-in-out infinite}' +
     '.swfc-demo .swfc-badge{display:inline-flex}' +
     '.swfc-demo .swfc-card{box-shadow:0 0 0 3px rgba(234,115,23,.12),0 10px 30px rgba(0,0,0,.08)}' +
     '.swfc-demo .swfc-out{min-height:330px}' +
@@ -69,13 +68,12 @@
     '.swfc-text mark.on{background:#fde68a;box-shadow:inset 0 -2px 0 #f59e0b}' +
     '.swfc-row{display:flex;align-items:center;gap:10px;font-size:13px;padding:6px 0;border-top:1px solid #f3f4f6;opacity:.35;transition:opacity .3s}' +
     '.swfc-row.on{opacity:1}' +
-    '.swfc-row s{text-decoration:none;flex:0 0 20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#f3f4f6;color:var(--mu)}' +
+    '.swfc-row s{text-decoration:none;flex:0 0 20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#f3f4f6;color:var(--mu)}' +
     '.swfc-row.ok s{background:#dcfce7;color:#16a34a}.swfc-row.bad s{background:#fee2e2;color:#dc2626}.swfc-row.warn s{background:#fef3c7;color:#b45309}' +
     '.swfc-row em{font-style:normal;margin-left:auto;font-size:12px;font-weight:600;color:var(--mu)}' +
     '.swfc-row.bad em{color:#dc2626}.swfc-row.warn em{color:#b45309}.swfc-row.ok em{color:#16a34a}' +
     '.swfc-res.swfc-pop{animation:swfcin .45s cubic-bezier(.2,.9,.3,1.2)}' +
     '.swfc-fade{transition:opacity .4s;opacity:0}' +
-    '@keyframes swfcp{50%{opacity:.25}}' +
     '@keyframes swfct{0%{transform:scale(0);opacity:1}100%{transform:scale(2.4);opacity:0}}' +
     '@keyframes swfcsw{to{left:100%}}' +
     '@keyframes swfcin{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}';
@@ -95,7 +93,7 @@
 
   function mount(root, u) {
   root.innerHTML =
-    '<div class="swfc"><div class="swfc-badge" aria-hidden="true"><i></i>Example check \u00b7 click to try your own</div>' +
+    '<div class="swfc"><div class="swfc-badge" aria-hidden="true">Example check: click to try your own</div>' +
     '<div class="swfc-cur" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 2l15 9.5-6.6 1.4 3.8 7.2-2.6 1.4-3.8-7.2L4 19z" fill="#1a1a1a" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg></div>' +
     '<form class="swfc-card" novalidate>' +
       '<div class="swfc-tabs" role="group" aria-label="Channel">' +
@@ -250,7 +248,7 @@
         goBtn.innerHTML = '<span class="swfc-spin"></span>Checking against ICO, ASA and CMA rules…';
         outEl.innerHTML = '<div class="swfc-scan"><div class="swfc-bar"><b></b></div>' +
           '<div class="swfc-text">' + marked(sc.copy, sc.flags) + '</div>' +
-          CHECKS.map(function (c) { return '<div class="swfc-row"><s>·</s>' + esc(c) + '<em>Checking…</em></div>'; }).join('') + '</div>';
+          CHECKS.map(function (c) { return '<div class="swfc-row"><s></s>' + esc(c) + '<em>Checking…</em></div>'; }).join('') + '</div>';
         cur.style.opacity = '0';
         var rows = outEl.querySelectorAll('.swfc-row'), bar = outEl.querySelector('.swfc-bar b'), marks = outEl.querySelectorAll('mark');
         var chain = wait(300, id);
@@ -270,7 +268,7 @@
       .then(function () {
         goBtn.textContent = 'Run the check';
         cur.style.opacity = '';
-        var h = '<div class="swfc-res swfc-pop ' + sc.verdict + '"><div class="swfc-vl">' + esc(sc.label) + ' · example</div><div class="swfc-vh">' + esc(sc.headline) + '</div>';
+        var h = '<div class="swfc-res swfc-pop ' + sc.verdict + '"><div class="swfc-vl">' + esc(sc.label) + ' (example)</div><div class="swfc-vh">' + esc(sc.headline) + '</div>';
         if (sc.glimpse) h += '<div class="swfc-item">' + esc(sc.glimpse) + '… <span class="swfc-blur" aria-hidden="true">the rule it falls under and how to fix it</span></div>';
         h += '<div class="swfc-lock">' + (sc.count ? '<strong>' + sc.count + ' item' + (sc.count === 1 ? '' : 's') + ' found.</strong> The full report has the fix for each one and a rewritten version.' :
           'Clear to send. Sendwize keeps a dated record that you checked.') +
