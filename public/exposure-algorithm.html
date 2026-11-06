@@ -10,76 +10,92 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fed7aa;
-  --bg:#F4F3F0;--w:#ffffff;--b:#E8E6E1;
-  --t:#0C0B09;--tm:#5C5852;--mu:#8A867E;
-  --g:#16a34a;--gb:#f0fdf4;--r:#b91c1c;--rb:#fef2f2;
-  --pur:#7c3aed;--purb:#f5f3ff;
-  --rad:12px;--rad-sm:8px;--sh:0 1px 3px rgba(0,0,0,.06);
-}
+:root{--o:#EA7317;--od:#b85a0e;--ol:#fff4ec;--bg:#F6F5F2;--w:#fff;--b:#E8E6E1;--t:#0C0B09;--tm:#57534d;--mu:#8A867E;--g:#15803d;--gb:#effaf2;--r:#b42318;--rb:#fdf0ee;--rad:14px}
 html{scroll-behavior:smooth}
-body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
-a{color:var(--o);font-weight:600;text-decoration:none}a:hover{text-decoration:underline}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--od);font-weight:600;text-decoration:none}a:hover{text-decoration:underline}
 .nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
-.nav-logo{font-size:16px;font-weight:700;color:var(--o);letter-spacing:-.3px}
-.nav-back{border:1px solid var(--b);color:var(--tm);font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px}
-.nav-back:hover{border-color:var(--o);color:var(--o);text-decoration:none}
-.page{max-width:820px;margin:0 auto;padding:40px 16px 80px}
-.eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);margin-bottom:10px}
-h1{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.8px;line-height:1.1;margin-bottom:14px}
-.lede{font-size:16px;color:var(--tm);max-width:640px}
-.promises{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:28px 0 36px}
-.promise{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:14px 16px;font-size:13px;color:var(--tm)}
-.promise b{display:block;color:var(--t);font-size:14px;margin-bottom:2px}
-.toc{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:16px 20px;margin-bottom:40px;font-size:13px}
-.toc ol{padding-left:20px;columns:2;column-gap:28px}.toc li{margin:3px 0}
-section{margin-bottom:48px;scroll-margin-top:70px}
-h2{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:8px;display:flex;align-items:baseline;gap:10px}
-h2 .n{font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;color:var(--o);font-weight:500}
-h3{font-size:14px;font-weight:700;margin:22px 0 8px}
-p{font-size:14px;color:var(--tm);margin-bottom:10px;max-width:680px}
-p b{color:var(--t)}
-.card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px;box-shadow:var(--sh);margin:14px 0}
-.formula{background:var(--t);color:#f5f5f4;border-radius:var(--rad);padding:18px 20px;font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;line-height:1.9;margin:14px 0;overflow-x:auto;white-space:pre}
+.nav-logo{font-size:16px;font-weight:700;color:var(--o)}
+.nav-back{border:1px solid var(--b);color:var(--tm);font-size:13px;font-weight:600;padding:6px 14px;border-radius:8px}
+.page{max-width:900px;margin:0 auto;padding:48px 20px 80px}
+h1{font-size:clamp(30px,5vw,44px);font-weight:700;letter-spacing:-.03em;line-height:1.08}
+.lede{font-size:18px;color:var(--tm);max-width:60ch;margin-top:14px}
+h2{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:56px 0 6px}
+.sub{font-size:15px;color:var(--tm);max-width:62ch}
+p{font-size:15px;color:var(--tm)}
+.card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:24px}
+/* the three steps */
+.flow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:28px}
+.step{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:20px}
+.step .k{font-size:13px;color:var(--mu)}
+.step h3{font-size:17px;margin:2px 0 10px;letter-spacing:-.01em}
+.step .big{font-size:28px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.step .note{font-size:13px;color:var(--tm);margin-top:8px}
+.step.end{border-color:var(--o);box-shadow:0 0 0 3px var(--ol)}
+.step.end .big{color:var(--od)}
+.chips{display:flex;flex-direction:column;gap:6px}
+.chip{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:6px 10px;border-radius:8px}
+.chip.up{background:var(--rb);color:var(--r)}.chip.down{background:var(--gb);color:var(--g)}
+.chip b{font-weight:600;white-space:nowrap}
+.bar{position:relative;height:10px;background:#ece9e3;border-radius:5px;margin:16px 0 6px}
+.bar i{position:absolute;top:0;bottom:0;background:var(--o);border-radius:5px;opacity:.85}
+.bar s{position:absolute;top:-5px;width:3px;height:20px;background:var(--t);border-radius:2px}
+.bar-l{display:flex;justify-content:space-between;font-size:12px;color:var(--mu)}
+.who{font-size:13px;color:var(--mu);margin-top:12px}
+/* what moves it */
+.moves{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+.moves h3{font-size:15px;margin-bottom:10px}
+.mv{display:grid;grid-template-columns:1fr 70px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid #f0eee9;font-size:14px}
+.mv[hidden]{display:none}
+.mv span{color:var(--t)}
+.str{height:6px;border-radius:3px;background:#ece9e3;position:relative;overflow:hidden}
+.str i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.up .str i{background:var(--r)}.down .str i{background:var(--g)}
+.more{margin-top:10px;background:none;border:0;font:inherit;font-size:14px;font-weight:600;color:var(--od);cursor:pointer;padding:0}
+/* profile */
+.you{margin-top:28px}
+.you-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:12px}
+.you-item{background:var(--bg);border-radius:10px;padding:10px 12px}
+.you-k{font-size:12px;color:var(--mu)}
+.you-v{font-size:15px;font-weight:700}
+.you-v.miss{color:var(--r);font-size:14px}
+/* two cards */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+.two h3{font-size:17px;margin-bottom:6px}
+.nots{margin-top:16px;display:grid;gap:8px}
+.nots p b{color:var(--t)}
+.callout{background:var(--ol);border-radius:10px;padding:14px 16px;font-size:14px;color:#6b3410;margin-top:16px}
+/* detail */
+details{background:var(--w);border:1px solid var(--b);border-radius:12px;margin-top:10px}
+summary{cursor:pointer;list-style:none;padding:16px 20px;font-weight:600;font-size:15.5px;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--mu);font-weight:400;font-size:20px;line-height:1}
+details[open] summary::after{content:"−"}
+.dt{padding:0 20px 20px}
+.dt p{font-size:14px;margin:10px 0}
+.dt h4{font-size:14px;margin:18px 0 6px}
+.formula{background:#1c1b18;color:#f5f5f4;border-radius:10px;padding:14px 16px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.8;margin:12px 0;overflow-x:auto;white-space:pre}
 .formula .c{color:#a8a29e}.formula .k{color:#fbbf24}
-.tbl-wrap{overflow-x:auto;border:1px solid var(--b);border-radius:var(--rad);background:var(--w);margin:12px 0}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--b);border-radius:10px;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--b);vertical-align:top}
-th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);font-weight:700;background:#faf9f7;white-space:nowrap}
+th{font-size:12px;color:var(--mu);font-weight:600;background:#faf9f7;white-space:nowrap}
 tr:last-child td{border-bottom:none}
-td.num{font-family:inherit;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .yours{background:var(--ol)}
-th.yours{color:var(--od)}
-.up{color:var(--r);font-family:inherit;font-variant-numeric:tabular-nums;font-weight:600}.down{color:var(--g);font-family:inherit;font-variant-numeric:tabular-nums;font-weight:600}
-.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
-.tag.profile{background:var(--ol);color:var(--od)}.tag.rule{background:#e7e5e4;color:#44403c}.tag.ai{background:var(--purb);color:var(--pur)}
-.tag.high{background:#fee2e2;color:#991b1b}.tag.medium{background:#fef3c7;color:#92400e}.tag.low{background:var(--gb);color:var(--g)}
-.you{background:var(--w);border:1px solid var(--om);border-top:4px solid var(--o);border-radius:var(--rad);padding:20px;margin-bottom:40px}
-.you-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}
-.you-item{background:var(--bg);border-radius:var(--rad-sm);padding:10px 12px}
-.you-k{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu)}
-.you-v{font-size:15px;font-weight:700;font-family:inherit;font-variant-numeric:tabular-nums}
-.you-v.miss{color:var(--r);font-family:inherit;font-size:13px}
-.steps{list-style:none;counter-reset:s}
-.steps li{counter-increment:s;position:relative;padding:8px 0 8px 34px;font-size:13px;color:var(--tm);border-bottom:1px dashed var(--b)}
-.steps li:last-child{border-bottom:none}
-.steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:22px;height:22px;border-radius:50%;background:var(--o);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.steps li b{color:var(--t)}
-.bar{position:relative;height:12px;background:#ece9e3;border-radius:6px;margin:18px 0 6px}
-.bar i{position:absolute;top:0;bottom:0;background:var(--o);border-radius:6px;opacity:.85}
-.bar s{position:absolute;top:-5px;width:3px;height:22px;background:var(--t);border-radius:2px}
-.bar-l{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);font-family:inherit;font-variant-numeric:tabular-nums}
-.callout{background:#fff7ed;border:1px solid var(--om);border-left:3px solid var(--o);border-radius:var(--rad-sm);padding:14px 16px;font-size:13px;color:#7c2d12;margin:14px 0}
-.cases{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.case{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px}
-.case-f{font-family:inherit;font-variant-numeric:tabular-nums;font-size:17px;font-weight:600;color:#991b1b}
-.case-n{font-size:13px;font-weight:700;margin:2px 0}
-.case-s{font-size:12px;color:var(--tm)}
-.case-m{font-size:11px;color:var(--mu);margin-top:6px}
-.ld{color:var(--mu);font-size:13px;font-style:italic}
-.foot{font-size:12px;color:var(--mu);border-top:1px solid var(--b);padding-top:18px;margin-top:40px}
-@media(max-width:640px){.promises{grid-template-columns:1fr}.toc ol{columns:1}.cases{grid-template-columns:1fr}.nav{padding:12px 16px}h2{font-size:19px}}
+.up-t{color:var(--r);font-weight:600}.down-t{color:var(--g);font-weight:600}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;white-space:nowrap;background:#efedea;color:#44403c}
+.tag.high{background:#fde3df;color:#8f1d12}.tag.medium{background:#fdf0d5;color:#7a4b06}.tag.low{background:var(--gb);color:var(--g)}
+.q{width:100%;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--b);border-radius:8px;margin:6px 0 10px}
+.cases{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.case{border:1px solid var(--b);border-radius:10px;padding:12px}
+.case-f{font-size:16px;font-weight:700}
+.case-n{font-size:13.5px;font-weight:600;margin:2px 0}
+.case-s{font-size:12.5px;color:var(--tm)}
+.case-m{font-size:12px;color:var(--mu);margin-top:6px}
+.ld{color:var(--mu);font-size:14px}
+.foot{font-size:12.5px;color:var(--mu);border-top:1px solid var(--b);padding-top:18px;margin-top:48px}
+@media(max-width:760px){.flow,.moves,.two,.cases{grid-template-columns:1fr}.nav{padding:12px 16px}.page{padding:32px 16px 64px}h2{margin-top:44px}}
 </style>
 </head>
 <body>
@@ -89,122 +105,88 @@ th.yours{color:var(--od)}
 </nav>
 
 <main class="page">
-  <div class="eyebrow">Methodology</div>
-  <h1>The Sendwize exposure algorithm</h1>
-  <p class="lede">Every &pound; figure on your dashboard comes from the method on this page. The numbers in the tables below are read live from the same code that calculates your figures, so this page can't fall out of date.</p>
+  <h1>How we put a &pound; figure on a risk</h1>
+  <p class="lede">We start from what similar businesses were actually fined for the same issue, then adjust it for your business. You get one likely figure and a range around it. AI never sets the number.</p>
 
-  <div class="promises">
-    <div class="promise"><b>Anchored to real cases</b>Ranges come from published ICO enforcement, scaled to your size and sector.</div>
-    <div class="promise"><b>AI never writes a number</b>AI can only tick factors from a fixed list, and only by quoting your evidence word for word.</div>
-    <div class="promise"><b>Same evidence, same figure</b>Every step is a fixed rule. Change an input and you can see exactly why the figure moved.</div>
-  </div>
+  <div class="flow" id="flow"><div class="step"><span class="ld">Loading&hellip;</span></div></div>
+  <p class="who" id="flowWho"></p>
 
-  <div class="you" id="you" hidden>
-    <div class="eyebrow" style="margin-bottom:4px">Your business profile</div>
-    <p style="margin:0">These are the answers your figures are built on. <a id="editProfile" href="#">Edit your profile</a></p>
+  <div class="card you" id="you" hidden>
+    <h3 style="font-size:17px">Your figures use these answers</h3>
+    <p style="font-size:14px;margin-top:2px">Fill in anything marked missing and your ranges get tighter. <a id="editProfile" href="#">Edit your profile</a></p>
     <div class="you-grid" id="youGrid"></div>
   </div>
 
-  <nav class="toc" aria-label="Contents">
-    <ol>
-      <li><a href="#s1">The published-case range</a></li>
-      <li><a href="#s2">Factors that move the figure</a></li>
-      <li><a href="#s3">From factors to one figure</a></li>
-      <li><a href="#s4">Worked example</a></li>
-      <li><a href="#s5">Adding findings together</a></li>
-      <li><a href="#s6">Advertising (ASA) and consumer law (CMA)</a></li>
-      <li><a href="#s7">Score, risk addressed and other figures</a></li>
-      <li><a href="#s8">The cases behind the ranges</a></li>
-      <li><a href="#s9">What these figures are not</a></li>
-    </ol>
-  </nav>
+  <h2>What moves the figure</h2>
+  <p class="sub">The same things a regulator weighs. Each comes from a fixed list, so the same facts always give the same figure.</p>
+  <div class="moves">
+    <div class="card up"><h3>Pushes it up</h3><div id="mvUp"><span class="ld">Loading&hellip;</span></div></div>
+    <div class="card down"><h3>Brings it down</h3><div id="mvDown"><span class="ld">Loading&hellip;</span></div></div>
+  </div>
+  <button class="more" id="mvMore" type="button" hidden>Show all factors</button>
 
-  <section id="s1">
-    <h2><span class="n">01</span>The published-case range</h2>
-    <p>Each data protection finding (ICO) has a type, such as <b>consent missing</b> or <b>suppression breach</b>. For each type we hold a range of what comparable organisations were fined in published ICO decisions, split by annual turnover. We call this the <b>frame</b>. Your figure can never go outside it.</p>
-    <div class="formula"><span class="c">// Step 1</span>
-<span class="k">frame</span> = range for the finding type, for your turnover band
-        &times; your sector multiplier</div>
-    <h3>Ranges by finding type and turnover band</h3>
+  <h2>Ads and pricing work differently</h2>
+  <div class="two">
+    <div class="card"><h3>Ad claims (ASA)</h3><p>The ASA doesn't fine. An upheld ruling is published under your name for good, and serious cases go to Trading Standards. So we show the ruling and how likely a referral is, never a made-up fine.</p></div>
+    <div class="card"><h3>Prices and urgency (CMA)</h3><p>The CMA can now fine directly, but there aren't enough decisions yet to give a realistic range. So we show the legal maximum for a business your size, and nothing more.</p></div>
+  </div>
+
+  <h2>What these figures are not</h2>
+  <div class="nots">
+    <p><b>Not a prediction.</b> A real outcome depends on things no software sees, like how you co-operate and how fast you put things right.</p>
+    <p><b>Not legal advice.</b> For your own position, speak to a solicitor who specialises in UK data protection or consumer law.</p>
+    <p><b>Not for your accounts.</b> Don't use them as provisions without independent legal and financial advice.</p>
+  </div>
+  <div class="callout" id="duaa"></div>
+
+  <h2>The full detail</h2>
+  <p class="sub">Everything below is read live from the code that calculates your figures, so it can't fall out of date.</p>
+
+  <details><summary>Fine ranges by issue and business size</summary><div class="dt">
+    <p>For each type of data protection issue we hold the range comparable organisations were fined, split by turnover. Your figure never goes outside it.</p>
     <div class="tbl-wrap"><table id="bandTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
-    <p style="font-size:12px">Ranges shown before the sector multiplier. Your turnover band is highlighted when you are signed in. If you give an exact turnover, it decides your band.</p>
-    <h3>Sector multipliers</h3>
+    <h4>Sector adjustment</h4>
+    <p>Regulators have fined finance, health and gambling more heavily for the same breach, and charities and B2B senders less.</p>
     <div class="tbl-wrap"><table id="sectorTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
-    <p style="font-size:12px">Regulators have fined finance, health and gambling more heavily for the same breach, and charities and B2B senders less.</p>
-  </section>
+  </div></details>
 
-  <section id="s2">
-    <h2><span class="n">02</span>Factors that move the figure</h2>
-    <p>Where you sit inside the frame depends on aggravating factors (push it up) and mitigating factors (pull it down), the same things a regulator weighs. Every factor comes from a fixed list with a fixed weight. They come from three places:</p>
-    <ul class="steps" style="margin:10px 0 14px">
-      <li><span class="tag profile">Profile</span> &nbsp;<b>Your business profile.</b> Turnover, list size, opt-in records, complaints and regulator contact. This is why the profile is required.</li>
-      <li><span class="tag rule">Rule</span> &nbsp;<b>Facts we already hold about the finding.</b> Contacts affected, data types, DPA status, whether a documented assessment exists, known breach history, and how long the finding has been open.</li>
-      <li><span class="tag ai">AI</span> &nbsp;<b>An AI reading of the finding, only if you ask for one.</b> It can only tick factors from the AI part of this list, and each must come with a quote of at least three words that appears word for word in the finding. Anything else is thrown away, never repaired. The reading is saved and reused until the evidence changes.</li>
-    </ul>
+  <details><summary>Every factor and its weight</summary><div class="dt">
+    <p>Factors come from three places: your <b>profile</b>; <b>rules</b> about the finding itself (contacts affected, data types, supplier agreements, how long it's been open); and, only if you ask, an <b>AI</b> reading. The AI can only tick factors from its part of this list, and only by quoting your evidence word for word. Anything else is thrown away.</p>
     <div class="tbl-wrap"><table id="factorTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
-    <p style="font-size:12px">Contacts affected comes from the finding itself first, then a number the AI quoted from it, then the list size on your profile. Opt-in record factors apply to consent and opt-out findings only. Turnover counts as the lower or upper part of its band when it sits in the bottom or top third (measured on a log scale). If your profile confirms complaints, the AI&rsquo;s reading of complaints is ignored so it is never counted twice.</p>
-  </section>
+  </div></details>
 
-  <section id="s3">
-    <h2><span class="n">03</span>From factors to one figure</h2>
+  <details><summary>How the likely figure and range are set</summary><div class="dt">
     <div class="formula" id="posFormula">Loading&hellip;</div>
-    <p>The <b>most likely figure</b> is the point in the frame the factors land on. The <b>likely range</b> around it gets narrower the more we know about you. Confidence counts five things we might know:</p>
+    <p>The range gets narrower the more we know about you. Confidence counts these:</p>
     <div class="tbl-wrap"><table id="confTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
-    <p style="font-size:12px">With a complete business profile, a finding usually reaches high confidence. An AI reading is a bonus, not a requirement.</p>
-  </section>
+  </div></details>
 
-  <section id="s4">
-    <h2><span class="n">04</span>Worked example</h2>
-    <div class="card" id="example"><span class="ld">Loading&hellip;</span></div>
-  </section>
-
-  <section id="s5">
-    <h2><span class="n">05</span>Adding findings together</h2>
-    <p>Adding every finding&rsquo;s figure together would overstate things: a regulator investigates related failings as one case and issues one penalty. So findings are grouped by area, and each area is counted once.</p>
+  <details><summary>Adding several issues together</summary><div class="dt">
+    <p>A regulator investigates related failings as one case, so adding every figure together would overstate things. Issues are grouped by area and each area is counted once.</p>
     <div class="formula" id="clusterFormula">Loading&hellip;</div>
     <div class="tbl-wrap"><table id="areaTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
-    <p>Next to the total we show an <b>attention likelihood</b> (Low, Medium or High). It is never multiplied into the figure. It adds points for: critical findings open (+2), the largest audience affected (+2 over 100,000, +1 over 10,000), an issue type the ICO has fined recently such as opt-outs or bought-in data (+2), a finance, health or gambling sector (+1), and findings open for more than 90 days (+1). Five points or more is High, three or more is Medium.</p>
-  </section>
+    <p>Next to the total we show an attention likelihood (Low, Medium or High). It is never multiplied into the figure.</p>
+  </div></details>
 
-  <section id="s6">
-    <h2><span class="n">06</span>Advertising (ASA) and consumer law (CMA)</h2>
-    <h3>ASA: no fines, so no fine figure</h3>
-    <p>The ASA does not fine. An upheld ruling is published permanently under your brand name, and serious or repeat cases can be referred to Trading Standards. So ASA findings show a <b>referral risk</b>, never a fine.</p>
+  <details><summary>Ad referral risk, consumer law maximums and business cost</summary><div class="dt">
     <div class="tbl-wrap"><table id="asaTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
-    <h3>CMA: the statutory maximum only</h3>
-    <p>Since the DMCCA 2024 the CMA can fine directly. There are not yet enough published decisions to anchor a realistic range, so we show only the legal maximum for a business your size, worked out from the top of your turnover band.</p>
     <div class="tbl-wrap"><table id="cmaTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
-    <h3>Commercial cost (your own figures, never a fine)</h3>
-    <p>If you give a campaign&rsquo;s budget and expected sales, we estimate what an ASA or CMA finding could cost the business. These figures are labelled as business cost and are never added to regulatory exposure.</p>
+    <p>If you give a campaign's budget and expected sales, we also estimate what an ad or pricing finding could cost the business. That's labelled as business cost and never added to the fine figures.</p>
     <div class="tbl-wrap"><table id="commTable"><tr><td class="ld">Loading&hellip;</td></tr></table></div>
-  </section>
+  </div></details>
 
-  <section id="s7">
-    <h2><span class="n">07</span>Score, risk addressed and other figures</h2>
-    <h3>Compliance score</h3>
-    <p id="scoreText">Loading&hellip;</p>
-    <h3>Risk addressed</h3>
-    <p>The exposure removed by the fixes you have completed: your total with those findings still open, minus your total now, using the grouping in step 5. It is split into fixes <b>verified</b> by re-running the check and fixes you <b>marked fixed</b> yourself.</p>
-    <h3>Already lost</h3>
-    <p>A commercial figure, not a regulatory one: extra unsubscribes over the last 12 months (from Audience read) multiplied by your cost per subscriber. If you have not entered a cost per subscriber we use a sector default and label the figure as an estimate.</p>
-  </section>
+  <details><summary>Compliance score and other dashboard figures</summary><div class="dt">
+    <h4>Compliance score</h4><p id="scoreText">Loading&hellip;</p>
+    <h4>Risk addressed</h4><p>The exposure removed by the fixes you've completed, split into fixes verified by re-running the check and fixes you marked fixed yourself.</p>
+    <h4>Already lost</h4><p>A business figure, not a fine: extra unsubscribes over the last 12 months multiplied by what a subscriber is worth to you.</p>
+  </div></details>
 
-  <section id="s8">
-    <h2><span class="n">08</span>The cases behind the ranges</h2>
-    <p>These published decisions anchor the ranges and appear as &ldquo;closest published cases&rdquo; under <b>Why this number?</b>. Case Twin on your dashboard also draws on rulings our daily regulator feed picks up, so it grows as new decisions are published.</p>
+  <details><summary>The published cases behind the ranges</summary><div class="dt">
     <p id="caseCount"></p>
+    <input class="q" id="caseQ" type="search" placeholder="Search by company, issue or regulator">
     <div class="cases" id="cases"><span class="ld">Loading&hellip;</span></div>
-    <p style="font-size:12px;margin-top:10px">Each case links to the regulator&rsquo;s published record.</p>
-  </section>
-
-  <section id="s9">
-    <h2><span class="n">09</span>What these figures are not</h2>
-    <div class="callout" id="duaa">Loading&hellip;</div>
-    <p><b>Not a prediction.</b> A real outcome depends on things no software sees: how you co-operate, the regulator&rsquo;s priorities that year, and how quickly you put things right.</p>
-    <p><b>Not legal advice.</b> For your specific position, speak to a solicitor who specialises in UK data protection or consumer law.</p>
-    <p><b>Not for financial reporting.</b> Don&rsquo;t use these figures as provisions in accounts or investor documents without independent legal and financial advice.</p>
-    <p id="legalMax"></p>
-  </section>
+    <button class="more" id="caseMore" type="button" hidden>Show more</button>
+  </div></details>
 
   <div class="foot" id="foot">Illustrative ranges based on published enforcement data. Not a prediction. Not legal advice.</div>
 </main>
@@ -229,7 +211,7 @@ th.yours{color:var(--od)}
   function nice(s) { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
   function pct(x) { return Math.round(x * 100) + '%'; }
   function signed(w) { return (w > 0 ? '+' : '−') + Math.abs(w).toFixed(2); }
-  function set(id, html) { document.getElementById(id).innerHTML = html; }
+  function set(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
   function row(cells, cls) { return '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' + cells.join('') + '</tr>'; }
   var BAND_KEYS = ['under_1m', '1m_10m', '10m_50m', 'over_50m'];
   var SECTOR_NAMES = { finance: 'Finance', health: 'Health / Healthcare', gambling: 'Gambling', ecommerce: 'Ecommerce / Retail', media: 'Media / Publishing', general: 'Agency, SaaS and other', b2b: 'B2B / Professional services', charity: 'Charity / Non-profit' };
@@ -299,12 +281,29 @@ th.yours{color:var(--od)}
   function renderFactors() {
     var order = { profile: 0, rule: 1, ai: 2 };
     var fs = M.factors.slice().sort(function (a, b) { return order[a.source] - order[b.source] || b.weight - a.weight; });
-    var h = row(['<th>Factor</th>', '<th>Source</th>', '<th>Effect on position</th>']);
+    var h = row(['<th>Factor</th>', '<th>Comes from</th>', '<th>Weight</th>']);
     fs.forEach(function (f) {
-      h += row(['<td>' + esc(f.label) + '</td>', '<td><span class="tag ' + f.source + '">' + { profile: 'Profile', rule: 'Rule', ai: 'AI' }[f.source] + '</span></td>', '<td class="' + (f.weight > 0 ? 'up' : 'down') + '">' + signed(f.weight) + (f.weight > 0 ? ' ↑' : ' ↓') + '</td>']);
+      h += row(['<td>' + esc(f.label) + '</td>', '<td><span class="tag">' + { profile: 'Profile', rule: 'Rule', ai: 'AI' }[f.source] + '</span></td>', '<td class="num ' + (f.weight > 0 ? 'up-t' : 'down-t') + '">' + signed(f.weight) + '</td>']);
     });
     set('factorTable', h);
   }
+
+  var showAllMoves = false;
+  function renderMoves() {
+    var max = M.factors.reduce(function (m, f) { return Math.max(m, Math.abs(f.weight)); }, 0.01);
+    function list(fs) {
+      return fs.map(function (f, i) {
+        return '<div class="mv"' + (!showAllMoves && i >= 6 ? ' hidden' : '') + '><span>' + esc(f.label) + '</span><div class="str" title="' + signed(f.weight) + '"><i style="width:' + Math.round(Math.abs(f.weight) / max * 100) + '%"></i></div></div>';
+      }).join('');
+    }
+    var up = M.factors.filter(function (f) { return f.weight > 0; }).sort(function (a, b) { return b.weight - a.weight; });
+    var down = M.factors.filter(function (f) { return f.weight < 0; }).sort(function (a, b) { return a.weight - b.weight; });
+    set('mvUp', list(up)); set('mvDown', list(down));
+    var more = document.getElementById('mvMore');
+    more.hidden = showAllMoves || (up.length <= 6 && down.length <= 6);
+    more.textContent = 'Show all ' + M.factors.length + ' factors';
+  }
+  document.getElementById('mvMore').addEventListener('click', function () { showAllMoves = true; renderMoves(); });
 
   function renderPosition() {
     var p = M.position, hw = M.halfWidth;
@@ -325,28 +324,25 @@ th.yours{color:var(--od)}
 
   function renderExample() {
     var t = M.ico.filter(function (x) { return x.type === 'consent_missing'; })[0] || M.ico[0];
-    var band = (P && bandOf(P.annualTurnover, P.revenueBand)) || '1m_10m';
-    var sec = P ? sectorOf(P.sector) : 'ecommerce';
-    var prof = P && P.profileComplete ? P : { annualTurnover: 2000000, listSize: 25000, consentRecords: 'some', complaintsReceived: 'No', priorRegulatorContact: 'No' };
-    if (!P || !P.profileComplete) band = bandOf(prof.annualTurnover);
+    var mine = !!(P && P.profileComplete);
+    var prof = mine ? P : { annualTurnover: 2000000, listSize: 25000, consentRecords: 'some', complaintsReceived: 'No', priorRegulatorContact: 'No' };
+    var band = mine ? bandOf(P.annualTurnover, P.revenueBand) : bandOf(prof.annualTurnover);
+    var sec = mine ? sectorOf(P.sector) : 'ecommerce';
     var m = M.sectors[sec], low = Math.round(t.bands[band].low * m), high = Math.round(t.bands[band].high * m), w = high - low;
     var ids = profileFactors(prof, band), sum = ids.reduce(function (s, id) { return s + weight(id); }, 0);
     var pos = Math.min(M.position.max, Math.max(M.position.min, M.position.start + sum));
     var known = 4, level = known >= M.confidenceAt.high ? 'high' : known >= M.confidenceAt.medium ? 'medium' : 'low', half = M.halfWidth[level];
     var centre = low + w * pos, r100 = function (v) { return Math.round(v / 100) * 100; };
     var lo = r100(Math.max(low, centre - w * half)), hi = r100(Math.min(high, centre + w * half));
-    var who = P && P.profileComplete ? 'your business' : 'an example business (' + gbpK(prof.annualTurnover) + ' turnover, ' + Number(prof.listSize).toLocaleString('en-GB') + ' contacts, ' + (SECTOR_NAMES[sec] || sec) + ', no complaints or regulator contact)';
-    set('example',
-      '<p style="margin-bottom:12px">A <b>' + esc(nice(t.type)) + '</b> finding for ' + esc(who) + ', using only the profile. No finding-specific facts or AI reading.</p>' +
-      '<ul class="steps">' +
-        '<li><b>Frame.</b> ' + esc(M.bands[band]) + ' range ' + gbp(t.bands[band].low) + '–' + gbp(t.bands[band].high) + ' × ' + m + ' (' + esc(SECTOR_NAMES[sec] || sec) + ') = <b>' + gbp(low) + '–' + gbp(high) + '</b></li>' +
-        '<li><b>Factors.</b> ' + (ids.length ? ids.map(function (id) { return esc(label(id)) + ' <span class="' + (weight(id) > 0 ? 'up' : 'down') + '">' + signed(weight(id)) + '</span>'; }).join('; ') : 'None') + '</li>' +
-        '<li><b>Position.</b> ' + M.position.start + ' ' + (sum >= 0 ? '+ ' : '− ') + Math.abs(sum).toFixed(2) + ' = <b>' + pos.toFixed(2) + '</b> of the way up the frame</li>' +
-        '<li><b>Most likely.</b> ' + gbp(low) + ' + ' + pos.toFixed(2) + ' × ' + gbp(w) + ' = <b>about ' + gbp(roundNice(centre)) + '</b></li>' +
-        '<li><b>Likely range.</b> High confidence (4 of 5 known), so ±' + pct(half) + ' of the frame: <b>' + gbp(lo) + '–' + gbp(hi) + '</b></li>' +
-      '</ul>' +
-      '<div class="bar"><i style="left:' + ((lo - low) / w * 100).toFixed(1) + '%;width:' + Math.max(1, (hi - lo) / w * 100).toFixed(1) + '%"></i><s style="left:calc(' + (pos * 100).toFixed(1) + '% - 1px)"></s></div>' +
-      '<div class="bar-l"><span>' + gbpK(low) + '</span><span>published-case frame</span><span>' + gbpK(high) + '</span></div>');
+    var chips = ids.length ? ids.map(function (id) { var up = weight(id) > 0; return '<div class="chip ' + (up ? 'up' : 'down') + '"><span>' + esc(label(id)) + '</span><b>' + (up ? 'Up' : 'Down') + '</b></div>'; }).join('') : '<p class="note">Nothing on the profile moves it.</p>';
+    set('flow',
+      '<div class="step"><div class="k">Step 1</div><h3>What similar businesses were fined</h3><div class="big">' + gbpK(low) + '–' + gbpK(high) + '</div><p class="note">Published fines for ' + esc(nice(t.type).toLowerCase()) + ', for a ' + esc(M.bands[band]) + ' turnover ' + esc((SECTOR_NAMES[sec] || nice(sec)).toLowerCase()) + ' business.</p></div>' +
+      '<div class="step"><div class="k">Step 2</div><h3>Adjusted for you</h3><div class="chips">' + chips + '</div></div>' +
+      '<div class="step end"><div class="k">Step 3</div><h3>Your likely figure</h3><div class="big">About ' + gbpK(roundNice(centre)) + '</div><p class="note">Likely range ' + gbpK(lo) + '–' + gbpK(hi) + '</p>' +
+        '<div class="bar"><i style="left:' + ((lo - low) / w * 100).toFixed(1) + '%;width:' + Math.max(1, (hi - lo) / w * 100).toFixed(1) + '%"></i><s style="left:calc(' + (pos * 100).toFixed(1) + '% - 1px)"></s></div>' +
+        '<div class="bar-l"><span>' + gbpK(low) + '</span><span>' + gbpK(high) + '</span></div></div>');
+    set('flowWho', mine ? 'Worked out for a consent issue using your business profile.' :
+      'Example: a missing-consent issue for a business with ' + gbpK(prof.annualTurnover) + ' turnover and ' + Number(prof.listSize).toLocaleString('en-GB') + ' contacts. Sign in and it uses your own profile.');
   }
 
   function renderClusters() {
@@ -379,21 +375,33 @@ th.yours{color:var(--od)}
       row(['<td>Refunds or compensation</td>', '<td>CMA</td>', '<td>' + pct(A.refunded.likely) + ' of campaign revenue (range ' + pct(A.refunded.low) + ' to ' + pct(A.refunded.high) + ')</td>']));
   }
 
+  var caseLimit = 12;
+  function renderCases() {
+    var q = (document.getElementById('caseQ').value || '').toLowerCase().trim();
+    var cs = M.cases.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); })
+      .filter(function (c) { return !q || [c.name, c.summary, c.regulator, (c.types || []).map(nice).join(' ')].join(' ').toLowerCase().indexOf(q) >= 0; });
+    set('cases', cs.slice(0, caseLimit).map(function (c) {
+      return '<div class="case"><div class="case-f">' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || 'Published ruling')) + '</div><div class="case-n">' + esc(c.name) + '</div><div class="case-s">' + esc(c.summary) + '</div><div class="case-m">' + esc(c.regulator) + ', ' + esc(c.date) + (c.url ? '. <a href="' + esc(c.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</div></div>';
+    }).join('') || '<p>No cases match that search.</p>');
+    var more = document.getElementById('caseMore');
+    more.hidden = cs.length <= caseLimit;
+    more.textContent = 'Show more (' + (cs.length - caseLimit) + ' left)';
+  }
+  document.getElementById('caseMore').addEventListener('click', function () { caseLimit += 24; renderCases(); });
+  document.getElementById('caseQ').addEventListener('input', function () { caseLimit = 12; renderCases(); });
+
   function renderRest() {
     var w = M.severityWeight;
     set('scoreText', 'The share of your findings that are fixed, weighted by severity: critical ' + w.critical + ', high ' + w.high + ', medium ' + w.medium + ', low ' + w.low + '. A fix verified by re-running the check counts in full; a fix you mark yourself counts ' + pct(M.selfAttestedCredit) + '. Findings you dismiss as not applicable or wrong leave the score; findings you accept the risk on still count as open. Commercial findings are not part of the score.');
-    var cs = M.cases.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
-    set('cases', cs.map(function (c) {
-      return '<div class="case"><div class="case-f">' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || 'Published ruling')) + '</div><div class="case-n">' + esc(c.name) + '</div><div class="case-s">' + esc(c.summary) + '</div><div class="case-m">' + esc(c.regulator) + ' · ' + esc(c.date) + ((c.types || []).length ? ' · used for ' + esc(c.types.map(nice).join(', ')) : '') + (c.url ? ' · <a href="' + esc(c.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</div></div>';
-    }).join(''));
+    renderCases();
     var S = M.libraryStats;
-    if (S) set('caseCount', 'Sendwize matches findings against ' + S.total.toLocaleString('en-GB') + ' published cases: ' + ['ICO', 'CMA', 'ASA'].map(function (r) { return (S[r] || 0).toLocaleString('en-GB') + ' ' + r; }).join(', ') + '. Every one links to the regulator\u2019s own page. Shown below: the cases with a published fine or refund, which set the ranges, and the hand-checked anchors.');
-    set('duaa', '<b>Treat ICO figures as a floor, not a ceiling.</b> ' + esc(M.legal.duaaWarning));
-    set('legalMax', '<b>Legal maximums.</b> ICO: ' + esc(M.legal.icoMax) + '. CMA: ' + esc(M.legal.cmaMax) + '.');
+    if (S) set('caseCount', 'Sendwize matches findings against ' + S.total.toLocaleString('en-GB') + ' published decisions (' + ['ICO', 'CMA', 'ASA'].map(function (r) { return (S[r] || 0).toLocaleString('en-GB') + ' ' + r; }).join(', ') + '). Below are the ' + M.cases.length + ' with a published fine or refund, which set the ranges. Newest first.');
+    set('duaa', '<b>Treat data protection figures as a floor, not a ceiling.</b> The maximum fine rose sharply in February 2026, and most of the published fines behind these ranges came before that.');
+    
     set('foot', esc(M.legal.notLegalAdvice) + ' Method version ' + esc(M.version) + '.');
   }
 
-  function renderAll() { renderYou(); renderBands(); renderFactors(); renderPosition(); renderExample(); renderClusters(); renderAsaCma(); renderRest(); }
+  function renderAll() { renderYou(); renderBands(); renderFactors(); renderMoves(); renderPosition(); renderExample(); renderClusters(); renderAsaCma(); renderRest(); }
 
   async function boot() {
     try {
