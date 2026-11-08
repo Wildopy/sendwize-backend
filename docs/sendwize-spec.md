@@ -72,8 +72,8 @@ Helpers: `requireAuth(req,res)` for members, `requireInternal` for cron/internal
 | Tool (page) | What it does | Endpoint(s) | Rate-limit bucket (per day) |
 |---|---|---|---|
 | **Dashboard** (Webflow embed) | Score ring, Already lost / Open regulatory exposure / Risk addressed tiles, exposure by area, Start here, consent expiring, This week, list value, action items with "Why this number?", Case Twin, What-if mode, campaigns, recent checks. **[PR #8]** shows a required business-profile form instead of any £ figure until the profile is complete | `dashboard`, `fixes`, `exposure`, `profile`, `data`, `verdict` | `fix_draft` 40, `exposure` 20 |
-| **Send-day verdict** (`send-verdict.html`) | Go / Fix first / Hold before a send, combining copy + landing pages + list + audience. Pure rules over those results, fingerprinted and saved | `verdict` | `verdict` 40 |
-| **AI Copy Checker** (`ai-checker.html`) | Rules first, then Claude reviews ad/email/SMS/social copy against CAP/PECR/CMA, gives compliant rewrites, separates "evidence required" items, re-checks an edited version and closes resolved fixes | `analyze-copy`, `certify-evidence` | `copy_scan` 60 |
+| **Saved send-day verdicts** (`send-verdict.html`) | Retired as a tool in Nov 2026 and merged into the Copy Checker, because members often run one tool per campaign and a combined Go could imply the list and pages were checked. The page now only reopens verdicts saved before the change, and sends everyone else to the Copy Checker. Old page in `archive/send-verdict.html` | `verdict` (GET only) | none |
+| **AI Copy Checker** (`ai-checker.html`) | Gives one answer for the copy only, Go / Fix first / Hold (`_send-call.js`: any critical finding holds; any high or medium finding, or an evidence claim not yet confirmed, means fix first), and a "Not checked here" card linking to List health, Campaign defence and Audience read. Rules first, then Claude reviews ad/email/SMS/social copy against CAP/PECR/CMA, gives compliant rewrites, separates "evidence required" items, re-checks an edited version and closes resolved fixes | `analyze-copy`, `certify-evidence` | `copy_scan` 60 |
 | **Campaign Defence** (`campaign-defence.html`) | Builds a defensible campaign dossier: copy checks, landing-page scans (claims, reference/drip pricing, urgency), approvals, event log, page-drift monitoring | `submit-check` | `campaign_build` 30 |
 | **Commercial Relationships** (`vendor-checker.html`) | Vendor, partner and affiliate registers, vendor risk scoring, DPA reader (URL or PDF), competitor/relationship watch | `data`, `dpa-scan`, `check-vendors`, `vendor-*`, `submit-check` | `vendor_check` 30, `dpa_scan` 20 |
 | **List Intelligence** / List health (`list-intelligence.html`) | Upload an ESP contact CSV. Shows "your real list" (green/amber/red with reasons), the consent clock (default 24 months), sign-up source quality joined to Site Sweep, evidence coverage, unsubscribe leaks across lists, soft opt-in misuse, Case Twin, pre-send certificate and re-consent drafts | `list-intelligence` (logic in `_list-insights.js`) | `list_upload` 20, `reconsent` 30 |
@@ -127,7 +127,7 @@ All routes are `https://sendwize-backend.vercel.app/api/<name>`. Member routes n
 | `exposure` | `explain`, `assess`, `inputs` (campaign figures), `draft` (ready-to-use fix), `assess-pending` (cron), `method` (public) **[PR #8]** | member / cron / public |
 | `exposure-summary` | GET/POST: Lost / At risk / Cleared tiles | member |
 | `profile` | `get`, `save`, `streak` (internal) | member |
-| `verdict` | POST: run the verdict; `get`, `list` | member |
+| `verdict` | `get`, `list` of verdicts saved before the tool was retired. POST returns 410 | member |
 | `analyze-copy` | POST: copy check | member |
 | `certify-evidence` | POST: persist evidence confirmations | member |
 | `submit-check` | `check`, `brief-check`, `dossier-create/get/list/save/submit`, `defence-add-event/approve/assemble/scan-pages` | member |
@@ -168,7 +168,7 @@ Field names are case-sensitive. The code looks them up by name, and a missing fi
 | `User_Profile` | `UserID`, `Sector`, `RevenueBand`, `CPL`, `AnnualTurnover`, `ListSize`, `ConsentRecords` (all/some/none), `PriorRegulatorContact` (Yes/No), `ComplaintsReceived` (Yes/No), `TypicalCampaignBudget` (£), `TypicalCampaignRevenue` (£), streak fields |
 | `Compliance_Fixes` | the fix list: type, severity, status, exposure low/high, `CommercialInputs`, `AssessmentJson`, `EvidenceHash`, `DismissReason`, `FixDraft` |
 | `Score_History` | `UserID`, `Date`, `Score`, `ScoreChange`, `TriggerEvent` (one row per day) |
-| `Send_Verdicts` | `UserID`, `CreatedAt` (ISO text), `Verdict`, `CampaignName`, `Channel`, `ListName`, `Urls`, `CopyCheckId`, `ReasonsJson`, `InputHash`, `Fingerprint` |
+| `Send_Verdicts` | `UserID`, `CreatedAt` (ISO text), `Verdict`, `CampaignName`, `Channel`, `ListName`, `Urls`, `CopyCheckId`, `ReasonsJson`, `InputHash`, `Fingerprint`. Read-only since the Send-day verdict was merged into the Copy Checker |
 | `Simulations` | `UserID`, `CreatedAt`, `Regulator`, `Band`, `ResultJson` |
 | `Free_Checks` | `Email`, `Channel`, `Verdict`, `VisitorHash`, `CheckedAt`, `Issues`. The copy is never stored and the emails must not be used for marketing |
 | `List_Intelligence_Checks` | `ListName`, `CheckDate`, `Expiring30/60/90`, `LiabilityCount`, `LiabilityPct`, `TotalContacts`, `Results` (long text JSON, includes insights) |
@@ -228,7 +228,7 @@ All embeds load code from Vercel, so merging to `main` updates the live site wit
 - Vercel: set `INTERNAL_API_SECRET`, `CRON_SECRET`, `DASHBOARD_URL`, Upstash and the free-check vars. Remove `SENDWIZE_AUTH_ENFORCE`. Move to Pro.
 - Set a spend limit in the Anthropic Console.
 - Memberstack/Stripe plans, then `SENDWIZE_REQUIRE_PLAN=true`.
-- Run the signed-in end-to-end click-through of all eight tools.
+- Run the signed-in end-to-end click-through of all seven tools.
 - Replace the About page placeholders. Swap staging links (`new-mvp-v2.webflow.io`) once the live domain is set.
 
 **Product/engineering still open:**
