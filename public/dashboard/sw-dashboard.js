@@ -35,7 +35,7 @@
   'use strict';
   var API = 'https://sendwize-backend.vercel.app';
   var root, userId, member = null, D = null;
-  var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { list: 0, sweep: 0, ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'list' };
+  var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { list: 0, sweep: 0, ai: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'list' };
   var drafts = {}, nums = {}, lastRing = null;
   var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var AREA_LABELS = { consent: 'Marketing consent', suppression: 'Opt-outs and suppression', processors: 'Processors and data sharing', transparency: 'Transparency and identity', lawful_basis: 'Legitimate interests', ASA: 'Advertising claims (ASA)', CMA: 'Consumer law (CMA)', Commercial: 'Commercial', other: 'Other' };
@@ -44,8 +44,7 @@
   // own page and the switcher in /sw-tool-nav.js; change all three together.
   var TOOL_GROUPS = [
     { l: 'Before you send', tools: [
-      { k: 'verdict',   l: 'Send-day verdict',    u: '/send-verdict.html',      d: 'Go, fix first or hold for a campaign', hot: true },
-      { k: 'copy',      l: 'Copy checker',        u: '/ai-checker.html',        d: 'Check the wording of an email or ad' },
+      { k: 'copy',      l: 'Copy checker',        u: '/ai-checker.html',        d: 'Go, fix first or hold for an email or ad', hot: true },
     ] },
     { l: 'Your list', tools: [
       { k: 'list',      l: 'List health',         u: '/list-intelligence.html', d: 'Consent, value and who to remove' },
@@ -208,7 +207,7 @@
       (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-open sw-fixes" id="sw-fixes">' + fixesSection() + '</div>') +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Recent checks</span><span>' +
-        ['list', 'ai', 'verdict', 'sweep', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { list: 'Lists', sweep: 'Sites', ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' }[k] + '</button>'; }).join('') +
+        ['list', 'ai', 'sweep', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { list: 'Lists', sweep: 'Sites', ai: 'Copy', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' }[k] + '</button>'; }).join('') +
       '</span></div><div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/exposure-algorithm.html')) + '">The Sendwize exposure algorithm</a> · <a href="' + esc(link('/profile.html')) + '">Your business profile</a></div>';
     drawSpark(); animate();
@@ -296,7 +295,7 @@
     function ran(tool) { return fixes.some(function (f) { return String(f.tool || '').toLowerCase() === tool; }); }
     var steps = [
       [!!(D.listValue && D.listValue.hasData), 'Upload your marketing list', 'See who you can legally email, whose consent is running out and what the list is worth. Any ESP export works.', '/list-intelligence.html', 'Upload a list'],
-      [false, 'Check your next campaign', 'Paste the email or ad before it goes out. You get one answer: go, fix first or hold.', '/send-verdict.html', 'Check a campaign'],
+      [false, 'Check your next campaign', 'Paste the email or ad before it goes out. You get one answer for the copy: go, fix first or hold.', '/ai-checker.html', 'Check my copy'],
       [ran('site sweep'), 'Sweep your website', 'Finds gaps in cookies, your privacy notice and sign-up forms across the whole site.', '/site-sweep.html', 'Sweep my site'],
     ];
     var done = steps.filter(function (s) { return s[0]; }).length;
@@ -538,7 +537,7 @@
       return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
         '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(f.description) + '</div></div>' +
         effortChip(f) + '<span class="sw-nx-v">' + (pts(f) ? '<b>+' + pts(f) + ' pts</b>' : '') + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
-    }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/send-verdict.html">Check your next campaign</button> before it goes out.</div>';
+    }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/ai-checker.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
     return '<div class="sw-open sw-next"><div class="sw-next-h"><div class="sw-lbl">Start here · best value for your time</div>' +
       (more > 0 ? '<button class="sw-link" data-act="all-fixes">All ' + (more + top.length) + ' findings</button>' : '') + '</div>' + body + '</div>';
@@ -792,24 +791,36 @@
           ? ((await api('/api/list-intelligence?action=lists&userId=' + encodeURIComponent(userId))).lists || []).slice().sort(function (a, b) { return String(b.checkDate || '').localeCompare(String(a.checkDate || '')); }).map(function (l) { return { id: l.listName, fields: l }; })
           : k === 'sweep'
           ? ((await api('/api/site-sweep?action=get&userId=' + encodeURIComponent(userId))).sweeps || []).filter(function (w) { return w.lastSweptAt; }).sort(function (a, b) { return String(b.lastSweptAt).localeCompare(String(a.lastSweptAt)); }).map(function (w) { return { id: w.sweepId, fields: w }; })
-          : k === 'verdict'
-          ? ((await api('/api/verdict?action=list&userId=' + encodeURIComponent(userId))).verdicts || []).map(function (v) { return { id: v.id, fields: { CampaignName: v.campaign, Verdict: v.verdict, CreatedAt: v.createdAt, Channel: v.channel } }; })
+          : k === 'ai'
+          ? await copyHistory()
           : (await api('/api/data?action=history&type=' + k + '&userId=' + encodeURIComponent(userId))).records || [];
       }
       var rs = histCache[k], per = 6, pages = Math.max(1, Math.ceil(rs.length / per));
       var p = st.page[k] = Math.min(st.page[k], pages - 1);
       el.className = '';
       if (!rs.length) { el.innerHTML = '<div class="sw-empty">No checks yet.</div>'; return; }
-      el.innerHTML = rs.slice(p * per, p * per + per).map(function (r) { return histRow(k, r.fields || {}, r.id); }).join('') +
+      el.innerHTML = rs.slice(p * per, p * per + per).map(function (r) { return histRow(r.kind || k, r.fields || {}, r.id); }).join('') +
         (pages > 1 ? '<div class="sw-pgn"><button class="sw-flt" data-act="pg" data-d="-1"' + (p ? '' : ' disabled') + '>Previous</button>' + (p + 1) + ' of ' + pages + '<button class="sw-flt" data-act="pg" data-d="1"' + (p < pages - 1 ? '' : ' disabled') + '>Next</button></div>' : '');
     } catch (e) { el.className = ''; el.innerHTML = '<div class="sw-empty">Recent checks unavailable right now.</div>'; }
+  }
+  // Copy checks, plus any Send-day verdicts saved before that tool was
+  // merged into the Copy checker, newest first
+  async function copyHistory() {
+    var both = await Promise.all([
+      api('/api/data?action=history&type=ai&userId=' + encodeURIComponent(userId)).then(function (d) { return d.records || []; }),
+      api('/api/verdict?action=list&userId=' + encodeURIComponent(userId)).then(function (d) { return d.verdicts || []; }).catch(function () { return []; }),
+    ]);
+    var old = both[1].map(function (v) { return { id: v.id, kind: 'verdict', fields: { CampaignName: v.campaign, Verdict: v.verdict, CreatedAt: v.createdAt } }; });
+    if (!old.length) return both[0];
+    var day = function (r) { return String(r.fields.CheckDate || r.fields.CreatedAt || '').slice(0, 10); };
+    return both[0].concat(old).sort(function (a, b) { return day(b).localeCompare(day(a)); });
   }
   function histRow(k, f, id) {
     var t, s, d, href;
     if (k === 'list') { t = f.listName || 'List check'; s = (f.totalContacts ? Number(f.totalContacts).toLocaleString('en-GB') + ' contacts' : '') + (f.liabilityCount ? ' · ' + Number(f.liabilityCount).toLocaleString('en-GB') + ' below consent threshold' : ''); d = f.checkDate; href = link('/list-intelligence.html', 'listName=' + encodeURIComponent(f.listName || '')); }
     else if (k === 'sweep') { t = f.domain || 'Site sweep'; s = typeof f.siteScore === 'number' ? 'Site score ' + f.siteScore : ''; d = f.lastSweptAt; href = link('/site-sweep.html', 'domain=' + encodeURIComponent(f.domain || '')); }
     else if (k === 'ai') { t = f.FileName || 'Copy check'; s = f.Verdict || ''; d = f.CheckDate; href = link('/ai-checker.html', 'checkId=' + encodeURIComponent(id)); }
-    else if (k === 'verdict') { t = f.CampaignName || 'Send-day verdict'; s = f.Verdict || ''; d = f.CreatedAt; href = link('/send-verdict.html', 'verdictId=' + encodeURIComponent(id)); }
+    else if (k === 'verdict') { t = f.CampaignName || 'Send-day verdict'; s = (f.Verdict ? f.Verdict + ' · ' : '') + 'saved send-day verdict'; d = f.CreatedAt; href = link('/send-verdict.html', 'verdictId=' + encodeURIComponent(id)); }
     else if (k === 'simulation') { t = (f.Regulator || '') + ' simulation'; s = f.Band || ''; d = f.CreatedAt; href = link('/ico-simulator.html', 'simulationId=' + encodeURIComponent(id)); }
     else if (k === 'vendor') { t = f.VendorName || f.Vendor || 'Vendor'; s = f.RiskLevel || f.Status || ''; d = f.LastChecked; href = link('/vendor-checker.html'); }
     else { t = f.CampaignName || f.Name || 'Audience read'; s = f.Verdict || f.Status || ''; d = f.SendDate; href = link('/audience-read.html'); }

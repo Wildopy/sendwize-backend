@@ -25,6 +25,7 @@ import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { fq } from './_airtable.js';
 import { closestCases } from './_exposure.js';
+import { sendCall } from './_send-call.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -738,6 +739,12 @@ export default async function handler(req, res) {
       else                                   finalVerdict = 'No issues found';
     }
 
+    // Go / Fix first / Hold for the copy only (see _send-call.js). No answer
+    // when the check itself failed. Saved as the check's Verdict so past
+    // checks and the dashboard show the same answer.
+    const call = aiAnalysis?.verdict === 'Analysis Error' ? null : sendCall(allViolations);
+    if (call) finalVerdict = call.label;
+
     // Recheck: compare with the earlier check before saving this one
     let comparison = null;
     const previous = recheckOf ? await loadPreviousCheck(userId, recheckOf).catch(() => null) : null;
@@ -796,7 +803,7 @@ export default async function handler(req, res) {
     }).catch(e => console.error('Streak update failed:', e));
 
     const cleanViolations = allViolations.map(({ _fromContext, _fixType, ...rest }) => rest);
-    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, contentType, checkHash, sourceRecordId: savedRecordId, comparison });
+    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, sendCall: call, contentType, checkHash, sourceRecordId: savedRecordId, comparison });
 
   } catch (error) {
     console.error('analyze-copy error:', error);
