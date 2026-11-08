@@ -51,6 +51,11 @@
     '.swfc-demo .swfc-badge{display:inline-flex}' +
     '.swfc-demo .swfc-card{box-shadow:0 0 0 3px rgba(234,115,23,.12),0 10px 30px rgba(0,0,0,.08)}' +
     '.swfc-demo .swfc-out{min-height:330px}' +
+    // Until the example result arrives, show where it will appear rather than an empty white box.
+    '.swfc-out:empty{display:none}' +
+    '.swfc-demo .swfc-out:empty{display:flex;flex-direction:column;justify-content:flex-start;gap:10px;margin-top:16px;padding:22px;border:1px dashed #e2ddd5;border-radius:12px;background:linear-gradient(#eeebe5,#eeebe5) 22px 132px/62% 10px no-repeat,linear-gradient(#eeebe5,#eeebe5) 22px 154px/44% 10px no-repeat,linear-gradient(#f2efea,#f2efea) 22px 190px/calc(100% - 44px) 64px no-repeat,#faf9f6}' +
+    '.swfc-demo .swfc-out:empty::before{content:"Fix first";align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#c9c3b8;border:1px solid #e2ddd5;border-radius:999px;padding:3px 10px}' +
+    '.swfc-demo .swfc-out:empty::after{content:"The answer for the copy appears here: Go, Fix first or Hold, with a glimpse of what it found.";font-size:14px;line-height:1.5;color:#a8a29a;max-width:34ch}' +
     '.swfc-live{border-color:var(--o)!important;box-shadow:0 0 0 3px rgba(234,115,23,.18);outline:none}' +
     '.swfc-cur{position:absolute;left:0;top:0;z-index:4;width:22px;height:22px;pointer-events:none;opacity:0;transition:transform .7s cubic-bezier(.45,0,.2,1),opacity .3s;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}' +
     '.swfc-demo .swfc-cur{opacity:1}' +
