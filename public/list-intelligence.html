@@ -1564,7 +1564,7 @@ async function generateReconsentDraft(){
     var isTemplate=json.source==='template';
     draftEl.className='reconsent-draft show';
     draftEl.innerHTML='<div class="reconsent-draft-hdr"><div class="reconsent-draft-title">Re-consent email draft</div><span class="reconsent-draft-ai">'+(isTemplate?'TEMPLATE':'AI GENERATED')+'</span></div>'
-      +(isTemplate?'<div style="font-size:12px;color:var(--mu);margin:0 0 10px;line-height:1.5">'+escH(json.notice||'Our AI writer is unavailable right now, so here is a ready-made re-consent email you can use instead.')+'</div>':'')
+      +(isTemplate?'<div style="font-size:12px;color:var(--mu);margin:0 0 10px;line-height:1.5">'+escH(json.notice||'Our AI writer is unavailable right now, so here is a ready-made re-consent email you can use instead.')+(json.reason?' <span style="opacity:.8">('+escH(RECONSENT_REASONS[json.reason]||json.reason)+')</span>':'')+'</div>':'')
       +'<div class="reconsent-draft-field"><div class="reconsent-draft-label">Subject line</div><div class="reconsent-draft-content">'+escH(json.subject)+'</div></div>'
       +'<div class="reconsent-draft-field"><div class="reconsent-draft-label">Email body</div><div class="reconsent-draft-content">'+escH(json.body)+'</div></div>'
       +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"><button class="btn btn-primary btn-sm" onclick="copyDraftToClipboard()">Copy to clipboard</button><button class="btn btn-ghost btn-sm" onclick="generateReconsentDraft()">Regenerate</button></div>'
@@ -1576,6 +1576,7 @@ async function generateReconsentDraft(){
   }
 }
 
+var RECONSENT_REASONS={auth:'Reason: the AI key was rejected',billing:'Reason: the AI account is out of credit',model:'Reason: the AI model setting is not recognised',rate_limit:'Reason: too many AI requests at once',overloaded:'Reason: the AI service is busy',refusal:'Reason: the AI declined this request',network:'Reason: could not reach the AI service',unreadable_reply:'Reason: the AI reply could not be read',not_configured:'Reason: no AI key is set up',api_error:'Reason: the AI service returned an error'};
 function copyDraftToClipboard(){
   var fields=document.querySelectorAll('.reconsent-draft-content');
   var text='';
