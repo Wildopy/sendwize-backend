@@ -171,7 +171,7 @@ export default async function handler(req, res) {
       marketingCost: fx.marketingCost || null,
       alreadyLost: hero && !hero._error ? { amount: hero.lost || 0, isEstimate: !!hero.lostIsEstimate, excessUnsubs12mo: hero.excessUnsubs12mo || 0, cplUsed: hero.cplUsed || null, commercialAtRisk: hero.commercialAtRisk || 0 } : null,
       consentExpiry: expiry && !expiry._error ? { in30: expiry.expiringIn30 || 0, in60: expiry.expiringIn60 || 0, in90: expiry.expiringIn90 || 0, source: expiry.source || null } : null,
-      listValue: listValue && !listValue._error ? { hasData: !!listValue.hasData, total: listValue.unrealisedTotal || 0, top: (listValue.opportunities || []).slice(0, 3), basis: listValue.basis || '' } : null,
+      listValue: listValue && !listValue._error ? { hasData: !!listValue.hasData, total: listValue.unrealisedTotal || 0, top: (listValue.opportunities || []).filter(o => (Number(o.currentValue) || 0) >= 1).slice(0, 3), basis: listValue.basis || '' } : null,
       caseTwin: twins,
       fixes: {
         pending: pending.map(slimFix),
