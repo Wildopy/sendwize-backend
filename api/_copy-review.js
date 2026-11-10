@@ -105,6 +105,8 @@ export function reviewFindings(aiFindings, facts, { contentKind = 'marketing', c
   for (const raw of aiFindings || []) {
     const v = { ...raw, issue_type: ISSUES[raw.issue_type] ? raw.issue_type : guessIssue(raw) };
     const t = v.issue_type, sev = rank(v.severity);
+    // The rule a finding is shown under comes from a checked list, not the model
+    if (ISSUES[t].cite && !v._fromContext) v.regulation = ISSUES[t].cite;
 
     // A service message (order, delivery, account) isn't marketing: no opt-out or consent rules
     if (contentKind === 'service' && ['opt_out_missing', 'consent_basis', 'third_party_consent'].includes(t)) continue;

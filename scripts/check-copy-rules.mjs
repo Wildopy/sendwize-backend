@@ -112,6 +112,12 @@ check('26: no unrelated case on swearing', () => {
   assert.ok(out.find(v => v.issue_type === 'harm_offence')._noCase);
 });
 
+check('Citations come from the checked list, not the AI', () => {
+  const { out } = run('A', [F('drip_pricing', 'high', 'Handling fee in small print', { regulation: 'CAP Code 3.17 / DMCCA s.226' }), F('reference_price', 'high', 'RRP', { regulation: 'CAP Code 3.40' })]);
+  assert.equal(out[0].regulation, 'CAP Code 3.18 / DMCCA 2024 s.230');
+  assert.equal(out[1].regulation, 'CAP Code 3.39 / DMCCA 2024 s.226');
+});
+
 console.log('\n── Rewrites ──');
 check('A: a new time in the rewrite is marked, a known price is not', () => {
   const r = markNewFigures(byId.A.text, 'Was £249, NOW just £74.99. Ends 23:59 on [date].');
