@@ -47,7 +47,8 @@ import { caseForIssue } from './_exposure.js';
 
 // Bump when the prompt or the house rules change, so saved answers for
 // identical copy are not reused across versions.
-export const COPY_ENGINE = 'copy-6.1';
+export const COPY_ENGINE = 'copy-6.2';
+const CHANNEL_NAMES = { email: 'Email', sms: 'SMS', push: 'Push notification', social: 'Social ad', directmail: 'Direct mail' };
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -739,19 +740,28 @@ export default async function handler(req, res) {
     const auth = await requireAuth(req, res);
     if (!auth) return;
     if (!(await checkLimit(req, res, auth, 'copy_scan'))) return;
-    const { contentType, content, subject, userId, autoFix, sendingContext, images, recheckOf } = req.body ?? {};
+    const { contentType, subject, userId, autoFix, sendingContext, images, recheckOf } = req.body ?? {};
+    const content = String(req.body?.content || '').trim();
+    const from = String(req.body?.from || '').trim().slice(0, 200);
+    const campaignName = String(req.body?.campaignName || '').trim().slice(0, 120);
+    const hasImages = Array.isArray(images) && images.length > 0;
     if (!userId)      return res.status(400).json({ error: 'Missing userId' });
     if (!contentType) return res.status(400).json({ error: 'Missing contentType' });
     if (!['email','sms','push','social','directmail'].includes(contentType)) return res.status(400).json({ error: 'Invalid contentType' });
-    if (!content)     return res.status(400).json({ error: 'Missing content' });
+    // An image on its own is a complete check: many ads have no caption
+    if (!content && !hasImages) return res.status(400).json({ error: 'Paste the copy or upload an image' });
 
     const contextViolations = getContextViolations(sendingContext);
-    const copyText          = contentType === 'email' && subject ? `Subject: ${subject}\n\nEmail body:\n${content}` : content;
+    // The From line and subject are part of what the reader sees: check them with the body
+    const head              = [from ? `From: ${from}` : '', contentType === 'email' && subject ? `Subject: ${subject}` : ''].filter(Boolean).join('\n');
+    const body              = content || '(No text pasted. The image is the whole piece: read every word in it, including small print.)';
+    const copyText          = head ? `${head}\n\n${contentType === 'email' ? 'Email body:\n' : ''}${body}` : body;
+    const savedCopy         = [head, content || (hasImages ? '(Image only)' : '')].filter(Boolean).join('\n\n');
     const contextBlock      = buildSendingContextBlock(sendingContext);
     const facts             = copyFacts(contentType, copyText);
     const imageKey          = Array.isArray(images) ? images.map(i => crypto.createHash('sha256').update(String(i?.data || '')).digest('hex').slice(0, 12)).join(',') : '';
-    const checkHash         = contentHash(userId, contentType, content, `${subject || ''}|${contextBlock}|${imageKey}|${autoFix ? 'rw' : ''}`);
-    const analysisContent   = `${factsBlock(facts)}\n\n${contextBlock ? `${contextBlock}\n\n` : ''}[COPY TO ANALYSE]\n${copyText}`;
+    const checkHash         = contentHash(userId, contentType, content, `${subject || ''}|${from}|${contextBlock}|${imageKey}|${autoFix ? 'rw' : ''}`);
+    const analysisContent   = `${factsBlock(facts, { images: hasImages })}\n\n${contextBlock ? `${contextBlock}\n\n` : ''}[COPY TO ANALYSE]\n${copyText}`;
 
     // Identical copy (and context, images, engine) gives the saved answer back
     if (!recheckOf) {
@@ -831,7 +841,8 @@ export default async function handler(req, res) {
     let finalVerdict = aiAnalysis?.verdict;
 
     // The rewrite may only say what the original said; anything new becomes a [check: ...] placeholder
-    if (aiAnalysis.fixedVersion && !analysisFailed) aiAnalysis.fixedVersion = await guardRewrite(copyText, aiAnalysis.fixedVersion, { timeoutMs: 50000 - (Date.now() - startedAt) });
+    // With no typed text the original is in the image, so every word would look new: skip the guard
+    if (aiAnalysis.fixedVersion && !analysisFailed && content) aiAnalysis.fixedVersion = await guardRewrite(copyText, aiAnalysis.fixedVersion, { timeoutMs: 50000 - (Date.now() - startedAt) });
 
     // Go / Fix first / Hold for the copy only (see _send-call.js). No answer
     // when the check itself failed. Saved as the check's Verdict so past
@@ -862,8 +873,8 @@ export default async function handler(req, res) {
           Verdict:        finalVerdict ?? '',
           CriticalIssues: criticalCount,
           Warnings:       warningCount,
-          MarketingCopy:  content?.slice(0, 10000) ?? '',
-          FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
+          MarketingCopy:  savedCopy.slice(0, 10000),
+          FileName:       campaignName || (contentType === 'email' ? (subject ? `Email: ${subject}` : 'Email (no subject)') : `${CHANNEL_NAMES[contentType] || contentType}${hasImages && !content ? ' image' : ''} check`),
           Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', contentKind, engine: COPY_ENGINE, ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
           FixedVersion:   aiAnalysis?.fixedVersion ?? '',
           RelatedCases:   [...new Set(allViolations.map(v => v.case_id).filter(Boolean))].join(','),

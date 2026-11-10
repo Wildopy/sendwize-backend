@@ -346,6 +346,14 @@
         <label for="campaignName">Campaign / file name</label>
         <input type="text" id="campaignName" placeholder="e.g. Summer Sale Email &mdash; June 2026" />
       </div>
+      <div class="form-group" id="fromGroup">
+        <label for="fromLine" id="fromLabel">From <span style="color:var(--muted);font-weight:400;">(name and address it&rsquo;s sent from)</span></label>
+        <input type="text" id="fromLine" placeholder="e.g. Brightside Home &lt;hello@brightsidehome.co.uk&gt;" />
+      </div>
+      <div class="form-group" id="subjectGroup">
+        <label for="subjectLine">Subject line</label>
+        <input type="text" id="subjectLine" placeholder="e.g. Autumn sale: 30% off all lamps" />
+      </div>
       <div class="form-group" id="copyGroup">
         <label for="copyText" id="copyLabel">Marketing copy</label>
         <textarea id="copyText" placeholder="Paste your copy here&hellip;"></textarea>
@@ -353,7 +361,7 @@
       </div>
 
       <div class="form-group" id="imageGroup">
-        <label>Images <span style="color:var(--muted);font-weight:400;">(optional &mdash; up to 3, max 5MB each)</span></label>
+        <label>Images <span style="color:var(--muted);font-weight:400;">(up to 3, max 5MB each &mdash; an image on its own is fine)</span></label>
         <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
           <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none;" onchange="onImagesSelected(event)">
           <div class="image-upload-prompt" id="imageUploadPrompt">
@@ -533,9 +541,16 @@
             var f = r.fields || {};
             return '<button type="button" onclick="openPastCheck(\'' + r.id + '\')" style="display:flex;width:100%;justify-content:space-between;gap:12px;padding:9px 0;border:none;border-bottom:1px solid var(--border);background:none;font:inherit;font-size:13px;cursor:pointer;text-align:left;color:var(--text)">' +
               '<span>' + escH(f.FileName || 'Copy check') + ' <span style="color:var(--muted)">&middot; ' + escH(f.Verdict || '') + '</span></span>' +
-              '<span style="color:var(--muted);white-space:nowrap">' + escH(f.CheckDate || '') + ' &rarr;</span></button>';
+              '<span style="color:var(--muted);white-space:nowrap">' + escH(checkWhen(r.createdTime || f.CheckDate)) + ' &rarr;</span></button>';
           }).join('') + '</div>';
       }).catch(function() {});
+  }
+
+  function checkWhen(s) {
+    var d = new Date(s || '');
+    if (isNaN(d)) return s || '';
+    var day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return /T\d\d:\d\d/.test(String(s)) ? day + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : day;
   }
 
   function openPastCheck(id) {
@@ -552,7 +567,12 @@
           var sel = document.getElementById('contentType'); if (sel) sel.value = f.ContentType;
         }
         lastCopy = f.MarketingCopy || '';
-        document.getElementById('copyText').value = lastCopy;
+        var bodyText = lastCopy, mFrom = bodyText.match(/^From: (.*)$/m), mSubj = bodyText.match(/^Subject: (.*)$/m);
+        if (mFrom || mSubj) bodyText = bodyText.replace(/^(From|Subject): .*\n?/gm, '').replace(/^\s+/, '');
+        onContentTypeChange();
+        document.getElementById('fromLine').value = mFrom ? mFrom[1] : '';
+        document.getElementById('subjectLine').value = mSubj ? mSubj[1] : '';
+        document.getElementById('copyText').value = bodyText === '(Image only)' ? '' : bodyText;
         renderResults({
           score: f.RiskScore, verdict: f.Verdict, summary: a.summary || '',
           violations: (a.violations || []).map(function(v) { var c = Object.assign({}, v); delete c._fromContext; delete c._fixType; return c; }),
@@ -643,7 +663,7 @@
   }
 
   var typePlaceholders = {
-    email: 'Paste your email subject line and body copy here\u2026',
+    email: 'Paste the email body here (subject and From go above)\u2026',
     sms: 'Paste your SMS message text here\u2026',
     push: 'Paste your push notification title and body here\u2026',
     social: 'Paste your social ad headline and copy here\u2026',
@@ -652,7 +672,13 @@
   function onContentTypeChange() {
     currentContentType = document.getElementById('contentType').value;
     document.getElementById('copyText').placeholder = typePlaceholders[currentContentType] || typePlaceholders.email;
-    document.getElementById('copyLabel').textContent = currentContentType === 'email' ? 'Email copy (subject + body text)' : 'Marketing copy';
+    document.getElementById('copyLabel').textContent = currentContentType === 'email' ? 'Email body' : 'Marketing copy';
+    // Who it's from: an email's From line, an SMS sender ID, the sender on a mailing
+    var showFrom = ['email', 'sms', 'directmail'].indexOf(currentContentType) !== -1;
+    document.getElementById('fromGroup').style.display = showFrom ? '' : 'none';
+    document.getElementById('subjectGroup').style.display = currentContentType === 'email' ? '' : 'none';
+    document.getElementById('fromLabel').innerHTML = currentContentType === 'sms' ? 'Sender ID <span style="color:var(--muted);font-weight:400;">(the name the text shows as from)</span>' : currentContentType === 'directmail' ? 'Sender <span style="color:var(--muted);font-weight:400;">(business name and address on the mailing)</span>' : 'From <span style="color:var(--muted);font-weight:400;">(name and address it\u2019s sent from)</span>';
+    document.getElementById('fromLine').placeholder = currentContentType === 'sms' ? 'e.g. Brightside' : currentContentType === 'directmail' ? 'e.g. Brightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB' : 'e.g. Brightside Home <hello@brightsidehome.co.uk>';
   }
 
   var loadingSteps = [
@@ -732,12 +758,19 @@
     if (!userId) { showError('Please return to the dashboard and open this tool from there.'); return; }
     clearError();
     var copy = document.getElementById('copyText').value.trim();
-    if (!copy) { showError('Please paste your marketing copy before running a check.'); return; }
-    lastCopy = copy;
+    var showFrom = ['email', 'sms', 'directmail'].indexOf(currentContentType) !== -1;
+    var fromLine = showFrom ? document.getElementById('fromLine').value.trim() : '';
+    var subject = currentContentType === 'email' ? document.getElementById('subjectLine').value.trim() : '';
+    var campaignName = document.getElementById('campaignName').value.trim();
+    if (!copy && !uploadedImages.length) { showError('Paste your marketing copy or upload an image before running a check.'); return; }
+    lastCopy = [fromLine ? 'From: ' + fromLine : '', subject ? 'Subject: ' + subject : '', copy].filter(Boolean).join('\n') || '(Image only)';
     setLoadingState(true);
     try {
       var sendingContext = getSendingContext();
       var payload = { userId: userId, contentType: currentContentType, content: copy, autoFix: true };
+      if (fromLine) payload.from = fromLine;
+      if (subject) payload.subject = subject;
+      if (campaignName) payload.campaignName = campaignName;
       if (opts.recheckOf) payload.recheckOf = opts.recheckOf;
       if (sendingContext) payload.sendingContext = sendingContext;
       if (uploadedImages.length > 0) payload.images = uploadedImages.map(function(i) { return { data: i.data, mediaType: i.mediaType }; });
@@ -949,7 +982,7 @@
     document.getElementById('rewritePanel').classList.remove('show');
     document.getElementById('checksSection').classList.remove('show');
     document.querySelectorAll('.demo-notice').forEach(function(n) { n.remove(); });
-    ['copyText','campaignName'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+    ['copyText','campaignName','fromLine','subjectLine'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
     uploadedImages = []; renderImagePreviews();
     document.querySelectorAll('.radio-option input[type="radio"]').forEach(function(r) { r.checked = false; });
     document.querySelectorAll('.radio-option').forEach(function(el) { el.classList.remove('selected'); });
