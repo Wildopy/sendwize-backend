@@ -47,7 +47,7 @@ import { caseForIssue } from './_exposure.js';
 
 // Bump when the prompt or the house rules change, so saved answers for
 // identical copy are not reused across versions.
-export const COPY_ENGINE = 'copy-6.0';
+export const COPY_ENGINE = 'copy-6.1';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -202,7 +202,7 @@ PUSH: 40-60 words. Fewest words. Keep action verb.
 DIRECT MAIL: Preserve narrative. Headline punch critical.
 
 UNIVERSAL:
-* NEVER ADD FACTS. The rewrite must not state anything the original didn't: no new product facts, materials, benefits, endorsements, prices, what a price includes, dates, times, stock levels, terms, company details, lawful basis, or how the reader's details were collected. Where a fix needs information you don't have, write a [square-bracket placeholder], e.g. [end date], [registered office address], [why they're receiving this]. Removing or softening a claim is fine; inventing a replacement claim is not.
+* NEVER ADD FACTS. The rewrite must not state anything the original didn't: no new product facts, materials, benefits, endorsements, prices, what a price includes, dates, times, stock levels, terms, company details, lawful basis, or how the reader's details were collected. Where a fix needs information you don't have, write a [square-bracket placeholder], e.g. [end date], [registered office address], [why they're receiving this]. Removing or softening a claim is fine; inventing a replacement claim is not. When you take a claim out, drop it or leave a [placeholder] such as [substantiated environmental claim]; never write a new benefit, slogan or feeling in its place (e.g. not "kinder on your conscience", not "made for sensitive sleepers").
 * Never add qualifications inline breaking flow. Put in "Offer terms:" block at end, using only conditions the original states, or [placeholders].
 * Never remove a real offer.
 * Never replace first-person brand voice with passive voice.
@@ -379,8 +379,8 @@ Three violations from one paragraph. Two critical fixes (rewrite the copy). One 
 SECTION 10 -- SEVERITY & VERDICT
 
 SEVERITY:
-critical: Enforcement likely. Countdown or open-ended false urgency, pricing the copy shows is false, pre-ticked consent, no unsubscribe (email/SMS), third-party list without consent, fake or rewarded reviews, FCA without approval, "guaranteed" for market-linked, forward-looking projections, serious offence, disguised marketing.
-high: Clear rule breach. "Free" without disclosure, undisclosed influencer, bundled consent, absolute green claims, missing risk warnings, unauthorised health claim wording.
+critical: Enforcement likely. Countdown or open-ended false urgency, pricing the copy shows is false, pre-ticked consent, no unsubscribe (email/SMS), third-party list without consent, fake or rewarded reviews, FCA without approval, "guaranteed" for market-linked, forward-looking projections, serious offence, disguised marketing, a paid or gifted post with no ad label (a DMCCA banned practice), "100%" green claims such as "100% sustainable" or "100% eco-friendly" (they can't be proved).
+high: Clear rule breach. "Free" without disclosure, bundled consent, other absolute green claims ("carbon neutral", "eco-friendly") with no basis given, missing risk warnings, unauthorised health claim wording.
 medium: Probable breach, or a relative deadline with no date.
 low: Best practice gap.
 
@@ -578,6 +578,8 @@ function withClosestCase(v, channel) {
   const { enforcement_note, enforcement_url, case_id, ...rest } = v;
   const issue = rest.issue_type || guessIssue(rest);
   if (rest.requiresEvidence || rest.severity === 'low' || !issueOf(issue).caseable) return rest;
+  // No published case is about swearing: better none than an unrelated one
+  if (v._noCase || (issue === 'harm_offence' && /swear|profan|fuck|abus|expletive/i.test(`${rest.issue} ${rest.location}`))) return rest;
   const text = [rest.issue, rest.location, rest.text, rest.quote].filter(Boolean).join(' ');
   const c = caseForIssue(issue, { text, channel });
   if (!c) return rest;

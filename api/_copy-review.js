@@ -35,6 +35,8 @@ export function copyFacts(channel, text) {
     ? /\b(reply|text|txt|send)\s+["'“]?stop\b|\bstop\s+to\s+(opt|end|unsub|stop)|\bopt[- ]?out\b|\bunsubscribe\b/i.test(t)
     : /\bunsubscribe\b|\bopt[- ]?out\b|\bmanage (your )?(email |marketing )?preferences\b|\bstop receiving\b/i.test(t);
   const company = /\b(ltd|limited|plc|llp)\b/i.test(t);
+  // A brand named in the copy itself: "signed up to Top Deals UK", "sent by...", a sign-off
+  const named = (t.match(/\b(?:signed up (?:to|with|at|for)|bought from|customer of|sent (?:to you )?by|from (?:the )?team at|love from|thanks,|regards,)\s+([A-Z0-9][\w&'.-]*(?:\s+[A-Z0-9][\w&'.-]*){0,3})/) || [])[1] || '';
   const postcode = /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/.test(t);
   const corporateRecipient = /@[\w.-]+\.[a-z]{2,}/i.test(to) && !FREEMAIL.test(to);
   const datedDeadline = new RegExp(`\\b\\d{1,2}(st|nd|rd|th)?\\s+${MONTH}\\b|\\b${MONTH}\\s+\\d{1,2}(st|nd|rd|th)?\\b|\\b\\d{1,2}/\\d{1,2}(/\\d{2,4})?\\b`, 'i').test(t);
@@ -43,8 +45,8 @@ export function copyFacts(channel, text) {
   const countdown = /\b(next|within|in)\s+(the\s+next\s+)?\d+\s*(secs?|seconds?|mins?|minutes?|hrs?|hours?)\b|\b(ends?|ending) soon\b/i.test(t);
   const swear = PROFANITY.exec(t);
   return {
-    channel, fromName: fromName || smsSender, optOut,
-    senderNamed: !!(fromName || smsSender || company),
+    channel, fromName: fromName || smsSender || named, optOut,
+    senderNamed: !!(fromName || smsSender || company || named),
     companyName: company, postcode, corporateRecipient,
     deadline: datedDeadline ? 'dated' : relative ? 'relative' : 'none',
     countdown, profanity: swear ? swear[0] : null,
@@ -90,6 +92,7 @@ export function guessIssue(v) {
 }
 
 const SEV = ['low', 'medium', 'high', 'critical'];
+const DISGUISE = /\b(dressed up|presented|disguised|posing|pretend\w*|imperson\w*|masquerad\w*) as\b|\b(parcel|delivery|account|security) (notice|notification|alert|update)\b|\bmislead\w* about who\b/i;
 const rank = s => SEV.indexOf(String(s || '').toLowerCase());
 const evidence = (issue_type, regulation, issue, location, recommendation) =>
   ({ regulation, severity: 'high', issue, location, recommendation, requiresEvidence: true, issue_type });
@@ -109,6 +112,19 @@ export function reviewFindings(aiFindings, facts, { contentKind = 'marketing', c
     if (t === 'opt_out_missing' && (facts.optOut || ch === 'social' || ch === 'push')) continue;
     if (t === 'sender_details' && (ch === 'social' || ch === 'push' || (ch === 'sms' && facts.senderNamed))) continue;
     if ((t === 'sender_details' || t === 'sender_hidden') && facts.senderNamed && sev <= rank('medium')) continue;
+    // "Hidden" means disguised, like a fake delivery notice. A name that is
+    // simply missing from the pasted copy is a sender-details finding (high):
+    // the From line usually isn't pasted, so it can't show concealment.
+    if (t === 'sender_hidden' && !v._fromContext && !DISGUISE.test(`${v.issue} ${v.location}`)) {
+      if (facts.senderNamed) continue;
+      Object.assign(v, { issue_type: 'sender_details', severity: 'high', regulation: 'PECR Reg 23 / Companies Act 2006',
+        issue: 'We can\'t find the sender\'s name in the copy. Every marketing email must make clear who is sending it, with a valid address for opt-out requests.',
+        recommendation: 'Make sure the From name and the footer name your business, with a contact address.' });
+    }
+    // An ad that isn't labelled as one is a banned practice under the DMCCA: never just "high"
+    if (t === 'hidden_ad' && !v.requiresEvidence) v.severity = 'critical';
+    // An absolute green claim ("100% sustainable", "100% eco-friendly") can't be proved: it has to go
+    if (t === 'green_claim' && !v.requiresEvidence && /100\s?%/.test(`${v.issue} ${v.location}`)) v.severity = 'critical';
     if (t === 'consent_basis' || t === 'third_party_consent') {
       if (facts.corporateRecipient || ch === 'social') continue;
       // The copy can't show whether someone consented: it's something to hold on file
@@ -137,7 +153,7 @@ export function reviewFindings(aiFindings, facts, { contentKind = 'marketing', c
   if (facts.profanity && !out.some(v => v.issue_type === 'harm_offence' && rank(v.severity) >= rank('high'))) {
     out.push({ regulation: 'CAP Code 4.1 (harm and offence)', severity: 'critical', issue_type: 'harm_offence', requiresEvidence: false,
       issue: `The copy contains "${facts.profanity}". The ASA expects marketing not to cause serious or widespread offence, and swearing or abuse aimed at the reader is very likely to.`,
-      location: `"${facts.profanity}"`, recommendation: 'Remove the offensive wording before sending.' });
+      location: `"${facts.profanity}"`, recommendation: 'Remove the offensive wording before sending.', _noCase: true });
   }
   // Not recognisable as marketing (or a test): never a Go
   if (contentKind === 'not_marketing' && !out.some(v => v.issue_type === 'not_marketing')) {

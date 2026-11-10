@@ -83,6 +83,35 @@ check('13: a service message with no findings is a Go', () => {
   assert.equal(run('13', [], { contentKind: 'service' }).call, 'go');
 });
 
+console.log('\n── Round 2 mistakes ──');
+check('A: a missing sender name is sender details (high), not concealment', () => {
+  const { out } = run('A', [F('sender_hidden', 'critical', 'The email does not name the sender, so it may be read as disguised or concealed.')]);
+  // A's test copy has a From line; strip it to match what was pasted
+  const r = reviewFindings([F('sender_hidden', 'critical', 'The email does not name the sender, so it may be read as disguised or concealed.')], copyFacts('email', byId.A.text.replace(/^From:.*$/m, '')));
+  assert.equal(r[0].issue_type, 'sender_details'); assert.equal(r[0].severity, 'high');
+  assert.equal(out.length, 0);
+});
+check('I: "signed up to Top Deals UK" names the sender', () => {
+  assert.ok(copyFacts('email', byId.I.text.replace(/^From:.*$/m, '')).senderNamed);
+  const { out } = run('I', [F('sender_hidden', 'high', 'No sender is named.')]);
+  assert.equal(out.length, 0);
+});
+check('23: a fake delivery notice stays a hidden sender', () => {
+  const { out } = run('23', [F('sender_hidden', 'critical', 'A promotional email presented as a parcel delivery notification')]);
+  assert.equal(out[0].issue_type, 'sender_hidden'); assert.equal(out[0].severity, 'critical');
+});
+check('C: an unlabelled influencer ad is a Hold', () => {
+  assert.equal(run('C', [F('hidden_ad', 'high', 'No #ad label on a post with a discount code')]).call, 'hold');
+});
+check('H: "100% sustainable" is a Hold, "carbon neutral" alone is not', () => {
+  assert.equal(run('H', [F('green_claim', 'high', "'100% sustainable' is an absolute claim")]).call, 'hold');
+  assert.equal(run('H', [F('green_claim', 'high', "'carbon neutral' with no basis")]).call, 'fix_first');
+});
+check('26: no unrelated case on swearing', () => {
+  const { out } = run('26', [], { contentKind: 'not_marketing' });
+  assert.ok(out.find(v => v.issue_type === 'harm_offence')._noCase);
+});
+
 console.log('\n── Rewrites ──');
 check('A: a new time in the rewrite is marked, a known price is not', () => {
   const r = markNewFigures(byId.A.text, 'Was £249, NOW just £74.99. Ends 23:59 on [date].');
