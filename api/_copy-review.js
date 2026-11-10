@@ -54,14 +54,17 @@ export function copyFacts(channel, text) {
   };
 }
 
-export function factsBlock(f) {
-  const yn = b => (b ? 'yes' : 'no');
-  const lines = ['[FACTS CHECKED BY CODE: treat these as settled. Do not raise a finding that contradicts them.]'];
+// With images attached, code has only read the typed text: a "no" may be in the image
+export function factsBlock(f, { images = false } = {}) {
+  const yn = b => (b ? 'yes' : images ? 'not in the typed text (check the image)' : 'no');
+  const lines = [images
+    ? '[FACTS CHECKED BY CODE in the typed text. A "yes" is settled. Anything "not in the typed text" may still be in the image: read the image before raising it.]'
+    : '[FACTS CHECKED BY CODE: treat these as settled. Do not raise a finding that contradicts them.]'];
   if (['email', 'sms', 'directmail'].includes(f.channel)) lines.push(`Opt-out or unsubscribe present: ${yn(f.optOut)}${f.channel === 'sms' ? ' (STOP line)' : ''}`);
-  lines.push(`Sender named: ${f.senderNamed ? `yes${f.fromName ? ` ("${f.fromName}")` : ''}` : 'no'}`);
+  lines.push(`Sender named: ${f.senderNamed ? `yes${f.fromName ? ` ("${f.fromName}")` : ''}` : yn(false)}`);
   if (f.channel === 'email' || f.channel === 'directmail') lines.push(`Company name present: ${yn(f.companyName)}. Postal address present: ${yn(f.postcode)}`);
   if (f.corporateRecipient) lines.push('Recipient: a company email address (corporate subscriber). Do not raise consent.');
-  lines.push(`Deadline: ${{ dated: 'a specific date is given', relative: 'relative only ("tonight", "midnight", "before Friday"), no date', none: 'none stated' }[f.deadline]}`);
+  lines.push(`Deadline: ${{ dated: 'a specific date is given', relative: 'relative only ("tonight", "midnight", "before Friday"), no date', none: images ? 'none in the typed text (check the image)' : 'none stated' }[f.deadline]}`);
   lines.push(`Countdown in minutes or open-ended urgency ("ends soon"): ${yn(f.countdown)}`);
   if (f.profanity) lines.push(`Contains swearing: yes ("${f.profanity}")`);
   lines.push('[END FACTS]');

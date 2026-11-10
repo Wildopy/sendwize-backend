@@ -35,7 +35,7 @@
   'use strict';
   var API = 'https://sendwize-backend.vercel.app';
   var root, userId, member = null, D = null;
-  var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { list: 0, sweep: 0, ai: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'list' };
+  var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { all: 0, list: 0, sweep: 0, ai: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'all' };
   var drafts = {}, nums = {}, lastRing = null;
   var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var AREA_LABELS = { consent: 'Marketing consent', suppression: 'Opt-outs and suppression', processors: 'Processors and data sharing', transparency: 'Transparency and identity', lawful_basis: 'Legitimate interests', ASA: 'Advertising claims (ASA)', CMA: 'Consumer law (CMA)', Commercial: 'Commercial', other: 'Other' };
@@ -83,6 +83,8 @@
   function likely(ml, lo, hi) { return ml ? 'About ' + gbpK(ml) : range(lo, hi); }
   var CONF = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' };
   function confChip(c) { return c ? '<span class="sw-conf ' + esc(c) + '">' + esc(CONF[c] || c) + '</span>' : ''; }
+  // A finding's text without the "AI Checker:" tool prefix the fix records carry
+  function desc(f) { return String((f && f.description) || '').replace(/^(AI Checker|Sending Context)\s*:\s*/i, ''); }
   function date(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function nice(s) { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
   function $(sel, el) { return (el || root).querySelector(sel); }
@@ -207,7 +209,7 @@
       (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-open sw-fixes" id="sw-fixes">' + fixesSection() + '</div>') +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Recent checks</span><span>' +
-        ['list', 'ai', 'sweep', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { list: 'Lists', sweep: 'Sites', ai: 'Copy', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' }[k] + '</button>'; }).join('') +
+        ['all', 'ai', 'list', 'sweep', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + HIST_NAMES[k] + '</button>'; }).join('') +
       '</span></div><div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/exposure-algorithm.html')) + '">The Sendwize exposure algorithm</a> · <a href="' + esc(link('/profile.html')) + '">Your business profile</a></div>';
     drawSpark(); animate();
@@ -531,11 +533,14 @@
 
   // Top three open findings by value for the time they take
   function startHere() {
-    var top = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); }).slice(0, 3);
+    // Best value first, but one of each kind: three "Fake urgency" rows tell you less than three different fixes
+    var ranked = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); });
+    var kinds = {}, top = ranked.filter(function (f) { if (kinds[f.fixType]) return false; kinds[f.fixType] = 1; return true; }).slice(0, 3);
+    if (top.length < 3) top = top.concat(ranked.filter(function (f) { return top.indexOf(f) < 0; }).slice(0, 3 - top.length));
     var body = top.length ? top.map(function (f, i) {
       var r = removes(f);
       return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
-        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(f.description) + '</div></div>' +
+        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(desc(f)) + '</div></div>' +
         effortChip(f) + '<span class="sw-nx-v">' + (pts(f) ? '<b>+' + pts(f) + ' pts</b>' : '') + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
     }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/ai-checker.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
@@ -646,7 +651,7 @@
       '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') +
         '<div class="sw-note">' + esc(c.regulator) + ', ' + esc(monthYear(c.date)) + '</div></div>' +
       '<div class="sw-vs-mid" aria-hidden="true">vs</div>' +
-      '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(f.description) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
+      '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(desc(f)) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
       stakes(c, f) +
       '<div class="sw-dr-sec"><div class="sw-lbl">Why they match</div><div class="sw-chips">' + tw.t.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div></div>' +
       '<div class="sw-dr-sec"><div class="sw-lbl">What you have already done differently</div>' + (done.length ? done.map(function (x) {
@@ -716,7 +721,7 @@
     var head = '<div class="sw-fx-head" data-act="expand" role="button" tabindex="0" aria-expanded="' + open + '">' +
       (st.whatif ? '<label class="sw-pick" data-act="noop"><input type="checkbox" data-pick="' + esc(f.id) + '"' + (st.picked[f.id] ? ' checked' : '') + ' aria-label="Include in what-if"></label>' : '') +
       '<span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body">' +
-      (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(f.description) + '">' + esc(f.description) + '</div>') +
+      (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(desc(f)) + '">' + esc(desc(f)) + '</div>') +
       '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : f.exposure && f.exposure.marketingCost && f.exposure.marketingCost.available ? ', ~' + gbpK(f.exposure.marketingCost.mostLikely) + ' to you' : ', ' + esc(tw.c.regulator) + ' ruling') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
       valueChip(f) +
       (open || st.whatif ? '' : '<span class="sw-fx-quick"><button class="sw-btn o" data-act="quickfix" title="Open it with the fix written for you">Fix it</button><button class="sw-btn ok" data-act="done" data-src="' + (f.improvedOnRerun ? 'improved_on_rerun' : 'manual') + '" title="Mark fixed" aria-label="Mark fixed">✓</button></span>') +
@@ -729,7 +734,7 @@
       : d && d.loading ? '<div class="sw-draft"><div class="sw-ld"><div class="sw-spin"></div>Writing the fix…</div></div>'
       : '<div class="sw-draft empty"><div><div class="sw-row-t">Want the fix written for you?</div><div class="sw-row-s">Steps plus text you can paste straight into your email, form or page.</div></div><button class="sw-btn g" data-act="draft">Write the fix for me</button></div>';
     return '<div class="sw-fx open" data-id="' + esc(f.id) + '">' + head + '<div class="sw-fx-more">' +
-      '<div class="sw-fx-desc">' + esc(f.description) + '</div>' +
+      '<div class="sw-fx-desc">' + esc(desc(f)) + '</div>' +
       '<div class="sw-fx-meta">' + (f.tool ? '<span class="sw-fx-tool">' + esc(f.tool) + '</span> · ' : '') + esc(nice(f.severity)) + (f.createdDate ? ' · found ' + esc(date(f.createdDate)) : '') + '</div>' +
       (f.improvedOnRerun ? '<div class="sw-improved">A re-run shows this has improved. Confirm to get full credit.</div>' : '') + expLine(f) +
       (tw ? '<div class="sw-twin-mini"><span><b>Case Twin:</b> ' + esc(tw.c.name) + ' · ' + outcome(tw.c) + ' · ' + tw.t.match + '% match</span><button class="sw-link" data-act="twin">Side by side</button></div>' : '') +
@@ -781,25 +786,50 @@
   }
 
   var histCache = {};
+  var HIST_NAMES = { all: 'All', list: 'Lists', sweep: 'Sites', ai: 'Copy', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' };
+  var HIST_KIND = { list: 'List health', sweep: 'Site sweep', ai: 'Copy checker', verdict: 'Copy checker', simulation: 'Regulator simulator', vendor: 'Third parties', audience: 'Audience read' };
+  // One tool's checks, each tagged with its kind and the moment it ran
+  async function histFor(k) {
+    var rs = k === 'list'
+      ? ((await api('/api/list-intelligence?action=lists&userId=' + encodeURIComponent(userId))).lists || []).map(function (l) { return { id: l.listName, fields: l }; })
+      : k === 'sweep'
+      ? ((await api('/api/site-sweep?action=get&userId=' + encodeURIComponent(userId))).sweeps || []).filter(function (w) { return w.lastSweptAt; }).map(function (w) { return { id: w.sweepId, fields: w }; })
+      : k === 'ai'
+      ? await copyHistory()
+      : (await api('/api/data?action=history&type=' + k + '&userId=' + encodeURIComponent(userId))).records || [];
+    return rs.map(function (r) { r.kind = r.kind || k; r.at = histWhen(r); return r; })
+      .sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+  }
+  // The most precise time a check carries: Airtable's created time, else its own date
+  function histWhen(r) {
+    var f = r.fields || {};
+    return r.createdTime || f.lastSweptAt || f.CreatedAt || f.checkDate || f.CheckDate || f.LastChecked || f.SendDate || '';
+  }
+  function when(s) {
+    if (!s) return '';
+    var d = new Date(s);
+    if (isNaN(d)) return '';
+    var day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
+    return /T\d\d:\d\d/.test(String(s)) ? day + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : day;
+  }
   async function loadHistory() {
     var el = $('#sw-hist'), k = st.histTab;
     if (!el) return;
     try {
       if (!histCache[k]) {
         el.className = 'sw-ld'; el.innerHTML = '<div class="sw-spin"></div>';
-        histCache[k] = k === 'list'
-          ? ((await api('/api/list-intelligence?action=lists&userId=' + encodeURIComponent(userId))).lists || []).slice().sort(function (a, b) { return String(b.checkDate || '').localeCompare(String(a.checkDate || '')); }).map(function (l) { return { id: l.listName, fields: l }; })
-          : k === 'sweep'
-          ? ((await api('/api/site-sweep?action=get&userId=' + encodeURIComponent(userId))).sweeps || []).filter(function (w) { return w.lastSweptAt; }).sort(function (a, b) { return String(b.lastSweptAt).localeCompare(String(a.lastSweptAt)); }).map(function (w) { return { id: w.sweepId, fields: w }; })
-          : k === 'ai'
-          ? await copyHistory()
-          : (await api('/api/data?action=history&type=' + k + '&userId=' + encodeURIComponent(userId))).records || [];
+        if (k === 'all') {
+          var parts = await Promise.all(['ai', 'list', 'sweep', 'simulation', 'vendor', 'audience'].map(function (x) {
+            return (histCache[x] ? Promise.resolve(histCache[x]) : histFor(x).then(function (r) { histCache[x] = r; return r; })).catch(function () { return []; });
+          }));
+          histCache.all = [].concat.apply([], parts).sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+        } else histCache[k] = await histFor(k);
       }
-      var rs = histCache[k], per = 6, pages = Math.max(1, Math.ceil(rs.length / per));
-      var p = st.page[k] = Math.min(st.page[k], pages - 1);
+      var rs = histCache[k], per = 8, pages = Math.max(1, Math.ceil(rs.length / per));
+      var p = st.page[k] = Math.min(st.page[k] || 0, pages - 1);
       el.className = '';
       if (!rs.length) { el.innerHTML = '<div class="sw-empty">No checks yet.</div>'; return; }
-      el.innerHTML = rs.slice(p * per, p * per + per).map(function (r) { return histRow(r.kind || k, r.fields || {}, r.id); }).join('') +
+      el.innerHTML = rs.slice(p * per, p * per + per).map(function (r) { return histRow(r.kind || k, r.fields || {}, r.id, r.at, k === 'all'); }).join('') +
         (pages > 1 ? '<div class="sw-pgn"><button class="sw-flt" data-act="pg" data-d="-1"' + (p ? '' : ' disabled') + '>Previous</button>' + (p + 1) + ' of ' + pages + '<button class="sw-flt" data-act="pg" data-d="1"' + (p < pages - 1 ? '' : ' disabled') + '>Next</button></div>' : '');
     } catch (e) { el.className = ''; el.innerHTML = '<div class="sw-empty">Recent checks unavailable right now.</div>'; }
   }
@@ -815,7 +845,7 @@
     var day = function (r) { return String(r.fields.CheckDate || r.fields.CreatedAt || '').slice(0, 10); };
     return both[0].concat(old).sort(function (a, b) { return day(b).localeCompare(day(a)); });
   }
-  function histRow(k, f, id) {
+  function histRow(k, f, id, at, showKind) {
     var t, s, d, href;
     if (k === 'list') { t = f.listName || 'List check'; s = (f.totalContacts ? Number(f.totalContacts).toLocaleString('en-GB') + ' contacts' : '') + (f.liabilityCount ? ' · ' + Number(f.liabilityCount).toLocaleString('en-GB') + ' below consent threshold' : ''); d = f.checkDate; href = link('/list-intelligence.html', 'listName=' + encodeURIComponent(f.listName || '')); }
     else if (k === 'sweep') { t = f.domain || 'Site sweep'; s = typeof f.siteScore === 'number' ? 'Site score ' + f.siteScore : ''; d = f.lastSweptAt; href = link('/site-sweep.html', 'domain=' + encodeURIComponent(f.domain || '')); }
@@ -824,7 +854,7 @@
     else if (k === 'simulation') { t = (f.Regulator || '') + ' simulation'; s = f.Band || ''; d = f.CreatedAt; href = link('/ico-simulator.html', 'simulationId=' + encodeURIComponent(id)); }
     else if (k === 'vendor') { t = f.VendorName || f.Vendor || 'Vendor'; s = f.RiskLevel || f.Status || ''; d = f.LastChecked; href = link('/vendor-checker.html'); }
     else { t = f.CampaignName || f.Name || 'Audience read'; s = f.Verdict || f.Status || ''; d = f.SendDate; href = link('/audience-read.html'); }
-    return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(t) + '</div><div class="sw-row-s">' + [esc(s), esc(date(d))].filter(Boolean).join(' · ') + '</div></div><a class="sw-link" href="' + esc(href) + '">Open</a></div>';
+    return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(t) + '</div><div class="sw-row-s">' + [showKind ? esc(HIST_KIND[k] || '') : '', esc(s)].filter(Boolean).join(' · ') + '</div></div><span class="sw-hist-at">' + esc(when(at || d)) + '</span><a class="sw-link" href="' + esc(href) + '">Open</a></div>';
   }
 
   // ── "Why this number?" drawer ──
@@ -849,7 +879,7 @@
 
   function drawWhy(x) {
     var e = x.exposure || {}, f = x.fix || {};
-    var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Why this number?</div><div class="sw-h2">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(f.description) + '</div></div>';
+    var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Why this number?</div><div class="sw-h2">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(desc(f)) + '</div></div>';
     if (e.category === 'ICO' && e.realisticHigh) {
       var span = (e.frameHigh - e.frameLow) || 1;
       var l = ((e.realisticLow - e.frameLow) / span) * 100, w = ((e.realisticHigh - e.realisticLow) / span) * 100;
