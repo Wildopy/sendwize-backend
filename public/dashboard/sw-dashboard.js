@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   SENDWIZE: sw-dashboard.js v1.4  (browser)
+   SENDWIZE: sw-dashboard.js v1.5  (browser)
    The member dashboard, served from Vercel so the Webflow embed stays
    a few lines long. Needs sw-auth.js in the Webflow site head and
    sw-dashboard.css on the page. Renders into <div id="sw-dashboard">.
@@ -88,6 +88,8 @@
   function date(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
   // AI text: drop markdown and double hyphens so it reads as plain prose
   function plain(s) { return String(s == null ? '' : s).replace(/\*\*|__/g, '').replace(/^#+\s*/gm, '').replace(/\s+--+\s+/g, ', ').replace(/--+/g, ', '); }
+  // Section header used by every card from Start here down
+  function pnlHead(t, sub, right) { return '<div class="sw-pnl-h"><div><div class="sw-pnl-t">' + t + '</div>' + (sub ? '<div class="sw-pnl-s">' + sub + '</div>' : '') + '</div>' + (right || '') + '</div>'; }
   function nice(s) { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
   function $(sel, el) { return (el || root).querySelector(sel); }
   function link(path, query) { var u = API + path + '?' + (userId ? 'userId=' + encodeURIComponent(userId) : '') + (query ? '&' + query : ''); return window.SW && SW.withToken ? SW.withToken(u) : u; }
@@ -208,11 +210,11 @@
       (st.detail ? '<div class="sw-det"><div class="sw-det-tiles">' + heroTiles() + '</div>' + '<div class="sw-open"><div class="sw-lbl">Score trend</div><div id="sw-spark"></div></div>' + clustersCard() + '</div>' : '') +
       (first ? first : twinCard() + startHere()) + noticedCard() +
       '<div class="sw-quiet">' + expiryCard() + briefingCard() + listValueCard() + '</div>' +
-      (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-open sw-fixes" id="sw-fixes">' + fixesSection() + '</div>') +
-      '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
-      '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Recent checks</span><span>' +
+      (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-pnl sw-fixes" id="sw-fixes">' + fixesSection() + '</div>') +
+      '<div class="sw-pnl">' + pnlHead('Campaigns', 'Evidence you have recorded for each campaign', '<a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a>') + '<div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
+      '<div class="sw-pnl sw-hist">' + pnlHead('Recent checks', 'Everything you have run, newest first', '<span class="sw-seg">' +
         ['all', 'ai', 'list', 'sweep', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + HIST_NAMES[k] + '</button>'; }).join('') +
-      '</span></div><div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
+      '</span>') + '<div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/exposure-algorithm.html')) + '">The Sendwize exposure algorithm</a> · <a href="' + esc(link('/profile.html')) + '">Your business profile</a></div>';
     drawSpark(); animate();
   }
@@ -539,15 +541,15 @@
     var ranked = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); });
     var kinds = {}, top = ranked.filter(function (f) { if (kinds[f.fixType]) return false; kinds[f.fixType] = 1; return true; }).slice(0, 3);
     if (top.length < 3) top = top.concat(ranked.filter(function (f) { return top.indexOf(f) < 0; }).slice(0, 3 - top.length));
-    var body = top.length ? top.map(function (f, i) {
-      var r = removes(f);
-      return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
-        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(desc(f)) + '</div></div>' +
-        effortChip(f) + '<span class="sw-nx-v">' + (pts(f) ? '<b>+' + pts(f) + ' pts</b>' : '') + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
-    }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/ai-checker.html">Check your next campaign</button> before it goes out.</div>';
-    var more = (D.fixes.pending || []).length - top.length;
-    return '<div class="sw-open sw-next"><div class="sw-next-h"><div class="sw-lbl">Start here · best value for your time</div>' +
-      (more > 0 ? '<button class="sw-link" data-act="all-fixes">All ' + (more + top.length) + ' findings</button>' : '') + '</div>' + body + '</div>';
+    var body = top.length ? '<div class="sw-sh-grid">' + top.map(function (f, i) {
+      var r = removes(f), c = String((f.exposure && f.exposure.category) || '').toLowerCase();
+      return '<div class="sw-sh sw-row-btn' + (c ? ' c-' + esc(c) : '') + '" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0">' +
+        '<div class="sw-sh-top"><span class="sw-step-n">' + (i + 1) + '</span>' + (c && c !== 'commercial' ? '<span class="sw-badge ' + esc(c) + '">' + esc(c.toUpperCase()) + '</span>' : '') + effortChip(f) + '</div>' +
+        '<div class="sw-sh-t">' + esc(nice(f.fixType)) + '</div><div class="sw-sh-d">' + esc(desc(f)) + '</div>' +
+        '<div class="sw-sh-f"><span class="sw-sh-g">' + (pts(f) ? '<b>+' + pts(f) + ' pts</b>' : '') + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div></div>';
+    }).join('') + '</div>' : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/ai-checker.html">Check your next campaign</button> before it goes out.</div>';
+    var n = (D.fixes.pending || []).length;
+    return '<div class="sw-pnl sw-next">' + pnlHead('Start here', top.length ? 'Your ' + (top.length === 1 ? 'best fix' : top.length + ' best-value fixes') + ' right now' : '', n > top.length ? '<button class="sw-link" data-act="all-fixes">See all ' + n + ' findings</button>' : '') + body + '</div>';
   }
 
   function expLine(f) {
@@ -571,11 +573,11 @@
         return '<div class="sw-bkt ' + b[0] + '"><div class="sw-bkn">' + (b[1] || 0).toLocaleString('en-GB') + '</div><div class="sw-bkl">' + b[2] + '</div></div>';
       }).join('') + '</div><a class="sw-link" href="' + esc(link('/list-intelligence.html')) + '">Draft a re-consent email in List health</a>'
       : '<div class="sw-empty">No consents expiring in the next 90 days' + (c ? '.' : ' on record. Upload a list in List health.') + '</div>';
-    return '<div class="sw-card sw-pad"><div class="sw-lbl">Consent running out</div>' + body + '</div>';
+    return '<div class="sw-pnl">' + pnlHead('Consent running out', 'Opt-ins that lapse in the next 90 days') + body + '</div>';
   }
 
   function briefingCard() {
-    return '<div class="sw-card sw-pad"><div class="sw-lbl">This week</div><div class="sw-brf-body clip" id="sw-brf"><div class="sw-spin"></div></div><button class="sw-link" data-act="brf-more" id="sw-brf-more" hidden>Read more</button></div>';
+    return '<div class="sw-pnl">' + pnlHead('This week', 'Your compliance briefing') + '<div class="sw-brf-body clip" id="sw-brf"><div class="sw-spin"></div></div><button class="sw-link" data-act="brf-more" id="sw-brf-more" hidden>Read more</button></div>';
   }
 
   function listValueCard() {
@@ -586,7 +588,7 @@
       top.map(function (o) { return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(o.title || o.name || nice(o.type) || 'Opportunity') + '</div>' + (o.listName ? '<div class="sw-row-s">' + esc(o.listName) + '</div>' : '') + '</div><div class="sw-row-v">' + gbpK(worth(o)) + '</div></div>'; }).join('') +
       (v.basis ? '<div class="sw-note">' + esc(v.basis) + '</div>' : '')
       : '<div class="sw-empty">' + (v && v.hasData ? 'No value worth chasing in your latest list checks.' : 'Upload a list in List health to see where the value is.') + '</div>';
-    return '<div class="sw-card sw-pad"><div class="sw-lbl">List value</div>' + body + '</div>';
+    return '<div class="sw-pnl">' + pnlHead('List value', 'Revenue sitting in your lists') + body + '</div>';
   }
 
   // ── Sendwize noticed: alerts worked out from past uploads ──
@@ -595,7 +597,7 @@
     var a = D.alerts || [];
     if (!a.length) return '';
     var shown = st.noticedAll ? a : a.slice(0, 3);
-    return '<div class="sw-card sw-pad sw-noticed"><div class="sw-lbl">Sendwize noticed</div>' + shown.map(function (x) {
+    return '<div class="sw-pnl sw-noticed">' + pnlHead('Sendwize noticed', 'Patterns in your recent uploads and sends') + shown.map(function (x) {
       var u = AUDIENCE_KINDS[x.kind] ? '/audience-read.html' : '/list-intelligence.html';
       var cta = x.kind === 'lapsing' ? 'Write the email' : x.kind === 'lapsed' || x.kind === 'stale_list' ? 'Upload latest' : x.kind === 'ruling' ? 'See the list' : 'Open';
       return '<div class="sw-ntc"><span class="sw-ntc-dot ' + esc(x.severity) + '"></span><div class="sw-ntc-t">' + esc(x.text) + '</div><button class="sw-btn q" data-act="tool" data-u="' + u + '">' + cta + '</button></div>';
@@ -714,7 +716,7 @@
         (isOpen ? shown.map(fixRow).join('') + (more > 0 ? '<button class="sw-lane-more" data-act="lane-more" data-g="' + esc(g) + '">Show ' + more + ' more</button>' : '') : '') + '</div>';
     }).join('');
     var empty = '<div class="sw-empty">' + (all.length ? 'Nothing matches this filter.' : 'Nothing to fix right now.') + '</div>';
-    return '<div class="sw-fx-hdr"><span class="sw-h2">Everything to fix <span class="sw-cnt">' + all.length + '</span></span><span class="sw-fx-ctl">' + flt +
+    return '<div class="sw-fx-hdr"><div><div class="sw-pnl-t">Everything to fix <span class="sw-cnt">' + all.length + '</span></div><div class="sw-pnl-s">Grouped by area, riskiest first</div></div><span class="sw-fx-ctl">' + flt +
       '<button class="sw-flt wi' + (st.whatif ? ' on' : '') + '" data-act="whatif" title="Tick findings to see what fixing them would change">What if?</button></span></div>' +
       (tags ? '<div class="sw-tags">' + tags + '</div>' : '') +
       (st.whatif ? '<div class="sw-wi-hint">Tick the findings you could fix and watch your score and exposure move.</div>' : '') +
@@ -867,7 +869,7 @@
     else if (k === 'simulation') { t = (f.Regulator || '') + ' simulation'; s = f.Band || ''; d = f.CreatedAt; href = link('/ico-simulator.html', 'simulationId=' + encodeURIComponent(id)); }
     else if (k === 'vendor') { t = f.VendorName || f.Vendor || 'Vendor'; s = f.RiskLevel || f.Status || ''; d = f.LastChecked; href = link('/vendor-checker.html'); }
     else { t = f.CampaignName || f.Name || 'Audience read'; s = f.Verdict || f.Status || ''; d = f.SendDate; href = link('/audience-read.html'); }
-    return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(t) + '</div><div class="sw-row-s">' + [showKind ? esc(HIST_KIND[k] || '') : '', esc(s)].filter(Boolean).join(' · ') + '</div></div><span class="sw-hist-at">' + esc(when(at || d)) + '</span><a class="sw-link" href="' + esc(href) + '">Open</a></div>';
+    return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(t) + '</div><div class="sw-row-s">' + (showKind ? '<span class="sw-kind k-' + esc(k) + '">' + esc(HIST_KIND[k] || '') + '</span>' : '') + esc(s) + '</div></div><span class="sw-hist-at">' + esc(when(at || d)) + '</span><a class="sw-link" href="' + esc(href) + '">Open</a></div>';
   }
 
   // ── "Why this number?" drawer ──
