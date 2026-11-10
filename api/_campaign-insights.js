@@ -5,7 +5,7 @@
 // date, recipients, unsubscribes; most have complaints and revenue).
 //
 //   forecast     How much of each list unsubscribes and complaints will
-//                take over the next 12 months at the current pace, and
+//                lose over the next 12 months at the current pace, and
 //                how much of that comes from the sends that spike.
 //   frequency    Whether a third send in a week costs more people than
 //                the first two, measured on their own history.
@@ -51,9 +51,11 @@ function sendsOf(campaigns) {
 }
 
 function forecast(sends) {
-  if (sends.length < 2) return null;
+  // A year's forecast needs at least three sends over a month: a few sends a
+  // week apart compound into "you'll lose everyone", which nobody believes
+  if (sends.length < 3) return null;
   const spanDays = (sends[sends.length - 1]._t - sends[0]._t) / DAY;
-  if (spanDays < 7) return null;
+  if (spanDays < 30) return null;
   const latestSize = sends[sends.length - 1].recipients;
   const sendsPerMonth = (sends.length - 1) / (spanDays / 30.44);
   const pooled = sends.reduce((s, c) => s + c.unsubs + c.complaints, 0) / sends.reduce((s, c) => s + c.recipients, 0);
@@ -208,13 +210,15 @@ export function buildCampaignInsights(campaigns, ctx = {}) {
   const [headName, head] = ranked[0] || [];
   const reveals = [];
   let headline = null;
-  if (head) {
+  // An implausible forecast (90%+ gone in a year) says more about the data than the list
+  if (head && head.forecast.annualLoss < 0.9) {
     const fc = head.forecast, v = head.subscriberValue;
-    headline = `At your current pace, unsubscribes and complaints will take ${pctTxt(fc.annualLoss)} of "${headName}" (${fmt(fc.peopleLost12)} people) over the next 12 months.`;
-    let more = `That's ${fmt(fc.signupsNeededPerMonth)} new sign-ups a month just to stand still`;
-    if (v) more += v.basis === 'revenue'
-      ? `. At your average of ${gbp(v.perYear)} a year per subscriber, that's about ${gbp(fc.peopleLost12 * v.perYear)} a year in revenue walking out`
-      : `, costing about ${gbp(fc.peopleLost12 * v.perYear)} to replace at your cost per subscriber`;
+    headline = `"${headName === 'Default' ? 'Your main list' : headName}" is on track to lose ${fmt(fc.peopleLost12)} people (${pctTxt(fc.annualLoss)}) to unsubscribes and complaints in the next 12 months.`;
+    let more = '';
+    if (v) more = v.basis === 'revenue'
+      ? `Those ${fmt(fc.peopleLost12)} people are worth about ${gbp(fc.peopleLost12 * v.perYear)} a year in email revenue (${gbp(v.perYear)} each). `
+      : `Replacing them costs about ${gbp(fc.peopleLost12 * v.perYear)} at your cost per subscriber. `;
+    more += `To stay the same size, you need about ${fmt(fc.signupsNeededPerMonth)} new sign-ups a month`;
     reveals.push({ kind: 'forecast', severity: fc.annualLoss >= 0.2 ? 'red' : fc.annualLoss >= 0.1 ? 'amber' : 'info', text: more + '.' });
     if (fc.fixedAnnualLoss != null && fc.annualLoss - fc.fixedAnnualLoss >= 0.02) {
       reveals.push({ kind: 'spikes', severity: 'amber', text: `${fc.spikeSends} send${fc.spikeSends === 1 ? '' : 's'} lost more than twice your usual number of people. If they had performed like the rest, you'd lose ${pctTxt(fc.fixedAnnualLoss)} a year instead of ${pctTxt(fc.annualLoss)}.` });

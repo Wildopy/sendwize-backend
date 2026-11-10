@@ -1,4 +1,5 @@
-/* Sendwize free check: embed for the marketing site.
+/* Sendwize preview check: embed for the marketing site. Shows the verdict and a
+ * snippet of the report; the full report needs an account.
  *
  * Paste into a Webflow Code Embed:
  *   <div id="sw-free-check"></div>
@@ -11,8 +12,12 @@
 (function () {
   var API = window.SW_API_URL || 'https://sendwize-backend.vercel.app';
   var SIGNUP = window.SW_SIGNUP_URL || window.SW_PRICING_URL || 'https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/pricing-1';
-  var root = document.getElementById('sw-free-check');
-  if (!root) return;
+  // Every container on the page gets its own widget. Webflow pages sometimes end
+  // up with two (an old free-check embed left behind, or one per breakpoint), and
+  // the old code only filled the first, which could be the hidden one.
+  var roots = [].slice.call(document.querySelectorAll('#sw-free-check, [data-sw-free-check]'))
+    .filter(function (r) { return !r.getAttribute('data-swfc-ready'); });
+  if (!roots.length) return;
 
   var css = '' +
     '.swfc{--o:#EA7317;--t:#1a1a1a;--mu:#6b7280;--b:#e5e7eb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--t);max-width:720px;margin:0 auto;text-align:left;box-sizing:border-box}' +
@@ -43,10 +48,14 @@
     // Auto-playing demo: shown while nobody is using the form.
     '.swfc{position:relative}' +
     '.swfc-badge{position:absolute;top:-11px;right:16px;z-index:3;display:none;align-items:center;gap:7px;background:var(--t);color:#fff;font-size:11px;font-weight:600;letter-spacing:.04em;padding:5px 11px;border-radius:999px;box-shadow:0 4px 12px rgba(0,0,0,.15);pointer-events:none}' +
-    '.swfc-badge i{width:7px;height:7px;border-radius:50%;background:#ef4444;animation:swfcp 1.4s ease-in-out infinite}' +
     '.swfc-demo .swfc-badge{display:inline-flex}' +
     '.swfc-demo .swfc-card{box-shadow:0 0 0 3px rgba(234,115,23,.12),0 10px 30px rgba(0,0,0,.08)}' +
     '.swfc-demo .swfc-out{min-height:330px}' +
+    // Until the example result arrives, show where it will appear rather than an empty white box.
+    '.swfc-out:empty{display:none}' +
+    '.swfc-demo .swfc-out:empty{display:flex;flex-direction:column;justify-content:flex-start;gap:10px;margin-top:16px;padding:22px;border:1px dashed #e2ddd5;border-radius:12px;background:linear-gradient(#eeebe5,#eeebe5) 22px 132px/62% 10px no-repeat,linear-gradient(#eeebe5,#eeebe5) 22px 154px/44% 10px no-repeat,linear-gradient(#f2efea,#f2efea) 22px 190px/calc(100% - 44px) 64px no-repeat,#faf9f6}' +
+    '.swfc-demo .swfc-out:empty::before{content:"Fix first";align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#c9c3b8;border:1px solid #e2ddd5;border-radius:999px;padding:3px 10px}' +
+    '.swfc-demo .swfc-out:empty::after{content:"The answer for the copy appears here: Go, Fix first or Hold, with a glimpse of what it found.";font-size:14px;line-height:1.5;color:#a8a29a;max-width:34ch}' +
     '.swfc-live{border-color:var(--o)!important;box-shadow:0 0 0 3px rgba(234,115,23,.18);outline:none}' +
     '.swfc-cur{position:absolute;left:0;top:0;z-index:4;width:22px;height:22px;pointer-events:none;opacity:0;transition:transform .7s cubic-bezier(.45,0,.2,1),opacity .3s;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}' +
     '.swfc-demo .swfc-cur{opacity:1}' +
@@ -64,22 +73,32 @@
     '.swfc-text mark.on{background:#fde68a;box-shadow:inset 0 -2px 0 #f59e0b}' +
     '.swfc-row{display:flex;align-items:center;gap:10px;font-size:13px;padding:6px 0;border-top:1px solid #f3f4f6;opacity:.35;transition:opacity .3s}' +
     '.swfc-row.on{opacity:1}' +
-    '.swfc-row s{text-decoration:none;flex:0 0 20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#f3f4f6;color:var(--mu)}' +
+    '.swfc-row s{text-decoration:none;flex:0 0 20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#f3f4f6;color:var(--mu)}' +
     '.swfc-row.ok s{background:#dcfce7;color:#16a34a}.swfc-row.bad s{background:#fee2e2;color:#dc2626}.swfc-row.warn s{background:#fef3c7;color:#b45309}' +
     '.swfc-row em{font-style:normal;margin-left:auto;font-size:12px;font-weight:600;color:var(--mu)}' +
     '.swfc-row.bad em{color:#dc2626}.swfc-row.warn em{color:#b45309}.swfc-row.ok em{color:#16a34a}' +
     '.swfc-res.swfc-pop{animation:swfcin .45s cubic-bezier(.2,.9,.3,1.2)}' +
     '.swfc-fade{transition:opacity .4s;opacity:0}' +
-    '@keyframes swfcp{50%{opacity:.25}}' +
     '@keyframes swfct{0%{transform:scale(0);opacity:1}100%{transform:scale(2.4);opacity:0}}' +
     '@keyframes swfcsw{to{left:100%}}' +
     '@keyframes swfcin{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}';
-  var style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+  if (!document.getElementById('swfc-style')) {
+    var style = document.createElement('style'); style.id = 'swfc-style'; style.textContent = css; document.head.appendChild(style);
+  }
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
+  // Ids get a suffix after the first widget so labels still point at their own fields.
+  var count = document.querySelectorAll('[data-swfc-ready]').length;
+  roots.forEach(function (r) {
+    r.setAttribute('data-swfc-ready', '1');
+    mount(r, count ? '-' + count : '');
+    count++;
+  });
+
+  function mount(root, u) {
   root.innerHTML =
-    '<div class="swfc"><div class="swfc-badge" aria-hidden="true"><i></i>Example check \u00b7 click to try your own</div>' +
+    '<div class="swfc"><div class="swfc-badge" aria-hidden="true">Example check: click to try your own</div>' +
     '<div class="swfc-cur" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 2l15 9.5-6.6 1.4 3.8 7.2-2.6 1.4-3.8-7.2L4 19z" fill="#1a1a1a" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg></div>' +
     '<form class="swfc-card" novalidate>' +
       '<div class="swfc-tabs" role="group" aria-label="Channel">' +
@@ -87,13 +106,13 @@
         '<button type="button" class="swfc-tab" data-ch="sms" aria-pressed="false">SMS</button>' +
         '<button type="button" class="swfc-tab" data-ch="social" aria-pressed="false">Social post</button>' +
       '</div>' +
-      '<div class="swfc-subj"><label for="swfc-subj">Subject line</label><input id="swfc-subj" maxlength="300" placeholder="Last chance: 50% off ends tonight"></div>' +
-      '<label for="swfc-copy">Your campaign copy</label>' +
-      '<textarea id="swfc-copy" maxlength="6000" placeholder="Paste the email, SMS or post you are about to send"></textarea>' +
-      '<label for="swfc-email">Your work email</label><input id="swfc-email" type="email" autocomplete="email" maxlength="254" placeholder="you@company.com">' +
-      '<button class="swfc-go" type="submit">Check it free</button>' +
+      '<div class="swfc-subj"><label for="swfc-subj' + u + '">Subject line</label><input id="swfc-subj' + u + '" maxlength="300" placeholder="Last chance: 50% off ends tonight"></div>' +
+      '<label for="swfc-copy' + u + '">Your campaign copy</label>' +
+      '<textarea id="swfc-copy' + u + '" maxlength="6000" placeholder="Paste the email, SMS or post you are about to send"></textarea>' +
+      '<label for="swfc-email' + u + '">Your work email</label><input id="swfc-email' + u + '" type="email" autocomplete="email" maxlength="254" placeholder="you@company.com">' +
+      '<button class="swfc-go" type="submit">Run the check</button>' +
       '<div class="swfc-err" role="alert"></div>' +
-      '<p class="swfc-small">One free check a day. Checked against ICO, ASA and CMA rules. We use your email only to limit free checks, never for marketing. We do not keep the text you paste. Not legal advice.</p>' +
+      '<p class="swfc-small">A preview of the Sendwize copy checker, one check a day. We use your email only to limit checks, never for marketing. We do not keep the text you paste. Not legal advice.</p>' +
     '</form><div class="swfc-out" aria-live="polite"></div></div>';
 
   var form = root.querySelector('form');
@@ -116,7 +135,7 @@
     btn.disabled = true; btn.innerHTML = '<span class="swfc-spin"></span>Checking against ICO, ASA and CMA rules…';
     fetch(API + '/api/free-check', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channel: channel, subject: root.querySelector('#swfc-subj').value, copy: root.querySelector('#swfc-copy').value, email: root.querySelector('#swfc-email').value }),
+      body: JSON.stringify({ channel: channel, subject: root.querySelector('.swfc-subj input').value, copy: root.querySelector('textarea').value, email: root.querySelector('input[type=email]').value }),
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { d.status = r.status; throw d; } return d; });
     }).then(function (v) {
@@ -133,9 +152,9 @@
       out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }).catch(function (d) {
       err.innerHTML = esc((d && d.error) || 'The check could not run. Please try again.') +
-        (d && d.status === 429 ? ' <a href="' + esc(SIGNUP) + '">Create an account</a>' : '');
+        (d && (d.status === 429 || d.status === 503) ? ' <a href="' + esc(SIGNUP) + '">Sign up here</a>' : '');
     }).finally(function () {
-      btn.disabled = false; btn.textContent = 'Check it free';
+      btn.disabled = false; btn.textContent = 'Run the check';
     });
   });
   /* Demo mode: while nobody is using the form, play a scripted example check
@@ -177,7 +196,7 @@
   var wrap = root.querySelector('.swfc');
   var cur = root.querySelector('.swfc-cur');
   var outEl = root.querySelector('.swfc-out');
-  var fields = [root.querySelector('#swfc-subj'), root.querySelector('#swfc-copy'), root.querySelector('#swfc-email')];
+  var fields = [root.querySelector('.swfc-subj input'), root.querySelector('textarea'), root.querySelector('input[type=email]')];
   var goBtn = form.querySelector('.swfc-go');
   var run = 0;          // bumps on every stop, so a running script knows to quit
   var playing = false;
@@ -234,7 +253,7 @@
         goBtn.innerHTML = '<span class="swfc-spin"></span>Checking against ICO, ASA and CMA rules…';
         outEl.innerHTML = '<div class="swfc-scan"><div class="swfc-bar"><b></b></div>' +
           '<div class="swfc-text">' + marked(sc.copy, sc.flags) + '</div>' +
-          CHECKS.map(function (c) { return '<div class="swfc-row"><s>·</s>' + esc(c) + '<em>Checking…</em></div>'; }).join('') + '</div>';
+          CHECKS.map(function (c) { return '<div class="swfc-row"><s></s>' + esc(c) + '<em>Checking…</em></div>'; }).join('') + '</div>';
         cur.style.opacity = '0';
         var rows = outEl.querySelectorAll('.swfc-row'), bar = outEl.querySelector('.swfc-bar b'), marks = outEl.querySelectorAll('mark');
         var chain = wait(300, id);
@@ -252,13 +271,13 @@
         return chain.then(function () { outEl.querySelector('.swfc-text').classList.add('done'); return wait(700, id); });
       })
       .then(function () {
-        goBtn.textContent = 'Check it free';
+        goBtn.textContent = 'Run the check';
         cur.style.opacity = '';
-        var h = '<div class="swfc-res swfc-pop ' + sc.verdict + '"><div class="swfc-vl">' + esc(sc.label) + ' · example</div><div class="swfc-vh">' + esc(sc.headline) + '</div>';
+        var h = '<div class="swfc-res swfc-pop ' + sc.verdict + '"><div class="swfc-vl">' + esc(sc.label) + ' (example)</div><div class="swfc-vh">' + esc(sc.headline) + '</div>';
         if (sc.glimpse) h += '<div class="swfc-item">' + esc(sc.glimpse) + '… <span class="swfc-blur" aria-hidden="true">the rule it falls under and how to fix it</span></div>';
         h += '<div class="swfc-lock">' + (sc.count ? '<strong>' + sc.count + ' item' + (sc.count === 1 ? '' : 's') + ' found.</strong> The full report has the fix for each one and a rewritten version.' :
           'Clear to send. Sendwize keeps a dated record that you checked.') +
-          '<br><a class="swfc-cta swfc-try" href="#swfc-copy">Check your own copy free</a></div></div>';
+          '<br><a class="swfc-cta swfc-try" href="#swfc-copy' + u + '">Check your own copy</a></div></div>';
         outEl.innerHTML = h;
         return wait(4800, id);
       })
@@ -269,7 +288,7 @@
   function clearForm() {
     fields.forEach(function (f) { f.value = ''; f.classList.remove('swfc-live'); });
     outEl.innerHTML = '';
-    goBtn.textContent = 'Check it free';
+    goBtn.textContent = 'Run the check';
   }
 
   function play() {
@@ -323,5 +342,6 @@
     }, { threshold: 0.35 }).observe(root);
   } else {
     visible = true; setTimeout(play, 1500);
+  }
   }
 })();

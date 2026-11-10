@@ -10,7 +10,7 @@
    ───────────────────────────────────────────────────────────── */
 (function () {
   var GROUPS = [
-    ['Before you send', [['Send-day verdict', 'send-verdict.html'], ['Copy checker', 'ai-checker.html']]],
+    ['Before you send', [['Copy checker', 'ai-checker.html']]],
     ['Your list', [['List health', 'list-intelligence.html'], ['Audience read', 'audience-read.html']]],
     ['Website and suppliers', [['Site sweep', 'site-sweep.html'], ['Third parties', 'vendor-checker.html']]],
     ['Records and practice', [['Campaign defence', 'campaign-defence.html'], ['Regulator simulator', 'ico-simulator.html']]],

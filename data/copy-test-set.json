@@ -1,0 +1,161 @@
+{
+ "about": "Copy Checker test set (agreed answers in the Copy Checker test set doc). expect = the verdict it should give: go, fix_first or hold.",
+ "emails": [
+  {
+   "id": "A",
+   "channel": "email",
+   "text": "Subject: ⏰ FINAL HOURS – 70% OFF EVERYTHING!!!\n\nFrom: Brightside Deals\n\nHi there,\n\nOur biggest sale EVER ends at MIDNIGHT TONIGHT. Was £249, NOW just £74.99 on our best-selling Oslo armchair – the UK's No.1 armchair, rated 5 stars by thousands of customers.\n\nOur bamboo bedding is clinically proven to improve your sleep by 40% and is 100% eco-friendly.\n\nFREE delivery on everything!*\n\nOnly 2 left in stock – order now before it's gone forever.\n\nShop now →\n\n*Free delivery on orders over £150. Excludes furniture. Prices exclude a £9.99 handling fee.",
+   "expect": "hold"
+  },
+  {
+   "id": "B",
+   "channel": "sms",
+   "text": "Brightside: Hey! Ur 20% off code is HOME20 – use it b4 it expires 2nite! brightside.link/h20",
+   "expect": "hold"
+  },
+  {
+   "id": "C",
+   "channel": "social",
+   "text": "Obsessed with my new @brightsidehome rattan lamp 😍 honestly the best lamp I've ever owned. Use code SOPHIE15 for 15% off! Link in bio 💛",
+   "expect": "hold"
+  },
+  {
+   "id": "D",
+   "channel": "email",
+   "text": "Subject: New autumn lighting is here\n\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nOur autumn lighting range has just landed, including the Oslo table lamp (£49) and the Fern floor lamp (£89).\n\nDelivery is £4.95, or free on orders over £60.\n\nBrowse the range: brightsidehome.co.uk/autumn\n\nYou're receiving this because you signed up at brightsidehome.co.uk. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB. Company no. 12345678.",
+   "expect": "go"
+  },
+  {
+   "id": "E",
+   "channel": "email",
+   "text": "Subject: Your going to love our new cushion collection\n\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nOur new cushion collection has arrived and we think its the best we've ever made. Each cushion come in five colors, from soft sage to a deep teracotta, and every cover is made from 100% recycled polyester (independently certified by GRS – see brightsidehome.co.uk/materials).\n\nTheres less reasons than ever to put off a refresh: cushions start at £18 and delivery is £4.95, or free on orders over £60.\n\nWe've also organized our living room range by colour so its easier to find what your looking for.\n\nBrowse the collection: brightsidehome.co.uk/cushions\n\nYou're receiving this because you signed up at brightsidehome.co.uk. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB. Company no. 12345678.",
+   "expect": "fix_first"
+  },
+  {
+   "id": "F",
+   "channel": "push",
+   "text": "🔥 Last chance! Your basket items are about to sell out – 3 other people are looking at them right now. Checkout in the next 10 minutes to keep your 25% off.",
+   "expect": "hold"
+  },
+  {
+   "id": "G",
+   "channel": "directmail",
+   "text": "Dear Homeowner,\n\nCONGRATULATIONS! You have been specially selected to receive a £50 Brightside gift voucher.\n\nTo claim your voucher, simply call 0800 123 4567 and place an order. Your voucher is waiting for you!\n\nOur sofas are made by British craftsmen and are guaranteed for life. Prices from just £399 – that's half the price of the high street.\n\nHurry – vouchers are strictly limited.\n\nThe Brightside Team\n\nVoucher valid on orders over £800. One per household. Lifetime guarantee covers frame only and excludes fabric, cushions and wear.",
+   "expect": "hold"
+  },
+  {
+   "id": "H",
+   "channel": "social",
+   "text": "Sleep better, guilt-free 🌿\n\nOur Bamboo Dream bedding is 100% sustainable, carbon neutral and better for the planet than cotton. Dermatologist recommended for sensitive skin.\n\nRated the UK's best bedding 2026.\n\nNow £59 (RRP £129). Shop the collection → brightsidehome.co.uk/bamboo",
+   "expect": "hold"
+  },
+  {
+   "id": "I",
+   "channel": "email",
+   "text": "Subject: ⚡ Brightside flash sale – 50% off everything today only!\n\nFrom: Top Deals UK\n\nHi deal hunter,\n\nOur partner Brightside Home is giving you HALF PRICE on everything – but only until midnight!\n\n✔ Award-winning furniture\n✔ The UK's #1 rated homeware brand\n✔ Save up to 70% on cushions, lamps and rugs\n\nGrab the deal now: topdealsuk.example/brightside\n\nYou received this email because you signed up to Top Deals UK and our partners.",
+   "expect": "hold"
+  },
+  {
+   "id": "10",
+   "channel": "email",
+   "text": "Hi Sarah,\n\nIt's finally here! Our biggest sale ever.\n\nGet 70% OFF EVERYTHING on our website today.\n\nOur products have never been cheaper, and this offer will disappear at midnight.\n\nDon't miss out!\n\n[SHOP NOW]\n\n*Terms and conditions apply.",
+   "expect": "hold"
+  },
+  {
+   "id": "11",
+   "channel": "email",
+   "text": "Subject: Our Biggest Summer Sale – Save Up to 70%\n\nHi Sarah,\n\nOur biggest summer sale is here!\n\nEnjoy up to 70% off selected products until 23:59 on 30 November 2026.\n\nShop our range today and discover some fantastic savings.\n\n[SHOP NOW]\n\nOffer terms:\nDiscounts apply to selected products only.\nDiscount varies by product.\nSale ends 30 November 2026 at 23:59.\nSubject to availability.\n\nKind regards,\nABC Retail Ltd\nsupport@abcretail.example\n\nYou are receiving this email because you signed up to receive marketing communications from us.\n\n[Unsubscribe]",
+   "expect": "fix_first"
+  },
+  {
+   "id": "12",
+   "channel": "email",
+   "text": "Subject: Autumn sale: 30% off all lamps\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nOur autumn sale is on: 30% off every lamp in the range, until 23:59 on Sunday 16 November 2026.\n\nShop lamps: brightsidehome.co.uk/lamps\n\nYou're receiving this because you signed up at brightsidehome.co.uk. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB. Company no. 12345678.",
+   "expect": "fix_first"
+  },
+  {
+   "id": "13",
+   "channel": "email",
+   "text": "Subject: Your order BH-20931 is on its way\nFrom: Brightside Home <orders@brightsidehome.co.uk>\n\nHi Amelia,\n\nYour Oslo table lamp left our warehouse today and should arrive by Thursday 13 November. Track it here: brightsidehome.co.uk/track/BH-20931\n\nQuestions? Reply to this email or call 0113 496 0000.\n\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB.",
+   "expect": "go"
+  },
+  {
+   "id": "14",
+   "channel": "email",
+   "text": "Subject: Invitation: trade breakfast, 4 December\nFrom: Brightside Trade <trade@brightsidehome.co.uk>\nTo: jane.cole@acmeinteriors.co.uk\n\nHi Jane,\n\nWe're hosting a breakfast for interior design studios at our Leeds showroom on Thursday 4 December 2026, 8:00 to 9:30, to preview our 2027 trade range.\n\nReserve a place: brightsidehome.co.uk/trade-breakfast\n\nYou're receiving this as a Brightside trade contact. Unsubscribe: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB.",
+   "expect": "go"
+  },
+  {
+   "id": "15",
+   "channel": "sms",
+   "text": "Brightside: Our new autumn lamps are in, from £49. See the range at brightside.link/autumn. Reply STOP to opt out.",
+   "expect": "go"
+  },
+  {
+   "id": "16",
+   "channel": "email",
+   "text": "Subject: The Oslo armchair is now £179\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nThe Oslo armchair is now £179, down from £249. It was £249 from 1 August to 31 October 2026.\n\nShop the Oslo: brightsidehome.co.uk/oslo\n\nYou're receiving this because you signed up at brightsidehome.co.uk. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB.",
+   "expect": "fix_first"
+  },
+  {
+   "id": "17",
+   "channel": "email",
+   "text": "Subject: Meet the comfiest sofa you'll ever sink into\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nSay hello to the Fern sofa: deep cushions, soft bouclé and our cosiest look yet. Perfect for long winter evenings.\n\nFrom £899. See it: brightsidehome.co.uk/fern\n\nYou're receiving this because you signed up at brightsidehome.co.uk. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB.",
+   "expect": "go"
+  },
+  {
+   "id": "18",
+   "channel": "email",
+   "text": "Subject: Free delivery all year for just £1\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nJoin Brightside Plus for just £1 and get free delivery on every order, all year round.\n\nJoin now: brightsidehome.co.uk/plus\n\n*T&Cs apply. Renews monthly.\n\nYou're receiving this because you signed up at brightsidehome.co.uk. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB.",
+   "expect": "hold"
+  },
+  {
+   "id": "19",
+   "channel": "email",
+   "text": "Subject: Love your new sofa? Tell us and get £20 off\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nRated 4.9 out of 5 by over 10,000 happy customers!\n\nLeave us a 5-star review on Trustpilot and we'll send you £20 off your next order.\n\nReview us: brightsidehome.co.uk/review\n\nYou're receiving this because you signed up at brightsidehome.co.uk. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB.",
+   "expect": "hold"
+  },
+  {
+   "id": "20",
+   "channel": "social",
+   "text": "Try Brightside Design for FREE ✨ Our stylists will plan your whole living room. Book your free room design today!\n\n*£39 design fee, refunded against orders over £500.",
+   "expect": "hold"
+  },
+  {
+   "id": "21",
+   "channel": "email",
+   "text": "Subject: Finally, a good night's sleep\nFrom: Calma Nutrition <hello@calmanutrition.co.uk>\n\nHi Tom,\n\nOur Sleep Gummies cure insomnia naturally and boost your immune system while you rest. Doctor-approved.\n\n£19.99 for 60 gummies: calmanutrition.co.uk/sleep\n\nYou're receiving this because you bought from us before. Unsubscribe: calmanutrition.co.uk/unsubscribe\nCalma Nutrition Ltd, 2 Dock Street, Bristol BS1 6AA.",
+   "expect": "hold"
+  },
+  {
+   "id": "22",
+   "channel": "email",
+   "text": "Subject: Win a £500 sofa voucher\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nEnter our winter prize draw to win a £500 Brightside voucher. No purchase necessary.\n\nEnter by 23:59 on 30 November 2026. One winner, drawn at random on 1 December 2026. Full terms: brightsidehome.co.uk/prize-terms\n\nEnter now: brightsidehome.co.uk/win\n\nYou're receiving this because you signed up at brightsidehome.co.uk. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB.",
+   "expect": "go"
+  },
+  {
+   "id": "23",
+   "channel": "email",
+   "text": "Subject: Your parcel is waiting\nFrom: Delivery Update <noreply@parcel-notice.example>\n\nGood news!\n\nSomething special is waiting for you. Claim 40% off our bestselling sofas before Friday.\n\nClaim now: parcel-notice.example/claim\n\nUnsubscribe: parcel-notice.example/unsubscribe",
+   "expect": "hold"
+  },
+  {
+   "id": "24",
+   "channel": "email",
+   "text": "Subject: The sage Oslo armchair is nearly gone\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nYou looked at the Oslo armchair in sage last week. We've only 4 left in that colour.\n\nSee it: brightsidehome.co.uk/oslo\n\nYou're receiving this because you signed up at brightsidehome.co.uk. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB.",
+   "expect": "fix_first"
+  },
+  {
+   "id": "25",
+   "channel": "email",
+   "text": "Subject: We miss you, Amelia\nFrom: Brightside Home <hello@brightsidehome.co.uk>\n\nHi Amelia,\n\nIt's been three years since your last order, so here's 15% off anything in our new range with code BACK15, valid until 31 December 2026.\n\nShop now: brightsidehome.co.uk/new\n\nYou're receiving this because you bought from us before. Unsubscribe here: brightsidehome.co.uk/unsubscribe\nBrightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB.",
+   "expect": "fix_first"
+  },
+  {
+   "id": "26",
+   "channel": "email",
+   "text": "Subject: fuck you\n\nfuck you",
+   "expect": "hold"
+  }
+ ]
+}

@@ -35,7 +35,7 @@
   'use strict';
   var API = 'https://sendwize-backend.vercel.app';
   var root, userId, member = null, D = null;
-  var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { ai: 0, verdict: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'ai' };
+  var st = { detail: false, filter: 'all', area: null, twinOnly: false, whatif: false, picked: {}, open: {}, raMode: 'month', lane: {}, laneMore: {}, noticedAll: false, page: { all: 0, list: 0, sweep: 0, ai: 0, simulation: 0, vendor: 0, audience: 0 }, histTab: 'all' };
   var drafts = {}, nums = {}, lastRing = null;
   var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var AREA_LABELS = { consent: 'Marketing consent', suppression: 'Opt-outs and suppression', processors: 'Processors and data sharing', transparency: 'Transparency and identity', lawful_basis: 'Legitimate interests', ASA: 'Advertising claims (ASA)', CMA: 'Consumer law (CMA)', Commercial: 'Commercial', other: 'Other' };
@@ -44,8 +44,7 @@
   // own page and the switcher in /sw-tool-nav.js; change all three together.
   var TOOL_GROUPS = [
     { l: 'Before you send', tools: [
-      { k: 'verdict',   l: 'Send-day verdict',    u: '/send-verdict.html',      d: 'Go, fix first or hold for a campaign', hot: true },
-      { k: 'copy',      l: 'Copy checker',        u: '/ai-checker.html',        d: 'Check the wording of an email or ad' },
+      { k: 'copy',      l: 'Copy checker',        u: '/ai-checker.html',        d: 'Go, fix first or hold for an email or ad', hot: true },
     ] },
     { l: 'Your list', tools: [
       { k: 'list',      l: 'List health',         u: '/list-intelligence.html', d: 'Consent, value and who to remove' },
@@ -84,6 +83,8 @@
   function likely(ml, lo, hi) { return ml ? 'About ' + gbpK(ml) : range(lo, hi); }
   var CONF = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' };
   function confChip(c) { return c ? '<span class="sw-conf ' + esc(c) + '">' + esc(CONF[c] || c) + '</span>' : ''; }
+  // A finding's text without the "AI Checker:" tool prefix the fix records carry
+  function desc(f) { return String((f && f.description) || '').replace(/^(AI Checker|Sending Context)\s*:\s*/i, ''); }
   function date(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
   // AI text: drop markdown and double hyphens so it reads as plain prose
   function plain(s) { return String(s == null ? '' : s).replace(/\*\*|__/g, '').replace(/^#+\s*/gm, '').replace(/\s+--+\s+/g, ', ').replace(/--+/g, ', '); }
@@ -210,7 +211,7 @@
       (first && !(D.fixes.pending || []).length ? '<div id="sw-fixes" hidden></div>' : '<div class="sw-open sw-fixes" id="sw-fixes">' + fixesSection() + '</div>') +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Campaigns</span><a class="sw-link" href="' + esc(link('/campaign-defence.html')) + '">Open Campaign Defence</a></div><div id="sw-camps" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-sec"><div class="sw-sec-h"><span class="sw-h2">Recent checks</span><span>' +
-        ['ai', 'verdict', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + { ai: 'Copy', verdict: 'Verdicts', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' }[k] + '</button>'; }).join('') +
+        ['all', 'ai', 'list', 'sweep', 'simulation', 'vendor', 'audience'].map(function (k) { return '<button class="sw-flt' + (st.histTab === k ? ' on' : '') + '" data-act="hist" data-k="' + k + '">' + HIST_NAMES[k] + '</button>'; }).join('') +
       '</span></div><div id="sw-hist" class="sw-ld"><div class="sw-spin"></div></div></div>' +
       '<div class="sw-foot">' + esc(D.disclaimer || '') + ' <a href="' + esc(link('/exposure-algorithm.html')) + '">The Sendwize exposure algorithm</a> · <a href="' + esc(link('/profile.html')) + '">Your business profile</a></div>';
     drawSpark(); animate();
@@ -298,7 +299,7 @@
     function ran(tool) { return fixes.some(function (f) { return String(f.tool || '').toLowerCase() === tool; }); }
     var steps = [
       [!!(D.listValue && D.listValue.hasData), 'Upload your marketing list', 'See who you can legally email, whose consent is running out and what the list is worth. Any ESP export works.', '/list-intelligence.html', 'Upload a list'],
-      [false, 'Check your next campaign', 'Paste the email or ad before it goes out. You get one answer: go, fix first or hold.', '/send-verdict.html', 'Check a campaign'],
+      [false, 'Check your next campaign', 'Paste the email or ad before it goes out. You get one answer for the copy: go, fix first or hold.', '/ai-checker.html', 'Check my copy'],
       [ran('site sweep'), 'Sweep your website', 'Finds gaps in cookies, your privacy notice and sign-up forms across the whole site.', '/site-sweep.html', 'Sweep my site'],
     ];
     var done = steps.filter(function (s) { return s[0]; }).length;
@@ -334,7 +335,7 @@
   // fines, ASA consequences. Each regulator keeps its own figure; they are
   // never added together because they measure different things.
   function monthYear(s) { s = String(s || ''); if (s.length <= 4) return s; var d = new Date(s.length === 7 ? s + '-01' : s); return isNaN(d) ? s : d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }); }
-  function caseLink(c) { var t = esc(c.name) + ', ' + esc(monthYear(c.date)); return c.url ? '<a class="sw-rr-case" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + t + '</a>' : t; }
+  function caseLink(c) { return esc(c.name) + ', ' + esc(monthYear(c.date)); }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
   function regRisk(e) {
     var r = e.regulators;
@@ -534,13 +535,16 @@
 
   // Top three open findings by value for the time they take
   function startHere() {
-    var top = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); }).slice(0, 3);
+    // Best value first, but one of each kind: three "Fake urgency" rows tell you less than three different fixes
+    var ranked = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); });
+    var kinds = {}, top = ranked.filter(function (f) { if (kinds[f.fixType]) return false; kinds[f.fixType] = 1; return true; }).slice(0, 3);
+    if (top.length < 3) top = top.concat(ranked.filter(function (f) { return top.indexOf(f) < 0; }).slice(0, 3 - top.length));
     var body = top.length ? top.map(function (f, i) {
       var r = removes(f);
       return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
         '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(plain(f.description)) + '</div></div>' +
         effortChip(f) + '<span class="sw-nx-v">' + (pts(f) ? '<b>+' + pts(f) + ' pts</b>' : '') + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
-    }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/send-verdict.html">Check your next campaign</button> before it goes out.</div>';
+    }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/ai-checker.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
     return '<div class="sw-open sw-next"><div class="sw-next-h"><div class="sw-lbl">Start here · best value for your time</div>' +
       (more > 0 ? '<button class="sw-link" data-act="all-fixes">All ' + (more + top.length) + ' findings</button>' : '') + '</div>' + body + '</div>';
@@ -649,7 +653,7 @@
     if (D.profile && D.profile.sector) you.push('Sector: ' + nice(D.profile.sector));
     var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Case Twin · ' + tw.t.match + '% match</div><div class="sw-h2">You and ' + esc(c.name) + '</div></div>' +
       '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') +
-        (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + (c.source === 'curated' ? esc(c.regulator) + ' enforcement page' : 'Read the ruling') + '</a>' : '') + '</div>' +
+        '<div class="sw-note">' + esc(c.regulator) + ', ' + esc(monthYear(c.date)) + '</div></div>' +
       '<div class="sw-vs-mid" aria-hidden="true">vs</div>' +
       '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(plain(f.description)) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
       stakes(c, f) +
@@ -795,32 +799,75 @@
   }
 
   var histCache = {};
+  var HIST_NAMES = { all: 'All', list: 'Lists', sweep: 'Sites', ai: 'Copy', simulation: 'Simulations', vendor: 'Third parties', audience: 'Audience' };
+  var HIST_KIND = { list: 'List health', sweep: 'Site sweep', ai: 'Copy checker', verdict: 'Copy checker', simulation: 'Regulator simulator', vendor: 'Third parties', audience: 'Audience read' };
+  // One tool's checks, each tagged with its kind and the moment it ran
+  async function histFor(k) {
+    var rs = k === 'list'
+      ? ((await api('/api/list-intelligence?action=lists&userId=' + encodeURIComponent(userId))).lists || []).map(function (l) { return { id: l.listName, fields: l }; })
+      : k === 'sweep'
+      ? ((await api('/api/site-sweep?action=get&userId=' + encodeURIComponent(userId))).sweeps || []).filter(function (w) { return w.lastSweptAt; }).map(function (w) { return { id: w.sweepId, fields: w }; })
+      : k === 'ai'
+      ? await copyHistory()
+      : (await api('/api/data?action=history&type=' + k + '&userId=' + encodeURIComponent(userId))).records || [];
+    return rs.map(function (r) { r.kind = r.kind || k; r.at = histWhen(r); return r; })
+      .sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+  }
+  // The most precise time a check carries: Airtable's created time, else its own date
+  function histWhen(r) {
+    var f = r.fields || {};
+    return r.createdTime || f.lastSweptAt || f.CreatedAt || f.checkDate || f.CheckDate || f.LastChecked || f.SendDate || '';
+  }
+  function when(s) {
+    if (!s) return '';
+    var d = new Date(s);
+    if (isNaN(d)) return '';
+    var day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
+    return /T\d\d:\d\d/.test(String(s)) ? day + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : day;
+  }
   async function loadHistory() {
     var el = $('#sw-hist'), k = st.histTab;
     if (!el) return;
     try {
       if (!histCache[k]) {
         el.className = 'sw-ld'; el.innerHTML = '<div class="sw-spin"></div>';
-        histCache[k] = k === 'verdict'
-          ? ((await api('/api/verdict?action=list&userId=' + encodeURIComponent(userId))).verdicts || []).map(function (v) { return { id: v.id, fields: { CampaignName: v.campaign, Verdict: v.verdict, CreatedAt: v.createdAt, Channel: v.channel } }; })
-          : (await api('/api/data?action=history&type=' + k + '&userId=' + encodeURIComponent(userId))).records || [];
+        if (k === 'all') {
+          var parts = await Promise.all(['ai', 'list', 'sweep', 'simulation', 'vendor', 'audience'].map(function (x) {
+            return (histCache[x] ? Promise.resolve(histCache[x]) : histFor(x).then(function (r) { histCache[x] = r; return r; })).catch(function () { return []; });
+          }));
+          histCache.all = [].concat.apply([], parts).sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+        } else histCache[k] = await histFor(k);
       }
-      var rs = histCache[k], per = 6, pages = Math.max(1, Math.ceil(rs.length / per));
-      var p = st.page[k] = Math.min(st.page[k], pages - 1);
+      var rs = histCache[k], per = 8, pages = Math.max(1, Math.ceil(rs.length / per));
+      var p = st.page[k] = Math.min(st.page[k] || 0, pages - 1);
       el.className = '';
       if (!rs.length) { el.innerHTML = '<div class="sw-empty">No checks yet.</div>'; return; }
-      el.innerHTML = rs.slice(p * per, p * per + per).map(function (r) { return histRow(k, r.fields || {}, r.id); }).join('') +
+      el.innerHTML = rs.slice(p * per, p * per + per).map(function (r) { return histRow(r.kind || k, r.fields || {}, r.id, r.at, k === 'all'); }).join('') +
         (pages > 1 ? '<div class="sw-pgn"><button class="sw-flt" data-act="pg" data-d="-1"' + (p ? '' : ' disabled') + '>Previous</button>' + (p + 1) + ' of ' + pages + '<button class="sw-flt" data-act="pg" data-d="1"' + (p < pages - 1 ? '' : ' disabled') + '>Next</button></div>' : '');
     } catch (e) { el.className = ''; el.innerHTML = '<div class="sw-empty">Recent checks unavailable right now.</div>'; }
   }
-  function histRow(k, f, id) {
+  // Copy checks, plus any Send-day verdicts saved before that tool was
+  // merged into the Copy checker, newest first
+  async function copyHistory() {
+    var both = await Promise.all([
+      api('/api/data?action=history&type=ai&userId=' + encodeURIComponent(userId)).then(function (d) { return d.records || []; }),
+      api('/api/verdict?action=list&userId=' + encodeURIComponent(userId)).then(function (d) { return d.verdicts || []; }).catch(function () { return []; }),
+    ]);
+    var old = both[1].map(function (v) { return { id: v.id, kind: 'verdict', fields: { CampaignName: v.campaign, Verdict: v.verdict, CreatedAt: v.createdAt } }; });
+    if (!old.length) return both[0];
+    var day = function (r) { return String(r.fields.CheckDate || r.fields.CreatedAt || '').slice(0, 10); };
+    return both[0].concat(old).sort(function (a, b) { return day(b).localeCompare(day(a)); });
+  }
+  function histRow(k, f, id, at, showKind) {
     var t, s, d, href;
-    if (k === 'ai') { t = f.FileName || 'Copy check'; s = f.Verdict || ''; d = f.CheckDate; href = link('/ai-checker.html', 'checkId=' + encodeURIComponent(id)); }
-    else if (k === 'verdict') { t = f.CampaignName || 'Send-day verdict'; s = f.Verdict || ''; d = f.CreatedAt; href = link('/send-verdict.html', 'verdictId=' + encodeURIComponent(id)); }
+    if (k === 'list') { t = f.listName || 'List check'; s = (f.totalContacts ? Number(f.totalContacts).toLocaleString('en-GB') + ' contacts' : '') + (f.liabilityCount ? ' · ' + Number(f.liabilityCount).toLocaleString('en-GB') + ' below consent threshold' : ''); d = f.checkDate; href = link('/list-intelligence.html', 'listName=' + encodeURIComponent(f.listName || '')); }
+    else if (k === 'sweep') { t = f.domain || 'Site sweep'; s = typeof f.siteScore === 'number' ? 'Site score ' + f.siteScore : ''; d = f.lastSweptAt; href = link('/site-sweep.html', 'domain=' + encodeURIComponent(f.domain || '')); }
+    else if (k === 'ai') { t = f.FileName || 'Copy check'; s = f.Verdict || ''; d = f.CheckDate; href = link('/ai-checker.html', 'checkId=' + encodeURIComponent(id)); }
+    else if (k === 'verdict') { t = f.CampaignName || 'Send-day verdict'; s = (f.Verdict ? f.Verdict + ' · ' : '') + 'saved send-day verdict'; d = f.CreatedAt; href = link('/send-verdict.html', 'verdictId=' + encodeURIComponent(id)); }
     else if (k === 'simulation') { t = (f.Regulator || '') + ' simulation'; s = f.Band || ''; d = f.CreatedAt; href = link('/ico-simulator.html', 'simulationId=' + encodeURIComponent(id)); }
     else if (k === 'vendor') { t = f.VendorName || f.Vendor || 'Vendor'; s = f.RiskLevel || f.Status || ''; d = f.LastChecked; href = link('/vendor-checker.html'); }
     else { t = f.CampaignName || f.Name || 'Audience read'; s = f.Verdict || f.Status || ''; d = f.SendDate; href = link('/audience-read.html'); }
-    return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(t) + '</div><div class="sw-row-s">' + [esc(s), esc(date(d))].filter(Boolean).join(' · ') + '</div></div><a class="sw-link" href="' + esc(href) + '">Open</a></div>';
+    return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(t) + '</div><div class="sw-row-s">' + [showKind ? esc(HIST_KIND[k] || '') : '', esc(s)].filter(Boolean).join(' · ') + '</div></div><span class="sw-hist-at">' + esc(when(at || d)) + '</span><a class="sw-link" href="' + esc(href) + '">Open</a></div>';
   }
 
   // ── "Why this number?" drawer ──
@@ -885,7 +932,7 @@
     cases = cases || [];
     if (!cases.length) return '';
     return '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
-      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + (c.related ? ' <span class="sw-src">Related issue</span>' : '') + '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') + (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a>' : '<div class="sw-note">From the ' + esc(c.regulator) + '\u2019s published penalties register</div>') + '</div>';
+      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') + '</div>';
     }).join('') + '</div>';
   }
 
@@ -916,7 +963,7 @@
     if (m.available) {
       h += '<div class="sw-hn">About ' + gbpK(m.mostLikely) + '</div><div class="sw-hs">' + esc(m.label) + '. Likely ' + range(m.low, m.high) + '.</div>' +
         (m.lines || []).map(function (l) {
-          var refs = (l.cases || []).map(function (c) { return '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.name) + ' ' + gbp(c.perCustomer) + '</a>'; }).join(' · ');
+          var refs = (l.cases || []).map(function (c) { return esc(c.name) + ' ' + gbp(c.perCustomer); }).join(' · ');
           return '<div class="sw-cost-l"><span>' + esc(l.label) + (l.assumption ? ' <span class="sw-src">Assumption</span>' : '') + '<div class="sw-note">' + esc(l.basis) + '</div>' + (refs ? '<div class="sw-note">Per customer: ' + refs + '</div>' : '') + '</span><b>' + gbpK(l.amount) + '</b></div>';
         }).join('') +
         '<div class="sw-note" style="margin-top:6px">Worked out from ' + (m.source === 'campaign' ? 'the figures you gave for this campaign' : 'your usual campaign figures') + '. Never added to regulatory exposure.</div>';
@@ -924,7 +971,7 @@
       h += '<div class="sw-hs">Add this campaign’s figures to see what it could cost ' + (m.category === 'ASA' ? 'if the ad had to be withdrawn' : 'if customers had to be refunded') + '.</div>';
     }
     var pr = m.publicRecord;
-    if (pr) h += '<div class="sw-cost-l"><span>Reputation<div class="sw-note">' + esc(pr.text) + (pr.example ? ' For example: <a class="sw-link" href="' + esc(pr.example.url) + '" target="_blank" rel="noopener">' + esc(pr.example.name) + '</a>.' : '') + ' No £ figure: nothing published supports one.</div></span><b>Public</b></div>';
+    if (pr) h += '<div class="sw-cost-l"><span>Reputation<div class="sw-note">' + esc(pr.text) + (pr.example ? ' For example: ' + esc(pr.example.name) + '.' : '') + ' No £ figure: nothing published supports one.</div></span><b>Public</b></div>';
     h += '<div class="sw-tf"><label for="sw-c-bud">Campaign budget (£)</label><input id="sw-c-bud" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignBudget || m.budget || '') + '" placeholder="Media and creative, e.g. 8000"></div>' +
       '<div class="sw-tf"><label for="sw-c-rev">Expected sales from the campaign (£)</label><input id="sw-c-rev" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignRevenue || m.revenue || '') + '" placeholder="e.g. 40000"></div>' +
       (m.category === 'CMA' ? '<div class="sw-tf"><label for="sw-c-aov">Average order value (£)</label><input id="sw-c-aov" type="number" min="1" inputmode="numeric" value="' + esc(ci.averageOrderValue || m.averageOrderValue || '') + '" placeholder="e.g. 60"></div>' : '') +

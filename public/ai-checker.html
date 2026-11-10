@@ -113,6 +113,18 @@
     .risk-score-label { font-size: 10px; font-weight: 500; opacity: .7; }
     .risk-verdict h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
     .risk-verdict p  { font-size: 13px; color: var(--muted); }
+    /* Go / Fix first / Hold for the copy */
+    .call-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+    .call-label { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; background: #fff; border: 1px solid currentColor; }
+    .call-label.go { color: #15803d; } .call-label.fix_first { color: #b45309; } .call-label.hold { color: #b91c1c; }
+    .call-scope { font-size: 11px; font-weight: 600; color: var(--muted); }
+    .not-checked { margin-bottom: 20px; }
+    .not-checked-intro { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+    .nc-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 13px; line-height: 1.45; }
+    .nc-row b { display: block; font-size: 13px; }
+    .nc-row span { color: var(--muted); }
+    .nc-row a { flex-shrink: 0; color: var(--orange); font-weight: 600; text-decoration: none; white-space: nowrap; }
+    .nc-row a:hover { text-decoration: underline; }
 
     /* Rewrite panel */
     .rewrite-panel { display: none; gap: 16px; margin-bottom: 20px; }
@@ -214,6 +226,8 @@
       .controls-row { grid-template-columns: 1fr; }
       .rewrite-panel.show { grid-template-columns: 1fr; }
       .risk-banner { flex-direction: column; text-align: center; gap: 14px; }
+      .call-row { justify-content: center; }
+      .nc-row { flex-direction: column; align-items: flex-start; gap: 4px; }
     }
   </style>
 </head>
@@ -242,7 +256,7 @@
 
   <div class="page-header">
     <h1 class="page-title">Copy checker</h1>
-    <p class="page-subtitle">Analyse marketing copy and creative assets for PECR, UK GDPR, ASA CAP Code, and CMA/DMCCA issues. Not legal advice.</p>
+    <p class="page-subtitle">Paste an email, SMS or ad before it goes out. You get one answer for the copy, Go, Fix first or Hold, with each issue against PECR, UK GDPR, the ASA CAP Code and CMA/DMCCA, and a suggested rewrite. Not legal advice.</p>
   </div>
 
   <div class="error-box" id="errorBox"></div>
@@ -332,6 +346,14 @@
         <label for="campaignName">Campaign / file name</label>
         <input type="text" id="campaignName" placeholder="e.g. Summer Sale Email &mdash; June 2026" />
       </div>
+      <div class="form-group" id="fromGroup">
+        <label for="fromLine" id="fromLabel">From <span style="color:var(--muted);font-weight:400;">(name and address it&rsquo;s sent from)</span></label>
+        <input type="text" id="fromLine" placeholder="e.g. Brightside Home &lt;hello@brightsidehome.co.uk&gt;" />
+      </div>
+      <div class="form-group" id="subjectGroup">
+        <label for="subjectLine">Subject line</label>
+        <input type="text" id="subjectLine" placeholder="e.g. Autumn sale: 30% off all lamps" />
+      </div>
       <div class="form-group" id="copyGroup">
         <label for="copyText" id="copyLabel">Marketing copy</label>
         <textarea id="copyText" placeholder="Paste your copy here&hellip;"></textarea>
@@ -339,7 +361,7 @@
       </div>
 
       <div class="form-group" id="imageGroup">
-        <label>Images <span style="color:var(--muted);font-weight:400;">(optional &mdash; up to 3, max 5MB each)</span></label>
+        <label>Images <span style="color:var(--muted);font-weight:400;">(up to 3, max 5MB each &mdash; an image on its own is fine)</span></label>
         <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
           <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none;" onchange="onImagesSelected(event)">
           <div class="image-upload-prompt" id="imageUploadPrompt">
@@ -378,9 +400,16 @@
         <span class="risk-score-label">/ 100</span>
       </div>
       <div class="risk-verdict">
+        <div class="call-row"><span class="call-label" id="callLabel">&mdash;</span><span class="call-scope">Copy only</span></div>
         <h2 id="verdictText">&mdash;</h2>
         <p id="verdictSub">&mdash;</p>
       </div>
+    </div>
+
+    <div class="card not-checked" id="notChecked">
+      <div class="section-title">Not checked here</div>
+      <p class="not-checked-intro">This answer is about the wording only. Before you send, these are worth a check too if you haven't run them for this campaign.</p>
+      <div id="notCheckedList"></div>
     </div>
 
     <div class="rewrite-panel" id="rewritePanel">
@@ -449,6 +478,42 @@
   var lastCheckSourceRecordId = null;  // set from analyze-copy response
   var evidenceCertifications = [];     // items the user has ticked "I confirm"
   var evidenceMap = {};                // certId -> source violation object
+  var lastViolations = [];             // the findings behind the Go / Fix first / Hold answer
+
+  // Go / Fix first / Hold for the copy only. Same rules as api/_send-call.js:
+  // a critical finding holds, anything high or medium (or a claim that needs
+  // evidence you haven't confirmed) means fix first, otherwise go.
+  var NOT_CHECKED = [
+    ['List health', '/list-intelligence.html', 'Who it is going to: consent, opt-outs and bought data.'],
+    ['Campaign defence', '/campaign-defence.html', 'The landing pages it links to: prices, terms and offer details.'],
+    ['Audience read', '/audience-read.html', 'How this list reacted to recent sends: complaints and unsubscribes.'],
+  ];
+  function copyCall(violations, certified) {
+    var live = (violations || []).filter(function(v) { return String(v.severity || '').toLowerCase() !== 'low' && certified.indexOf(v) === -1; });
+    var hold = live.filter(function(v) { return !v.requiresEvidence && String(v.severity || '').toLowerCase() === 'critical'; });
+    var fix = live.length - hold.length;
+    var plural = function(n) { return n + ' item' + (n === 1 ? '' : 's'); };
+    if (hold.length) return { verdict: 'hold', label: 'Hold', headline: 'Hold this copy. ' + plural(hold.length) + ' could put the campaign at risk.' };
+    if (fix) return { verdict: 'fix_first', label: 'Fix first', headline: 'Fix ' + plural(fix) + ' in the copy first, then send.' };
+    return { verdict: 'go', label: 'Go', headline: 'Go on the copy. Nothing in the wording needs review.' };
+  }
+  function showCall(call) {
+    var lab = document.getElementById('callLabel');
+    lab.textContent = call.label;
+    lab.className = 'call-label ' + call.verdict;
+    document.getElementById('riskBanner').className = 'risk-banner ' + ({ go: 'low', fix_first: 'medium', hold: 'critical' }[call.verdict] || 'medium');
+    document.getElementById('verdictText').textContent = call.headline;
+  }
+  function certifiedViolations() {
+    return Object.keys(evidenceMap).filter(function(id) { var c = document.getElementById('certify-chk-' + id); return c && c.checked; }).map(function(id) { return evidenceMap[id]; });
+  }
+  function renderNotChecked() {
+    var qs = userId ? '?userId=' + encodeURIComponent(userId) : '';
+    document.getElementById('notCheckedList').innerHTML = NOT_CHECKED.map(function(t) {
+      return '<div class="nc-row"><div><b>' + escH(t[0]) + '</b><span>' + escH(t[2]) + '</span></div>' +
+        (userId ? '<a href="' + t[1] + qs + '">Run ' + escH(t[0]) + ' &rarr;</a>' : '') + '</div>';
+    }).join('');
+  }
 
   function init() {
     userId = new URLSearchParams(window.location.search).get('userId');
@@ -476,9 +541,16 @@
             var f = r.fields || {};
             return '<button type="button" onclick="openPastCheck(\'' + r.id + '\')" style="display:flex;width:100%;justify-content:space-between;gap:12px;padding:9px 0;border:none;border-bottom:1px solid var(--border);background:none;font:inherit;font-size:13px;cursor:pointer;text-align:left;color:var(--text)">' +
               '<span>' + escH(f.FileName || 'Copy check') + ' <span style="color:var(--muted)">&middot; ' + escH(f.Verdict || '') + '</span></span>' +
-              '<span style="color:var(--muted);white-space:nowrap">' + escH(f.CheckDate || '') + ' &rarr;</span></button>';
+              '<span style="color:var(--muted);white-space:nowrap">' + escH(checkWhen(r.createdTime || f.CheckDate)) + ' &rarr;</span></button>';
           }).join('') + '</div>';
       }).catch(function() {});
+  }
+
+  function checkWhen(s) {
+    var d = new Date(s || '');
+    if (isNaN(d)) return s || '';
+    var day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return /T\d\d:\d\d/.test(String(s)) ? day + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : day;
   }
 
   function openPastCheck(id) {
@@ -495,13 +567,18 @@
           var sel = document.getElementById('contentType'); if (sel) sel.value = f.ContentType;
         }
         lastCopy = f.MarketingCopy || '';
-        document.getElementById('copyText').value = lastCopy;
+        var bodyText = lastCopy, mFrom = bodyText.match(/^From: (.*)$/m), mSubj = bodyText.match(/^Subject: (.*)$/m);
+        if (mFrom || mSubj) bodyText = bodyText.replace(/^(From|Subject): .*\n?/gm, '').replace(/^\s+/, '');
+        onContentTypeChange();
+        document.getElementById('fromLine').value = mFrom ? mFrom[1] : '';
+        document.getElementById('subjectLine').value = mSubj ? mSubj[1] : '';
+        document.getElementById('copyText').value = bodyText === '(Image only)' ? '' : bodyText;
         renderResults({
           score: f.RiskScore, verdict: f.Verdict, summary: a.summary || '',
           violations: (a.violations || []).map(function(v) { var c = Object.assign({}, v); delete c._fromContext; delete c._fixType; return c; }),
           fixedVersion: f.FixedVersion || '', sourceRecordId: rec.id, comparison: a.comparison || null,
         });
-        document.getElementById('verdictSub').textContent = 'Saved check from ' + (f.CheckDate || '') + '. Edit the rewrite and recheck to see what has changed.';
+        document.getElementById('verdictSub').textContent = 'Saved check from ' + (f.CheckDate || '') + '. This answer covers the copy only. Edit the rewrite and recheck to see what has changed.';
         window.scrollTo({ top: 0, behavior: 'smooth' });
       })
       .catch(function() { showError('That check could not be opened.'); });
@@ -586,7 +663,7 @@
   }
 
   var typePlaceholders = {
-    email: 'Paste your email subject line and body copy here\u2026',
+    email: 'Paste the email body here (subject and From go above)\u2026',
     sms: 'Paste your SMS message text here\u2026',
     push: 'Paste your push notification title and body here\u2026',
     social: 'Paste your social ad headline and copy here\u2026',
@@ -595,7 +672,13 @@
   function onContentTypeChange() {
     currentContentType = document.getElementById('contentType').value;
     document.getElementById('copyText').placeholder = typePlaceholders[currentContentType] || typePlaceholders.email;
-    document.getElementById('copyLabel').textContent = currentContentType === 'email' ? 'Email copy (subject + body text)' : 'Marketing copy';
+    document.getElementById('copyLabel').textContent = currentContentType === 'email' ? 'Email body' : 'Marketing copy';
+    // Who it's from: an email's From line, an SMS sender ID, the sender on a mailing
+    var showFrom = ['email', 'sms', 'directmail'].indexOf(currentContentType) !== -1;
+    document.getElementById('fromGroup').style.display = showFrom ? '' : 'none';
+    document.getElementById('subjectGroup').style.display = currentContentType === 'email' ? '' : 'none';
+    document.getElementById('fromLabel').innerHTML = currentContentType === 'sms' ? 'Sender ID <span style="color:var(--muted);font-weight:400;">(the name the text shows as from)</span>' : currentContentType === 'directmail' ? 'Sender <span style="color:var(--muted);font-weight:400;">(business name and address on the mailing)</span>' : 'From <span style="color:var(--muted);font-weight:400;">(name and address it\u2019s sent from)</span>';
+    document.getElementById('fromLine').placeholder = currentContentType === 'sms' ? 'e.g. Brightside' : currentContentType === 'directmail' ? 'e.g. Brightside Home Ltd, 14 Mill Lane, Leeds LS1 4AB' : 'e.g. Brightside Home <hello@brightsidehome.co.uk>';
   }
 
   var loadingSteps = [
@@ -675,12 +758,19 @@
     if (!userId) { showError('Please return to the dashboard and open this tool from there.'); return; }
     clearError();
     var copy = document.getElementById('copyText').value.trim();
-    if (!copy) { showError('Please paste your marketing copy before running a check.'); return; }
-    lastCopy = copy;
+    var showFrom = ['email', 'sms', 'directmail'].indexOf(currentContentType) !== -1;
+    var fromLine = showFrom ? document.getElementById('fromLine').value.trim() : '';
+    var subject = currentContentType === 'email' ? document.getElementById('subjectLine').value.trim() : '';
+    var campaignName = document.getElementById('campaignName').value.trim();
+    if (!copy && !uploadedImages.length) { showError('Paste your marketing copy or upload an image before running a check.'); return; }
+    lastCopy = [fromLine ? 'From: ' + fromLine : '', subject ? 'Subject: ' + subject : '', copy].filter(Boolean).join('\n') || '(Image only)';
     setLoadingState(true);
     try {
       var sendingContext = getSendingContext();
       var payload = { userId: userId, contentType: currentContentType, content: copy, autoFix: true };
+      if (fromLine) payload.from = fromLine;
+      if (subject) payload.subject = subject;
+      if (campaignName) payload.campaignName = campaignName;
       if (opts.recheckOf) payload.recheckOf = opts.recheckOf;
       if (sendingContext) payload.sendingContext = sendingContext;
       if (uploadedImages.length > 0) payload.images = uploadedImages.map(function(i) { return { data: i.data, mediaType: i.mediaType }; });
@@ -706,12 +796,19 @@
     var score = data.score ?? 0;
     var violations = data.violations ?? [];
     var fixed = data.fixedVersion ?? '';
-    var riskScore = 100 - score;
-    var level = riskScore >= 75 ? 'critical' : riskScore >= 50 ? 'high' : riskScore >= 25 ? 'medium' : 'low';
-    document.getElementById('riskBanner').className = 'risk-banner ' + level;
+    lastViolations = violations;
     document.getElementById('riskNum').textContent = score;
-    document.getElementById('verdictText').textContent = data.verdict || riskLabel(level);
-    document.getElementById('verdictSub').textContent  = riskSub(level, violations.length);
+    if (data.verdict === 'Analysis Error') {
+      // The check didn't run properly: never show that as clean copy
+      document.getElementById('callLabel').textContent = 'Not checked';
+      document.getElementById('callLabel').className = 'call-label fix_first';
+      document.getElementById('riskBanner').className = 'risk-banner medium';
+      document.getElementById('verdictText').textContent = 'The copy could not be checked. Run it again before sending.';
+    } else {
+      showCall(data.sendCall || copyCall(violations, []));
+    }
+    document.getElementById('verdictSub').textContent = 'Copy score ' + score + ' out of 100. This answer covers the wording only, not who it goes to or the pages it links to.';
+    renderNotChecked();
 
     // Rewrite panel
     var panel = document.getElementById('rewritePanel');
@@ -723,8 +820,9 @@
       var evidenceCount = violations.filter(function(v) { return v.requiresEvidence; }).length;
       var noteparts = [];
       if (changedCount > 0) noteparts.push(changedCount + ' potential area' + (changedCount !== 1 ? 's' : '') + ' addressed in the rewrite');
-      if (evidenceCount > 0) noteparts.push(evidenceCount + ' evidence item' + (evidenceCount !== 1 ? 's' : '') + ' marked [EVIDENCE REQUIRED] for you to resolve');
-      document.getElementById('rewriteNote').textContent = noteparts.length ? noteparts.join(' \u00b7 ') + '. Brand voice preserved.' : 'Brand voice and energy preserved.';
+      if (evidenceCount > 0) noteparts.push(evidenceCount + ' evidence item' + (evidenceCount !== 1 ? 's' : '') + ' below for you to confirm');
+      var checkNote = fixed.indexOf('[check:') >= 0 ? ' Anything shown as [check: \u2026] is not in your original: keep it only if it is true, or remove it. Fill in any other [brackets] before sending.' : (/\[[^\]]+\]/.test(fixed) ? ' Fill in the [brackets] before sending.' : '');
+      document.getElementById('rewriteNote').textContent = (noteparts.length ? noteparts.join(' \u00b7 ') + '. Brand voice preserved.' : 'Brand voice and energy preserved.') + checkNote;
     } else {
       panel.classList.remove('show');
     }
@@ -759,7 +857,7 @@
           '<div class="violation-text">' + escH(v.issue || '') + '</div>' +
           (v.location ? '<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">&#x1F4CD; ' + escH(v.location) + '</div>' : '') +
           (v.recommendation ? '<div class="violation-quote">Fix: ' + escH(v.recommendation) + '</div>' : '') +
-          (v.enforcement_note ? '<div class="violation-enforcement">&#x1F4CB; ' + escH(v.enforcement_note) + (/^https:\/\/(www\.)?(ico\.org\.uk|asa\.org\.uk|gov\.uk)\//.test(v.enforcement_url || '') ? ' <a href="' + escH(v.enforcement_url) + '" target="_blank" rel="noopener">Read the case</a>' : '') + '</div>' : '') +
+          (v.enforcement_note ? '<div class="violation-enforcement">&#x1F4CB; ' + escH(v.enforcement_note) + '</div>' : '') +
           '</div>';
       }).join('');
 
@@ -829,6 +927,8 @@
           certified:      true,
         });
       }
+      // Confirming the evidence can move the copy from Fix first to Go
+      if (lastViolations.length) showCall(copyCall(lastViolations, certifiedViolations()));
       // Refresh the finish summary
       var allViolations = Object.values(evidenceMap);
       // Re-compute from the DOM to avoid stale references
@@ -882,7 +982,7 @@
     document.getElementById('rewritePanel').classList.remove('show');
     document.getElementById('checksSection').classList.remove('show');
     document.querySelectorAll('.demo-notice').forEach(function(n) { n.remove(); });
-    ['copyText','campaignName'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+    ['copyText','campaignName','fromLine','subjectLine'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
     uploadedImages = []; renderImagePreviews();
     document.querySelectorAll('.radio-option input[type="radio"]').forEach(function(r) { r.checked = false; });
     document.querySelectorAll('.radio-option').forEach(function(el) { el.classList.remove('selected'); });
@@ -912,14 +1012,6 @@
   function showError(msg) { var el = document.getElementById('errorBox'); el.textContent = msg; el.classList.add('show'); document.getElementById('formSection').style.display = 'block'; document.getElementById('loadingSection').classList.remove('show'); stopLoading(); }
   function clearError() { document.getElementById('errorBox').classList.remove('show'); }
   function escH(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function riskLabel(l) { return { low:'Low Risk', medium:'Medium Risk', high:'High Risk', critical:'Critical Risk' }[l] || l; }
-  function riskSub(l, n) {
-    if (l === 'low')      return n === 0 ? 'No issues detected \u2014 no obvious concerns identified. Not a guarantee of compliance.' : n + ' minor issue' + (n!==1?'s':'') + ' to review.';
-    if (l === 'medium')   return n + ' issue' + (n!==1?'s':'') + ' detected. Review before sending.';
-    if (l === 'high')     return n + ' serious issue' + (n!==1?'s':'') + ' found. Fix before sending.';
-    if (l === 'critical') return n + ' critical issue' + (n!==1?'s':'') + ' found. Do not send this copy.';
-    return '';
-  }
 </script>
 </body>
 </html>

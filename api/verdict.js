@@ -1,6 +1,15 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — verdict.js v1.0
-// Send-day verdict: one answer before a campaign goes out.
+// SENDWIZE — verdict.js v1.1
+// Send-day verdict: RETIRED as a member tool (Nov 2026).
+//
+// Members often run only one tool for a campaign, so one combined Go
+// could read as if the list and pages had been checked when they hadn't.
+// The Copy checker now gives Go / Fix first / Hold for the copy only
+// (api/_send-call.js) and points to List health, Campaign defence and
+// Audience read for the rest. This endpoint stays so verdicts saved
+// before the change can still be listed and reopened (GET list|get).
+// POST now returns 410. The rules (decide, checkCopy etc.) are kept
+// for reference; archive/send-verdict.html is the old page.
 //
 // POST /api/verdict   { userId, copy, subject?, channel?, urls?[], listName?, sendingContext? }
 // GET  /api/verdict?action=list&userId=…   recent verdicts
@@ -22,7 +31,6 @@
 import crypto from 'crypto';
 import { atFetch, fq } from './_airtable.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
-import { checkLimit } from './_limits.js';
 import { scanCampaignPages, isSafePublicUrl } from './_page-scan.js';
 import { lapsedBetween } from './_memory.js';
 
@@ -244,58 +252,11 @@ export default async function handler(req, res) {
         notice: NOTICE, reopened: true,
       });
     }
-    if (req.method !== 'POST') return res.status(405).json({ error: 'POST to run a verdict, or GET ?action=list|get' });
-    if (!(await checkLimit(req, res, auth, 'verdict'))) return;
-
-    const b = req.body || {};
-    const copy = String(b.copy || '').trim();
-    if (copy.length < 20) return res.status(400).json({ error: 'Paste the campaign copy (at least a sentence).' });
-    if (copy.length > 20000) return res.status(400).json({ error: 'Copy is too long. Keep it under 20,000 characters.' });
-    const channel = CHANNELS.includes(b.channel) ? b.channel : 'email';
-    const urls = [...new Set((Array.isArray(b.urls) ? b.urls : []).map(u => String(u).trim()).filter(Boolean))].slice(0, 4);
-    const badUrl = urls.find(u => !isSafePublicUrl(u));
-    if (badUrl) return res.status(400).json({ error: `That page address can't be checked: ${badUrl}` });
-    const listName = b.listName ? String(b.listName).slice(0, 120) : '';
-    const subject = b.subject ? String(b.subject).slice(0, 300) : '';
-    const campaign = b.campaignName ? String(b.campaignName).slice(0, 120) : subject || 'Untitled campaign';
-
-    const [copyR, pagesR, listR, audR] = await Promise.all([
-      checkCopy({ userId, copy, subject, channel, sendingContext: b.sendingContext }).catch(e => ({ ok: false, error: e.message })),
-      checkPages(urls, userId).catch(e => ({ ok: true, findings: [], pages: urls.map(url => ({ url, verdict: 'error', error: e.message })) })),
-      checkList(userId, listName).catch(() => ({ ok: false, blockingFixes: [] })),
-      channel === 'email' ? checkAudience(userId, listName).catch(() => ({ ok: false })) : Promise.resolve({ ok: true, found: false }),
-    ]);
-    const result = decide({ channel, copy: copyR, pages: pagesR, list: listR, audience: audR });
-    const createdAt = new Date().toISOString();
-    const inputs = { copy, subject, channel, urls, listName };
-    const fp = fingerprint({ v: VERSION, inputs, verdict: result.verdict, hold: result.hold, fix: result.fix, createdAt });
-
-    let saved = false, verdictId = null;
-    try {
-      const r = await atFetch(`${base()}/Send_Verdicts`, {
-        method: 'POST', headers: atH(),
-        body: JSON.stringify({ fields: {
-          UserID: userId, CreatedAt: createdAt, Verdict: result.label, CampaignName: campaign, Channel: channel,
-          ListName: listR.listName || listName || '', Urls: urls.join('\n'), CopyCheckId: copyR.checkId || '',
-          ReasonsJson: JSON.stringify({ hold: result.hold, fix: result.fix, ok: result.ok }).slice(0, 95000),
-          InputHash: fingerprint({ v: VERSION, inputs }), Fingerprint: fp,
-        } }),
-      });
-      if (r.ok) { saved = true; verdictId = (await r.json()).id; }
-      else console.warn('Send_Verdicts save failed', r.status);
-    } catch (e) { console.warn('Send_Verdicts save error', e.message); }
-
-    return res.json({
-      success: true, ...result, verdictId, saved, fingerprint: fp, createdAt, version: VERSION,
-      checks: {
-        copy: copyR.ok ? { score: copyR.score, issues: copyR.issues.length, checkId: copyR.checkId } : { error: copyR.error },
-        pages: pagesR.skipped ? null : { scanned: pagesR.pages.length, findings: pagesR.findings.length },
-        list: listR.found ? { listName: listR.listName, checkDate: listR.checkDate, totalContacts: listR.totalContacts } : null,
-      },
-      notice: NOTICE,
-    });
+    if (req.method !== 'POST') return res.status(405).json({ error: 'GET ?action=list|get to read a saved verdict' });
+    // Retired: new checks go through the Copy checker
+    return res.status(410).json({ error: 'The Send-day verdict is now part of the Copy checker. Check your copy there, then run List health and Campaign defence for the list and pages.', moved: '/ai-checker.html' });
   } catch (e) {
     console.error('verdict.js error:', e);
-    return res.status(500).json({ error: 'Could not run the send-day verdict' });
+    return res.status(500).json({ error: 'Could not load the saved verdict' });
   }
 }

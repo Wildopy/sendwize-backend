@@ -46,7 +46,9 @@
 // legal advice. Weights and case anchors are for the founder to review.
 // ─────────────────────────────────────────────────────────────
 import { createHash } from 'node:crypto';
-import { CASES, LIBRARY_STATS, BROAD_TYPES, caseOutcome, sameIssueTypes, relatedTypes, subjectsOf, channelsOf, subjectFit, sharedSubjects } from './_case-library.js';
+import { ISSUES, issueOf } from './_copy-issues.js';
+import { guessIssue } from './_copy-review.js';
+import { CASES, LIBRARY_STATS, BROAD_TYPES, caseOutcome, sameIssueTypes, subjectsOf, channelsOf, subjectFit, sharedSubjects } from './_case-library.js';
 
 // ── REVENUE BAND NORMALISATION ────────────────────────────────
 // Keys are compared with spaces removed and hyphens as en dashes, so the
@@ -583,19 +585,62 @@ function sharedWords(c, words) {
   for (const w of wordsOf(`${c.name} ${c.summary}`)) if (words.has(w) && (WORD_DF.get(w) || 0) <= max) n++;
   return Math.min(n, 3);
 }
+// The specific issue a finding is about (_copy-issues.js): the one written
+// on it, else read from its words, kept only if it fits the fix type.
+// null when no taggable issue fits.
+function issueForFix(fixType, ctx) {
+  const fits = Object.keys(ISSUES).filter(id => ISSUES[id].fixType === fixType && ISSUES[id].caseable);
+  const named = ctx.issue && issueOf(ctx.issue).caseable ? ctx.issue : null;
+  if (named) return [named];
+  const guess = ctx.text ? guessIssue({ issue: ctx.text }) : 'other';
+  if (issueOf(guess).caseable && (!fits.length || fits.includes(guess))) return [guess];
+  return fits.length === 1 ? fits : null;
+}
+
+// The three published cases behind "Why this number?" (v6.1). Cases tagged
+// with the finding's own issue come first, so an "only 2 left" finding shows
+// stock-claim rulings, not a consent fine. A finding with no taggable issue
+// (calls, suppression, data sharing) falls back to the fix type, same issue
+// only: a loosely related case is no longer shown.
 export function closestCases(fixType, volume, ctx = {}) {
-  const same = sameIssueTypes(fixType), related = relatedTypes(fixType);
+  const same = sameIssueTypes(fixType);
   const v = Number(volume) || null;
   const words = wordsOf(ctx.text);
   const subjects = subjectsOf(ctx.text), channels = ctx.channel ? [ctx.channel] : channelsOf(ctx.text);
-  return CASE_ANCHORS
-    .map(c => ({ c, rel: c.types.some(t => same.includes(t)) ? 0 : c.types.some(t => related.includes(t)) ? 1 : null }))
-    .filter(x => x.rel !== null && subjectFit(x.c, subjects, fixType))
-    .map(({ c, rel }) => ({ c, rel, d: rel * 10 - sharedSubjects(c, subjects) - 0.75 * sharedWords(c, words) + 0.5 * ((c.subjects || []).length - sharedSubjects(c, subjects)) + (channels.length && !c.channels.some(ch => channels.includes(ch)) ? 0.5 : 0)
-      + (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5) + (c.penalty ? 0 : 1) }))
+  const issues = issueForFix(fixType, ctx);
+  const tagged = issues ? CASE_ANCHORS.filter(c => (c.issues || []).some(i => issues.includes(i))) : [];
+  const pool = tagged.length ? tagged
+    : CASE_ANCHORS.filter(c => c.types.some(t => same.includes(t)) && subjectFit(c, subjects, fixType));
+  const volumeGap = c => (v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : 5);
+  return pool
+    .map(c => ({ c, d: tagged.length
+      ? -2 * sharedSubjects(c, subjects) - sharedWords(c, words) + 0.75 * Math.max(0, (c.issues || []).length - 1) + 0.2 * volumeGap(c)
+      : -sharedSubjects(c, subjects) - 0.75 * sharedWords(c, words) + 0.5 * ((c.subjects || []).length - sharedSubjects(c, subjects)) + volumeGap(c)
+    }))
+    .map(x => ({ ...x, d: x.d + (channels.length && !(x.c.channels || []).some(ch => channels.includes(ch)) ? 0.5 : 0) + (x.c.penalty ? 0 : 1) }))
     .sort((a, b) => a.d - b.d || String(b.c.date).localeCompare(String(a.c.date)))
     .slice(0, 3)
-    .map(({ c, rel }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, action: c.action || null, url: c.url || (c.imported ? null : ICO_ACTION_URL), related: rel === 1 }));
+    .map(({ c }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, action: c.action || null, url: c.url || (c.imported ? null : ICO_ACTION_URL), related: false }));
+}
+
+// The published case for one copy finding (_copy-issues.js). Only a case
+// tagged with the same specific issue qualifies; among those, the one
+// sharing the finding's subject (green, health, price...), distinctive
+// words and channel, with fines before rulings and newer before older.
+// Returns null rather than a loose match: no case beats a wrong one.
+export function caseForIssue(issue, ctx = {}) {
+  const words = wordsOf(ctx.text), subjects = subjectsOf(ctx.text);
+  const channels = ctx.channel ? [ctx.channel] : channelsOf(ctx.text);
+  const pool = CASE_ANCHORS.filter(c => (c.issues || []).includes(issue));
+  if (!pool.length) return null;
+  const best = pool
+    .map(c => ({ c, d: -2 * sharedSubjects(c, subjects) - sharedWords(c, words)
+      + (channels.length && !(c.channels || []).some(ch => channels.includes(ch)) ? 0.5 : 0)
+      + 0.25 * Math.max(0, (c.issues || []).length - 1)
+      + (c.penalty ? 0 : 0.5) }))
+    .sort((a, b) => a.d - b.d || String(b.c.date).localeCompare(String(a.c.date)))[0].c;
+  return { id: best.id, name: best.name, regulator: best.regulator, date: best.date, penalty: best.penalty, outcome: caseOutcome(best),
+    summary: best.summary, action: best.action || null, url: best.url || (best.imported ? null : ICO_ACTION_URL) };
 }
 
 // ── Profile inputs that sharpen the figures (all optional) ──

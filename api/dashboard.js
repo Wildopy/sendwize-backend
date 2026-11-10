@@ -114,7 +114,7 @@ export default async function handler(req, res) {
     const pending = fx.fixes?.pending || [];
     const completed = fx.fixes?.completed || [];
     const dismissed = fx.fixes?.dismissed || [];
-    const twins = caseTwins(pending, completed, buildLibrary(feed), { sector: profile?.sector || fx.sector, listSize: profile?.listSize });
+    const twins = caseTwins(pending, completed, buildLibrary(feed), { sector: profile?.sector || fx.sector, listSize: profile?.listSize, turnover: profile?.annualTurnover });
 
     // What-if needs the same weights computeScore uses
     const w = f => SEVERITY_WEIGHT[f.severity] || 3;
