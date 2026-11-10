@@ -84,8 +84,10 @@
   var CONF = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' };
   function confChip(c) { return c ? '<span class="sw-conf ' + esc(c) + '">' + esc(CONF[c] || c) + '</span>' : ''; }
   // A finding's text without the "AI Checker:" tool prefix the fix records carry
-  function desc(f) { return String((f && f.description) || '').replace(/^(AI Checker|Sending Context)\s*:\s*/i, ''); }
+  function desc(f) { return plain((f && f.description) || '').replace(/^(AI Checker|Sending Context)\s*:\s*/i, ''); }
   function date(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  // AI text: drop markdown and double hyphens so it reads as plain prose
+  function plain(s) { return String(s == null ? '' : s).replace(/\*\*|__/g, '').replace(/^#+\s*/gm, '').replace(/\s+--+\s+/g, ', ').replace(/--+/g, ', '); }
   function nice(s) { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
   function $(sel, el) { return (el || root).querySelector(sel); }
   function link(path, query) { var u = API + path + '?' + (userId ? 'userId=' + encodeURIComponent(userId) : '') + (query ? '&' + query : ''); return window.SW && SW.withToken ? SW.withToken(u) : u; }
@@ -578,10 +580,12 @@
 
   function listValueCard() {
     var v = D.listValue;
-    var body = v && v.hasData && v.total ? '<div class="sw-hn">' + gbpK(v.total) + '</div><div class="sw-hs">Unrealised value in your lists.</div>' +
-      (v.top || []).map(function (o) { return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(o.title || o.name || nice(o.type)) + '</div></div><div class="sw-row-v">' + gbpK(o.value || o.estimatedValue || 0) + '</div></div>'; }).join('') +
+    var worth = function (o) { return Number(o.currentValue != null ? o.currentValue : o.value || o.estimatedValue) || 0; };
+    var top = ((v && v.top) || []).filter(function (o) { return worth(o) >= 1; });
+    var body = v && v.hasData && v.total >= 1 && top.length ? '<div class="sw-hn">' + gbpK(v.total) + '</div><div class="sw-hs">Unrealised value in your lists.</div>' +
+      top.map(function (o) { return '<div class="sw-row"><div class="sw-row-main"><div class="sw-row-t">' + esc(o.title || o.name || nice(o.type) || 'Opportunity') + '</div>' + (o.listName ? '<div class="sw-row-s">' + esc(o.listName) + '</div>' : '') + '</div><div class="sw-row-v">' + gbpK(worth(o)) + '</div></div>'; }).join('') +
       (v.basis ? '<div class="sw-note">' + esc(v.basis) + '</div>' : '')
-      : '<div class="sw-empty">Upload a list in List health to see where the value is.</div>';
+      : '<div class="sw-empty">' + (v && v.hasData ? 'No value worth chasing in your latest list checks.' : 'Upload a list in List health to see where the value is.') + '</div>';
     return '<div class="sw-card sw-pad"><div class="sw-lbl">List value</div>' + body + '</div>';
   }
 
@@ -762,12 +766,21 @@
   }
 
   // ── deferred sections ──
+  // The briefing may arrive as markdown: bold stays bold, the title line goes
+  function briefingHtml(t) {
+    var lines = String(t).replace(/\r/g, '').split('\n');
+    if (lines.length > 1 && /^\s*(#+\s*|\*\*)?\s*weekly[^\n]*briefing/i.test(lines[0])) lines.shift();
+    var h = esc(lines.join('\n').trim().replace(/\s+--+\s+/g, ', ').replace(/^#+\s*/gm, ''))
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*\*/g, '')
+      .replace(/^\s*[-*]\s+/gm, '• ');
+    return h.replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
+  }
   async function loadBriefing() {
     var el = $('#sw-brf');
     try {
       var b = await api('/api/data?action=briefing&userId=' + encodeURIComponent(userId));
       if (!el) return;
-      el.innerHTML = b.briefing ? esc(b.briefing).replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>') : '<div class="sw-empty">Your briefing appears once you have run a check.</div>';
+      el.innerHTML = b.briefing ? briefingHtml(b.briefing) : '<div class="sw-empty">Your briefing appears once you have run a check.</div>';
       if (b.briefing && b.briefing.length > 320) $('#sw-brf-more').hidden = false; else el.classList.remove('clip');
     } catch (e) { if (el) el.innerHTML = '<div class="sw-empty">Briefing unavailable right now.</div>'; }
   }
@@ -779,7 +792,7 @@
       var ds = d.dossiers || [];
       el.className = '';
       el.innerHTML = ds.length ? '<div class="sw-cards">' + ds.map(function (c) {
-        return '<a class="sw-tile" style="display:block;text-decoration:none;color:inherit" href="' + esc(link('/campaign-defence.html', 'dossierId=' + encodeURIComponent(c.dossierId))) + '"><div class="sw-tile-k">' + esc(c.defenceStatus || c.status) + (c.needsReview ? ' · needs review' : '') + '</div><div class="sw-tile-t">' + esc(c.campaignTitle) + '</div>' +
+        return '<a class="sw-tile" style="display:block;text-decoration:none;color:inherit" href="' + esc(link('/campaign-defence.html', 'dossierId=' + encodeURIComponent(c.dossierId))) + '"><div class="sw-tile-k">' + esc(nice(c.defenceStatus || c.status)) + (c.needsReview ? ' · needs review' : '') + '</div><div class="sw-tile-t">' + esc(c.campaignTitle) + '</div>' +
           '<div class="sw-prog"><i style="width:' + Math.max(0, Math.min(100, c.modulesPct || 0)) + '%"></i></div><div class="sw-note">' + (c.modulesPct || 0) + '% evidence recorded' + (c.launchDate ? ' · launches ' + esc(date(c.launchDate)) : '') + '</div></a>';
       }).join('') + '</div>' : '<div class="sw-empty">No campaigns yet. Start one in Campaign Defence to keep your evidence in one place.</div>';
     } catch (e) { el.className = ''; el.innerHTML = '<div class="sw-empty">Campaigns unavailable right now.</div>'; }
@@ -1089,6 +1102,10 @@
   function gotoFix(id) {
     closeLayers();
     st.open[id] = true; st.area = null; st.twinOnly = false; if (st.filter !== 'all') st.filter = 'all';
+    // Only the riskiest area is open by default and lanes show three rows, so
+    // open this finding's area in full or the row is never drawn
+    var f = (D.fixes.pending || []).filter(function (x) { return x.id === id; })[0];
+    if (f) { var g = groupOf(f); st.lane[g] = true; st.laneMore[g] = true; }
     redrawFixes();
     var row = root.querySelector('.sw-fx[data-id="' + id + '"]');
     if (row) { row.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'center' }); row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600); }
