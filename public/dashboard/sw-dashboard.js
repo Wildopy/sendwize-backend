@@ -331,7 +331,7 @@
   // fines, ASA consequences. Each regulator keeps its own figure; they are
   // never added together because they measure different things.
   function monthYear(s) { s = String(s || ''); if (s.length <= 4) return s; var d = new Date(s.length === 7 ? s + '-01' : s); return isNaN(d) ? s : d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }); }
-  function caseLink(c) { var t = esc(c.name) + ', ' + esc(monthYear(c.date)); return c.url ? '<a class="sw-rr-case" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + t + '</a>' : t; }
+  function caseLink(c) { return esc(c.name) + ', ' + esc(monthYear(c.date)); }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
   function regRisk(e) {
     var r = e.regulators;
@@ -644,7 +644,7 @@
     if (D.profile && D.profile.sector) you.push('Sector: ' + nice(D.profile.sector));
     var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Case Twin · ' + tw.t.match + '% match</div><div class="sw-h2">You and ' + esc(c.name) + '</div></div>' +
       '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') +
-        (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + (c.source === 'curated' ? esc(c.regulator) + ' enforcement page' : 'Read the ruling') + '</a>' : '') + '</div>' +
+        '<div class="sw-note">' + esc(c.regulator) + ', ' + esc(monthYear(c.date)) + '</div></div>' +
       '<div class="sw-vs-mid" aria-hidden="true">vs</div>' +
       '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(f.description) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
       stakes(c, f) +
@@ -889,7 +889,7 @@
     cases = cases || [];
     if (!cases.length) return '';
     return '<div class="sw-dr-sec"><div class="sw-lbl">Closest published cases</div>' + cases.map(function (c) {
-      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + (c.related ? ' <span class="sw-src">Related issue</span>' : '') + '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') + (c.url ? '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Read it on the ' + esc(c.regulator) + ' website</a>' : '<div class="sw-note">From the ' + esc(c.regulator) + '\u2019s published penalties register</div>') + '</div>';
+      return '<div class="sw-case"><b>' + esc(c.name) + '</b> · ' + esc(c.regulator) + ' ' + esc(c.date) + ' · ' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || '')) + '<div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') + '</div>';
     }).join('') + '</div>';
   }
 
@@ -920,7 +920,7 @@
     if (m.available) {
       h += '<div class="sw-hn">About ' + gbpK(m.mostLikely) + '</div><div class="sw-hs">' + esc(m.label) + '. Likely ' + range(m.low, m.high) + '.</div>' +
         (m.lines || []).map(function (l) {
-          var refs = (l.cases || []).map(function (c) { return '<a class="sw-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.name) + ' ' + gbp(c.perCustomer) + '</a>'; }).join(' · ');
+          var refs = (l.cases || []).map(function (c) { return esc(c.name) + ' ' + gbp(c.perCustomer); }).join(' · ');
           return '<div class="sw-cost-l"><span>' + esc(l.label) + (l.assumption ? ' <span class="sw-src">Assumption</span>' : '') + '<div class="sw-note">' + esc(l.basis) + '</div>' + (refs ? '<div class="sw-note">Per customer: ' + refs + '</div>' : '') + '</span><b>' + gbpK(l.amount) + '</b></div>';
         }).join('') +
         '<div class="sw-note" style="margin-top:6px">Worked out from ' + (m.source === 'campaign' ? 'the figures you gave for this campaign' : 'your usual campaign figures') + '. Never added to regulatory exposure.</div>';
@@ -928,7 +928,7 @@
       h += '<div class="sw-hs">Add this campaign’s figures to see what it could cost ' + (m.category === 'ASA' ? 'if the ad had to be withdrawn' : 'if customers had to be refunded') + '.</div>';
     }
     var pr = m.publicRecord;
-    if (pr) h += '<div class="sw-cost-l"><span>Reputation<div class="sw-note">' + esc(pr.text) + (pr.example ? ' For example: <a class="sw-link" href="' + esc(pr.example.url) + '" target="_blank" rel="noopener">' + esc(pr.example.name) + '</a>.' : '') + ' No £ figure: nothing published supports one.</div></span><b>Public</b></div>';
+    if (pr) h += '<div class="sw-cost-l"><span>Reputation<div class="sw-note">' + esc(pr.text) + (pr.example ? ' For example: ' + esc(pr.example.name) + '.' : '') + ' No £ figure: nothing published supports one.</div></span><b>Public</b></div>';
     h += '<div class="sw-tf"><label for="sw-c-bud">Campaign budget (£)</label><input id="sw-c-bud" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignBudget || m.budget || '') + '" placeholder="Media and creative, e.g. 8000"></div>' +
       '<div class="sw-tf"><label for="sw-c-rev">Expected sales from the campaign (£)</label><input id="sw-c-rev" type="number" min="1" inputmode="numeric" value="' + esc(ci.campaignRevenue || m.revenue || '') + '" placeholder="e.g. 40000"></div>' +
       (m.category === 'CMA' ? '<div class="sw-tf"><label for="sw-c-aov">Average order value (£)</label><input id="sw-c-aov" type="number" min="1" inputmode="numeric" value="' + esc(ci.averageOrderValue || m.averageOrderValue || '') + '" placeholder="e.g. 60"></div>' : '') +

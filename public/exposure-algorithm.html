@@ -381,7 +381,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
     var cs = M.cases.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); })
       .filter(function (c) { return !q || [c.name, c.summary, c.regulator, (c.types || []).map(nice).join(' ')].join(' ').toLowerCase().indexOf(q) >= 0; });
     set('cases', cs.slice(0, caseLimit).map(function (c) {
-      return '<div class="case"><div class="case-f">' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || 'Published ruling')) + '</div><div class="case-n">' + esc(c.name) + '</div><div class="case-s">' + esc(c.summary) + '</div><div class="case-m">' + esc(c.regulator) + ', ' + esc(c.date) + (c.url ? '. <a href="' + esc(c.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</div></div>';
+      return '<div class="case"><div class="case-f">' + (c.penalty ? gbp(c.penalty) : esc(c.outcome || 'Published ruling')) + '</div><div class="case-n">' + esc(c.name) + '</div><div class="case-s">' + esc(c.summary) + '</div><div class="case-m">' + esc(c.regulator) + ', ' + esc(c.date) + '</div></div>';
     }).join('') || '<p>No cases match that search.</p>');
     var more = document.getElementById('caseMore');
     more.hidden = cs.length <= caseLimit;

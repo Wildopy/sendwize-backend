@@ -18,6 +18,7 @@
 import crypto from 'crypto';
 import { claudeFetch, parseJson } from './_claude.js';
 import { SYSTEM_PROMPT, ANALYSIS_SCHEMA, CHANNEL_RULES } from './analyze-copy.js';
+import { copyFacts, factsBlock, reviewFindings } from './_copy-review.js';
 import { requireAuth } from './_auth.js';
 import { atFetch } from './_airtable.js';
 
@@ -167,6 +168,7 @@ export default async function handler(req, res) {
 
   const sub = ch === 'email' && typeof subject === 'string' ? subject.trim().slice(0, 300) : '';
   const copyText = sub ? `Subject: ${sub}\n\nEmail body:\n${text}` : text;
+  const facts = copyFacts(ch, copyText);
 
   try {
     const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
@@ -174,7 +176,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         max_tokens: 4000,
         system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: `${CHANNEL_RULES[ch]}\n\nCONTENT TO ANALYSE:\n${copyText}\n\nDo not include a fixedVersion.` }],
+        messages: [{ role: 'user', content: `${CHANNEL_RULES[ch]}\n\nCONTENT TO ANALYSE:\n${factsBlock(facts)}\n\n[COPY TO ANALYSE]\n${copyText}\n\nDo not include a fixedVersion.` }],
       }),
     }, { effort: 'medium', schema: ANALYSIS_SCHEMA, cacheSystem: true });
     if (!r.ok) return res.status(502).json({ error: 'The check could not run. Please try again.' });
@@ -182,9 +184,11 @@ export default async function handler(req, res) {
     const a = parseJson((await r.json()).content?.[0]?.text);
     if (!a || !Array.isArray(a.violations)) return res.status(502).json({ error: 'The check could not run. Please try again.' });
 
-    const items = a.violations.map(v => ({ severity: sev(v.severity), regulation: v.regulation || '', issue: v.issue || '' }));
-    const hold = items.filter(i => i.severity === 'critical');
-    const fix = items.filter(i => i.severity === 'high' || i.severity === 'medium');
+    // The same house rules as the member check (_copy-review.js), so both give the same answer
+    const items = reviewFindings(a.violations, facts, { contentKind: a.content_kind || 'marketing' })
+      .map(v => ({ severity: sev(v.severity), regulation: v.regulation || '', issue: v.issue || '', evidence: !!v.requiresEvidence }));
+    const hold = items.filter(i => i.severity === 'critical' && !i.evidence);
+    const fix = items.filter(i => !hold.includes(i) && i.severity !== 'low');
     const verdict = hold.length ? 'hold' : fix.length ? 'fix_first' : 'go';
     // Only the first few words of the most serious issue; the rest is in the paid report.
     const first = [...hold, ...fix][0];

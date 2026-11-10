@@ -787,8 +787,9 @@
       var evidenceCount = violations.filter(function(v) { return v.requiresEvidence; }).length;
       var noteparts = [];
       if (changedCount > 0) noteparts.push(changedCount + ' potential area' + (changedCount !== 1 ? 's' : '') + ' addressed in the rewrite');
-      if (evidenceCount > 0) noteparts.push(evidenceCount + ' evidence item' + (evidenceCount !== 1 ? 's' : '') + ' marked [EVIDENCE REQUIRED] for you to resolve');
-      document.getElementById('rewriteNote').textContent = noteparts.length ? noteparts.join(' \u00b7 ') + '. Brand voice preserved.' : 'Brand voice and energy preserved.';
+      if (evidenceCount > 0) noteparts.push(evidenceCount + ' evidence item' + (evidenceCount !== 1 ? 's' : '') + ' below for you to confirm');
+      var checkNote = fixed.indexOf('[check:') >= 0 ? ' Anything shown as [check: \u2026] is not in your original: keep it only if it is true, or remove it. Fill in any other [brackets] before sending.' : (/\[[^\]]+\]/.test(fixed) ? ' Fill in the [brackets] before sending.' : '');
+      document.getElementById('rewriteNote').textContent = (noteparts.length ? noteparts.join(' \u00b7 ') + '. Brand voice preserved.' : 'Brand voice and energy preserved.') + checkNote;
     } else {
       panel.classList.remove('show');
     }
@@ -823,7 +824,7 @@
           '<div class="violation-text">' + escH(v.issue || '') + '</div>' +
           (v.location ? '<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">&#x1F4CD; ' + escH(v.location) + '</div>' : '') +
           (v.recommendation ? '<div class="violation-quote">Fix: ' + escH(v.recommendation) + '</div>' : '') +
-          (v.enforcement_note ? '<div class="violation-enforcement">&#x1F4CB; ' + escH(v.enforcement_note) + (/^https:\/\/(www\.)?(ico\.org\.uk|asa\.org\.uk|gov\.uk)\//.test(v.enforcement_url || '') ? ' <a href="' + escH(v.enforcement_url) + '" target="_blank" rel="noopener">Read the case</a>' : '') + '</div>' : '') +
+          (v.enforcement_note ? '<div class="violation-enforcement">&#x1F4CB; ' + escH(v.enforcement_note) + '</div>' : '') +
           '</div>';
       }).join('');
 
