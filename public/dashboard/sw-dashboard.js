@@ -83,6 +83,8 @@
   function likely(ml, lo, hi) { return ml ? 'About ' + gbpK(ml) : range(lo, hi); }
   var CONF = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' };
   function confChip(c) { return c ? '<span class="sw-conf ' + esc(c) + '">' + esc(CONF[c] || c) + '</span>' : ''; }
+  // A finding's text without the "AI Checker:" tool prefix the fix records carry
+  function desc(f) { return String((f && f.description) || '').replace(/^(AI Checker|Sending Context)\s*:\s*/i, ''); }
   function date(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function nice(s) { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
   function $(sel, el) { return (el || root).querySelector(sel); }
@@ -531,11 +533,14 @@
 
   // Top three open findings by value for the time they take
   function startHere() {
-    var top = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); }).slice(0, 3);
+    // Best value first, but one of each kind: three "Fake urgency" rows tell you less than three different fixes
+    var ranked = (D.fixes.pending || []).slice().sort(function (a, b) { return valueForTime(b) - valueForTime(a); });
+    var kinds = {}, top = ranked.filter(function (f) { if (kinds[f.fixType]) return false; kinds[f.fixType] = 1; return true; }).slice(0, 3);
+    if (top.length < 3) top = top.concat(ranked.filter(function (f) { return top.indexOf(f) < 0; }).slice(0, 3 - top.length));
     var body = top.length ? top.map(function (f, i) {
       var r = removes(f);
       return '<div class="sw-nx sw-row-btn" data-act="next" data-id="' + esc(f.id) + '" role="button" tabindex="0"><span class="sw-step-n">' + (i + 1) + '</span>' +
-        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(f.description) + '</div></div>' +
+        '<div class="sw-nx-main"><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s sw-nx-d">' + esc(desc(f)) + '</div></div>' +
         effortChip(f) + '<span class="sw-nx-v">' + (pts(f) ? '<b>+' + pts(f) + ' pts</b>' : '') + (r >= 1000 ? '<small>−' + gbpK(r) + ' risk</small>' : '') + '</span><span class="sw-btn o">Fix it</span></div>';
     }).join('') : '<div class="sw-empty">Nothing open. <button class="sw-link" data-act="tool" data-u="/ai-checker.html">Check your next campaign</button> before it goes out.</div>';
     var more = (D.fixes.pending || []).length - top.length;
@@ -646,7 +651,7 @@
       '<div class="sw-vs"><div class="sw-vs-col them"><div class="sw-lbl">Them</div><div class="sw-row-t">' + esc(c.name) + '</div><div class="sw-twin-out">' + outcome(c) + '</div><div class="sw-hs">' + esc(c.summary) + '</div>' + (c.action ? '<div class="sw-hs"><b>What they had to change:</b> ' + esc(c.action) + '</div>' : '') +
         '<div class="sw-note">' + esc(c.regulator) + ', ' + esc(monthYear(c.date)) + '</div></div>' +
       '<div class="sw-vs-mid" aria-hidden="true">vs</div>' +
-      '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(f.description) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
+      '<div class="sw-vs-col you"><div class="sw-lbl">You</div><div class="sw-row-t">' + esc(nice(f.fixType)) + '</div><div class="sw-hs">' + esc(desc(f)) + '</div>' + (you.length ? '<div class="sw-note" style="margin-top:6px">' + you.map(esc).join('<br>') + '</div>' : '') + '</div></div>' +
       stakes(c, f) +
       '<div class="sw-dr-sec"><div class="sw-lbl">Why they match</div><div class="sw-chips">' + tw.t.reasons.map(function (r) { return '<span class="sw-chip">' + esc(r) + '</span>'; }).join('') + '</div></div>' +
       '<div class="sw-dr-sec"><div class="sw-lbl">What you have already done differently</div>' + (done.length ? done.map(function (x) {
@@ -716,7 +721,7 @@
     var head = '<div class="sw-fx-head" data-act="expand" role="button" tabindex="0" aria-expanded="' + open + '">' +
       (st.whatif ? '<label class="sw-pick" data-act="noop"><input type="checkbox" data-pick="' + esc(f.id) + '"' + (st.picked[f.id] ? ' checked' : '') + ' aria-label="Include in what-if"></label>' : '') +
       '<span class="sw-dot dot-' + esc(f.severity || 'medium') + '"></span><div class="sw-fx-body">' +
-      (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(f.description) + '">' + esc(f.description) + '</div>') +
+      (open ? '<div class="sw-fx-type">' + esc(nice(f.fixType)) + '</div>' : '<div class="sw-fx-desc one" title="' + esc(desc(f)) + '">' + esc(desc(f)) + '</div>') +
       '<div class="sw-chips">' + effortChip(f) + (tw ? '<span class="sw-chip twin">Twin: ' + esc(tw.c.name.split(' (')[0]) + (tw.c.penalty ? ', ' + gbpK(tw.c.penalty) : f.exposure && f.exposure.marketingCost && f.exposure.marketingCost.available ? ', ~' + gbpK(f.exposure.marketingCost.mostLikely) + ' to you' : ', ' + esc(tw.c.regulator) + ' ruling') + '</span>' : '') + (f.improvedOnRerun ? '<span class="sw-chip good">Improved on re-run</span>' : '') + '</div></div>' +
       valueChip(f) +
       (open || st.whatif ? '' : '<span class="sw-fx-quick"><button class="sw-btn o" data-act="quickfix" title="Open it with the fix written for you">Fix it</button><button class="sw-btn ok" data-act="done" data-src="' + (f.improvedOnRerun ? 'improved_on_rerun' : 'manual') + '" title="Mark fixed" aria-label="Mark fixed">✓</button></span>') +
@@ -729,7 +734,7 @@
       : d && d.loading ? '<div class="sw-draft"><div class="sw-ld"><div class="sw-spin"></div>Writing the fix…</div></div>'
       : '<div class="sw-draft empty"><div><div class="sw-row-t">Want the fix written for you?</div><div class="sw-row-s">Steps plus text you can paste straight into your email, form or page.</div></div><button class="sw-btn g" data-act="draft">Write the fix for me</button></div>';
     return '<div class="sw-fx open" data-id="' + esc(f.id) + '">' + head + '<div class="sw-fx-more">' +
-      '<div class="sw-fx-desc">' + esc(f.description) + '</div>' +
+      '<div class="sw-fx-desc">' + esc(desc(f)) + '</div>' +
       '<div class="sw-fx-meta">' + (f.tool ? '<span class="sw-fx-tool">' + esc(f.tool) + '</span> · ' : '') + esc(nice(f.severity)) + (f.createdDate ? ' · found ' + esc(date(f.createdDate)) : '') + '</div>' +
       (f.improvedOnRerun ? '<div class="sw-improved">A re-run shows this has improved. Confirm to get full credit.</div>' : '') + expLine(f) +
       (tw ? '<div class="sw-twin-mini"><span><b>Case Twin:</b> ' + esc(tw.c.name) + ' · ' + outcome(tw.c) + ' · ' + tw.t.match + '% match</span><button class="sw-link" data-act="twin">Side by side</button></div>' : '') +
@@ -874,7 +879,7 @@
 
   function drawWhy(x) {
     var e = x.exposure || {}, f = x.fix || {};
-    var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Why this number?</div><div class="sw-h2">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(f.description) + '</div></div>';
+    var h = '<button class="sw-dr-x" data-act="close" aria-label="Close">✕</button><div class="sw-dr-h"><div class="sw-lbl">Why this number?</div><div class="sw-h2">' + esc(nice(f.fixType)) + '</div><div class="sw-row-s">' + esc(desc(f)) + '</div></div>';
     if (e.category === 'ICO' && e.realisticHigh) {
       var span = (e.frameHigh - e.frameLow) || 1;
       var l = ((e.realisticLow - e.frameLow) / span) * 100, w = ((e.realisticHigh - e.realisticLow) / span) * 100;
