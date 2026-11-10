@@ -70,6 +70,7 @@ export function factsBlock(f) {
 // checks, or a missing field). Only used when issue_type is absent.
 export function guessIssue(v) {
   const s = `${v.issue || ''} ${v.regulation || ''} ${v.recommendation || ''}`.toLowerCase();
+  if (/offen[cs]|swear|profan|obscen|harm and offence|cap 4\.1/.test(s)) return 'harm_offence';
   if (/sender|reg\s*23|identif(y|ies) (the )?(sender|business)|postal address|registered address/.test(s)) return /disguis|conceal|hide|hidden/.test(s) ? 'sender_hidden' : 'sender_details';
   if (/unsubscribe|opt.out|\bstop\b/.test(s)) return 'opt_out_missing';
   if (/partners?"|third.party|purchased|bought/.test(s)) return 'third_party_consent';

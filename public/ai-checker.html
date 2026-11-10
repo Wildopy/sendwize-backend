@@ -824,7 +824,7 @@
           '<div class="violation-text">' + escH(v.issue || '') + '</div>' +
           (v.location ? '<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">&#x1F4CD; ' + escH(v.location) + '</div>' : '') +
           (v.recommendation ? '<div class="violation-quote">Fix: ' + escH(v.recommendation) + '</div>' : '') +
-          (v.enforcement_note ? '<div class="violation-enforcement">&#x1F4CB; ' + escH(v.enforcement_note) + (/^https:\/\/(www\.)?(ico\.org\.uk|asa\.org\.uk|gov\.uk)\//.test(v.enforcement_url || '') ? ' <a href="' + escH(v.enforcement_url) + '" target="_blank" rel="noopener">Read the case</a>' : '') + '</div>' : '') +
+          (v.enforcement_note ? '<div class="violation-enforcement">&#x1F4CB; ' + escH(v.enforcement_note) + '</div>' : '') +
           '</div>';
       }).join('');
 

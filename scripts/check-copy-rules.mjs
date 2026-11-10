@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { copyFacts, reviewFindings, copyScore, markNewFigures } from '../api/_copy-review.js';
-import { caseForIssue } from '../api/_exposure.js';
+import { caseForIssue, closestCases } from '../api/_exposure.js';
 import { issueOf } from '../api/_copy-issues.js';
 import { sendCall } from '../api/_send-call.js';
 
@@ -121,5 +121,16 @@ for (const [id, issue, text, want] of CASE_TESTS) {
   if (want === null && c) { failures++; console.log('FAIL   expected no case'); }
   if (want === 'any' && !c) { failures++; console.log('FAIL   expected a case'); }
 }
+console.log('\n── "Why this number?" cases ──');
+check('Only same-issue cases behind a stock claim', () => {
+  const cs = closestCases('fake_scarcity', null, { text: "'Only 2 left in stock' claim" });
+  assert.ok(cs.length && cs.every(c => !/HelloFresh/.test(c.name)));
+});
+check('No case rather than a loose one for a missing unsubscribe link', () => {
+  assert.equal(closestCases('missing_unsubscribe', null, { text: 'No unsubscribe link in this email' }).length, 0);
+});
+check('Partner consent shows partner-consent cases', () => {
+  assert.ok(closestCases('third_party_list', null, { text: "Consent given to 'our partners', not you by name" }).every(c => c.regulator === 'ICO'));
+});
 console.log(failures ? `\n${failures} failed` : '\nAll checks passed');
 process.exit(failures ? 1 : 0);
