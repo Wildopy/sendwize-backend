@@ -33,6 +33,8 @@
 import { IMPORTED } from './_case-imports.js';
 
 const ICO = 'https://ico.org.uk';
+import { caseIssues } from './_copy-issues.js';
+
 const ASA = 'https://www.asa.org.uk/rulings/';
 const CMA = 'https://www.gov.uk';
 
@@ -265,7 +267,7 @@ export const sectorOf = text => (SECTOR_WORDS.find(([, re]) => re.test(String(te
 const VOLUME = /\b(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(million|m)?\s+(?:[a-z-]+\s+){0,4}?(calls|texts|text messages|messages|e-?mails|sms|communications)\b/gi;
 export const volumeOf = text => Math.max(0, ...[...String(text || '').matchAll(VOLUME)].map(m => Math.round(Number(m[1].replace(/,/g, '')) * (m[2] ? 1e6 : 1)))) || null;
 
-const withSubjects = c => ({ ...c, subjects: subjectsOf(c.summary), channels: channelsOf(`${c.media || ''} ${c.summary || ''}`),
+const withSubjects = c => ({ ...c, subjects: subjectsOf(c.summary), channels: channelsOf(`${c.media || ''} ${c.summary || ''}`), issues: caseIssues(c),
   ...(c.imported ? { sector: c.sector || sectorOf(c.summary), volume: c.volume || volumeOf(c.summary) } : {}) });
 export const CASES = [...CURATED.map(c => ({ ...c, curated: true })), ...IMPORTED.map(c => ({ ...c, imported: true, ...(c.noPage ? { sourceUrl: c.url, url: null } : {}) }))].map(withSubjects);
 

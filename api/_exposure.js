@@ -598,6 +598,26 @@ export function closestCases(fixType, volume, ctx = {}) {
     .map(({ c, rel }) => ({ id: c.id, name: c.name, regulator: c.regulator, date: c.date, penalty: c.penalty, outcome: caseOutcome(c), summary: c.summary, action: c.action || null, url: c.url || (c.imported ? null : ICO_ACTION_URL), related: rel === 1 }));
 }
 
+// The published case for one copy finding (_copy-issues.js). Only a case
+// tagged with the same specific issue qualifies; among those, the one
+// sharing the finding's subject (green, health, price...), distinctive
+// words and channel, with fines before rulings and newer before older.
+// Returns null rather than a loose match: no case beats a wrong one.
+export function caseForIssue(issue, ctx = {}) {
+  const words = wordsOf(ctx.text), subjects = subjectsOf(ctx.text);
+  const channels = ctx.channel ? [ctx.channel] : channelsOf(ctx.text);
+  const pool = CASE_ANCHORS.filter(c => (c.issues || []).includes(issue));
+  if (!pool.length) return null;
+  const best = pool
+    .map(c => ({ c, d: -2 * sharedSubjects(c, subjects) - sharedWords(c, words)
+      + (channels.length && !(c.channels || []).some(ch => channels.includes(ch)) ? 0.5 : 0)
+      + 0.25 * Math.max(0, (c.issues || []).length - 1)
+      + (c.penalty ? 0 : 0.5) }))
+    .sort((a, b) => a.d - b.d || String(b.c.date).localeCompare(String(a.c.date)))[0].c;
+  return { id: best.id, name: best.name, regulator: best.regulator, date: best.date, penalty: best.penalty, outcome: caseOutcome(best),
+    summary: best.summary, action: best.action || null, url: best.url || (best.imported ? null : ICO_ACTION_URL) };
+}
+
 // ── Profile inputs that sharpen the figures (all optional) ──
 const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
 const yesNo = v => (v === 'Yes' || v === true) ? true : (v === 'No' || v === false) ? false : null;
