@@ -1,5 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — _cases.js v1.1
+// SENDWIZE — _cases.js v1.2
+// v1.2: no twin whose fine shows a far bigger business than the member's
+// (a £600k shop is no longer set beside Wayfair's £4.8M CMA fine).
 // v1.1: twins only when close (TWIN_MIN, audience within 100x, no
 // low-severity findings), so distant cases don't alarm anyone.
 // Case Twin: each open finding is set beside the real published case
@@ -131,6 +133,12 @@ export function matchCase(fix, c, ctx = {}) {
   const v = Number(fix.contactVolume) || Number(ctx.listSize) || null;
   const gap = v && c.volume ? Math.abs(Math.log10(c.volume) - Math.log10(v)) : null;
   if (gap != null && gap > 2) return null;
+  // Business size: a fine far beyond what the member's turnover could draw
+  // means a far bigger company, so it isn't a twin. The CMA can fine at most
+  // 10% of turnover, so a CMA fine above 10% of the member's turnover means
+  // a bigger firm; for other regulators, above half the member's turnover.
+  const turnover = Number(ctx.turnover) || null;
+  if (turnover && c.penalty && c.penalty > turnover * (c.regulator === 'CMA' ? 0.1 : 0.5)) return null;
   const reasons = ['Same issue: ' + niceType(fix.fixType)];
   let score = c.source === 'curated' ? 55 : 48;
   if (c.sector && c.sector === sectorKey(ctx.sector)) { score += 15; reasons.push('Same sector'); }

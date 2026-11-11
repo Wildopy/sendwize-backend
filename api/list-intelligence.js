@@ -1052,36 +1052,93 @@ export default async function handler(req, res) {
       try{const aiRes=await claudeFetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','Content-Type':'application/json'},body:JSON.stringify({max_tokens:400,messages:[{role:'user',content:prompt}]})});if(!aiRes.ok)return res.status(500).json({success:false,error:'Brief generation failed'});const msg=await aiRes.json();return res.json({success:true,brief:msg.content?.[0]?.text||''});}catch(e){return res.status(500).json({success:false,error:'Brief generation failed'});}
     }
 
-    // ── DRAFT RE-CONSENT EMAIL — v1.7 ───────────────────────
+    // ── DRAFT RE-CONSENT EMAIL — v1.8 ───────────────────────
+    // v1.8: never fails the button. If Claude is unavailable (bad key, no
+    // credit, overloaded, model override wrong, refusal, timeout) we return a
+    // vetted template draft instead, flagged source:'template', and log the
+    // real Claude error so it can be found in the Vercel logs.
     if (action === 'draft-reconsent') {
-      if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-      const { listName, sector, recoverableCount, totalContacts } = req.body;
-      const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-      if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'AI not configured' });
+      if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'POST only' });
+      const { listName, sector, recoverableCount, totalContacts } = req.body || {};
       const sectorLabels = { ecommerce: 'an ecommerce / retail brand', finance: 'a financial services company', healthcare: 'a health and wellness brand', agency: 'a B2B services company', other: 'a UK business' };
       const sectorDesc = sectorLabels[sector] || sectorLabels.other;
-      const claudeRes = await claudeFetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          max_tokens: 600,
-          system: `You write re-consent / re-permission emails for UK email marketers. The email must:\n- Be PECR compliant — the recipient must be able to clearly opt in or opt out\n- Not use fake urgency, countdown timers, or misleading claims (DMCCA 2024)\n- Not use guilt, pressure, or dark patterns\n- Be honest about why they are receiving the email\n- Include a clear "Yes, keep me subscribed" call to action\n- Include a clear unsubscribe option\n- Be under 120 words in the body\n- Match the tone of ${sectorDesc}\n- Not include HTML tags — plain text only\n\nReturn ONLY a JSON object with two fields, no markdown:\n{"subject":"...","body":"..."}`,
-          messages: [{ role: 'user', content: `Write a re-consent email for "${listName || 'our list'}". ${recoverableCount || 0} contacts have declining consent and will cross the PECR threshold within 90 days. Total list size: ${totalContacts || 0}. Sector: ${sector || 'ecommerce'}.` }],
-        }),
+      const template = {
+        subject: 'Quick check \u2014 do you still want to hear from us?',
+        body: 'Hi,\n\nYou signed up to hear from us a while ago, and we haven\u2019t heard from you in some time. We only want to email people who still find our emails useful.\n\nIf you\u2019d like to keep hearing from us, just click below:\n\n[Yes, keep me subscribed]\n\nIf not, there\u2019s nothing you need to do. We\u2019ll stop emailing you, and you can also unsubscribe at any time using the link at the bottom of this email.\n\nThanks for being with us.',
+      };
+      const fallback = (reason) => res.status(200).json({
+        success: true, source: 'template', reason,
+        notice: 'Our AI writer is unavailable right now, so here is a ready-made re-consent email you can use instead. Try Regenerate in a minute for a tailored version.',
+        ...template,
       });
-      if (!claudeRes.ok) return res.status(500).json({ success: false, error: 'AI generation failed' });
+
+      if (!process.env.ANTHROPIC_API_KEY) {
+        console.error('draft-reconsent: ANTHROPIC_API_KEY is not set');
+        return fallback('not_configured');
+      }
+
+      const request = {
+        method: 'POST',
+        body: JSON.stringify({
+          max_tokens: 800,
+          system: `You write re-consent / re-permission emails for UK email marketers. The email must:\n- Let the recipient clearly opt in or opt out (PECR)\n- Not use fake urgency, countdown timers, or misleading claims (DMCCA 2024)\n- Not use guilt, pressure, or dark patterns\n- Be honest about why they are receiving the email\n- Include a clear "Yes, keep me subscribed" call to action\n- Include a clear unsubscribe option\n- Be under 120 words in the body\n- Match the tone of ${sectorDesc}\n- Be plain text only, no HTML tags\n\nReturn a JSON object with "subject" and "body".`,
+          messages: [{ role: 'user', content: `Write a re-consent email for the list "${String(listName || 'our list').slice(0, 120)}". ${Number(recoverableCount) || 0} contacts have declining consent and will cross the PECR threshold within 90 days. Total list size: ${Number(totalContacts) || 0}. Sector: ${sector || 'ecommerce'}.` }],
+        }),
+      };
+      const schema = {
+        type: 'object',
+        properties: { subject: { type: 'string' }, body: { type: 'string' } },
+        required: ['subject', 'body'],
+        additionalProperties: false,
+      };
+
+      let claudeRes = null;
+      let errInfo = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          claudeRes = await claudeFetch('https://api.anthropic.com/v1/messages', request, { schema });
+        } catch (e) {
+          claudeRes = null;
+          errInfo = { status: 0, type: 'network', message: e.message };
+        }
+        if (claudeRes?.ok) break;
+        if (claudeRes) {
+          const data = await claudeRes.json().catch(() => ({}));
+          errInfo = { status: claudeRes.status, type: data?.error?.type || 'unknown', message: data?.error?.message || '' };
+        }
+        // Only retry what can succeed on a second try: rate limit, overload, server errors, network.
+        const retryable = !errInfo || errInfo.status === 0 || errInfo.status === 429 || errInfo.status >= 500;
+        if (!retryable) break;
+        if (attempt === 0) await new Promise(r => setTimeout(r, 1200));
+      }
+
+      if (!claudeRes?.ok) {
+        console.error('draft-reconsent: Claude call failed', JSON.stringify(errInfo));
+        const s = errInfo?.status;
+        const reason = s === 401 || s === 403 ? 'auth'
+          : s === 404 || (s === 400 && /model/i.test(errInfo?.message || '')) ? 'model'
+          : s === 400 && /credit|billing/i.test(errInfo?.message || '') ? 'billing'
+          : s === 422 ? 'refusal'
+          : s === 429 ? 'rate_limit'
+          : s === 529 || s === 503 ? 'overloaded'
+          : s === 0 ? 'network'
+          : 'api_error';
+        return fallback(reason);
+      }
+
       const result = await claudeRes.json();
       const text = result.content?.[0]?.text || '';
-      const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      let parsed;
+      let parsed = null;
       try {
+        const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         const match = cleaned.match(/\{[\s\S]*\}/);
         parsed = JSON.parse(match ? match[0] : cleaned);
-      } catch (e) {
-        const subMatch = text.match(/subject[:\s]*(.+?)[\n\r]/i);
-        parsed = { subject: subMatch ? subMatch[1].trim() : 'Quick check \u2014 do you still want to hear from us?', body: text.replace(/^subject[:\s]*.+?[\n\r]/i, '').replace(/^\{[\s\S]*\}$/, '').trim() || 'We noticed it\u2019s been a while since you engaged with our emails. We want to make sure we\u2019re only sending to people who want to hear from us.\n\nIf you\u2019d like to keep receiving our emails, click the link below:\n\n[Yes, keep me subscribed]\n\nIf not, no problem \u2014 you can unsubscribe at any time using the link at the bottom of this email.' };
+      } catch (e) { parsed = null; }
+      if (!parsed?.subject || !parsed?.body) {
+        console.error('draft-reconsent: unreadable Claude reply', text.slice(0, 300));
+        return fallback('unreadable_reply');
       }
-      return res.status(200).json({ success: true, subject: parsed.subject || 'Do you still want to hear from us?', body: parsed.body || '' });
+      return res.status(200).json({ success: true, source: 'ai', subject: String(parsed.subject).trim(), body: String(parsed.body).trim() });
     }
 
     return res.status(400).json({ error: `Unknown action: ${action}` });

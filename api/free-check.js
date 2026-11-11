@@ -134,22 +134,22 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   if (process.env.SENDWIZE_FREE_CHECK !== 'true' || !process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return res.status(503).json({ error: 'The free check is paused right now. Create an account to check your copy.', code: 'free_check_off' });
+    return res.status(503).json({ error: 'The preview check is paused right now. Create an account to check your copy.', code: 'free_check_off' });
   }
 
   const { copy, subject, channel, email } = req.body ?? {};
   const mail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-  if (!EMAIL_RE.test(mail)) return res.status(400).json({ error: 'Enter your work email to run the free check.' });
+  if (!EMAIL_RE.test(mail)) return res.status(400).json({ error: 'Enter your work email to run the check.' });
   const ch = CHANNELS.includes(channel) ? channel : 'email';
   const text = typeof copy === 'string' ? copy.trim() : '';
   if (text.length < 20) return res.status(400).json({ error: 'Paste the full message, at least a sentence or two.' });
-  if (text.length > MAX_COPY) return res.status(400).json({ error: `Keep it under ${MAX_COPY.toLocaleString('en-GB')} characters for the free check.` });
+  if (text.length > MAX_COPY) return res.status(400).json({ error: `Keep it under ${MAX_COPY.toLocaleString('en-GB')} characters for the preview check.` });
 
   const day = new Date().toISOString().slice(0, 10);
   try {
     if (await bump(`sw:free:email:${hash(mail)}:${day}`) > cap('SENDWIZE_FREE_CHECK_PER_EMAIL', 1)
       || await bump(`sw:free:ip:${hash(clientIp(req))}:${day}`) > cap('SENDWIZE_FREE_CHECK_PER_IP', 1)) {
-      return res.status(429).json({ error: "You've used today's free check. Create an account to see the full report and keep checking.", code: 'visitor_limit' });
+      return res.status(429).json({ error: "You've used today's preview check. Create an account to see the full report and keep checking.", code: 'visitor_limit' });
     }
     const total = await bump(`sw:free:all:${day}`);
     const daily = cap('SENDWIZE_FREE_CHECK_DAILY', 30);
@@ -158,15 +158,16 @@ export default async function handler(req, res) {
         `<p>All ${daily} free checks for today have been used. Visitors now see "busy today" and a sign-up link until midnight UTC.</p><p>Tomorrow morning's report shows who used them. If it looks like real demand, raise SENDWIZE_FREE_CHECK_DAILY in Vercel. If it looks like one person, the cap has already stopped them, and it is the most the check can cost you in a day.</p>`);
     }
     if (total > daily) {
-      return res.status(429).json({ error: 'The free check is busy today. Create an account to check now, or try again tomorrow.', code: 'daily_limit' });
+      return res.status(429).json({ error: 'The preview check is busy today. Create an account to check now, or try again tomorrow.', code: 'daily_limit' });
     }
   } catch (e) {
     console.error('[free-check] limiter unavailable:', e.message);
-    return res.status(503).json({ error: 'The free check is not available right now.', code: 'limiter_down' });
+    return res.status(503).json({ error: 'The preview check is not available right now.', code: 'limiter_down' });
   }
 
   const sub = ch === 'email' && typeof subject === 'string' ? subject.trim().slice(0, 300) : '';
   const copyText = sub ? `Subject: ${sub}\n\nEmail body:\n${text}` : text;
+  const facts = copyFacts(ch, copyText);
 
   try {
     const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
@@ -174,7 +175,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         max_tokens: 4000,
         system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: `${CHANNEL_RULES[ch]}\n\nCONTENT TO ANALYSE:\n${copyText}\n\nDo not include a fixedVersion.` }],
+        messages: [{ role: 'user', content: `${CHANNEL_RULES[ch]}\n\nCONTENT TO ANALYSE:\n${factsBlock(facts)}\n\n[COPY TO ANALYSE]\n${copyText}\n\nDo not include a fixedVersion.` }],
       }),
     }, { effort: 'medium', schema: ANALYSIS_SCHEMA, cacheSystem: true });
     if (!r.ok) return res.status(502).json({ error: 'The check could not run. Please try again.' });
@@ -182,9 +183,11 @@ export default async function handler(req, res) {
     const a = parseJson((await r.json()).content?.[0]?.text);
     if (!a || !Array.isArray(a.violations)) return res.status(502).json({ error: 'The check could not run. Please try again.' });
 
-    const items = a.violations.map(v => ({ severity: sev(v.severity), regulation: v.regulation || '', issue: v.issue || '' }));
-    const hold = items.filter(i => i.severity === 'critical');
-    const fix = items.filter(i => i.severity === 'high' || i.severity === 'medium');
+    // The same house rules as the member check (_copy-review.js), so both give the same answer
+    const items = reviewFindings(a.violations, facts, { contentKind: a.content_kind || 'marketing' })
+      .map(v => ({ severity: sev(v.severity), regulation: v.regulation || '', issue: v.issue || '', evidence: !!v.requiresEvidence }));
+    const hold = items.filter(i => i.severity === 'critical' && !i.evidence);
+    const fix = items.filter(i => !hold.includes(i) && i.severity !== 'low');
     const verdict = hold.length ? 'hold' : fix.length ? 'fix_first' : 'go';
     // Only the first few words of the most serious issue; the rest is in the paid report.
     const first = [...hold, ...fix][0];
