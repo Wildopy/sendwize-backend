@@ -15,6 +15,10 @@
     {
       "path": "/api/free-check?action=report",
       "schedule": "15 7 * * *"
+    },
+    {
+      "path": "/api/guard?action=rollup",
+      "schedule": "15 3 * * *"
     }
   ],
   "functions": {
@@ -57,6 +61,24 @@
     },
     "api/audience-read.js": {
       "maxDuration": 60
+    },
+    "api/guard.js": {
+      "maxDuration": 60
     }
-  }
+  },
+  "headers": [
+    {
+      "source": "/g.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
 }

@@ -80,6 +80,21 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .muted{color:var(--mu);font-size:12px}
 .note{font-size:12px;color:var(--tm);padding:6px 0}
 .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px;line-height:1.5}
+/* Site guard */
+.gd{border-top:3px solid var(--o)}
+.gd-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.gd-h>div{flex:1;min-width:0}.gd-pill{flex-shrink:0}
+.gd-pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
+.gd-on{background:var(--gb);color:var(--g)}.gd-wait{background:var(--yb);color:var(--y)}.gd-off{background:#f3f4f6;color:#6b7280}
+.gd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0}
+.gd-tile{background:var(--bg);border-radius:8px;padding:12px 14px}.gd-tile b{display:block;font-size:24px;letter-spacing:-.5px;font-variant-numeric:tabular-nums}.gd-tile span{font-size:12px;color:var(--tm)}
+.gd-meter{position:relative;height:8px;border-radius:4px;background:var(--b);margin:10px 0 4px}.gd-meter i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--o)}.gd-meter u{position:absolute;top:-4px;width:2px;height:16px;background:var(--t)}
+.gd-a{border:1px solid var(--b);border-left:3px solid var(--r);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.gd-a.medium{border-left-color:var(--y)}.gd-a.low{border-left-color:var(--mu)}.gd-a.resolved{border-left-color:var(--g);opacity:.85}
+.gd-a-t{font-weight:600;font-size:14px}.gd-a-d{font-size:13px;color:var(--tm);margin-top:4px}.gd-a-m{font-size:11px;color:var(--mu);margin-top:6px}
+.gd-ev{font-size:12px;color:var(--tm);margin-top:6px;padding-left:10px;border-left:2px solid var(--b)}
+.gd-set{display:grid;grid-template-columns:1fr 1fr;gap:10px}.gd-set label{font-size:12px;color:var(--tm);display:flex;flex-direction:column;gap:4px}
+.gd-set input{font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--bm);border-radius:7px;width:100%}
+@media(max-width:600px){.gd-set{grid-template-columns:1fr}}
 @media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.checks{grid-template-columns:1fr}.score{font-size:44px}}
 </style>
 </head>
@@ -140,7 +155,7 @@ function renderOthers(){
   d.innerHTML='<div class="card-t">Your other sites</div>'+others.map(x=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #f0f0f0;font-size:14px"><a href="?userId=${encodeURIComponent(U)}&domain=${encodeURIComponent(x.domain)}">${E(x.domain)}</a><span style="color:#6b7280">${x.siteScore!=null?'Score '+E(x.siteScore)+' · ':''}${x.lastSweptAt?'Last swept '+E(fDT(x.lastSweptAt)):'Not swept yet'}</span></div>`).join('');
   $('app').appendChild(d);
 }
-function render(){renderMain();renderOthers();}
+function render(){renderMain();renderOthers();renderGuard();}
 function renderMain(){
   if(BUSY==='run')return renderRunning();
   if(!S)return renderSetup();
@@ -211,6 +226,66 @@ async function run(){
   catch(e){toast(e.message,'er');}
   finally{BUSY=false;render();}
 }
+
+
+// ── Site guard: always-on monitoring of a verified site ──
+const GAPI='https://sendwize-backend.vercel.app/api/guard';
+let G=null,G_DOMAIN=null,G_BUSY=false;
+async function gPost(action,body){const r=await swFetch(`${GAPI}?action=${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,domain:S.domain,...body})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j.guard;}
+async function loadGuard(force){
+  if(!S||!S.verified)return;
+  if(G&&G_DOMAIN===S.domain&&!force)return;
+  G_DOMAIN=S.domain;
+  try{const r=await swFetch(`${GAPI}?action=get&userId=${encodeURIComponent(U)}&domain=${encodeURIComponent(S.domain)}`);const j=await r.json();G=j.guard||null;}catch(e){G=null;}
+  renderGuard();
+}
+const pct=x=>x==null?'–':Math.round(x*100)+'%';
+const num=n=>Number(n||0).toLocaleString('en-GB');
+function renderGuard(){
+  const old=$('swGuard');if(old)old.remove();
+  if(!S||!S.verified||BUSY==='run'||!$('app'))return;
+  if(!G||G_DOMAIN!==S.domain){loadGuard();return;}
+  const d=document.createElement('div');d.id='swGuard';d.className='card gd view';
+  if(!G.available){d.innerHTML=`<div class="card-t">Site guard</div><div class="card-s" style="margin:0">Always-on monitoring isn't switched on for Sendwize yet. It will appear here when it is.</div>`;placeGuard(d);return;}
+  if(!G.enabled){
+    d.innerHTML=`<div class="gd-h"><div><div class="card-t">Keep watching every page with Site guard</div><div class="card-s" style="margin:0">This sweep checked ${num((S.sweep?.pages||[]).length||0)} pages once. Site guard watches real visits to every page, every day: checkout, account pages, A/B tests. You get an email the day a tag starts firing before consent, a "was" price goes stale or your banner stops working, and fixes close themselves once real visits confirm them.</div></div><span class="gd-pill gd-off">Off</span></div>
+    <div class="gd-grid"><div class="gd-tile"><b>1 line</b><span>of script, like Google Analytics</span></div><div class="gd-tile"><b>No personal data</b><span>No cookies set, no visitor ids, nothing stored on the device</span></div><div class="gd-tile"><b>Consent rate</b><span>See how many visits you can actually measure</span></div></div>
+    <button class="btn btn-o" onclick="gEnable()" ${G_BUSY?'disabled':''}>Turn on Site guard →</button>`;
+    placeGuard(d);return;
+  }
+  const snippet=codeRow(G.snippet||'');
+  if(!G.connected){
+    d.innerHTML=`<div class="gd-h"><div><div class="card-t">Site guard: add one line to ${E(G.domain)}</div><div class="card-s" style="margin:0">Paste this into the &lt;head&gt; of every page, then publish. Webflow: Site settings → Custom code → Head code. Shopify: Online Store → Themes → Edit code → theme.liquid, just before &lt;/head&gt;. Google Tag Manager: a Custom HTML tag on All Pages, set to fire on every page view (not behind consent: it doesn't track anyone).</div></div><span class="gd-pill gd-wait">Waiting</span></div>
+    <div style="margin:14px 0">${snippet}</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn btn-o btn-sm" onclick="loadGuard(true).then(()=>toast(G&&G.connected?'Connected':'No visits reported yet. Open your site in a new tab, then check again.'))">Check connection</button><button class="link" onclick="gDisable()">Turn off</button></div>`;
+    placeGuard(d);return;
+  }
+  const c=G.consent||{},b=G.benchmark;
+  const openA=(G.alerts||[]).filter(a=>a.status==='open'),doneA=(G.alerts||[]).filter(a=>a.status!=='open');
+  const alertHtml=a=>`<div class="gd-a ${E(a.status==='open'?a.severity:'resolved')}"><div class="gd-a-t">${a.status==='open'?'':'✓ '}${E(a.title)}</div><div class="gd-a-d">${E(a.detail)}</div><div class="gd-a-m">${[a.regulator,a.ruleRef,a.pages&&a.pages.length?'Pages: '+a.pages.slice(0,3).join(', '):'','First seen '+fDT(a.firstSeen),a.resolvedAt?'Fixed '+fDT(a.resolvedAt):''].filter(Boolean).map(E).join(' · ')}</div>${(a.events||[]).length>1?`<div class="gd-ev">${a.events.slice(-4).map(e=>E(fDT(e.at)+': '+e.text)).join('<br>')}</div>`:''}</div>`;
+  const today=G.today;
+  const early=(today?.trackersFiringEarly||[]);
+  d.innerHTML=`<div class="gd-h"><div><div class="card-t">Site guard</div><div class="card-s" style="margin:0">Watching real visits to ${E(G.domain)}. Last report ${fDT(G.lastSeen)}. Alerts are worked out each night from the day before.</div></div><span class="gd-pill gd-on">Live</span></div>
+  <div class="gd-grid">
+    <div class="gd-tile"><span>Consent rate, last ${G.days||0} day${G.days===1?'':'s'}</span><b>${pct(c.rate)}</b><div class="gd-meter"><i style="width:${Math.round((c.rate||0)*100)}%"></i>${b?`<u style="left:${Math.round(b.median*100)}%" title="Median"></u>`:''}</div><span>${b?`Median for ${E(b.label)}: ${pct(b.median)} (${b.sites} sites)`:'A comparison appears once 5 similar sites use Site guard'}</span></div>
+    <div class="gd-tile"><span>Page views you couldn't measure</span><b>${num(c.unmeasured)}</b><span>People who rejected cookies or never chose. Your ads and analytics can't see these visits.</span></div>
+    <div class="gd-tile"><span>Today so far</span><b>${num(today?.visits)}</b><span>page views across ${num(today?.pages)} page${today?.pages===1?'':'s'}${early.length?`. Firing early today: ${early.map(t=>E(t.name)).join(', ')}`:''}</span></div>
+  </div>
+  <div class="sec-t" style="margin-top:6px">Open alerts <span class="cnt">${openA.length}</span></div>
+  ${openA.length?openA.map(alertHtml).join(''):'<div class="muted" style="margin-bottom:10px">Nothing needs attention. You\'ll get an email if that changes.</div>'}
+  ${doneA.length?`<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">Fixed and earlier alerts (${doneA.length})</summary><div style="margin-top:10px">${doneA.map(alertHtml).join('')}</div></details>`:''}
+  ${(G.trackers||[]).length?`<div class="sec-t">Tags seen, last ${G.days||0} days <span class="cnt">${G.trackers.length}</span></div><div class="list">${G.trackers.map(t=>`<div class="li"><span>${E(t.name)}</span><span class="muted">${num(t.seen)} page views${t.pre?` · <b style="color:var(--r)">${num(t.pre)} before consent</b>`:' · waits for consent'}</span></div>`).join('')}</div>`:''}
+  <details style="margin-top:16px"><summary class="muted" style="cursor:pointer">Alerts, script and settings</summary><div style="margin-top:12px">
+   <div class="gd-set"><label>Send alerts to (leave blank for your account email)<input id="gEmail" type="email" value="${E(G.notifyEmail)}" placeholder="marketing@yourbrand.co.uk"></label><label>Slack incoming webhook (optional)<input id="gSlack" type="url" placeholder="${G.slackConnected?'Connected. Paste a new one to change it':'https://hooks.slack.com/services/…'}"></label></div>
+   <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn btn-w btn-sm" onclick="gSave()">Save</button><button class="link" onclick="gDisable()">Turn off Site guard</button></div>
+   <div style="margin-top:14px" class="muted">Your script:</div>${snippet}
+  </div></details>`;
+  placeGuard(d);
+}
+function placeGuard(d){const h=$('app').querySelector('.head');if(h&&h.parentNode)h.parentNode.insertBefore(d,h.nextSibling);else $('app').prepend(d);}
+async function gEnable(){G_BUSY=true;renderGuard();try{G=await gPost('enable',{});toast('Site guard is on. Add the line to your site.','ok');}catch(e){toast(e.message,'er');}finally{G_BUSY=false;renderGuard();}}
+async function gDisable(){try{G=await gPost('disable',{});toast('Site guard turned off');renderGuard();}catch(e){toast(e.message,'er');}}
+async function gSave(){const slack=$('gSlack').value.trim();try{G=await gPost('settings',{notifyEmail:$('gEmail').value.trim(),slackWebhook:slack||undefined});toast('Saved','ok');renderGuard();}catch(e){toast(e.message,'er');}}
 
 const CATS=[['cookies','Cookies & tracking'],['privacy','Privacy notice'],['capture','Data capture'],['identity','Business identity'],['reviews','Reviews']];
 const RANK={high:0,medium:1,low:2};
