@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────────
    SENDWIZE: sw-dashboard.js v1.6  (browser)
-   v1.6: tool bar tiles with an icon and what each tool is for, and a
+   v1.6: tool bar tiles with each tool's name and what it's for, and a
      light that runs along the bar on load instead of one orange tile.
      Campaign defence moves to "Before you send"; Site sweep and
      Campaign defence descriptions cover Site guard and Sign-off.
@@ -63,16 +63,6 @@
       { k: 'simulator', l: 'Regulator simulator', u: '/ico-simulator.html',     d: 'Rehearse an ICO, ASA or CMA investigation', s: 'Rehearse an investigation' },
     ] },
   ];
-  // Line icons for the tool bar (24px grid, drawn with currentColor)
-  var TOOL_ICON = {
-    copy: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9.5 14.5l2 2 3.5-4"/>',
-    defence: '<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/>',
-    list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
-    audience: '<path d="M3 20h18"/><path d="M6 20v-6M11 20V8M16 20v-9M21 4l-5 4-5-3-6 5"/>',
-    sweep: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.4 3 14.6 0 18M12 3c-3 3.4-3 14.6 0 18"/>',
-    vendor: '<circle cx="8" cy="8" r="3"/><circle cx="16.5" cy="9" r="2.5"/><path d="M2.5 20c.4-3.3 2.7-5.5 5.5-5.5s5.1 2.2 5.5 5.5M14.5 14.6c.6-.1 1.3-.1 2-.1 2.6 0 4.6 2 5 5.5"/>',
-    simulator: '<path d="M12 4v16M7 20h10M5 7h14"/><path d="M5 7l-2.5 6a2.5 2.5 0 005 0zM19 7l-2.5 6a2.5 2.5 0 005 0z"/>',
-  };
   // Which page re-runs the check that raised a fix (verified fixes get full credit)
   var TOOL_PAGE = {
     'ai checker': '/ai-checker.html', 'ai-checker': '/ai-checker.html', 'copy': '/ai-checker.html',
@@ -299,13 +289,12 @@
   }
 
   function toolsNav() {
-    // One bar, in the order of the groups. Each tile: icon, name, what it's for.
+    // One bar, in the order of the groups. Each tile: name and what it's for.
     // On load a light passes along the bar once (CSS, sw-nt-sweep)
     var i = 0;
     return '<nav class="sw-tools" aria-label="Tools">' + TOOL_GROUPS.map(function (g) {
       return g.tools.map(function (t) {
         return '<button class="sw-nt" style="--i:' + (i++) + '" data-act="tool" data-u="' + esc(t.u) + '" title="' + esc(g.l + ': ' + t.d) + '">' +
-          '<span class="sw-nt-i"><svg viewBox="0 0 24 24" aria-hidden="true">' + (TOOL_ICON[t.k] || '') + '</svg></span>' +
           '<span class="sw-nt-l">' + esc(t.l) + '</span><span class="sw-nt-d">' + esc(t.s || t.d) + '</span></button>';
       }).join('');
     }).join('') + '</nav>';
