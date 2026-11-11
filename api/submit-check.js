@@ -57,6 +57,7 @@ import { claudeFetch } from './_claude.js';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
+import { ISSUES } from './_copy-issues.js';
 import { scanCampaignPages, serialiseScan, describeScan, activePageFindings, fetchPage } from './_page-scan.js';
 
 const APP_URL      = 'https://sendwize-backend.vercel.app';
@@ -544,12 +545,79 @@ ${copyText.slice(0, 4000)}` }],
     const text = data.content?.[0]?.text || '';
     const match = text.match(/\[[\s\S]*\]/);
     if (!match) return [];
-    return JSON.parse(match[0]);
+    return JSON.parse(match[0]).map(c => ({ ...c, ruleRef: claimCite(c) || c.ruleRef || '' }));
   } catch (e) {
     console.error('extractClaims failed (non-fatal):', e);
     return [];
   }
 }
+
+// The rule a claim is shown under comes from the checked list the copy
+// checker uses (_copy-issues.js), not the model, wherever the type is clear
+const CLAIM_ISSUE = { urgency_claim: 'fake_urgency', scarcity_claim: 'scarcity', free_claim: 'free_claim', comparative_claim: 'comparative_claim', testimonial_claim: 'review_claim', environmental_claim: 'green_claim' };
+function claimCite(c) {
+  let issue = CLAIM_ISSUE[c?.claimType];
+  if (c?.claimType === 'pricing_claim') {
+    const t = String(c.claim || '');
+    issue = /\b(was|rrp|save|saving|half price|reduced)\b|% off/i.test(t) ? 'reference_price' : /\b(fee|surcharge|handling|booking|delivery charge)\b/i.test(t) ? 'drip_pricing' : null;
+  }
+  return issue ? ISSUES[issue]?.cite || null : null;
+}
+
+// Copy check channel for a campaign: the first direct channel it runs on
+function copyChannel(channels = []) {
+  if (channels.includes('email')) return 'email';
+  if (channels.includes('sms')) return 'sms';
+  return channels.some(c => ['paid_social', 'influencer', 'affiliate', 'display'].includes(c)) ? 'social' : 'email';
+}
+
+// v5.5: the five evidence modules, filled from what the defence actually
+// holds (the copy check, the linked List health check, the extracted claims,
+// the profile) plus the member's own answers on the assembly form. Before
+// this, only the demo campaign had module fields, so every real defence
+// scored 20/100, read "Weak" and drew a regulator letter whatever it held.
+function buildModuleFields({ answers = {}, aiCheck, claims = [], listSummary, sender, copy = '', channels = [] }) {
+  const a = answers || {}, mf = {};
+  const direct = channels.some(c => ['email', 'sms'].includes(c));
+  const has = t => claims.some(c => c.claimType === t);
+  if (aiCheck) {
+    const n = (aiCheck.issues || []).length;
+    mf.ContentCheck = {
+      aiCheckerRun: `Run on ${new Date().toISOString().slice(0, 10)}: ${aiCheck.verdict || 'checked'}, ${n ? `${n} issue${n === 1 ? '' : 's'} found` : 'no issues found'}`,
+      aiCheckerScore: aiCheck.score != null ? String(aiCheck.score) : '',
+      // A Hold means the copy isn't ready: the module stays Weak until it is rechecked
+      asaReviewed: /hold/i.test(aiCheck.verdict || '') ? '' : 'Yes: Sendwize copy check against the CAP Code',
+      pricingCompliant: has('pricing_claim') ? ((aiCheck.issues || []).some(i => /price|pricing|3\.39|3\.18|s\.226|s\.230/i.test(`${i.regulation} ${i.issue}`)) ? 'Pricing issues found in the copy check' : 'Pricing claims checked, no issues found') : 'Not applicable: no pricing claims',
+      ...(has('urgency_claim') || has('scarcity_claim') ? { urgencyGenuine: a.urgencyGenuine || '' } : { urgencyGenuine: 'No urgency language used' }),
+      ...(claims.length ? { substantiatedClaims: claims.map(c => c.claim).filter(Boolean).slice(0, 8).join('; ') } : {}),
+    };
+  }
+  if (direct) {
+    if (listSummary || a.listSource) mf.ListProvenance = {
+      listSource: a.listSource || '',
+      collectionMech: listSummary ? `List health check ${listSummary.checkDate || ''}: ${listSummary.gateVerdict || 'checked'}` : '',
+      ownership: a.listSource ? (/bought|rented|partner/i.test(a.listSource) ? 'Third party' : 'Own list') : '',
+      ...(listSummary ? { notes: `Linked List health check: ${Number(listSummary.totalContacts || 0).toLocaleString('en-GB')} contacts` } : {}),
+    };
+    if (a.lawfulBasis || a.consentWording) mf.ConsentMechanism = { lawfulBasis: a.lawfulBasis || '', consentWording: a.consentWording || '', dateFrom: a.consentFrom || '' };
+    if (a.suppressionApplied) mf.Suppression = { suppressionApplied: a.suppressionApplied, dateApplied: a.suppressionDate || '', listLastUpdated: listSummary?.checkDate || '',
+      ...(listSummary?.consentHealthScore != null ? { sendwizeCheckScore: String(listSummary.consentHealthScore) } : {}) };
+  }
+  if (channels.includes('email') && (a.fromName || a.fromEmail)) {
+    const co = String(sender?.companyName || '').toLowerCase().replace(/\b(ltd|limited|plc)\b|[^a-z0-9 ]/g, '').trim();
+    const fn = String(a.fromName || '').toLowerCase();
+    mf.SenderIdentity = {
+      fromName: a.fromName || '', fromEmail: a.fromEmail || '',
+      matchesTradingName: co && fn ? (fn.includes(co) || co.includes(fn.replace(/[^a-z0-9 ]/g, '').trim()) ? 'Yes' : 'No') : '',
+      unsubscribePresent: /unsubscribe|opt[ -]?out|manage (your )?preferences/i.test(copy) ? 'Yes' : 'No',
+      ...(/\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/.test(copy) ? { businessAddress: 'Yes: postal address in the copy' } : {}),
+    };
+  }
+  return mf;
+}
+
+// Claim types the enforcement watch follows, from the extracted claims
+const CLAIM_MONITOR = { pricing_claim: ['reference_pricing', 'drip_pricing'], urgency_claim: ['fake_urgency'], scarcity_claim: ['fake_urgency'], free_claim: ['misleading_claim'], health_claim: ['health_claim', 'misleading_claim'], comparative_claim: ['misleading_claim'], guarantee_claim: ['misleading_claim'], environmental_claim: ['misleading_claim'], testimonial_claim: ['misleading_claim'] };
 
 // ── URL snapshot ──────────────────────────────────────────────
 async function snapshotUrl(url) {
@@ -665,7 +733,7 @@ Write the response now.`;
 
 // ── DEFENCE-ASSEMBLE ──────────────────────────────────────────
 async function handleDefenceAssemble(req, res) {
-  const { userId, dossierId, campaignCopy, listName, connectedUrls, campaignTitle, ownerName, channels } = req.body ?? {};
+  const { userId, dossierId, campaignCopy, listName, connectedUrls, campaignTitle, ownerName, channels, answers } = req.body ?? {};
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -698,7 +766,7 @@ async function handleDefenceAssemble(req, res) {
     try {
       const checkRes = await fetch(`${APP_URL}/api/submit-check?action=check`, {
         method: 'POST', headers: internalHeaders(),
-        body: JSON.stringify({ userId, copy: campaignCopy, source: 'Campaign Defence' }),
+        body: JSON.stringify({ userId, copy: campaignCopy, contentType: copyChannel(selectedChannels), source: 'Campaign Defence' }),
       });
       if (checkRes.ok) { aiCheckResult = await checkRes.json(); aiCheckId = aiCheckResult.checkId || null; }
     } catch (e) { console.error('Copy check failed (non-fatal):', e); }
@@ -771,6 +839,11 @@ async function handleDefenceAssemble(req, res) {
     }
   } catch (e) { console.error('Profile lookup failed (non-fatal):', e); }
 
+  // 6b. Evidence modules from what the defence holds and the member's answers
+  const clean = v => String(v ?? '').trim().slice(0, 500);
+  const ans = answers && typeof answers === 'object' ? Object.fromEntries(Object.entries(answers).map(([k, v]) => [k, clean(v)])) : {};
+  const moduleFields = buildModuleFields({ answers: ans, aiCheck: aiCheckResult, claims, listSummary, sender: senderSnapshot, copy: campaignCopy || '', channels: selectedChannels });
+
   // 7. Format URLs
   const urls = (Array.isArray(connectedUrls) ? connectedUrls : [])
     .filter(u => u?.url?.startsWith('http'))
@@ -796,6 +869,8 @@ async function handleDefenceAssemble(req, res) {
     SenderIdentitySnapshot: senderSnapshot ? JSON.stringify(senderSnapshot) : '',
     ListSummarySnapshot: listSummary ? JSON.stringify(listSummary) : '',
     Channels: JSON.stringify(selectedChannels), EvidenceHash: evidenceHash, UpdatedAt: now,
+    ModuleFieldsJson: JSON.stringify(moduleFields),
+    ...Object.fromEntries(DOSSIER_MODULES.filter(k => moduleFields[k]).map(k => [k, serialiseModuleFields(k, moduleFields[k])])),
   };
   if (campaignTitle) patchFields.CampaignTitle = campaignTitle;
   if (ownerName) patchFields.OwnerName = ownerName;
@@ -809,7 +884,8 @@ async function handleDefenceAssemble(req, res) {
   return res.json({
     success: true, dossierId: recordId, defenceStatus: 'building',
     claimsExtracted: claims.length, channels: selectedChannels, evidenceRequirements: evidenceReqs,
-    aiCheckResult: aiCheckResult ? { issueCount: aiCheckResult.issues?.length || 0, score: aiCheckResult.score || null } : null,
+    aiCheckResult: aiCheckResult ? { issueCount: aiCheckResult.issues?.length || 0, score: aiCheckResult.score ?? null, verdict: aiCheckResult.verdict || null } : null,
+    healthScore: calculateHealthScore(moduleFields),
     listSummary, linkedRelationships: linkedRelationships.length, connectedUrls: urls.length, evidenceHash, events,
   });
 }
@@ -927,7 +1003,8 @@ async function handleDefenceApprove(req, res) {
   let moduleFields = {}; try { moduleFields = JSON.parse(f.ModuleFieldsJson || '{}'); } catch {}
   const evidenceStrength = calculateOverallStrength(moduleFields);
   const healthScore = calculateHealthScore(moduleFields);
-  const monitoredClaimTypes = extractMonitoredClaimTypes(moduleFields);
+  let claimsForWatch = []; try { claimsForWatch = JSON.parse(f.ClaimsExtracted || '[]'); } catch {}
+  const monitoredClaimTypes = [...new Set([...extractMonitoredClaimTypes(moduleFields), ...claimsForWatch.flatMap(c => CLAIM_MONITOR[c.claimType] || [])])];
 
   // Letter
   const letter = await generateLetter(moduleFields, evidenceStrength, f.CampaignTitle || '', f.OwnerName || approvedBy || '', dossierId, healthScore);
@@ -984,8 +1061,10 @@ async function handleDefenceApprove(req, res) {
     await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, { method: 'PATCH', headers: authH, body: JSON.stringify({ fields: patchFields }) });
   } catch (e) { return res.status(500).json({ error: 'Failed to approve defence', detail: e.message }); }
 
-  // Emit fixes from extracted claims → feeds dashboard £ exposure
-  for (const claim of claims) {
+  // Emit fixes from extracted claims → feeds dashboard £ exposure. Skipped
+  // when the copy check ran: it has already raised these as fixes, and a
+  // second set would count the same claim twice on the dashboard.
+  for (const claim of f.AICheckId ? [] : claims) {
     const mapping = CLAIM_FIX_MAP[claim.claimType];
     if (mapping) {
       fetch(`${APP_URL}/api/generate-fix`, {
