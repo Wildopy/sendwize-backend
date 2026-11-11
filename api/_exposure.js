@@ -575,14 +575,19 @@ export const ICO_ACTION_URL = 'https://ico.org.uk/action-weve-taken/enforcement/
 const stem = w => w.replace(/(ies)$/, 'y').replace(/(ing|ed|es|s)$/, '');
 const wordsOf = t => new Set((String(t || '').toLowerCase().match(/[a-z][a-z-]{3,}/g) || []).map(stem));
 let WORD_DF = null;
-function sharedWords(c, words) {
+// Words inside quotes are the claim itself ("Wrinkles GONE in 7 days"): they
+// count three times, so a case about the same claim beats one that only
+// shares the finding's explaining words ("remove", "deliver")
+const QUOTED = /['"\u2018\u201C]([^'"\u2019\u201D]{3,120})['"\u2019\u201D]/g;
+const quotedWords = t => wordsOf((String(t || '').match(QUOTED) || []).join(' '));
+function sharedWords(c, words, quoted) {
   if (!WORD_DF) {
     WORD_DF = new Map();
     for (const k of CASE_ANCHORS) for (const w of wordsOf(`${k.name} ${k.summary}`)) WORD_DF.set(w, (WORD_DF.get(w) || 0) + 1);
   }
   const max = CASE_ANCHORS.length * 0.02;
   let n = 0;
-  for (const w of wordsOf(`${c.name} ${c.summary}`)) if (words.has(w) && (WORD_DF.get(w) || 0) <= max) n++;
+  for (const w of wordsOf(`${c.name} ${c.summary}`)) if (words.has(w) && (WORD_DF.get(w) || 0) <= max) n += quoted && quoted.has(w) ? 3 : 1;
   return Math.min(n, 3);
 }
 // The specific issue a finding is about (_copy-issues.js): the one written
@@ -629,12 +634,12 @@ export function closestCases(fixType, volume, ctx = {}) {
 // words and channel, with fines before rulings and newer before older.
 // Returns null rather than a loose match: no case beats a wrong one.
 export function caseForIssue(issue, ctx = {}) {
-  const words = wordsOf(ctx.text), subjects = subjectsOf(ctx.text);
+  const words = wordsOf(ctx.text), subjects = subjectsOf(ctx.text), quoted = quotedWords(ctx.text);
   const channels = ctx.channel ? [ctx.channel] : channelsOf(ctx.text);
   const pool = CASE_ANCHORS.filter(c => (c.issues || []).includes(issue));
   if (!pool.length) return null;
   const best = pool
-    .map(c => ({ c, d: -2 * sharedSubjects(c, subjects) - sharedWords(c, words)
+    .map(c => ({ c, d: -2 * sharedSubjects(c, subjects) - sharedWords(c, words, quoted)
       + (channels.length && !(c.channels || []).some(ch => channels.includes(ch)) ? 0.5 : 0)
       + 0.25 * Math.max(0, (c.issues || []).length - 1)
       + (c.penalty ? 0 : 0.5) }))

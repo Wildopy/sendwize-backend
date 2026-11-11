@@ -47,7 +47,7 @@ import { caseForIssue } from './_exposure.js';
 
 // Bump when the prompt or the house rules change, so saved answers for
 // identical copy are not reused across versions.
-export const COPY_ENGINE = 'copy-6.2';
+export const COPY_ENGINE = 'copy-6.3';
 const CHANNEL_NAMES = { email: 'Email', sms: 'SMS', push: 'Push notification', social: 'Social ad', directmail: 'Direct mail' };
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
@@ -835,7 +835,7 @@ export default async function handler(req, res) {
     const analysisFailed = aiAnalysis?.verdict === 'Analysis Error';
     const contentKind = aiAnalysis?.content_kind || 'marketing';
     const reviewed = analysisFailed ? taggedAiViolations
-      : reviewFindings(taggedAiViolations, facts, { contentKind, contextFindings: contextViolations });
+      : reviewFindings(taggedAiViolations, facts, { contentKind, contextFindings: contextViolations, imageOnly: hasImages && !content });
     const allViolations = reviewed.map(v => withClosestCase(v, contentType));
 
     let finalScore = analysisFailed ? (aiAnalysis?.score ?? 50) : copyScore(allViolations);
