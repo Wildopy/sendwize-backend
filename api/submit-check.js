@@ -1,5 +1,21 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v5.4
+// SENDWIZE — submit-check.js v5.5
+// v5.5 changes (Sign-off):
+//   + signoff-request: the marketer sends a built defence to an approver
+//     by email. The approver gets a one-time link (sign-off.html) showing
+//     every check as Go / Fix first / Hold, so they only read what's
+//     flagged, and approves or sends it back with a note.
+//   + signoff-view / signoff-decide: public, authorised by the link's
+//     token (only its SHA-256 is stored; it works once and expires after
+//     14 days). Approval runs the same freeze as defence-approve and
+//     records who signed off and how.
+//   + signoff-cancel, offer-end (set or correct when the offer ends).
+//   + defence-complaint: paste a complaint, get a draft reply built only
+//     from the record, the evidence to attach and the gaps to check.
+//   + defence-approve records OfferEndsAt (read from the copy when not
+//     set), so the daily watch can flag an offer still live after it ends.
+//   New Campaign_Dossiers fields are written in a separate, non-fatal
+//   update, so approvals keep working before they are added.
 // v5.4 changes:
 //   + New action=check: runs the AI Scanner (analyze-copy) on a piece of
 //     copy and returns { issues, score, verdict, checkId }. Campaign
@@ -53,7 +69,9 @@
 //        429/5xx retry with backoff.
 // v4.29: Dossier re-verification (stickiness). LastVerified stamp.
 // ─────────────────────────────────────────────────────────────
-import { claudeFetch } from './_claude.js';
+import { claudeFetch, parseJson } from './_claude.js';
+import { buildSignoffSummary, parseOfferEnd, complaintPrompt, newToken, hashToken, isToken, SIGNOFF_DAYS } from './_signoff.js';
+import { sendEmail, emailLayout, escHtml, memberEmail, isEmail } from './_email.js';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
@@ -1094,8 +1112,12 @@ async function handleDefenceApprove(req, res) {
 
   fetch(`${APP_URL}/api/profile?action=streak`, { method: 'POST', headers: internalHeaders(), body: JSON.stringify({ userId }) }).catch(() => {});
 
+  // v5.5 — when the offer ends, for the daily watch (non-fatal)
+  const offerEnd = f.OfferEndsAt ? { date: f.OfferEndsAt } : parseOfferEnd(f.CampaignCopySnapshot || '', new Date(now));
+  if (offerEnd?.date) await patchOptional(dossierId, { OfferEndsAt: offerEnd.date, OfferEndAlertStage: '' });
+
   return res.json({
-    success: true, dossierId, defenceStatus: 'approved',
+    success: true, dossierId, defenceStatus: 'approved', offerEndsAt: offerEnd?.date || null,
     evidenceStrength, healthScore, urlsSnapshotted: snapshots.filter(s => s.status === 'ok').length,
     monitoredClaimTypes, letter, responsePack, approvalHash, events,
   });
@@ -1373,6 +1395,10 @@ async function handleDossierGet(req, res) {
     PageScanJson: f.PageScanJson || '',
     PageScanStatus: f.PageScanStatus || '',
     PageScanAt: f.PageScanAt || '',
+    // v5.5 — Sign-off, offer end, complaints
+    signoff: signoffForOwner(f),
+    OfferEndsAt: f.OfferEndsAt || '',
+    complaints: (() => { try { return JSON.parse(f.ComplaintsJson || '[]'); } catch { return []; } })(),
     letter,
     moduleFields,
     responsePack,
@@ -1561,6 +1587,228 @@ async function handleBriefCheck(req, res) {
   return res.json({ briefCheckId, redCount, amberCount, greenCount, totalExposureEstimate, resultStatus, dossierPrefill: dossierPrefill || null, campaignName: campaignName || '' });
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// v5.5 — SIGN-OFF, OFFER END, COMPLAINTS
+// ══════════════════════════════════════════════════════════════
+const SIGNOFF_PAGE = `${APP_URL}/sign-off.html`;
+const DASH_URL = process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+
+function dossierBase() {
+  const token = process.env.AIRTABLE_TOKEN;
+  return { base: `https://api.airtable.com/v0/${process.env.BASE_ID}`, h: { Authorization: `Bearer ${token}` }, authH: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } };
+}
+async function loadDossier(dossierId) {
+  if (!/^rec[A-Za-z0-9]{14}$/.test(String(dossierId || ''))) return null;
+  const { base, h } = dossierBase();
+  const r = await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, { headers: h });
+  return r.ok ? r.json() : null;
+}
+async function patchDossier(id, fields) {
+  const { base, authH } = dossierBase();
+  const r = await atFetch(`${base}/Campaign_Dossiers/${id}`, { method: 'PATCH', headers: authH, body: JSON.stringify({ fields }) });
+  if (!r.ok) throw new Error(`Airtable ${r.status}: ${(await r.text().catch(() => '')).slice(0, 200)}`);
+  return r.json();
+}
+// Fields added in v5.5: a missing column must never break the main flow
+async function patchOptional(id, fields) {
+  try { await patchDossier(id, fields); return true; }
+  catch (e) { console.warn('[sign-off] optional fields not saved (add them to Campaign_Dossiers):', Object.keys(fields).join(', '), e.message); return false; }
+}
+const parse = (s, fb) => { try { return s ? JSON.parse(s) : fb; } catch { return fb; } };
+async function addEvent(id, fields, event) {
+  const events = parse(fields.CampaignEventsJson, []);
+  events.push({ date: new Date().toISOString(), severity: 'info', ...event });
+  await patchDossier(id, { CampaignEventsJson: JSON.stringify(events), UpdatedAt: new Date().toISOString() });
+  return events;
+}
+
+function signoffForOwner(f) {
+  const so = parse(f.SignoffJson, null);
+  if (!so) return null;
+  const { tokenHash, ...rest } = so;
+  return { ...rest, expired: so.status === 'awaiting' && Date.parse(so.expiresAt) < Date.now() };
+}
+
+// What the approver sees: the campaign, the checks, nothing else of the account
+function signoffForApprover(rec) {
+  const f = rec.fields;
+  const so = parse(f.SignoffJson, {});
+  const summary = buildSignoffSummary(f);
+  const claims = parse(f.ClaimsExtracted, []).slice(0, 12).map(c => ({ type: String(c.claimType || '').replace(/_/g, ' '), claim: String(c.claim || '').slice(0, 200), rule: c.ruleRef || '' }));
+  const urls = [...new Set([...parse(f.ConnectedUrls, []).map(u => u?.url || u), ...parse(f.LandingPageUrls, [])].filter(u => typeof u === 'string' && u.startsWith('http')))].slice(0, 8);
+  return {
+    campaignTitle: f.CampaignTitle || 'Untitled campaign', ownerName: f.OwnerName || '',
+    channels: parse(f.Channels, ['email']), copy: f.CampaignCopySnapshot || '', urls, claims,
+    offerEndsAt: f.OfferEndsAt || null, summary,
+    request: { approverName: so.approverName || '', requestedBy: so.requestedBy || '', requestedAt: so.requestedAt || null, note: so.note || '', expiresAt: so.expiresAt || null },
+    status: so.status || 'awaiting', decidedAt: so.decidedAt || null, decidedBy: so.decidedBy || null,
+    approvalHash: f.ApprovalHash ? String(f.ApprovalHash).slice(0, 16) : null,
+  };
+}
+
+async function handleSignoffRequest(req, res) {
+  const { userId, dossierId, approverName = '', approverEmail = '', note = '', offerEndsAt = '' } = req.body ?? {};
+  if (!isEmail(approverEmail)) return res.status(400).json({ error: "Enter the approver's email address" });
+  const rec = await loadDossier(dossierId);
+  if (!rec || rec.fields.UserID !== userId) return res.status(404).json({ error: 'Defence record not found' });
+  const f = rec.fields;
+  if (f.DefenceStatus && f.DefenceStatus !== 'building') return res.status(409).json({ error: 'This campaign is already approved.' });
+  if (offerEndsAt && !/^\d{4}-\d{2}-\d{2}$/.test(offerEndsAt)) return res.status(400).json({ error: 'Offer end date should be a date' });
+
+  const token = newToken();
+  const now = new Date();
+  const summary = buildSignoffSummary(f);
+  const so = {
+    status: 'awaiting', approverName: String(approverName).slice(0, 80), approverEmail: approverEmail.trim(),
+    requestedBy: f.OwnerName || '', requestedAt: now.toISOString(), note: String(note).slice(0, 1000),
+    expiresAt: new Date(now.getTime() + SIGNOFF_DAYS * 86400000).toISOString(), tokenHash: hashToken(token),
+    flaggedCount: summary.flaggedCount, clearCount: summary.clearCount,
+  };
+  const saved = await patchOptional(rec.id, { SignoffJson: JSON.stringify(so), SignoffTokenHash: so.tokenHash, ...(offerEndsAt ? { OfferEndsAt: offerEndsAt } : {}) });
+  if (!saved) return res.status(500).json({ error: 'Sign-off is not set up yet: add the SignoffJson and SignoffTokenHash fields to Campaign_Dossiers.' });
+
+  const flagged = summary.items.filter(i => i.verdict !== 'go');
+  const bodyHtml = `<p style="color:#555;font-size:14px;margin:0 0 12px">${escHtml(so.requestedBy || 'Your marketing team')} has asked you to sign off <b>${escHtml(f.CampaignTitle || 'a campaign')}</b>.</p>`
+    + (so.note ? `<p style="color:#555;font-size:14px;margin:0 0 12px;border-left:3px solid #eee;padding-left:10px">${escHtml(so.note)}</p>` : '')
+    + `<p style="color:#555;font-size:14px;margin:0 0 8px">${summary.clearCount} of ${summary.items.length} checks are a clear Go.${flagged.length ? ` ${flagged.length === 1 ? 'One needs' : `${flagged.length} need`} your attention:` : ''}</p>`
+    + flagged.map(i => `<div style="font-size:14px;margin:0 0 6px"><b>${escHtml(i.label)}</b>: ${escHtml(i.detail)}</div>`).join('');
+  const mail = await sendEmail({
+    to: so.approverEmail, subject: `Sign-off needed: ${f.CampaignTitle || 'campaign'}`,
+    html: emailLayout({ heading: 'Campaign sign-off', bodyHtml, ctaText: 'Review and sign off', ctaUrl: `${SIGNOFF_PAGE}#t=${token}`, footnote: `This link works once and expires on ${so.expiresAt.slice(0, 10)}. Not legal advice.` }),
+  });
+  await addEvent(rec.id, f, { type: 'signoff_requested', title: `Sent to ${so.approverName || so.approverEmail} for sign-off`, detail: `${summary.flaggedCount} of ${summary.items.length} checks flagged for the approver.${mail.sent ? '' : ' The email could not be sent; share the link instead.'}` });
+  return res.json({ success: true, signoff: signoffForOwner({ SignoffJson: JSON.stringify(so) }), emailSent: mail.sent, link: mail.sent ? undefined : `${SIGNOFF_PAGE}#t=${token}` });
+}
+
+async function handleSignoffCancel(req, res) {
+  const { userId, dossierId } = req.body ?? {};
+  const rec = await loadDossier(dossierId);
+  if (!rec || rec.fields.UserID !== userId) return res.status(404).json({ error: 'Defence record not found' });
+  const so = parse(rec.fields.SignoffJson, null);
+  if (!so || so.status !== 'awaiting') return res.json({ success: true, signoff: signoffForOwner(rec.fields) });
+  const next = { ...so, status: 'cancelled', decidedAt: new Date().toISOString(), tokenHash: '' };
+  await patchDossier(rec.id, { SignoffJson: JSON.stringify(next), SignoffTokenHash: '' });
+  await addEvent(rec.id, rec.fields, { type: 'signoff_cancelled', title: 'Sign-off request withdrawn' });
+  return res.json({ success: true, signoff: signoffForOwner({ SignoffJson: JSON.stringify(next) }) });
+}
+
+async function findByToken(token) {
+  if (!isToken(token)) return null;
+  const { base, h } = dossierBase();
+  const formula = encodeURIComponent(`{SignoffTokenHash}='${hashToken(token)}'`);
+  const r = await atFetch(`${base}/Campaign_Dossiers?filterByFormula=${formula}&maxRecords=1`, { headers: h });
+  if (!r.ok) return null;
+  return (await r.json()).records?.[0] || null;
+}
+
+async function handleSignoffView(req, res) {
+  const rec = await findByToken(req.body?.token);
+  if (!rec) return res.status(404).json({ error: 'This sign-off link has already been used, was withdrawn, or is not valid.' });
+  const so = parse(rec.fields.SignoffJson, {});
+  if (Date.parse(so.expiresAt) < Date.now()) return res.status(410).json({ error: 'This sign-off link has expired. Ask for a new one.' });
+  return res.json({ success: true, signoff: signoffForApprover(rec) });
+}
+
+// Runs a handler written for (req, res) and returns what it sent
+async function callHandler(fn, body) {
+  let status = 200, payload = null;
+  const res = { status(c) { status = c; return this; }, json(p) { payload = p; return this; }, setHeader() {}, end() { return this; } };
+  await fn({ method: 'POST', query: {}, headers: {}, body }, res);
+  return { status, payload };
+}
+
+async function handleSignoffDecide(req, res) {
+  const { token, decision, name = '', note = '', confirmHold = false } = req.body ?? {};
+  if (!['approve', 'return'].includes(decision)) return res.status(400).json({ error: 'Choose approve or send back' });
+  const who = String(name).trim().slice(0, 80);
+  if (!who) return res.status(400).json({ error: 'Type your name so the record shows who signed off' });
+  const rec = await findByToken(token);
+  if (!rec) return res.status(404).json({ error: 'This sign-off link has already been used, was withdrawn, or is not valid.' });
+  const f = rec.fields;
+  const so = parse(f.SignoffJson, {});
+  if (so.status !== 'awaiting' || (f.DefenceStatus && f.DefenceStatus !== 'building')) return res.status(409).json({ error: 'This campaign has already been decided.' });
+  if (Date.parse(so.expiresAt) < Date.now()) return res.status(410).json({ error: 'This sign-off link has expired. Ask for a new one.' });
+  const summary = buildSignoffSummary(f);
+  if (decision === 'approve' && summary.hold && !confirmHold) return res.status(409).json({ error: 'The copy check said Hold. Tick the box to confirm you are approving it anyway.', code: 'hold_confirm' });
+  if (decision === 'return' && !String(note).trim()) return res.status(400).json({ error: 'Add a note saying what needs to change' });
+
+  const now = new Date().toISOString();
+  const by = `${who} (${so.approverEmail})`;
+  // Use the token once, before anything else, so a double click can't approve twice
+  await patchDossier(rec.id, { SignoffTokenHash: '' });
+
+  let approval = null;
+  if (decision === 'approve') {
+    const { status, payload } = await callHandler(handleDefenceApprove, { userId: f.UserID, dossierId: rec.id, approvedBy: by });
+    if (status !== 200 || !payload?.success) {
+      await patchDossier(rec.id, { SignoffTokenHash: so.tokenHash }).catch(() => {});
+      return res.status(500).json({ error: 'Approval could not be saved. Please try again.' });
+    }
+    approval = payload;
+  }
+  const fresh = (await loadDossier(rec.id)) || rec;
+  const next = { ...so, status: decision === 'approve' ? 'approved' : 'returned', decidedAt: now, decidedBy: by, decisionNote: String(note).slice(0, 1000), heldConfirmed: !!(summary.hold && confirmHold), tokenHash: '' };
+  await patchDossier(rec.id, { SignoffJson: JSON.stringify(next) });
+  await addEvent(rec.id, fresh.fields, decision === 'approve'
+    ? { type: 'signoff_approved', title: `Signed off by ${who}`, detail: `${so.approverEmail} approved by emailed sign-off link${summary.hold ? ', confirming the copy-check Hold' : ''}.${note ? ` Note: ${String(note).slice(0, 400)}` : ''}${approval?.approvalHash ? ` Fingerprint ${approval.approvalHash.slice(0, 12)}…` : ''}` }
+    : { type: 'signoff_returned', title: `Sent back by ${who}`, detail: String(note).slice(0, 600), severity: 'warning' });
+
+  const owner = await memberEmail(f.UserID);
+  if (owner?.email) {
+    await sendEmail({
+      to: owner.email, replyTo: so.approverEmail,
+      subject: decision === 'approve' ? `Signed off: ${f.CampaignTitle || 'campaign'}` : `Changes requested: ${f.CampaignTitle || 'campaign'}`,
+      html: emailLayout({
+        heading: decision === 'approve' ? 'Campaign signed off' : 'Changes requested',
+        bodyHtml: `<p style="color:#555;font-size:14px;margin:0 0 12px">${escHtml(who)} ${decision === 'approve' ? 'approved' : 'sent back'} <b>${escHtml(f.CampaignTitle || 'your campaign')}</b>.</p>${note ? `<p style="color:#555;font-size:14px;border-left:3px solid #eee;padding-left:10px">${escHtml(note)}</p>` : ''}${decision === 'approve' ? '<p style="color:#555;font-size:14px">The evidence is frozen and monitoring has started.</p>' : ''}`,
+        ctaText: 'Open Campaign Defence', ctaUrl: DASH_URL,
+      }),
+    });
+  }
+  return res.json({ success: true, status: next.status, decidedAt: now, approvalHash: approval?.approvalHash ? approval.approvalHash.slice(0, 16) : null });
+}
+
+async function handleOfferEnd(req, res) {
+  const { userId, dossierId, offerEndsAt = '' } = req.body ?? {};
+  if (offerEndsAt && !/^\d{4}-\d{2}-\d{2}$/.test(offerEndsAt)) return res.status(400).json({ error: 'Use a date' });
+  const rec = await loadDossier(dossierId);
+  if (!rec || rec.fields.UserID !== userId) return res.status(404).json({ error: 'Defence record not found' });
+  const ok = await patchOptional(rec.id, { OfferEndsAt: offerEndsAt || null, OfferEndAlertStage: '' });
+  if (!ok) return res.status(500).json({ error: 'Add the OfferEndsAt field to Campaign_Dossiers first.' });
+  await addEvent(rec.id, rec.fields, { type: 'manual_note', title: offerEndsAt ? `Offer end set to ${offerEndsAt}` : 'Offer end date cleared' });
+  return res.json({ success: true, offerEndsAt: offerEndsAt || null });
+}
+
+async function handleDefenceComplaint(req, res) {
+  const { userId, dossierId, complaint = '' } = req.body ?? {};
+  if (String(complaint).trim().length < 30) return res.status(400).json({ error: 'Paste the complaint or letter (at least a sentence or two)' });
+  const rec = await loadDossier(dossierId);
+  if (!rec || rec.fields.UserID !== userId) return res.status(404).json({ error: 'Defence record not found' });
+  if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: 'Drafting is not available right now' });
+  const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ max_tokens: 1500, messages: [{ role: 'user', content: complaintPrompt(rec.fields, complaint) }] }),
+  });
+  if (!r.ok) return res.status(502).json({ error: 'The draft could not be written. Please try again.' });
+  const d = await r.json();
+  const out = parseJson(d.content?.[0]?.text || '', null);
+  if (!out?.reply) return res.status(502).json({ error: 'The draft could not be read. Please try again.' });
+  const entry = {
+    at: new Date().toISOString(), regulator: String(out.regulator || 'Other').slice(0, 20),
+    complaint: String(complaint).slice(0, 4000), reply: String(out.reply).slice(0, 6000),
+    evidence: (Array.isArray(out.evidence) ? out.evidence : []).slice(0, 12).map(e => ({ item: String(e.item || '').slice(0, 200), from: String(e.from || '').slice(0, 120) })),
+    gaps: (Array.isArray(out.gaps) ? out.gaps : []).slice(0, 8).map(g => String(g).slice(0, 300)),
+    approvalHash: rec.fields.ApprovalHash ? String(rec.fields.ApprovalHash).slice(0, 16) : null,
+  };
+  const list = parse(rec.fields.ComplaintsJson, []);
+  list.unshift(entry);
+  await patchOptional(rec.id, { ComplaintsJson: JSON.stringify(list.slice(0, 10)) });
+  await addEvent(rec.id, rec.fields, { type: 'complaint_received', title: `${entry.regulator === 'Customer' ? 'Customer complaint' : `${entry.regulator} enquiry`} logged`, detail: `Draft reply prepared from this record. ${entry.gaps.length ? `${entry.gaps.length} point${entry.gaps.length === 1 ? '' : 's'} to check before replying.` : ''}`, severity: 'warning' });
+  return res.json({ success: true, complaint: entry });
+}
+
 // ── ROUTER ────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -1570,14 +1818,22 @@ export default async function handler(req, res) {
   const { action } = req.query;
   try {
     // Identity: the verified member id replaces any userId sent by the browser
-    const auth = await requireAuth(req, res);
+    const auth = await requireAuth(req, res, { publicActions: ['signoff-view', 'signoff-decide'] });
     if (!auth) return;
+    // v5.5 — the approver's link: authorised by its token, not a login
+    if (req.method === 'POST' && action === 'signoff-view')   return await handleSignoffView(req, res);
+    if (req.method === 'POST' && action === 'signoff-decide') return await handleSignoffDecide(req, res);
+    if (action === 'defence-complaint' && !(await checkLimit(req, res, auth, 'copy_scan'))) return;
     if (['defence-assemble','defence-scan-pages','check'].includes(action) && !(await checkLimit(req, res, auth, action === 'check' ? 'copy_scan' : 'campaign_build'))) return;
     // Campaign Defence (v5.1 / v5.2)
     if (req.method === 'POST' && action === 'defence-assemble')   return await handleDefenceAssemble(req, res);
     if (req.method === 'POST' && action === 'defence-scan-pages') return await handleDefenceScanPages(req, res);
     if (req.method === 'POST' && action === 'defence-approve')    return await handleDefenceApprove(req, res);
     if (req.method === 'POST' && action === 'defence-add-event')  return await handleDefenceAddEvent(req, res);
+    if (req.method === 'POST' && action === 'signoff-request')    return await handleSignoffRequest(req, res);
+    if (req.method === 'POST' && action === 'signoff-cancel')     return await handleSignoffCancel(req, res);
+    if (req.method === 'POST' && action === 'offer-end')          return await handleOfferEnd(req, res);
+    if (req.method === 'POST' && action === 'defence-complaint')  return await handleDefenceComplaint(req, res);
     // Existing dossier (v4.32)
     if (req.method === 'POST' && action === 'dossier-create') return await handleDossierCreate(req, res);
     if (req.method === 'GET'  && action === 'dossier-list')   return await handleDossierList(req, res);

@@ -512,8 +512,15 @@
     document.getElementById('notCheckedList').innerHTML = NOT_CHECKED.map(function(t) {
       return '<div class="nc-row"><div><b>' + escH(t[0]) + '</b><span>' + escH(t[2]) + '</span></div>' +
         (userId ? '<a href="' + t[1] + qs + '">Run ' + escH(t[0]) + ' &rarr;</a>' : '') + '</div>';
-    }).join('');
+    }).join('') + (userId ? '<div class="nc-row nc-signoff"><div><b>Send for sign-off</b><span>Start a defence file with this copy: the checks above run together, your approver gets one email, and the campaign is watched after launch.</span></div><a href="#" onclick="sendForSignoff();return false;">Send for sign-off &rarr;</a></div>' : '');
   }
+  // Hands this copy to Campaign Defence, which runs the full set of checks
+  window.sendForSignoff = function() {
+    var name = (document.getElementById('campaignName') || {}).value || '';
+    var copy = lastCopy && lastCopy !== '(Image only)' ? lastCopy : (document.getElementById('copyText') || {}).value || '';
+    try { sessionStorage.setItem('sw_defence_prefill', JSON.stringify({ title: name.trim(), copy: copy, channel: currentContentType || 'email', at: Date.now() })); } catch (e) {}
+    window.location.href = '/campaign-defence.html?userId=' + encodeURIComponent(userId) + '&new=1';
+  };
 
   function init() {
     userId = new URLSearchParams(window.location.search).get('userId');

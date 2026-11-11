@@ -30,6 +30,8 @@
 //      MonitoringActive=true (Phase 3)
 //   7. Checks landing page URLs for content changes (Phase 4)
 //   8. Checks reference pricing campaigns for expiry (Phase 5)
+//  10. Flags offers still live after the end date the campaign gave
+//      (Phase 7, v2.2: OfferEndsAt set at approval or sign-off)
 //   9. Checks members' latest list results for contacts with the same
 //      issue as a new ICO consent or suppression ruling (Phase 6)
 //
@@ -42,6 +44,8 @@ import { atFetch } from './_airtable.js';
 import { internalHeaders } from './_auth.js';
 import { fetchPage } from './_page-scan.js';
 import { createHash } from 'crypto';
+import { offerMarkers, markersOnPage } from './_signoff.js';
+import { sendEmail, emailLayout, escHtml, memberEmail } from './_email.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -568,11 +572,15 @@ async function checkLandingPageDrift() {
               .trim()
               .slice(0, 1500);
 
+            let approvedSnap = null;
+            try { approvedSnap = JSON.parse(dossier.fields.UrlSnapshots || '[]').find(x => x.url === urlObj.url) || null; } catch {}
             changedUrls.push({
               url: urlObj.url,
               type: urlObj.type,
               reason: 'Page content changed',
               newSnippet: visibleText.slice(0, 500),
+              approvedSnippet: approvedSnap?.snippet ? String(approvedSnap.snippet).slice(0, 300) : null,
+              approvedAt: approvedSnap?.capturedAt || null,
             });
           }
 
@@ -627,7 +635,7 @@ async function checkLandingPageDrift() {
             type: 'url_change_detected',
             date: new Date().toISOString(),
             title: `${materialChanges.length} URL${materialChanges.length !== 1 ? 's' : ''} changed`,
-            detail: materialChanges.map(u => u.url + (u.relevanceNote ? ' — ' + u.relevanceNote : '')).join('; '),
+            detail: materialChanges.map(u => u.url + (u.relevanceNote ? ' — ' + u.relevanceNote : '') + (u.approvedAt ? ` (changed since the version approved ${String(u.approvedAt).slice(0, 10)})` : '')).join('; '),
             severity: 'warning',
             urlsAffected: materialChanges.map(u => u.url),
           });
@@ -669,6 +677,63 @@ async function checkLandingPageDrift() {
     }
   }
 
+  return results;
+}
+
+
+// ── Phase 7: Offers still live after they should have ended ───
+// A deadline that passes while the offer carries on is a false urgency
+// claim (CMA, DMCCA 2024 Sch 20). OfferEndsAt comes from the approved
+// copy ("Ends midnight Sunday") or the marketer. The day after it, each
+// landing page is read for the offer's own markers (the % off, the sale
+// price, the deadline wording). One alert per campaign.
+async function checkOfferEnds() {
+  const results = { checked: 0, stillLive: 0, errors: [] };
+  const today = new Date().toISOString().split('T')[0];
+  let dossiers = [];
+  try {
+    dossiers = await atGet('Campaign_Dossiers',
+      `AND({Status}='Submitted',{MonitoringActive}=1,{OfferEndsAt}!='',IS_BEFORE({OfferEndsAt},'${today}'),{OfferEndAlertStage}!='alerted')`, '', 50);
+  } catch (e) {
+    // OfferEndsAt not added yet: nothing to check
+    console.warn('Offer end check skipped:', e.message);
+    return results;
+  }
+  for (const d of dossiers) {
+    try {
+      const markers = offerMarkers(d.fields.CampaignCopySnapshot || '');
+      if (!markers.length) { await atPatch('Campaign_Dossiers', d.id, { OfferEndAlertStage: 'no_markers' }); continue; }
+      let urls = [];
+      try { urls = JSON.parse(d.fields.LandingPageUrls || '[]').filter(u => typeof u === 'string'); } catch {}
+      try { urls = urls.concat(JSON.parse(d.fields.ConnectedUrls || '[]').map(u => u?.url || u).filter(u => typeof u === 'string')); } catch {}
+      urls = [...new Set(urls)].slice(0, 5);
+      const hits = [];
+      for (const url of urls) {
+        results.checked++;
+        const page = await fetchPage(url, { allowText: true });
+        if (!page.ok) continue;
+        const text = page.html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ');
+        const found = markersOnPage(markers, text);
+        if (found.length) hits.push({ url, found });
+      }
+      if (!hits.length) { await atPatch('Campaign_Dossiers', d.id, { OfferEndAlertStage: 'checked_clear' }); continue; }
+      results.stillLive++;
+      let events = [];
+      try { events = JSON.parse(d.fields.CampaignEventsJson || '[]'); } catch {}
+      const detail = `The campaign said the offer ends ${d.fields.OfferEndsAt}, but ${hits.map(h => `${h.url} still shows "${h.found.join('", "')}"`).join('; ')}. If the offer has been extended, the original deadline is likely to mislead. Take the offer down, or change the wording and record why.`;
+      events.push({ type: 'offer_still_live', date: new Date().toISOString(), title: 'Offer still live after its end date', detail, severity: 'warning', urlsAffected: hits.map(h => h.url) });
+      const patch = { CampaignEventsJson: JSON.stringify(events), OfferEndAlertStage: 'alerted' };
+      if (['live', 'approved'].includes(d.fields.DefenceStatus || '')) patch.DefenceStatus = 'alert';
+      await atPatch('Campaign_Dossiers', d.id, patch);
+      const owner = d.fields.UserID ? await memberEmail(d.fields.UserID) : null;
+      if (owner?.email) await sendEmail({
+        to: owner.email, subject: `Sendwize: "${d.fields.CampaignTitle || 'campaign'}" is still live after its end date`,
+        html: emailLayout({ heading: 'Offer still live', bodyHtml: `<p style="color:#555;font-size:14px">${escHtml(detail)}</p>`, ctaText: 'Open Campaign Defence', ctaUrl: process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy', footnote: 'CMA: DMCCA 2024 Sch 20 (false urgency). Not legal advice.' }),
+      });
+    } catch (e) {
+      results.errors.push({ dossierId: d.id, error: e.message });
+    }
+  }
   return results;
 }
 
@@ -987,6 +1052,9 @@ export default async function handler(req, res) {
   results.refPriceExpiry = await checkReferencePriceExpiry();
   console.log(`Ref price check complete — warnings: ${results.refPriceExpiry.warnings}, expired: ${results.refPriceExpiry.expired}`);
 
+  // ── Phase 7: Offers still live after their end date (daily) ──
+  results.offerEnds = await checkOfferEnds().catch(e => ({ checked: 0, stillLive: 0, errors: [e.message] }));
+
   console.log(`Feed update complete — enforcement: ${results.written}, competitor alerts: ${results.competitorAlerts}, drift: ${results.landingPageDrift.drifted}, ref price: ${results.refPriceExpiry.warnings}w/${results.refPriceExpiry.expired}e`);
 
   return res.status(200).json({
@@ -1027,6 +1095,7 @@ export default async function handler(req, res) {
       expired:         results.refPriceExpiry.expired,
       errors:          results.refPriceExpiry.errors.length,
     },
+    offerEnds: { pagesChecked: results.offerEnds.checked, stillLive: results.offerEnds.stillLive, errors: results.offerEnds.errors.length },
     errors: results.errors,
   });
 }
