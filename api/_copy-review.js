@@ -102,12 +102,27 @@ const evidence = (issue_type, regulation, issue, location, recommendation) =>
 
 // Apply the house rules. `context` findings (from the member's own answers
 // about the send) always win over the AI's version of the same issue.
-export function reviewFindings(aiFindings, facts, { contentKind = 'marketing', contextFindings = [] } = {}) {
+// Footer details a banner image almost never carries
+const FOOTER_ITEM = /companies act|trading disclosure|registered (office|number|name)|company (name|number)/i;
+
+export function reviewFindings(aiFindings, facts, { contentKind = 'marketing', contextFindings = [], imageOnly = false } = {}) {
   const ch = facts.channel;
   const out = [];
+  // Only an image was checked, for an email or letter: it is usually one part
+  // of the send, so a missing footer is something to check, not a Hold
+  const footerOnly = imageOnly && (ch === 'email' || ch === 'directmail');
+  const footer = new Set();
   for (const raw of aiFindings || []) {
     const v = { ...raw, issue_type: ISSUES[raw.issue_type] ? raw.issue_type : guessIssue(raw) };
     const t = v.issue_type, sev = rank(v.severity);
+    if (footerOnly && !v.requiresEvidence && !v._fromContext) {
+      const said = `${raw.regulation || ''} ${v.issue || ''}`;
+      if (t === 'opt_out_missing') { footer.add('an unsubscribe link'); continue; }
+      if (FOOTER_ITEM.test(said)) { footer.add('your company name, number and registered office'); continue; }
+      if (t === 'sender_details' || (t === 'sender_hidden' && !DISGUISE.test(`${v.issue} ${v.location}`))) { footer.add('who it is from, with a contact address'); continue; }
+    }
+    // A "from £49" price is a plain price, not a was/now saving
+    if (t === 'reference_price' && /\bfrom £\s?\d/i.test(`${v.issue} ${v.location}`) && !/\b(was|rrp|save|saving|off|reduced|half price)\b|%/i.test(`${v.issue} ${v.location}`)) continue;
     // The rule a finding is shown under comes from a checked list, not the model
     if (ISSUES[t].cite && !v._fromContext) v.regulation = ISSUES[t].cite;
 
@@ -144,6 +159,13 @@ export function reviewFindings(aiFindings, facts, { contentKind = 'marketing', c
     // Stock and was/now claims are fine when true: ask for the proof
     if ((t === 'scarcity' || t === 'reference_price') && !v.requiresEvidence) Object.assign(v, { requiresEvidence: true, severity: 'high' });
     out.push(v);
+  }
+
+  if (footer.size) {
+    out.push({ regulation: 'PECR Reg 23 / Companies Act 2006', severity: 'low', issue_type: 'sender_details', requiresEvidence: false, _noCase: true,
+      issue: `Only the image was checked. It doesn't show a footer, which is normal for a banner, but the ${ch === 'email' ? 'email' : 'letter'} it goes in must include ${[...footer].join('; ')}.`,
+      location: 'Footer (not in the image)',
+      recommendation: `Check the footer before sending, or paste the full ${ch === 'email' ? 'email' : 'letter'} to have it checked too.` });
   }
 
   // A relative deadline always gets its "is it real?" check

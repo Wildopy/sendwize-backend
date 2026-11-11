@@ -118,6 +118,33 @@ check('Citations come from the checked list, not the AI', () => {
   assert.equal(out[1].regulation, 'CAP Code 3.39 / DMCCA 2024 s.226');
 });
 
+console.log('\n── Images (J1 to J4) ──');
+const imgFacts = ch => copyFacts(ch, '');
+check('J4: a clean banner checked on its own as an email is a Go', () => {
+  const r = reviewFindings([
+    F('opt_out_missing', 'critical', "We can't find a way to opt out in the image."),
+    F('other', 'low', 'No company name, registered number or registered office.', { regulation: 'Companies Act trading disclosures' }),
+    F('reference_price', 'high', "The 'from £49' price claim is only acceptable if some lamps are available at £49.", { requiresEvidence: true, location: "Price line, 'from £49'" }),
+  ], imgFacts('email'), { imageOnly: true });
+  assert.equal(sendCall(r).verdict, 'go');
+  assert.equal(r.length, 1); assert.equal(r[0].severity, 'low'); assert.match(r[0].issue, /unsubscribe link/);
+});
+check('J3: a missing footer on an image is a note, "Wrinkles GONE" is still a Hold', () => {
+  const r = reviewFindings([
+    F('performance_claim', 'critical', "'Wrinkles GONE in 7 days' is an absolute efficacy claim."),
+    F('opt_out_missing', 'critical', 'No opt-out in the image.'),
+    F('sender_hidden', 'high', "We can't find the sender's name."),
+  ], imgFacts('email'), { imageOnly: true });
+  assert.equal(sendCall(r).verdict, 'hold'); assert.equal(sendCall(r).hold, 1);
+});
+check('Typed email without a footer still holds on a missing unsubscribe', () => {
+  assert.equal(sendCall(reviewFindings([F('opt_out_missing', 'critical', 'No unsubscribe link.')], copyFacts('email', 'Big sale on lamps today.'))).verdict, 'hold');
+});
+check('J3: the wrinkle claim gets a wrinkle case, not an unrelated health one', () => {
+  const t = "'Wrinkles GONE in 7 days' is an absolute efficacy claim that suggests wrinkles are fully eliminated. A cosmetic cream is unlikely to remove wrinkles entirely, and the regulator expects claims to match what the product can really deliver.";
+  for (const ch of ['email', 'social']) assert.match(caseForIssue('performance_claim', { text: t, channel: ch }).summary, /wrinkle/i);
+});
+
 console.log('\n── Rewrites ──');
 check('A: a new time in the rewrite is marked, a known price is not', () => {
   const r = markNewFigures(byId.A.text, 'Was £249, NOW just £74.99. Ends 23:59 on [date].');
