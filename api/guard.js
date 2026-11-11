@@ -7,10 +7,14 @@
 // Actions:
 //   POST ?action=collect   (public)  beacon from g.js, counters only
 //   POST ?action=enable    { domain }                   → key + snippet
-//   POST ?action=settings  { domain, notifyEmail, slackWebhook }
 //   POST ?action=disable   { domain }
 //   GET  ?action=get       domain                       → status, alerts, consent
 //   GET/POST ?action=rollup (cron, internal)            → yesterday's alerts
+//
+// Alerts are delivered inside Sendwize only: the Site guard section of
+// the Site sweep page, and dashboard fixes for the ones with a fix type.
+// Turning Site guard off stops counting at once (the key is unlinked);
+// removing the script line from the site stops it running at all.
 //
 // Needs Upstash Redis (UPSTASH_REDIS_REST_URL / _TOKEN), the same store
 // as the usage limits. Without it, collect answers 503 and the page says
@@ -18,8 +22,7 @@
 //
 // Airtable, table Site_Sweeps (new fields):
 //   GuardKey (single line text), GuardEnabledAt (date with time),
-//   GuardJson (long text), GuardNotifyEmail (email),
-//   GuardSlackWebhook (URL), GuardLastRollup (single line text)
+//   GuardJson (long text), GuardLastRollup (single line text)
 // Fixes reuse FixKeysJson, with keys starting "guard:".
 // ─────────────────────────────────────────────────────────────
 import { randomBytes } from 'node:crypto';
@@ -30,13 +33,12 @@ import {
   cleanBeacon, beaconCommands, dayKey, siteDayKey, sitePagesKey, siteLastKey, siteMapKey,
   summariseDay, evaluateGuard, guardView, buildBenchmarks, consentStats, MAX_DAILY_VISITS,
 } from './_guard.js';
-import { sendEmail, sendSlack, emailLayout, escHtml, memberEmail, isEmail, isSlackWebhook } from './_email.js';
+import { memberEmail } from './_email.js';
 import { normaliseDomain } from './site-sweep.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const TABLE = 'Site_Sweeps';
 const BENCH_KEY = 'sw:g:bench';
-const DASH_URL = process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 
 const esc = s => String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 const safeJson = (s, fb) => { try { return s ? JSON.parse(s) : fb; } catch { return fb; } };
@@ -119,22 +121,6 @@ async function handleEnable(req, res) {
   return res.json({ success: true, guard: await viewFor(updated) });
 }
 
-async function handleSettings(req, res) {
-  const o = await loadOwned(req, res); if (!o) return;
-  const { notifyEmail, slackWebhook } = req.body || {};
-  const fields = {};
-  if (typeof notifyEmail === 'string') {
-    if (notifyEmail.trim() && !isEmail(notifyEmail)) return res.status(400).json({ error: 'That alert email does not look right' });
-    fields.GuardNotifyEmail = notifyEmail.trim();
-  }
-  if (typeof slackWebhook === 'string') {
-    if (slackWebhook.trim() && !isSlackWebhook(slackWebhook)) return res.status(400).json({ error: 'Paste a Slack incoming webhook URL (it starts https://hooks.slack.com/services/)' });
-    fields.GuardSlackWebhook = slackWebhook.trim();
-  }
-  const updated = Object.keys(fields).length ? await patchRecord(o.c, o.record.id, fields) : o.record;
-  return res.json({ success: true, guard: await viewFor(updated) });
-}
-
 async function handleDisable(req, res) {
   const o = await loadOwned(req, res, { requireVerified: false }); if (!o) return;
   if (o.record.fields.GuardKey && redisConfigured()) await redis(['DEL', siteMapKey(o.record.fields.GuardKey)]).catch(() => {});
@@ -172,7 +158,6 @@ async function viewFor(record, { live = true } = {}) {
     snippet: f.GuardKey ? snippetFor(f.GuardKey) : null,
     enabledAt: f.GuardEnabledAt || null,
     lastSeen, connected: !!(lastSeen && Date.now() - Date.parse(lastSeen) < 3 * 86400000),
-    notifyEmail: f.GuardNotifyEmail || '', slackConnected: isSlackWebhook(f.GuardSlackWebhook || ''),
     lastRollup: f.GuardLastRollup || null,
     today,
     ...guardView(state, { benchmarks, sector: profile?.sector ? String(profile.sector).toLowerCase() : null }),
@@ -206,12 +191,6 @@ async function closeFix(userId, fixId) {
   }).catch(e => console.error('[guard] close fix failed:', e.message));
 }
 
-function alertLines(alerts, html) {
-  return alerts.map(a => html
-    ? `<div style="border-left:3px solid ${a.severity === 'high' ? '#c62828' : a.severity === 'medium' ? '#a96b00' : '#999'};padding:8px 12px;margin:0 0 12px"><b>${escHtml(a.title)}</b><br><span style="color:#555;font-size:14px">${escHtml(a.detail)}</span>${a.ruleRef ? `<br><span style="color:#999;font-size:12px">${escHtml(a.ruleRef)}</span>` : ''}</div>`
-    : `• ${a.title}`).join(html ? '' : '\n');
-}
-
 async function rollupSite(c, record, day, now) {
   const f = record.fields;
   const key = f.GuardKey;
@@ -238,23 +217,10 @@ async function rollupSite(c, record, day, now) {
     delete fixKeys[k];
   }
 
-  // Tell people
+  // Alerts are shown in Sendwize only (Site sweep page, and as dashboard
+  // fixes where they have a fix type). No email or Slack.
+  for (const a of opened) a.events.push({ at: nowIso(), text: a.fixType ? 'Shown in Sendwize and added to your dashboard' : 'Shown in Sendwize' });
   const profile = await memberEmail(f.UserID);
-  const to = f.GuardNotifyEmail || profile?.email;
-  const notify = [...opened, ...resolved];
-  if (notify.length) {
-    const subject = opened.length
-      ? `Site guard: ${opened.length} new issue${opened.length === 1 ? '' : 's'} on ${f.Domain}`
-      : `Site guard: ${resolved.length} issue${resolved.length === 1 ? '' : 's'} fixed on ${f.Domain}`;
-    const bodyHtml = (opened.length ? `<p style="color:#555;font-size:14px;margin:0 0 16px">Found on real visits to ${escHtml(f.Domain)} yesterday:</p>${alertLines(opened, true)}` : '')
-      + (resolved.length ? `<p style="color:#555;font-size:14px;margin:16px 0 8px">Fixed and confirmed on live visits:</p>${resolved.map(a => `<div style="color:#167a3e;font-size:14px;margin:0 0 6px">✓ ${escHtml(a.title)}</div>`).join('')}` : '');
-    const e = await sendEmail({ to, subject, html: emailLayout({ heading: 'Site guard', bodyHtml, ctaText: 'Open Site guard', ctaUrl: DASH_URL }) });
-    for (const a of opened) a.events.push({ at: nowIso(), text: e.sent ? `Alert emailed to ${to}` : 'Shown on your dashboard' });
-    if (isSlackWebhook(f.GuardSlackWebhook || '')) {
-      const s = await sendSlack(f.GuardSlackWebhook, `*Site guard · ${f.Domain}*\n${opened.length ? `New:\n${alertLines(opened, false)}\n` : ''}${resolved.length ? `Fixed:\n${resolved.map(a => `✓ ${a.title}`).join('\n')}` : ''}`);
-      if (s.sent) for (const a of opened) a.events.push({ at: nowIso(), text: 'Posted to Slack' });
-    }
-  }
 
   await patchRecord(c, record.id, { GuardJson: JSON.stringify(state).slice(0, 99000), FixKeysJson: JSON.stringify(fixKeys), GuardLastRollup: day });
   const cs = consentStats(state.daily.slice(-30));
@@ -324,10 +290,9 @@ export default async function handler(req, res) {
       return await handleRollup(req, res);
     }
     if (req.method === 'POST' && action === 'enable')   return await handleEnable(req, res);
-    if (req.method === 'POST' && action === 'settings') return await handleSettings(req, res);
     if (req.method === 'POST' && action === 'disable')  return await handleDisable(req, res);
     if (req.method === 'GET'  && action === 'get')      return await handleGet(req, res);
-    return res.status(400).json({ error: 'Unknown action. Use enable, settings, disable or get.' });
+    return res.status(400).json({ error: 'Unknown action. Use enable, disable or get.' });
   } catch (e) {
     console.error('guard.js error:', e);
     return res.status(500).json({ error: 'Internal server error' });

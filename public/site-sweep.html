@@ -248,7 +248,7 @@ function renderGuard(){
   const d=document.createElement('div');d.id='swGuard';d.className='card gd view';
   if(!G.available){d.innerHTML=`<div class="card-t">Site guard</div><div class="card-s" style="margin:0">Always-on monitoring isn't switched on for Sendwize yet. It will appear here when it is.</div>`;placeGuard(d);return;}
   if(!G.enabled){
-    d.innerHTML=`<div class="gd-h"><div><div class="card-t">Keep watching every page with Site guard</div><div class="card-s" style="margin:0">This sweep checked ${num((S.sweep?.pages||[]).length||0)} pages once. Site guard watches real visits to every page, every day: checkout, account pages, A/B tests. You get an email the day a tag starts firing before consent, a "was" price goes stale or your banner stops working, and fixes close themselves once real visits confirm them.</div></div><span class="gd-pill gd-off">Off</span></div>
+    d.innerHTML=`<div class="gd-h"><div><div class="card-t">Keep watching every page with Site guard</div><div class="card-s" style="margin:0">This sweep checked ${num((S.sweep?.pages||[]).length||0)} pages once. Site guard watches real visits to every page, every day: checkout, account pages, A/B tests. You'll see it here, and on your dashboard, when a tag starts firing before consent, a "was" price goes stale or your banner stops working, and fixes close themselves once real visits confirm them.</div></div><span class="gd-pill gd-off">Off</span></div>
     <div class="gd-grid"><div class="gd-tile"><b>1 line</b><span>of script, like Google Analytics</span></div><div class="gd-tile"><b>No personal data</b><span>No cookies set, no visitor ids, nothing stored on the device</span></div><div class="gd-tile"><b>Consent rate</b><span>See how many visits you can actually measure</span></div></div>
     <button class="btn btn-o" onclick="gEnable()" ${G_BUSY?'disabled':''}>Turn on Site guard →</button>`;
     placeGuard(d);return;
@@ -262,30 +262,29 @@ function renderGuard(){
   }
   const c=G.consent||{},b=G.benchmark;
   const openA=(G.alerts||[]).filter(a=>a.status==='open'),doneA=(G.alerts||[]).filter(a=>a.status!=='open');
-  const alertHtml=a=>`<div class="gd-a ${E(a.status==='open'?a.severity:'resolved')}"><div class="gd-a-t">${a.status==='open'?'':'✓ '}${E(a.title)}</div><div class="gd-a-d">${E(a.detail)}</div><div class="gd-a-m">${[a.regulator,a.ruleRef,a.pages&&a.pages.length?'Pages: '+a.pages.slice(0,3).join(', '):'','First seen '+fDT(a.firstSeen),a.resolvedAt?'Fixed '+fDT(a.resolvedAt):''].filter(Boolean).map(E).join(' · ')}</div>${(a.events||[]).length>1?`<div class="gd-ev">${a.events.slice(-4).map(e=>E(fDT(e.at)+': '+e.text)).join('<br>')}</div>`:''}</div>`;
+  const alertHtml=a=>`<div class="gd-a ${E(a.status==='open'?a.severity:'resolved')}"><div class="gd-a-t">${a.status==='open'?'':'✓ '}${E(a.title)}${a.status==='open'&&Date.now()-Date.parse(a.firstSeen)<2*86400000?' <span class="gd-pill gd-wait" style="font-size:10px;vertical-align:middle">New</span>':''}</div><div class="gd-a-d">${E(a.detail)}</div><div class="gd-a-m">${[a.regulator,a.ruleRef,a.pages&&a.pages.length?'Pages: '+a.pages.slice(0,3).join(', '):'','First seen '+fDT(a.firstSeen),a.resolvedAt?'Fixed '+fDT(a.resolvedAt):''].filter(Boolean).map(E).join(' · ')}</div>${(a.events||[]).length>1?`<div class="gd-ev">${a.events.slice(-4).map(e=>E(fDT(e.at)+': '+e.text)).join('<br>')}</div>`:''}</div>`;
   const today=G.today;
   const early=(today?.trackersFiringEarly||[]);
-  d.innerHTML=`<div class="gd-h"><div><div class="card-t">Site guard</div><div class="card-s" style="margin:0">Watching real visits to ${E(G.domain)}. Last report ${fDT(G.lastSeen)}. Alerts are worked out each night from the day before.</div></div><span class="gd-pill gd-on">Live</span></div>
+  d.innerHTML=`<div class="gd-h"><div><div class="card-t">Site guard</div><div class="card-s" style="margin:0">Watching real visits to ${E(G.domain)}. Last report ${fDT(G.lastSeen)}. New alerts appear here each morning, worked out from the day before.</div></div><span class="gd-pill gd-on">Live</span></div>
   <div class="gd-grid">
     <div class="gd-tile"><span>Consent rate, last ${G.days||0} day${G.days===1?'':'s'}</span><b>${pct(c.rate)}</b><div class="gd-meter"><i style="width:${Math.round((c.rate||0)*100)}%"></i>${b?`<u style="left:${Math.round(b.median*100)}%" title="Median"></u>`:''}</div><span>${b?`Median for ${E(b.label)}: ${pct(b.median)} (${b.sites} sites)`:'A comparison appears once 5 similar sites use Site guard'}</span></div>
     <div class="gd-tile"><span>Page views you couldn't measure</span><b>${num(c.unmeasured)}</b><span>People who rejected cookies or never chose. Your ads and analytics can't see these visits.</span></div>
     <div class="gd-tile"><span>Today so far</span><b>${num(today?.visits)}</b><span>page views across ${num(today?.pages)} page${today?.pages===1?'':'s'}${early.length?`. Firing early today: ${early.map(t=>E(t.name)).join(', ')}`:''}</span></div>
   </div>
   <div class="sec-t" style="margin-top:6px">Open alerts <span class="cnt">${openA.length}</span></div>
-  ${openA.length?openA.map(alertHtml).join(''):'<div class="muted" style="margin-bottom:10px">Nothing needs attention. You\'ll get an email if that changes.</div>'}
+  ${openA.length?openA.map(alertHtml).join(''):'<div class="muted" style="margin-bottom:10px">Nothing needs attention right now.</div>'}
   ${doneA.length?`<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">Fixed and earlier alerts (${doneA.length})</summary><div style="margin-top:10px">${doneA.map(alertHtml).join('')}</div></details>`:''}
   ${(G.trackers||[]).length?`<div class="sec-t">Tags seen, last ${G.days||0} days <span class="cnt">${G.trackers.length}</span></div><div class="list">${G.trackers.map(t=>`<div class="li"><span>${E(t.name)}</span><span class="muted">${num(t.seen)} page views${t.pre?` · <b style="color:var(--r)">${num(t.pre)} before consent</b>`:' · waits for consent'}</span></div>`).join('')}</div>`:''}
-  <details style="margin-top:16px"><summary class="muted" style="cursor:pointer">Alerts, script and settings</summary><div style="margin-top:12px">
-   <div class="gd-set"><label>Send alerts to (leave blank for your account email)<input id="gEmail" type="email" value="${E(G.notifyEmail)}" placeholder="marketing@yourbrand.co.uk"></label><label>Slack incoming webhook (optional)<input id="gSlack" type="url" placeholder="${G.slackConnected?'Connected. Paste a new one to change it':'https://hooks.slack.com/services/…'}"></label></div>
-   <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn btn-w btn-sm" onclick="gSave()">Save</button><button class="link" onclick="gDisable()">Turn off Site guard</button></div>
-   <div style="margin-top:14px" class="muted">Your script:</div>${snippet}
+  <details style="margin-top:16px"><summary class="muted" style="cursor:pointer">Your script, and how to turn Site guard off</summary><div style="margin-top:12px">
+   <div class="muted" style="margin-bottom:6px">This is the line on your site:</div>${snippet}
+   <p class="muted" style="margin-top:12px">Turning off stops Sendwize counting straight away. To stop the script loading at all, also delete this line from your site's head code or tag manager.</p>
+   <div style="margin-top:10px"><button class="btn btn-w btn-sm" onclick="gDisable()">Turn off Site guard</button></div>
   </div></details>`;
   placeGuard(d);
 }
 function placeGuard(d){const h=$('app').querySelector('.head');if(h&&h.parentNode)h.parentNode.insertBefore(d,h.nextSibling);else $('app').prepend(d);}
 async function gEnable(){G_BUSY=true;renderGuard();try{G=await gPost('enable',{});toast('Site guard is on. Add the line to your site.','ok');}catch(e){toast(e.message,'er');}finally{G_BUSY=false;renderGuard();}}
 async function gDisable(){try{G=await gPost('disable',{});toast('Site guard turned off');renderGuard();}catch(e){toast(e.message,'er');}}
-async function gSave(){const slack=$('gSlack').value.trim();try{G=await gPost('settings',{notifyEmail:$('gEmail').value.trim(),slackWebhook:slack||undefined});toast('Saved','ok');renderGuard();}catch(e){toast(e.message,'er');}}
 
 const CATS=[['cookies','Cookies & tracking'],['privacy','Privacy notice'],['capture','Data capture'],['identity','Business identity'],['reviews','Reviews']];
 const RANK={high:0,medium:1,low:2};
