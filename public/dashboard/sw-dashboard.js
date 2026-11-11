@@ -1,5 +1,9 @@
 /* ─────────────────────────────────────────────────────────────
-   SENDWIZE: sw-dashboard.js v1.5  (browser)
+   SENDWIZE: sw-dashboard.js v1.6  (browser)
+   v1.6: tool bar tiles with each tool's name and what it's for, and a
+     light that runs along the bar on load instead of one orange tile.
+     Campaign defence moves to "Before you send"; Site sweep and
+     Campaign defence descriptions cover Site guard and Sign-off.
    The member dashboard, served from Vercel so the Webflow embed stays
    a few lines long. Needs sw-auth.js in the Webflow site head and
    sw-dashboard.css on the page. Renders into <div id="sw-dashboard">.
@@ -44,19 +48,19 @@
   // own page and the switcher in /sw-tool-nav.js; change all three together.
   var TOOL_GROUPS = [
     { l: 'Before you send', tools: [
-      { k: 'copy',      l: 'Copy checker',        u: '/ai-checker.html',        d: 'Go, fix first or hold for an email or ad', hot: true },
+      { k: 'copy',      l: 'Copy checker',        u: '/ai-checker.html',        d: 'Go, fix first or hold for an email or ad', s: 'Go, fix first or hold' },
+      { k: 'defence',   l: 'Campaign defence',    u: '/campaign-defence.html',  d: 'Sign-off before launch, alerts once it\'s live', s: 'Sign-off, then watched live' },
     ] },
     { l: 'Your list', tools: [
-      { k: 'list',      l: 'List health',         u: '/list-intelligence.html', d: 'Consent, value and who to remove' },
-      { k: 'audience',  l: 'Audience read',       u: '/audience-read.html',     d: 'What your last send did to your list' },
+      { k: 'list',      l: 'List health',         u: '/list-intelligence.html', d: 'Consent, value and who to remove', s: 'Consent, value, who to drop' },
+      { k: 'audience',  l: 'Audience read',       u: '/audience-read.html',     d: 'What your last send did to your list', s: 'What your last send did' },
     ] },
     { l: 'Your website and suppliers', tools: [
-      { k: 'sweep',     l: 'Site sweep',          u: '/site-sweep.html',        d: 'Cookies, privacy notice and sign-up forms' },
-      { k: 'vendor',    l: 'Third parties',       u: '/vendor-checker.html',    d: 'Suppliers who handle your data' },
+      { k: 'sweep',     l: 'Site sweep',          u: '/site-sweep.html',        d: 'Checks your site, then watches it every day', s: 'Checked, then watched daily' },
+      { k: 'vendor',    l: 'Third parties',       u: '/vendor-checker.html',    d: 'Suppliers who handle your data', s: 'Suppliers with your data' },
     ] },
-    { l: 'Records and practice', tools: [
-      { k: 'defence',   l: 'Campaign defence',    u: '/campaign-defence.html',  d: 'Keep proof you checked each campaign' },
-      { k: 'simulator', l: 'Regulator simulator', u: '/ico-simulator.html',     d: 'Rehearse an ICO, ASA or CMA investigation' },
+    { l: 'Practice', tools: [
+      { k: 'simulator', l: 'Regulator simulator', u: '/ico-simulator.html',     d: 'Rehearse an ICO, ASA or CMA investigation', s: 'Rehearse an investigation' },
     ] },
   ];
   // Which page re-runs the check that raised a fix (verified fixes get full credit)
@@ -285,10 +289,13 @@
   }
 
   function toolsNav() {
-    // One bar, in the order of the groups; hover or long-press shows what each is for
+    // One bar, in the order of the groups. Each tile: name and what it's for.
+    // On load a light passes along the bar once (CSS, sw-nt-sweep)
+    var i = 0;
     return '<nav class="sw-tools" aria-label="Tools">' + TOOL_GROUPS.map(function (g) {
       return g.tools.map(function (t) {
-        return '<button class="sw-nt' + (t.hot ? ' hot' : '') + '" data-act="tool" data-u="' + esc(t.u) + '" title="' + esc(g.l + ': ' + t.d) + '">' + esc(t.l) + '</button>';
+        return '<button class="sw-nt" style="--i:' + (i++) + '" data-act="tool" data-u="' + esc(t.u) + '" title="' + esc(g.l + ': ' + t.d) + '">' +
+          '<span class="sw-nt-l">' + esc(t.l) + '</span><span class="sw-nt-d">' + esc(t.s || t.d) + '</span></button>';
       }).join('');
     }).join('') + '</nav>';
   }
