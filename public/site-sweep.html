@@ -137,7 +137,8 @@ async function init(){
   try{
     const want=p.get('domain');
     const r=await swFetch(`${API}?action=get&userId=${encodeURIComponent(U)}${want?'&domain='+encodeURIComponent(want):''}`);
-    const j=await r.json();
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)setTimeout(()=>toast(j.error||('Could not load your sites (HTTP '+r.status+')'),'er'),300);
     S=want?j.sweep:(j.sweeps||[])[0]||null;
     if(!want)ALL=j.sweeps||[];
     else swFetch(`${API}?action=get&userId=${encodeURIComponent(U)}`).then(x=>x.json()).then(x=>{ALL=x.sweeps||[];renderOthers();}).catch(()=>{});

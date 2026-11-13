@@ -121,16 +121,50 @@ function pathOf(url) {
 
 function safeJson(s, fallback) { try { return s ? JSON.parse(s) : fallback; } catch { return fallback; } }
 
+// Turns an Airtable error response into a thrown error with a message a
+// person can act on. Without this, a missing field or table surfaced as a
+// bare "Internal server error" (or the raw Airtable status) in the browser.
+async function airtableError(r, step) {
+  const body = await r.text().catch(() => '');
+  let type = '', message = '';
+  try {
+    const j = JSON.parse(body);
+    type = j?.error?.type || (typeof j?.error === 'string' ? j.error : '');
+    message = j?.error?.message || '';
+  } catch { /* not JSON */ }
+  let hint;
+  if (r.status === 404 || r.status === 403 || type === 'TABLE_NOT_FOUND' || type === 'INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND') {
+    hint = `The ${TABLE} table could not be found in Airtable. Check it exists in the base and the token can access it.`;
+  } else if (type === 'UNKNOWN_FIELD_NAME' || type === 'INVALID_FILTER_BY_FORMULA' || type === 'INVALID_SORT_FIELD' || /unknown field/i.test(message)) {
+    hint = `The ${TABLE} table in Airtable is missing a field the Site sweep needs (${message || type}). Fields needed: ${REQUIRED_FIELDS.join(', ')}.`;
+  } else if (type === 'INVALID_VALUE_FOR_COLUMN' || type === 'INVALID_MULTIPLE_CHOICE_OPTIONS') {
+    hint = `A field in the ${TABLE} table has the wrong type in Airtable (${message || type}).`;
+  } else {
+    hint = `Airtable error ${r.status}${message ? `: ${message}` : ''}`;
+  }
+  console.error(`site-sweep Airtable ${step} failed:`, r.status, body.slice(0, 500));
+  const e = new Error(hint);
+  e.setup = true;
+  return e;
+}
+
+const REQUIRED_FIELDS = [
+  'UserID', 'Domain', 'VerificationToken', 'VerificationMethod', 'VerifiedAt', 'Status',
+  'SweepJson', 'FixKeysJson', 'SiteScore', 'LastSweptAt', 'RunStartedAt', 'RunCount', 'CreatedAt',
+];
+
 async function findRecord(ctx, userId, domain) {
   const formula = encodeURIComponent(`AND({UserID}='${esc(userId)}',{Domain}='${esc(domain)}')`);
   const r = await atFetch(`${ctx.base}/${TABLE}?filterByFormula=${formula}&maxRecords=1`, { headers: { Authorization: `Bearer ${ctx.token}` } });
-  if (!r.ok) throw new Error(`Airtable ${r.status}: ${await r.text().catch(() => '')}`);
+  if (!r.ok) throw await airtableError(r, 'lookup');
   return (await r.json()).records?.[0] || null;
 }
 
+// typecast lets Airtable add a missing single-select option (e.g. a Status
+// of "running") instead of rejecting the whole write with a 422
 async function patchRecord(ctx, id, fields) {
-  const r = await atFetch(`${ctx.base}/${TABLE}/${id}`, { method: 'PATCH', headers: ctx.authH, body: JSON.stringify({ fields }) });
-  if (!r.ok) throw new Error(`Airtable ${r.status}: ${await r.text().catch(() => '')}`);
+  const r = await atFetch(`${ctx.base}/${TABLE}/${id}`, { method: 'PATCH', headers: ctx.authH, body: JSON.stringify({ fields, typecast: true }) });
+  if (!r.ok) throw await airtableError(r, 'update');
   return r.json();
 }
 
@@ -575,12 +609,12 @@ async function handleStart(req, res) {
 
   const r = await atFetch(`${ctx.base}/${TABLE}`, {
     method: 'POST', headers: ctx.authH,
-    body: JSON.stringify({ records: [{ fields: {
+    body: JSON.stringify({ typecast: true, records: [{ fields: {
       UserID: userId, Domain: domain, VerificationToken: randomBytes(12).toString('hex'),
       Status: 'unverified', RunCount: 0, CreatedAt: nowIso(),
     } }] }),
   });
-  if (!r.ok) return res.status(r.status).json({ error: 'Failed to create site sweep (check the Site_Sweeps table exists)', detail: await r.text().catch(() => '') });
+  if (!r.ok) throw await airtableError(r, 'create');
   const record = (await r.json()).records?.[0];
   return res.json({ success: true, ...publicView(record) });
 }
@@ -633,7 +667,8 @@ async function handleRun(req, res) {
     sweep = await runSweep(domain);
   } catch (e) {
     await patchRecord(ctx, record.id, { Status: previousStatus }).catch(() => {});
-    return res.status(e.userFacing ? 422 : 500).json({ error: e.userFacing ? e.message : 'Site sweep failed', detail: e.userFacing ? undefined : e.message });
+    console.error('Site sweep run failed:', domain, e);
+    return res.status(e.userFacing ? 422 : 500).json({ error: e.userFacing ? e.message : `Site sweep failed: ${String(e.message || e).slice(0, 200)}` });
   }
 
   // What changed since the last run
@@ -678,7 +713,7 @@ async function handleGet(req, res) {
   }
   const formula = encodeURIComponent(`{UserID}='${esc(userId)}'`);
   const r = await atFetch(`${ctx.base}/${TABLE}?filterByFormula=${formula}&sort[0][field]=CreatedAt&sort[0][direction]=desc&maxRecords=10`, { headers: { Authorization: `Bearer ${ctx.token}` } });
-  if (!r.ok) return res.status(r.status).json({ error: 'Failed to load site sweeps' });
+  if (!r.ok) throw await airtableError(r, 'list');
   const records = (await r.json()).records || [];
   return res.json({ success: true, sweeps: records.map(publicView) });
 }
@@ -692,7 +727,9 @@ export default async function handler(req, res) {
   const { action } = req.query;
   try {
     // Identity: the verified member id replaces any userId sent by the browser
-    const auth = await requireAuth(req, res);
+    // allowUnpaid: the Site sweep stays free for prospects without a paid
+    // plan (launch plan billing gate); the daily limit still applies
+    const auth = await requireAuth(req, res, { allowUnpaid: true });
     if (!auth) return;
     if (req.method === 'POST' && action === 'run' && !(await checkLimit(req, res, auth, 'site_sweep'))) return;
     if (req.method === 'POST' && action === 'start')  return await handleStart(req, res);
@@ -702,6 +739,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Unknown action. Use start, verify, run or get.' });
   } catch (e) {
     console.error('site-sweep.js error:', e);
-    return res.status(500).json({ error: 'Internal server error' });
+    // Setup problems (Airtable table or fields) say exactly what to fix
+    if (e.setup) return res.status(503).json({ error: e.message, code: 'setup_required' });
+    return res.status(500).json({ error: `Site sweep hit an error: ${String(e.message || e).slice(0, 200)}` });
   }
 }
