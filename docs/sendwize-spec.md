@@ -38,6 +38,8 @@ Sendwize is a UK marketing-compliance and marketing-performance toolkit for in-h
 
 **Cases:** only cases published by the regulator itself (ico.org.uk, asa.org.uk, gov.uk/CMA), each with its source URL. Never add a case from memory or from a press report. **[PR #9]**
 
+**Website ownership:** anything that *watches* a website over time (Site guard, Campaign Defence daily drift checks, scheduled re-sweeps) only covers domains the member has proven they own through Site Sweep's ownership step (`api/_owned-domains.js`). A one-off check of a public page does not need proof.
+
 **Security:** every endpoint authenticates (section 4). The browser's `userId` is never trusted. Every user-supplied URL is fetched through `_page-scan.js fetchPage()` (SSRF-safe). Values are escaped before they go into Airtable formulas.
 
 ## 3. Architecture

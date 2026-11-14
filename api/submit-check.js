@@ -1,5 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — submit-check.js v5.5
+// SENDWIZE — submit-check.js v5.6
+// v5.6: dossier-get returns `watch` (which connected pages are watched
+//   daily and which are not, because the member hasn't proven they own
+//   the domain). Drift checks follow the same rule (_owned-domains.js).
 // v5.5 changes (Sign-off):
 //   + signoff-request: the marketer sends a built defence to an approver
 //     by email. The approver gets a one-time link (sign-off.html) showing
@@ -75,6 +78,7 @@ import { sendEmail, emailLayout, escHtml, memberEmail, isEmail } from './_email.
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
+import { verifiedDomains, splitWatchable } from './_owned-domains.js';
 import { ISSUES } from './_copy-issues.js';
 import { scanCampaignPages, serialiseScan, describeScan, activePageFindings, fetchPage } from './_page-scan.js';
 
@@ -1353,7 +1357,14 @@ async function handleDossierGet(req, res) {
   try { responsePack = JSON.parse(f.ResponsePackJson || 'null'); } catch {}
   let letter = null;
   try { letter = JSON.parse(f.LetterJson || 'null'); } catch {}
+  // Daily watching only covers pages on domains the member has proven they own
+  const watchUrls = [];
+  try { for (const u of JSON.parse(f.ConnectedUrls || '[]')) { const x = typeof u === 'string' ? u : u?.url; if (x) watchUrls.push(x); } } catch {}
+  try { for (const u of JSON.parse(f.LandingPageUrls || '[]')) if (typeof u === 'string' && u.startsWith('http')) watchUrls.push(u); } catch {}
+  const owned = watchUrls.length ? await verifiedDomains(userId) : [];
+  const watch = { ...splitWatchable([...new Set(watchUrls)], owned), verifiedDomains: owned };
   return res.json({
+    watch,
     dossierId: record.id, recordId: record.id,
     CampaignTitle: f.CampaignTitle || '', OwnerName: f.OwnerName || '',
     Status: f.Status || 'Draft', DossierSource: f.DossierSource || 'Standalone',
