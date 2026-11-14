@@ -125,6 +125,19 @@ export async function hasPaidPlan(memberId) {
   }
 }
 
+// The member's sign-in email, and whether Memberstack has confirmed they
+// own that inbox. Used by Site sweep to confirm a domain with no extra
+// steps when the member signed up with an address at that domain.
+export async function memberLogin(memberId) {
+  try {
+    const { data } = await memberstack().members.retrieve({ id: memberId });
+    return { email: data?.auth?.email || null, verified: !!data?.verified };
+  } catch (e) {
+    console.warn('[auth] member lookup failed:', e.message);
+    return null;
+  }
+}
+
 // Pins the verified member id onto the request so existing handlers,
 // which read userId from query/body, automatically use the real one.
 function pinUserId(req, userId) {

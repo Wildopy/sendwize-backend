@@ -14,6 +14,17 @@
 // Actions:
 //   POST ?action=start   { userId, domain }  → record + verification instructions (idempotent)
 //   POST ?action=verify  { userId, domain }  → checks meta tag, /.well-known file, DNS TXT
+//   POST ?action=email-link { domain, email } → emails a confirm link to an address AT the domain
+//   POST ?action=send-steps { domain, email } → emails the tag/file/DNS steps to whoever runs the site
+//   GET  ?action=confirm  (public, signed link) → marks the domain verified
+//
+// OWNERSHIP, IN ORDER OF EFFORT (no code needed for the first two):
+//   1. Signed up with an address at the domain, and Memberstack has
+//      confirmed that inbox → verified automatically on start.
+//   2. A link emailed to any address at the domain (you@, info@, a
+//      colleague) → one click. The link is signed, so no extra fields.
+//   3. Meta tag, file or DNS record, or "send these steps" to whoever
+//      runs the website, for any platform.
 //   POST ?action=run     { userId, domain }  → runs the sweep (verified domains only)
 //   GET  ?action=get     userId[, domain]    → latest result (for the page and dashboard)
 //
@@ -48,9 +59,10 @@
 //   (number), LastSweptAt, RunStartedAt, RunCount (number), CreatedAt
 // ─────────────────────────────────────────────────────────────
 import { promises as dns } from 'node:dns';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { atFetch } from './_airtable.js';
-import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
+import { requireAuth, internalHeaders, CORS_HEADERS, memberLogin } from './_auth.js';
+import { sendEmail, emailLayout, escHtml, isEmail } from './_email.js';
 import { checkLimit } from './_limits.js';
 import { fetchPage, extractSignals, extractLinks, isSafePublicUrl, resolvesPublic } from './_page-scan.js';
 import { sweepTrackers } from './_processor-rules.js';
@@ -175,6 +187,53 @@ function verificationInstructions(domain, token) {
     dns:  { type: 'TXT', host: domain, value: `${DNS_PREFIX}${token}` },
     file: { url: `https://${domain}${FILE_PATH}`, contents: token },
   };
+}
+
+// ── Email confirmation (no code needed) ───────────────────────
+// Addresses on shared platform domains can't prove ownership of a site
+// hosted there (anyone@netlify.app would match every Netlify site).
+const SHARED_HOSTS = ['netlify.app', 'vercel.app', 'webflow.io', 'myshopify.com', 'wixsite.com', 'squarespace.com',
+  'github.io', 'wordpress.com', 'pages.dev', 'herokuapp.com', 'framer.website', 'carrd.co', 'godaddysites.com'];
+// Second-level suffixes nobody can have an inbox on (a@co.uk must not match brand.co.uk)
+const PUBLIC_SUFFIX = /^(co|org|me|ltd|plc|net|ac|gov|com|nhs|sch|police|mod)\.[a-z]{2}$/;
+
+export function emailMatchesDomain(email, domain) {
+  if (!isEmail(email) || !domain) return false;
+  const ed = email.trim().toLowerCase().split('@').pop().replace(/^www\./, '');
+  if (SHARED_HOSTS.includes(ed) || PUBLIC_SUFFIX.test(ed) || !ed.includes('.')) return false;
+  // you@brand.co.uk for brand.co.uk or shop.brand.co.uk; you@mail.brand.co.uk for brand.co.uk
+  return ed === domain || domain.endsWith('.' + ed) || ed.endsWith('.' + domain);
+}
+
+const LINK_TTL_MS = 48 * 60 * 60 * 1000;
+function linkSig(recordId, email, exp) {
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret) throw new Error('INTERNAL_API_SECRET not set');
+  return createHmac('sha256', secret).update(`site-sweep-confirm|${recordId}|${email.toLowerCase()}|${exp}`).digest('hex').slice(0, 40);
+}
+function sigOk(a, b) {
+  const x = Buffer.from(String(a || '')), y = Buffer.from(String(b || ''));
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+
+async function getRecordById(ctx, id) {
+  if (!/^rec[A-Za-z0-9]{14}$/.test(String(id || ''))) return null;
+  const r = await atFetch(`${ctx.base}/${TABLE}/${id}`, { headers: { Authorization: `Bearer ${ctx.token}` } });
+  if (r.status === 404) return null;
+  if (!r.ok) throw await airtableError(r, 'lookup');
+  return r.json();
+}
+
+// Verified automatically when the member's confirmed sign-in email is at the domain
+async function tryLoginEmail(ctx, record, userId) {
+  if (record.fields.VerifiedAt || !String(userId).startsWith('mem_')) return { record, loginEmail: null };
+  const login = await memberLogin(userId);
+  const matches = login?.email && emailMatchesDomain(login.email, record.fields.Domain);
+  if (matches && login.verified) {
+    const updated = await patchRecord(ctx, record.id, { VerificationMethod: 'login_email', VerifiedAt: nowIso(), Status: record.fields.SweepJson ? 'complete' : 'verified' });
+    return { record: updated, loginEmail: login.email };
+  }
+  return { record, loginEmail: matches ? login.email : null };
 }
 
 function publicView(record) {
@@ -605,7 +664,10 @@ async function handleStart(req, res) {
 
   const ctx = airtableCtx();
   const existing = await findRecord(ctx, userId, domain);
-  if (existing) return res.json({ success: true, ...publicView(existing) });
+  if (existing) {
+    const { record, loginEmail } = await tryLoginEmail(ctx, existing, userId);
+    return res.json({ success: true, ...publicView(record), suggestedEmail: loginEmail });
+  }
 
   const r = await atFetch(`${ctx.base}/${TABLE}`, {
     method: 'POST', headers: ctx.authH,
@@ -615,8 +677,96 @@ async function handleStart(req, res) {
     } }] }),
   });
   if (!r.ok) throw await airtableError(r, 'create');
-  const record = (await r.json()).records?.[0];
-  return res.json({ success: true, ...publicView(record) });
+  const created = (await r.json()).records?.[0];
+  const { record, loginEmail } = await tryLoginEmail(ctx, created, userId);
+  return res.json({ success: true, ...publicView(record), suggestedEmail: loginEmail });
+}
+
+async function handleEmailLink(req, res, auth) {
+  const { userId, domain: raw, email } = req.body ?? {};
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  const domain = normaliseDomain(raw);
+  if (!domain) return res.status(400).json({ error: 'Invalid domain' });
+  if (!isEmail(email)) return res.status(400).json({ error: 'Enter an email address' });
+  if (!emailMatchesDomain(email, domain)) {
+    return res.status(400).json({ error: `Use an address that ends in @${domain}, so we know the site is yours.` });
+  }
+  const ctx = airtableCtx();
+  const record = await findRecord(ctx, userId, domain);
+  if (!record) return res.status(404).json({ error: 'Start the sweep for this domain first' });
+  if (record.fields.VerifiedAt) return res.json({ success: true, verified: true, ...publicView(record) });
+  if (!(await checkLimit(req, res, auth, 'sweep_email'))) return;
+
+  const to = email.trim().toLowerCase();
+  const exp = Date.now() + LINK_TTL_MS;
+  const link = `${APP_URL}/api/site-sweep?action=confirm&r=${record.id}&e=${encodeURIComponent(to)}&x=${exp}&s=${linkSig(record.id, to, exp)}`;
+  const sent = await sendEmail({
+    to, subject: `Confirm ${domain} for your Sendwize site sweep`,
+    html: emailLayout({
+      heading: `Is ${domain} your website?`,
+      bodyHtml: `<p style="font-size:14px;line-height:1.6;color:#333">Someone using Sendwize asked to review <b>${escHtml(domain)}</b> for cookie, privacy and sign-up issues. Press the button to confirm it's your site. The link works for 48 hours.</p><p style="font-size:13px;color:#666">If you didn't expect this, ignore this email and nothing happens.</p>`,
+      ctaText: 'Confirm it’s our website', ctaUrl: link,
+    }),
+  });
+  if (!sent.sent) {
+    console.error('Site sweep confirm email failed:', sent.reason);
+    return res.status(503).json({ error: 'We could not send the email just now. Try again in a minute, or use one of the other options.' });
+  }
+  return res.json({ success: true, sent: true, to });
+}
+
+async function handleSendSteps(req, res, auth) {
+  const { userId, domain: raw, email } = req.body ?? {};
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  const domain = normaliseDomain(raw);
+  if (!domain) return res.status(400).json({ error: 'Invalid domain' });
+  if (!isEmail(email)) return res.status(400).json({ error: 'Enter their email address' });
+  const ctx = airtableCtx();
+  const record = await findRecord(ctx, userId, domain);
+  if (!record) return res.status(404).json({ error: 'Start the sweep for this domain first' });
+  if (record.fields.VerifiedAt) return res.json({ success: true, verified: true, ...publicView(record) });
+  if (!(await checkLimit(req, res, auth, 'sweep_email'))) return;
+
+  const v = verificationInstructions(domain, record.fields.VerificationToken);
+  const login = String(userId).startsWith('mem_') ? await memberLogin(userId) : null;
+  const pre = s => `<pre style="background:#f6f6f6;padding:10px 12px;border-radius:6px;font-size:12px;white-space:pre-wrap;word-break:break-all">${escHtml(s)}</pre>`;
+  const sent = await sendEmail({
+    to: email.trim(), replyTo: login?.email || undefined,
+    subject: `A 2-minute website change for ${domain}`,
+    html: emailLayout({
+      heading: `Please add one line to ${domain}`,
+      bodyHtml: `<p style="font-size:14px;line-height:1.6;color:#333">${login?.email ? escHtml(login.email) : 'A colleague'} is using Sendwize to check ${escHtml(domain)} for cookie and privacy issues, and needs to confirm the site is yours. Any <b>one</b> of these does it:</p>
+<p style="font-size:14px;margin:16px 0 4px"><b>1. Add this tag inside the &lt;head&gt; of the homepage</b>, then publish:</p>${pre(v.meta.tag)}
+<p style="font-size:14px;margin:16px 0 4px"><b>2. Or upload a file</b> at ${escHtml(v.file.url)} containing only:</p>${pre(v.file.contents)}
+<p style="font-size:14px;margin:16px 0 4px"><b>3. Or add a DNS TXT record</b> on ${escHtml(v.dns.host)} with the value:</p>${pre(v.dns.value)}
+<p style="font-size:13px;color:#666;margin-top:16px">The tag does nothing for visitors and can be removed once the site is confirmed. Reply to this email if you have questions.</p>`,
+    }),
+  });
+  if (!sent.sent) {
+    console.error('Site sweep steps email failed:', sent.reason);
+    return res.status(503).json({ error: 'We could not send the email just now. Try again in a minute.' });
+  }
+  return res.json({ success: true, sent: true });
+}
+
+// The emailed link: public, so it works from any device, but signed and time-limited
+async function handleConfirm(req, res) {
+  const { r: id, e: email, x, s: sig } = req.query;
+  const page = (title, msg, ok) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(ok ? 200 : 400).send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(title)}</title><style>body{font-family:system-ui,sans-serif;background:#faf8f5;color:#1a1a1a;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:16px}div{background:#fff;border:1px solid #eee;border-radius:12px;padding:32px;max-width:440px}h1{font-size:20px;margin:0 0 10px}p{font-size:15px;line-height:1.6;color:#444;margin:0}</style></head><body><div><h1>${escHtml(title)}</h1><p>${escHtml(msg)}</p></div></body></html>`);
+  };
+  const exp = Number(x);
+  if (!id || !isEmail(email) || !Number.isFinite(exp) || !sig) return page('Link not recognised', 'This confirmation link is incomplete. Ask for a new one from the Site sweep page.', false);
+  if (Date.now() > exp) return page('Link expired', 'This link has expired. Ask for a new one from the Site sweep page in Sendwize.', false);
+  if (!sigOk(sig, linkSig(id, String(email), exp))) return page('Link not recognised', 'This confirmation link is not valid. Ask for a new one from the Site sweep page.', false);
+  const ctx = airtableCtx();
+  const record = await getRecordById(ctx, id);
+  if (!record || !emailMatchesDomain(String(email), record.fields.Domain)) return page('Link not recognised', 'We could not find this site. Ask for a new link from the Site sweep page.', false);
+  if (!record.fields.VerifiedAt) {
+    await patchRecord(ctx, record.id, { VerificationMethod: 'email', VerifiedAt: nowIso(), Status: record.fields.SweepJson ? 'complete' : 'verified' });
+  }
+  return page(`${record.fields.Domain} is confirmed`, 'Thanks. Go back to Sendwize: the Site sweep page updates by itself, and you can run the sweep now.', true);
 }
 
 async function handleVerify(req, res) {
@@ -729,14 +879,17 @@ export default async function handler(req, res) {
     // Identity: the verified member id replaces any userId sent by the browser
     // allowUnpaid: the Site sweep stays free for prospects without a paid
     // plan (launch plan billing gate); the daily limit still applies
-    const auth = await requireAuth(req, res, { allowUnpaid: true });
+    const auth = await requireAuth(req, res, { allowUnpaid: true, publicActions: ['confirm'] });
     if (!auth) return;
     if (req.method === 'POST' && action === 'run' && !(await checkLimit(req, res, auth, 'site_sweep'))) return;
     if (req.method === 'POST' && action === 'start')  return await handleStart(req, res);
+    if (req.method === 'GET'  && action === 'confirm') return await handleConfirm(req, res);
     if (req.method === 'POST' && action === 'verify') return await handleVerify(req, res);
+    if (req.method === 'POST' && action === 'email-link') return await handleEmailLink(req, res, auth);
+    if (req.method === 'POST' && action === 'send-steps') return await handleSendSteps(req, res, auth);
     if (req.method === 'POST' && action === 'run')    return await handleRun(req, res);
     if (req.method === 'GET'  && action === 'get')    return await handleGet(req, res);
-    return res.status(400).json({ error: 'Unknown action. Use start, verify, run or get.' });
+    return res.status(400).json({ error: 'Unknown action. Use start, verify, email-link, send-steps, run or get.' });
   } catch (e) {
     console.error('site-sweep.js error:', e);
     // Setup problems (Airtable table or fields) say exactly what to fix

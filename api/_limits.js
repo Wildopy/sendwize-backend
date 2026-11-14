@@ -26,6 +26,7 @@ const DEFAULT_LIMITS = {
   verdict:        40,  // Send-day verdict
   exposure:       20,  // AI exposure assessments requested by a member
   fix_draft:      40,  // ready-to-use fixes on the dashboard
+  sweep_email:    10,  // Site sweep ownership emails (confirm link, steps to a web person)
 };
 
 let warned = false;
