@@ -11,7 +11,6 @@
 // dashboard. Deterministic: no AI.
 // ─────────────────────────────────────────────────────────────
 import { atFetch, fq } from './_airtable.js';
-import { loadSupplierDue, supplierAlertText } from './_suppliers.js';
 import { buildCampaignInsights, COMPLAINT_LIMIT, COMPLAINT_TARGET } from './_campaign-insights.js';
 
 const DAY = 86400000;
@@ -158,15 +157,12 @@ export async function loadRulingFixes(userId, days = 14) {
 
 // Everything for one member; each source fails on its own
 export async function buildAlerts(userId, now = Date.now()) {
-  const [checks, camps, rulings, due] = await Promise.all([
+  const [checks, camps, rulings] = await Promise.all([
     loadListChecks(userId).catch(() => []),
     loadRecentCampaigns(userId).catch(() => []),
     loadRulingFixes(userId).catch(() => []),
-    loadSupplierDue(userId, atFetch, now).catch(() => []),
   ]);
-  // Third-party register upkeep: reviews, renewals, unanswered questionnaires
-  const supplier = due.slice(0, 4).map(i => ({ kind: 'supplier_' + i.type, severity: i.days < 0 ? 'red' : 'amber', name: i.name, recordId: i.recordId, text: supplierAlertText(i) }));
-  const alerts = rankAlerts([...rulingAlerts(rulings), ...listAlerts(checks, now), ...audienceAlerts(camps, now), ...supplier]);
+  const alerts = rankAlerts([...rulingAlerts(rulings), ...listAlerts(checks, now), ...audienceAlerts(camps, now)]);
   const latest = [...checks.map(c => c.checkDate), ...camps.map(c => c.date)].filter(Boolean).sort().pop() || null;
-  return { alerts, latestUpload: latest, hasData: checks.length > 0 || camps.length > 0 || supplier.length > 0 };
+  return { alerts, latestUpload: latest, hasData: checks.length > 0 || camps.length > 0 };
 }

@@ -137,9 +137,7 @@ export function buildChecklist(rec, pending = []) {
     const ok = v.filter(f => DPA_OK.includes(f.DPAStatus || f.AgreementStatus));
     if (!v.length) add('processor_dpas', ['ICO'], 'Agreements with the platforms that hold your data (Article 28)', 'missing', 'No platforms recorded. Every email or SMS tool you use processes your customers\' data and needs an agreement on file.', 'vendor-checker.html');
     else add('processor_dpas', ['ICO'], 'Agreements with the platforms that hold your data (Article 28)', ok.length === v.length ? 'available' : ok.length ? 'partial' : 'missing',
-      `${ok.length} of ${plural(v.length, 'platform')} have a confirmed agreement on file.` + (ok.length < v.length ? ` Missing: ${v.filter(f => !ok.includes(f)).slice(0, 3).map(f => f.VendorName).filter(Boolean).join(', ')}.` : '') +
-      (() => { const c = v.filter(f => (f.Contracts || []).length).length;
-        return c ? ` ${c} with the signed contract uploaded.` : ''; })(),
+      `${ok.length} of ${plural(v.length, 'platform')} have a confirmed agreement on file.` + (ok.length < v.length ? ` Missing: ${v.filter(f => !ok.includes(f)).slice(0, 3).map(f => f.VendorName).filter(Boolean).join(', ')}.` : ''),
       'vendor-checker.html');
   }
 
@@ -151,8 +149,7 @@ export function buildChecklist(rec, pending = []) {
     if (all.length) {
       const ok = all.filter(f => f.ConsentChainVerified && (DPA_OK.includes(f.Article26Status) || DPA_OK.includes(f.DataAgreementStatus) || DPA_OK.includes(f.DPAStatus)));
       add('partner_chain', ['ICO'], 'Consent and agreements for partners and affiliates who market for you', ok.length === all.length ? 'available' : ok.length ? 'partial' : 'missing',
-        `${ok.length} of ${plural(all.length, 'partner or affiliate')} have both the agreement and the consent wording confirmed.` +
-        (() => { const logged = [...rec.partners, ...rec.affiliates].reduce((n, r) => n + (json(r.fields.CheckLogJson, []) || []).length, 0); return logged ? ` ${plural(logged, 'dated check')} logged by your team.` : ''; })(), 'vendor-checker.html');
+        `${ok.length} of ${plural(all.length, 'partner or affiliate')} have both the agreement and the consent wording confirmed.`, 'vendor-checker.html');
     }
     const ads = [...rec.partners, ...rec.affiliates].map(r => r.fields).filter(f => /influencer|joint_ads|co_branded/.test(String(f.RelationshipActivity || f.AffiliateType || '').toLowerCase()));
     if (ads.length) {
