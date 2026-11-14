@@ -412,3 +412,24 @@ a.sw-link{text-decoration:none}
 @media(max-width:900px){.sw-sh-grid{grid-template-columns:1fr}.sw-sh-d{-webkit-line-clamp:2}}
 @media(max-width:900px){.sw-quiet{grid-template-columns:1fr}}
 @media(max-width:680px){.sw-pnl,.sw-pnl.sw-next,.sw-pnl.sw-fixes,.sw-wrap .sw-pnl.sw-noticed{padding:16px}.sw-pnl-h .sw-seg{width:100%}.sw-hist .sw-row{flex-wrap:wrap}.sw-hist .sw-row-main{flex-basis:100%}.sw-hist .sw-hist-at{margin:0 auto 0 0}}
+
+/* v1.7: client workspaces, bookmarklet, published cases beside figures */
+.sw-portal-id{display:flex;align-items:center;gap:12px;min-width:0}
+.sw-ws-logo{width:40px;height:40px;object-fit:contain;border-radius:8px;border:1px solid var(--b);background:#fff;flex:none}
+.sw-portal-links{align-items:center}
+.sw-portal-links .sw-link{font-size:12px;font-weight:600;color:var(--tm)}.sw-portal-links .sw-link:hover{color:var(--o)}
+.sw-ws{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--tm)}
+.sw-ws select{font:inherit;font-size:12px;font-weight:600;padding:5px 26px 5px 10px;border:1px solid var(--bm);border-radius:999px;background:#fff;color:var(--t);max-width:200px;cursor:pointer}
+.sw-chip.case{background:#fff;border-color:var(--bm);color:var(--t);text-decoration:none;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.sw-chip.case:hover{border-color:var(--o);color:var(--od)}
+.sw-cases{margin:10px 0;padding:10px 12px;border:1px solid var(--b);border-radius:var(--rad-sm);background:#fff}
+.sw-case-row{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--b)}
+.sw-case-row:last-of-type{border-bottom:none}
+.sw-case-row a{font-weight:600;color:var(--t);text-decoration:underline;text-decoration-color:var(--bm)}
+.sw-case-row a:hover{color:var(--od)}
+.sw-case-row span{color:var(--tm)}
+.sw-bm{display:inline-block;background:var(--o);color:#fff!important;font-weight:700;font-size:14px;padding:10px 18px;border-radius:999px;text-decoration:none;cursor:grab;box-shadow:0 6px 18px rgba(234,115,23,.3)}
+.sw-steps{margin:0 0 10px 18px;padding:0;font-size:13px;color:var(--tm)}
+.sw-steps li{margin:3px 0}
+@media (max-width:640px){.sw-portal-links{gap:12px}.sw-ws select{max-width:150px}}
+.sw-nx-case{margin-top:4px}

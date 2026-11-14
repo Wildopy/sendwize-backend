@@ -56,7 +56,8 @@ export async function checkLimit(req, res, auth, bucket) {
     return true;
   }
   const day = new Date().toISOString().slice(0, 10);
-  const key = `sw:limit:${bucket}:${auth.userId}:${day}`;
+  // Per member, not per client workspace, so workspaces don't multiply the caps
+  const key = `sw:limit:${bucket}:${auth.memberId || auth.userId}:${day}`;
   try {
     const count = await redis(['INCR', key]);
     if (count === 1) await redis(['EXPIRE', key, 60 * 60 * 26]);

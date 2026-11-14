@@ -1,5 +1,11 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — _auth.js v1.0
+// SENDWIZE — _auth.js v1.1
+// v1.1: client workspaces for agencies. A member may send the header
+//   X-Sendwize-Workspace: <workspace id>. If the member owns that
+//   workspace (Workspaces table), every endpoint sees the workspace's own
+//   user id, <member id>__<workspace id>, so all records (profile, fixes,
+//   lists, checks) are kept per client with no change to the tools.
+//   The plan check and usage limits still use the member's own id.
 // Server-side identity for every API endpoint.
 //
 // Who is calling, in order:
@@ -36,7 +42,11 @@ import { timingSafeEqual } from 'node:crypto';
 import memberstackAdmin from '@memberstack/admin';
 
 export const INTERNAL_HEADER = 'x-sendwize-internal';
-export const CORS_HEADERS = 'Content-Type, Authorization';
+export const CORS_HEADERS = 'Content-Type, Authorization, X-Sendwize-Workspace';
+export const WORKSPACE_HEADER = 'x-sendwize-workspace';
+// Workspace ids are made by api/workspaces.js: "ws" + 10 lowercase letters/digits
+export const isWorkspaceId = id => typeof id === 'string' && /^ws[a-z0-9]{10}$/.test(id);
+export const workspaceUserId = (memberId, ws) => `${memberId}__${ws}`;
 
 let msClient = null;
 function memberstack() {
@@ -76,7 +86,42 @@ async function verifyMemberToken(token) {
   }
 }
 
-export async function authenticate(req) {
+// Does this member own this workspace? Cached for 5 minutes per warm
+// function. An Airtable outage or a missing Workspaces table refuses the
+// workspace (the member can still use their own account).
+const WS_CACHE_MS = 5 * 60 * 1000;
+const wsCache = new Map();
+export function forgetWorkspace(memberId, ws) { wsCache.delete(`${memberId}|${ws}`); }
+async function ownsWorkspace(memberId, ws) {
+  const key = `${memberId}|${ws}`;
+  if (!/^[A-Za-z0-9_-]+$/.test(memberId)) return false;
+  const hit = wsCache.get(key);
+  if (hit && Date.now() - hit.at < WS_CACHE_MS) return hit.ok;
+  try {
+    const formula = encodeURIComponent(`AND({OwnerID}='${memberId}',{WorkspaceID}='${ws}',NOT({Archived}))`);
+    const r = await fetch(`https://api.airtable.com/v0/${process.env.BASE_ID}/Workspaces?filterByFormula=${formula}&maxRecords=1`,
+      { headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` } });
+    if (!r.ok) { console.warn('[auth] workspace lookup failed:', r.status); return false; }
+    const ok = ((await r.json()).records || []).length > 0;
+    wsCache.set(key, { ok, at: Date.now() });
+    return ok;
+  } catch (e) {
+    console.warn('[auth] workspace lookup error:', e.message);
+    return false;
+  }
+}
+
+// Member identity, switched to a client workspace when the request names one
+async function memberIdentity(req, memberId, extra = {}) {
+  const ws = req.headers?.[WORKSPACE_HEADER];
+  if (!ws || extra.ignoreWorkspace) return { kind: 'member', userId: memberId, memberId, ...extra };
+  if (!isWorkspaceId(ws) || !(await ownsWorkspace(memberId, ws))) {
+    return { kind: 'member', userId: memberId, memberId, workspaceRefused: true, ...extra };
+  }
+  return { kind: 'member', userId: workspaceUserId(memberId, ws), memberId, workspace: ws, ...extra };
+}
+
+export async function authenticate(req, opts = {}) {
   const headers = req.headers || {};
   const internal = headers[INTERNAL_HEADER];
   if (internal && process.env.INTERNAL_API_SECRET && safeEqual(internal, process.env.INTERNAL_API_SECRET)) {
@@ -89,11 +134,13 @@ export async function authenticate(req) {
   const token = authz.startsWith('Bearer ') ? authz.slice(7).trim() : readCookie(req, '_ms-mid');
   if (token) {
     const id = await verifyMemberToken(token);
-    if (id) return { kind: 'member', userId: id };
+    if (id) return memberIdentity(req, id, { ignoreWorkspace: opts.ignoreWorkspace });
   }
   if (process.env.SENDWIZE_ALLOW_USERID_BYPASS === 'true' && process.env.VERCEL_ENV !== 'production') {
-    const id = req.query?.userId || (req.body && typeof req.body === 'object' ? req.body.userId : null);
-    if (id) return { kind: 'member', userId: String(id), bypass: true };
+    const raw = req.query?.userId || (req.body && typeof req.body === 'object' ? req.body.userId : null);
+    // A workspace user id typed in dev mode is split back into member + workspace
+    const id = raw ? String(raw).split('__')[0] : null;
+    if (id) return memberIdentity(req, id, { bypass: true, ignoreWorkspace: opts.ignoreWorkspace });
   }
   return null;
 }
@@ -125,6 +172,25 @@ export async function hasPaidPlan(memberId) {
   }
 }
 
+// The member's active plan ids (ACTIVE or TRIALING). Used for the agency
+// plan (client workspaces). null when Memberstack can't be reached.
+const plansCache = new Map();
+export async function activePlanIds(memberId) {
+  const hit = plansCache.get(memberId);
+  if (hit && Date.now() - hit.at < PLAN_CACHE_MS) return hit.ids;
+  try {
+    const { data } = await memberstack().members.retrieve({ id: memberId });
+    const ids = (data?.planConnections || [])
+      .filter(pc => PLAN_OK_STATUS.includes(String(pc.status || '').toUpperCase()))
+      .map(pc => pc.planId);
+    plansCache.set(memberId, { ids, at: Date.now() });
+    return ids;
+  } catch (e) {
+    console.warn('[auth] plan lookup failed:', e.message);
+    return null;
+  }
+}
+
 // The member's sign-in email, and whether Memberstack has confirmed they
 // own that inbox. Used by Site sweep to confirm a domain with no extra
 // steps when the member signed up with an address at that domain.
@@ -152,13 +218,17 @@ function pinUserId(req, userId) {
 // Use at the top of each router, after the OPTIONS check:
 //   const auth = await requireAuth(req, res, { publicActions: ['vendors'] });
 //   if (!auth) return;
-export async function requireAuth(req, res, { publicActions = [], allowUnpaid = false } = {}) {
+export async function requireAuth(req, res, { publicActions = [], allowUnpaid = false, ignoreWorkspace = false } = {}) {
   if (publicActions.includes(req.query?.action)) return { kind: 'public' };
-  const auth = await authenticate(req);
+  const auth = await authenticate(req, { ignoreWorkspace });
   if (auth) {
     if (auth.kind === 'member') {
+      if (auth.workspaceRefused) {
+        res.status(403).json({ error: 'That client workspace was not found on your account.', code: 'workspace_not_found' });
+        return null;
+      }
       pinUserId(req, auth.userId);
-      if (!allowUnpaid && !auth.bypass && !(await hasPaidPlan(auth.userId))) {
+      if (!allowUnpaid && !auth.bypass && !(await hasPaidPlan(auth.memberId || auth.userId))) {
         res.status(402).json({ error: 'Your Sendwize plan is not active. Choose a plan to keep using the tools.', code: 'plan_required' });
         return null;
       }
