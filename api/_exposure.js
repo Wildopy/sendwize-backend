@@ -204,6 +204,8 @@ const EXPOSURE_CONSTANTS = {
     referralNote: 'Marketing that may not meet the CAP Code can lead to an upheld ASA ruling published under your brand name. Repeat or serious cases can be referred to Trading Standards under DMCCA 2024.',
   },
   drip_pricing:    { category: 'CMA' },
+  // Site Sweep terms checks: terms that leave out or contradict consumer rights
+  consumer_terms:  { category: 'CMA', cmaNote: 'Terms that leave out the right to cancel, limit statutory rights or contradict what the site promises are a CMA consumer-law focus. Since April 2025 the CMA can fine directly under the DMCCA 2024.' },
   fake_reviews:    { category: 'CMA' },
   commercial_loss: { category: 'Commercial' },
   segment_damaged:              { category: 'Commercial' },
