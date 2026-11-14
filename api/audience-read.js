@@ -43,6 +43,7 @@ import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { validateAudienceUpload } from './_normalise.js';
 import { buildCampaignInsights } from './_campaign-insights.js';
+import { contactSavings } from './_esp-cost.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 const AT_HEADERS = () => ({
@@ -1708,6 +1709,23 @@ export default async function handler(req, res) {
         const msg=await aiRes.json();
         return res.json({success:true,brief:msg.content?.[0]?.text||''});
       } catch(e){ return res.status(500).json({success:false,error:'Strategy generation failed'}); }
+    }
+
+    // Contacts who never engage, from each list's latest List health check,
+    // and what keeping them costs on the email platform each month
+    if (action === 'list-savings') {
+      const safeId = String(userId).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const checks = await atGet('List_Intelligence_Checks', `{UserID}='${safeId}'`, 'sort[0][field]=CheckDate&sort[0][direction]=desc', 100).catch(() => []);
+      const latest = new Map();
+      for (const c of checks) { const name = c.fields.ListName || 'Main list'; if (!latest.has(name)) latest.set(name, c); }
+      const lists = [];
+      for (const [name, c] of latest) {
+        let sv = null;
+        try { sv = JSON.parse(c.fields.Results || '{}')?.insights?.realList?.savings || null; } catch {}
+        if (sv) lists.push({ listName: name, checkDate: c.fields.CheckDate || null, total: c.fields.TotalContacts || null, contacts: sv.contacts });
+      }
+      const total = lists.reduce((n, l) => n + (l.contacts || 0), 0);
+      return res.json({ success: true, checked: latest.size > 0, lists, ...contactSavings(total) });
     }
 
     if (action === 'methodology') {

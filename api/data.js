@@ -1,5 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — data.js v7.8
+// SENDWIZE — data.js v7.9
+// v7.9: Regulator simulator filled from the member's own records
+//   (_readiness.js): every letter question is answered Ready / Partly /
+//   Missing, plus a readiness score and a response pack.
 // Commercial Relationships & Risk Register
 //
 // v7.8 changes (processor rules, see _processor-rules.js):
@@ -56,8 +59,11 @@
 // ─────────────────────────────────────────────────────────────
 
 import { claudeFetch } from './_claude.js';
+import { createHash } from 'node:crypto';
+import { gatherRecords, buildChecklist, readinessScore, readinessLabel, backgroundChecks, representations, STATUS_WEIGHT } from './_readiness.js';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
+import { checkLimit } from './_limits.js';
 import { transferPosition, ICO_REGISTER_NOTE, sweepTrackers, trackerMatchesVendor, applySweepEvidence } from './_processor-rules.js';
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
@@ -1724,35 +1730,144 @@ async function handleConsentExpiryCheck(req, res) {
 async function handleVendorWatch(req, res) { return handleRelationshipWatch(req, res); }
 
 // ── SIMULATION-RUN ───────────────────────────────────────────
+// v7.9: every stage is filled from the member's own records
+// (_readiness.js): background check, risk factors, a letter whose
+// questions are each answered from what Sendwize holds (Ready / Partly /
+// Missing), the document checklist, a readiness score and the penalty
+// frame from the exposure engine. Claude only words the letter, and only
+// picks questions from the checklist; if it fails, a plain letter is
+// built from the checklist so the stage is never empty.
+const SIM_REG = {
+  ICO: { orgName: "Information Commissioner's Office", refPrefix: 'ICO-ENF', signatory: 'Senior Enforcement Officer, Direct Marketing Team', tone: 'formal ICO tone, referring to PECR and UK GDPR by regulation or article number' },
+  ASA: { orgName: 'Advertising Standards Authority', refPrefix: 'ASA-ENQ', signatory: 'Investigations Executive', tone: 'formal ASA tone, referring to CAP Code rules by number' },
+  CMA: { orgName: 'Competition and Markets Authority', refPrefix: 'CMA-CP', signatory: 'Senior Director, Consumer Protection', tone: 'formal CMA tone under the DMCCA 2024' },
+};
+const SIM_BANDS = {
+  standard: { label: 'Standard Risk', colour: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
+  elevated: { label: 'Elevated Risk', colour: '#ca8a04', bg: '#fefce8', border: '#fef08a' },
+  serious:  { label: 'Serious Risk',  colour: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+};
+const SIM_BAND_TEXT = {
+  ICO: { standard: 'Your records do not show the patterns the ICO most commonly investigates.', elevated: 'Your records show patterns the ICO actively investigates.', serious: 'Your records show gaps of the kind that have led to ICO enforcement action.' },
+  ASA: { standard: 'Your records do not show the patterns behind most upheld ASA complaints.', elevated: 'Your records show patterns associated with ASA complaints.', serious: 'Your records show serious CAP Code concerns.' },
+  CMA: { standard: 'Your records do not match the patterns the CMA has targeted.', elevated: 'Your records show patterns the CMA has looked at in its sweeps.', serious: 'Your records show practices the CMA treats as serious under the DMCCA 2024.' },
+};
+const ANSWER_TEXT = { available: 'Ready', partial: 'Partly', missing: 'Missing' };
+
+function simRef(prefix, userId) {
+  const h = createHash('sha256').update(`${userId}|${new Date().toISOString().slice(0, 10)}`).digest('hex').slice(0, 5).toUpperCase();
+  return `${prefix}-${h}`;
+}
+
+function plainLetter(regulator, items, userId) {
+  const cfg = SIM_REG[regulator];
+  const pick = [...items].sort((a, b) => STATUS_WEIGHT[a.status] - STATUS_WEIGHT[b.status]).slice(0, 6);
+  return {
+    reference: simRef(cfg.refPrefix, userId),
+    subject: regulator === 'ICO' ? 'Information request: your direct marketing' : regulator === 'ASA' ? 'Enquiry about your advertising' : 'Information request: your consumer-facing practices',
+    opening: `The ${cfg.orgName} is looking into your organisation's marketing and asks you to provide the information below.`,
+    context: 'We may use your answers, and any documents you send, to decide whether to take this further.',
+    closing: 'Please reply within 28 days of the date of this letter, with copies of the documents referred to.',
+    signatory: cfg.signatory,
+    questions: pick.map(i => ({ docId: i.id, question: `Please send us copies of your records covering: ${i.name.charAt(0).toLowerCase()}${i.name.slice(1)}.` })),
+  };
+}
+
+async function simLetter(regulator, items, pending, userId) {
+  const cfg = SIM_REG[regulator];
+  const ids = items.map(i => i.id);
+  const schema = {
+    type: 'object', additionalProperties: false,
+    required: ['subject', 'opening', 'context', 'closing', 'questions'],
+    properties: {
+      subject: { type: 'string' }, opening: { type: 'string' }, context: { type: 'string' }, closing: { type: 'string' },
+      questions: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['docId', 'question'], properties: { docId: { type: 'string', enum: ids }, question: { type: 'string' } } } },
+    },
+  };
+  const findings = pending.filter(f => f.exposure?.category === regulator).slice(0, 6).map(f => `- ${String(f.fixType || '').replace(/_/g, ' ')} (${f.severity}): ${String(f.description || '').slice(0, 200)}`).join('\n') || '- none open';
+  const menu = items.map(i => `- ${i.id}: ${i.name}`).join('\n');
+  try {
+    const r = await claudeFetch('https://api.anthropic.com/v1/messages', { method: 'POST', body: JSON.stringify({ max_tokens: 1500, messages: [{ role: 'user', content:
+      `Write a realistic first-contact letter from the ${cfg.orgName} to a UK business, for a training simulation. Tone: ${cfg.tone}.\n\nOpen findings that would have prompted the letter:\n${findings}\n\nAsk 5 or 6 questions. Each question must ask for one of these records, named by its id (use each id at most once, start with the ones most relevant to the findings):\n${menu}\n\nWrite each question as the regulator would, in one or two sentences. Opening, context and closing are one short paragraph each. Plain text, no markdown, no dashes as punctuation. Do not invent dates, figures or case names.` }] }) },
+      { effort: 'low', schema });
+    if (!r.ok) throw new Error(`Claude ${r.status}`);
+    const l = parseJsonSafe((await r.json()).content?.[0]?.text);
+    const seen = new Set();
+    const qs = (l?.questions || []).filter(q => ids.includes(q.docId) && !seen.has(q.docId) && seen.add(q.docId)).slice(0, 6);
+    if (!l?.opening || qs.length < 3) throw new Error('letter too short');
+    return { ...l, questions: qs, reference: simRef(cfg.refPrefix, userId), signatory: cfg.signatory };
+  } catch (e) {
+    console.warn('Simulation letter fell back to the plain version:', e.message);
+    return plainLetter(regulator, items, userId);
+  }
+}
+function parseJsonSafe(t) { try { return JSON.parse(String(t || '').replace(/```json|```/g, '').trim()); } catch { return null; } }
+
 async function handleSimulationRun(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const { userId, regulator } = req.body;
   if (!userId || !regulator) return res.status(400).json({ error: 'userId and regulator required' });
-  if (!['ICO','CMA','ASA'].includes(regulator)) return res.status(400).json({ error: 'regulator must be ICO | CMA | ASA' });
+  if (!SIM_REG[regulator]) return res.status(400).json({ error: 'regulator must be ICO | CMA | ASA' });
   const base = airtableBase();
-  const fixesRes = await fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`, { headers: internalHeaders() });
+  const [fixesRes, rec] = await Promise.all([
+    fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`, { headers: internalHeaders() }),
+    gatherRecords(userId),
+  ]);
   const fixesData = fixesRes.ok ? await fixesRes.json() : null;
-  const pendingFixes = fixesData?.fixes?.pending || [];
+  const pending = fixesData?.fixes?.pending || [];
   const score = fixesData?.score || 0;
-  const criticalFixes = pendingFixes.filter(f => f.severity === 'critical');
-  const highFixes = pendingFixes.filter(f => f.severity === 'high');
-  const escalationBand = criticalFixes.length > 0 ? 'serious' : (highFixes.length > 0 || score < 50) ? 'elevated' : 'standard';
-  const bandConfig = { standard: { label:'Standard Risk', colour:'#16a34a', bgColour:'#f0fdf4', borderColour:'#bbf7d0' }, elevated: { label:'Elevated Risk', colour:'#ca8a04', bgColour:'#fefce8', borderColour:'#fef08a' }, serious: { label:'Serious Risk', colour:'#dc2626', bgColour:'#fef2f2', borderColour:'#fecaca' } };
-  const bandDescriptions = { ICO: { standard:'Your compliance data does not show the patterns the ICO most commonly investigates.', elevated:'Your data shows patterns the ICO actively investigates.', serious:'Your data shows critical compliance gaps that have formed the basis of ICO enforcement action.' }, ASA: { standard:'Your compliance data does not show the patterns the ASA most commonly receives upheld complaints about.', elevated:'Your data shows patterns associated with ASA complaints.', serious:'Your data shows critical CAP Code concerns.' }, CMA: { standard:'Your compliance data does not match the patterns the CMA has targeted.', elevated:'Your data shows patterns the CMA has identified in proactive sweeps.', serious:'Your data shows practices that may constitute Schedule 1 banned practices under DMCCA 2024.' } };
-  const categoryFixes = pendingFixes.filter(f => f.exposure?.category === regulator);
-  const fixList = (categoryFixes.length ? categoryFixes : pendingFixes).slice(0,8).map(f => `- ${f.fixType.replace(/_/g,' ')} (${f.severity}): ${String(f.description||'').slice(0,250)}`).join('\n') || 'No pending fixes.';
-  const regCfg = { ICO: { orgName:"Information Commissioner's Office", refPrefix:'ICO-ENF', signatory:'Senior Enforcement Officer, Direct Marketing Team', tone:'formal ICO enforcement tone, reference PECR Regulation 22 and UK GDPR articles by number' }, ASA: { orgName:'Advertising Standards Authority', refPrefix:'ASA-ENQ', signatory:'Investigations Executive, ASA', tone:'formal ASA tone, reference specific CAP Code rules by number' }, CMA: { orgName:'Competition and Markets Authority', refPrefix:'CMA-CP', signatory:'Senior Director, Consumer Protection', tone:'formal CMA enforcement tone under DMCCA 2024' } }[regulator];
-  let letter = {};
+
+  // The checklist for this regulator, with the gaps first
+  const items = buildChecklist(rec, pending).filter(i => i.regs.includes(regulator))
+    .sort((x, y) => STATUS_WEIGHT[x.status] - STATUS_WEIGHT[y.status]);
+  const readiness = readinessScore(items);
+
+  // Risk band and factors (stage 2)
+  const mine = pending.filter(f => f.exposure?.category === regulator);
+  const band = mine.some(f => f.severity === 'critical') ? 'serious' : (mine.some(f => f.severity === 'high') || score < 50) ? 'elevated' : 'standard';
+  const byType = {};
+  for (const f of mine) byType[f.fixType] = (byType[f.fixType] || 0) + 1;
+  const factors = Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    .map(([t, n]) => ({ icon: '•', text: `${n} open finding${n === 1 ? '' : 's'}: ${t.replace(/_/g, ' ')}` }));
+  const missing = items.filter(i => i.status === 'missing');
+  if (missing.length) factors.push({ icon: '•', text: `${missing.length} record${missing.length === 1 ? '' : 's'} a regulator would ask for ${missing.length === 1 ? 'is' : 'are'} missing: ${missing.slice(0, 3).map(i => i.name.toLowerCase()).join('; ')}` });
+
+  // Letter (stage 3): every question carries the answer from the records
+  const letter = await simLetter(regulator, items, pending, userId);
+  const byId = Object.fromEntries(items.map(i => [i.id, i]));
+  letter.questions = letter.questions.map(q => {
+    const it = byId[q.docId];
+    return it ? { ...q, answer: { status: it.status, label: ANSWER_TEXT[it.status], detail: it.detail, tool: it.tool, name: it.name } } : q;
+  });
+
+  // Penalty frame (stage 5) from the exposure engine, never from the AI
+  const regs = fixesData?.exposure?.regulators || {};
+  let penalty = { low: 0, high: 0, context: '' };
+  if (regulator === 'ICO') {
+    const ico = regs.ico || {};
+    penalty = ico.count ? { low: ico.low || 0, high: ico.high || 0, context: `Range from comparable published ICO cases for ${ico.count} open finding${ico.count === 1 ? '' : 's'}, sized to your business. Not a prediction.` }
+      : { low: 0, high: 0, context: 'No open ICO findings, so there is no comparable case range to show.' };
+  } else if (regulator === 'CMA') {
+    const cma = regs.cma || {};
+    penalty = { low: 0, high: 0, context: cma.max ? `The CMA can fine up to the higher of £300,000 or 10% of global turnover. For your business that is up to £${Number(cma.max).toLocaleString('en-GB')}. We show the legal maximum only, not a likely figure.` : 'The CMA can fine up to the higher of £300,000 or 10% of global turnover.' };
+  } else {
+    penalty = { low: 0, high: 0, context: 'The ASA does not fine. Upheld rulings are published and ads must be withdrawn or changed.' };
+  }
+
+  const b = SIM_BANDS[band];
+  const result = {
+    regulator, version: 2, createdAt: new Date().toISOString(),
+    readiness: { score: readiness, label: readinessLabel(readiness), counts: { available: items.length - missing.length - items.filter(i => i.status === 'partial').length, partial: items.filter(i => i.status === 'partial').length, missing: missing.length } },
+    stage1: { checks: backgroundChecks(rec, pending, regulator) },
+    stage2: { band, bandLabel: b.label, bandColour: b.colour, bandBg: b.bg, bandBorder: b.border, bandDescription: SIM_BAND_TEXT[regulator][band], factors },
+    stage3: { letter },
+    stage4: { documents: items.map(i => ({ id: i.id, name: i.name, status: i.status, detail: i.detail, tool: i.tool, at: i.at || null })) },
+    stage5: { penalty, representations: representations(items) },
+  };
+  // Keep every run so the member can reopen it and see readiness change
   try {
-    const r = await claudeFetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify({ max_tokens:2000, messages:[{ role:'user', content: `Simulate a ${regulator} enforcement letter. USER PENDING FIXES:\n${fixList}\n\nTone: ${regCfg.tone}. Return ONLY JSON (no markdown):\n{"reference":"${regCfg.refPrefix}-XXXXX","subject":"...","opening":"...","context":"...","closing":"...","signatory":"${regCfg.signatory}","questions":[{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."},{"question":"...","yesNote":"...","noNote":"..."}]}` }] }) });
-    if (r.ok) { const text = (await r.json()).content?.[0]?.text||''; const m = text.match(/\{[\s\S]*\}/); if (m) letter = JSON.parse(m[0]); }
-  } catch (e) { console.error('Letter parse non-fatal:', e); }
-  const thisBand = bandConfig[escalationBand];
-  const result = { regulator, stage1: { checks: [] }, stage2: { band: escalationBand, bandLabel: thisBand.label, bandColour: thisBand.colour, bandBg: thisBand.bgColour, bandBorder: thisBand.borderColour, bandDescription: (bandDescriptions[regulator]||bandDescriptions.ICO)[escalationBand], factors: [] }, stage3: { letter }, stage4: { documents: [] }, stage5: { penalty: { low:0, high:0, context:'' }, representations:[] } };
-  // Keep every run so the member can reopen it later (Simulations table; skipped if missing)
-  try {
-    const rec = await atCreate(base, 'Simulations', { UserID: userId, CreatedAt: new Date().toISOString(), Regulator: regulator, Band: thisBand.label, ResultJson: JSON.stringify(result).slice(0, 95000) });
-    result.simulationId = rec?.id || null;
+    const rec2 = await atCreate(base, 'Simulations', { UserID: userId, CreatedAt: result.createdAt, Regulator: regulator, Band: `${b.label} · ${readiness}% ready`, ResultJson: JSON.stringify(result).slice(0, 95000) });
+    result.simulationId = rec2?.id || null;
   } catch (e) { console.warn('Simulation not saved:', e.message); }
   return res.status(200).json(result);
 }
@@ -1843,7 +1958,7 @@ export default async function handler(req, res) {
     if (action === 'send-alert'              && req.method === 'POST')                      return await handleSendAlert(req, res);
     if (action === 'briefing'                && req.method === 'GET')                       return await handleBriefing(req, res);
     if (action === 'consent-expiry-check'    && req.method === 'POST')                      return await handleConsentExpiryCheck(req, res);
-    if (action === 'simulation-run'          && req.method === 'POST')                      return await handleSimulationRun(req, res);
+    if (action === 'simulation-run'          && req.method === 'POST')                      return (await checkLimit(req, res, auth, 'simulation')) ? await handleSimulationRun(req, res) : undefined;
     if (action === 'vendor-watch'            && req.method === 'GET')                       return await handleVendorWatch(req, res);
     if (action === 'relationship-watch'      && req.method === 'GET')                       return await handleRelationshipWatch(req, res);
     if (action === 'sector-intelligence'     && req.method === 'GET')                       return await handleSectorIntelligence(req, res);

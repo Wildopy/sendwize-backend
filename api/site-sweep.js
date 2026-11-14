@@ -1,5 +1,10 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — site-sweep.js v1.2
+// SENDWIZE — site-sweep.js v1.3
+// v1.3: terms checks (_terms-check.js): what a consumer seller's terms
+//   should cover (14-day cancellation, returns, statutory rights, trader,
+//   subscriptions) and where the site promises something the terms
+//   contradict. New score category 'terms'. Sweeps run when the member
+//   asks, plus an optional monthly re-sweep (SweepCadence).
 // v1.2: each sweep records `trackers` (one entry per vendor: fired before
 // consent, seen in source) and passes them to the Commercial Relationships
 // register (data.js sweep-trackers), which marks the matching vendors'
@@ -27,6 +32,13 @@
 //      runs the website, for any platform.
 //   POST ?action=run     { userId, domain }  → runs the sweep (verified domains only)
 //   GET  ?action=get     userId[, domain]    → latest result (for the page and dashboard)
+//   POST ?action=cadence { userId, domain, cadence: 'monthly'|'' } → turn the monthly re-check on/off
+//   GET  ?action=scheduled (cron/internal only) → re-runs verified domains set to
+//        'monthly' whose last sweep is 30+ days old (up to 20 a day), and emails
+//        the member only when the re-check finds something new
+//
+// RUNS ON REQUEST: a sweep only ever runs when the member presses Run, or
+// when they have switched on the monthly re-check for that domain.
 //
 // CHECK OWNERSHIP (no duplication with Campaign Defence):
 //   Site Sweep owns site-wide checks: cookies and trackers, privacy
@@ -56,7 +68,8 @@
 // Airtable table: Site_Sweeps
 //   UserID, Domain, VerificationToken, VerificationMethod, VerifiedAt,
 //   Status, SweepJson (long text), FixKeysJson (long text), SiteScore
-//   (number), LastSweptAt, RunStartedAt, RunCount (number), CreatedAt
+//   (number), LastSweptAt, RunStartedAt, RunCount (number), CreatedAt,
+//   SweepCadence (single line text, optional: 'monthly' or empty)
 // ─────────────────────────────────────────────────────────────
 import { promises as dns } from 'node:dns';
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
@@ -66,6 +79,8 @@ import { sendEmail, emailLayout, escHtml, isEmail } from './_email.js';
 import { checkLimit } from './_limits.js';
 import { fetchPage, extractSignals, extractLinks, isSafePublicUrl, resolvesPublic } from './_page-scan.js';
 import { sweepTrackers } from './_processor-rules.js';
+import { evaluateTerms } from './_terms-check.js';
+import { memberEmail } from './_email.js';
 
 const APP_URL       = 'https://sendwize-backend.vercel.app';
 const TABLE         = 'Site_Sweeps';
@@ -89,18 +104,30 @@ export const SITE_FIX_MAP = {
   privacy_notice_incomplete:       'privacy_notice_incomplete',      // NEW
   capture_pre_ticked:              'invalid_consent_mechanism',
   capture_no_privacy_link:         'privacy_notice_at_capture',      // NEW
+  // v1.3 terms checks (_terms-check.js), all on the CMA consumer-law range
+  terms_missing:                   'consumer_terms',
+  terms_no_cancellation:           'consumer_terms',
+  terms_no_returns:                'consumer_terms',
+  terms_excludes_rights:           'consumer_terms',
+  terms_subscription:              'consumer_terms',
+  terms_mismatch_free_returns:     'consumer_terms',
+  terms_mismatch_return_days:      'consumer_terms',
+  terms_mismatch_guarantee:        'consumer_terms',
 };
 
 const SCORE_CATEGORIES = [
-  { id: 'cookies',  label: 'Cookies & tracking',  max: 35 },
-  { id: 'privacy',  label: 'Privacy notice',      max: 25 },
-  { id: 'capture',  label: 'Data capture',        max: 25 },
-  { id: 'identity', label: 'Business identity',   max: 15 },
+  { id: 'cookies',  label: 'Cookies & tracking',  max: 30 },
+  { id: 'privacy',  label: 'Privacy notice',      max: 20 },
+  { id: 'capture',  label: 'Data capture',        max: 20 },
+  { id: 'terms',    label: 'Terms & consumer rights', max: 20 },
+  { id: 'identity', label: 'Business identity',   max: 10 },
 ];
 
 // ── Small helpers ─────────────────────────────────────────────
 const esc = s => String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 const nowIso = () => new Date().toISOString();
+const CADENCE_MS = 30 * 24 * 60 * 60 * 1000;
+const SCHEDULED_MAX = 20;
 
 function airtableCtx() {
   const token = process.env.AIRTABLE_TOKEN;
@@ -247,6 +274,8 @@ function publicView(record) {
     verificationMethod: f.VerificationMethod || null,
     verification: f.VerifiedAt ? null : verificationInstructions(f.Domain, f.VerificationToken),
     lastSweptAt: f.LastSweptAt || null,
+    cadence: f.SweepCadence === 'monthly' ? 'monthly' : '',
+    nextCheckAt: f.SweepCadence === 'monthly' && f.LastSweptAt ? new Date(Date.parse(f.LastSweptAt) + CADENCE_MS).toISOString() : null,
     runCount: f.RunCount || 0,
     siteScore: typeof f.SiteScore === 'number' ? f.SiteScore : null,
     sweep: withTrackers(safeJson(f.SweepJson, null)),
@@ -396,6 +425,7 @@ const PAGE_ROLES = [
   ['privacy', /privacy/i],
   ['cookies', /cookie/i],
   ['terms',   /terms|conditions|t\s?&\s?c/i],
+  ['returns', /returns|refund/i],
   ['signup',  /sign[\s-]?up|register|newsletter|subscribe|join|create[\s-]?account/i],
   ['contact', /contact|about/i],
 ];
@@ -436,7 +466,7 @@ function finding(key, checkId, category, severity, regulator, title, detail, rul
   };
 }
 
-export function evaluateSite({ domain, pages, browser }) {
+export function evaluateSite({ domain, pages, browser, sector = null }) {
   const findings = [];
   const notes = [];
   const ok = pages.filter(p => p.ok);
@@ -556,6 +586,11 @@ export function evaluateSite({ domain, pages, browser }) {
       'E-Commerce Regs 2002 reg 6'));
   }
 
+  // ── Terms and consumer rights (v1.3, _terms-check.js) ──
+  const termsResult = evaluateTerms({ pages, sector, finding });
+  findings.push(...termsResult.findings);
+  notes.push(...termsResult.notes);
+
   // ── Reviews (informational) ──
   if (reviews.length) {
     findings.push(finding('reviews_displayed', 'reviews_displayed', 'reviews', 'low', 'CMA',
@@ -573,6 +608,7 @@ export function evaluateSite({ domain, pages, browser }) {
     let note = '';
     if (cat.id === 'cookies' && browser?.status !== 'ok') note = 'Assessed from page source only';
     if (cat.id === 'capture' && !formPages.length) note = 'No sign-up forms found';
+    if (cat.id === 'terms' && !termsResult.checked) note = 'Not a consumer checkout';
     return {
       id: cat.id, label: cat.label, max: cat.max, score: Math.round(cat.max * factor),
       status: worst >= 2 ? 'Needs attention' : worst === 1 ? 'Minor gaps' : note && cat.id === 'cookies' ? 'Partly tested' : 'Passed',
@@ -619,7 +655,7 @@ export async function runSweep(domain, opts = {}) {
   const homeSig = extractSignals(home.html, homeUrl);
   const pages = [{ role: 'home', url: homeUrl, ok: true, signals: homeSig.signals, text: homeSig.text }, ...fetched];
   // Roles that share a page (e.g. privacy + cookies on one URL) resolve to the same fetch
-  const evaluation = evaluateSite({ domain, pages, browser });
+  const evaluation = evaluateSite({ domain, pages, browser, sector: opts.sector || null });
 
   return {
     version: SWEEP_VERSION, domain, startedAt, completedAt: nowIso(), homepage: homeUrl,
@@ -793,8 +829,9 @@ async function handleVerify(req, res) {
   return res.json({ success: true, verified: true, method, ...publicView(updated) });
 }
 
-async function handleRun(req, res) {
+async function handleRun(req, res, auth) {
   const { userId, domain: raw } = req.body ?? {};
+  const scheduled = auth?.kind === 'internal' && req.body?.scheduled === true;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
   const domain = normaliseDomain(raw);
   if (!domain) return res.status(400).json({ error: 'Invalid domain' });
@@ -814,7 +851,8 @@ async function handleRun(req, res) {
 
   let sweep;
   try {
-    sweep = await runSweep(domain);
+    const sector = (await memberEmail(userId).catch(() => null))?.sector || null;
+    sweep = await runSweep(domain, { sector });
   } catch (e) {
     await patchRecord(ctx, record.id, { Status: previousStatus }).catch(() => {});
     console.error('Site sweep run failed:', domain, e);
@@ -848,7 +886,83 @@ async function handleRun(req, res) {
     FixKeysJson: JSON.stringify(fixKeys), LastSweptAt: sweep.completedAt,
     RunCount: (f.RunCount || 0) + 1,
   });
+  if (scheduled && sweep.changes.newKeys.length) await emailNewFindings(userId, domain, sweep).catch(e => console.error('Site sweep re-check email failed (non-fatal):', e.message));
   return res.json({ success: true, ...publicView(updated) });
+}
+
+// Monthly re-check found something new: tell the member. No email when
+// nothing changed, so the re-check stays quiet unless it matters.
+async function emailNewFindings(userId, domain, sweep) {
+  const member = await memberEmail(userId);
+  if (!member?.email) return;
+  const fresh = sweep.findings.filter(x => sweep.changes.newKeys.includes(x.key));
+  const items = fresh.slice(0, 8).map(x => `<li style="margin:0 0 6px">${escHtml(x.title)}${x.page && x.page !== '/' ? ` <span style="color:#888">(${escHtml(x.page)})</span>` : ''}</li>`).join('');
+  const more = fresh.length > 8 ? `<p style="font-size:13px;color:#666">And ${fresh.length - 8} more.</p>` : '';
+  const resolved = sweep.changes.resolved.length ? `<p style="font-size:13px;color:#2e7d32">${sweep.changes.resolved.length} earlier issue${sweep.changes.resolved.length === 1 ? ' has' : 's have'} cleared since last time.</p>` : '';
+  await sendEmail({
+    to: member.email,
+    subject: `Your monthly site check found ${fresh.length} new item${fresh.length === 1 ? '' : 's'} on ${domain}`,
+    html: emailLayout({
+      heading: `New on ${domain} since last month`,
+      bodyHtml: `<p style="font-size:14px;line-height:1.6;color:#333">Your monthly Site sweep re-checked <b>${escHtml(domain)}</b> and found ${fresh.length} potential area${fresh.length === 1 ? '' : 's'} requiring review that weren't there last time:</p><ul style="font-size:14px;line-height:1.5;color:#333;padding-left:18px">${items}</ul>${more}${resolved}<p style="font-size:13px;color:#666">Site score: ${sweep.score}/100.</p>`,
+      ctaText: 'See the full results', ctaUrl: `${APP_URL}/site-sweep.html?domain=${encodeURIComponent(domain)}`,
+    }),
+  });
+}
+
+async function handleCadence(req, res) {
+  const { userId, domain: raw, cadence } = req.body ?? {};
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  const domain = normaliseDomain(raw);
+  if (!domain) return res.status(400).json({ error: 'Invalid domain' });
+  const value = cadence === 'monthly' ? 'monthly' : '';
+  const ctx = airtableCtx();
+  const record = await findRecord(ctx, userId, domain);
+  if (!record) return res.status(404).json({ error: 'Start the sweep for this domain first' });
+  if (value && !record.fields.VerifiedAt) return res.status(403).json({ error: 'Confirm you own this website before turning on the monthly re-check' });
+  try {
+    const updated = await patchRecord(ctx, record.id, { SweepCadence: value });
+    return res.json({ success: true, ...publicView(updated) });
+  } catch (e) {
+    if (/SweepCadence|UNKNOWN_FIELD/i.test(String(e.message))) {
+      return res.status(503).json({ error: 'The monthly re-check needs a SweepCadence field (single line text) on the Site_Sweeps table in Airtable.', code: 'setup_required' });
+    }
+    throw e;
+  }
+}
+
+// Cron: re-run the domains whose owners asked for a monthly re-check.
+// Each run is its own function call (same lock, limits and fix
+// de-duplication as a member's run); this waits for them so the logs
+// show the outcome, and stops waiting before its own time limit.
+async function handleScheduled(req, res) {
+  const ctx = airtableCtx();
+  const formula = encodeURIComponent(`AND({SweepCadence}='monthly',{VerifiedAt}!='')`);
+  const r = await atFetch(`${ctx.base}/${TABLE}?filterByFormula=${formula}&pageSize=100`, { headers: { Authorization: `Bearer ${ctx.token}` } });
+  if (!r.ok) {
+    if (r.status === 422) return res.json({ success: true, ran: 0, note: 'SweepCadence field not set up yet' });
+    throw await airtableError(r, 'scheduled');
+  }
+  const now = Date.now();
+  const due = ((await r.json()).records || [])
+    .filter(x => x.fields.UserID && x.fields.Domain && x.fields.Status !== 'running')
+    .filter(x => !x.fields.LastSweptAt || now - Date.parse(x.fields.LastSweptAt) >= CADENCE_MS)
+    .sort((a, b) => (Date.parse(a.fields.LastSweptAt || 0) || 0) - (Date.parse(b.fields.LastSweptAt || 0) || 0))
+    .slice(0, SCHEDULED_MAX);
+
+  const results = await Promise.allSettled(due.map(async x => {
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), 55000);
+    try {
+      const resp = await fetch(`${APP_URL}/api/site-sweep?action=run`, {
+        method: 'POST', headers: internalHeaders(), signal: ac.signal,
+        body: JSON.stringify({ userId: x.fields.UserID, domain: x.fields.Domain, scheduled: true }),
+      });
+      return { domain: x.fields.Domain, status: resp.status };
+    } finally { clearTimeout(t); }
+  }));
+  const out = results.map((r, i) => r.status === 'fulfilled' ? r.value : { domain: due[i].fields.Domain, status: 'pending', note: String(r.reason?.message || r.reason).slice(0, 80) });
+  return res.json({ success: true, ran: due.length, results: out });
 }
 
 async function handleGet(req, res) {
@@ -887,9 +1001,14 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && action === 'verify') return await handleVerify(req, res);
     if (req.method === 'POST' && action === 'email-link') return await handleEmailLink(req, res, auth);
     if (req.method === 'POST' && action === 'send-steps') return await handleSendSteps(req, res, auth);
-    if (req.method === 'POST' && action === 'run')    return await handleRun(req, res);
+    if (req.method === 'POST' && action === 'run')    return await handleRun(req, res, auth);
+    if (req.method === 'POST' && action === 'cadence') return await handleCadence(req, res);
+    if (action === 'scheduled') {
+      if (auth.kind !== 'internal') return res.status(401).json({ error: 'Not allowed', code: 'internal_only' });
+      return await handleScheduled(req, res);
+    }
     if (req.method === 'GET'  && action === 'get')    return await handleGet(req, res);
-    return res.status(400).json({ error: 'Unknown action. Use start, verify, email-link, send-steps, run or get.' });
+    return res.status(400).json({ error: 'Unknown action. Use start, verify, email-link, send-steps, run, cadence or get.' });
   } catch (e) {
     console.error('site-sweep.js error:', e);
     // Setup problems (Airtable table or fields) say exactly what to fix

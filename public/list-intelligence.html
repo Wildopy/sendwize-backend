@@ -3,6 +3,7 @@
 <head>
   <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
   <script src="https://sendwize-backend.vercel.app/sw-tool-nav.js" defer></script>
+  <script src="https://sendwize-backend.vercel.app/sw-connect.js" defer></script>
   <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>List health &mdash; Sendwize</title>
@@ -355,6 +356,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </div>
     </div>
   </div>
+  <div id="espConnect"></div>
   <div class="upload-zone" id="uploadZone" ondragover="drgOver(event,this)" ondragleave="drgLeave(event,this)" ondrop="drgDrop(event,this)">
     <input type="file" accept=".csv" id="fileInput" onchange="fileChg(this)">
     <div class="uz-icon">&#128203;</div>
@@ -813,6 +815,16 @@ function drgOver(e,z){e.preventDefault();z.classList.add('hover');}
 function drgLeave(e,z){z.classList.remove('hover');}
 function drgDrop(e,z){e.preventDefault();z.classList.remove('hover');if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0]);}
 function fileChg(inp){if(inp.files[0])readFile(inp.files[0]);}
+// Klaviyo / Mailchimp pull: behaves exactly like a dropped-in export
+function useEspData(d){
+  parsedCSV={headers:d.headers,rows:d.rows};
+  currentFilename=d.name||'';
+  el('uploadZone').classList.add('loaded');
+  el('uzFname').textContent=(d.name||'List')+' \u00b7 '+d.rows.length.toLocaleString()+' contacts from '+({klaviyo:'Klaviyo',mailchimp:'Mailchimp',hubspot:'HubSpot'}[d.provider]||'your platform');
+  el('btnContinue').disabled=false;
+  goMapping();
+}
+window.addEventListener('load',function(){if(window.SWConnect&&el('espConnect'))SWConnect.mount(el('espConnect'),{mode:'contacts',userId:userId,onData:useEspData});});
 function readFile(file){
   var r=new FileReader();
   r.onload=function(e){
@@ -1098,6 +1110,7 @@ function renderInsights(d){
     +'<div class="ins-bar"><span class="g" style="width:'+rl.greenPct+'%"></span><span class="a" style="width:'+rl.amberPct+'%"></span><span class="r" style="width:'+rl.redPct+'%"></span></div>'
     +'<div class="ins-legend"><span><i style="background:var(--g)"></i><b>'+fmt(rl.green)+'</b> safe to market</span><span><i style="background:#f59e0b"></i><b>'+fmt(rl.amber)+'</b> need attention</span><span><i style="background:var(--r)"></i><b>'+fmt(rl.red)+'</b> can’t legally or usefully contact</span></div>'
     +'<div class="ins-reasons">'+(rl.reasons||[]).slice(0,8).map(function(r){return'<span class="ins-chip '+r.band+'">'+escH(r.label)+' · '+fmt(r.count)+'</span>';}).join('')+'</div>'
+    +(rl.savings&&rl.savings.contacts>=50&&rl.savings.monthly>=1?'<div class="ins-reveal amber" style="margin-top:12px"><span class="lbl">Money you could save</span><b>'+fmt(rl.savings.contacts)+'</b> contacts never engage. Dropping them saves about <b>£'+fmt(rl.savings.monthly)+' a month</b> (£'+fmt(rl.savings.yearly)+' a year) on your email platform, and it helps your emails reach inboxes. <span style="color:var(--mu);font-size:12px">'+escH(rl.savings.basis)+'</span></div>':'')
     +'<div class="ins-note">Consent counted as valid for '+(ins.consentMonths||24)+' months after sign-up or the last open, click or purchase. Change this on the upload screen.</div></div>';
   // Reveals
   if(ins.reveals&&ins.reveals.length){
