@@ -424,6 +424,7 @@ Respond ONLY in this exact JSON. No preamble. No markdown fences.
       "issue_type": "health_claim"
     }
   ],
+  "content_kind": "marketing",
   "writing": [
     { "original": "your going to love it", "suggestion": "you're going to love it", "why": "Spelling: \"you're\" means \"you are\"." }
   ],
@@ -437,6 +438,7 @@ EVERY violation MUST have a requiresEvidence boolean. Do not omit this field.
 
 SECTION 12 -- CUSTOMER-FACING WORDING
 The "issue", "recommendation", "enforcement_note", "summary" and "why" fields are shown to customers. Internal words in this prompt such as "violation" and "breach" describe your task; they must not appear in those fields.
+In those fields write normal sentences: never use "--" or dashes as punctuation, and no markdown.
 
 ------------------------------------------------------------
 
@@ -476,6 +478,7 @@ export const ANALYSIS_SCHEMA = {
         additionalProperties: false,
       },
     },
+    content_kind: { type: 'string', enum: ['marketing', 'service', 'not_marketing'] },
     writing: {
       type: 'array',
       items: {
@@ -910,9 +913,9 @@ export default async function handler(req, res) {
           Verdict:        finalVerdict ?? '',
           CriticalIssues: criticalCount,
           Warnings:       warningCount,
-          MarketingCopy:  content?.slice(0, 10000) ?? '',
-          FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : `${contentType} scan`,
-          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', writing: aiAnalysis.writing, ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
+          MarketingCopy:  savedCopy.slice(0, 10000),
+          FileName:       campaignName || (contentType === 'email' ? (subject ? `Email: ${subject}` : 'Email (no subject)') : `${CHANNEL_NAMES[contentType] || contentType}${hasImages && !content ? ' image' : ''} check`),
+          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', contentKind, engine: COPY_ENGINE, writing: aiAnalysis.writing, ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
           FixedVersion:   aiAnalysis?.fixedVersion ?? '',
           RelatedCases:   [...new Set(allViolations.map(v => v.case_id).filter(Boolean))].join(','),
           SendingContext: contextBlock || '',

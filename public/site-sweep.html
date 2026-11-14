@@ -124,7 +124,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <script>
 const swFetch=window.swFetch||((u,o)=>fetch(u,o)); // sends the sign-in token (sw-auth.js)
 const API='https://sendwize-backend.vercel.app/api/site-sweep';
-let U=null,S=null,BUSY=false,VERIFY_FAIL=null,ALL=[];
+let U=null,S=null,BUSY=false,VERIFY_FAIL=null,ALL=[],SUGGEST='',SENT_TO='',STEPS_TO='',POLL=null;
 const $=id=>document.getElementById(id);
 const E=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 let _t;function toast(m,c=''){const t=$('toast');t.textContent=m;t.className='toast on'+(c?' '+c:'');clearTimeout(_t);_t=setTimeout(()=>t.classList.remove('on'),4000);}
@@ -137,7 +137,8 @@ async function init(){
   try{
     const want=p.get('domain');
     const r=await swFetch(`${API}?action=get&userId=${encodeURIComponent(U)}${want?'&domain='+encodeURIComponent(want):''}`);
-    const j=await r.json();
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)setTimeout(()=>toast(j.error||('Could not load your sites (HTTP '+r.status+')'),'er'),300);
     S=want?j.sweep:(j.sweeps||[])[0]||null;
     if(!want)ALL=j.sweeps||[];
     else swFetch(`${API}?action=get&userId=${encodeURIComponent(U)}`).then(x=>x.json()).then(x=>{ALL=x.sweeps||[];renderOthers();}).catch(()=>{});
@@ -172,7 +173,7 @@ const CHECKS=`<div class="checks">
 
 function renderSetup(){
   $('app').innerHTML=`<div class="view"><div class="head"><h1>Site Sweep</h1><p>One review of your whole website. Major gaps go straight to your dashboard.</p></div>
-  <div class="card hero"><div class="card-t">Which website should we review?</div><div class="card-s">We'll ask you to confirm you own it first, so reports only ever describe your own site.</div>
+  <div class="card hero"><div class="card-t">Which website should we review?</div><div class="card-s">Next we'll ask you to confirm it's yours. Usually that's one click on an email, with no code.</div>
   <div class="fg"><input id="dom" placeholder="yourbrand.co.uk" autocomplete="off" onkeydown="if(event.key==='Enter')start()"><button class="btn btn-o" id="bStart" onclick="start()">Continue →</button></div></div>
   <div class="card"><div class="card-t">What the sweep checks</div>${CHECKS}<p class="hint">Offer and pricing claims are checked per campaign in Campaign Defence, so nothing is checked twice.</p></div></div>`;
   setTimeout(()=>$('dom')?.focus(),50);
@@ -181,7 +182,9 @@ function renderSetup(){
 async function start(){
   const v=$('dom').value.trim();if(!v){toast('Enter your website','er');return;}
   const b=$('bStart');b.disabled=true;b.textContent='Setting up…';
-  try{S=await post('start',{domain:v});VERIFY_FAIL=null;render();}
+  try{S=await post('start',{domain:v});SUGGEST=S.suggestedEmail||'';SENT_TO='';STEPS_TO='';VERIFY_FAIL=null;
+    if(S.verified&&S.verificationMethod==='login_email')toast('Confirmed from your sign-in email','ok');
+    render();}
   catch(e){toast(e.message,'er');b.disabled=false;b.textContent='Continue →';}
 }
 
@@ -190,27 +193,67 @@ function copyText(btn,enc){navigator.clipboard?.writeText(decodeURIComponent(enc
 
 function renderVerify(){
   const v=S.verification||{};
-  $('app').innerHTML=`<div class="view"><div class="head"><h1>Confirm you own ${E(S.domain)}</h1><p>Use any one of these. It takes a couple of minutes and you only do it once.</p></div>
+  const at='@'+S.domain;
+  $('app').innerHTML=`<div class="view"><div class="head"><h1>Confirm ${E(S.domain)} is yours</h1><p>So nobody can review a website that isn't theirs. You only do this once, and you don't need to touch any code.</p></div>
   <div class="card"><div class="methods">
-   <div class="method"><div class="method-h"><b>Add a meta tag</b><span class="tag">Easiest</span></div><p>Paste this into the &lt;head&gt; of your homepage. In Webflow: Site settings → Custom code → Head code. In Shopify: theme.liquid. Then publish.</p>${codeRow(v.meta?.tag||'')}</div>
-   <div class="method"><div class="method-h"><b>Add a DNS record</b></div><p>Ask whoever manages your domain to add a TXT record on <b>${E(v.dns?.host||S.domain)}</b> with this value. It can take up to an hour to appear.</p>${codeRow(v.dns?.value||'')}</div>
-   <div class="method"><div class="method-h"><b>Upload a file</b></div><p>Create a file at <b>${E(v.file?.url||'')}</b> containing only this code.</p>${codeRow(v.file?.contents||'')}</div>
+   <div class="method"><div class="method-h"><b>Get a link by email</b><span class="tag">Easiest</span></div>
+    ${SENT_TO?`<p>We've sent a link to <b>${E(SENT_TO)}</b>. Open it on any device and this page moves on by itself. Can't see it? Check spam, or send it again.</p>`:`<p>Use any address ending in <b>${E(at)}</b>: yours, info${E(at)}, or a colleague's. Press the link in the email and you're done.</p>`}
+    <div class="fg"><input id="vEmail" type="email" placeholder="you${E(at)}" value="${E(SENT_TO||SUGGEST)}" autocomplete="email" onkeydown="if(event.key==='Enter')emailLink()"><button class="btn btn-o" id="bLink" onclick="emailLink()">${SENT_TO?'Send again':'Email me a link'}</button></div></div>
+   <div class="method"><div class="method-h"><b>No email at ${E(S.domain)}? Ask whoever runs your website</b></div>
+    ${STEPS_TO?`<p>Sent to <b>${E(STEPS_TO)}</b>, with a reply going to you. Once they've made the change, press <b>Check now</b> below.</p>`:`<p>We'll email them a two-minute change that works on any website or platform. Replies come back to you.</p>`}
+    <div class="fg"><input id="vSteps" type="email" placeholder="their email address" autocomplete="off" onkeydown="if(event.key==='Enter')sendSteps()"><button class="btn btn-w" id="bSteps" onclick="sendSteps()">Send them the steps</button></div></div>
   </div>
-  <div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap"><button class="btn btn-o" id="bVer" onclick="verify()">Check verification</button><button class="link" onclick="S=null;render()">Use a different domain</button></div>
-  ${VERIFY_FAIL?`<div class="fail"><b>Not verified yet.</b><br>Meta tag: ${E(VERIFY_FAIL.meta)}<br>File: ${E(VERIFY_FAIL.file)}<br>DNS: ${E(VERIFY_FAIL.dns)}</div>`:''}
+  <details style="margin-top:14px"><summary class="link" style="cursor:pointer">Do it yourself instead (meta tag, file or DNS record)</summary>
+   <div class="methods" style="margin-top:12px">
+    <div class="method"><div class="method-h"><b>Add a meta tag</b></div><p>Paste this into the &lt;head&gt; of your homepage, then publish. Webflow: Site settings → Custom code → Head code. Shopify: Online Store → Themes → Edit code → theme.liquid. WordPress: a header plugin such as WPCode. Anything else: wherever your site lets you add code to the head, or ask your developer.</p>${codeRow(v.meta?.tag||'')}</div>
+    <div class="method"><div class="method-h"><b>Upload a file</b></div><p>Create a file at <b>${E(v.file?.url||'')}</b> containing only this code.</p>${codeRow(v.file?.contents||'')}</div>
+    <div class="method"><div class="method-h"><b>Add a DNS record</b></div><p>Add a TXT record on <b>${E(v.dns?.host||S.domain)}</b> with this value. It can take up to an hour to appear.</p>${codeRow(v.dns?.value||'')}</div>
+   </div></details>
+  <div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap"><button class="btn btn-w" id="bVer" onclick="verify()">Check now</button><button class="link" onclick="stopPoll();S=null;render()">Use a different website</button></div>
+  ${VERIFY_FAIL?`<div class="fail"><b>Not confirmed yet.</b> If you used the email link, press it in the email first. If you added the tag, file or record, wait a minute after publishing and check again.</div>`:''}
   </div></div>`;
+}
+
+async function emailLink(){
+  const email=($('vEmail')?.value||'').trim();if(!email){toast('Enter an email address','er');return;}
+  const b=$('bLink');b.disabled=true;b.textContent='Sending…';
+  try{const j=await post('email-link',{domain:S.domain,email});
+    if(j.verified){S=j;stopPoll();toast('Already confirmed','ok');render();return;}
+    SENT_TO=j.to||email;toast('Link sent to '+SENT_TO,'ok');startPoll();render();
+  }catch(e){toast(e.message,'er');b.disabled=false;b.textContent=SENT_TO?'Send again':'Email me a link';}
+}
+
+async function sendSteps(){
+  const email=($('vSteps')?.value||'').trim();if(!email){toast('Enter their email address','er');return;}
+  const b=$('bSteps');b.disabled=true;b.textContent='Sending…';
+  try{const j=await post('send-steps',{domain:S.domain,email});
+    if(j.verified){S=j;stopPoll();toast('Already confirmed','ok');render();return;}
+    STEPS_TO=email;toast('Steps sent to '+email,'ok');startPoll();render();
+  }catch(e){toast(e.message,'er');b.disabled=false;b.textContent='Send them the steps';}
+}
+
+// After an email goes out, check quietly every few seconds so the page moves on by itself
+function stopPoll(){if(POLL){clearInterval(POLL);POLL=null;}}
+function startPoll(){
+  stopPoll();const until=Date.now()+30*60*1000,dom=S.domain;
+  POLL=setInterval(async()=>{
+    if(Date.now()>until||!S||S.domain!==dom||S.verified){stopPoll();return;}
+    try{const r=await swFetch(`${API}?action=get&userId=${encodeURIComponent(U)}&domain=${encodeURIComponent(dom)}`);const j=await r.json();
+      if(j.sweep&&j.sweep.verified&&S&&S.domain===dom){stopPoll();S=j.sweep;VERIFY_FAIL=null;toast(dom+' confirmed','ok');render();}
+    }catch(e){}
+  },5000);
 }
 
 async function verify(){
   const b=$('bVer');b.disabled=true;b.textContent='Checking…';
   try{const j=await post('verify',{domain:S.domain});
-    if(j.verified){S=j;VERIFY_FAIL=null;toast('Domain verified','ok');}else{VERIFY_FAIL=j.checks||{};}
+    if(j.verified){S=j;VERIFY_FAIL=null;stopPoll();toast('Confirmed','ok');}else{VERIFY_FAIL=j.checks||{};}
     render();
-  }catch(e){toast(e.message,'er');b.disabled=false;b.textContent='Check verification';}
+  }catch(e){toast(e.message,'er');b.disabled=false;b.textContent='Check now';}
 }
 
 function renderReady(){
-  $('app').innerHTML=`<div class="view"><div class="head"><h1>Site Sweep</h1><p>${E(S.domain)} · verified</p></div>
+  $('app').innerHTML=`<div class="view"><div class="head"><h1>Site Sweep</h1><p>${E(S.domain)} · confirmed as yours</p></div>
   <div class="card hero"><div class="card-t">Ready to review ${E(S.domain)}</div><div class="card-s">We'll read your homepage and key pages (privacy, cookies, terms, sign-up, contact) and load your homepage the way a first-time visitor would. It takes about a minute.</div>
   <button class="btn btn-o" onclick="run()">Run site sweep →</button></div>
   <div class="card"><div class="card-t">What the sweep checks</div>${CHECKS}</div></div>`;

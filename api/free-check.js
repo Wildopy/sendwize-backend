@@ -18,6 +18,7 @@
 import crypto from 'crypto';
 import { claudeFetch, parseJson } from './_claude.js';
 import { SYSTEM_PROMPT, ANALYSIS_SCHEMA, CHANNEL_RULES, cleanWriting } from './analyze-copy.js';
+import { copyFacts, factsBlock, reviewFindings } from './_copy-review.js';
 import { requireAuth } from './_auth.js';
 import { atFetch } from './_airtable.js';
 
