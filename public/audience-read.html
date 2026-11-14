@@ -227,6 +227,7 @@ details.more[open]>summary::after{transform:rotate(225deg);margin-top:4px}
   <div id="nextSendBlock"></div>
   <div id="strategySlot"></div>
   <div id="changeBlock"></div>
+  <div id="savingsBlock"></div>
 
   <!-- 2. Worth knowing -->
   <div id="insightsNotes"></div>
@@ -753,6 +754,7 @@ function renderDash(data){
   layoutAR(data,hasIns);
   if(hasIns)document.getElementById('nextSendBlock').innerHTML='';else renderNextSendSummary(data);
   renderChangeBlock(data.changes);
+  loadSavings();
   renderCampaignHistory(data);
   renderSegmentDiagnoses(data);
   renderRecommendations(data);
@@ -783,6 +785,22 @@ function renderNextSendSummary(data){
   var hasAmber=segNames.some(function(s){var st=data.segments[s].sentiment.state;return st==='Cooling'||st==='Fatigue building'||st==='Recovering';});
   var bdr=hasRed?'var(--rc)':hasAmber?'var(--yc)':'var(--gc)';var bg=hasRed?'var(--rb)':hasAmber?'var(--yb)':'var(--gb)';var tc=hasRed?'#7f1d1d':hasAmber?'#713f12':'#14532d';
   nb.innerHTML='<div class="next-send-summary" style="background:'+bg+';border:1.5px solid '+bdr+'"><div style="font-size:15px;font-weight:700;color:'+tc+';margin-bottom:10px">What this means for your next send</div><div style="font-size:13px;color:var(--tm);line-height:1.8">'+lines.join('<br>')+'</div></div>';
+}
+// Contacts who never engage (from List health) and what they cost each month
+var savingsData=null;
+function savingsRate(){try{var v=parseFloat(localStorage.getItem('sw_cost_per_1k'));return v>0?v:null;}catch(e){return null;}}
+function loadSavings(){var b=document.getElementById('savingsBlock');if(!b)return;
+  swFetch(API+'?userId='+userId+'&action=list-savings').then(function(r){return r.json();}).then(function(j){savingsData=j;renderSavings();}).catch(function(){b.innerHTML='';});}
+function setSavingsRate(inp){var v=parseFloat(inp.value);try{if(v>0)localStorage.setItem('sw_cost_per_1k',String(v));else localStorage.removeItem('sw_cost_per_1k');}catch(e){}renderSavings();}
+function renderSavings(){var b=document.getElementById('savingsBlock'),j=savingsData;if(!b||!j||!j.success)return;
+  var box='<div style="margin:0 0 20px;padding:16px 18px;border-radius:12px;border:1.5px solid #fde0c8;background:#fff8f2">';
+  if(!j.checked||!j.lists||!j.lists.length){b.innerHTML=box+'<div style="font-size:14px;font-weight:700;margin-bottom:4px">How much are quiet contacts costing you?</div><div style="font-size:13px;color:var(--mu)">Run your list through <a href="list-intelligence.html?userId='+encodeURIComponent(userId)+'" style="color:var(--o)">List health</a> to see how many contacts never engage and what dropping them would save on your email platform.</div></div>';return;}
+  var rate=savingsRate()||j.per1k,n=j.contacts||0,m=Math.round(n*rate/1000);
+  if(n<50||m<1){b.innerHTML='';return;}
+  b.innerHTML=box+'<div style="font-size:15px;font-weight:700;margin-bottom:6px">Drop '+n.toLocaleString('en-GB')+' contacts who never engage and save about \u00a3'+m.toLocaleString('en-GB')+' a month</div>'
+    +'<div style="font-size:13px;line-height:1.55;color:var(--tm)">That\u2019s about \u00a3'+(m*12).toLocaleString('en-GB')+' a year on your email platform. They haven\u2019t opened, clicked or bought in a year or more, so they drag down your open rates and inbox placement too. From your latest List health check'+(j.lists.length>1?'s ('+j.lists.length+' lists)':'')+'.</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--mu)"><label for="costPer1k">Your platform cost per 1,000 contacts a month: \u00a3</label><input id="costPer1k" type="number" min="1" step="1" value="'+rate+'" onchange="setSavingsRate(this)" style="width:70px;padding:4px 6px;border:1px solid var(--b);border-radius:6px;font-family:inherit"><a href="list-intelligence.html?userId='+encodeURIComponent(userId)+'" style="color:var(--o);font-weight:600">Download the list to drop \u2192</a></div>'
+    +(savingsRate()?'':'<div style="font-size:11px;color:var(--mu);margin-top:6px">'+escH(j.basis||'')+'</div>')+'</div>';
 }
 function renderChangeBlock(changes){var cb=document.getElementById('changeBlock');if(!cb)return;if(!changes||!changes.segments||!changes.segments.length){cb.innerHTML='';return;}var sum=changes.summary||{};if(sum.brandNew===sum.total&&sum.improved===0&&sum.worsened===0){cb.innerHTML='';return;}var days=sum.daysSinceLast;var sinceTxt=days==null?'since your last check':days===0?'since earlier today':days===1?'since yesterday':'since your last check '+days+' days ago';var staleHtml='';if(days!=null&&days>=14){staleHtml='<div class="stale-banner"><div style="font-size:18px;flex-shrink:0">&#x23F3;</div><div class="stale-banner-txt">It has been '+days+' days since your last upload. Upload your latest export to keep this diagnosis accurate.</div><button class="btn btn-primary btn-sm" onclick="showScreen(\'upload\')">Upload latest &rarr;</button></div>';}var pills='';if(sum.worsened>0)pills+='<span class="tally-pill down">&#x25BC; '+sum.worsened+' worsened</span>';if(sum.improved>0)pills+='<span class="tally-pill up">&#x25B2; '+sum.improved+' improved</span>';if(sum.unchanged>0)pills+='<span class="tally-pill flat">&#x2014; '+sum.unchanged+' unchanged</span>';if(sum.brandNew>0)pills+='<span class="tally-pill new">+ '+sum.brandNew+' new</span>';var rows=changes.segments.filter(function(s){return s.direction==='worsened'||s.direction==='improved'||s.isNew;}).slice(0,6).map(function(s){var arrowCls=s.direction==='improved'?'up':s.direction==='worsened'?'down':s.isNew?'new':'flat';var arrow=s.direction==='improved'?'&#x25B2;':s.direction==='worsened'?'&#x25BC;':s.isNew?'+':'&#x2014;';var desc;if(s.isNew){desc='<span class="to">'+escH(s.currentState)+'</span> <span class="from">\u00b7 new list</span>';}else if(s.stateChanged){desc='<span class="from">'+escH(s.previousState)+'</span> &rarr; <span class="to">'+escH(s.currentState)+'</span>';}else{desc='<span class="to">'+escH(s.currentState)+'</span> <span class="from">\u00b7 goodwill '+(s.capitalDelta>0?'rising':'falling')+'</span>';}var capStr='';if(s.capitalDelta!=null&&Math.abs(s.capitalDelta)>=1){var capCls=s.capitalDelta>0?'up':s.capitalDelta<0?'down':'flat';capStr='<span class="change-cap '+capCls+'">'+(s.capitalDelta>0?'+':'')+s.capitalDelta.toFixed(0)+' goodwill</span>';}return'<div class="change-row"><div class="change-arrow '+arrowCls+'">'+arrow+'</div><div class="change-seg">'+escH(s.segment)+'</div><div class="change-desc">'+desc+'</div>'+capStr+'</div>';}).join('');var headline=sum.worsened>0?sum.worsened+' list'+(sum.worsened!==1?'s':'')+' need'+(sum.worsened===1?'s':'')+' attention':sum.improved>0?'Good news \u2014 '+sum.improved+' list'+(sum.improved!==1?'s':'')+' improved':'What changed';cb.innerHTML=staleHtml+'<div class="change-block"><div class="change-hdr"><div class="change-title">'+escH(headline)+'</div><div class="change-since">'+escH(sinceTxt)+'</div></div><div class="change-tally">'+pills+'</div>'+(rows?'<div class="change-rows">'+rows+'</div>':'<div class="change-empty">No state changes since your last check.</div>')+'</div>';}
 function renderCampaignHistory(data){

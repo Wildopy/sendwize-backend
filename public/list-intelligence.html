@@ -1110,6 +1110,7 @@ function renderInsights(d){
     +'<div class="ins-bar"><span class="g" style="width:'+rl.greenPct+'%"></span><span class="a" style="width:'+rl.amberPct+'%"></span><span class="r" style="width:'+rl.redPct+'%"></span></div>'
     +'<div class="ins-legend"><span><i style="background:var(--g)"></i><b>'+fmt(rl.green)+'</b> safe to market</span><span><i style="background:#f59e0b"></i><b>'+fmt(rl.amber)+'</b> need attention</span><span><i style="background:var(--r)"></i><b>'+fmt(rl.red)+'</b> can’t legally or usefully contact</span></div>'
     +'<div class="ins-reasons">'+(rl.reasons||[]).slice(0,8).map(function(r){return'<span class="ins-chip '+r.band+'">'+escH(r.label)+' · '+fmt(r.count)+'</span>';}).join('')+'</div>'
+    +(rl.savings&&rl.savings.contacts>=50&&rl.savings.monthly>=1?'<div class="ins-reveal amber" style="margin-top:12px"><span class="lbl">Money you could save</span><b>'+fmt(rl.savings.contacts)+'</b> contacts never engage. Dropping them saves about <b>£'+fmt(rl.savings.monthly)+' a month</b> (£'+fmt(rl.savings.yearly)+' a year) on your email platform, and it helps your emails reach inboxes. <span style="color:var(--mu);font-size:12px">'+escH(rl.savings.basis)+'</span></div>':'')
     +'<div class="ins-note">Consent counted as valid for '+(ins.consentMonths||24)+' months after sign-up or the last open, click or purchase. Change this on the upload screen.</div></div>';
   // Reveals
   if(ins.reveals&&ins.reveals.length){
