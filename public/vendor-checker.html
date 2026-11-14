@@ -1067,7 +1067,7 @@ function renderEmpty() {
       + '</div></div>';
   }
   var affWarn = currentType==='affiliates'
-    ? '<div class="info-banner red"><i class="ph ph-warning-circle icon-16"></i><div><strong>Saga Group (\u00a3225k fine, 2021):</strong> affiliates sent marketing using consent that did not name Saga. You cannot rely on consent an affiliate collected unless it names your organisation specifically.</div></div>'
+    ? '<div class="info-banner red"><i class="ph ph-warning-circle icon-16"></i><div><strong>Saga Services and Saga Personal Finance (ICO, \u00a3150k and \u00a375k, 2021):</strong> partners and affiliates sent marketing using consent that did not name Saga. You cannot rely on consent an affiliate collected unless it names your organisation specifically.</div></div>'
     : '';
   return affWarn
     + '<div class="guided-empty">'
@@ -1411,7 +1411,7 @@ function renderDetailOverview(rec) {
     var lines = ['<strong>'+escH(name)+'</strong> is registered as '+escH((f.AffiliateType||'an affiliate').toLowerCase())+(q.role!=='unknown' ? ' \u2014 '+escH(roleLabel.toLowerCase()) : '')+(volume?' (approx. '+volume+' messages)':'')+'.'];
     var actions = [];
     if (q.role==='unknown') { lines.push('You haven\'t recorded how they handle data. That decides whether you need a DPA, a marketing agreement, or neither, and which checks apply.'); actions.push('record data role'); }
-    if (!consentOk) { lines.push('Their consent wording hasn\'t been confirmed to name you. Consent that doesn\'t name your organisation can\'t be relied on for your marketing (Saga Group, \u00a3225k, 2021).'); actions.push('check consent wording'); }
+    if (!consentOk) { lines.push('Their consent wording hasn\'t been confirmed to name you. Consent that doesn\'t name your organisation can\'t be relied on for your marketing (the ICO fined two Saga companies \u00a3150k and \u00a375k for this in 2021).'); actions.push('check consent wording'); }
     if (!senderOk) { lines.push('The From name used on your behalf hasn\'t been verified (PECR Reg 23).'); actions.push('check sender identity'); }
     if (!matOk) { lines.push('Their marketing materials haven\'t been reviewed against the CAP Code. You are responsible for claims made on your behalf.'); actions.push('review creative'); }
     if (!discOk) { lines.push('Influencer content must be clearly identified as advertising.'); actions.push('verify ad disclosure'); }
