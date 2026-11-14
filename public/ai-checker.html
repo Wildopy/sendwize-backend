@@ -176,6 +176,10 @@
     .violation-source-tag { font-size: 10px; font-weight: 600; background: #FFF4EA; color: var(--orange); padding: 2px 7px; border-radius: 4px; letter-spacing: .04em; }
     .violation-reg  { font-size: 11px; color: var(--muted); margin-left: auto; }
     .violation-text { font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
+    .writing-item { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-top: 8px; font-size: 13px; line-height: 1.5; }
+    .writing-item del { color: #b91c1c; text-decoration-color: rgba(185,28,28,.5); }
+    .writing-item ins { color: #15803d; text-decoration: none; font-weight: 600; }
+    .writing-why { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .violation-quote { font-size: 12px; color: var(--muted); font-style: italic; background: var(--bg); padding: 8px 12px; border-radius: 4px; border-left: 2px solid var(--border-mid); }
     .violation-enforcement { font-size: 12px; color: #374151; background: #f0f4ff; padding: 8px 12px; border-radius: 4px; border-left: 2px solid #6366f1; margin-top: 6px; }
 
@@ -583,7 +587,7 @@
         renderResults({
           score: f.RiskScore, verdict: f.Verdict, summary: a.summary || '',
           violations: (a.violations || []).map(function(v) { var c = Object.assign({}, v); delete c._fromContext; delete c._fixType; return c; }),
-          fixedVersion: f.FixedVersion || '', sourceRecordId: rec.id, comparison: a.comparison || null,
+          fixedVersion: f.FixedVersion || '', sourceRecordId: rec.id, comparison: a.comparison || null, writing: a.writing || [],
         });
         document.getElementById('verdictSub').textContent = 'Saved check from ' + (f.CheckDate || '') + '. This answer covers the copy only. Edit the rewrite and recheck to see what has changed.';
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -894,6 +898,17 @@
       }
 
       vEl.innerHTML = genuineHtml + evidenceHtml;
+    }
+
+    // Spelling and grammar: separate from compliance, never part of the score
+    var writing = Array.isArray(data.writing) ? data.writing : [];
+    if (writing.length) {
+      vEl.insertAdjacentHTML('beforeend',
+        '<div class="evidence-section-label" style="color:var(--muted)">Spelling and grammar (' + writing.length + ')</div>' +
+        writing.map(function(w) {
+          return '<div class="writing-item"><del>' + escH(w.original) + '</del> &rarr; <ins>' + escH(w.suggestion) + '</ins>' +
+            (w.why ? '<div class="writing-why">' + escH(w.why) + '</div>' : '') + '</div>';
+        }).join(''));
     }
 
     // Update the finish summary line to reflect what will save
