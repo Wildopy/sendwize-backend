@@ -820,7 +820,7 @@ function useEspData(d){
   parsedCSV={headers:d.headers,rows:d.rows};
   currentFilename=d.name||'';
   el('uploadZone').classList.add('loaded');
-  el('uzFname').textContent=(d.name||'List')+' \u00b7 '+d.rows.length.toLocaleString()+' contacts from '+(d.provider==='klaviyo'?'Klaviyo':'Mailchimp');
+  el('uzFname').textContent=(d.name||'List')+' \u00b7 '+d.rows.length.toLocaleString()+' contacts from '+({klaviyo:'Klaviyo',mailchimp:'Mailchimp',hubspot:'HubSpot'}[d.provider]||'your platform');
   el('btnContinue').disabled=false;
   goMapping();
 }

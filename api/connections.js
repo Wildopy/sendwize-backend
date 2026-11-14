@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // SENDWIZE — connections.js v1.0 (Nov 2026)
-// Connect Klaviyo or Mailchimp with a read-only API key, then pull
+// Connect Klaviyo or Mailchimp with a read-only API key (HubSpot with a
+// private app token), then pull
 // contacts (List health), campaign results (Audience read) and how
 // people responded to recent sends (Campaign defence) without exporting
 // CSVs. Pulled data comes back shaped like the platform's own export and
@@ -55,7 +56,7 @@ const view = rec => ({ provider: rec.fields.Provider, name: PROVIDERS[rec.fields
 
 function providerOf(raw) {
   const p = String(raw || '').toLowerCase();
-  if (!PROVIDERS[p]) throw Object.assign(new Error('Choose Klaviyo or Mailchimp.'), { userFacing: true, status: 400 });
+  if (!PROVIDERS[p]) throw Object.assign(new Error('Choose Klaviyo, Mailchimp or HubSpot.'), { userFacing: true, status: 400 });
   return p;
 }
 

@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // SENDWIZE — _esp.js v1.0 (Nov 2026)
-// Email platform connections (Klaviyo and Mailchimp, by API key).
+// Email platform connections: Klaviyo and Mailchimp by API key, HubSpot
+// by private app access token.
 //
 // Each provider turns its API into the same rows its own CSV export
 // would give, with the column names Sendwize already recognises, so the
@@ -49,10 +50,16 @@ const userError = (msg, status = 400) => Object.assign(new Error(msg), { userFac
 const isoDate = v => { if (!v) return ''; const d = new Date(v); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
 const num = v => (v == null || v === '' || !Number.isFinite(Number(v)) ? '' : Number(v));
 
-async function getJson(url, init, provider) {
+async function getJson(url, init, provider, { forbidden } = {}) {
   let r;
-  try { r = await fetch(url, init); } catch (e) { throw userError(`Couldn't reach ${provider}. Try again in a minute.`, 502); }
-  if (r.status === 401 || r.status === 403) throw userError(`${provider} didn't accept that API key. Check it's copied in full and has read access.`, 401);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try { r = await fetch(url, init); } catch (e) { throw userError(`Couldn't reach ${provider}. Try again in a minute.`, 502); }
+    if (r.status !== 429 || attempt === 2) break;
+    // Short burst limits (HubSpot: 100 calls per 10 seconds): wait and retry
+    await new Promise(ok => setTimeout(ok, 1500 * (attempt + 1)));
+  }
+  if (r.status === 401) throw userError(`${provider} didn't accept that key. Check it's copied in full.`, 401);
+  if (r.status === 403) throw userError(forbidden || `${provider} didn't accept that key. Check it's copied in full and has read access.`, 401);
   if (r.status === 429) throw userError(`${provider} is limiting requests right now. Try again in a minute.`, 429);
   if (!r.ok) {
     const body = await r.text().catch(() => '');
@@ -224,10 +231,93 @@ const mailchimp = {
   },
 };
 
+// ── HubSpot (private app access token) ───────────────────────
+const HS = 'https://api.hubapi.com';
+const hsH = key => ({ Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': UA });
+const HS_PROPS = ['email', 'createdate', 'hs_email_last_open_date', 'hs_email_last_click_date', 'hs_email_optout', 'hs_legal_basis', 'hs_analytics_source', 'total_revenue', 'hs_email_hard_bounce_reason_enum'];
+const hsScope = s => `HubSpot refused that request. In your private app, tick the "${s}" scope, then reconnect.`;
+const hsRow = p => [
+  p.email, isoDate(p.createdate),
+  isoDate([p.hs_email_last_open_date, p.hs_email_last_click_date].filter(Boolean).sort().pop()),
+  isoDate(p.hs_email_last_click_date), p.hs_email_optout === 'true' ? 'yes' : 'no',
+  (p.hs_legal_basis || '').replace(/;/g, ', '), (p.hs_analytics_source || '').replace(/_/g, ' ').toLowerCase(),
+  num(p.total_revenue), p.hs_email_hard_bounce_reason_enum ? 'bounced' : '',
+];
+
+const hubspot = {
+  name: 'HubSpot',
+  keyHint: 'A private app access token starting pat- (Settings → Integrations → Private apps, with the crm.objects.contacts.read, crm.lists.read and content scopes).',
+  checkFormat: k => /^pat-[a-z0-9]{2,6}-[a-f0-9-]{30,}$/i.test(k),
+
+  async verify(key) {
+    const j = await getJson(`${HS}/account-info/v3/details`, { headers: hsH(key) }, 'HubSpot');
+    // Make sure contacts can actually be read before saving
+    await getJson(`${HS}/crm/v3/objects/contacts?limit=1&properties=email`, { headers: hsH(key) }, 'HubSpot', { forbidden: hsScope('crm.objects.contacts.read') });
+    return { account: j.portalId ? `HubSpot account ${j.portalId}` : 'HubSpot account' };
+  },
+
+  async lists(key) {
+    const out = [{ id: 'all', name: 'All contacts', count: null }];
+    try {
+      const j = await getJson(`${HS}/crm/v3/lists/search`, { method: 'POST', headers: hsH(key), body: JSON.stringify({ count: 100, offset: 0, processingTypes: ['MANUAL', 'DYNAMIC', 'SNAPSHOT'], additionalProperties: ['hs_list_size'] }) }, 'HubSpot', { forbidden: hsScope('crm.lists.read') });
+      for (const l of j.lists || []) if (l.objectTypeId === '0-1' || !l.objectTypeId) out.push({ id: String(l.listId), name: l.name, count: l.additionalProperties?.hs_list_size != null ? Number(l.additionalProperties.hs_list_size) : null });
+    } catch (e) { if (!e.userFacing) throw e; /* no list scope: "All contacts" still works */ }
+    return out;
+  },
+
+  async contacts(key, listId, { deadline = Date.now() + PULL_BUDGET_MS } = {}) {
+    const headers = ['Email', 'Create Date', 'Last Marketing Email Open Date', 'Last Marketing Email Click Date', 'Unsubscribed from all email', 'Legal basis', 'Original Source', 'Total Revenue', 'Status'];
+    const rows = [];
+    let truncated = false;
+    const forbidden = hsScope('crm.objects.contacts.read');
+    if (listId === 'all') {
+      let after = null;
+      do {
+        if (rows.length >= MAX_CONTACT_ROWS || Date.now() > deadline) { truncated = true; break; }
+        const j = await getJson(`${HS}/crm/v3/objects/contacts?limit=100&archived=false&properties=${HS_PROPS.join(',')}${after ? `&after=${encodeURIComponent(after)}` : ''}`, { headers: hsH(key) }, 'HubSpot', { forbidden });
+        for (const c of j.results || []) if (c.properties?.email) rows.push(hsRow(c.properties));
+        after = j.paging?.next?.after || null;
+      } while (after);
+    } else {
+      let after = null;
+      do {
+        if (rows.length >= MAX_CONTACT_ROWS || Date.now() > deadline) { truncated = true; break; }
+        const m = await getJson(`${HS}/crm/v3/lists/${encodeURIComponent(listId)}/memberships?limit=250${after ? `&after=${encodeURIComponent(after)}` : ''}`, { headers: hsH(key) }, 'HubSpot', { forbidden: hsScope('crm.lists.read') });
+        const ids = (m.results || []).map(x => String(x.recordId || x));
+        for (let i = 0; i < ids.length; i += 100) {
+          const b = await getJson(`${HS}/crm/v3/objects/contacts/batch/read`, { method: 'POST', headers: hsH(key), body: JSON.stringify({ properties: HS_PROPS, inputs: ids.slice(i, i + 100).map(id => ({ id })) }) }, 'HubSpot', { forbidden });
+          for (const c of b.results || []) if (c.properties?.email) rows.push(hsRow(c.properties));
+        }
+        after = m.paging?.next?.after || null;
+      } while (after);
+    }
+    return { headers, rows: rows.slice(0, MAX_CONTACT_ROWS), truncated, total: null };
+  },
+
+  async campaigns(key) {
+    const since = Date.now() - 365 * 864e5;
+    const rows = [];
+    let after = null;
+    for (let i = 0; i < 5; i++) {
+      const j = await getJson(`${HS}/marketing/v3/emails?limit=100&includeStats=true&sort=-publishDate${after ? `&after=${encodeURIComponent(after)}` : ''}`, { headers: hsH(key) }, 'HubSpot', { forbidden: hsScope('content') });
+      for (const e of j.results || []) {
+        const c = e.stats?.counters || {};
+        const sentAt = e.publishDate || e.publishedAt || e.updatedAt;
+        if (!c.sent || (sentAt && Date.parse(sentAt) < since)) continue;
+        rows.push([e.name || e.subject || 'Email', isoDate(sentAt), '', num(c.sent), num(c.delivered), num(c.open), num(c.click), num(c.unsubscribed), num(c.spamreport), num(c.bounce), '']);
+      }
+      after = j.paging?.next?.after || null;
+      if (!after) break;
+    }
+    rows.sort((a, b) => String(b[1]).localeCompare(String(a[1])));
+    return { headers: CAMPAIGN_HEADERS, rows };
+  },
+};
+
 // Same names Audience read already maps without asking
 export const CAMPAIGN_HEADERS = ['Campaign Name', 'Send Date', 'List', 'Recipients', 'Delivered', 'Unique Opens', 'Unique Clicks', 'Unsubscribes', 'Spam Complaints', 'Bounces', 'Revenue'];
 
-export const PROVIDERS = { klaviyo, mailchimp };
+export const PROVIDERS = { klaviyo, mailchimp, hubspot };
 
 // How people responded to recent sends, for Campaign defence. Rates are
 // against delivered (or sent). Flags use public mailbox-provider limits:

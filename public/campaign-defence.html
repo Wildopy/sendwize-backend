@@ -557,7 +557,7 @@ async function loadResponses(d){
     const r=await swFetch(`${A}/api/connections?action=responses&userId=${encodeURIComponent(U||'')}`);const j=await r.json().catch(()=>({}));
     if(CID!==myId)return;
     if(!r.ok)throw new Error(j.error||'HTTP '+r.status);
-    if(!j.connected){box.innerHTML='<div class="sec-t">How people responded</div><div class="cf-info">Connect Klaviyo or Mailchimp in <a href="audience-read.html?userId='+encodeURIComponent(U||'')+'" style="color:var(--o)">Audience read</a> to see opens, unsubscribes and spam complaints for this campaign\'s sends, flagged against the limits Gmail and Yahoo set.</div>';return;}
+    if(!j.connected){box.innerHTML='<div class="sec-t">How people responded</div><div class="cf-info">Connect Klaviyo, Mailchimp or HubSpot in <a href="audience-read.html?userId='+encodeURIComponent(U||'')+'" style="color:var(--o)">Audience read</a> to see opens, unsubscribes and spam complaints for this campaign\'s sends, flagged against the limits Gmail and Yahoo set.</div>';return;}
     const from=d.LaunchDate||d.ApprovedAt||null,fromD=from?String(from).slice(0,10):null;
     const words=String(d.CampaignTitle||'').toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>3);
     let sends=(j.sends||[]).filter(x=>!fromD||!x.sentAt||x.sentAt>=fromD);

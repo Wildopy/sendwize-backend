@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────────
    SENDWIZE: sw-connect.js v1.0  (browser)
-   "Pull straight from Klaviyo or Mailchimp" panel for List health and
+   "Pull straight from Klaviyo, Mailchimp or HubSpot" panel for List health and
    Audience read. Connect once with a read-only API key; after that one
    click pulls the data in the same shape as the platform's CSV export,
    and the page carries on exactly as if a file had been dropped in.
@@ -10,10 +10,11 @@
    ───────────────────────────────────────────────────────────── */
 (function () {
   var API = 'https://sendwize-backend.vercel.app/api/connections';
-  var NAMES = { klaviyo: 'Klaviyo', mailchimp: 'Mailchimp' };
+  var NAMES = { klaviyo: 'Klaviyo', mailchimp: 'Mailchimp', hubspot: 'HubSpot' };
   var HINTS = {
     klaviyo: 'In Klaviyo: Settings → API keys → Create private API key. Choose <b>Read-only</b> access and paste the key (it starts pk_).',
-    mailchimp: 'In Mailchimp: Profile → Extras → API keys → Create a key. Paste it here (it ends in something like -us21).'
+    mailchimp: 'In Mailchimp: Profile → Extras → API keys → Create a key. Paste it here (it ends in something like -us21).',
+    hubspot: 'In HubSpot: Settings → Integrations → Private apps → Create a private app. On Scopes tick <b>crm.objects.contacts.read</b>, <b>crm.lists.read</b> and <b>content</b> (for email results), create it, then copy the access token (it starts pat-).'
   };
   var CSS = '.swc{border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;margin:0 0 18px;background:#fff;font-family:inherit}' +
     '.swc-h{font-size:14px;font-weight:700;margin:0 0 4px;color:#111}.swc-s{font-size:13px;color:#6b7280;margin:0 0 12px;line-height:1.5}' +
@@ -40,7 +41,7 @@
       if (!c) {
         h += '<div class="swc-s">No export needed. Connect once with a read-only key and Sendwize pulls your ' + what + ' whenever you ask. Your key is stored encrypted and you can disconnect at any time.</div>';
         if (!st.picking) {
-          h += '<div class="swc-row"><button class="swc-b" data-pick="klaviyo">Connect Klaviyo</button><button class="swc-b" data-pick="mailchimp">Connect Mailchimp</button></div>';
+          h += '<div class="swc-row"><button class="swc-b" data-pick="klaviyo">Connect Klaviyo</button><button class="swc-b" data-pick="mailchimp">Connect Mailchimp</button><button class="swc-b" data-pick="hubspot">Connect HubSpot</button></div>';
         } else {
           h += '<div class="swc-s" style="margin-bottom:8px">' + HINTS[st.picking] + '</div><div class="swc-row"><input class="swc-in" type="password" autocomplete="off" placeholder="Paste your ' + NAMES[st.picking] + ' API key" id="swc-key"><button class="swc-b pri" data-act="connect"' + (st.busy ? ' disabled' : '') + '>' + (st.busy ? 'Checking…' : 'Connect') + '</button><button class="swc-link" data-act="cancel">Cancel</button></div>';
         }
