@@ -68,6 +68,9 @@
     },
     "api/guard.js": {
       "maxDuration": 60
+    },
+    "api/connections.js": {
+      "maxDuration": 60
     }
   },
   "headers": [

@@ -543,6 +543,30 @@ function renderCF(d){
   if(!isBld)P+=complaintHtml(d);
   $('cfP').innerHTML=P;
   sTab(CT);
+  if(isLive&&ch.includes('email'))loadResponses(d);
+}
+
+// ── How people responded (Klaviyo / Mailchimp sends since launch) ──
+const pct=v=>v==null?'—':(v*100).toFixed(v<0.01?2:1)+'%';
+async function loadResponses(d){
+  const host=$('tab-evidence');if(!host)return;
+  let box=$('respBox');if(!box){box=document.createElement('div');box.id='respBox';box.className='sec';host.appendChild(box);}
+  box.innerHTML='<div class="sec-t">How people responded</div><div class="ld"><div class="spin"></div>Checking your email platform…</div>';
+  const myId=CID;
+  try{
+    const r=await swFetch(`${A}/api/connections?action=responses&userId=${encodeURIComponent(U||'')}`);const j=await r.json().catch(()=>({}));
+    if(CID!==myId)return;
+    if(!r.ok)throw new Error(j.error||'HTTP '+r.status);
+    if(!j.connected){box.innerHTML='<div class="sec-t">How people responded</div><div class="cf-info">Connect Klaviyo or Mailchimp in <a href="audience-read.html?userId='+encodeURIComponent(U||'')+'" style="color:var(--o)">Audience read</a> to see opens, unsubscribes and spam complaints for this campaign\'s sends, flagged against the limits Gmail and Yahoo set.</div>';return;}
+    const from=d.LaunchDate||d.ApprovedAt||null,fromD=from?String(from).slice(0,10):null;
+    const words=String(d.CampaignTitle||'').toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>3);
+    let sends=(j.sends||[]).filter(x=>!fromD||!x.sentAt||x.sentAt>=fromD);
+    const named=sends.filter(x=>words.some(w=>String(x.name||'').toLowerCase().includes(w)));
+    if(named.length)sends=named;
+    sends=sends.slice(0,6);
+    if(!sends.length){box.innerHTML='<div class="sec-t">How people responded</div><div class="empty-s" style="font-size:13px;color:var(--mu)">No '+E(j.name)+' sends'+(fromD?' since '+fD(fromD):'')+' yet.</div>';return;}
+    box.innerHTML='<div class="sec-t">How people responded <span class="cnt">'+E(j.name)+'</span></div><div style="font-size:12px;color:var(--mu);margin:-4px 0 10px">'+(named.length?'Sends whose name matches this campaign':'Sends since this campaign went live')+'. Rates are against delivered emails.</div>'+sends.map(x=>`<div class="ev-item"><div class="ev-body"><div class="ev-label">${E(x.name)}${x.sentAt?' · '+fD(x.sentAt):''}</div><div class="ev-detail">${x.sent!=null?Number(x.sent).toLocaleString()+' sent · ':''}Opens ${pct(x.openRate)} · Clicks ${pct(x.clickRate)} · Unsubscribes ${pct(x.unsubRate)} · Spam complaints ${pct(x.complaintRate)}</div>${(x.flags||[]).map(f=>`<div class="cf-info" style="margin-top:6px">${E(f.text)}</div>`).join('')}</div><span class="ev-st ${x.flags&&x.flags.length?(x.flags.some(f=>f.level==='high')?'ev-gap':'ev-warn'):'ev-ok'}">${x.flags&&x.flags.length?'Review':'Normal'}</span></div>`).join('');
+  }catch(e){if(CID===myId)box.innerHTML='<div class="sec-t">How people responded</div><div style="font-size:13px;color:var(--r)">'+E(e.message)+'</div>';}
 }
 
 // ── Page scan rendering ──

@@ -28,6 +28,7 @@ const DEFAULT_LIMITS = {
   fix_draft:      40,  // ready-to-use fixes on the dashboard
   sweep_email:    10,  // Site sweep ownership emails (confirm link, steps to a web person)
   simulation:     20,  // Regulator simulator runs (letter wording)
+  esp_pull:       40,  // Klaviyo / Mailchimp pulls (contacts, campaigns)
 };
 
 let warned = false;
