@@ -1,8 +1,24 @@
-// api/analyze-copy.js  v5.7
-// v5.7: influencer and creator posts (contentType 'influencer'). Rules run
-//   first on the post and the brand relationship (paid, gifted, affiliate,
-//   own brand): no clear ad label, an unclear label such as #sp or
-//   #collab, or a label hidden at the end. Claude then reviews the rest.
+// api/analyze-copy.js  v6.0
+// Influencer and creator posts (contentType 'influencer', from PR #28). Rules
+//   run first on the post and the brand relationship (paid, gifted,
+//   affiliate, own brand): no clear ad label, an unclear label such as #sp
+//   or #collab, or a label hidden at the end. Claude then reviews the rest.
+// v6.0 (10 Nov 2026), from the 25-email test set (data/copy-test-set.json):
+//   + Facts read by code first (_copy-review.js copyFacts): opt-out, named
+//     sender, company recipient, dated/relative deadline, countdown,
+//     swearing. Sent to the AI as settled and enforced after it answers.
+//   + Every finding carries an issue_type (_copy-issues.js). House rules
+//     (reviewFindings): relative deadlines are medium plus an evidence
+//     check, stock and was/now claims are evidence checks, one finding per
+//     single issue, swearing is a Hold, non-marketing text is never a Go.
+//   + Score comes from the final findings (copyScore), not the AI.
+//   + A case is shown only when it is about the same issue, never on low
+//     notes or evidence checks (caseForIssue). No more HelloFresh on every
+//     opt-out finding.
+//   + The rewrite may not add facts: new figures and any claim the original
+//     didn't make become [check: ...] placeholders (guardRewrite).
+//   + Identical copy (and context, images, engine version) returns the
+//     saved answer, so a re-run never changes the verdict.
 // v5.6 (security): every request authenticated via _auth.js; the verified
 //   member id replaces any userId from the browser. Calls to generate-fix
 //   and profile carry the internal secret.
@@ -28,7 +44,15 @@ import crypto from 'crypto';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { fq } from './_airtable.js';
-import { closestCases } from './_exposure.js';
+import { sendCall } from './_send-call.js';
+import { ISSUE_IDS, issueOf } from './_copy-issues.js';
+import { copyFacts, factsBlock, reviewFindings, copyScore, guardRewrite, guessIssue } from './_copy-review.js';
+import { caseForIssue } from './_exposure.js';
+
+// Bump when the prompt or the house rules change, so saved answers for
+// identical copy are not reused across versions.
+export const COPY_ENGINE = 'copy-6.3';
+const CHANNEL_NAMES = { email: 'Email', sms: 'SMS', push: 'Push notification', social: 'Social ad', influencer: 'Influencer post', directmail: 'Direct mail' };
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -120,9 +144,10 @@ Some statements are simply not allowed under any circumstances, regardless of wh
 * "Capital is guaranteed and investors cannot lose money" -- false statement of fact
 * "We're confident it will continue to perform at this level" -- forward-looking projection as certainty
 * "No risk of losing your investment" -- misleading statement of fact
-* Fake urgency without genuine deadline
+* A countdown in minutes or hours, or urgency with no end at all ("ends soon", "last chance")
 * Pre-ticked consent
-* Missing unsubscribe
+* Missing unsubscribe (email and SMS only)
+* Swearing, abuse or content likely to cause serious offence (CAP 4.1)
 
 For these: output as a violation. Set requiresEvidence: false. The fix is to REMOVE OR REWORD the offending statement.
 
@@ -130,8 +155,10 @@ CATEGORY 2 -- EVIDENCE CHECK (evidence on file makes it OK)
 Some claims are lawful if the marketer holds documentary evidence on file. Examples:
 * "20% returns for the past 5 years" -- lawful with audited performance data + past-performance disclaimer
 * "UK's best-value service" -- lawful with a price-comparison study
-* "Boost your immune system" -- lawful with an authorised health claim from the GB NHC Register
-* "Only 50 places available" -- lawful with a documented, enforceable cap
+* "Vitamin C contributes to the normal function of the immune system" -- lawful when the product meets the GB NHC Register conditions for that authorised claim
+* "Only 50 places available" or "only 4 left" -- lawful when the number is true
+* "Was £249, now £179" -- lawful with records showing £249 was the genuine selling price
+* "Sale ends 23:59 Sunday 16 November" -- lawful when the deadline is genuine and enforced
 * "Clinically proven to reduce wrinkles" -- lawful with a clinical trial
 
 For these: output as a violation with requiresEvidence: true. The fix is to CONFIRM YOU HOLD THE EVIDENCE. The user will tick a certification box.
@@ -180,17 +207,41 @@ PUSH: 40-60 words. Fewest words. Keep action verb.
 DIRECT MAIL: Preserve narrative. Headline punch critical.
 
 UNIVERSAL:
-* Never add qualifications inline breaking flow. Put in "Offer terms:" block at end.
+* NEVER ADD FACTS. The rewrite must not state anything the original didn't: no new product facts, materials, benefits, endorsements, prices, what a price includes, dates, times, stock levels, terms, company details, lawful basis, or how the reader's details were collected. Where a fix needs information you don't have, write a [square-bracket placeholder], e.g. [end date], [registered office address], [why they're receiving this]. Removing or softening a claim is fine; inventing a replacement claim is not. When you take a claim out, drop it or leave a [placeholder] such as [substantiated environmental claim]; never write a new benefit, slogan or feeling in its place (e.g. not "kinder on your conscience", not "made for sensitive sleepers").
+* Never add qualifications inline breaking flow. Put in "Offer terms:" block at end, using only conditions the original states, or [placeholders].
 * Never remove a real offer.
 * Never replace first-person brand voice with passive voice.
 * Do NOT include "[EVIDENCE REQUIRED: ...]" or any bracketed evidence markers in the rewrite.
 
 ------------------------------------------------------------
 
+SECTION 2C -- ISSUE TYPES, FACTS AND WHAT NOT TO FLAG
+
+Every finding carries an issue_type from this fixed list: ${ISSUE_IDS.join(', ')}.
+Use the most specific one. One finding per issue: never merge two issues (e.g. a missing unsubscribe and a missing sender) into one finding, and never raise the same issue twice.
+
+A [FACTS CHECKED BY CODE] block comes with the copy. Those facts are settled: if it says an opt-out is present or the sender is named, do not raise a finding saying otherwise.
+
+Set content_kind: "marketing" for promotional copy; "service" for a purely transactional message (order, delivery, account) with no promotion; "not_marketing" for anything with no product, offer or brand message (a test, a greeting, abuse).
+
+Do NOT flag:
+* A sender who is clearly named (in the From line, an SMS prefix like "Brand:", or the footer). Only flag the sender when it is missing or disguised.
+* Consent on an email to a company address (corporate subscriber).
+* A creator's or customer's honest opinion as something to substantiate.
+* Puffery nobody would read as measurable ("the comfiest sofa you'll ever sink into").
+* Missing unsubscribe or postal address on social posts or push notifications.
+* Conditions that are already stated in the copy (e.g. a closing date that is given).
+
+------------------------------------------------------------
+
 SECTION 3 -- PECR RULES
 
 Reg 22 -- Consent for electronic marketing (individuals need prior consent or soft opt-in; B2B corporate emails more flexible; sole traders and partnerships still need consent).
-Reg 22 -- Unsubscribe (every marketing message must have simple, free, working opt-out).
+Reg 22 -- Unsubscribe (every marketing email or SMS must give a simple, free way to opt out). Say "a simple, free way to opt out". Do not say a one-click link is required: one-click is good practice and a Gmail/Yahoo bulk-sender requirement, not a PECR rule.
+Corporate subscribers: emails to a company address need no prior consent (sole traders and partnerships do). Opt-out and sender identity still apply.
+Service messages (order, delivery, account updates with no promotion) are not marketing: no opt-out or consent finding.
+Push notifications: no unsubscribe or postal address finding (opt-out is in device settings). Treat consent as an evidence check only.
+Company details: a company's marketing emails are expected to show its name, registered number and registered office (Companies Act trading disclosures). If missing, that is LOW severity, cite the Companies Act, not PECR. PECR Reg 23 only needs the sender not to be disguised and a valid address (an email address is enough) for opt-out requests.
 Reg 23 -- Sender identity (must not be disguised or concealed).
 Reg 6 -- Cookies and tracking (DUAA 2025 updates).
 
@@ -217,7 +268,8 @@ CAP 3.17: Price statements not misleading.
 CAP 3.22-3.30: Pricing, free claims, urgency, scarcity.
 CAP 3.33-3.35: Comparative claims like-for-like.
 CAP 3.44-3.47: Reviews and testimonials.
-CAP 8.17: Promotions state closing dates.
+CAP 4.1: Must not cause serious or widespread offence (swearing, abuse, shock content). [CRITICAL]
+CAP 8.17: Promotions state closing dates. A relative deadline in an email ("tonight", "midnight", "before Friday") is MEDIUM: ask for the date, because emails are opened later. A dated deadline is an EVIDENCE CHECK that it is genuine.
 CAP 12.1: Health claims substantiated. [EVIDENCE CHECK]
 CAP 14.1: Financial promotions fair, clear, not misleading. [CRITICAL for forward-looking or guaranteed]
 CAP 15.1: Nutrition/health claims authorised on GB NHC Register. [EVIDENCE CHECK]
@@ -264,19 +316,24 @@ Financial ("guaranteed", forward-looking, missing risk warnings, past performanc
 
 SECTION 9 -- FEW-SHOT EXAMPLES
 
-FAKE URGENCY (CRITICAL, requiresEvidence: false): "ends tonight" without date. Fix: use specific date.
+COUNTDOWN (CRITICAL, requiresEvidence: false, issue_type fake_urgency): "checkout in the next 10 minutes", or "ends soon" with no end. Fix: use a genuine, specific end date and time.
+RELATIVE DEADLINE (MEDIUM, requiresEvidence: false, issue_type deadline_unclear): "ends at midnight tonight" in an email. Fix: give the date and time. Plus a separate EVIDENCE CHECK (issue_type fake_urgency) that the deadline is genuine.
 
 FREE WITH HIDDEN CONDITIONS (CRITICAL, requiresEvidence: false): "FREE gift" requiring GBP20 min without disclosure. Fix: add disclosure.
 
 CONSENT BUNDLING (CRITICAL, requiresEvidence: false): Bundled marketing consent. Fix: separate opt-in.
 
-HEALTH CLAIM (EVIDENCE CHECK, requiresEvidence: true): "Boost your immune system" without authorised claim. Recommendation: "Confirm you hold the GB NHC Register authorised claim reference for this statement."
+HEALTH CLAIM WORDING (HIGH, requiresEvidence: false, issue_type health_claim): "Boost your immune system" is not authorised wording; evidence can't fix it. Fix: use the authorised wording (e.g. "Vitamin C contributes to the normal function of the immune system") if the product qualifies.
+AUTHORISED HEALTH CLAIM (EVIDENCE CHECK, requiresEvidence: true): "Vitamin D contributes to normal immune function". Recommendation: "Confirm the product meets the GB NHC Register conditions of use for this claim."
 
 MATERIAL OMISSION (CRITICAL, requiresEvidence: false): "No T&Cs" or "no risk warning" -- CAP 3.9/3.10. Fix: add missing content.
 
 FCA UNAPPROVED (CRITICAL, requiresEvidence: false): Financial promotion without s.21 approval. Fix: obtain approval before sending.
 
-REFERENCE PRICING (CRITICAL, requiresEvidence: false): "WAS £200 NOW £49" without 28-day history. Fix: prove history or remove.
+REFERENCE PRICING (EVIDENCE CHECK, requiresEvidence: true, issue_type reference_price): "WAS £200 NOW £49" or "RRP £129". Confirm the higher price was genuinely charged (or widely charged, for RRP). Only a finding (not evidence) if the copy itself shows the comparison is false.
+STOCK CLAIM (EVIDENCE CHECK, requiresEvidence: true, issue_type scarcity): "Only 4 left". Confirm stock was that low when sent.
+OPINION (not a finding, not evidence): an influencer's or customer's own opinion ("honestly the best lamp I've ever owned"). For influencer posts the issue is the ad label, not the opinion.
+NOT MARKETING (content_kind not_marketing): text with no product, offer or brand message, e.g. "test", "hello", or abuse. Never treat it as clean copy.
 
 PUFFERY (not a violation): "UK's most loved".
 AUTHORISED HEALTH CLAIM (not a violation): "Vitamin D contributes to normal immune function".
@@ -327,9 +384,9 @@ Three violations from one paragraph. Two critical fixes (rewrite the copy). One 
 SECTION 10 -- SEVERITY & VERDICT
 
 SEVERITY:
-critical: Enforcement likely. PECR consent missing, fake urgency, fabricated pricing, pre-ticked consent, no unsubscribe, third-party list without consent, fake reviews, FCA without approval, "guaranteed" for market-linked, forward-looking projections.
-high: Clear rule breach. "Free" without disclosure, vague deadline, undisclosed influencer, bundled consent, greenwashing, missing risk warnings, past performance requiring documented data (EVIDENCE CHECK).
-medium: Probable breach.
+critical: Enforcement likely. Countdown or open-ended false urgency, pricing the copy shows is false, pre-ticked consent, no unsubscribe (email/SMS), third-party list without consent, fake or rewarded reviews, FCA without approval, "guaranteed" for market-linked, forward-looking projections, serious offence, disguised marketing, a paid or gifted post with no ad label (a DMCCA banned practice), "100%" green claims such as "100% sustainable" or "100% eco-friendly" (they can't be proved).
+high: Clear rule breach. "Free" without disclosure, bundled consent, other absolute green claims ("carbon neutral", "eco-friendly") with no basis given, missing risk warnings, unauthorised health claim wording.
+medium: Probable breach, or a relative deadline with no date.
 low: Best practice gap.
 
 VERDICTS (exact):
@@ -352,23 +409,26 @@ Respond ONLY in this exact JSON. No preamble. No markdown fences.
   "verdict": "Minor issues to address",
   "violations": [
     {
-      "regulation": "CAP Code 3.7",
-      "severity": "high",
-      "issue": "Time-limited offer without specific end date",
-      "location": "Subject line -- 'Flash sale ends soon'",
-      "recommendation": "Replace 'ends soon' with exact date and time.",
+      "regulation": "CAP Code 8.17",
+      "severity": "medium",
+      "issue": "'Ends at midnight tonight' gives no date, and emails are often opened later.",
+      "location": "Subject line -- 'Ends midnight tonight'",
+      "recommendation": "Give the date and time, e.g. 'Ends 23:59 on [date]'.",
       "requiresEvidence": false,
+      "issue_type": "deadline_unclear",
       "enforcement_note": "Always leave empty. Sendwize adds the closest published case."
     },
     {
       "regulation": "CAP Code 12.1 / GB NHC Register",
       "severity": "high",
-      "issue": "Health claim 'boosts immunity' requires an authorised claim reference on file.",
+      "issue": "'Vitamin C contributes to the normal function of the immune system' is an authorised claim, but only for products that meet its conditions of use.",
       "location": "Body paragraph 2",
-      "recommendation": "Confirm you hold the GB NHC Register authorised claim reference for this statement.",
-      "requiresEvidence": true
+      "recommendation": "Confirm the product meets the GB NHC Register conditions of use for this claim.",
+      "requiresEvidence": true,
+      "issue_type": "health_claim"
     }
   ],
+  "content_kind": "marketing",
   "fixedVersion": "FULL REWRITTEN COMPLIANT VERSION. Follow Section 2B rules. Fix critical violations by rewriting. Do NOT include [EVIDENCE REQUIRED:] markers. Clean sendable copy.",
   "summary": "One sentence plain English assessment."
 }
@@ -379,6 +439,7 @@ EVERY violation MUST have a requiresEvidence boolean. Do not omit this field.
 
 SECTION 12 -- CUSTOMER-FACING WORDING
 The "issue", "recommendation", "enforcement_note" and "summary" fields are shown to customers. Internal words in this prompt such as "violation" and "breach" describe your task; they must not appear in those fields.
+In those fields write normal sentences: never use "--" or dashes as punctuation, and no markdown.
 ${LEGAL_RULES}
 `;
 
@@ -399,16 +460,18 @@ export const ANALYSIS_SCHEMA = {
           location: { type: 'string' },
           recommendation: { type: 'string' },
           requiresEvidence: { type: 'boolean' },
+          issue_type: { type: 'string', enum: ISSUE_IDS },
           enforcement_note: { type: 'string' },
         },
-        required: ['regulation', 'severity', 'issue', 'location', 'recommendation', 'requiresEvidence'],
+        required: ['regulation', 'severity', 'issue', 'location', 'recommendation', 'requiresEvidence', 'issue_type'],
         additionalProperties: false,
       },
     },
+    content_kind: { type: 'string', enum: ['marketing', 'service', 'not_marketing'] },
     fixedVersion: { type: 'string' },
     summary: { type: 'string' },
   },
-  required: ['score', 'verdict', 'violations', 'summary'],
+  required: ['score', 'verdict', 'violations', 'content_kind', 'summary'],
   additionalProperties: false,
 };
 
@@ -489,7 +552,7 @@ export function influencerViolations(content, ctx) {
   const why = rel === 'affiliate'
     ? 'The creator earns commission from this post, so the regulator expects it to be labelled as an ad.'
     : 'The brand paid for or controlled this post, so the regulator expects it to be labelled as an ad.';
-  const base = { regulation: 'ASA CAP Code 2.1 / 2.4, CMA influencer guidance', requiresEvidence: false, _fixType: 'undisclosed_ad', _fromContext: true };
+  const base = { regulation: 'ASA CAP Code 2.1 / 2.4, CMA influencer guidance', requiresEvidence: false, issue_type: 'hidden_ad', _fixType: 'undisclosed_ad', _fromContext: true };
   if (!clear) {
     return [{ ...base, severity: 'critical',
       issue: `We can't find a clear ad label in this post. ${why}${unclear ? ` "${unclear[0].trim()}" on its own is a potential area requiring review: the ASA has found labels like this unclear.` : ''}`,
@@ -525,22 +588,22 @@ function getContextViolations(ctx) {
   if (!ctx) return [];
   const violations = [];
   if (ctx.listSource === 'purchased') {
-    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List purchased or rented from a third party. Recipients must have specifically consented to receive marketing from your organisation by name.', location: 'Sending context -- list source', recommendation: 'Do not send to this list until you can verify valid consent.', requiresEvidence: false, _fixType: 'third_party_list', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List purchased or rented from a third party. Recipients must have specifically consented to receive marketing from your organisation by name.', location: 'Sending context -- list source', recommendation: 'Do not send to this list until you can verify valid consent.', requiresEvidence: false, _fixType: 'third_party_list', issue_type: 'third_party_consent', _fromContext: true });
   }
   if (ctx.listSource === 'partner') {
-    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List provided by a partner or affiliate -- indirect consent is insufficient for email or SMS marketing.', location: 'Sending context -- list source', recommendation: 'Each organisation sending marketing must have consent obtained specifically for their own communications.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'critical', issue: 'List provided by a partner or affiliate -- indirect consent is insufficient for email or SMS marketing.', location: 'Sending context -- list source', recommendation: 'Each organisation sending marketing must have consent obtained specifically for their own communications.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', issue_type: 'third_party_consent', _fromContext: true });
   }
   if (ctx.consentSpecificity === 'thirdParty') {
-    violations.push({ regulation: 'PECR Reg 22 / UK GDPR Article 7', severity: 'critical', issue: 'Recipients consented to a third party or "our partners" -- not to your organisation by name.', location: 'Sending context -- consent specificity', recommendation: 'Stop sending to this list. Consent must specifically name your organisation.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22 / UK GDPR Article 7', severity: 'critical', issue: 'Recipients consented to a third party or "our partners" -- not to your organisation by name.', location: 'Sending context -- consent specificity', recommendation: 'Stop sending to this list. Consent must specifically name your organisation.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', issue_type: 'third_party_consent', _fromContext: true });
   }
   if (ctx.consentSpecificity === 'notSure') {
-    violations.push({ regulation: 'PECR Reg 22', severity: 'high', issue: 'Consent basis is unclear. Do not send unless you can confirm valid consent.', location: 'Sending context -- consent specificity', recommendation: 'Verify your consent records before sending.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 22', severity: 'high', issue: 'Consent basis is unclear. Do not send unless you can confirm valid consent.', location: 'Sending context -- consent specificity', recommendation: 'Verify your consent records before sending.', requiresEvidence: false, _fixType: 'invalid_consent_mechanism', issue_type: 'third_party_consent', _fromContext: true });
   }
   if (ctx.senderRelationship === 'thirdParty' && ctx.fromNameMatch === 'no') {
-    violations.push({ regulation: 'PECR Reg 23', severity: 'critical', issue: 'A third-party agency is sending on your behalf and the From name does not match the organisation that collected consent.', location: 'Sending context -- sender relationship and From name mismatch', recommendation: 'The From name must clearly identify the brand that collected consent.', requiresEvidence: false, _fixType: 'concealed_sender', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 23', severity: 'critical', issue: 'A third-party agency is sending on your behalf and the From name does not match the organisation that collected consent.', location: 'Sending context -- sender relationship and From name mismatch', recommendation: 'The From name must clearly identify the brand that collected consent.', requiresEvidence: false, _fixType: 'concealed_sender', issue_type: 'sender_hidden', _fromContext: true });
   }
   if (ctx.fromNameMatch === 'no' && ctx.senderRelationship !== 'thirdParty') {
-    violations.push({ regulation: 'PECR Reg 23', severity: 'high', issue: 'The From name does not match the organisation that collected consent.', location: 'Sending context -- From name mismatch', recommendation: 'Ensure the From name clearly identifies the organisation that collected consent.', requiresEvidence: false, _fixType: 'concealed_sender', _fromContext: true });
+    violations.push({ regulation: 'PECR Reg 23', severity: 'high', issue: 'The From name does not match the organisation that collected consent.', location: 'Sending context -- From name mismatch', recommendation: 'Ensure the From name clearly identifies the organisation that collected consent.', requiresEvidence: false, _fixType: 'concealed_sender', issue_type: 'sender_hidden', _fromContext: true });
   }
   return violations;
 }
@@ -548,6 +611,8 @@ function getContextViolations(ctx) {
 function mapViolationToFixType(violation) {
   if (violation._fixType) return violation._fixType;
   if (isEvidenceViolation(violation)) return null;
+  const known = violation.issue_type && issueOf(violation.issue_type);
+  if (known && known.fixType) return known.fixType;
 
   const combined = `${violation.issue || ''} ${violation.regulation || ''} ${violation.recommendation || ''}`.toLowerCase();
 
@@ -578,14 +643,19 @@ function mapViolationToFixType(violation) {
 // library, never from the model, so every case shown has a source link.
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const caseWhen = d => { const m = String(d || '').match(/^(\d{4})(?:-(\d{2}))?/); return m ? (m[2] ? MONTHS[Number(m[2]) - 1] + ' ' : '') + m[1] : ''; };
+// v6.0: only a case tagged with the same specific issue (_copy-issues.js),
+// never on low-severity notes or evidence checks. No case beats a wrong one.
 function withClosestCase(v, channel) {
   const { enforcement_note, enforcement_url, case_id, ...rest } = v;
-  const fixType = rest.requiresEvidence ? null : mapViolationToFixType(rest);
-  const text = [rest.issue, rest.regulation, rest.recommendation, rest.text, rest.quote].filter(Boolean).join(' ');
-  const c = fixType ? closestCases(fixType, null, { text, channel })[0] : null;
+  const issue = rest.issue_type || guessIssue(rest);
+  if (rest.requiresEvidence || rest.severity === 'low' || !issueOf(issue).caseable) return rest;
+  // No published case is about swearing: better none than an unrelated one
+  if (v._noCase || (issue === 'harm_offence' && /swear|profan|fuck|abus|expletive/i.test(`${rest.issue} ${rest.location}`))) return rest;
+  const text = [rest.issue, rest.location, rest.text, rest.quote].filter(Boolean).join(' ');
+  const c = caseForIssue(issue, { text, channel });
   if (!c) return rest;
   return { ...rest,
-    enforcement_note: `${c.related ? 'Related' : 'Closest'} published case: ${c.name} (${c.regulator}, ${caseWhen(c.date)}). ${c.outcome}. ${c.summary}${c.action ? ` What they had to change: ${c.action}` : ''}`,
+    enforcement_note: `Published case on the same issue: ${c.name} (${c.regulator}, ${caseWhen(c.date)}). ${c.outcome}. ${c.summary}${c.action ? ` What they had to change: ${c.action}` : ''}`,
     enforcement_url: c.url, case_id: c.id };
 }
 
@@ -597,8 +667,25 @@ function mapViolationToSeverity(v) {
   return 'low';
 }
 
-function contentHash(userId, contentType, content) {
-  return crypto.createHash('sha256').update(`${userId}|${contentType}|${content}`).digest('hex').slice(0, 16);
+// Everything that can change the answer: the same inputs on the same
+// engine version give back the saved answer (see the handler).
+function contentHash(userId, contentType, content, extra = '') {
+  return crypto.createHash('sha256').update(`${COPY_ENGINE}|${userId}|${contentType}|${content}|${extra}`).digest('hex').slice(0, 16);
+}
+
+// The saved answer for identical copy, so a re-run never gives a different verdict
+async function loadSameCheck(userId, hash) {
+  const formula = `AND({UserID}=${fq(userId)},{ContentHash}=${fq(hash)})`;
+  const r = await fetch(`https://api.airtable.com/v0/${process.env.BASE_ID}/AI_Compliance_Checks?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1&sort%5B0%5D%5Bfield%5D=CheckDate&sort%5B0%5D%5Bdirection%5D=desc`, {
+    headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` },
+  });
+  if (!r.ok) return null;
+  const rec = (await r.json()).records?.[0];
+  if (!rec) return null;
+  let analysis = {};
+  try { analysis = JSON.parse(rec.fields.Analysis || '{}'); } catch { return null; }
+  if (!Array.isArray(analysis.violations)) return null;
+  return { id: rec.id, fields: rec.fields, analysis };
 }
 
 async function generateFixes(userId, allViolations, emailChecks, sourceRecordId) {
@@ -717,25 +804,51 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  const startedAt = Date.now();
   try {
     // Identity: the verified member id replaces any userId sent by the browser
     const auth = await requireAuth(req, res);
     if (!auth) return;
     if (!(await checkLimit(req, res, auth, 'copy_scan'))) return;
-    const { contentType, content, subject, userId, autoFix, sendingContext, influencerContext, images, recheckOf } = req.body ?? {};
+    const { contentType, subject, userId, autoFix, sendingContext, influencerContext, images, recheckOf } = req.body ?? {};
+    const content = String(req.body?.content || '').trim();
+    const from = String(req.body?.from || '').trim().slice(0, 200);
+    const campaignName = String(req.body?.campaignName || '').trim().slice(0, 120);
+    const hasImages = Array.isArray(images) && images.length > 0;
     if (!userId)      return res.status(400).json({ error: 'Missing userId' });
     if (!contentType) return res.status(400).json({ error: 'Missing contentType' });
     if (!['email','sms','push','social','influencer','directmail'].includes(contentType)) return res.status(400).json({ error: 'Invalid contentType' });
-    if (!content)     return res.status(400).json({ error: 'Missing content' });
+    // An image on its own is a complete check: many ads have no caption
+    if (!content && !hasImages) return res.status(400).json({ error: 'Paste the copy or upload an image' });
 
-    const checkHash         = contentHash(userId, contentType, content);
     const infCtx            = contentType === 'influencer' && influencerContext && typeof influencerContext === 'object' ? influencerContext : null;
     const labelViolations   = infCtx ? influencerViolations(content, infCtx) : [];
     // Email-style sending questions don't apply to a creator's post
     const contextViolations = [...(contentType === 'influencer' ? [] : getContextViolations(sendingContext)), ...labelViolations];
-    const copyText          = contentType === 'email' && subject ? `Subject: ${subject}\n\nEmail body:\n${content}` : content;
+    // The From line and subject are part of what the reader sees: check them with the body
+    const head              = [from ? `From: ${from}` : '', contentType === 'email' && subject ? `Subject: ${subject}` : ''].filter(Boolean).join('\n');
+    const body              = content || '(No text pasted. The image is the whole piece: read every word in it, including small print.)';
+    const copyText          = head ? `${head}\n\n${contentType === 'email' ? 'Email body:\n' : ''}${body}` : body;
+    const savedCopy         = [head, content || (hasImages ? '(Image only)' : '')].filter(Boolean).join('\n\n');
     const contextBlock      = contentType === 'influencer' ? buildInfluencerContextBlock(infCtx, labelViolations) : buildSendingContextBlock(sendingContext);
-    const analysisContent   = contextBlock ? `${contextBlock}\n\n[COPY TO ANALYSE]\n${copyText}` : copyText;
+    const facts             = copyFacts(contentType, copyText);
+    const imageKey          = Array.isArray(images) ? images.map(i => crypto.createHash('sha256').update(String(i?.data || '')).digest('hex').slice(0, 12)).join(',') : '';
+    const checkHash         = contentHash(userId, contentType, content, `${subject || ''}|${from}|${contextBlock}|${infCtx ? JSON.stringify(infCtx) : ''}|${imageKey}|${autoFix ? 'rw' : ''}`);
+    const analysisContent   = `${factsBlock(facts, { images: hasImages })}\n\n${contextBlock ? `${contextBlock}\n\n` : ''}[COPY TO ANALYSE]\n${copyText}`;
+
+    // Identical copy (and context, images, engine) gives the saved answer back
+    if (!recheckOf) {
+      const same = await loadSameCheck(userId, checkHash).catch(() => null);
+      if (same) {
+        const violations = same.analysis.violations;
+        const call = sendCall(violations);
+        return res.status(200).json({
+          score: same.fields.RiskScore ?? copyScore(violations), verdict: call.label, violations,
+          summary: same.analysis.summary || '', fixedVersion: same.fields.FixedVersion || '', content_kind: same.analysis.contentKind || 'marketing',
+          sendCall: call, contentType, checkHash, sourceRecordId: same.id, comparison: null, reused: true,
+        });
+      }
+    }
 
     const userMessage = `${CHANNEL_RULES[contentType]}\n\nCONTENT TO ANALYSE:\n${analysisContent}${autoFix ? '\nGenerate a fixedVersion field in the JSON following the Section 2B rewrite rules exactly. Fix compliance issues. Preserve brand voice, energy, and marketing punch. Do NOT include [EVIDENCE REQUIRED:] markers in the rewrite.' : ''}`;
 
@@ -789,26 +902,26 @@ export default async function handler(req, res) {
       return cleaned;
     });
 
-    const contextFixTypes = new Set(contextViolations.map(v => v._fixType));
-    const aiViolations    = taggedAiViolations.filter(v => !contextFixTypes.has(mapViolationToFixType(v)));
-    const allViolations   = [...contextViolations, ...aiViolations].map(v => withClosestCase(v, contentType));
+    // v6.0: the house rules (_copy-review.js) decide what stays, how serious
+    // it is and the score, so the same findings always give the same answer
+    const analysisFailed = aiAnalysis?.verdict === 'Analysis Error';
+    const contentKind = aiAnalysis?.content_kind || 'marketing';
+    const reviewed = analysisFailed ? taggedAiViolations
+      : reviewFindings(taggedAiViolations, facts, { contentKind, contextFindings: contextViolations, imageOnly: hasImages && !content });
+    const allViolations = reviewed.map(v => withClosestCase(v, contentType));
 
-    let finalScore = aiAnalysis?.score ?? 50;
-    for (const v of contextViolations) {
-      if (v.severity === 'critical')    finalScore -= 30;
-      else if (v.severity === 'high')   finalScore -= 15;
-      else if (v.severity === 'medium') finalScore -= 7;
-    }
-    finalScore = Math.max(0, finalScore);
-
+    let finalScore = analysisFailed ? (aiAnalysis?.score ?? 50) : copyScore(allViolations);
     let finalVerdict = aiAnalysis?.verdict;
-    if (contextViolations.length > 0) {
-      const hasCritical = allViolations.some(v => v.severity === 'critical');
-      if (hasCritical || finalScore <= 49)   finalVerdict = 'Do not send -- address critical issues first';
-      else if (finalScore <= 74)             finalVerdict = 'Review required before sending';
-      else if (finalScore <= 89)             finalVerdict = 'Minor issues to address';
-      else                                   finalVerdict = 'No issues found';
-    }
+
+    // The rewrite may only say what the original said; anything new becomes a [check: ...] placeholder
+    // With no typed text the original is in the image, so every word would look new: skip the guard
+    if (aiAnalysis.fixedVersion && !analysisFailed && content) aiAnalysis.fixedVersion = await guardRewrite(copyText, aiAnalysis.fixedVersion, { timeoutMs: 50000 - (Date.now() - startedAt) });
+
+    // Go / Fix first / Hold for the copy only (see _send-call.js). No answer
+    // when the check itself failed. Saved as the check's Verdict so past
+    // checks and the dashboard show the same answer.
+    const call = analysisFailed ? null : sendCall(allViolations);
+    if (call) finalVerdict = call.label;
 
     // Recheck: compare with the earlier check before saving this one
     let comparison = null;
@@ -828,14 +941,14 @@ export default async function handler(req, res) {
           UserID:         userId,
           CheckDate:      new Date().toISOString().split('T')[0],
           ContentType:    contentType,
-          ContentHash:    checkHash,
+          ContentHash:    analysisFailed ? '' : checkHash,
           RiskScore:      finalScore,
           Verdict:        finalVerdict ?? '',
           CriticalIssues: criticalCount,
           Warnings:       warningCount,
-          MarketingCopy:  content?.slice(0, 10000) ?? '',
-          FileName:       contentType === 'email' ? `Email: ${subject || '(no subject)'}` : contentType === 'influencer' ? 'Influencer post' : `${contentType} scan`,
-          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
+          MarketingCopy:  savedCopy.slice(0, 10000),
+          FileName:       campaignName || (contentType === 'email' ? (subject ? `Email: ${subject}` : 'Email (no subject)') : `${CHANNEL_NAMES[contentType] || contentType}${hasImages && !content ? ' image' : ''} check`),
+          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', contentKind, engine: COPY_ENGINE, ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
           FixedVersion:   aiAnalysis?.fixedVersion ?? '',
           RelatedCases:   [...new Set(allViolations.map(v => v.case_id).filter(Boolean))].join(','),
           SendingContext: contextBlock || '',
@@ -868,7 +981,7 @@ export default async function handler(req, res) {
     }).catch(e => console.error('Streak update failed:', e));
 
     const cleanViolations = allViolations.map(({ _fromContext, _fixType, ...rest }) => rest);
-    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, contentType, checkHash, sourceRecordId: savedRecordId, comparison });
+    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, sendCall: call, contentType, checkHash, sourceRecordId: savedRecordId, comparison });
 
   } catch (error) {
     console.error('analyze-copy error:', error);

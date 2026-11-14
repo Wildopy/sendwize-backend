@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="https://sendwize-backend.vercel.app/favicon.svg">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Send-day verdict | Sendwize</title>
+  <title>Saved send-day verdicts | Sendwize</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{--o:#EA7317;--ol:#FFF4EA;--bg:#FAFAFA;--w:#fff;--b:#ececec;--t:#1a1a1a;--mu:#6b7280;--r:#dc2626;--rb:#fef2f2;--y:#b45309;--yb:#fffbeb;--g:#16a34a;--gb:#f0fdf4;--rad:10px}
@@ -43,6 +43,8 @@
     .hist a{color:var(--t)}
     .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:8px}
     @keyframes s{to{transform:rotate(360deg)}}
+    .moved{background:var(--ol);border:1px solid #fed7aa;border-radius:var(--rad);padding:16px 18px;margin-bottom:16px;font-size:14px;line-height:1.5}
+    .moved a{color:var(--o);font-weight:600}
     @media(max-width:600px){.row{grid-template-columns:1fr}}
   </style>
 </head>
@@ -52,72 +54,40 @@
   <a id="dash" href="#">Dashboard</a>
 </header>
 <main class="wrap">
-  <h1>Send-day verdict</h1>
-  <p class="sub">Paste the campaign before it goes out. Sendwize checks the copy, the landing pages and the list together and gives one answer: Go, Fix first, or Hold. Each verdict is saved with a fingerprint as a record that you checked.</p>
-
-  <form class="card" id="f">
-    <div class="row">
-      <div><label for="name">Campaign name</label><input id="name" maxlength="120" placeholder="Black Friday email"></div>
-      <div><label for="ch">Channel</label>
-        <select id="ch"><option value="email">Email</option><option value="sms">SMS</option><option value="push">Push</option><option value="social">Social</option><option value="directmail">Direct mail</option></select></div>
-    </div>
-    <label for="subj">Subject line <span class="hint">(email)</span></label><input id="subj" maxlength="300">
-    <label for="copy">Campaign copy</label><textarea id="copy" required placeholder="Paste the full email, SMS or post"></textarea>
-    <label for="urls">Landing pages <span class="hint">(one per line, up to 4)</span></label><textarea id="urls" style="min-height:70px" placeholder="https://"></textarea>
-    <div class="row">
-      <div><label for="list">Send list <span class="hint">(as named in List health)</span></label><select id="list"><option value="">Most recent list check</option></select></div>
-      <div><label for="src">Where the list came from</label>
-        <select id="src"><option value="">Not stated</option><option value="direct">Collected by us</option><option value="purchased">Bought or rented</option><option value="partner">From a partner or affiliate</option></select></div>
-    </div>
-    <button class="go" id="run" type="submit">Get the verdict</button>
-    <div class="err" id="err" role="alert"></div>
-  </form>
-
+  <h1>Saved send-day verdicts</h1>
+  <div class="moved" id="moved">The Send-day verdict is now part of the <a id="toCopy" href="/ai-checker.html">Copy checker</a>. It gives Go, Fix first or Hold for the copy and shows what it didn't check, so you can run List health or Campaign defence for the list and pages. Verdicts you saved before the change are kept below, exactly as they were recorded.</div>
+  <div class="err" id="err" role="alert"></div>
   <div id="out" aria-live="polite"></div>
-
-  <div class="card hist" id="hist" hidden><div class="sec">Recent verdicts</div><div id="hl"></div></div>
+  <div class="card hist" id="hist" hidden><div class="sec">Saved verdicts</div><div id="hl"></div></div>
 </main>
 <script>
 (function () {
   var API = 'https://sendwize-backend.vercel.app';
   var DASH = (window.SW && SW.dashboard) || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
-  var userId = new URLSearchParams(location.search).get('userId');
+  var q = new URLSearchParams(location.search), userId = q.get('userId'), startId = q.get('verdictId');
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  $('dash').href = DASH;
+  var copyUrl = '/ai-checker.html' + (userId ? '?userId=' + encodeURIComponent(userId) : '');
+  $('dash').href = DASH; $('toCopy').href = copyUrl;
 
-  async function call(path, opts) {
-    var r = await swFetch(API + path, opts);
+  async function call(path) {
+    var r = await swFetch(API + path);
     var j = {}; try { j = await r.json(); } catch (e) {}
     if (!r.ok) throw new Error(j.error || ('Request failed (' + r.status + ')'));
     return j;
   }
+  if (!userId) { location.replace(copyUrl); return; }
 
-  if (!userId) {
-    $('f').innerHTML = '<p class="note">Open this tool from your <a href="' + esc(DASH) + '">dashboard</a> so we know who you are.</p>';
-    return;
-  }
+  // Old bookmarks and links with nothing saved behind them go straight to the Copy checker
+  call('/api/verdict?action=list&userId=' + encodeURIComponent(userId)).then(function (d) {
+    var v = d.verdicts || [];
+    if (!v.length) { if (!startId) location.replace(copyUrl); return; }
+    $('hist').hidden = false;
+    $('hl').innerHTML = v.map(function (x) {
+      return '<div class="item"><a href="#" data-id="' + esc(x.id) + '" class="open-v"><span class="tag">' + esc(x.verdict) + '</span>' + esc(x.campaign) + '</a> <span class="note">· ' + esc(x.channel) + ' · ' + esc(new Date(x.createdAt).toLocaleString('en-GB')) + '</span></div>';
+    }).join('');
+  }).catch(function () { if (!startId) location.replace(copyUrl); });
 
-  call('/api/list-intelligence?action=lists&userId=' + encodeURIComponent(userId)).then(function (d) {
-    (d.lists || []).forEach(function (l) {
-      var n = l.listName || l.name; if (!n) return;
-      var o = document.createElement('option'); o.value = n; o.textContent = n; $('list').appendChild(o);
-    });
-  }).catch(function () {});
-
-  function loadHistory() {
-    call('/api/verdict?action=list&userId=' + encodeURIComponent(userId)).then(function (d) {
-      var v = d.verdicts || [];
-      if (!v.length) return;
-      $('hist').hidden = false;
-      $('hl').innerHTML = v.map(function (x) {
-        return '<div class="item"><a href="#" data-id="' + esc(x.id) + '" class="open-v"><span class="tag">' + esc(x.verdict) + '</span>' + esc(x.campaign) + '</a> <span class="note">· ' + esc(x.channel) + ' · ' + esc(new Date(x.createdAt).toLocaleString('en-GB')) + '</span></div>';
-      }).join('');
-    }).catch(function () {});
-  }
-  loadHistory();
-
-  // Reopen a saved verdict from the list, or from ?verdictId= in the address
   $('hl').addEventListener('click', function (e) {
     var a = e.target.closest('.open-v'); if (!a) return;
     e.preventDefault();
@@ -128,51 +98,23 @@
       .then(showVerdict)
       .catch(function (err) { $('err').textContent = err.message; });
   }
-  var startId = new URLSearchParams(location.search).get('verdictId');
   if (startId) openVerdict(startId);
 
-  function items(list, area) {
+  function items(list) {
     return list.map(function (i) {
       return '<div class="item"><span class="tag">' + esc(i.area) + '</span>' + esc(i.text) + (i.action ? '<div class="act">' + esc(i.action) + '</div>' : '') + '</div>';
     }).join('');
   }
-
   function showVerdict(v) {
-      var h = '<div class="verdict ' + esc(v.verdict) + '"><div class="vl">' + esc(v.label) + '</div><div class="vh">' + esc(v.headline) + '</div>' +
-        '<div class="note">' + (v.reopened ? 'Saved verdict' + (v.campaign ? ' for ' + esc(v.campaign) : '') + ', checked ' : 'Checked ') + esc(new Date(v.createdAt).toLocaleString('en-GB')) + (v.saved ? '. Saved to your records.' : '. Not saved: ask your admin to add the Send_Verdicts table.') + '</div></div>';
-      if (v.hold.length) h += '<div class="card"><div class="sec">Stop and resolve</div>' + items(v.hold) + '</div>';
-      if (v.fix.length) h += '<div class="card"><div class="sec">Fix before sending</div>' + items(v.fix) + '</div>';
-      if (v.ok.length) h += '<div class="card"><div class="sec">Checked and clear</div>' + items(v.ok) + '</div>';
-      h += '<div class="card"><div class="note">' + esc(v.notice) + '</div><div class="fp">Fingerprint ' + esc(v.fingerprint) + '</div></div>';
-      $('out').innerHTML = h;
-      $('out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var h = '<div class="verdict ' + esc(v.verdict) + '"><div class="vl">' + esc(v.label) + '</div><div class="vh">' + esc(v.headline) + '</div>' +
+      '<div class="note">Saved verdict' + (v.campaign ? ' for ' + esc(v.campaign) : '') + ', checked ' + esc(new Date(v.createdAt).toLocaleString('en-GB')) + '.</div></div>';
+    if (v.hold.length) h += '<div class="card"><div class="sec">Stop and resolve</div>' + items(v.hold) + '</div>';
+    if (v.fix.length) h += '<div class="card"><div class="sec">Fix before sending</div>' + items(v.fix) + '</div>';
+    if (v.ok.length) h += '<div class="card"><div class="sec">Checked and clear</div>' + items(v.ok) + '</div>';
+    h += '<div class="card"><div class="note">' + esc(v.notice) + '</div><div class="fp">Fingerprint ' + esc(v.fingerprint) + '</div></div>';
+    $('out').innerHTML = h;
+    $('out').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-
-  $('f').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    $('err').textContent = '';
-    var btn = $('run');
-    btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Checking copy, pages and list…';
-    try {
-      var body = {
-        userId: userId,
-        campaignName: $('name').value.trim(),
-        channel: $('ch').value,
-        subject: $('subj').value.trim(),
-        copy: $('copy').value,
-        urls: $('urls').value.split(/\s+/).filter(Boolean),
-        listName: $('list').value,
-        sendingContext: $('src').value ? { listSource: $('src').value } : undefined,
-      };
-      var v = await call('/api/verdict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      showVerdict(v);
-      loadHistory();
-    } catch (err) {
-      $('err').textContent = err.message;
-    } finally {
-      btn.disabled = false; btn.textContent = 'Get the verdict';
-    }
-  });
 })();
 </script>
 </body>

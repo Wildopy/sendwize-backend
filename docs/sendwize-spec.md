@@ -72,13 +72,13 @@ Helpers: `requireAuth(req,res)` for members, `requireInternal` for cron/internal
 | Tool (page) | What it does | Endpoint(s) | Rate-limit bucket (per day) |
 |---|---|---|---|
 | **Dashboard** (Webflow embed) | Score ring, Already lost / Open regulatory exposure / Risk addressed tiles, exposure by area, Start here, consent expiring, This week, list value, action items with "Why this number?", Case Twin, What-if mode, campaigns, recent checks. **[PR #8]** shows a required business-profile form instead of any £ figure until the profile is complete | `dashboard`, `fixes`, `exposure`, `profile`, `data`, `verdict` | `fix_draft` 40, `exposure` 20 |
-| **Send-day verdict** (`send-verdict.html`) | Go / Fix first / Hold before a send, combining copy + landing pages + list + audience. Pure rules over those results, fingerprinted and saved | `verdict` | `verdict` 40 |
-| **AI Copy Checker** (`ai-checker.html`) | Rules first, then Claude reviews ad/email/SMS/social copy against CAP/PECR/CMA, gives compliant rewrites, separates "evidence required" items, re-checks an edited version and closes resolved fixes | `analyze-copy`, `certify-evidence` | `copy_scan` 60 |
-| **Campaign Defence** (`campaign-defence.html`) | Builds a defensible campaign dossier: copy checks, landing-page scans (claims, reference/drip pricing, urgency), approvals, event log, page-drift monitoring | `submit-check` | `campaign_build` 30 |
+| **Saved send-day verdicts** (`send-verdict.html`) | Retired as a tool in Nov 2026 and merged into the Copy Checker, because members often run one tool per campaign and a combined Go could imply the list and pages were checked. The page now only reopens verdicts saved before the change, and sends everyone else to the Copy Checker. Old page in `archive/send-verdict.html` | `verdict` (GET only) | none |
+| **AI Copy Checker** (`ai-checker.html`) | Gives one answer for the copy only, Go / Fix first / Hold (`_send-call.js`: any critical finding holds; any high or medium finding, or an evidence claim not yet confirmed, means fix first), and a "Not checked here" card linking to List health, Campaign defence and Audience read. Rules first, then Claude reviews ad/email/SMS/social copy against CAP/PECR/CMA, gives compliant rewrites, separates "evidence required" items, re-checks an edited version and closes resolved fixes | `analyze-copy`, `certify-evidence` | `copy_scan` 60 |
+| **Campaign Defence / Sign-off** (`campaign-defence.html`, approver page `sign-off.html`) | Builds a defensible campaign dossier: copy checks, landing-page scans (claims, reference/drip pricing, urgency), event log. **Sign-off:** the marketer sends the built defence to an approver by email; the approver sees every check as Go / Fix first / Hold on a one-time link (token hashed, 14 days) and approves (same freeze as defence-approve, recorded by name) or sends it back with a note. **After launch:** page drift vs the approved snapshot, enforcement watch, reference-price expiry, and an offer still live after its end date (`OfferEndsAt`, read from the copy or set by the marketer). **Complaint:** paste a complaint and get a draft reply built only from the record, the evidence to attach and the gaps to check. Copy checker has "Send for sign-off" | `submit-check` (logic in `_signoff.js`) | `campaign_build` 30, complaint drafts use `copy_scan` |
 | **Commercial Relationships** (`vendor-checker.html`) | Vendor, partner and affiliate registers, vendor risk scoring, DPA reader (URL or PDF), competitor/relationship watch | `data`, `dpa-scan`, `check-vendors`, `vendor-*`, `submit-check` | `vendor_check` 30, `dpa_scan` 20 |
 | **List Intelligence** / List health (`list-intelligence.html`) | Upload an ESP contact CSV. Shows "your real list" (green/amber/red with reasons), the consent clock (default 24 months), sign-up source quality joined to Site Sweep, evidence coverage, unsubscribe leaks across lists, soft opt-in misuse, Case Twin, pre-send certificate and re-consent drafts | `list-intelligence` (logic in `_list-insights.js`) | `list_upload` 20, `reconsent` 30 |
 | **Audience Read** (`audience-read.html`) | Upload a campaign export. Shows a 12-month list forecast, a per-send table (people lost, £ value, net, complaint rate against the 0.3% Gmail/Yahoo limit), best campaign by net, the third-send-in-a-week effect, the next-send call and a Black Friday plan. Zero AI in scoring (AI only maps columns) | `audience-read` (logic in `_campaign-insights.js`) | `list_upload` |
-| **Site Sweep** (`site-sweep.html`) | Site-wide scan of a verified domain (meta tag, `/.well-known` file or DNS TXT): cookies before consent, banner and reject option, privacy notice, sign-up consent. Feeds fixes | `site-sweep` | `site_sweep` 10 |
+| **Site Sweep + Site guard** (`site-sweep.html`) | Sweep: one-off scan of a verified domain (meta tag, `/.well-known` file or DNS TXT): cookies before consent, banner and reject option, privacy notice, sign-up consent. Feeds fixes. **Site guard:** one script tag (`public/g.js`) reports, per real page view, which known tags fired and whether before a consent choice, the consent state (Cookiebot, OneTrust, CookieYes, Didomi, Usercentrics, Shopify, Complianz, Osano, Iubenda, Termly, Google Consent Mode), the path and any "was £X" price. No cookies, ids or personal data. Counters live in Upstash; a nightly rollup opens/closes alerts (tag before consent, no consent tool, Consent Mode missing or not updated, "was" price shown > 28 days, script silent), raises and auto-closes dashboard fixes, and shows alerts in Sendwize only (no email or Slack), with consent rate with a benchmark once 5 comparable sites exist | `site-sweep`, `guard` (logic in `_guard.js`) | `site_sweep` 10 |
 | **Regulator Simulator** (`ico-simulator.html`) | Simulates a regulator investigation for the member's band. Saved to `Simulations` and can be reopened | `data?action=simulation-run` | |
 | **Profile / Onboarding** (`profile.html`, `onboarding.html`) | Business profile: sector, revenue band, exact turnover, list size, opt-in records, complaints, regulator contact, campaign budget/revenue, CPL. **[PR #8]** makes five of these required before figures show | `profile` | |
 | **Explainers** | `exposure-explain.html` (replaced by `exposure-algorithm.html` **[PR #8]**, a public page built live from engine constants via `GET /api/exposure?action=method`) and `list-value-explain.html` | | |
@@ -127,7 +127,7 @@ All routes are `https://sendwize-backend.vercel.app/api/<name>`. Member routes n
 | `exposure` | `explain`, `assess`, `inputs` (campaign figures), `draft` (ready-to-use fix), `assess-pending` (cron), `method` (public) **[PR #8]** | member / cron / public |
 | `exposure-summary` | GET/POST: Lost / At risk / Cleared tiles | member |
 | `profile` | `get`, `save`, `streak` (internal) | member |
-| `verdict` | POST: run the verdict; `get`, `list` | member |
+| `verdict` | `get`, `list` of verdicts saved before the tool was retired. POST returns 410 | member |
 | `analyze-copy` | POST: copy check | member |
 | `certify-evidence` | POST: persist evidence confirmations | member |
 | `submit-check` | `check`, `brief-check`, `dossier-create/get/list/save/submit`, `defence-add-event/approve/assemble/scan-pages` | member |
@@ -153,7 +153,8 @@ Shared modules: `_auth`, `_airtable`, `_claude`, `_limits`, `_exposure`, `_cases
 | Time (UTC) | Job |
 |---|---|
 | 02:30 daily | `exposure?action=assess-pending` (AI assessments, up to 12 a night) |
-| 07:00 daily | `regulatory-feed-update` |
+| 03:15 daily | `guard?action=rollup` (Site guard: yesterday's alerts, fixes, benchmarks) |
+| 07:00 daily | `regulatory-feed-update` (now also checks offers still live after `OfferEndsAt`) |
 | 07:15 daily | `free-check?action=report` (emails yesterday's numbers) |
 | 08:00 Mondays | `digest` |
 
@@ -168,7 +169,7 @@ Field names are case-sensitive. The code looks them up by name, and a missing fi
 | `User_Profile` | `UserID`, `Sector`, `RevenueBand`, `CPL`, `AnnualTurnover`, `ListSize`, `ConsentRecords` (all/some/none), `PriorRegulatorContact` (Yes/No), `ComplaintsReceived` (Yes/No), `TypicalCampaignBudget` (£), `TypicalCampaignRevenue` (£), streak fields |
 | `Compliance_Fixes` | the fix list: type, severity, status, exposure low/high, `CommercialInputs`, `AssessmentJson`, `EvidenceHash`, `DismissReason`, `FixDraft` |
 | `Score_History` | `UserID`, `Date`, `Score`, `ScoreChange`, `TriggerEvent` (one row per day) |
-| `Send_Verdicts` | `UserID`, `CreatedAt` (ISO text), `Verdict`, `CampaignName`, `Channel`, `ListName`, `Urls`, `CopyCheckId`, `ReasonsJson`, `InputHash`, `Fingerprint` |
+| `Send_Verdicts` | `UserID`, `CreatedAt` (ISO text), `Verdict`, `CampaignName`, `Channel`, `ListName`, `Urls`, `CopyCheckId`, `ReasonsJson`, `InputHash`, `Fingerprint`. Read-only since the Send-day verdict was merged into the Copy Checker |
 | `Simulations` | `UserID`, `CreatedAt`, `Regulator`, `Band`, `ResultJson` |
 | `Free_Checks` | `Email`, `Channel`, `Verdict`, `VisitorHash`, `CheckedAt`, `Issues`. The copy is never stored and the emails must not be used for marketing |
 | `List_Intelligence_Checks` | `ListName`, `CheckDate`, `Expiring30/60/90`, `LiabilityCount`, `LiabilityPct`, `TotalContacts`, `Results` (long text JSON, includes insights) |
@@ -176,10 +177,10 @@ Field names are case-sensitive. The code looks them up by name, and a missing fi
 | `List_Intelligence_Snapshots`, `List_Intelligence_Certificates`, `List_Opportunities` (legacy fallback) | list history and certificates |
 | `Audience_Read_Campaigns` | per-send rows plus `BounceCount`, `DeliveredCount`, `OpenCount`, `ClickCount`, `Cost`, `Conversions` |
 | `Audience_Read_Segments`, `Audience_Read_Snapshots` | audience history |
-| `Campaign_Dossiers` | Campaign Defence records |
+| `Campaign_Dossiers` | Campaign Defence records. Sign-off adds `SignoffJson` (long text), `SignoffTokenHash` (single line text), `OfferEndsAt` (date), `OfferEndAlertStage` (single line text), `ComplaintsJson` (long text) |
 | `AI_Compliance_Checks`, `Evidence_Certifications`, `Email_Scans` | copy checks and evidence confirmations |
 | `Vendor_Register`, `Partner_Register`, `Affiliate_Register`, `Marketing_Vendors`, `Competitor_Watch`, `Monitor_Log` | Commercial Relationships |
-| `Site_Sweeps` | domain verification and sweep results |
+| `Site_Sweeps` | domain verification and sweep results. Site guard adds `GuardKey` (single line text), `GuardEnabledAt` (date with time), `GuardJson` (long text), `GuardLastRollup` (single line text) |
 | `Database_Audits`, `Suppression_Checks` | auditor and suppression |
 | `Sector_Intelligence_Feed`, `Violation_Database` | regulator feed (Case Twin reads it, sorted by `PublishedDate`) |
 
@@ -228,7 +229,7 @@ All embeds load code from Vercel, so merging to `main` updates the live site wit
 - Vercel: set `INTERNAL_API_SECRET`, `CRON_SECRET`, `DASHBOARD_URL`, Upstash and the free-check vars. Remove `SENDWIZE_AUTH_ENFORCE`. Move to Pro.
 - Set a spend limit in the Anthropic Console.
 - Memberstack/Stripe plans, then `SENDWIZE_REQUIRE_PLAN=true`.
-- Run the signed-in end-to-end click-through of all eight tools.
+- Run the signed-in end-to-end click-through of all seven tools.
 - Replace the About page placeholders. Swap staging links (`new-mvp-v2.webflow.io`) once the live domain is set.
 
 **Product/engineering still open:**

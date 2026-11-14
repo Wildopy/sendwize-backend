@@ -51,9 +51,11 @@ function sendsOf(campaigns) {
 }
 
 function forecast(sends) {
-  if (sends.length < 2) return null;
+  // A year's forecast needs at least three sends over a month: a few sends a
+  // week apart compound into "you'll lose everyone", which nobody believes
+  if (sends.length < 3) return null;
   const spanDays = (sends[sends.length - 1]._t - sends[0]._t) / DAY;
-  if (spanDays < 7) return null;
+  if (spanDays < 30) return null;
   const latestSize = sends[sends.length - 1].recipients;
   const sendsPerMonth = (sends.length - 1) / (spanDays / 30.44);
   const pooled = sends.reduce((s, c) => s + c.unsubs + c.complaints, 0) / sends.reduce((s, c) => s + c.recipients, 0);
@@ -208,9 +210,10 @@ export function buildCampaignInsights(campaigns, ctx = {}) {
   const [headName, head] = ranked[0] || [];
   const reveals = [];
   let headline = null;
-  if (head) {
+  // An implausible forecast (90%+ gone in a year) says more about the data than the list
+  if (head && head.forecast.annualLoss < 0.9) {
     const fc = head.forecast, v = head.subscriberValue;
-    headline = `"${headName}" is on track to lose ${fmt(fc.peopleLost12)} people (${pctTxt(fc.annualLoss)}) to unsubscribes and complaints in the next 12 months.`;
+    headline = `"${headName === 'Default' ? 'Your main list' : headName}" is on track to lose ${fmt(fc.peopleLost12)} people (${pctTxt(fc.annualLoss)}) to unsubscribes and complaints in the next 12 months.`;
     let more = '';
     if (v) more = v.basis === 'revenue'
       ? `Those ${fmt(fc.peopleLost12)} people are worth about ${gbp(fc.peopleLost12 * v.perYear)} a year in email revenue (${gbp(v.perYear)} each). `

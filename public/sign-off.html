@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Campaign sign-off | Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--o:#EA7317;--od:#c85f0f;--bg:#F7F6F3;--w:#fff;--b:#ece9e3;--bm:#ddd9d0;--t:#0f0f0d;--tm:#4a4740;--mu:#8d8981;
+  --r:#c62828;--rb:#fdeeee;--g:#167a3e;--gb:#eaf6ee;--y:#a96b00;--yb:#fdf5e2}
+body{font-family:'DM Sans',-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--t);line-height:1.6;min-height:100vh}
+.top{background:var(--w);border-bottom:1px solid var(--b);padding:14px max(16px,env(safe-area-inset-left))}
+.top img{height:26px;display:block}
+.page{max-width:760px;margin:0 auto;padding:28px max(16px,env(safe-area-inset-left)) 80px}
+h1{font-size:26px;letter-spacing:-.4px;line-height:1.25;text-wrap:balance}
+.sub{color:var(--tm);font-size:14px;margin-top:6px}
+.card{background:var(--w);border:1px solid var(--b);border-radius:14px;padding:20px;margin-top:16px}
+.k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);margin-bottom:8px}
+.note{border-left:3px solid var(--o);padding:4px 0 4px 12px;font-size:14px;color:var(--tm);margin-top:12px}
+.summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:15px}
+.big{font-size:32px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.item{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:12px 0;border-top:1px solid var(--b)}
+.item:first-of-type{border-top:0}
+.item>div{min-width:0}
+.item b{font-size:14px}.item p{font-size:13px;color:var(--tm)}
+.chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;white-space:nowrap}
+.go{background:var(--gb);color:var(--g)}.fix{background:var(--yb);color:var(--y)}.hold{background:var(--rb);color:var(--r)}.gap{background:#f1f0ed;color:var(--tm)}
+pre{white-space:pre-wrap;font-family:inherit;font-size:14px;background:var(--bg);border-radius:8px;padding:14px;line-height:1.7;overflow-wrap:anywhere}
+a{color:var(--od)}
+ul{margin-left:18px;font-size:14px;color:var(--tm)}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
+input[type=text],textarea{width:100%;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--bm);border-radius:8px;background:#faf9f7}
+textarea{min-height:90px;resize:vertical}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--o);outline-offset:1px}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:500;background:var(--rb);color:var(--r);padding:10px 12px;border-radius:8px;margin-top:12px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.btn{font:inherit;font-weight:600;font-size:15px;padding:12px 20px;border-radius:9px;border:1px solid transparent;cursor:pointer}
+.btn-ok{background:var(--g);color:#fff}.btn-back{background:var(--w);color:var(--t);border-color:var(--bm)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.err{margin-top:12px;color:var(--r);font-size:14px}
+.done{text-align:center;padding:40px 20px}
+.done .big{font-size:26px}
+.hint{font-size:12px;color:var(--mu);margin-top:6px}
+details summary{cursor:pointer;font-size:13px;color:var(--tm)}
+.ld{padding:60px 0;text-align:center;color:var(--mu)}
+</style>
+</head>
+<body>
+<div class="top"><img src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></div>
+<main class="page" id="app"><div class="ld">Loading the campaign…</div></main>
+<script>
+(function(){
+  const API='https://sendwize-backend.vercel.app/api/submit-check';
+  const $=id=>document.getElementById(id);
+  const E=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const fD=d=>{if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch{return d;}};
+  const LABEL={go:'Go',fix:'Fix first',hold:'Hold',gap:'Not on file'};
+  // The token lives in the #fragment so it never reaches a server log
+  const m=location.hash.match(/[#&]t=([A-Za-z0-9_-]+)/);
+  const TOKEN=m?m[1]:null;
+  try{history.replaceState(null,'',location.pathname);}catch(e){}
+  let S=null;
+
+  async function post(action,body){
+    const r=await fetch(`${API}?action=${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,...body})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){const e=new Error(j.error||'Something went wrong. Please try again.');e.code=j.code;throw e;}
+    return j;
+  }
+  function fail(msg){$('app').innerHTML=`<div class="card done"><div class="big">This link can't be used</div><p class="sub" style="margin-top:8px">${E(msg)}</p></div>`;}
+
+  async function load(){
+    if(!TOKEN)return fail('Open the link from your sign-off email.');
+    try{S=(await post('signoff-view',{})).signoff;render();}
+    catch(e){fail(e.message);}
+  }
+
+  function itemHtml(i){return`<div class="item"><div><b>${E(i.label)}</b><p>${E(i.detail)}</p></div><span class="chip ${E(i.verdict)}">${LABEL[i.verdict]||E(i.verdict)}</span></div>`;}
+
+  function render(){
+    const s=S,sum=s.summary||{items:[]};
+    const flagged=sum.items.filter(i=>i.verdict!=='go'),clear=sum.items.filter(i=>i.verdict==='go');
+    const req=s.request||{};
+    $('app').innerHTML=`
+    <h1>Sign off: ${E(s.campaignTitle)}</h1>
+    <p class="sub">${E(req.requestedBy||s.ownerName||'Your marketing team')} asked you to approve this campaign${req.requestedAt?' on '+fD(req.requestedAt):''}. Channels: ${E((s.channels||[]).map(c=>c.replace(/_/g,' ')).join(', '))}.</p>
+    ${req.note?`<div class="note">${E(req.note)}</div>`:''}
+
+    <div class="card">
+      <div class="summary"><span class="big">${sum.clearCount} of ${sum.items.length}</span><span>checks are a clear Go.${flagged.length?` ${flagged.length===1?'One needs':flagged.length+' need'} you:`:' Nothing needs your attention.'}</span></div>
+      ${flagged.length?`<div style="margin-top:10px">${flagged.map(itemHtml).join('')}</div>`:''}
+      ${clear.length?`<details style="margin-top:12px"><summary>Show the ${clear.length} clear check${clear.length===1?'':'s'}</summary><div style="margin-top:8px">${clear.map(itemHtml).join('')}</div></details>`:''}
+    </div>
+
+    <div class="card"><div class="k">The copy being approved</div><pre>${E(s.copy||'(No copy on file)')}</pre>
+      ${(s.urls||[]).length?`<div class="k" style="margin-top:16px">Landing pages</div><ul>${s.urls.map(u=>`<li><a href="${E(u)}" target="_blank" rel="noopener noreferrer">${E(u)}</a></li>`).join('')}</ul>`:''}
+      ${(s.claims||[]).length?`<div class="k" style="margin-top:16px">Claims found</div><ul>${s.claims.map(c=>`<li>"${E(c.claim)}" <span style="color:var(--mu)">${E(c.type)}${c.rule?' · '+E(c.rule):''}</span></li>`).join('')}</ul>`:''}
+      ${s.offerEndsAt?`<p class="hint" style="margin-top:12px">Offer ends ${fD(s.offerEndsAt)}. After that, Sendwize checks the landing pages and alerts the team if it's still up.</p>`:''}
+    </div>
+
+    <div class="card" id="decide">
+      <div class="k">Your decision</div>
+      <label for="who">Your name</label><input type="text" id="who" maxlength="80" value="${E(req.approverName||'')}" autocomplete="name">
+      <label for="dn">Note (needed if you send it back)</label><textarea id="dn" maxlength="1000" placeholder="e.g. Approved. Keep the study on file. / Please change 'clinically proven' to 'shown in a trial of 40 people'."></textarea>
+      ${sum.hold?`<label class="check"><input type="checkbox" id="hold" style="margin-top:4px"> The copy check said Hold. I've read the flagged items and I'm approving it anyway.</label>`:''}
+      <div class="btns"><button class="btn btn-ok" id="bOk">Approve</button><button class="btn btn-back" id="bBack">Send back with note</button></div>
+      <p class="hint">Approving freezes this exact version as the campaign's record, with your name and the time, and starts monitoring after launch. This link then stops working.</p>
+      <div class="err" id="err" role="alert"></div>
+    </div>`;
+    $('bOk').onclick=()=>decide('approve');
+    $('bBack').onclick=()=>decide('return');
+  }
+
+  async function decide(decision){
+    const who=$('who').value.trim(),note=$('dn').value.trim();
+    $('err').textContent='';
+    if(!who){$('err').textContent='Type your name so the record shows who decided.';$('who').focus();return;}
+    if(decision==='return'&&!note){$('err').textContent='Add a note saying what needs to change.';$('dn').focus();return;}
+    const hold=$('hold');
+    if(decision==='approve'&&hold&&!hold.checked){$('err').textContent='Tick the box to confirm you are approving copy the check said to hold.';return;}
+    ['bOk','bBack'].forEach(id=>$(id).disabled=true);
+    $(decision==='approve'?'bOk':'bBack').textContent=decision==='approve'?'Approving…':'Sending…';
+    try{
+      const j=await post('signoff-decide',{decision,name:who,note,confirmHold:!!(hold&&hold.checked)});
+      $('app').innerHTML=decision==='approve'
+        ?`<div class="card done"><div class="big">Approved</div><p class="sub" style="margin-top:8px">${E(S.campaignTitle)} is signed off by ${E(who)}, ${new Date(j.decidedAt).toLocaleString('en-GB')}. The team has been told.</p>${j.approvalHash?`<p class="hint" style="margin-top:12px">Record fingerprint ${E(j.approvalHash.match(/.{1,4}/g).join(' '))}</p>`:''}</div>`
+        :`<div class="card done"><div class="big">Sent back</div><p class="sub" style="margin-top:8px">The team has your note and will send it again once it's changed.</p></div>`;
+    }catch(e){
+      $('err').textContent=e.message;
+      ['bOk','bBack'].forEach(id=>{const b=$(id);if(b)b.disabled=false;});
+      $('bOk').textContent='Approve';$('bBack').textContent='Send back with note';
+    }
+  }
+  load();
+})();
+</script>
+</body>
+</html>

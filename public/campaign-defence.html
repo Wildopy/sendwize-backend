@@ -78,6 +78,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .av-card-t{font-size:15px;font-weight:700;margin-bottom:3px}.av-card-s{font-size:12px;color:var(--mu);margin-bottom:14px;line-height:1.5}
 .fg{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
 .fg label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--o)}
+.fg select{font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--bm);border-radius:7px;background:#faf9f7;color:var(--t);width:100%}
+.fg textarea.short{min-height:64px}
+@media(max-width:640px){#proofCard [style*="grid-template-columns"]{grid-template-columns:1fr!important}}
+.cf-warn{margin-top:12px;padding:10px 14px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:13px}
 .fg input,.fg textarea{font-family:inherit;font-size:14px;padding:10px 14px;border:1px solid var(--bm);border-radius:7px;background:#faf9f7;color:var(--t);outline:none;width:100%;transition:border-color .15s}
 .fg input:focus,.fg textarea:focus{border-color:var(--o);background:var(--w)}
 .fg textarea{min-height:120px;resize:vertical;line-height:1.6}
@@ -162,6 +166,14 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .rp-reg{font-size:14px;font-weight:700}.rp-toggle{font-size:14px;color:var(--mu);transition:transform .2s}
 .rp-body{display:none;padding:18px;border-top:1px solid var(--b);font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--tm)}
 .rp-card.open .rp-body{display:block}.rp-card.open .rp-toggle{transform:rotate(180deg)}
+.so-box{margin-top:14px;padding:12px 16px;border-radius:8px;font-size:13px;line-height:1.6;background:var(--bg);border:1px solid var(--b)}
+.so-box.wait{background:#fffbeb;border-color:#fde68a;color:#854d0e}.so-box.ret{background:#fef2f2;border-color:#fecaca;color:#991b1b}.so-box.ok{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.so-form{margin-top:14px;padding:16px;border:1px solid var(--b);border-radius:10px;background:var(--w);display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.so-form .fg{margin:0}.so-form .full{grid-column:1/-1}
+@media(max-width:640px){.so-form{grid-template-columns:1fr}}
+.cp-reply{white-space:pre-wrap;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7}
+.cp-list{font-size:13px;color:var(--tm);margin:8px 0 0 18px;line-height:1.7}
+.cp-item{border:1px solid var(--b);border-radius:10px;padding:16px;margin-bottom:12px;background:var(--w)}
 .rp-banner{background:var(--ol);border-left:3px solid var(--o);border-radius:0 7px 7px 0;padding:14px 18px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.6}
 
 /* Timeline */
@@ -229,7 +241,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div style="margin-bottom:16px"><button class="btn btn-w btn-sm" onclick="showList()">← Back to campaigns</button></div>
   <div class="av-intro">
     <div class="av-intro-t">Assemble your defence</div>
-    <div class="av-intro-s">Paste your creative, tell us the channels and audience. Sendwize links your AI Scanner check, list clearance, relationship data, and sender profile. Claims are extracted, connected pages are scanned against them, and your evidence is assembled in one step.</div>
+    <div class="av-intro-s">Paste your creative, tell us the channels and audience. Sendwize runs the copy check, links your latest List health check and any partners or affiliates it names, pulls out every claim that needs proof and scans the pages the campaign links to. Your evidence is gathered in one step.</div>
   </div>
 
   <div class="av-card">
@@ -266,6 +278,25 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="av-card-t">Audience</div>
     <div class="av-card-s">Which list are you sending to? Sendwize links the most recent List health check for this list name.</div>
     <div class="fg"><label>List name</label><input id="aList" placeholder="e.g. Main Newsletter, Black Friday Segment"><div class="hint">Must match the name used in List health. Only required for email/SMS channels.</div></div>
+  </div>
+
+  <div class="av-card" id="proofCard">
+    <div class="av-card-t">Proof for email and SMS</div>
+    <div class="av-card-s">What a regulator asks for first: where the list came from, what people agreed to, that opt-outs were removed and who the message is from. Answer what you can. Anything left blank shows as a gap in the defence.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
+      <div class="fg"><label for="pSrc">Where the list came from</label><select id="pSrc"><option value="">Choose</option><option>Collected by us</option><option>Mixed sources</option><option>Bought or rented</option><option>From a partner</option></select></div>
+      <div class="fg"><label for="pBasis">Basis for messaging them</label><select id="pBasis"><option value="">Choose</option><option>Consent (PECR Reg 22)</option><option>Soft opt-in (existing customers)</option><option>Not sure</option></select></div>
+    </div>
+    <div class="fg"><label for="pWord">The words people agreed to</label><textarea id="pWord" class="short" placeholder="e.g. Tick to get offers and news from Brightside Home by email. Unsubscribe any time." maxlength="500"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px">
+      <div class="fg"><label for="pSince">Collecting it this way since</label><input id="pSince" type="date"></div>
+      <div class="fg"><label for="pSup">Opt-outs removed before send</label><select id="pSup"><option value="">Choose</option><option>Yes</option><option>No</option></select></div>
+      <div class="fg"><label for="pSupD">Date removed</label><input id="pSupD" type="date"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px" id="senderRow">
+      <div class="fg"><label for="pFrom">From name</label><input id="pFrom" placeholder="e.g. Brightside Home" maxlength="80"></div>
+      <div class="fg"><label for="pFromE">From email</label><input id="pFromE" type="email" placeholder="e.g. hello@brightsidehome.co.uk" maxlength="120"></div>
+    </div>
   </div>
 
   <div class="av-card">
@@ -322,6 +353,7 @@ function init(){
   if(demo){U=U||'demo';loadDemo(demo);return;}
   if(!U){$('gate').classList.add('on');return;}
   if(d){CID=d;loadCF(d);}
+  else if(p.get('new')){showAssembly();prefillFromCopyChecker();}
   else{showList();loadList();}
 }
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
@@ -343,7 +375,10 @@ function updCh(){
   if(ch.some(c=>['affiliate','influencer'].includes(c)))n.push('relationship verification');
   n.push('claims evidence','URL monitoring');
   $('chHint').textContent=ch.length?ch.join(', ')+', '+n.join(', ')+' required.':'Select at least one channel.';
-  const lc=$('listCard');if(lc)lc.style.display=ch.some(c=>['email','sms'].includes(c))?'':'none';
+  const direct=ch.some(c=>['email','sms'].includes(c));
+  const lc=$('listCard');if(lc)lc.style.display=direct?'':'none';
+  const pc=$('proofCard');if(pc)pc.style.display=direct?'':'none';
+  const sr=$('senderRow');if(sr)sr.style.display=ch.includes('email')?'grid':'none';
 }
 
 // ── Button state ──
@@ -380,6 +415,7 @@ async function loadList(){
 }
 
 // ── Assemble ──
+function proofAnswers(){const v=id=>($(id)?.value||'').trim();return{listSource:v('pSrc'),lawfulBasis:v('pBasis')==='Not sure'?'':v('pBasis'),consentWording:v('pWord'),consentFrom:v('pSince'),suppressionApplied:v('pSup'),suppressionDate:v('pSupD'),fromName:v('pFrom'),fromEmail:v('pFromE')};}
 async function assemble(){
   const title=$('aTitle').value.trim(),owner=$('aOwner').value.trim(),copy=$('aCopy').value.trim(),list=$('aList').value.trim(),urls=getUrls(),ch=getCh();
   if(!title){toast('Enter a campaign title','er');return;}
@@ -387,7 +423,7 @@ async function assemble(){
   if(!ch.length){toast('Select at least one channel','er');return;}
   const b=$('btnA');b.disabled=true;b.textContent='Assembling…';
   try{
-    const r=await swFetch(`${A}/api/submit-check?action=defence-assemble`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,campaignCopy:copy,listName:list,connectedUrls:urls,campaignTitle:title,ownerName:owner,channels:ch})});
+    const r=await swFetch(`${A}/api/submit-check?action=defence-assemble`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,campaignCopy:copy,listName:list,connectedUrls:urls,campaignTitle:title,ownerName:owner,channels:ch,answers:proofAnswers()})});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();CID=d.dossierId;
     toast(`Defence assembled: ${d.claimsExtracted} claims extracted`,'ok');
@@ -443,13 +479,16 @@ function renderCF(d){
   const mon=d.MonitoringActive!==false&&isLive;
 
   // Hero
-  $('cfH').innerHTML=`<div class="cf-sr"><span class="sb sb-${ds}">${ds}</span>${isLive?`<span class="pulse${mon?'':' off'}"></span><span style="font-size:12px;color:var(--mu)">${mon?'Monitoring active':'Monitoring paused'}</span>`:''}${d.HealthScore?`<span style="font-size:12px;color:var(--mu);margin-left:auto">Health: ${d.HealthScore}/100</span>`:''}</div><div class="cf-title">${E(d.CampaignTitle||'Untitled')}</div><div class="cf-meta">${E(d.OwnerName||'')}${d.ApprovedAt?' · Approved '+fD(d.ApprovedAt):''}${d.LaunchDate?' · Launched '+fD(d.LaunchDate):''}${ch.length?' · '+ch.map(c=>c.replace(/_/g,' ')).join(', '):''}</div>${isLive?`<div class="cf-summary">${bldSum(ds,allEv,urls,snaps,d)}</div>`:''}<div class="cf-actions">${isBld?'<button class="btn btn-g" onclick="approve()">Approve defence →</button>':''}${ds==='approved'?'<button class="btn btn-o btn-sm" onclick="addEv(\'campaign_launched\')">Mark as launched</button>':''}${ds==='live'?'<button class="btn btn-w btn-sm" onclick="addEv(\'campaign_takedown\')">Campaign taken down</button>':''}${isLive?'<button class="btn btn-w btn-sm" onclick="logNote()">Log a change</button>':''}</div>`;
+  $('cfH').innerHTML=`<div class="cf-sr"><span class="sb sb-${ds}">${ds}</span>${isLive?`<span class="pulse${mon?'':' off'}"></span><span style="font-size:12px;color:var(--mu)">${mon?'Monitoring active':'Monitoring paused'}</span>`:''}${d.HealthScore?`<span style="font-size:12px;color:var(--mu);margin-left:auto">Health: ${d.HealthScore}/100</span>`:''}</div><div class="cf-title">${E(d.CampaignTitle||'Untitled')}</div><div class="cf-meta">${E(d.OwnerName||'')}${d.ApprovedAt?' · Approved '+fD(d.ApprovedAt):''}${d.LaunchDate?' · Launched '+fD(d.LaunchDate):''}${ch.length?' · '+ch.map(c=>c.replace(/_/g,' ')).join(', '):''}</div>${isLive?`<div class="cf-summary">${bldSum(ds,allEv,urls,snaps,d)}</div>`:''}<div class="cf-actions">${isBld?'<button class="btn btn-o" onclick="soOpen()">Send for sign-off →</button><button class="btn btn-w" onclick="approve()">Approve it myself</button>':''}${ds==='approved'?'<button class="btn btn-o btn-sm" onclick="addEv(\'campaign_launched\')">Mark as launched</button>':''}${ds==='live'?'<button class="btn btn-w btn-sm" onclick="addEv(\'campaign_takedown\')">Campaign taken down</button>':''}${isLive?'<button class="btn btn-w btn-sm" onclick="logNote()">Log a change</button>':''}</div>`;
+
+  $('cfH').insertAdjacentHTML('beforeend',soHtml(d,isBld)+offerHtml(d,isLive));
 
   // Tabs
   const tabs=[{id:'evidence',l:'Evidence'},{id:'claims',l:'Claims ('+claims.length+')'},{id:'urls',l:'URLs ('+(urls.length||snaps.length)+')'+(ps?.totals?.needsAttention?'<span class="tab-dot"></span>':'')},{id:'timeline',l:'Timeline'}];
   if(rp)tabs.splice(2,0,{id:'response',l:'Response Pack'});
   if(d.CampaignCopySnapshot)tabs.splice(1,0,{id:'copy',l:'Approved Copy'});
   if(d.letter)tabs.push({id:'letter',l:d.letter.type==='clearance'?'Clearance':'Regulator Letter'});
+  if(!isBld)tabs.push({id:'complaint',l:'Complaint'+((d.complaints||[]).length?' ('+d.complaints.length+')':'')});
   $('cfT').innerHTML=tabs.map((t,i)=>`<button class="cf-tab${i===0?' on':''}" onclick="sTab('${t.id}')">${t.l}</button>`).join('');
 
   let P='';
@@ -459,7 +498,7 @@ function renderCF(d){
 
   // Evidence panel
   const ev=[];
-  if(aiChk||d.AICheckId){const n=aiChk?.issues?.length||0;ev.push({l:'AI Scanner',d:n?n+' issue'+(n>1?'s':''):'Clear',s:n?'Issues':'Clear',c:n?'ev-warn':'ev-ok',link:d.AICheckId?'ai-checker.html?checkId='+d.AICheckId:null});}else ev.push({l:'AI Scanner',d:'Not yet run',s:'Not evidenced',c:'ev-gap',link:'ai-checker.html'});
+  if(aiChk||d.AICheckId){const n=aiChk?.issues?.length||0,vd=aiChk?.verdict||aiChk?.Verdict||'';ev.push({l:'Copy check',d:(vd?vd+' · ':'')+(n?n+' item'+(n>1?'s':'')+' to review':'Nothing to change')+(aiChk?.score!=null?' · score '+aiChk.score+'/100':''),s:/hold/i.test(vd)?'Hold':n?'Issues':'Clear',c:/hold/i.test(vd)?'ev-gap':n?'ev-warn':'ev-ok',link:d.AICheckId?'ai-checker.html?checkId='+d.AICheckId:null});}else ev.push({l:'Copy check',d:'Not yet run',s:'Not evidenced',c:'ev-gap',link:'ai-checker.html'});
   if(urls.length||ps){
     if(scanning)ev.push({l:'Page scan',d:'Scanning connected pages…',s:'Running',c:'ev-na',tab:'urls'});
     else if(ps){const t=ps.totals||{},n=t.needsAttention||0;ev.push({l:'Page scan',d:t.pages+' page'+(t.pages!==1?'s':'')+' scanned · '+(t.findings||0)+' potential area'+(t.findings!==1?'s':'')+' requiring review'+(t.conflicts?' · '+t.conflicts+' conflict'+(t.conflicts!==1?'s':'')+' with campaign claims':''),s:n?'Needs attention':t.errors?'Partial':'Passed',c:n?'ev-warn':t.errors?'ev-na':'ev-ok',tab:'urls'});}
@@ -499,6 +538,7 @@ function renderCF(d){
   // Timeline
   P+=`<div class="cf-panel" id="tab-timeline"><div class="sec"><div class="sec-t">Timeline</div><div class="tl">${allEv.length?allEv.map(e=>{const sv=e.severity==='warning'||e.type?.includes('drift')||e.type?.includes('amended')?'warning':e.severity==='alert'?'alert':e.type?.includes('approved')||e.type?.includes('launched')?'success':'info';return`<div class="tl-item ${sv}"><div class="tl-dot"></div><div class="tl-date">${fDT(e.date)}</div><div class="tl-title">${E(e.title||e.type?.replace(/_/g,' ')||'Event')}</div>${e.detail?`<div class="tl-detail">${E(e.detail)}</div>`:''}</div>`;}).join(''):'<div style="color:var(--mu);padding:12px 0;font-size:13px">No events recorded yet.</div>'}</div></div></div>`;
 
+  if(!isBld)P+=complaintHtml(d);
   $('cfP').innerHTML=P;
   sTab(CT);
 }
@@ -526,7 +566,77 @@ function fD(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',
 function fDT(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return d;}}
 
 // ── Actions ──
-async function approve(){if(!CID)return;if(SCAN){toast('Wait for the page scan to finish before approving','er');return;}const b=document.querySelector('.cf-actions .btn-g');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await swFetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved: monitoring started','ok');loadCF(CID);}catch(e){toast('Failed: '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve defence →';}}}
+
+// ── Sign-off (v5.5) ──
+function prefillFromCopyChecker(){
+  let p=null;try{p=JSON.parse(sessionStorage.getItem('sw_defence_prefill')||'null');sessionStorage.removeItem('sw_defence_prefill');}catch{}
+  if(!p||Date.now()-(p.at||0)>3600000)return;
+  if(p.title)$('aTitle').value=p.title;
+  if(p.copy)$('aCopy').value=p.copy;
+  const ch={email:'email',sms:'sms',social:'paid_social'}[p.channel]||'email';
+  const el=document.querySelector(`#chGrid input[value="${ch}"]`)?.closest('.ch-opt');
+  if(el&&!el.querySelector('input').checked)togCh(el);
+  updBtn();toast('Copy brought over from the Copy checker','ok');
+}
+function soHtml(d,isBld){
+  const so=d.signoff;
+  let h='';
+  if(so&&so.status==='awaiting'&&!so.expired)h=`<div class="so-box wait"><b>Waiting for ${E(so.approverName||so.approverEmail)}</b> (${E(so.approverEmail)}) since ${fDT(so.requestedAt)}. ${so.flaggedCount?so.flaggedCount+' item'+(so.flaggedCount!==1?'s':'')+' flagged for them, '+so.clearCount+' clear.':'Everything was clear.'} <button class="link" onclick="soCancel()" style="color:inherit;text-decoration:underline;background:none;border:none;cursor:pointer;font:inherit">Withdraw</button></div>`;
+  else if(so&&so.status==='awaiting'&&so.expired)h=`<div class="so-box">The sign-off link sent to ${E(so.approverEmail)} has expired. Send it again.</div>`;
+  else if(so&&so.status==='returned')h=`<div class="so-box ret"><b>Sent back by ${E(so.decidedBy||'')}</b> on ${fDT(so.decidedAt)}${so.decisionNote?': '+E(so.decisionNote):''}. Make the changes, rebuild if needed, then send it again.</div>`;
+  else if(so&&so.status==='approved')h=`<div class="so-box ok"><b>Signed off by ${E(so.decidedBy||'')}</b> on ${fDT(so.decidedAt)}${so.decisionNote?'. Note: '+E(so.decisionNote):''}</div>`;
+  if(isBld)h+=`<div id="soForm" hidden><div class="so-form">
+    <div class="fg"><label for="soName">Approver's name</label><input id="soName" maxlength="80" placeholder="e.g. Priya Shah" value="${E(so?.approverName||'')}"></div>
+    <div class="fg"><label for="soEmail">Approver's email</label><input id="soEmail" type="email" placeholder="priya@yourbrand.co.uk" value="${E(so?.approverEmail||'')}"></div>
+    <div class="fg full"><label for="soNote">Note for them (optional)</label><textarea id="soNote" class="short" maxlength="1000" placeholder="e.g. Goes out Friday 9am. The study for the redness claim is attached."></textarea></div>
+    <div class="fg"><label for="soEnds">Offer ends (optional)</label><input id="soEnds" type="date" value="${E(d.OfferEndsAt||'')}"><div class="hint">If you leave this blank we'll read it from the copy ("ends Sunday"). After that date we check the offer has come down.</div></div>
+    <div class="fg full" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn btn-o" id="soSend" onclick="soSend()">Send sign-off email</button><span class="hint" style="margin:0">They'll see every check, with only the flagged ones to read. The link works once and lasts 14 days.</span></div>
+  </div></div>`;
+  return h;
+}
+function soOpen(){const f=$('soForm');if(f){f.hidden=!f.hidden;if(!f.hidden)$('soName')?.focus();}}
+async function soSend(){
+  const b=$('soSend');b.disabled=true;b.textContent='Sending…';
+  try{const r=await swFetch(`${A}/api/submit-check?action=signoff-request`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approverName:$('soName').value.trim(),approverEmail:$('soEmail').value.trim(),note:$('soNote').value.trim(),offerEndsAt:$('soEnds').value})});
+    const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'HTTP '+r.status);
+    if(j.emailSent)toast('Sign-off email sent','ok');
+    else if(j.link){toast('The email could not be sent. Copy the link from the timeline note and send it yourself.','er');try{await navigator.clipboard.writeText(j.link);toast('Email failed, so the link is copied: paste it to your approver','er');}catch{}}
+    loadCF(CID,true);
+  }catch(e){toast(e.message,'er');b.disabled=false;b.textContent='Send sign-off email';}
+}
+async function soCancel(){try{await swFetch(`${A}/api/submit-check?action=signoff-cancel`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID})});toast('Sign-off request withdrawn');loadCF(CID,true);}catch(e){toast(e.message,'er');}}
+function offerHtml(d,isLive){
+  if(!isLive&&d.DefenceStatus!=='archived')return'';
+  return`<div class="so-box" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${d.OfferEndsAt?`Offer ends <b>${fD(d.OfferEndsAt)}</b>. The day after, Sendwize checks the landing pages and tells you if the offer is still up.`:'No end date for this offer. If it has one, add it and Sendwize will check it comes down on time.'}<input type="date" id="offEnd" value="${E(d.OfferEndsAt||'')}" style="font:inherit;font-size:12px;padding:4px 8px;border:1px solid var(--bm);border-radius:6px"><button class="btn btn-w btn-sm" onclick="setOfferEnd()">Save</button></div>`;
+}
+async function setOfferEnd(){try{const r=await swFetch(`${A}/api/submit-check?action=offer-end`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,offerEndsAt:$('offEnd').value})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'HTTP '+r.status);toast('Saved','ok');loadCF(CID,true);}catch(e){toast(e.message,'er');}}
+function complaintHtml(d){
+  const list=d.complaints||[];
+  const item=(c,i)=>`<div class="cp-item"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px"><b>${E(c.regulator==='Customer'?'Customer complaint':c.regulator+' enquiry')}</b><span style="font-size:12px;color:var(--mu)">${fDT(c.at)}${c.approvalHash?' · record '+E(c.approvalHash):''}</span></div>
+    <details><summary style="font-size:12px;color:var(--mu);cursor:pointer">What they said</summary><div class="cp-reply" style="margin-top:8px">${E(c.complaint)}</div></details>
+    <div class="sec-t" style="font-size:13px;margin:14px 0 8px">Draft reply</div><div class="cp-reply" id="cpR${i}">${E(c.reply)}</div>
+    <div style="margin-top:8px"><button class="btn btn-w btn-sm" onclick="cpCopy(${i})">Copy reply</button></div>
+    ${(c.evidence||[]).length?`<div class="sec-t" style="font-size:13px;margin:14px 0 4px">Attach from this record</div><ul class="cp-list">${c.evidence.map(e=>`<li>${E(e.item)}${e.from?` <span style="color:var(--mu)">(${E(e.from)})</span>`:''}</li>`).join('')}</ul>`:''}
+    ${(c.gaps||[]).length?`<div class="sec-t" style="font-size:13px;margin:14px 0 4px;color:var(--r)">Check before replying</div><ul class="cp-list">${c.gaps.map(g=>`<li>${E(g)}</li>`).join('')}</ul>`:''}</div>`;
+  return`<div class="cf-panel" id="tab-complaint"><div class="sec"><div class="sec-t">A complaint or letter arrived</div><div class="rp-banner"><strong>Paste it in.</strong> Sendwize drafts a reply using only what this record holds (the approved copy, the checks, who signed off, page snapshots and every change since) and lists what to attach and what to check first. Drafts are not legal advice.</div>
+    <div class="fg"><textarea id="cpText" placeholder="Paste the ASA complaint, ICO letter, Trading Standards enquiry or customer email…"></textarea></div>
+    <button class="btn btn-o" id="cpBtn" onclick="cpDraft()">Draft a reply →</button></div>
+    ${list.length?`<div class="sec"><div class="sec-t">Replies drafted <span class="cnt">${list.length}</span></div>${list.map(item).join('')}</div>`:''}</div>`;
+}
+async function cpDraft(){
+  const t=$('cpText').value.trim();if(t.length<30){toast('Paste the complaint first','er');return;}
+  const b=$('cpBtn');b.disabled=true;b.textContent='Drafting… about 20 seconds';
+  try{const r=await swFetch(`${A}/api/submit-check?action=defence-complaint`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,complaint:t})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'HTTP '+r.status);
+    if(j.complaint){D.complaints=[j.complaint,...(D.complaints||[])];}
+    CT='complaint';loadCF(CID,true);toast('Draft ready','ok');
+  }catch(e){toast(e.message,'er');b.disabled=false;b.textContent='Draft a reply →';}
+}
+function cpCopy(i){const el=$('cpR'+i);if(!el)return;navigator.clipboard?.writeText(el.textContent).then(()=>toast('Copied','ok')).catch(()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Selected: press Ctrl+C to copy');});}
+
+let HOLDOK=null;
+async function approve(){if(!CID)return;if(SCAN){toast('Wait for the page scan to finish before approving','er');return;}
+  let ai=null;try{ai=JSON.parse(D?.AICheckResultJson||'null');}catch{}
+  if(/hold/i.test(ai?.verdict||'')&&HOLDOK!==CID){HOLDOK=CID;const a=document.querySelector('.cf-actions');if(a&&!a.querySelector('.cf-warn'))a.insertAdjacentHTML('beforeend','<div class="cf-warn">The copy check said <b>Hold</b>: at least one item could put this campaign at risk. Approving freezes this version as your evidence. Fix and recheck the copy first, or press Approve again to approve it as it is.</div>');const b=document.querySelector('.cf-actions .btn-w');if(b)b.textContent='Approve anyway →';return;}const b=document.querySelector('.cf-actions .btn-w');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await swFetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved: monitoring started','ok');loadCF(CID);}catch(e){toast('Failed: '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve it myself';}}}
 async function addEv(t,d){if(!CID)return;try{await swFetch(`${A}/api/submit-check?action=defence-add-event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,eventType:t,detail:d||''})});toast(t.replace(/_/g,' ')+' recorded','ok');loadCF(CID,true);}catch(e){toast('Failed: '+e.message,'er');}}
 function logNote(){const n=prompt('What changed?\n\nExamples:\n• Landing page pricing updated\n• Affiliate modified subject line\n• A/B test variant went live');if(n?.trim())addEv('manual_note',n.trim());}
 
