@@ -604,9 +604,10 @@
     var a = D.alerts || [];
     if (!a.length) return '';
     var shown = st.noticedAll ? a : a.slice(0, 3);
-    return '<div class="sw-pnl sw-noticed">' + pnlHead('Sendwize noticed', 'Patterns in your recent uploads and sends') + shown.map(function (x) {
-      var u = AUDIENCE_KINDS[x.kind] ? '/audience-read.html' : '/list-intelligence.html';
-      var cta = x.kind === 'lapsing' ? 'Write the email' : x.kind === 'lapsed' || x.kind === 'stale_list' ? 'Upload latest' : x.kind === 'ruling' ? 'See the list' : 'Open';
+    return '<div class="sw-pnl sw-noticed">' + pnlHead('Sendwize noticed', 'From your uploads, sends and suppliers') + shown.map(function (x) {
+      var sup = /^supplier_/.test(x.kind || '');
+      var u = sup ? '/vendor-checker.html' : AUDIENCE_KINDS[x.kind] ? '/audience-read.html' : '/list-intelligence.html';
+      var cta = x.kind === 'lapsing' ? 'Write the email' : x.kind === 'lapsed' || x.kind === 'stale_list' ? 'Upload latest' : x.kind === 'ruling' ? 'See the list' : sup ? 'Open the register' : 'Open';
       return '<div class="sw-ntc"><span class="sw-ntc-dot ' + esc(x.severity) + '"></span><div class="sw-ntc-t">' + esc(x.text) + '</div><button class="sw-btn q" data-act="tool" data-u="' + u + '">' + cta + '</button></div>';
     }).join('') + (a.length > 3 && !st.noticedAll ? '<button class="sw-link" data-act="noticed-all">Show ' + (a.length - 3) + ' more</button>' : '') + '</div>';
   }

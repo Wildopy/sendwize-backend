@@ -88,7 +88,7 @@ function buildAlertEmail(alerts, days) {
     `<p style="margin:0 0 12px;font-size:14px;color:#333;line-height:1.55;"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${DOT[a.severity] || DOT.info};margin-right:8px;"></span>${escH(a.text)}</p>`).join('');
   const more = alerts.length > 6 ? `<p style="margin:0 0 12px;font-size:13px;color:#777;">And ${alerts.length - 6} more on your dashboard.</p>` : '';
   const inner = `<h2 style="margin:0 0 8px;font-size:20px;">What Sendwize noticed this week</h2>
-    <p style="color:#555;margin:0 0 18px;font-size:13px;">Worked out from the lists and sends you've uploaded${days != null ? ` (latest ${days === 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago'})` : ''}, against today's date.</p>
+    <p style="color:#555;margin:0 0 18px;font-size:13px;">Worked out from your suppliers and the lists and sends you've uploaded${days != null ? ` (latest ${days === 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago'})` : ''}, against today's date.</p>
     ${rows}${more}<div style="height:8px"></div>`;
   return shell(inner);
 }
@@ -137,7 +137,7 @@ async function processUser(profile, force) {
 
   let subject, html;
   if (top.length) {
-    subject = top.length > 1 ? `${top.length} things on your lists need you this week` : '1 thing on your lists needs you this week';
+    subject = top.length > 1 ? `${top.length} things need you this week` : '1 thing needs you this week';
     html = buildAlertEmail(alerts, days);
   } else if (days != null && days >= STALE_DAYS) {
     subject = `\u23F0 Your Sendwize data is ${days} days old`;

@@ -173,6 +173,20 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .dp-tab:hover{color:var(--tm)}
 .dp-tab.on{color:var(--o);border-bottom-color:var(--o)}
 .dp-body{padding:20px}
+.uk-sec{border:1px solid var(--b);border-radius:10px;padding:16px;margin-bottom:14px;background:var(--w)}
+.uk-h{font-size:13.5px;font-weight:700;margin-bottom:4px}
+.uk-s{font-size:12.5px;color:var(--tm);line-height:1.5;margin-bottom:12px}
+.uk-file{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 0;border-top:1px solid var(--b)}
+.uk-file:first-of-type{border-top:0}
+.uk-file a{color:var(--o);font-weight:600;text-decoration:none}
+.uk-ans{font-size:13px;padding:8px 0;border-top:1px solid var(--b);line-height:1.5}
+.uk-ans b{display:block;font-weight:600}
+.uk-ans span{color:var(--tm)}
+.uk-flag{color:#b45309;font-weight:600}
+.uk-pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--ol);color:var(--o);margin-left:6px}
+.due-list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.due-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px}
+.due-row button{background:none;border:0;color:var(--o);font:inherit;font-weight:600;cursor:pointer;padding:0}
 .confirm-panel{background:var(--gb);border:1px solid var(--gc);border-radius:var(--rad-sm);padding:14px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start;animation:fadeUp .3s ease}
 .confirm-panel.warn{background:var(--yb);border-color:var(--yc)}
 .confirm-panel.risk{background:var(--rb);border-color:var(--rc)}
@@ -531,10 +545,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </div>
       <div class="work-hdr-actions" id="workActions">
         <button class="btn btn-ghost btn-sm" id="workExport" onclick="exportCSV()"><i class="ph ph-download-simple icon-16"></i>CSV</button>
+        <button class="btn btn-ghost btn-sm" id="workAudit" onclick="auditorExport()"><i class="ph ph-printer icon-16"></i>Auditor export</button>
         <button class="btn btn-primary btn-sm" id="workAdd" onclick="openModal('processor')"><i class="ph ph-plus icon-16"></i>Add platform</button>
       </div>
     </div>
     <div class="work-body">
+      <div id="dueBanner"></div>
       <div id="confirmPanel"></div>
       <div id="detailPanel" class="detail-panel"></div>
       <div id="workContent"></div>
@@ -880,6 +896,7 @@ function loadAll() {
     updateTypeCards();
     renderWorkArea();
     loadScore();
+    loadDue();
   }).catch(function(e){ hideLoading(); showToast('Could not load: '+e.message,'er'); });
 }
 
@@ -987,6 +1004,7 @@ function renderWorkArea() {
   document.getElementById('workAdd').innerHTML = '<i class="ph ph-plus icon-16"></i>'+cfg.addLabel;
   document.getElementById('workAdd').onclick = function(){ openModal(cfg.modalKey); };
   document.getElementById('workExport').style.display = currentType==='competitors' ? 'none' : 'inline-flex';
+  var wa = document.getElementById('workAudit'); if (wa) wa.style.display = currentType==='competitors' ? 'none' : 'inline-flex';
   var records = S[currentType];
   var content = document.getElementById('workContent');
   var sweepHtml = currentType==='processors' ? sweepSuggestionsHtml() : '';
@@ -1067,7 +1085,7 @@ function renderEmpty() {
       + '</div></div>';
   }
   var affWarn = currentType==='affiliates'
-    ? '<div class="info-banner red"><i class="ph ph-warning-circle icon-16"></i><div><strong>Saga Group (\u00a3225k fine, 2021):</strong> affiliates sent marketing using consent that did not name Saga. You cannot rely on consent an affiliate collected unless it names your organisation specifically.</div></div>'
+    ? '<div class="info-banner red"><i class="ph ph-warning-circle icon-16"></i><div><strong>Saga Services and Saga Personal Finance (ICO, \u00a3150k and \u00a375k, 2021):</strong> partners and affiliates sent marketing using consent that did not name Saga. You cannot rely on consent an affiliate collected unless it names your organisation specifically.</div></div>'
     : '';
   return affWarn
     + '<div class="guided-empty">'
@@ -1267,13 +1285,13 @@ function showDetail(recordId) {
 if (currentType==='competitors') {
     tabDefs = [['Overview','overview'],['Rulings','rulings'],['Promo Tactics','promos']];
   } else if (currentType==='partners') {
-    tabDefs = [['Overview','overview'],['Verification','verification']];
+    tabDefs = [['Overview','overview'],['Upkeep','upkeep'],['Verification','verification']];
     if (partnerAgreement(f).rel==='joint_controller') tabDefs.push(['Article 26','a26']);
     tabDefs.push(['Privacy Policy','privacy']);
   } else if (currentType==='affiliates') {
-    tabDefs = [['Overview','overview'],['Verification','verification'],['Creative','creative'],['Agreement','dpa'],['Privacy Policy','privacy']];
+    tabDefs = [['Overview','overview'],['Upkeep','upkeep'],['Verification','verification'],['Creative','creative'],['Agreement','dpa'],['Privacy Policy','privacy']];
   } else {
-    tabDefs = [['Overview','overview'],['Marketing checks','marketing'],['Agreement','dpa'],['Privacy Policy','privacy']];
+    tabDefs = [['Overview','overview'],['Upkeep','upkeep'],['Marketing checks','marketing'],['Agreement','dpa'],['Privacy Policy','privacy']];
   }
   panel.innerHTML =
     '<div class="dp-hdr"><div><div class="dp-name">'+escH(name)+'</div><div class="dp-meta">'+escH(getTypeInfo(f))+'</div></div>'
@@ -1299,6 +1317,7 @@ function switchDetailTab(name, btn) {
   var rec = S[currentType].find(function(r){return r.id===selId[currentType];});
   if (!rec) return;
   if (name==='overview') renderDetailOverview(rec);
+  if (name==='upkeep')   renderUpkeep(rec);
 if (name==='marketing') renderMarketingChecks(rec);
   if (name==='dpa')      renderDPAReview(rec);
   if (name==='a26')      renderA26Review(rec);
@@ -1411,7 +1430,7 @@ function renderDetailOverview(rec) {
     var lines = ['<strong>'+escH(name)+'</strong> is registered as '+escH((f.AffiliateType||'an affiliate').toLowerCase())+(q.role!=='unknown' ? ' \u2014 '+escH(roleLabel.toLowerCase()) : '')+(volume?' (approx. '+volume+' messages)':'')+'.'];
     var actions = [];
     if (q.role==='unknown') { lines.push('You haven\'t recorded how they handle data. That decides whether you need a DPA, a marketing agreement, or neither, and which checks apply.'); actions.push('record data role'); }
-    if (!consentOk) { lines.push('Their consent wording hasn\'t been confirmed to name you. Consent that doesn\'t name your organisation can\'t be relied on for your marketing (Saga Group, \u00a3225k, 2021).'); actions.push('check consent wording'); }
+    if (!consentOk) { lines.push('Their consent wording hasn\'t been confirmed to name you. Consent that doesn\'t name your organisation can\'t be relied on for your marketing (the ICO fined two Saga companies \u00a3150k and \u00a375k for this in 2021).'); actions.push('check consent wording'); }
     if (!senderOk) { lines.push('The From name used on your behalf hasn\'t been verified (PECR Reg 23).'); actions.push('check sender identity'); }
     if (!matOk) { lines.push('Their marketing materials haven\'t been reviewed against the CAP Code. You are responsible for claims made on your behalf.'); actions.push('review creative'); }
     if (!discOk) { lines.push('Influencer content must be clearly identified as advertising.'); actions.push('verify ad disclosure'); }
@@ -2698,6 +2717,128 @@ function openModalPre(type, preset) {
   var actInput = document.getElementById('m-activity');
   if (actInput && type==='affiliate' && AFF_TYPE_TO_ACTIVITY[preset]) actInput.value = AFF_TYPE_TO_ACTIVITY[preset];
   if (actInput && type==='partner' && PARTNER_TYPE_TO_ACTIVITY[preset]) actInput.value = PARTNER_TYPE_TO_ACTIVITY[preset];
+}
+
+// ── Upkeep: owner, review dates, contracts, check log ──
+var SUP_API = APP_URL + '/api/supplier';
+function supPost(action, body) {
+  return swFetch(SUP_API + '?action=' + action, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({ userId: userId, kind: currentType }, body)) })
+    .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status)); return d; }); });
+}
+function ukParse(s) { try { return JSON.parse(s || 'null'); } catch (e) { return null; } }
+function ukDue(d) {
+  if (!d) return '';
+  var n = Math.ceil((new Date(d) - new Date()) / 86400000);
+  return n < 0 ? ' <span class="uk-flag">' + (-n) + ' days overdue</span>' : n <= 30 ? ' <span class="uk-flag">in ' + n + ' days</span>' : '';
+}
+function renderUpkeep(rec) {
+  var body = document.getElementById('dpBody'); if (!body) return;
+  var f = rec.fields;
+  var files = f.Contracts || [];
+  var html = '<div class="uk-sec"><div class="uk-h">Who looks after this, and when</div><div class="uk-s">Give each one an owner and a review date. Sendwize reminds you 30 days before a review or renewal is due.</div>'
+    + '<div class="form-grid">'
+    + '<div class="fg"><label>Owner</label><input type="text" id="uk-owner" placeholder="e.g. Sam, Marketing Ops" value="' + escH(f.Owner || '') + '"></div>'
+    + '<div class="fg"><label>Next review' + ukDue(f.NextReviewDate) + '</label><input type="date" id="uk-review" value="' + escH(f.NextReviewDate || '') + '"></div>'
+    + '<div class="fg"><label>Contract renews' + ukDue(f.ContractRenewalDate) + '</label><input type="date" id="uk-renewal" value="' + escH(f.ContractRenewalDate || '') + '"></div>'
+    + '</div><button class="btn btn-primary btn-sm" onclick="saveUpkeep(\'' + escJ(rec.id) + '\')">Save</button></div>';
+
+  html += '<div class="uk-sec"><div class="uk-h">Signed contracts</div><div class="uk-s">Keep the signed agreement here so you can produce it the day someone asks. PDF, Word or image, up to 3 MB.</div>'
+    + (files.length ? files.map(function(a){ return '<div class="uk-file"><i class="ph ph-file-text icon-16"></i><a href="' + escH(a.url) + '" target="_blank" rel="noopener">' + escH(a.filename) + '</a></div>'; }).join('') : '<div class="uk-s" style="margin:0 0 10px">Nothing uploaded yet.</div>')
+    + '<label class="btn btn-ghost btn-sm" style="margin-top:8px;cursor:pointer"><i class="ph ph-upload-simple icon-16"></i>Upload a contract<input type="file" accept=".pdf,.doc,.docx,image/png,image/jpeg" style="display:none" onchange="uploadContract(\'' + escJ(rec.id) + '\', this)"></label></div>';
+
+  var log = ukParse(f.CheckLogJson) || [];
+  html += '<div class="uk-sec"><div class="uk-h">Check log</div><div class="uk-s">Each time someone checks ' + escH(getName(f)) + ' (the agreement, their consent wording, their ads, their landing page), log it here. It is your dated record of who checked what, and it goes into the auditor export.</div>'
+    + '<div class="form-grid"><div class="fg"><label>What did you check?</label><select id="uk-what">' + Object.keys(UK_CHECKS).map(function(k){ return '<option value="' + k + '">' + escH(UK_CHECKS[k]) + '</option>'; }).join('') + '</select></div>'
+    + '<div class="fg"><label>Checked by</label><input type="text" id="uk-by" value="' + escH(f.Owner || '') + '"></div></div>'
+    + '<div class="fg"><label>What you found <span style="font-weight:400;color:var(--mu)">(optional)</span></label><textarea id="uk-note" placeholder="e.g. Sign-up form names us; asked them to add the unsubscribe link to the footer"></textarea></div>'
+    + '<button class="btn btn-primary btn-sm" onclick="logCheck(\'' + escJ(rec.id) + '\')">Log this check</button>'
+    + (log.length ? '<div style="margin-top:14px">' + log.slice(0, 8).map(function(e){ return '<div class="uk-ans"><b>' + escH(e.label) + '</b><span>' + escH(fmtDate(e.at)) + (e.by ? ' · ' + escH(e.by) : '') + '</span>' + (e.note ? '<div style="color:var(--tm);white-space:pre-wrap">' + escH(e.note) + '</div>' : '') + '</div>'; }).join('') + (log.length > 8 ? '<div class="uk-s" style="margin-top:6px">And ' + (log.length - 8) + ' earlier checks in the auditor export.</div>' : '') + '</div>' : '');
+  html += '</div>';
+  body.innerHTML = html;
+}
+var UK_CHECKS = { agreement:'Agreement checked', consent_wording:'Consent wording checked', creative:'Ads or creative reviewed', ad_label:'Ad labels checked', sender:'Sender name and details checked', landing_page:'Landing page checked', list_source:'List source checked', suppression:'Opt-outs passed on', other:'Other check' };
+function ukUpdate(recordId, fields) {
+  var rec = S[currentType].find(function(r){ return r.id === recordId; });
+  if (rec) Object.assign(rec.fields, fields);
+  if (rec) renderUpkeep(rec);
+  loadDue();
+}
+function saveUpkeep(recordId) {
+  showLoading('Saving…');
+  supPost('upkeep', { recordId: recordId, owner: document.getElementById('uk-owner').value, nextReview: document.getElementById('uk-review').value, renewal: document.getElementById('uk-renewal').value })
+    .then(function(d){ hideLoading(); ukUpdate(recordId, d.fields || {}); showToast(d.missingFields && d.missingFields.length ? 'Saved, but ' + d.missingFields.join(', ') + ' need adding in Airtable' : 'Saved', 'ok'); })
+    .catch(function(e){ hideLoading(); showToast(e.message, 'er'); });
+}
+function uploadContract(recordId, input) {
+  var file = input.files && input.files[0]; if (!file) return;
+  if (file.size > 3 * 1024 * 1024) { showToast('Files can be up to 3 MB', 'er'); input.value = ''; return; }
+  var rd = new FileReader();
+  rd.onload = function(){
+    showLoading('Uploading…');
+    supPost('contract', { recordId: recordId, filename: file.name, contentType: file.type, data: String(rd.result).split(',')[1] })
+      .then(function(d){ hideLoading(); ukUpdate(recordId, { Contracts: d.contracts }); showToast('Contract saved', 'ok'); })
+      .catch(function(e){ hideLoading(); showToast(e.message, 'er'); });
+  };
+  rd.readAsDataURL(file);
+}
+function logCheck(recordId) {
+  showLoading('Saving…');
+  supPost('log', { recordId: recordId, what: document.getElementById('uk-what').value, by: document.getElementById('uk-by').value, note: document.getElementById('uk-note').value })
+    .then(function(d){ hideLoading(); ukUpdate(recordId, { CheckLogJson: JSON.stringify(d.log), LastChecked: (d.fields || {}).LastChecked }); showToast('Check logged', 'ok'); })
+    .catch(function(e){ hideLoading(); showToast(e.message, 'er'); });
+}
+function loadDue() {
+  swFetch(SUP_API + '?action=due&userId=' + encodeURIComponent(userId)).then(function(r){ return r.ok ? r.json() : { items: [] }; }).then(function(d){
+    var el = document.getElementById('dueBanner'); if (!el) return;
+    var items = d.items || [];
+    if (!items.length) { el.innerHTML = ''; return; }
+    var what = { review:'Review due', renewal:'Contract renews' };
+    el.innerHTML = '<div class="info-banner" style="display:block"><b>Coming up</b><div class="due-list">' + items.slice(0, 6).map(function(i){
+      var when = i.days < 0 ? (-i.days) + ' days overdue' : i.days === 0 ? 'today' : 'in ' + i.days + ' days';
+      return '<div class="due-row"><span>' + escH(what[i.type]) + ' <b>' + escH(i.name) + '</b>, ' + escH(when) + (i.owner ? ' (' + escH(i.owner) + ')' : '') + '</span><button onclick="openDue(\'' + escJ(i.kind) + '\',\'' + escJ(i.recordId) + '\')">Open</button></div>';
+    }).join('') + '</div></div>';
+  }).catch(function(){});
+}
+function openDue(kind, recordId) {
+  if (currentType !== kind) pickType(kind);
+  showDetail(recordId);
+  setTimeout(function(){ goToDetailTab('upkeep'); }, 50);
+}
+// One page an auditor can read: every third party, its agreement, owner, dates, contracts and checks
+function auditorExport() {
+  showLoading('Building the export…');
+  swFetch(SUP_API + '?action=export&userId=' + encodeURIComponent(userId)).then(function(r){ return r.json(); }).then(function(d){
+    hideLoading();
+    var groups = { processors:'Platforms that process your data', partners:'Partners', affiliates:'Affiliates and creators' };
+    var h = '<!doctype html><html><head><meta charset="utf-8"><title>Third-party register: ' + escH(d.company) + '</title><style>'
+      + 'body{font-family:DM Sans,Arial,sans-serif;color:#0C0B09;max-width:900px;margin:28px auto;padding:0 20px;font-size:12.5px;line-height:1.5}'
+      + 'h1{font-size:21px;margin:0}h2{font-size:15px;margin:26px 0 8px;border-bottom:2px solid #EA7317;padding-bottom:4px}'
+      + '.m{color:#6b7280}.s{border:1px solid #ECEAE6;border-radius:8px;padding:12px 14px;margin:10px 0;page-break-inside:avoid}'
+      + '.s h3{font-size:14px;margin:0 0 6px}table{border-collapse:collapse;width:100%}td{padding:3px 8px 3px 0;vertical-align:top}td:first-child{color:#6b7280;width:180px}'
+      + '@media print{body{margin:0}}</style></head><body>'
+      + '<h1>Third-party register</h1><div class="m">' + escH(d.company) + '. Exported from Sendwize on ' + escH(fmtDate(d.generatedAt)) + '.</div>';
+    Object.keys(groups).forEach(function(kind){
+      var rows = (d.rows || []).filter(function(r){ return r.kind === kind; });
+      if (!rows.length) return;
+      h += '<h2>' + groups[kind] + ' (' + rows.length + ')</h2>' + rows.map(function(r){
+        return '<div class="s"><h3>' + escH(r.name) + (r.type ? ' <span class="m" style="font-weight:400">' + escH(r.type) + '</span>' : '') + '</h3><table>'
+          + '<tr><td>Agreement</td><td>' + escH(r.agreement) + '</td></tr>'
+          + (r.consentChain !== null ? '<tr><td>Consent wording checked</td><td>' + (r.consentChain ? 'Yes' : 'No') + '</td></tr>' : '')
+          + '<tr><td>Owner</td><td>' + escH(r.owner || 'Not set') + '</td></tr>'
+          + '<tr><td>Next review</td><td>' + (r.nextReview ? escH(fmtDate(r.nextReview)) : 'Not set') + '</td></tr>'
+          + (r.renewal ? '<tr><td>Contract renews</td><td>' + escH(fmtDate(r.renewal)) + '</td></tr>' : '')
+          + '<tr><td>Signed contracts on file</td><td>' + (r.contracts.length ? escH(r.contracts.join(', ')) : 'None') + '</td></tr>'
+          + (r.lastChecked ? '<tr><td>Last checked</td><td>' + escH(fmtDate(r.lastChecked)) + '</td></tr>' : '')
+          + '<tr><td>Checks logged</td><td>' + (r.checks && r.checks.length ? r.checks.map(function(c){ return escH(fmtDate(c.at)) + ': ' + escH(c.label) + (c.by ? ' (' + escH(c.by) + ')' : '') + (c.note ? '<br><span class="m">' + escH(c.note) + '</span>' : ''); }).join('<br>') : 'None') + '</td></tr>'
+          + (r.notes ? '<tr><td>Notes</td><td>' + escH(r.notes) + '</td></tr>' : '')
+          + '</table></div>';
+      }).join('');
+    });
+    h += '<p class="m" style="margin-top:24px">Built from the records your team keeps in Sendwize. Not legal advice.</p><script>window.onload=function(){window.print();}<\/script></body></html>';
+    var w = window.open('', '_blank');
+    if (!w) { showToast('Allow pop-ups to open the export', 'er'); return; }
+    w.document.open(); w.document.write(h); w.document.close();
+  }).catch(function(e){ hideLoading(); showToast('Export failed: ' + e.message, 'er'); });
 }
 
 function exportCSV() {
