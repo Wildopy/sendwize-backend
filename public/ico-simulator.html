@@ -145,6 +145,21 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .letter-sign{margin-top:20px;padding-top:16px;border-top:1px solid var(--b)}
 .letter-sign p{font-size:13px;color:var(--tm);line-height:1.6}
 .docs-list{display:flex;flex-direction:column;gap:8px}
+.ans{margin-top:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--b);font-size:12.5px;line-height:1.5;color:var(--tm);background:var(--bg)}
+.ans-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600;color:var(--t);margin-bottom:2px}
+.ans-pill{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
+.ans-pill.available{background:var(--gb);color:var(--g);border:1px solid var(--gc)}
+.ans-pill.partial{background:var(--yb);color:#92400e;border:1px solid var(--yc)}
+.ans-pill.missing{background:var(--rb);color:var(--r);border:1px solid var(--rc)}
+.ans a,.doc-act{color:var(--o);font-weight:600;text-decoration:none}
+.ans a:hover,.doc-act:hover{text-decoration:underline}
+.ready{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 18px;border:1px solid var(--b);border-radius:10px;background:var(--w);margin-bottom:16px}
+.ready-n{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+.ready-t{flex:1;min-width:180px;font-size:13px;color:var(--tm);line-height:1.5}
+.ready-t b{display:block;font-size:15px;color:var(--t)}
+.pack-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:8px;border:1px solid var(--o);background:var(--o);color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.pack-btn:hover{background:#c85f0f}
+.doc-meta{font-size:11.5px;color:var(--mu);margin-top:4px}
 .doc-row{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-radius:8px;border:1px solid var(--b)}
 .doc-row.available{background:var(--gb);border-color:var(--gc)}
 .doc-row.partial{background:var(--yb);border-color:var(--yc)}
@@ -237,8 +252,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-.25 3h1.5v5h-1.5V7z"/></svg>
       Regulator simulator &mdash; Sendwize
     </div>
-    <h1 id="introTitle">How would your business look in a regulator investigation?</h1>
-    <p id="introDesc">Choose a regulator below, then run a simulation based on your actual compliance posture from Sendwize &mdash; and see what investigators would find across five stages.</p>
+    <h1 id="introTitle">Could you answer the regulator today?</h1>
+    <p id="introDesc">Choose a regulator and we&rsquo;ll walk through an investigation using your own Sendwize records: the letter they would send, what you could show for each question today, what&rsquo;s missing, and a response pack you can download.</p>
     <div class="intro-warning">
       <div class="intro-warning-icon">&#9888;&#65039;</div>
       <p>This is a simulation based on your current compliance data. It is illustrative only and does not constitute legal advice. Scenarios are based on published enforcement patterns from each regulator.</p>
@@ -768,6 +783,10 @@ function renderStage3() {
   }
 
   var questionsHtml = questions.map(function(q, i){
+    if (q.answer) return '<div class="letter-q" id="lq-'+i+'">'
+      +'<div class="lq-text">'+(i+1)+'. '+escH(q.question)+'</div>'
+      +ansHtml(q.answer)
+      +'</div>';
     return '<div class="letter-q" id="lq-'+i+'">'
       +'<div class="lq-row"><div class="lq-text">'+(i+1)+'. '+escH(q.question)+'</div>'
       +'<div class="lq-toggles">'
@@ -802,6 +821,48 @@ function renderStage3() {
   document.getElementById('letterCard').innerHTML = html;
 }
 
+var TOOL_NAMES = {'list-intelligence.html':'List health','site-sweep.html':'Site sweep','vendor-checker.html':'Third parties','ai-checker.html':'Copy checker','campaign-defence.html':'Campaign defence','profile.html':'Your profile'};
+function toolLink(t, label) {
+  if (!t || isDemo) return '';
+  return '<a class="doc-act" href="'+APP_URL+'/'+t+'?userId='+encodeURIComponent(userId)+'">'+escH(label || ('Fix in '+(TOOL_NAMES[t]||'Sendwize')))+' &rarr;</a>';
+}
+function ansHtml(a) {
+  var head = a.status==='available' ? 'Your records can answer this' : a.status==='partial' ? 'You could partly answer this' : 'You couldn\u2019t answer this today';
+  return '<div class="ans"><div class="ans-h"><span class="ans-pill '+escH(a.status)+'">'+escH(a.label||a.status)+'</span>'+head+'</div>'
+    +escH(a.detail||'')+(a.status!=='available' ? ' '+toolLink(a.tool) : '')+'</div>';
+}
+
+// The response pack: the letter, what the records show for each question,
+// and the document checklist, laid out to print or save as a PDF.
+function downloadPack() {
+  var d = simData; if (!d) return;
+  var l = (d.stage3 && d.stage3.letter) || {}, docs = (d.stage4 && d.stage4.documents) || [], r = d.readiness;
+  var lbl = {available:'Ready', partial:'Partly', missing:'Missing'};
+  var when = new Date(d.createdAt || Date.now()).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  var h = '<!doctype html><html><head><meta charset="utf-8"><title>Sendwize response pack: '+escH(d.regulator)+'</title><style>'
+    +'body{font-family:DM Sans,Arial,sans-serif;color:#0C0B09;max-width:760px;margin:32px auto;padding:0 20px;font-size:13px;line-height:1.55}'
+    +'h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:28px 0 8px;border-bottom:1px solid #ECEAE6;padding-bottom:6px}'
+    +'.m{color:#6b7280}.q{margin:12px 0;padding:10px 12px;border:1px solid #ECEAE6;border-radius:8px;page-break-inside:avoid}'
+    +'.s{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:1px 7px;border-radius:999px;margin-right:6px}'
+    +'.available{background:#f0fdf4;color:#15803d}.partial{background:#fefce8;color:#92400e}.missing{background:#fef2f2;color:#b91c1c}'
+    +'table{width:100%;border-collapse:collapse}td{border-top:1px solid #ECEAE6;padding:8px 6px;vertical-align:top}'
+    +'@media print{body{margin:0}}</style></head><body>'
+    +'<h1>Regulator response pack: '+escH(d.regulator)+'</h1><div class="m">Prepared by Sendwize on '+escH(when)+'. A practice run from your own records. Not legal advice.</div>'
+    +(r ? '<h2>Readiness</h2><p><b>'+r.score+'% ready</b> ('+escH(r.label)+'): '+r.counts.available+' ready, '+r.counts.partial+' partly, '+r.counts.missing+' missing.</p>' : '')
+    +'<h2>The letter</h2><p class="m">Ref '+escH(l.reference||'')+'. Re: '+escH(l.subject||'')+'</p><p>'+escH(l.opening||'')+'</p><p>'+escH(l.context||'')+'</p>'
+    +'<h2>Questions and what your records show</h2>'
+    +(l.questions||[]).map(function(q,i){ var a=q.answer||{}; return '<div class="q"><b>'+(i+1)+'. '+escH(q.question)+'</b><br>'+(a.status?'<span class="s '+escH(a.status)+'">'+escH(lbl[a.status]||'')+'</span>':'')+escH(a.detail||'')+'</div>'; }).join('')
+    +'<h2>Document checklist</h2><table>'
+    +docs.map(function(x){ return '<tr><td style="width:90px"><span class="s '+escH(x.status)+'">'+escH(lbl[x.status]||x.status)+'</span></td><td><b>'+escH(x.name)+'</b><br>'+escH(x.detail||'')+'</td></tr>'; }).join('')
+    +'</table>'
+    +((d.stage5 && d.stage5.representations && d.stage5.representations.length) ? '<h2>How to reply</h2><ol>'+d.stage5.representations.map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ol>' : '')
+    +'<p class="m" style="margin-top:28px">Sendwize is not a law firm and this is not legal advice. If you receive a real letter, speak to a solicitor.</p>'
+    +'<script>window.onload=function(){window.print();}<\/script></body></html>';
+  var w = window.open('', '_blank');
+  if (!w) { showToast('Allow pop-ups to download the pack', 'er'); return; }
+  w.document.open(); w.document.write(h); w.document.close();
+}
+
 function regenLetter() {
   if (!userId || !simData) return;
   document.getElementById('letterCard').innerHTML = '<div class="letter-body" style="text-align:center;padding:40px;color:var(--mu)">Regenerating letter\u2026</div>';
@@ -833,14 +894,19 @@ function answerQ(idx, answer) {
 function renderStage4() {
   var data = simData; if (!data) return;
   var docs = data.stage4 && data.stage4.documents ? data.stage4.documents : [];
+  var r = data.readiness;
+  var top = r ? '<div class="ready"><div class="ready-n" style="color:'+(r.score>=80?'var(--g)':r.score>=50?'#ca8a04':'var(--r)')+'">'+r.score+'%</div>'
+    +'<div class="ready-t"><b>'+escH(r.label)+'</b>'+r.counts.available+' ready, '+r.counts.partial+' partly, '+r.counts.missing+' missing. Close the gaps below and run this again to see it rise.</div>'
+    +'<button class="pack-btn" onclick="downloadPack()">Download response pack</button></div>' : '';
   var html = docs.map(function(d){
-    var statusLabel = d.status==='available'?'Available':d.status==='partial'?'Partial / Needs Review':'Missing';
+    var statusLabel = d.status==='available'?(r?'Ready':'Available'):d.status==='partial'?(r?'Partly':'Partial / Needs Review'):'Missing';
     return '<div class="doc-row '+d.status+'">'
       +'<div class="doc-status-pill">'+statusLabel+'</div>'
-      +'<div><div class="doc-name">'+escH(d.name)+'</div><div class="doc-desc">'+escH(d.detail||'')+'</div></div>'
+      +'<div><div class="doc-name">'+escH(d.name)+'</div><div class="doc-desc">'+escH(d.detail||'')+'</div>'
+      +(d.status!=='available' && d.tool ? '<div class="doc-meta">'+toolLink(d.tool)+'</div>' : '')+'</div>'
       +'</div>';
   }).join('');
-  document.getElementById('stage4-docs').innerHTML = html || '<div style="font-size:13px;color:var(--mu)">No documentation data available.</div>';
+  document.getElementById('stage4-docs').innerHTML = top + (html || '<div style="font-size:13px;color:var(--mu)">No documentation data available.</div>');
 }
 
 function renderStage5() {
@@ -889,6 +955,8 @@ function renderStage5() {
       +reps.map(function(r,i){ return '<div class="rep-item"><div class="rep-num '+cls+'">'+(i+1)+'</div><div class="rep-text">'+escH(r)+'</div></div>'; }).join('')
       +'</div>';
   }
+
+  if (data.readiness) html += '<div style="margin:20px 0"><button class="pack-btn" onclick="downloadPack()">Download response pack</button></div>';
 
   // Try other regulators
   var others = ['ICO','ASA','CMA'].filter(function(r){ return r!==reg; });
