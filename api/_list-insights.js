@@ -21,6 +21,7 @@
 // ─────────────────────────────────────────────────────────────
 import crypto from 'crypto';
 import { matchCase, TWIN_MIN } from './_cases.js';
+import { contactSavings, NEVER_ENGAGE_REASONS } from './_esp-cost.js';
 
 export const DEFAULT_CONSENT_MONTHS = 24;
 export const EXPIRING_WINDOW_DAYS = 90;
@@ -266,7 +267,11 @@ function realList(rows, total, values) {
   const spent = r => (r.c.orderValue > 0 ? r.c.orderValue : 0);
   const amber = rows.filter(r => r.v.band === 'amber');
   const expiring60 = rows.filter(r => r.v.daysLeft != null && r.v.daysLeft > 0 && r.v.daysLeft <= 60);
+  // Still on the list (not unsubscribed, bounced or invalid) but never engaging
+  const gone = new Set(['invalid', 'disposable', 'opted_out', 'bounced']);
+  const neverEngage = rows.filter(r => r.v.reasons.some(x => NEVER_ENGAGE_REASONS.includes(x)) && !r.v.reasons.some(x => gone.has(x))).length;
   return {
+    savings: contactSavings(neverEngage),
     total, green: by.green, amber: by.amber, red: by.red,
     greenPct: pct(by.green, total), amberPct: pct(by.amber, total), redPct: pct(by.red, total),
     reasons, amberValue: sum(amber, values), amberSpent: sum(amber, spent),

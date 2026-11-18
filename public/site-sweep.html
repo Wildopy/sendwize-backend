@@ -28,7 +28,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .btn{padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
 .btn-o{background:var(--o);color:#fff}.btn-o:hover{background:var(--od)}
 .btn-w{background:var(--w);color:var(--t);border:1px solid var(--bm)}.btn-w:hover{border-color:var(--o);color:var(--o)}
-.btn-sm{padding:7px 14px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{padding:7px 14px;font-size:12px}
+.cad{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;cursor:pointer}.cad input{margin-top:3px;width:16px;height:16px;flex-shrink:0}.btn:disabled{opacity:.4;cursor:not-allowed}
 .link{background:none;border:none;color:var(--o);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .view{animation:fadeUp .25s ease}
@@ -263,6 +264,11 @@ function renderRunning(){
   $('app').innerHTML=`<div class="card view" style="text-align:center;padding:56px 32px"><div class="spin"></div><div class="card-t">Reviewing ${E(S?.domain||'your site')}</div><p class="card-s" style="margin:6px auto 0;max-width:420px">Reading your key pages and checking what loads before anyone accepts cookies. Keep this page open: it takes about a minute.</p></div>`;
 }
 
+async function setCadence(box){
+  const want=box.checked?'monthly':'';box.disabled=true;
+  try{const j=await post('cadence',{domain:S.domain,cadence:want});S={...S,cadence:j.cadence,nextCheckAt:j.nextCheckAt};toast(want?'Monthly re-check on':'Monthly re-check off','ok');render();}
+  catch(e){box.checked=!box.checked;box.disabled=false;toast(e.message,'er');}
+}
 async function run(){
   if(BUSY)return;BUSY='run';render();
   try{S=await post('run',{domain:S.domain});const n=S.sweep?.fixesAdded||0;toast(n?`${n} issue${n!==1?'s':''} added to your dashboard`:'Sweep complete','ok');}
@@ -354,6 +360,7 @@ function renderResults(){
   ${third}${notes}
   <div class="sec-t">Pages reviewed <span class="cnt">${(w.pages||[]).length}</span></div><div class="list">${pages}</div>
   <div style="display:flex;gap:14px;align-items:center;margin-top:22px;flex-wrap:wrap"><button class="btn btn-w btn-sm" onclick="run()">Run again</button><span class="muted">Re-running updates this report. Issues already on your dashboard are never added twice.</span></div>
+  <label class="cad"><input type="checkbox" id="cadBox" ${S.cadence==='monthly'?'checked':''} onchange="setCadence(this)"><span><b>Re-check this site every month</b><br><span class="muted">${S.cadence==='monthly'?(S.nextCheckAt?'Next check around '+E(new Date(S.nextCheckAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))+'. ':'')+'We only email you if something new turns up.':'Off. The sweep only runs when you press Run again. Turn this on and we email you only if something new turns up.'}</span></span></label>
   <p class="disc">Evidence-based assessment of the pages reviewed, not legal advice. The sweep covers site-wide practices; offer and pricing claims are checked per campaign in Campaign Defence.</p></div>`;
 }
 </script>

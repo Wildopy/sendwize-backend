@@ -2,6 +2,10 @@
 // SENDWIZE — api/regulatory-feed-update.js
 // Daily cron endpoint — fires every day at 07:00 UTC via Vercel Cron.
 //
+// v2.2 — November 2026: drift checks only watch pages on domains the
+//   member has proven they own (Site Sweep ownership step, see
+//   _owned-domains.js). Pages elsewhere are left alone.
+//
 // v2.1 — October 2026 (security): calls to send-alert carry the internal
 //   secret so they keep working once endpoints require a login.
 //
@@ -43,6 +47,7 @@ import { claudeFetch, LEGAL_RULES } from './_claude.js';
 import { atFetch } from './_airtable.js';
 import { internalHeaders } from './_auth.js';
 import { fetchPage } from './_page-scan.js';
+import { verifiedDomains, urlOnDomains } from './_owned-domains.js';
 import { createHash } from 'crypto';
 import { offerMarkers, markersOnPage } from './_signoff.js';
 import { sendEmail, emailLayout, escHtml, memberEmail } from './_email.js';
@@ -502,6 +507,14 @@ async function checkLandingPageDrift() {
 
   if (!dossiers.length) return results;
 
+  // v2.2: watch only pages on domains the member has proven they own
+  const ownedCache = new Map();
+  const ownedFor = async uid => {
+    if (!ownedCache.has(uid)) ownedCache.set(uid, await verifiedDomains(uid));
+    return ownedCache.get(uid);
+  };
+  results.skippedNotOwned = 0;
+
   for (const dossier of dossiers) {
     try {
       // Merge LandingPageUrls (strings) and ConnectedUrls (objects) into one list
@@ -527,8 +540,13 @@ async function checkLandingPageDrift() {
 
       if (!allUrls.length) continue;
 
+      const owned = await ownedFor(dossier.fields.UserID);
+      const ownedUrls = allUrls.filter(u => urlOnDomains(u.url, owned));
+      results.skippedNotOwned += allUrls.length - ownedUrls.length;
+      if (!ownedUrls.length) continue;
+
       // Limit to 8 URLs per dossier
-      const urlsToCheck = allUrls.slice(0, 8);
+      const urlsToCheck = ownedUrls.slice(0, 8);
 
       let storedHashes = {};
       try { storedHashes = JSON.parse(dossier.fields.PageHashes || '{}'); } catch {}
