@@ -318,8 +318,11 @@ async function handleDismiss(req, res) {
     method: 'PATCH', headers: authH,
     body: JSON.stringify({ fields }),
   });
-  let ur = await patch(dismissReason ? { Status: 'dismissed', DismissReason: dismissReason } : { Status: 'dismissed' });
-  // DismissReason field not added in Airtable yet: dismiss without it
+  // v7.1: DismissedDate for the audit log. Fields not added in Airtable
+  // yet are dropped one by one, so a dismiss never fails over them.
+  const today = new Date().toISOString().split('T')[0];
+  let ur = await patch({ Status: 'dismissed', DismissedDate: today, ...(dismissReason ? { DismissReason: dismissReason } : {}) });
+  if (!ur.ok && ur.status === 422) ur = await patch(dismissReason ? { Status: 'dismissed', DismissReason: dismissReason } : { Status: 'dismissed' });
   if (!ur.ok && ur.status === 422 && dismissReason) ur = await patch({ Status: 'dismissed' });
   if (!ur.ok) return res.status(ur.status).json({ error: 'Failed to dismiss fix' });
   return res.json({ success: true, fixId, dismissReason, message: 'Fix dismissed.' });
