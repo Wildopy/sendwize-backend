@@ -211,7 +211,7 @@ function renderVerify(){
     <div class="method"><div class="method-h"><b>Add a DNS record</b></div><p>Add a TXT record on <b>${E(v.dns?.host||S.domain)}</b> with this value. It can take up to an hour to appear.</p>${codeRow(v.dns?.value||'')}</div>
    </div></details>
   <div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap"><button class="btn btn-w" id="bVer" onclick="verify()">Check now</button><button class="link" onclick="stopPoll();S=null;render()">Use a different website</button></div>
-  ${VERIFY_FAIL?`<div class="fail"><b>Not confirmed yet.</b> If you used the email link, press it in the email first. If you added the tag, file or record, wait a minute after publishing and check again.</div>`:''}
+  ${VERIFY_FAIL?`<div class="fail"><b>Not confirmed yet.</b> If you used the email link, press it in the email first. If you added the tag, file or record, wait a minute after publishing and check again.${VERIFY_FAIL.meta?`<br><b>What we found:</b> ${E(VERIFY_FAIL.meta)}`:''}</div>`:''}
   </div></div>`;
 }
 
