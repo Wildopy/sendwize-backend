@@ -2,6 +2,10 @@
 // SENDWIZE — api/regulatory-feed-update.js
 // Daily cron endpoint — fires every day at 07:00 UTC via Vercel Cron.
 //
+// v2.3 — November 2026: Phase 3 (rulings matched to campaigns by claim
+//   type) retired. Claims Bank matches new rulings to each claim's actual
+//   wording at 07:30, so there is one watcher and no double alerts.
+//
 // v2.2 — November 2026: drift checks only watch pages on domains the
 //   member has proven they own (Site Sweep ownership step, see
 //   _owned-domains.js). Pages elsewhere are left alone.
@@ -30,8 +34,7 @@
 //   5. Re-scans all active competitors' current marketing promotions
 //      and updates RecentPromoClaims on each Competitor_Watch record
 //      (Phase 2 — runs weekly only, skipped on other days)
-//   6. Cross-references rulings against submitted dossiers with
-//      MonitoringActive=true (Phase 3)
+//   6. (Retired v2.3: rulings are matched to claims by Claims Bank)
 //   7. Checks landing page URLs for content changes (Phase 4)
 //   8. Checks reference pricing campaigns for expiry (Phase 5)
 //  10. Flags offers still live after the end date the campaign gave
@@ -330,143 +333,6 @@ async function notifyListImpact(allItems) {
       }
     }
   }
-  return results;
-}
-
-// ── Phase 3: Dossier compliance monitoring ────────────────────
-// Cross-references new enforcement rulings against submitted
-// dossiers' monitored claim types. Only checks dossiers where
-// MonitoringActive is true (user hasn't paused monitoring).
-async function crossReferenceDossiers(allItems) {
-  const results = { checked: 0, alertsFired: 0, errors: [] };
-  if (!allItems.length) return results;
-
-  let dossiers = [];
-  try {
-    // MonitoringActive filter: only check dossiers the user hasn't paused
-    dossiers = await atGet('Campaign_Dossiers',
-      "AND({Status}='Submitted',{MonitoringActive}=1,{MonitoredClaimTypes}!='')",
-      'sort[0][field]=SubmittedAt&sort[0][direction]=desc', 200
-    );
-  } catch (e) {
-    console.error('Could not load submitted dossiers (non-fatal):', e.message);
-    return results;
-  }
-
-  if (!dossiers.length) return results;
-  results.checked = dossiers.length;
-
-  const newClaimTypes = new Set();
-  const claimToItems = {};
-  for (const item of allItems) {
-    const claims = Array.isArray(item.claimTypes) ? item.claimTypes : [];
-    for (const ct of claims) {
-      newClaimTypes.add(ct);
-      if (!claimToItems[ct]) claimToItems[ct] = [];
-      claimToItems[ct].push({
-        companyName: item.companyName || '',
-        regulator: item.regulator || '',
-        rulingSummary: (item.rulingSummary || '').slice(0, 200),
-        publishedDate: item.publishedDate || '',
-      });
-    }
-  }
-
-  if (!newClaimTypes.size) return results;
-
-  const today = new Date().toISOString().split('T')[0];
-
-  for (const dossier of dossiers) {
-    try {
-      let monitored = [];
-      try { monitored = JSON.parse(dossier.fields.MonitoredClaimTypes || '[]'); } catch {}
-      if (!monitored.length) continue;
-
-      const overlapping = monitored.filter(ct => newClaimTypes.has(ct));
-      if (!overlapping.length) continue;
-
-      const matchingRulings = [];
-      for (const ct of overlapping) {
-        for (const item of (claimToItems[ct] || [])) {
-          matchingRulings.push({ ...item, matchedClaimType: ct });
-        }
-      }
-
-      const seen = new Set();
-      const uniqueRulings = matchingRulings.filter(r => {
-        const key = r.companyName + r.regulator;
-        if (seen.has(key)) return false;
-        seen.add(key); return true;
-      });
-
-      const alert = {
-        type: 'enforcement_match',
-        detectedAt: new Date().toISOString(),
-        claimTypes: overlapping,
-        rulingCount: uniqueRulings.length,
-        rulings: uniqueRulings.slice(0, 5),
-        summary: overlapping.length + ' claim type' + (overlapping.length !== 1 ? 's' : '') +
-          ' in your campaign match new enforcement activity: ' +
-          overlapping.map(ct => ct.replace(/_/g, ' ')).join(', ') + '.',
-      };
-
-      let existingAlerts = [];
-      try { existingAlerts = JSON.parse(dossier.fields.ComplianceAlertsJson || '[]'); } catch {}
-      existingAlerts.push(alert);
-
-      await atPatch('Campaign_Dossiers', dossier.id, {
-        ComplianceAlertsJson: JSON.stringify(existingAlerts),
-        LastComplianceCheck: today,
-      });
-
-      // Write to both ComplianceAlertsJson (legacy) and CampaignEventsJson (Defence timeline)
-      let existingEvents = [];
-      try { existingEvents = JSON.parse(dossier.fields.CampaignEventsJson || '[]'); } catch {}
-      existingEvents.push({
-        type: 'enforcement_match',
-        date: new Date().toISOString(),
-        title: `${overlapping.length} claim type${overlapping.length !== 1 ? 's' : ''} match new enforcement`,
-        detail: alert.summary,
-        severity: 'warning',
-      });
-      
-      const patchFields = {
-        ComplianceAlertsJson: JSON.stringify(existingAlerts),
-        CampaignEventsJson: JSON.stringify(existingEvents),
-        LastComplianceCheck: today,
-      };
-      // Set DefenceStatus to alert if it's currently live or approved
-      const currentDs = dossier.fields.DefenceStatus || '';
-      if (['live', 'approved'].includes(currentDs)) {
-        patchFields.DefenceStatus = 'alert';
-      }
-      await atPatch('Campaign_Dossiers', dossier.id, patchFields);
-      
-      const dossierUserId = dossier.fields.UserID;
-      if (dossierUserId) {
-        try {
-          await fetch(APP_URL + '/api/data?action=send-alert', {
-            method: 'POST',
-            headers: internalHeaders(),
-            body: JSON.stringify({
-              userId: dossierUserId,
-              alertType: 'dossier_compliance_change',
-              campaignTitle: dossier.fields.CampaignTitle || 'a campaign',
-              claimTypes: overlapping.join(', ').replace(/_/g, ' '),
-              rulingCount: uniqueRulings.length,
-            }),
-          });
-          results.alertsFired++;
-        } catch (ae) {
-          console.error('Dossier alert failed (non-fatal):', ae.message);
-        }
-      }
-    } catch (e) {
-      console.error('Dossier cross-ref error:', e.message);
-      results.errors.push({ dossierId: dossier.id, error: e.message });
-    }
-  }
-
   return results;
 }
 
@@ -1048,14 +914,12 @@ export default async function handler(req, res) {
     results.promoScan = { scanned: 0, updated: 0, errors: [], skippedReason: monday ? 'no competitors' : 'not Monday' };
   }
 
-  // ── Phase 3: Dossier compliance monitoring (daily) ──────────
-  if (allItems.length > 0) {
-    console.log('Starting dossier compliance cross-reference');
-    results.dossierMonitoring = await crossReferenceDossiers(allItems);
-    console.log(`Dossier monitoring complete — alerts fired: ${results.dossierMonitoring.alertsFired}`);
-  } else {
-    results.dossierMonitoring = { checked: 0, alertsFired: 0, errors: [] };
-  }
+  // ── Phase 3: retired (v2.3) ─────────────────────────────────
+  // New rulings are matched to the actual wording of each claim by Claims
+  // Bank (api/claims-bank.js, 07:30), which Campaign Defence feeds at
+  // approval. The old match on broad claim types flagged whole campaigns
+  // for any ruling in the category, and would alert twice.
+  results.dossierMonitoring = { checked: 0, alertsFired: 0, errors: [], retired: 'Claims Bank watches claims against new rulings' };
 
   // ── Phase 6: List impact of new rulings (daily) ─────────────
   results.listImpact = allItems.length ? await notifyListImpact(allItems) : { listsChecked: 0, fixesAdded: 0, errors: [] };

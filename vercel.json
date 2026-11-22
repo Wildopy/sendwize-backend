@@ -5,6 +5,10 @@
       "schedule": "0 7 * * *"
     },
     {
+      "path": "/api/claims-bank?action=match",
+      "schedule": "30 7 * * *"
+    },
+    {
       "path": "/api/digest",
       "schedule": "0 8 * * 1"
     },
@@ -70,6 +74,9 @@
       "maxDuration": 60
     },
     "api/connections.js": {
+      "maxDuration": 60
+    },
+    "api/claims-bank.js": {
       "maxDuration": 60
     }
   },

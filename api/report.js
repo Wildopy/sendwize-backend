@@ -35,7 +35,7 @@ async function rows(table, userId) {
 const day = v => { const s = String(v || ''); return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : ''; };
 const nice = s => { s = String(s || '').replace(/_/g, ' ').trim(); return s.charAt(0).toUpperCase() + s.slice(1); };
 const DISMISS = { not_applicable: 'not applicable to the business', false_positive: 'Sendwize got it wrong', accepted_risk: 'risk accepted (still counted as open)' };
-const DONE_BY = { improved_on_rerun: 'confirmed by re-running the check', verified: 'confirmed by re-running the check', manual: 'marked fixed by hand' };
+const DONE_BY = { improved_on_rerun: 'confirmed by re-running the check', verified: 'confirmed by re-running the check', manual: 'marked fixed by hand', claims_bank: 'answered in Claims watched' };
 
 // One source = a table and how its rows become events
 const SOURCES = {

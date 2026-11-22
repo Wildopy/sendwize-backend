@@ -198,6 +198,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px;line-height:1.5}
 @media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.sw-ph-footer{flex-direction:column;align-items:flex-start}.lv-grid{grid-template-columns:1fr}.ch-grid{gap:6px}.url-row{flex-direction:column}.url-row select{width:100%}.pg-body{padding-left:16px}.pg-head{flex-wrap:wrap}}
+.cd-tabs{display:flex;gap:4px;margin:0 0 18px;padding:4px;background:#fff;border:1px solid var(--b,#ece9e3);border-radius:12px;width:max-content;max-width:100%}
+.cd-tab{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;font-size:14px;font-weight:600;color:#4a4740;text-decoration:none;cursor:pointer}
+.cd-tab:hover{color:#0f0f0d}.cd-tab.on{background:#EA7317;color:#fff;cursor:default}
+.cd-tab-n{font-size:11px;font-weight:700;background:#EA7317;color:#fff;border-radius:9px;padding:1px 7px}.cd-tab.on .cd-tab-n{background:#fff;color:#c85f0f}
 </style>
 </head>
 <body>
@@ -217,7 +221,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div class="gate-card">
     <div class="gate-logo">sendwize</div>
     <div class="gate-t">Campaign Defence</div>
-    <div class="gate-s">Build your compliance evidence before launch. Monitor it after. Your creative is frozen at approval. The pages it points to are scanned against your claims, and they and the regulatory landscape are watched daily. If a landing page changes or an enforcement ruling matches your claims, you know first.</div>
+    <div class="gate-s">Build your compliance evidence before launch. Monitor it after. Your creative is frozen at approval. The pages it points to are scanned against your claims and watched daily, so if a landing page changes or an offer runs past its end date, you know first. Its claims go into the Claims tab, where they're watched against new rulings.</div>
     <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard →</a>
     <a href="?demo=true" style="display:block;margin-top:12px;font-size:13px;color:var(--o);text-decoration:none;font-weight:500">View demo →</a>
   </div>
@@ -225,9 +229,10 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <!-- LIST VIEW -->
 <div class="lv" id="listView">
+  <nav class="cd-tabs" aria-label="Campaign Defence"><a class="cd-tab on" aria-current="page">Campaigns</a><a class="cd-tab" id="claimsTab" href="/campaign-claims.html">Claims watched<span class="cd-tab-n" id="claimsTabN" hidden></span></a></nav>
   <div class="lv-hero">
     <div class="lv-hero-t">Your compliance evidence. Built before launch. Watched after.</div>
-    <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize links your existing compliance data, scans every page your campaign points to against your claims, and freezes the defence at approval. After launch, it monitors those pages, landing pages, offer pages, affiliate pages, and watches for regulatory enforcement that matches your claim types. If a price changes or a ruling drops, you know before a regulator asks.</div>
+    <div class="lv-hero-s">Paste your creative, select channels, name your audience. Sendwize links your existing compliance data, scans every page your campaign points to against your claims, and freezes the defence at approval. After launch, it monitors those pages, landing pages, offer pages, affiliate pages, so if a price changes you know before a regulator asks. At approval its claims go into the Claims tab, where they're watched against new rulings.</div>
     <a href="#" onclick="event.preventDefault();loadDemo('true')" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--o);font-weight:600;text-decoration:none">See a demo campaign →</a>
   </div>
   <div class="lv-head">
@@ -353,12 +358,23 @@ function init(){
   const demo=p.get('demo');
   if(demo){U=U||'demo';loadDemo(demo);return;}
   if(!U){$('gate').classList.add('on');return;}
+  claimsTab();
   if(d){CID=d;loadCF(d);}
   else if(p.get('new')){showAssembly();prefillFromCopyChecker();}
   else{showList();loadList();}
 }
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
 
+// The Claims tab: every claim from approved campaigns and the Copy Checker,
+// watched against new rulings (campaign-claims.html). The badge counts
+// decisions waiting for an answer.
+function claimsTab(){
+  const t=$('claimsTab');if(!t||!U||U==='demo')return;
+  t.href='/campaign-claims.html?userId='+encodeURIComponent(U);
+  (window.swFetch||fetch)(`${A}/api/claims-bank?action=list&userId=${encodeURIComponent(U)}`).then(r=>r.ok?r.json():null).then(j=>{
+    const n=j&&j.totals&&j.totals.openAlerts;if(n){const b=$('claimsTabN');b.textContent=n;b.hidden=false;}
+  }).catch(()=>{});
+}
 function hideAll(){['gate','listView','assemblyView','caseFile'].forEach(v=>$(v).classList.remove('on'));}
 function showList(){hideAll();$('listView').classList.add('on');loadList();}
 function showAssembly(){hideAll();$('assemblyView').classList.add('on');if(!$('urlList').children.length)addUrl();updCh();updBtn();}
@@ -404,7 +420,7 @@ async function loadList(){
   try{
     const r=await swFetch(`${A}/api/submit-check?action=dossier-list&userId=${U}&limit=50`);
     const{dossiers:d}=await r.json();
-    if(!d?.length){$('listC').innerHTML='<div class="empty-lv"><div class="empty-t">No campaigns yet</div><div class="empty-s">Assemble your compliance evidence before launch. Sendwize links your existing checks, scans your pages against your claims, freezes the defence at approval, and monitors connected URLs and enforcement after launch.</div><button class="btn btn-o" onclick="showAssembly()">Create your first defence</button></div>';return;}
+    if(!d?.length){$('listC').innerHTML='<div class="empty-lv"><div class="empty-t">No campaigns yet</div><div class="empty-s">Assemble your compliance evidence before launch. Sendwize links your existing checks, scans your pages against your claims, freezes the defence at approval, and monitors connected URLs after launch. Its claims are watched against new rulings in the Claims tab.</div><button class="btn btn-o" onclick="showAssembly()">Create your first defence</button></div>';return;}
     $('listC').innerHTML='<div class="lv-grid">'+d.map(c=>{
       const ds=c.defenceStatus||(c.status==='Submitted'?'approved':'draft');
       let ch=[];try{ch=JSON.parse(c.channels||'[]');}catch{}
@@ -588,7 +604,7 @@ function sTab(id){if(!document.getElementById('tab-'+id))id='evidence';CT=id;doc
 
 function mergeU(u,s){const m={};for(const x of s)if(x.url)m[x.url]=x;const r=u.map(x=>{const sn=m[x.url];return{...x,snap:!!sn,at:sn?.capturedAt,title:sn?.title,changed:sn?.changed||false};});for(const x of s)if(!u.some(y=>y.url===x.url))r.push({url:x.url,type:'auto',snap:true,at:x.capturedAt,title:x.title,changed:x.changed||false});return r;}
 function watchNote(nw){const hs=[...new Set(nw.map(u=>{try{return new URL(u).hostname.replace(/^www\./,'');}catch{return u;}}))];return`<div class="cf-info">We only watch pages on websites you've confirmed you own, so ${nw.length===1?'this page isn\'t':'these '+nw.length+' pages aren\'t'} checked for changes each day: <b>${hs.map(E).join(', ')}</b>. If ${hs.length===1?'it\'s':'they\'re'} yours, <a href="site-sweep.html?userId=${encodeURIComponent(U||'')}" style="color:var(--o)">confirm ownership in Site sweep</a> (one click from an email at the domain). Pages you don't own can still be checked once when you build the defence.</div>`;}
-function bldSum(ds,ev,u,s,d){if(ds==='alert'){const n=ev.filter(e=>e.severity==='warning'||e.severity==='alert').length;return n+' change'+(n!==1?'s':'')+' detected since approval. Review the timeline.';}if(ds==='live'){const wn=(d.watch&&Array.isArray(d.watch.watched))?d.watch.watched.length:(u.length||s.length);return'Campaign is live. '+wn+' connected page'+(wn!==1?'s':'')+' watched daily. Regulatory enforcement checked against your claim types.';}if(ds==='approved')return'Defence approved and evidence frozen. Mark as launched to start URL and enforcement monitoring.';if(ds==='archived')return'Campaign taken down'+(d.TakedownDate?' on '+fD(d.TakedownDate):'')+'. Defence preserved as a permanent record.';return'Defence is being assembled. Review the evidence and approve when ready.';}
+function bldSum(ds,ev,u,s,d){if(ds==='alert'){const n=ev.filter(e=>e.severity==='warning'||e.severity==='alert').length;return n+' change'+(n!==1?'s':'')+' detected since approval. Review the timeline.';}if(ds==='live'){const wn=(d.watch&&Array.isArray(d.watch.watched))?d.watch.watched.length:(u.length||s.length);return'Campaign is live. '+wn+' connected page'+(wn!==1?'s':'')+' watched daily. Its claims are watched against new rulings in the Claims tab.';}if(ds==='approved')return'Defence approved and evidence frozen. Mark as launched to start watching its pages. Its claims are already in the Claims tab.';if(ds==='archived')return'Campaign taken down'+(d.TakedownDate?' on '+fD(d.TakedownDate):'')+'. Defence preserved as a permanent record.';return'Defence is being assembled. Review the evidence and approve when ready.';}
 function fD(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch{return d;}}
 function fDT(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return d;}}
 
@@ -663,7 +679,7 @@ function cpCopy(i){const el=$('cpR'+i);if(!el)return;navigator.clipboard?.writeT
 let HOLDOK=null;
 async function approve(){if(!CID)return;if(SCAN){toast('Wait for the page scan to finish before approving','er');return;}
   let ai=null;try{ai=JSON.parse(D?.AICheckResultJson||'null');}catch{}
-  if(/hold/i.test(ai?.verdict||'')&&HOLDOK!==CID){HOLDOK=CID;const a=document.querySelector('.cf-actions');if(a&&!a.querySelector('.cf-warn'))a.insertAdjacentHTML('beforeend','<div class="cf-warn">The copy check said <b>Hold</b>: at least one item could put this campaign at risk. Approving freezes this version as your evidence. Fix and recheck the copy first, or press Approve again to approve it as it is.</div>');const b=document.querySelector('.cf-actions .btn-w');if(b)b.textContent='Approve anyway →';return;}const b=document.querySelector('.cf-actions .btn-w');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await swFetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved: monitoring started','ok');loadCF(CID);}catch(e){toast('Failed: '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve it myself';}}}
+  if(/hold/i.test(ai?.verdict||'')&&HOLDOK!==CID){HOLDOK=CID;const a=document.querySelector('.cf-actions');if(a&&!a.querySelector('.cf-warn'))a.insertAdjacentHTML('beforeend','<div class="cf-warn">The copy check said <b>Hold</b>: at least one item could put this campaign at risk. Approving freezes this version as your evidence. Fix and recheck the copy first, or press Approve again to approve it as it is.</div>');const b=document.querySelector('.cf-actions .btn-w');if(b)b.textContent='Approve anyway →';return;}const b=document.querySelector('.cf-actions .btn-w');if(b){b.disabled=true;b.textContent='Approving…';}try{const r=await swFetch(`${A}/api/submit-check?action=defence-approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,approvedBy:D?.OwnerName||''})});if(!r.ok)throw new Error('HTTP '+r.status);toast('Defence approved: its claims are now watched in the Claims tab','ok');loadCF(CID);}catch(e){toast('Failed: '+e.message,'er');if(b){b.disabled=false;b.textContent='Approve it myself';}}}
 async function addEv(t,d){if(!CID)return;try{await swFetch(`${A}/api/submit-check?action=defence-add-event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,dossierId:CID,eventType:t,detail:d||''})});toast(t.replace(/_/g,' ')+' recorded','ok');loadCF(CID,true);}catch(e){toast('Failed: '+e.message,'er');}}
 function logNote(){const n=prompt('What changed?\n\nExamples:\n• Landing page pricing updated\n• Affiliate modified subject line\n• A/B test variant went live');if(n?.trim())addEv('manual_note',n.trim());}
 

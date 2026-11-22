@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claims Watched | Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--om:#fde8d4;
+  --bg:#F7F6F3;--w:#fff;--b:#ece9e3;--bm:#ddd9d0;
+  --t:#0f0f0d;--tm:#4a4740;--mu:#9a9690;
+  --r:#dc2626;--rb:#fef2f2;--g:#16a34a;--gb:#f0fdf4;--y:#ca8a04;--yb:#fefce8;
+  --blue:#1d4ed8;--blueb:#eff6ff;
+  --rad:10px;--rad-lg:16px;--sh:0 1px 4px rgba(0,0,0,.07);
+}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6}
+.sw-ph-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.sw-ph-header a{text-decoration:none}.sw-ph-logo{height:28px;display:block}
+.sw-ph-nav{display:flex;align-items:center;gap:22px}.sw-ph-nav a{color:var(--tm);font-size:14px;font-weight:500}.sw-ph-nav a:hover{color:var(--t)}
+.sw-ph-footer{border-top:1px solid var(--b);padding:20px 24px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.sw-ph-footer-logo{height:20px;display:block;opacity:.7}
+.sw-ph-footer-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}.sw-ph-footer-links a{color:var(--mu);text-decoration:none}
+.page{max-width:860px;margin:0 auto;padding:40px 20px 80px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:360px}.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+.ld{padding:60px 24px;text-align:center;color:var(--mu)}.spin{width:24px;height:24px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 12px}@keyframes sp{to{transform:rotate(360deg)}}
+.btn{padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn-o{background:var(--o);color:#fff}.btn-o:hover{background:var(--od)}
+.btn-w{background:var(--w);color:var(--t);border:1px solid var(--bm)}.btn-w:hover{border-color:var(--o);color:var(--o)}
+.btn-sm{padding:7px 13px;font-size:12.5px}.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-w.on{border-color:var(--o);background:var(--ol);color:var(--od)}
+.link{background:none;border:none;color:var(--o);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.view{animation:fadeUp .25s ease}
+.head{margin-bottom:20px}.head h1{font-size:26px;font-weight:700;letter-spacing:-.5px}.head p{font-size:14px;color:var(--tm);margin-top:2px;max-width:620px}
+.card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:22px 24px;margin-bottom:14px;box-shadow:var(--sh)}
+.card-t{font-size:15px;font-weight:700;margin-bottom:3px}.card-s{font-size:13px;color:var(--tm);line-height:1.6;margin-bottom:14px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.tile{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:16px 18px;box-shadow:var(--sh)}
+.tile b{display:block;font-size:28px;letter-spacing:-.8px;line-height:1.15;font-variant-numeric:tabular-nums}.tile span{font-size:12.5px;color:var(--tm)}
+.tile.hot{border-color:#f4c7a3;background:linear-gradient(180deg,#fff 0%,var(--ol) 100%)}.tile.hot b{color:var(--od)}
+.sec-t{font-size:15px;font-weight:700;margin:24px 0 10px;display:flex;align-items:center;gap:8px}
+.cnt{font-size:11px;font-weight:600;background:var(--b);color:var(--tm);padding:1px 8px;border-radius:8px}
+.cnt.hot{background:var(--o);color:#fff}
+.al{background:var(--w);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:var(--rad-lg);padding:18px 20px;margin-bottom:12px;box-shadow:var(--sh)}
+.al-claim{font-size:16px;font-weight:600;line-height:1.45}
+.al-meta{font-size:12px;color:var(--mu);margin-top:3px}
+.al-dec{background:var(--bg);border-radius:var(--rad);padding:12px 14px;margin-top:12px;font-size:13px;color:var(--tm)}
+.al-dec b{color:var(--t)}.al-dec a{color:var(--o);font-weight:600;text-decoration:none}
+.al-why{margin-top:6px}
+.stake{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--tm)}
+.stake b{font-size:15px;color:var(--t)}
+.pill{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
+.p-asa{background:var(--blueb);color:var(--blue)}.p-cma{background:var(--rb);color:var(--r)}.p-ico{background:var(--yb);color:#854d0e}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.form{margin-top:12px;padding-top:12px;border-top:1px dashed var(--bm);display:grid;gap:10px}
+.form label{font-size:12px;font-weight:600;color:var(--tm);display:flex;flex-direction:column;gap:4px}
+.form label small{font-weight:400;color:var(--mu)}
+input[type=text],textarea{font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--bm);border-radius:8px;background:#faf9f7;outline:none;width:100%;resize:vertical}
+input[type=text]:focus,textarea:focus{border-color:var(--o);background:var(--w)}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.cl{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:13px 16px;margin-bottom:8px}
+.cl-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.cl-t{font-size:14px;font-weight:600}.cl.off .cl-t{color:var(--mu);text-decoration:line-through}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{font-size:11px;font-weight:600;padding:2px 9px;border-radius:10px;background:var(--bg);color:var(--tm)}
+.chip.ok{background:var(--gb);color:var(--g)}.chip.warn{background:var(--ol);color:var(--od)}.chip.mute{background:#f3f4f6;color:#6b7280}
+.hist{margin-top:10px;padding-left:12px;border-left:2px solid var(--b);font-size:12px;color:var(--tm)}
+.hist div{margin-bottom:5px}.hist b{color:var(--t);font-weight:600}
+details summary{cursor:pointer;list-style:none}details summary::-webkit-details-marker{display:none}
+.muted{color:var(--mu);font-size:12px}
+.empty{text-align:center;padding:30px 20px;color:var(--tm);font-size:14px}
+.disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:28px;line-height:1.5}
+.cd-tabs{display:flex;gap:4px;margin:0 0 18px;padding:4px;background:var(--w);border:1px solid var(--b);border-radius:12px;width:max-content;max-width:100%}
+.cd-tab{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;font-size:14px;font-weight:600;color:var(--tm);text-decoration:none}
+.cd-tab:hover{color:var(--t)}.cd-tab.on{background:var(--o);color:#fff}
+.cd-tab-n{font-size:11px;font-weight:700;background:#fff;color:var(--od);border-radius:9px;padding:1px 7px}
+.shots{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.shot{position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--b)}
+.shot img{width:100%;height:100%;object-fit:cover}.shot button{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:12px;line-height:20px;cursor:pointer}
+.opt{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:12px 14px;border:1px solid var(--b);border-radius:10px;font-size:13.5px;cursor:pointer;background:#faf9f7}
+.opt input{margin-top:3px;width:16px;height:16px;flex-shrink:0;accent-color:var(--o)}
+select{font-family:inherit;font-size:14px;padding:9px 10px;border:1px solid var(--bm);border-radius:8px;background:#faf9f7}
+.res{margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--blueb);color:#1e3a8a;font-size:13px}
+.res b{color:#0f172a}
+@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.tiles{grid-template-columns:1fr}.page{padding:28px 16px 60px}.cl-top{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<header class="sw-ph-header">
+  <a href="https://new-mvp-v2.webflow.io/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <nav class="sw-ph-nav">
+    <a href="https://new-mvp-v2.webflow.io/">Home</a>
+    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
+  </nav>
+</header>
+
+<div class="page"><div id="app"><div class="ld"><div class="spin"></div>Loading your claims…</div></div></div>
+
+<footer class="sw-ph-footer">
+  <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
+  <div class="sw-ph-footer-links">
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a>
+    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a>
+  </div>
+</footer>
+<div class="toast" id="toast"></div>
+
+<script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+<script src="https://sendwize-backend.vercel.app/sw-tool-nav.js" defer></script>
+<script>
+const swFetch=window.swFetch||((u,o)=>fetch(u,o)); // sends the sign-in token (sw-auth.js)
+const API='https://sendwize-backend.vercel.app/api/claims-bank';
+let U=null,D=null,OPEN={},BUSY=false;
+const $=id=>document.getElementById(id);
+const E=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+let _t;function toast(m,c=''){const t=$('toast');t.textContent=m;t.className='toast on'+(c?' '+c:'');clearTimeout(_t);_t=setTimeout(()=>t.classList.remove('on'),4500);}
+function fD(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch{return d;}}
+function fDT(d){if(!d)return'';try{return new Date(d).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return d;}}
+const gbp=n=>'£'+Math.round(n||0).toLocaleString('en-GB');
+function getName(){try{return localStorage.getItem('sw_cb_name')||'';}catch{return'';}}
+function setName(n){try{localStorage.setItem('sw_cb_name',n);}catch{}}
+async function post(action,body){const r=await swFetch(`${API}?action=${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,...body})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;}
+
+async function load(){
+  try{const r=await swFetch(`${API}?action=list&userId=${encodeURIComponent(U)}`);const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||('HTTP '+r.status));D=j;}
+  catch(e){D={claims:[],totals:{claims:0,live:0,watched:0,openAlerts:0,atStake:0,answered:0},_error:e.message};}
+  render();
+}
+async function init(){
+  U=new URLSearchParams(location.search).get('userId');
+  if(!U){$('app').innerHTML=`<div class="card view" style="text-align:center;padding:48px 32px"><div class="card-t" style="font-size:20px">Campaign Defence: claims watched</div><p class="card-s" style="margin:8px auto 20px;max-width:440px">Every claim you make, watched against new ASA, ICO and CMA decisions every morning.</p><a class="btn btn-o" href="${E((window.SW&&SW.dashboard)||'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy')}">Go to Dashboard →</a></div>`;return;}
+  await load();
+}
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+
+const REG_CLASS={ASA:'p-asa',CMA:'p-cma',ICO:'p-ico'};
+function stakeHtml(c){
+  const x=c.exposure;
+  if(!x)return`<div class="stake"><span>Counts in your dashboard score until you answer.</span></div>`;
+  let fig='';
+  if(x.mostLikely)fig=`<b>~${gbp(x.mostLikely)}</b><span>${E((x.label||'At stake').toLowerCase())}</span>`;
+  else if(x.category==='CMA'&&x.legalMax)fig=`<b>Up to 10% of turnover</b><span>the most the CMA can fine</span>`;
+  else if(x.needs&&x.needs.length)fig=`<span>Add your campaign budget and sales on the dashboard to see the £ at stake.</span>`;
+  return`<div class="stake">${fig}<span>Counts in your dashboard score and £ exposure until you answer.</span></div>`;
+}
+function alertCard(c,a){
+  const key=c.id+'|'+a.id,mode=OPEN[key]||'';
+  const form=!mode?'':`<div class="form">
+    ${mode==='changed'?`<label>New wording<small>What the claim says now. We'll watch this version from today.</small><textarea id="nt_${E(key)}" rows="2">${E(c.text)}</textarea></label>`:''}
+    ${mode==='kept'?`<label>What evidence do you hold?<small>For example: "Supplier certificate ref 1234, test report dated 3 Oct 2026, on file in the shared drive."</small><textarea id="ev_${E(key)}" rows="2"></textarea></label>`:''}
+    ${mode!=='kept'?`<label>Note <small>Optional: where, when, anything a colleague would need to know.</small><input type="text" id="no_${E(key)}" placeholder="${mode==='taken_down'?'e.g. Removed from the homepage and the welcome email on 22 Nov':'e.g. Updated on the product page and in the welcome email'}"></label>`:''}
+    <label>Confirmed by<input type="text" id="by_${E(key)}" value="${E(getName())}" placeholder="Your name"></label>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn btn-o btn-sm" id="go_${E(key)}" onclick="answer('${E(c.id)}','${E(a.id)}','${mode}')">Save to the record</button><button class="link" onclick="pick('${E(key)}','')">Cancel</button></div>
+  </div>`;
+  const b=(m,l)=>`<button class="btn btn-w btn-sm${mode===m?' on':''}" onclick="pick('${E(key)}','${m}')">${l}</button>`;
+  return`<div class="al view">
+    <div class="al-claim">“${E(c.text)}”</div>
+    <div class="al-meta">${[c.campaign,c.source,'Saved '+fD(c.addedAt)].filter(Boolean).map(E).join(' · ')}</div>
+    <div class="al-dec"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill ${REG_CLASS[a.regulator]||'p-asa'}">${E(a.regulator||'Regulator')}</span><b>${E(a.title)}</b>${a.date?`<span class="muted">${E(fD(a.date))}</span>`:''}</div>
+      <div class="al-why">${E(a.why)}</div>
+      ${a.summary?`<details style="margin-top:6px"><summary class="link">What the decision was about</summary><div style="margin-top:6px">${E(a.summary)}${a.url?` <a href="${E(a.url)}" target="_blank" rel="noopener">Read the decision →</a>`:''}</div></details>`:(a.url?`<div style="margin-top:6px"><a href="${E(a.url)}" target="_blank" rel="noopener">Read the decision →</a></div>`:'')}
+    </div>
+    ${stakeHtml(c)}
+    <div class="acts">${b('taken_down','Taken down')}${b('changed','Changed the wording')}${b('kept','Kept it, evidence on file')}</div>
+    ${form}
+  </div>`;
+}
+function pick(key,mode){OPEN={[key]:mode};render();if(mode)setTimeout(()=>{const id=key.replace(/"/g,'');const el=document.getElementById((mode==='changed'?'nt_':mode==='kept'?'ev_':'no_')+id);if(el)el.focus();},40);}
+async function answer(claimId,alertId,action){
+  const key=claimId+'|'+alertId,v=p=>(document.getElementById(p+key)||{}).value||'';
+  const by=v('by_').trim();if(!by){toast('Add your name so the record shows who confirmed it','er');return;}
+  setName(by);const btn=document.getElementById('go_'+key);if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    const j=await post('respond',{claimId,alertId,action,by,note:action==='kept'?v('ev_'):v('no_'),newText:v('nt_')});
+    OPEN={};toast(j.fixesClosed?'Saved. Removed from your dashboard score.':'Saved to the record','ok');await load();
+  }catch(e){toast(e.message,'er');if(btn){btn.disabled=false;btn.textContent='Save to the record';}}
+}
+
+function claimRow(c){
+  const off=c.status!=='live',answered=(c.alerts||[]).filter(a=>a.status==='answered').length;
+  const st=c.status==='taken_down'?'<span class="chip mute">Taken down</span>':c.status==='retired'?'<span class="chip mute">No longer running</span>':c.issues.length?'<span class="chip ok">Watched</span>':'<span class="chip mute">Not watched: no rule area found</span>';
+  const hist=(c.history||[]).slice().reverse().map(h=>`<div><b>${E(fD(h.at))}</b> · ${E(h.label||h.action)}${h.by&&h.by!=='Sendwize'?' · '+E(h.by):''}${h.oldText?`<br><span class="muted">Was: “${E(h.oldText)}”</span>`:''}${h.note?`<br><span class="muted">${E(h.note)}</span>`:''}</div>`).join('');
+  return`<div class="cl${off?' off':''}"><div class="cl-top"><div style="min-width:0"><div class="cl-t">“${E(c.text)}”</div>
+    <div class="chips">${st}${c.issues.map(i=>`<span class="chip">${E(i.label)}</span>`).join('')}${answered?`<span class="chip warn">${answered} decision${answered!==1?'s':''} answered</span>`:''}</div>
+    <div class="muted" style="margin-top:5px">${[c.campaign,c.source,'Saved '+fD(c.addedAt)].filter(Boolean).map(E).join(' · ')}</div></div>
+    <div style="flex-shrink:0">${c.status==='live'?`<button class="link" onclick="setStatus('${E(c.id)}','retire')">No longer running</button>`:c.status==='retired'?`<button class="link" onclick="setStatus('${E(c.id)}','restore')">Running again</button>`:''}</div></div>
+    ${hist?`<details style="margin-top:8px"><summary class="muted">The record (${(c.history||[]).length})</summary><div class="hist">${hist}</div></details>`:''}
+  </div>`;
+}
+async function setStatus(claimId,action){
+  try{await post(action,{claimId,by:getName()||'Member'});toast(action==='retire'?'Marked as no longer running. It stays in your record.':'Watched again from tomorrow','ok');await load();}
+  catch(e){toast(e.message,'er');}
+}
+
+let SHOTS=[],CHECK=true,LASTRES='';
+const CALL_LABEL={go:'Go',fix_first:'Fix first',hold:'Hold'};
+function addCard(){
+  const n=D.totals.claims;
+  const shots=SHOTS.map((x,i)=>`<div class="shot"><img src="data:${E(x.mediaType)};base64,${x.data}" alt="Screenshot ${i+1}"><button onclick="SHOTS.splice(${i},1);render()" aria-label="Remove">×</button></div>`).join('');
+  return`<div class="card" id="addCard"><div class="card-t">${n?'Add a campaign, page or ad':'Add your first claims'}</div>
+  <div class="card-s">Paste the copy, add screenshots, or both. We pull out every claim and check them against decisions from the last 90 days straight away. Anything you run through the Copy Checker or approve as a campaign arrives here by itself.</div>
+  <textarea id="addText" rows="5" placeholder="Paste an email, ad, product page or landing page…"></textarea>
+  <div class="shots">${shots}${SHOTS.length<3?`<label class="btn btn-w btn-sm" style="cursor:pointer">+ Add screenshot<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden onchange="addShots(this)"></label>`:''}<span class="muted">Up to 3 images${SHOTS.length?'':', e.g. a social ad or a product page'}</span></div>
+  <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap"><input type="text" id="addCampaign" placeholder="Campaign or page name (optional)" style="flex:1;min-width:200px">
+   <select id="addChannel" aria-label="Where it runs"><option value="email">Email</option><option value="social">Social or display ad</option><option value="influencer">Influencer post</option><option value="sms">SMS</option><option value="push">Push</option><option value="directmail">Direct mail</option></select></div>
+  <label class="opt"><input type="checkbox" id="addCheck" ${CHECK?'checked':''} onchange="CHECK=this.checked;$('bAdd').textContent=CHECK?'Copy check and watch':'Save and watch'"><span><b>Copy check it at the same time</b><br><span class="muted">Runs the full Copy Checker on it (go, fix first or hold, with fixes on your dashboard) and saves its claims here in one step.</span></span></label>
+  <div style="margin-top:12px"><button class="btn btn-o" id="bAdd" onclick="addClaims()">${CHECK?'Copy check and watch':'Save and watch'}</button></div>
+  ${LASTRES}</div>`;
+}
+function addShots(input){
+  const files=[...input.files].slice(0,3-SHOTS.length);
+  Promise.all(files.map(f=>new Promise((ok,no)=>{if(f.size>5*1024*1024){no(new Error(f.name+' is over 5MB'));return;}const r=new FileReader();r.onload=()=>ok({data:String(r.result).split(',')[1],mediaType:f.type});r.onerror=()=>no(new Error('Could not read '+f.name));r.readAsDataURL(f);})))
+    .then(x=>{const keep=$('addText').value,camp=$('addCampaign').value;SHOTS.push(...x);render();$('addText').value=keep;$('addCampaign').value=camp;})
+    .catch(e=>toast(e.message,'er'));
+}
+async function addClaims(){
+  if(BUSY)return;const text=($('addText').value||'').trim();
+  if(!text&&!SHOTS.length){toast('Paste some copy or add a screenshot first','er');return;}
+  const campaign=($('addCampaign').value||'').trim(),channel=$('addChannel').value;
+  BUSY=true;const b=$('bAdd');b.disabled=true;b.textContent=CHECK?'Checking the copy and finding the claims…':'Finding the claims…';
+  try{
+    let added=0,skipped=0,matched=0,res='';
+    if(CHECK){
+      const r=await swFetch('https://sendwize-backend.vercel.app/api/analyze-copy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:U,contentType:channel,content:text,campaignName:campaign,autoFix:true,images:SHOTS,bank:'wait'})});
+      const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+      ({added=0,skipped=0,matched=0}=j.bank||{});
+      const call=j.sendCall&&(CALL_LABEL[j.sendCall.verdict]||j.sendCall.label);
+      const nIss=(j.violations||[]).length;
+      res=`<div class="res"><b>Copy check: ${E(call||j.verdict||'done')}</b>${nIss?` · ${nIss} item${nIss!==1?'s':''} to look at, now on your dashboard`:''}. <a href="/ai-checker.html?userId=${encodeURIComponent(U)}${j.sourceRecordId?'&checkId='+encodeURIComponent(j.sourceRecordId):''}" style="color:var(--blue);font-weight:600">See the full check and the rewrite →</a>${j.reused?'<br>This exact copy was checked before, so its claims were already here.':''}</div>`;
+    }else{
+      const j=await post('add',{copy:text,images:SHOTS,campaign,channel,source:'Added by hand'});
+      added=(j.added||[]).length;skipped=j.skipped||0;matched=j.matched||0;if(!added&&!skipped)res=`<div class="res">${E(j.message||'No claims found.')}</div>`;
+    }
+    toast(added?`${added} claim${added!==1?'s':''} now watched${skipped?`, ${skipped} already here`:''}.${matched?` ${matched} look${matched===1?'s':''} like a recent decision.`:''}`:(skipped?'Those claims were already here':'Done'),'ok');
+    SHOTS=[];LASTRES=res;await load();
+  }catch(e){toast(e.message,'er');b.disabled=false;b.textContent=CHECK?'Copy check and watch':'Save and watch';}
+  finally{BUSY=false;}
+}
+
+function render(){
+  if(!D)return;const t=D.totals||{},claims=D.claims||[];
+  const needs=claims.filter(c=>c.openAlerts>0);
+  const live=claims.filter(c=>c.status==='live'&&!c.openAlerts),off=claims.filter(c=>c.status!=='live');
+  const alerts=needs.flatMap(c=>(c.alerts||[]).filter(a=>a.status==='open').map(a=>alertCard(c,a))).join('');
+  $('app').innerHTML=`<div class="view"><nav class="cd-tabs" aria-label="Campaign Defence"><a class="cd-tab" href="/campaign-defence.html?userId=${encodeURIComponent(U)}">Campaigns</a><a class="cd-tab on" aria-current="page">Claims watched${t.openAlerts?`<span class="cd-tab-n">${t.openAlerts}</span>`:''}</a></nav>
+  <div class="head"><h1>Claims watched</h1><p>Every claim you're making, in your own words: from approved campaigns, the Copy Checker, or copy and screenshots you add here. Each morning we check new ASA, ICO and CMA decisions against them and tell you when one looks similar. You record what you did, and that becomes your record.</p></div>
+  ${D._error?`<div class="card" style="border-color:#f5c2c2;background:var(--rb)"><div class="card-t">Couldn't load your claims</div><div class="card-s" style="margin:0">${E(D._error)}. Refresh to try again.</div></div>`:''}
+  <div class="tiles">
+    <div class="tile"><span>Claims watched</span><b>${t.watched||0}</b><span>${t.live&&t.live>t.watched?`${t.live-t.watched} more saved but not tied to a rule area`:'checked every morning'}</span></div>
+    <div class="tile${t.openAlerts?' hot':''}"><span>Need your answer</span><b>${t.openAlerts||0}</b><span>${t.openAlerts?(t.atStake?`~${gbp(t.atStake)} at stake on your dashboard`:'counting in your dashboard score'):'nothing waiting'}</span></div>
+    <div class="tile"><span>Decisions answered</span><b>${t.answered||0}</b><span>dated and named, in your record</span></div>
+  </div>
+  ${needs.length?`<div class="sec-t">Needs your answer <span class="cnt hot">${t.openAlerts}</span></div>${alerts}`:''}
+  ${addCard()}
+  <div class="sec-t">Your claims <span class="cnt">${claims.filter(c=>c.status==='live').length}</span></div>
+  ${live.length||needs.length?live.map(claimRow).join('')||'<div class="muted">All your running claims are listed above, waiting for an answer.</div>':'<div class="card empty">No claims yet. Add some copy or a screenshot above, run something through the Copy Checker, or approve a campaign.</div>'}
+  ${off.length?`<details style="margin-top:12px"><summary class="sec-t" style="margin:12px 0 10px">No longer running <span class="cnt">${off.length}</span></summary>${off.map(claimRow).join('')}</details>`:''}
+  <p class="disc">Sendwize shows published decisions that look similar to your wording, so you can decide what to do. It is information, not legal advice. Decisions come from the ASA, ICO and CMA as they are published.</p></div>`;
+}
+</script>
+</body>
+</html>
