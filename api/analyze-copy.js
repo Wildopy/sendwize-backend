@@ -1019,8 +1019,26 @@ export default async function handler(req, res) {
       body: JSON.stringify({ userId })
     }).catch(e => console.error('Streak update failed:', e));
 
+    // Claims Bank: every checked piece of marketing has its claims banked and
+    // watched against new rulings. A recheck replaces the version before.
+    // Claims Bank's own upload waits for the answer (bank: 'wait'); the
+    // Copy Checker only waits long enough for the request to go out.
+    let bank = null;
+    if (!analysisFailed && contentKind !== 'not_marketing' && savedRecordId) {
+      const bankCall = fetch(`${APP_URL}/api/claims-bank?action=add`, {
+        method: 'POST', headers: internalHeaders(),
+        body: JSON.stringify({
+          userId, copy: [head, content].filter(Boolean).join('\n\n'), images: hasImages ? images.slice(0, 3) : [],
+          campaign: campaignName, channel: contentType, source: 'Copy checker', sourceRecordId: savedRecordId,
+          replaces: previous ? [previous.id, previous.root].filter(Boolean) : [],
+        }),
+      }).then(r => r.ok ? r.json() : null).catch(e => { console.error('Claims Bank add (non-fatal):', e.message); return null; });
+      if (req.body?.bank === 'wait') bank = await bankCall;
+      else await Promise.race([bankCall, new Promise(r => setTimeout(r, 1500))]);
+    }
+
     const cleanViolations = allViolations.map(({ _fromContext, _fixType, ...rest }) => rest);
-    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, sendCall: call, contentType, checkHash, sourceRecordId: savedRecordId, comparison });
+    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, sendCall: call, contentType, checkHash, sourceRecordId: savedRecordId, comparison, ...(bank ? { bank: { added: (bank.added || []).length, skipped: bank.skipped || 0, matched: bank.matched || 0 } } : {}) });
 
   } catch (error) {
     console.error('analyze-copy error:', error);

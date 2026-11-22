@@ -73,13 +73,13 @@
 // v4.29: Dossier re-verification (stickiness). LastVerified stamp.
 // ─────────────────────────────────────────────────────────────
 import { claudeFetch, parseJson } from './_claude.js';
+import { extractClaims } from './_claims-bank.js';
 import { buildSignoffSummary, parseOfferEnd, complaintPrompt, newToken, hashToken, isToken, SIGNOFF_DAYS } from './_signoff.js';
 import { sendEmail, emailLayout, escHtml, memberEmail, isEmail } from './_email.js';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { verifiedDomains, splitWatchable } from './_owned-domains.js';
-import { ISSUES } from './_copy-issues.js';
 import { scanCampaignPages, serialiseScan, describeScan, activePageFindings, fetchPage } from './_page-scan.js';
 
 const APP_URL      = 'https://sendwize-backend.vercel.app';
@@ -531,60 +531,8 @@ function getRequiredEvidence(channels) {
   return needs;
 }
 
-// ── Claim extraction via Claude ───────────────────────────────
-async function extractClaims(copyText) {
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (!anthropicKey || !copyText?.trim()) return [];
-
-  try {
-    const r = await claudeFetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        max_tokens: 800,
-        messages: [{ role: 'user', content: `Analyse this marketing copy and extract every specific claim that could have regulatory implications under UK law (ICO/PECR, ASA/CAP Code, CMA/DMCCA 2024).
-
-For each claim, return:
-- claim: the exact text or a close paraphrase
-- claimType: one of: pricing_claim, urgency_claim, scarcity_claim, free_claim, health_claim, comparative_claim, testimonial_claim, guarantee_claim, third_party_reference, environmental_claim, other
-- ruleRef: the specific regulation it engages (e.g. "DMCCA 2024 Schedule 1", "CAP Code 3.1", "PECR Reg 22")
-- evidenceNeeded: what evidence would be required to defend this claim
-- exposureCategory: one of: ICO, ASA, CMA
-
-Return ONLY a JSON array. No other text. If no claims found, return [].
-
-COPY:
-${copyText.slice(0, 4000)}` }],
-      }),
-    });
-
-    if (!r.ok) return [];
-    const data = await r.json();
-    const text = data.content?.[0]?.text || '';
-    const match = text.match(/\[[\s\S]*\]/);
-    if (!match) return [];
-    return JSON.parse(match[0]).map(c => ({ ...c, ruleRef: claimCite(c) || c.ruleRef || '' }));
-  } catch (e) {
-    console.error('extractClaims failed (non-fatal):', e);
-    return [];
-  }
-}
-
-// The rule a claim is shown under comes from the checked list the copy
-// checker uses (_copy-issues.js), not the model, wherever the type is clear
-const CLAIM_ISSUE = { urgency_claim: 'fake_urgency', scarcity_claim: 'scarcity', free_claim: 'free_claim', comparative_claim: 'comparative_claim', testimonial_claim: 'review_claim', environmental_claim: 'green_claim' };
-function claimCite(c) {
-  let issue = CLAIM_ISSUE[c?.claimType];
-  if (c?.claimType === 'pricing_claim') {
-    const t = String(c.claim || '');
-    issue = /\b(was|rrp|save|saving|half price|reduced)\b|% off/i.test(t) ? 'reference_price' : /\b(fee|surcharge|handling|booking|delivery charge)\b/i.test(t) ? 'drip_pricing' : null;
-  }
-  return issue ? ISSUES[issue]?.cite || null : null;
-}
+// Claim extraction (extractClaims, claimCite) lives in _claims-bank.js,
+// shared with Claims Bank and the Copy Checker.
 
 // Copy check channel for a campaign: the first direct channel it runs on
 function copyChannel(channels = []) {
@@ -1082,6 +1030,16 @@ async function handleDefenceApprove(req, res) {
   try {
     await atFetch(`${base}/Campaign_Dossiers/${dossierId}`, { method: 'PATCH', headers: authH, body: JSON.stringify({ fields: patchFields }) });
   } catch (e) { return res.status(500).json({ error: 'Failed to approve defence', detail: e.message }); }
+
+  // Claims Bank: an approved campaign's claims are going live, so they are
+  // banked and watched against new decisions (duplicates are skipped there)
+  if (claims.length) {
+    let chans = []; try { chans = JSON.parse(f.Channels || '[]'); } catch {}
+    fetch(`${APP_URL}/api/claims-bank?action=add`, {
+      method: 'POST', headers: internalHeaders(),
+      body: JSON.stringify({ userId, claims, campaign: f.CampaignTitle || '', channel: Array.isArray(chans) ? chans.join(', ') : '', source: 'Campaign defence', sourceRecordId: dossierId }),
+    }).catch(e => console.error('Claims Bank add (non-fatal):', e));
+  }
 
   // Emit fixes from extracted claims → feeds dashboard £ exposure. Skipped
   // when the copy check ran: it has already raised these as fixes, and a

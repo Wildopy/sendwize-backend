@@ -29,6 +29,7 @@ const DEFAULT_LIMITS = {
   sweep_email:    10,  // Site sweep ownership emails (confirm link, steps to a web person)
   simulation:     20,  // Regulator simulator runs (letter wording)
   esp_pull:       40,  // Klaviyo / Mailchimp pulls (contacts, campaigns)
+  claims_add:     40,  // Claims Bank additions (each reads the copy and checks recent decisions)
 };
 
 let warned = false;

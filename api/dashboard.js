@@ -1,5 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — dashboard.js v1.6
+// SENDWIZE — dashboard.js v1.7
+// v1.7: Claims Bank alerts (a new decision looks similar to a saved
+//   claim) lead "Sendwize noticed"; claimsBank totals for the tool card.
 // v1.6: each open finding carries basedOn, the published cases (name,
 //   regulator, date, outcome, source link) its figure is anchored to, so
 //   the dashboard can show the case beside the number, not behind a click.
@@ -33,6 +35,8 @@ import { atFetch } from './_airtable.js';
 import { areaOf, SEVERITY_WEIGHT, SELF_ATTESTED_CREDIT, closestCases } from './_exposure.js';
 import { buildLibrary, caseTwins, effortFor } from './_cases.js';
 import { buildAlerts } from './_memory.js';
+import { fq } from './_airtable.js';
+import { claimFromRecord, openAlerts, cleanText } from './_claims-bank.js';
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -45,6 +49,24 @@ async function feedRulings() {
     return r.ok ? ((await r.json()).records || []) : [];
   } catch (e) {
     return [];
+  }
+}
+
+// Claims Bank: open alerts on saved claims, as "Sendwize noticed" items. Best effort.
+async function claimsBankAlerts(userId) {
+  try {
+    const f = `AND({UserID}=${fq(userId)},{Status}='live',FIND('"status":"open"',{AlertsJson}))`;
+    const r = await atFetch(`https://api.airtable.com/v0/${process.env.BASE_ID}/Claims_Bank?pageSize=50&filterByFormula=${encodeURIComponent(f)}`,
+      { headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` } });
+    if (!r.ok) return { alerts: [], open: 0 };
+    const claims = ((await r.json()).records || []).map(claimFromRecord);
+    const alerts = claims.flatMap(c => openAlerts(c).map(a => ({
+      kind: 'claim_ruling', severity: 'high', claimId: c.id, at: a.foundAt,
+      text: `${a.title}: your claim "${cleanText(c.text, 90)}". Record whether you took it down, changed it or kept it.`,
+    }))).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    return { alerts, open: alerts.length };
+  } catch (e) {
+    return { alerts: [], open: 0 };
   }
 }
 
@@ -120,11 +142,12 @@ export default async function handler(req, res) {
     ]);
 
     // Wave 3: trend + list value
-    const [history, listValue, feed, memory] = await Promise.all([
+    const [history, listValue, feed, memory, claimsBank] = await Promise.all([
       call(`/api/data?action=score-history&userId=${u}&limit=30`),
       call(`/api/list-recommendations?userId=${u}`),
       feedRulings(),
       buildAlerts(userId).catch(() => null),
+      claimsBankAlerts(userId),
     ]);
 
     const pending = fx.fixes?.pending || [];
@@ -144,7 +167,9 @@ export default async function handler(req, res) {
       success: true,
       generatedAt: new Date().toISOString(),
       // What Sendwize remembers from past uploads (consent lapsed since, complaints, rulings)
-      alerts: memory ? memory.alerts.slice(0, 8) : [],
+      // Claims Bank alerts first: they need an answer from the member
+      alerts: [...claimsBank.alerts.slice(0, 5), ...(memory ? memory.alerts : [])].slice(0, 8),
+      claimsBank: { openAlerts: claimsBank.open },
       profile: {
         onboardingComplete: profile?.onboardingComplete ?? fx.profile?.onboardingComplete ?? null,
         revenueBand: profile?.revenueBand || null,

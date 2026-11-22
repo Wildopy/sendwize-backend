@@ -57,7 +57,7 @@
     GROUPS.forEach(function (g) {
       html += '<div class="swtn-g" role="group" aria-label="' + esc(g[0]) + '"><span class="swtn-gn">' + esc(g[0]) + '</span><div class="swtn-gc">';
       g[1].forEach(function (t) {
-        html += '<a class="swtn-t" href="/' + t[1] + qs + '"' + (t[1] === here ? ' aria-current="page"' : '') + '>' + esc(t[0]) + '</a>';
+        html += '<a class="swtn-t" href="/' + t[1] + qs + '"' + (t[1] === here || (here === 'campaign-claims.html' && t[1] === 'campaign-defence.html') ? ' aria-current="page"' : '') + '>' + esc(t[0]) + '</a>';
       });
       html += '</div></div>';
     });

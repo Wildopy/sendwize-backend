@@ -476,6 +476,7 @@
       <div class="finish-summary" id="finishSummary">
         Your check is saved to your compliance record. Certified evidence items will save when you finish.
       </div>
+      <div class="finish-bank" id="finishBank" style="font-size:13px;color:var(--muted);margin:0 0 12px">The claims in this copy are saved to <a id="bankLink" href="/campaign-claims.html" style="color:var(--orange);font-weight:600;text-decoration:none">Claims watched</a> in Campaign Defence, which checks them against new ASA, ICO and CMA decisions every morning. A recheck replaces the earlier version.</div>
       <div class="finish-buttons">
         <button class="btn-run-again" onclick="resetForm()">Run another check</button>
         <button class="btn-finish" id="finishSaveBtn" onclick="finishAndSave()">Finish &amp; return to dashboard</button>
@@ -852,6 +853,7 @@
     // v5.4: capture the source record ID from the server so we can attach
     // certifications to it when the user hits Finish
     lastCheckSourceRecordId = data.sourceRecordId || null;
+    var bl = document.getElementById('bankLink'); if (bl) bl.href = '/campaign-claims.html?userId=' + encodeURIComponent(userId);
     renderRecheckSummary(data.comparison || null);
     evidenceCertifications = [];
     evidenceMap = {};

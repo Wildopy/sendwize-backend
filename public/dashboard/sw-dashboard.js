@@ -55,7 +55,7 @@
   var TOOL_GROUPS = [
     { l: 'Before you send', tools: [
       { k: 'copy',      l: 'Copy checker',        u: '/ai-checker.html',        d: 'Go, fix first or hold for an email or ad', s: 'Go, fix first or hold' },
-      { k: 'defence',   l: 'Campaign defence',    u: '/campaign-defence.html',  d: 'Sign-off before launch, alerts once it\'s live', s: 'Sign-off, then watched live' },
+      { k: 'defence',   l: 'Campaign defence',    u: '/campaign-defence.html',  d: 'Sign-off before launch, then your claims and pages watched', s: 'Sign-off, then watched' },
     ] },
     { l: 'Your list', tools: [
       { k: 'list',      l: 'List health',         u: '/list-intelligence.html', d: 'Consent, value and who to remove', s: 'Consent, value, who to drop' },
@@ -74,7 +74,7 @@
     'ai checker': '/ai-checker.html', 'ai-checker': '/ai-checker.html', 'copy': '/ai-checker.html',
     'vendor checker': '/vendor-checker.html', 'vendor': '/vendor-checker.html', 'dpa scan': '/vendor-checker.html',
     'list intelligence': '/list-intelligence.html', 'database audit': '/list-intelligence.html', 'suppression': '/list-intelligence.html',
-    'audience read': '/audience-read.html', 'site sweep': '/site-sweep.html', 'campaign defence': '/campaign-defence.html',
+    'audience read': '/audience-read.html', 'site sweep': '/site-sweep.html', 'campaign defence': '/campaign-defence.html', 'campaign defence claims': '/campaign-claims.html',
   };
   var BANDS = ['Under £1M', '£1M–£10M', '£10M–£50M', 'Over £50M'];
   var SECTORS = [['ecommerce', 'Ecommerce / Retail'], ['b2b', 'B2B / Professional Services'], ['saas', 'SaaS / Technology'], ['media', 'Media / Publishing / Newsletter'], ['finance', 'Finance / Financial Services'], ['health', 'Health / Healthcare'], ['gambling', 'Gambling'], ['charity', 'Charity / Non-profit'], ['general', 'Agency or Other']];
@@ -726,9 +726,9 @@
     var a = D.alerts || [];
     if (!a.length) return '';
     var shown = st.noticedAll ? a : a.slice(0, 3);
-    return '<div class="sw-pnl sw-noticed">' + pnlHead('Sendwize noticed', 'Patterns in your recent uploads and sends') + shown.map(function (x) {
-      var u = AUDIENCE_KINDS[x.kind] ? '/audience-read.html' : '/list-intelligence.html';
-      var cta = x.kind === 'lapsing' ? 'Write the email' : x.kind === 'lapsed' || x.kind === 'stale_list' ? 'Upload latest' : x.kind === 'ruling' ? 'See the list' : 'Open';
+    return '<div class="sw-pnl sw-noticed">' + pnlHead('Sendwize noticed', 'New rulings that touch your claims, and patterns in your uploads and sends') + shown.map(function (x) {
+      var u = x.kind === 'claim_ruling' ? '/campaign-claims.html' : AUDIENCE_KINDS[x.kind] ? '/audience-read.html' : '/list-intelligence.html';
+      var cta = x.kind === 'claim_ruling' ? 'Record what you did' : x.kind === 'lapsing' ? 'Write the email' : x.kind === 'lapsed' || x.kind === 'stale_list' ? 'Upload latest' : x.kind === 'ruling' ? 'See the list' : 'Open';
       return '<div class="sw-ntc"><span class="sw-ntc-dot ' + esc(x.severity) + '"></span><div class="sw-ntc-t">' + esc(x.text) + '</div><button class="sw-btn q" data-act="tool" data-u="' + u + '">' + cta + '</button></div>';
     }).join('') + (a.length > 3 && !st.noticedAll ? '<button class="sw-link" data-act="noticed-all">Show ' + (a.length - 3) + ' more</button>' : '') + '</div>';
   }
