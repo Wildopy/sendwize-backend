@@ -22,7 +22,7 @@
     ['Practice', [['Regulator simulator', 'ico-simulator.html']]],
   ];
   var ICON = { back: '<path d="M15 5l-7 7 7 7"/>' };
-  var DEFAULT_DASHBOARD = 'https://sendwize.co.uk/dashboard';
+  var STAGING_DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
   var CSS =
     '.swtn-w{position:relative;background:#faf9f7;border-bottom:1px solid #e8e6e1;font:500 13px/1.3 "DM Sans",-apple-system,sans-serif}' +
     '.swtn{display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding:10px 24px 12px;scrollbar-width:none}' +
@@ -51,7 +51,7 @@
     var here = location.pathname.split('/').pop() || '';
     // Keep the member id the dashboard passed in, so the next tool knows who you are
     var m = location.search.match(/[?&]userId=([^&#]+)/), qs = m ? '?userId=' + m[1] : '';
-    var dash = (window.SW && window.SW.dashboard) || DEFAULT_DASHBOARD;
+    var dash = (window.SW && window.SW.dashboard) || STAGING_DASHBOARD;
     var html = '<a class="swtn-back" href="' + esc(dash) + '">' + svg('back') + 'Dashboard</a>' +
       '<span class="swtn-lbl"><span>Your tools</span></span>';
     GROUPS.forEach(function (g) {

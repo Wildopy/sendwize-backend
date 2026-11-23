@@ -46,7 +46,7 @@ Sendwize is a UK marketing-compliance and marketing-performance toolkit for in-h
 
 | Layer | What |
 |---|---|
-| Marketing site + login | Webflow (live: `sendwize.co.uk`, staging: `new-mvp-v2.webflow.io`) with Memberstack for members and plans |
+| Marketing site + login | Webflow (staging: `new-mvp-v2.webflow.io`) with Memberstack for members and plans |
 | Dashboard | Webflow Code Embed loading `sw-dashboard.js/.css` from Vercel, so it updates without re-pasting |
 | Tool pages | Static HTML in `public/`, served at `https://sendwize-backend.vercel.app/<page>.html` |
 | API | Vercel serverless functions in `api/` (ES modules, Node). Files starting with `_` are shared modules, not endpoints |
@@ -234,7 +234,7 @@ All embeds load code from Vercel, so merging to `main` updates the live site wit
 - Set a spend limit in the Anthropic Console.
 - Memberstack/Stripe plans, then `SENDWIZE_REQUIRE_PLAN=true`.
 - Run the signed-in end-to-end click-through of all seven tools.
-- Replace the About page placeholders. Staging links were swapped for `sendwize.co.uk` (Nov 2026).
+- Replace the About page placeholders. Swap staging links (`new-mvp-v2.webflow.io`) once the live domain is set.
 
 **Product/engineering still open:**
 - CORS locked to the live domain.

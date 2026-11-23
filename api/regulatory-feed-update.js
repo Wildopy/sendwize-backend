@@ -612,7 +612,7 @@ async function checkOfferEnds() {
       const owner = d.fields.UserID ? await memberEmail(d.fields.UserID) : null;
       if (owner?.email) await sendEmail({
         to: owner.email, subject: `Sendwize: "${d.fields.CampaignTitle || 'campaign'}" is still live after its end date`,
-        html: emailLayout({ heading: 'Offer still live', bodyHtml: `<p style="color:#555;font-size:14px">${escHtml(detail)}</p>`, ctaText: 'Open Campaign Defence', ctaUrl: process.env.DASHBOARD_URL || 'https://sendwize.co.uk/dashboard', footnote: 'CMA: DMCCA 2024 Sch 20 (false urgency). Not legal advice.' }),
+        html: emailLayout({ heading: 'Offer still live', bodyHtml: `<p style="color:#555;font-size:14px">${escHtml(detail)}</p>`, ctaText: 'Open Campaign Defence', ctaUrl: process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy', footnote: 'CMA: DMCCA 2024 Sch 20 (false urgency). Not legal advice.' }),
       });
     } catch (e) {
       results.errors.push({ dossierId: d.id, error: e.message });
