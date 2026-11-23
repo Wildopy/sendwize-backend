@@ -227,6 +227,92 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .disc{font-size:11px;color:var(--mu);font-style:italic;text-align:center;margin-top:32px;line-height:1.5}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--t);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;max-width:300px}
 .toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+/* v8.0: trigger, rehearsal, live gaps, reply */
+.trigger{background:var(--w);border:1px solid var(--b);border-left:4px solid var(--reg);border-radius:var(--rad-lg);padding:20px 22px;margin-bottom:24px;box-shadow:var(--sh);animation:fadeUp .3s ease}
+.trigger.asa{border-left-color:#991b1b}.trigger.cma{border-left-color:#065f46}
+.tg-k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:6px}
+.tg-title{font-size:17px;font-weight:700;line-height:1.4;letter-spacing:-.2px}
+.tg-src{font-size:12px;color:var(--mu);margin-top:4px}
+.tg-starts{font-size:13px;color:var(--tm);margin-top:10px;line-height:1.55}
+.tg-case{margin-top:14px;padding:14px 16px;border-radius:10px;background:#f8f7f4;border:1px solid var(--b)}
+.tg-case-name{font-size:14px;font-weight:700}
+.tg-case-out{font-weight:600;color:var(--r);font-size:12.5px;white-space:nowrap}
+.tg-case-sum{font-size:12.5px;color:var(--tm);line-height:1.5;margin-top:4px}
+.tg-link{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:600;color:var(--o);text-decoration:none}
+.tg-link:hover{text-decoration:underline}
+.letter-ol{margin:4px 0 16px 20px;font-size:13px;color:var(--t);line-height:1.6}
+.letter-ol li{margin-bottom:6px}
+.rehearse:empty{display:none}
+.rehearse{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-lg);padding:20px;margin-top:14px;box-shadow:var(--sh)}
+.rh-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rh-k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--o)}
+.rh-t{font-size:16px;font-weight:700}
+.rh-sub{font-size:12.5px;color:var(--mu);margin:6px 0 14px;line-height:1.5}
+.rh-dots{display:flex;gap:6px;padding-top:6px}
+.rh-dot{width:12px;height:12px;border-radius:50%;background:var(--b)}
+.rh-dot.now{background:var(--w);border:2px solid var(--reg)}
+.rh-dot.ok{background:var(--g)}.rh-dot.cond{background:#ca8a04}.rh-dot.esc{background:var(--r)}
+.rh-turn{border-top:1px solid var(--b);padding-top:14px;margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.rh-turn:first-of-type{border-top:none;margin-top:0}
+.bub{max-width:88%;padding:11px 14px;border-radius:12px;font-size:13px;line-height:1.55}
+.bub-who{font-size:11px;font-weight:700;letter-spacing:.03em;margin-bottom:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bub.reg{align-self:flex-start;background:var(--regl);border:1px solid var(--regc);border-top-left-radius:4px}
+.bub.reg .bub-who{color:var(--reg)}
+.bub.reg.asa{background:#fef2f2;border-color:#fecaca}.bub.reg.asa .bub-who{color:#991b1b}
+.bub.reg.cma{background:#f0fdf4;border-color:#bbf7d0}.bub.reg.cma .bub-who{color:#065f46}
+.bub.me{align-self:flex-end;background:#faf9f7;border:1px solid var(--bm);border-top-right-radius:4px}
+.bub.me .bub-who{color:var(--tm)}
+.att{margin:6px 0 0 18px;padding:0}.att li{margin:2px 0}
+.verdict{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:999px}
+.verdict.ok{background:var(--gb);color:var(--g);border:1px solid var(--gc)}
+.verdict.fu,.verdict.cond{background:var(--yb);color:#92400e;border:1px solid var(--yc)}
+.verdict.esc{background:var(--rb);color:var(--r);border:1px solid var(--rc)}
+.composer{align-self:stretch;border:1px dashed var(--bm);border-radius:10px;padding:12px 14px;background:#fcfcfb}
+.cmp-k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:8px}
+.ev{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--b);border-radius:8px;background:var(--w);margin-bottom:6px;cursor:pointer;font-size:13px;line-height:1.4}
+.ev input{margin-top:3px;accent-color:var(--o);width:16px;height:16px;flex-shrink:0}
+.ev b{font-weight:600;display:block}
+.ev-m{font-size:11.5px;color:var(--mu)}
+.ev-none{font-size:13px;color:var(--tm);padding:4px 0 8px}
+.cmp-btns,.oc-btns,.reply-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.cmp-send,.cmp-commit,.cmp-cant,.rh-next,.gap-btn,.gap-prev{font:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--b);background:var(--w);color:var(--t)}
+.cmp-send{background:var(--o);border-color:var(--o);color:#fff}
+.cmp-send:disabled{opacity:.45;cursor:not-allowed}
+.cmp-commit{background:var(--yb);border-color:var(--yc);color:#92400e}
+.cmp-cant:hover,.gap-btn:hover{border-color:var(--mu)}
+.rh-next{align-self:flex-start;color:#fff;border:none}
+.rh-next.ico{background:#1d4ed8}.rh-next.asa{background:#991b1b}.rh-next.cma{background:#065f46}
+.outcome{margin-top:18px;border-radius:12px;padding:18px 20px;border:2px solid var(--b)}
+.outcome.good{background:var(--gb);border-color:var(--gc)}.outcome.mid{background:var(--yb);border-color:var(--yc)}.outcome.bad{background:var(--rb);border-color:var(--rc)}
+.oc-k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu)}
+.oc-t{font-size:19px;font-weight:700;margin:2px 0 6px;letter-spacing:-.2px}
+.outcome.good .oc-t{color:#166534}.outcome.mid .oc-t{color:#92400e}.outcome.bad .oc-t{color:#991b1b}
+.oc-d{font-size:13px;color:var(--tm);line-height:1.6}
+.oc-tally{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--tm);margin-top:10px}
+.live{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.lv{border:1px solid var(--b);border-radius:10px;padding:14px 16px;background:var(--w)}
+.lv-k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu)}
+.lv-n{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums;margin:2px 0}
+.lv-n s{font-size:16px;color:var(--mu);font-weight:500}
+.lv-s{font-size:12px;color:var(--tm);line-height:1.45}
+.lv-note{grid-column:1/-1;font-size:12px;color:var(--mu);line-height:1.5}
+.gap-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.gap-btn,.gap-prev{padding:7px 12px;font-size:12.5px}
+.gap-btn{background:var(--o);border-color:var(--o);color:#fff}.gap-btn:hover{background:var(--od);border-color:var(--od)}
+.gap-prev.on{background:var(--gb);border-color:var(--gc);color:var(--g)}
+.gap-steps{margin-top:10px;padding:12px 14px;background:var(--w);border:1px solid var(--b);border-radius:8px;font-size:13px;color:var(--tm);line-height:1.55}
+.gap-steps ol{margin:0 0 8px 18px}.gap-steps li{margin-bottom:4px}
+.gap-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.recheck{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.dock{display:none;position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--t);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:90;white-space:nowrap;box-shadow:var(--sh-lg)}
+.dock.on{display:block;animation:dockIn .25s ease}
+@keyframes dockIn{from{opacity:0}to{opacity:1}}
+.dock b{font-variant-numeric:tabular-nums}
+.dock-p{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:rgba(255,255,255,.18);padding:2px 7px;border-radius:999px;margin-left:4px}
+.pen-after{margin-top:12px;padding-top:12px;border-top:1px solid var(--b);font-size:13px;color:var(--g)}
+.reply-note{font-size:12.5px;color:var(--tm);line-height:1.55;margin-bottom:10px}
+.reply{width:100%;min-height:420px;border:1px solid var(--bm);border-radius:10px;padding:16px;font:inherit;font-size:13px;line-height:1.6;color:var(--t);background:#fff;resize:vertical}
+@media(max-width:600px){.live{grid-template-columns:1fr}.bub{max-width:100%}.rehearse{padding:16px 14px}.trigger{padding:16px}.tg-title{font-size:15.5px}.doc-row{flex-direction:column;gap:8px}.scard{padding:18px 16px}.stage{padding-left:44px}.stage-dot{width:34px;height:34px}.stage::before{left:16px}.toast{bottom:70px}}
 @media(max-width:600px){.penalty-amt{font-size:34px}.intro h1{font-size:24px}.reg-grid{grid-template-columns:1fr}.btn-row{flex-direction:column;align-items:flex-start}.try-others-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -253,7 +339,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       Regulator simulator &mdash; Sendwize
     </div>
     <h1 id="introTitle">Could you answer the regulator today?</h1>
-    <p id="introDesc">Choose a regulator and we&rsquo;ll walk through an investigation using your own Sendwize records: the letter they would send, what you could show for each question today, what&rsquo;s missing, and a response pack you can download.</p>
+    <p id="introDesc">Choose a regulator and rehearse an investigation using your own Sendwize records. We start with the thing in your data most likely to start a case, show the published case that began the same way, then you answer the regulator&rsquo;s letter question by question, close the gaps, and get a reply drafted from your records.</p>
     <div class="intro-warning">
       <div class="intro-warning-icon">&#9888;&#65039;</div>
       <p>This is a simulation based on your current compliance data. It is illustrative only and does not constitute legal advice. Scenarios are based on published enforcement patterns from each regulator.</p>
@@ -294,6 +380,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </button>
     </div>
   </div>
+  <div class="trigger" id="triggerBox" style="display:none"></div>
   <div class="spine" id="spine" style="display:none">
     <div class="stage locked" id="stage-0">
       <div class="stage-dot">1</div>
@@ -332,7 +419,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       </div>
       <div class="stage-body">
         <div class="letter-card ico" id="letterCard"></div>
-        <button class="btn-next-stage ico" id="btnNext2" onclick="unlockStage(3)" style="margin-top:16px">Check Documentation &rarr;</button>
+        <div class="rehearse" id="rehearse"></div>
+        <button class="btn-next-stage ico" id="btnNext2" onclick="unlockStage(3)" style="margin-top:16px">Close the gaps &rarr;</button>
       </div>
     </div>
     <div class="stage locked" id="stage-3">
@@ -346,7 +434,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
           <div style="font-size:13px;color:var(--tm);margin-bottom:16px;line-height:1.6" id="stage4Desc">The regulator will request specific documentation.</div>
           <div class="docs-list" id="stage4-docs"></div>
         </div>
-        <button class="btn-next-stage ico" id="btnNext3" onclick="unlockStage(4)">View Penalty Estimate &rarr;</button>
+        <button class="btn-next-stage ico" id="btnNext3" onclick="unlockStage(4)">See the outcome and your reply &rarr;</button>
       </div>
     </div>
     <div class="stage locked" id="stage-4">
@@ -363,6 +451,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <p class="disc" id="discText">Information only &mdash; not legal advice. Illustrative scenarios based on published ICO enforcement data.</p>
 </div>
 <div class="toast" id="toast"></div>
+<div class="dock" id="liveDock"></div>
 <footer class="sw-ph-footer">
   <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
   <div class="sw-ph-footer-links"><a href="#">About Us</a><a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a><a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Use</a></div>
@@ -380,33 +469,33 @@ var REG_CFG = {
     btnCls:'ico', cardCls:'ico',
     stage1title:'Background Check',
     stage2title:'Risk Assessment',
-    stage3title:'First-Contact Letter',
-    stage4title:'Documentation Checklist',
-    stage5title:'Penalty Estimate & Strategy',
+    stage3title:'The letter: answer it',
+    stage4title:'Close the gaps',
+    stage5title:'Outcome and your reply',
     stage1desc:'The ICO begins any investigation with a background check. This covers your registration status, complaint history, and overall compliance posture from public data and your own records.',
-    stage4desc:'If the ICO opens an investigation, they will request specific documentation. Based on your Sendwize compliance data, here is what you would need to produce.',
+    stage4desc:'Everything the ICO would ask for, from your Sendwize records. Close a gap to see your readiness and the likely fine change.',
     disc:'Penalty ranges are based on comparable published ICO enforcement decisions. DUAA 2025 has raised the maximum PECR fine to £17.5M or 4% of global turnover. Not legal advice.',
   },
   ASA: {
     btnCls:'asa', cardCls:'asa',
     stage1title:'Advertiser Record Review',
     stage2title:'Risk Assessment',
-    stage3title:'Investigation Notification',
-    stage4title:'Evidence Checklist',
-    stage5title:'Likely Sanctions & Strategy',
+    stage3title:'The complaint letter: answer it',
+    stage4title:'Close the gaps',
+    stage5title:'Outcome and your reply',
     stage1desc:'The ASA reviews complaints and may proactively monitor advertisers. This shows how your ad record looks to an ASA investigations executive.',
-    stage4desc:'The ASA will request specific evidence. Under CAP Code 4.1, all marketing claims must be substantiated before the ad runs. Here is what you would need to produce.',
+    stage4desc:'Everything the ASA would ask for, from your Sendwize records. The ASA expects you to hold evidence for a claim before the ad runs. Close a gap to see your readiness change.',
     disc:'The ASA does not impose direct financial fines. Sanctions include mandatory ad withdrawal, upheld rulings published on asa.org.uk, and referral to Trading Standards under DMCCA 2024. Not legal advice.',
   },
   CMA: {
     btnCls:'cma', cardCls:'cma',
     stage1title:'DMCCA Sweep Assessment',
     stage2title:'Risk Assessment',
-    stage3title:'Preliminary Enquiry Letter',
-    stage4title:'Documentation Checklist',
-    stage5title:'Penalty Estimate & Strategy',
+    stage3title:'The enquiry letter: answer it',
+    stage4title:'Close the gaps',
+    stage5title:'Outcome and your reply',
     stage1desc:'The CMA conducts proactive sweeps under DMCCA 2024. This shows how your business would look under a CMA consumer protection sweep of your sector.',
-    stage4desc:'The CMA will request specific documentation as part of its enquiry. Under DMCCA 2024, the CMA can impose fines without court proceedings.',
+    stage4desc:'Everything the CMA would ask for, from your Sendwize records. Under DMCCA 2024 the CMA can fine without going to court. Close a gap to see your readiness change.',
     disc:'DMCCA 2024 maximum: higher of £300,000 or 10% of global annual turnover, imposable without court proceedings. Ranges based on published CMA enforcement decisions. Not legal advice.',
   },
 };
@@ -459,9 +548,9 @@ var DEMO = {
     stage5:{
       penalty:{low:28000,high:90000,context:'Realistic ICO penalty range built from demo compliance data. Anchored to comparable published ICO enforcement decisions. Statutory maximum under DUAA 2025: £17.5M or 4% of global annual turnover. Full and prompt co-operation is the single most significant mitigating factor.'},
       representations:[
-        'Address the consent_missing issue before responding, this is the primary basis for any ICO action. Produce your consent records or immediately cease sending to contacts without verified consent.',
-        'Address the suppression_breach issue: producing evidence of prompt remediation after discovery is a significant mitigating factor in ICO penalty decisions.',
-        '0 resolved fixes on record. Consider actioning your highest-severity pending items now, evidence of prompt remediation before the regulator response is due carries significant mitigating weight.',
+        'Sort out consent first: it is the main basis for any ICO action. Produce your consent records, or stop sending to contacts without them.',
+        'Fix how opt-outs are honoured across your lists. Showing you put it right quickly after finding it counts in your favour.',
+        'Close your highest-severity gaps before the reply is due. Evidence that you fixed things promptly carries real weight.',
         'Co-operate fully and respond promptly. The ICO\'s published penalty guidance explicitly gives significant credit to businesses that engage openly and remediate quickly.',
       ],
     },
@@ -572,6 +661,144 @@ var DEMO = {
   },
 };
 
+// v8.0 demo: the interactive rehearsal with example records. Same shape
+// as a version 3 run from the API (trigger, fineModel, documents with
+// evidence, fixIds and steps to close).
+var DEMO_V3 = {
+  ICO: {
+    member: { company: 'Acme Homeware Ltd', name: '' },
+    trigger: {
+      kind: 'complaints', itemId: 'consent_records',
+      title: '"Black Friday early access" drew 48 spam complaints from 11,500 people (0.42%), over the 0.3% limit.',
+      source: 'Audience read, sent 18 Nov 2026', starts: 'People who mark your email as spam can also report it to the ICO. Spam reports are how most ICO marketing cases begin.',
+      case: { name: 'Bharat Singh Chand (sole trader)', regulator: 'ICO', date: '2025-10', penalty: 200000, outcome: 'Fined £200,000', same: true,
+        why: 'Started the same way: with spam reports from recipients',
+        summary: 'Nearly 1M texts about debt solutions and energy grants sent without valid consent between December 2023 and July 2024, drawing 19,138 spam reports. Under appeal.',
+        url: 'https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2025/10/200-000-fine-for-sole-trader-who-sent-nearly-one-million-spam-texts/' },
+    },
+    fineModel: { kind: 'range', share: 0.25, cap: 2, fixes: [
+      { id: 'f1', area: 'consent', low: 20000, high: 80000, likely: 40000 },
+      { id: 'f2', area: 'suppression', low: 8000, high: 30000, likely: 15000 },
+      { id: 'f3', area: 'processors', low: 2000, high: 9000, likely: 4000 },
+      { id: 'f4', area: 'other', low: 3000, high: 12000, likely: 6000 },
+    ] },
+    documents: [
+      { id: 'optouts', name: 'Proof that opt-outs are honoured across lists', status: 'missing', detail: 'No opt-out or suppression check on record.', tool: 'list-intelligence.html', evidence: [], fixIds: ['f2'] },
+      { id: 'consent_records', name: 'Consent records for everyone you email or text', status: 'partial', detail: '1 list checked, last on 3 Nov 2026: 12,000 contacts, 15% without strong consent evidence. 640 came from bought or partner data.', tool: 'list-intelligence.html', fixIds: ['f1'],
+        evidence: [{ label: 'List check: "Main list", 12,000 contacts', date: '2026-11-03', tool: 'List health' }] },
+      { id: 'processor_dpas', name: 'Agreements with the platforms that hold your data (Article 28)', status: 'partial', detail: '1 of 2 platforms have a confirmed agreement on file. Missing: Twilio.', tool: 'vendor-checker.html', fixIds: ['f3'],
+        evidence: [{ label: 'Agreement on file: Klaviyo', date: '2026-09-14', tool: 'Third parties' }] },
+      { id: 'cookie_consent', name: 'Cookie consent before tracking', status: 'partial', detail: 'acme-demo.co.uk swept on 1 Nov 2026: analytics loads before a visitor accepts.', tool: 'site-sweep.html', fixIds: ['f4'],
+        evidence: [{ label: 'Website sweep of acme-demo.co.uk', date: '2026-11-01', tool: 'Site sweep' }] },
+      { id: 'complaints', name: 'How you handle complaints about your marketing', status: 'partial', detail: 'Your profile says you have had complaints, but no reply is recorded in Sendwize.', tool: 'campaign-defence.html', evidence: [], fixIds: [] },
+      { id: 'privacy_notice', name: 'Privacy notice that explains your marketing', status: 'available', detail: 'acme-demo.co.uk swept on 1 Nov 2026: nothing flagged.', tool: 'site-sweep.html', fixIds: [],
+        evidence: [{ label: 'Website sweep of acme-demo.co.uk', date: '2026-11-01', tool: 'Site sweep' }] },
+      { id: 'copy_checks', name: 'A record that ads and emails were checked before they went out', status: 'available', detail: '6 copy checks on record, 4 in the last 90 days. Latest on 17 Nov 2026.', tool: 'ai-checker.html', fixIds: [],
+        evidence: [{ label: 'Copy check: Email: Black Friday early access (Fix first)', date: '2026-11-17', tool: 'Copy checker' }, { label: 'Copy check: Email: Autumn edit (Go)', date: '2026-10-21', tool: 'Copy checker' }] },
+    ],
+    letter: {
+      reference: 'ICO-ENF-7C2A9', subject: 'Information request: your email marketing',
+      opening: 'The Information Commissioner\'s Office has received reports from members of the public about marketing emails sent by your organisation, including your recent "Black Friday early access" email. We are writing to understand how you obtained consent under regulation 22 of the Privacy and Electronic Communications Regulations 2003 (PECR).',
+      context: 'This is an initial enquiry. Your answers, and any records you send, will help us decide whether further action is needed.',
+      closing: 'Please reply within 28 days of the date of this letter, with copies of the records referred to. Co-operating fully and promptly is taken into account in any decision we make.',
+      signatory: 'Senior Enforcement Officer, Direct Marketing Team',
+      questions: [
+        { docId: 'consent_records', question: 'Please explain how and when each person who received your "Black Friday early access" email agreed to receive marketing from you, and send copies of the consent records.' },
+        { docId: 'optouts', question: 'Please describe how you make sure people who have unsubscribed or objected are not sent further marketing, across every list you use.' },
+        { docId: 'processor_dpas', question: 'Please send copies of the contracts with each platform that processes personal data for your marketing, as required by Article 28 UK GDPR.' },
+        { docId: 'cookie_consent', question: 'Please confirm that non-essential cookies and tracking on your website are only set after a visitor has given consent, as regulation 6 PECR requires.' },
+        { docId: 'complaints', question: 'Please tell us how many complaints about your marketing you have received in the last 12 months and how you dealt with them.' },
+      ],
+    },
+    penalty: { context: 'Range from comparable published ICO cases for 4 open findings, sized to your business. Not a prediction.' },
+  },
+  ASA: {
+    member: { company: 'Acme Homeware Ltd', name: '' },
+    trigger: {
+      kind: 'finding', itemId: 'pricing_records', severity: 'high',
+      title: 'Your "Up to 60% off" email compares against "was" prices that discount codes undercut most days, so they may not be the usual price.',
+      source: 'Open high finding from Copy checker', starts: 'Most ASA cases start with one complaint from a customer or a competitor about an ad like this.',
+      case: { name: 'DUSK (Retail) Ltd', regulator: 'ASA', date: '2026-06-03', penalty: null, outcome: 'Upheld ASA ruling', same: false, why: 'Published ASA case on the same issue',
+        summary: 'An "up to 50% off + an extra 20%" sale was misleading: discount codes ran most days, so the reference prices were not the usual prices.',
+        url: 'https://www.asa.org.uk/rulings/dusk--retail--ltd-a25-1321807-dusk--retail--ltd.html' },
+    },
+    fineModel: { kind: 'none' },
+    documents: [
+      { id: 'pricing_records', name: 'Records for "was" prices, discounts and deadlines', status: 'missing', detail: 'No landing pages scanned. 1 open finding about prices or deadlines.', tool: 'campaign-defence.html', evidence: [], fixIds: ['a1'] },
+      { id: 'partner_ads', name: 'Checks on ads that partners and creators run for you', status: 'missing', detail: '0 of 2 partners or creators running ads for you have had their content reviewed.', tool: 'vendor-checker.html', evidence: [], fixIds: ['a2'] },
+      { id: 'claims_evidence', name: 'Evidence for the claims you make ("best", "save", "proven", "eco")', status: 'partial', detail: '2 claims confirmed as backed by evidence on file, latest on 12 Oct 2026. 1 claim still waiting for evidence.', tool: 'ai-checker.html', fixIds: ['a3'],
+        evidence: [{ label: 'Evidence confirmed: "Made from 100% recycled cotton"', date: '2026-10-12', tool: 'Copy checker' }, { label: 'Evidence confirmed: "Rated 4.8 by 2,000 customers"', date: '2026-10-12', tool: 'Copy checker' }] },
+      { id: 'campaign_records', name: 'Dated sign-off for each campaign, with what was checked', status: 'partial', detail: '1 campaign approved with frozen evidence. Latest on 2 Apr 2026.', tool: 'campaign-defence.html', fixIds: [],
+        evidence: [{ label: 'Campaign sign-off: Spring sale, by Sam Patel', date: '2026-04-02', tool: 'Campaign defence' }] },
+      { id: 'copy_checks', name: 'A record that ads and emails were checked before they went out', status: 'available', detail: '6 copy checks on record, 4 in the last 90 days. Latest on 17 Nov 2026.', tool: 'ai-checker.html', fixIds: [],
+        evidence: [{ label: 'Copy check: Email: Up to 60% off (Fix first)', date: '2026-11-17', tool: 'Copy checker' }] },
+    ],
+    letter: {
+      reference: 'ASA-ENQ-41D0E', subject: 'Complaint about your "Up to 60% off" email',
+      opening: 'The Advertising Standards Authority has received a complaint about your "Up to 60% off" email. The complainant believes the "was" prices are not prices at which the products were usually sold.',
+      context: 'We are assessing whether the ad breaches CAP Code rules 3.1, 3.7 and 3.39. Rule 3.7 requires you to hold evidence for your claims before the ad appears.',
+      closing: 'Please reply within 7 working days with the evidence requested. If you change or withdraw the ad now, please tell us; it is taken into account.',
+      signatory: 'Investigations Executive',
+      questions: [
+        { docId: 'pricing_records', question: 'Please send the pricing history for the products shown, showing how long each "was" price was charged before the sale, and any discount codes that ran in that time.' },
+        { docId: 'claims_evidence', question: 'Please send the evidence you held, before the ad appeared, for the other claims made in the email.' },
+        { docId: 'partner_ads', question: 'Please tell us whether affiliates or creators ran the same offer for you, and how you checked their ads.' },
+        { docId: 'copy_checks', question: 'Please explain what checks you made on the email before it was sent.' },
+      ],
+    },
+    penalty: { context: 'The ASA does not fine. Upheld rulings are published and ads must be withdrawn or changed.' },
+  },
+  CMA: {
+    member: { company: 'Acme Homeware Ltd', name: '' },
+    trigger: {
+      kind: 'finding', itemId: 'pricing_records', severity: 'high',
+      title: 'Your product pages show a countdown timer that restarts when the page is reloaded, beside "high demand" messages.',
+      source: 'Open high finding from Campaign defence', starts: 'The CMA sweeps whole sectors for practices like this, without waiting for a complaint.',
+      case: { name: 'Emma Sleep', regulator: 'CMA', date: '2026-05-22', penalty: null, outcome: 'Court-backed undertakings', same: false, why: 'Published CMA case on the same issue',
+        summary: 'Admitted misleading countdown timers and false "high demand" and discount claims, and gave court-enforceable undertakings to stop.',
+        url: 'https://www.gov.uk/cma-cases/emma-group-consumer-protection-case' },
+    },
+    fineModel: { kind: 'max', max: 1000000 },
+    documents: [
+      { id: 'pricing_records', name: 'Records for "was" prices, discounts and deadlines', status: 'missing', detail: 'No landing pages scanned. 2 open findings about prices or deadlines.', tool: 'campaign-defence.html', evidence: [], fixIds: ['c1', 'c2'] },
+      { id: 'campaign_records', name: 'Dated sign-off for each campaign, with what was checked', status: 'missing', detail: 'No campaign records.', tool: 'campaign-defence.html', evidence: [], fixIds: [] },
+      { id: 'claims_evidence', name: 'Evidence for the claims you make ("best", "save", "proven", "eco")', status: 'partial', detail: '1 claim confirmed as backed by evidence on file, latest on 12 Oct 2026.', tool: 'ai-checker.html', fixIds: [],
+        evidence: [{ label: 'Evidence confirmed: "Rated 4.8 by 2,000 customers"', date: '2026-10-12', tool: 'Copy checker' }] },
+      { id: 'business_identity', name: 'Who you are and how to contact you', status: 'available', detail: 'acme-demo.co.uk swept on 1 Nov 2026: nothing flagged.', tool: 'site-sweep.html', fixIds: [],
+        evidence: [{ label: 'Website sweep of acme-demo.co.uk', date: '2026-11-01', tool: 'Site sweep' }] },
+      { id: 'copy_checks', name: 'A record that ads and emails were checked before they went out', status: 'available', detail: '6 copy checks on record, 4 in the last 90 days. Latest on 17 Nov 2026.', tool: 'ai-checker.html', fixIds: [],
+        evidence: [{ label: 'Copy check: Product page: Sofa range (Hold)', date: '2026-11-17', tool: 'Copy checker' }] },
+    ],
+    letter: {
+      reference: 'CMA-CP-9B31F', subject: 'Information request: online pricing and urgency claims',
+      opening: 'The Competition and Markets Authority is reviewing online selling practices in the home furnishings sector under the Digital Markets, Competition and Consumers Act 2024. Your website was included in that review.',
+      context: 'Countdown timers and urgency claims that are not true are banned in all circumstances under Schedule 20 of the Act. The CMA can fine directly where it finds a breach.',
+      closing: 'Please reply within 14 days. Businesses that engage promptly and put things right are treated more favourably.',
+      signatory: 'Senior Director, Consumer Protection',
+      questions: [
+        { docId: 'pricing_records', question: 'Please explain how the countdown timers on your product pages work, whether the offers really end when they reach zero, and send the records that show it.' },
+        { docId: 'claims_evidence', question: 'Please send the evidence behind the "high demand" and discount claims on the same pages.' },
+        { docId: 'campaign_records', question: 'Please describe who approves these pages before they go live and send the records of that approval.' },
+        { docId: 'business_identity', question: 'Please confirm the trading name, address and contact details consumers see on your website.' },
+      ],
+    },
+    penalty: { context: 'The CMA can fine up to the higher of £300,000 or 10% of global turnover. For your business that is up to £1,000,000. We show the legal maximum only, not a likely figure.' },
+  },
+};
+function demoData(reg) {
+  var base = DEMO[reg], v = DEMO_V3[reg];
+  var docs = v.documents.map(function(d){ return Object.assign({}, d, { close: CLOSE[d.id] || null }); });
+  var byId = {}; docs.forEach(function(d){ byId[d.id] = d; });
+  var letter = Object.assign({}, v.letter, { questions: v.letter.questions.map(function(q){
+    var d = byId[q.docId]; return Object.assign({}, q, { answer: { status: d.status, label: STATUS_LABEL[d.status], detail: d.detail, tool: d.tool, name: d.name } });
+  }) });
+  var data = { regulator: reg, version: 3, demo: true, createdAt: new Date().toISOString(), member: v.member, trigger: v.trigger, fineModel: v.fineModel,
+    stage1: base.stage1, stage2: base.stage2, stage3: { letter: letter }, stage4: { documents: docs },
+    stage5: { penalty: v.penalty, representations: base.stage5.representations } };
+  data.readiness = readinessOf(docs);
+  return data;
+}
+
 // ── Regulator selection ───────────────────────────────────────
 function selectRegulator(reg) {
   selectedReg = reg;
@@ -587,7 +814,8 @@ function selectRegulator(reg) {
 }
 
 // ── Gate / init ───────────────────────────────────────────────
-(function init(){
+// Runs at the end of the script, once everything below is defined
+function initPage(){
   if (!userId && !isDemo) {
     document.getElementById('gateScreen').classList.add('show');
     document.querySelector('.intro').style.display = 'none';
@@ -602,18 +830,18 @@ function selectRegulator(reg) {
     document.getElementById('discText').style.display = 'none';
     startDemo('ICO');
   }
-})();
+}
 
 function startDemo(reg) {
   selectedReg = reg || selectedReg;
-  var data = DEMO[selectedReg];
+  var data = DEMO[selectedReg] ? demoData(selectedReg) : null;
   if (!data) return;
   document.querySelector('.intro').style.display = 'none';
   document.getElementById('startWrap').style.display = 'none';
   document.getElementById('gateScreen').classList.remove('show');
   simData = data;
   renderSpine(selectedReg);
-  document.getElementById('disc').style.display = 'none';
+  var old = document.querySelector('.demo-notice'); if (old) old.remove();
   var demoNote = document.createElement('div');
   demoNote.className = 'demo-notice';
   demoNote.innerHTML = '<span>&#9660;</span><div><strong>Demo mode</strong> &mdash; showing example data. <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" style="color:#92400e;font-weight:600">Sign in</a> to run a simulation based on your real compliance data.</div>';
@@ -663,6 +891,8 @@ function renderSpine(reg) {
   document.getElementById('stage1Desc').textContent  = cfg.stage1desc;
   document.getElementById('stage4Desc').textContent  = cfg.stage4desc;
 
+  preview = {}; rh = null;
+  renderTrigger();
   renderStage1();
   unlockStage(0);
 }
@@ -686,6 +916,7 @@ function unlockStage(idx) {
   if (idx===2) renderStage3();
   if (idx===3) renderStage4();
   if (idx===4) renderStage5();
+  renderDock();
   setTimeout(function(){
     var el3 = document.getElementById('stage-'+idx);
     if (el3) el3.scrollIntoView({behavior:'smooth',block:'start'});
@@ -761,70 +992,10 @@ function renderStage2() {
   document.getElementById('stage2-factors').innerHTML = factorsHtml;
 }
 
-// v6.3 — question guard: if questions array empty, show regen button
-function renderStage3() {
-  var data = simData; if (!data) return;
-  var s3  = data.stage3 || {};
-  var ltr = s3.letter || {};
-  var reg = selectedReg;
-  var cls = reg.toLowerCase();
-
-  // Question guard — if questions missing or empty, show amber regen button
-  var questions = Array.isArray(ltr.questions) ? ltr.questions : [];
-  if (!ltr.opening || questions.length === 0) {
-    document.getElementById('letterCard').innerHTML =
-      '<div class="letter-body">'
-      +'<div style="background:var(--yb);border:1px solid var(--yc);border-radius:var(--rad);padding:16px 20px;font-size:13px;color:#92400e;line-height:1.5;margin-bottom:12px">'
-      +'&#9888;&#65039; <strong>The letter could not be generated in full.</strong> This can happen if the AI response was too long or a network issue occurred. Click below to try again.'
-      +'</div>'
-      +'<button class="regen-btn" onclick="regenLetter()">&#x21BB; Regenerate letter</button>'
-      +'</div>';
-    return;
-  }
-
-  var questionsHtml = questions.map(function(q, i){
-    if (q.answer) return '<div class="letter-q" id="lq-'+i+'">'
-      +'<div class="lq-text">'+(i+1)+'. '+escH(q.question)+'</div>'
-      +ansHtml(q.answer)
-      +'</div>';
-    return '<div class="letter-q" id="lq-'+i+'">'
-      +'<div class="lq-row"><div class="lq-text">'+(i+1)+'. '+escH(q.question)+'</div>'
-      +'<div class="lq-toggles">'
-      +'<button class="tgl" id="yes-'+i+'" onclick="answerQ('+i+',\'yes\')">Yes</button>'
-      +'<button class="tgl" id="no-'+i+'" onclick="answerQ('+i+',\'no\')">No</button>'
-      +'</div></div>'
-      +(q.yesNote ? '<div class="lq-note yes" id="lq-note-yes-'+i+'">&#x2705; '+escH(q.yesNote)+'</div>' : '')
-      +(q.noNote  ? '<div class="lq-note no"  id="lq-note-no-'+i+'">&#x274C; '+escH(q.noNote)+'</div>' : '')
-      +'</div>';
-  }).join('');
-
-  var headerCls = 'letter-header '+cls;
-  var html = '<div class="'+headerCls+'">'
-    +'<div class="letter-header-top">'
-    +'<div><div class="letter-org">'+escH(ltr.signatory||'')+'</div>'
-    +'<div class="letter-dept">'+escH(reg==='ICO'?"Information Commissioner's Office":reg==='ASA'?"Advertising Standards Authority":"Competition and Markets Authority")+'</div></div>'
-    +'<div class="letter-ref"><div class="letter-ref-label">Reference</div><div class="letter-ref-val">'+escH(ltr.reference||'')+'</div></div>'
-    +'</div>'
-    +'<div class="letter-divider"></div>'
-    +'<div class="letter-subject">Re: '+escH(ltr.subject||'')+'</div>'
-    +'</div>'
-    +'<div class="letter-body">'
-    +'<div class="letter-salutation">Dear Sir / Madam,</div>'
-    +'<div class="letter-para">'+escH(ltr.opening||'')+'</div>'
-    +(ltr.context ? '<div class="letter-para">'+escH(ltr.context)+'</div>' : '')
-    +'<div class="letter-para" style="font-size:13px;font-weight:600;color:var(--t)">We require answers to the following questions:</div>'
-    +'<div class="letter-questions">'+questionsHtml+'</div>'
-    +'<div class="letter-para">'+escH(ltr.closing||'')+'</div>'
-    +'<div class="letter-sign"><p>Yours faithfully,</p><p style="margin-top:8px;font-weight:600">'+escH(ltr.signatory||'')+'</p></div>'
-    +'</div>';
-
-  document.getElementById('letterCard').innerHTML = html;
-}
-
 var TOOL_NAMES = {'list-intelligence.html':'List health','site-sweep.html':'Site sweep','vendor-checker.html':'Third parties','ai-checker.html':'Copy checker','campaign-defence.html':'Campaign defence','profile.html':'Your profile'};
 function toolLink(t, label) {
-  if (!t || isDemo) return '';
-  return '<a class="doc-act" href="'+APP_URL+'/'+t+'?userId='+encodeURIComponent(userId)+'">'+escH(label || ('Fix in '+(TOOL_NAMES[t]||'Sendwize')))+' &rarr;</a>';
+  if (!t || isDemo || (simData && simData.demo)) return '';
+  return '<a class="doc-act" target="_blank" rel="noopener" href="'+APP_URL+'/'+t+'?userId='+encodeURIComponent(userId)+'">'+escH(label || ('Fix in '+(TOOL_NAMES[t]||'Sendwize')))+' &rarr;</a>';
 }
 function ansHtml(a) {
   var head = a.status==='available' ? 'Your records can answer this' : a.status==='partial' ? 'You could partly answer this' : 'You couldn\u2019t answer this today';
@@ -849,6 +1020,8 @@ function downloadPack() {
     +'@media print{body{margin:0}}</style></head><body>'
     +'<h1>Regulator response pack: '+escH(d.regulator)+'</h1><div class="m">Prepared by Sendwize on '+escH(when)+'. A practice run from your own records. Not legal advice.</div>'
     +(r ? '<h2>Readiness</h2><p><b>'+r.score+'% ready</b> ('+escH(r.label)+'): '+r.counts.available+' ready, '+r.counts.partial+' partly, '+r.counts.missing+' missing.</p>' : '')
+    +(d.trigger && d.trigger.kind !== 'none' ? '<h2>What would start it</h2><p>'+escH(d.trigger.title)+' <span class="m">('+escH(d.trigger.source||'')+')</span></p>'+(d.trigger.case ? '<p class="m">'+escH(d.trigger.case.why||'')+': '+escH(d.trigger.case.name)+', '+escH(d.trigger.case.outcome||'')+'. '+escH(d.trigger.case.summary||'')+'</p>' : '') : '')
+    +(outcome() ? '<h2>Rehearsal outcome</h2><p><b>'+escH(outcome().title)+'</b>. '+escH(outcome().text)+'</p>' : '')
     +'<h2>The letter</h2><p class="m">Ref '+escH(l.reference||'')+'. Re: '+escH(l.subject||'')+'</p><p>'+escH(l.opening||'')+'</p><p>'+escH(l.context||'')+'</p>'
     +'<h2>Questions and what your records show</h2>'
     +(l.questions||[]).map(function(q,i){ var a=q.answer||{}; return '<div class="q"><b>'+(i+1)+'. '+escH(q.question)+'</b><br>'+(a.status?'<span class="s '+escH(a.status)+'">'+escH(lbl[a.status]||'')+'</span>':'')+escH(a.detail||'')+'</div>'; }).join('')
@@ -856,6 +1029,7 @@ function downloadPack() {
     +docs.map(function(x){ return '<tr><td style="width:90px"><span class="s '+escH(x.status)+'">'+escH(lbl[x.status]||x.status)+'</span></td><td><b>'+escH(x.name)+'</b><br>'+escH(x.detail||'')+'</td></tr>'; }).join('')
     +'</table>'
     +((d.stage5 && d.stage5.representations && d.stage5.representations.length) ? '<h2>How to reply</h2><ol>'+d.stage5.representations.map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ol>' : '')
+    +(document.getElementById('replyText') ? '<h2>Your reply, drafted from your records</h2><pre style="white-space:pre-wrap;font:inherit">'+escH(document.getElementById('replyText').value)+'</pre>' : '')
     +'<p class="m" style="margin-top:28px">Sendwize is not a law firm and this is not legal advice. If you receive a real letter, speak to a solicitor.</p>'
     +'<script>window.onload=function(){window.print();}<\/script></body></html>';
   var w = window.open('', '_blank');
@@ -891,89 +1065,444 @@ function answerQ(idx, answer) {
   if (nNote) nNote.className = 'lq-note no'  + (answer==='no'  ? ' show' : '');
 }
 
-function renderStage4() {
-  var data = simData; if (!data) return;
-  var docs = data.stage4 && data.stage4.documents ? data.stage4.documents : [];
-  var r = data.readiness;
-  var top = r ? '<div class="ready"><div class="ready-n" style="color:'+(r.score>=80?'var(--g)':r.score>=50?'#ca8a04':'var(--r)')+'">'+r.score+'%</div>'
-    +'<div class="ready-t"><b>'+escH(r.label)+'</b>'+r.counts.available+' ready, '+r.counts.partial+' partly, '+r.counts.missing+' missing. Close the gaps below and run this again to see it rise.</div>'
-    +'<button class="pack-btn" onclick="downloadPack()">Download response pack</button></div>' : '';
-  var html = docs.map(function(d){
-    var statusLabel = d.status==='available'?(r?'Ready':'Available'):d.status==='partial'?(r?'Partly':'Partial / Needs Review'):'Missing';
-    return '<div class="doc-row '+d.status+'">'
-      +'<div class="doc-status-pill">'+statusLabel+'</div>'
-      +'<div><div class="doc-name">'+escH(d.name)+'</div><div class="doc-desc">'+escH(d.detail||'')+'</div>'
-      +(d.status!=='available' && d.tool ? '<div class="doc-meta">'+toolLink(d.tool)+'</div>' : '')+'</div>'
-      +'</div>';
-  }).join('');
-  document.getElementById('stage4-docs').innerHTML = top + (html || '<div style="font-size:13px;color:var(--mu)">No documentation data available.</div>');
+// ── v8.0: rehearsal, live gaps and the reply letter ───────────
+var STATUS_LABEL = { available: 'Ready', partial: 'Partly', missing: 'Missing' };
+var STATUS_W = { available: 1, partial: 0.5, missing: 0 };
+var ORG = { ICO: "Information Commissioner's Office", ASA: 'Advertising Standards Authority', CMA: 'Competition and Markets Authority' };
+// Steps to close each gap, for the demo and for runs saved before v8.0.
+// The API sends its own copy (api/_readiness.js CLOSE_STEPS); keep in step.
+var CLOSE = {
+  consent_records:   { tool: 'List health', steps: ['Export each list you market to from your email or SMS platform, with sign-up date and source.', 'Upload it to List health. It dates the check and shows who has no consent evidence.', 'Suppress the contacts it flags before your next send.'] },
+  optouts:           { tool: 'List health', steps: ['Export your unsubscribes and suppression list from every platform you send from.', 'Run the opt-out check in List health so anyone who opted out on one list is caught on the others.', 'Add the suppress file it gives you to each platform.'] },
+  privacy_notice:    { tool: 'Site sweep', steps: ['Check your privacy notice says you send marketing, on which channels, and how to opt out.', 'Link it from every sign-up form and your site footer.', 'Run Site sweep again so the fix is dated.'] },
+  cookie_consent:    { tool: 'Site sweep', steps: ['Make sure tracking and ad tags only load after a visitor accepts.', 'Give "Reject" the same weight as "Accept" on your banner.', 'Run Site sweep again and turn on site guard to record consent on real visits.'] },
+  signup_consent:    { tool: 'Site sweep', steps: ['Untick any marketing box that is ticked by default.', 'Ask separately for email and SMS, and say what people will get.', 'Run Site sweep again so the corrected forms are on record.'] },
+  business_identity: { tool: 'Site sweep', steps: ['Show your company name, registered address and a contact email on your site.', 'Put the same details in the footer of every marketing email.', 'Run Site sweep again so it is dated.'] },
+  processor_dpas:    { tool: 'Third parties', steps: ['List every platform that holds your customer data: email, SMS, CRM, ads.', 'Download each one’s data processing agreement (most are on their legal page) and confirm it in Third parties.', 'Re-check any marked as missing.'] },
+  partner_chain:     { tool: 'Third parties', steps: ['Ask each partner or affiliate who sends or collects for you for their consent wording and a signed data agreement.', 'Record both in Third parties.', 'Stop using data from any partner who can’t provide them.'] },
+  partner_ads:       { tool: 'Third parties', steps: ['Ask each creator or partner for the ads they run for you.', 'Check they are labelled as ads and the claims match yours.', 'Mark them reviewed in Third parties.'] },
+  claims_evidence:   { tool: 'Copy checker', steps: ['Run your live ads and emails through the Copy checker.', 'For each claim it flags ("best", "save", "proven", "eco"), attach the evidence you hold.', 'Change or remove any claim you can’t back up.'] },
+  pricing_records:   { tool: 'Campaign defence', steps: ['Keep a dated record of the price you compare against and how long you charged it.', 'Make sure every deadline or "only X left" is true, and record when offers really end.', 'Scan the landing page in Campaign defence so it is on file.'] },
+  copy_checks:       { tool: 'Copy checker', steps: ['Run the next ad or email through the Copy checker before it goes out.', 'Make that a habit: the dated check is your record.'] },
+  campaign_records:  { tool: 'Campaign defence', steps: ['Open your next campaign in Campaign defence.', 'Attach the copy check, list check and landing page scan.', 'Have the person responsible approve it by name, so the evidence is frozen and dated.'] },
+  complaints:        { tool: 'Campaign defence', steps: ['Record in your profile whether you have had complaints about your marketing.', 'When one arrives, paste it into Campaign defence to draft a reply from your records.'] },
+};
+
+var preview = {};      // gap id -> closed in preview
+var rh = null;         // the rehearsal state
+var baseline = null;   // readiness and fine when the run opened
+
+function docs() { return (simData && simData.stage4 && simData.stage4.documents) || []; }
+function docById(id) { var d = docs(); for (var i = 0; i < d.length; i++) if (d[i].id === id) return d[i]; return null; }
+function closeOf(d) { return (d && (d.close || CLOSE[d.id])) || null; }
+function evidenceOf(d) {
+  if (!d) return [];
+  if (d.evidence && d.evidence.length) return d.evidence;
+  // Runs saved before v8.0 have no evidence list: the record line stands in
+  return d.status !== 'missing' && d.detail ? [{ label: d.detail, date: d.at || null, tool: TOOL_NAMES[d.tool] || 'Sendwize' }] : [];
+}
+function readinessOf(list) {
+  if (!list.length) return { score: 0, label: 'Not ready yet', counts: { available: 0, partial: 0, missing: 0 } };
+  var s = Math.round(list.reduce(function(t, d){ return t + STATUS_W[d.status]; }, 0) / list.length * 100);
+  var c = function(st){ return list.filter(function(d){ return d.status === st; }).length; };
+  return { score: s, label: s >= 80 ? 'Ready to respond' : s >= 50 ? 'Partly ready' : 'Not ready yet', counts: { available: c('available'), partial: c('partial'), missing: c('missing') } };
+}
+function previewDocs() { return docs().map(function(d){ return preview[d.id] && d.status !== 'available' ? Object.assign({}, d, { status: 'available' }) : d; }); }
+function niceRound(v) { return v >= 10000 ? Math.round(v / 1000) * 1000 : Math.round(v / 100) * 100; }
+// Same maths as api/_readiness.js fineFrom() and _exposure.js clusterExposure()
+function fineNow(usePreview) {
+  var m = simData && simData.fineModel;
+  if (!m || m.kind !== 'range') return null;
+  var shut = {};
+  if (usePreview) docs().forEach(function(d){ if (preview[d.id]) (d.fixIds || []).forEach(function(id){ shut[id] = 1; }); });
+  var groups = {};
+  m.fixes.forEach(function(f){ if (!shut[f.id]) (groups[f.area] = groups[f.area] || []).push(f); });
+  var low = 0, high = 0, likely = 0, open = 0;
+  Object.keys(groups).forEach(function(k){
+    var s = groups[k].slice().sort(function(a, b){ return b.high - a.high; }), lead = s[0], rest = s.slice(1);
+    var sum = function(key){ return rest.reduce(function(t, f){ return t + f[key]; }, 0); };
+    low += Math.min(lead.low * m.cap, lead.low + m.share * sum('low'));
+    high += Math.min(lead.high * m.cap, lead.high + m.share * sum('high'));
+    likely += Math.min(lead.likely * m.cap, lead.likely + m.share * sum('likely'));
+    open += s.length;
+  });
+  return { low: Math.round(low), high: Math.round(high), likely: niceRound(likely), open: open };
+}
+function gbp(n) { return '£' + fmtNum(n); }
+function shortDate(d) { if (!d) return ''; var x = new Date(d); return isNaN(x) ? String(d) : x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+function longDate(d) { return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); }
+function inDays(n) { var d = new Date(); d.setDate(d.getDate() + n); return longDate(d); }
+
+// ── The trigger: what in your records would start this ──
+function renderTrigger() {
+  var box = document.getElementById('triggerBox');
+  var t = simData && simData.trigger;
+  if (!t) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  var reg = selectedReg, c = t.case;
+  var caseHtml = c ? '<div class="tg-case">'
+      + '<div class="tg-k">' + escH(c.why || 'Published case on the same issue') + '</div>'
+      + '<div class="tg-case-name">' + escH(c.name) + ' <span class="tg-case-out">' + escH(c.outcome || '') + (c.date ? ' &middot; ' + escH(String(c.date).slice(0, 4)) : '') + '</span></div>'
+      + '<div class="tg-case-sum">' + escH(c.summary || '') + '</div>'
+      + (c.url ? '<a class="tg-link" href="' + escH(c.url) + '" target="_blank" rel="noopener">Read the published case &rarr;</a>' : '')
+      + '</div>' : '';
+  box.className = 'trigger ' + reg.toLowerCase();
+  box.style.display = '';
+  box.innerHTML = '<div class="tg-k">' + (t.kind === 'none' ? 'Where this starts' : 'What would start it, from your own records') + '</div>'
+    + '<div class="tg-title">' + escH(t.title) + '</div>'
+    + '<div class="tg-src">' + escH(t.source || '') + '</div>'
+    + '<div class="tg-starts">' + escH(t.starts || '') + '</div>'
+    + caseHtml;
 }
 
+// ── Stage 3: the letter, answered question by question ──
+function questions() { var l = simData && simData.stage3 && simData.stage3.letter; return (l && Array.isArray(l.questions)) ? l.questions : []; }
+function interactive() { return questions().some(function(q){ return q.docId && q.answer; }); }
+
+function renderStage3() {
+  var data = simData; if (!data) return;
+  var ltr = (data.stage3 || {}).letter || {};
+  var reg = selectedReg, cls = reg.toLowerCase();
+  var qs = questions();
+  if (!ltr.opening || qs.length === 0) {
+    document.getElementById('letterCard').innerHTML = '<div class="letter-body">'
+      + '<div style="background:var(--yb);border:1px solid var(--yc);border-radius:var(--rad);padding:16px 20px;font-size:13px;color:#92400e;line-height:1.5;margin-bottom:12px">'
+      + '&#9888;&#65039; <strong>The letter could not be generated in full.</strong> This can happen if the AI response was too long or a network issue occurred. Click below to try again.'
+      + '</div><button class="regen-btn" onclick="regenLetter()">&#x21BB; Regenerate letter</button></div>';
+    document.getElementById('rehearse').innerHTML = '';
+    return;
+  }
+  var live = interactive();
+  var qList = qs.map(function(q, i){
+    if (live) return '<li>' + escH(q.question) + '</li>';
+    // Runs saved before v8.0 with Yes / No notes
+    if (q.answer) return '<div class="letter-q"><div class="lq-text">' + (i + 1) + '. ' + escH(q.question) + '</div>' + ansHtml(q.answer) + '</div>';
+    return '<div class="letter-q" id="lq-' + i + '"><div class="lq-row"><div class="lq-text">' + (i + 1) + '. ' + escH(q.question) + '</div>'
+      + '<div class="lq-toggles"><button class="tgl" id="yes-' + i + '" onclick="answerQ(' + i + ',\'yes\')">Yes</button><button class="tgl" id="no-' + i + '" onclick="answerQ(' + i + ',\'no\')">No</button></div></div>'
+      + (q.yesNote ? '<div class="lq-note yes" id="lq-note-yes-' + i + '">&#x2705; ' + escH(q.yesNote) + '</div>' : '')
+      + (q.noNote ? '<div class="lq-note no" id="lq-note-no-' + i + '">&#x274C; ' + escH(q.noNote) + '</div>' : '') + '</div>';
+  }).join('');
+  document.getElementById('letterCard').innerHTML = '<div class="letter-header ' + cls + '">'
+    + '<div class="letter-header-top"><div><div class="letter-org">' + escH(ltr.signatory || '') + '</div><div class="letter-dept">' + escH(ORG[reg]) + '</div></div>'
+    + '<div class="letter-ref"><div class="letter-ref-label">Reference</div><div class="letter-ref-val">' + escH(ltr.reference || '') + '</div></div></div>'
+    + '<div class="letter-divider"></div><div class="letter-subject">Re: ' + escH(ltr.subject || '') + '</div></div>'
+    + '<div class="letter-body"><div class="letter-salutation">Dear Sir / Madam,</div>'
+    + '<div class="letter-para">' + escH(ltr.opening || '') + '</div>'
+    + (ltr.context ? '<div class="letter-para">' + escH(ltr.context) + '</div>' : '')
+    + '<div class="letter-para" style="font-weight:600;color:var(--t)">We require answers to the following questions:</div>'
+    + (live ? '<ol class="letter-ol">' + qList + '</ol>' : '<div class="letter-questions">' + qList + '</div>')
+    + '<div class="letter-para">' + escH(ltr.closing || '') + '</div>'
+    + '<div class="letter-sign"><p>Yours faithfully,</p><p style="margin-top:8px;font-weight:600">' + escH(ltr.signatory || '') + '</p></div></div>';
+  if (live) { if (!rh) startRehearsal(); renderRehearsal(); }
+  else document.getElementById('rehearse').innerHTML = '';
+  document.getElementById('btnNext2').innerHTML = live && !(rh && rh.done) ? 'Skip the rehearsal: close the gaps &rarr;' : 'Close the gaps &rarr;';
+}
+
+function startRehearsal() { rh = { idx: 0, turns: questions().map(function(){ return { attached: null, phase: 'ask', result: null, log: [] }; }), done: false }; }
+function restartRehearsal() { startRehearsal(); renderStage3(); var el = document.getElementById('rehearse'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+
+// What the regulator says back. Deterministic: from the record's status and what was attached.
+function regReply(kind, d) {
+  var name = d ? d.name.charAt(0).toLowerCase() + d.name.slice(1) : 'this';
+  var by = inDays(28);
+  if (kind === 'accept') return 'Thank you. The records you have sent answer this point. We have no further questions on it.';
+  if (kind === 'partial') return 'Thank you. Your records answer part of this, but not all of it: ' + (d && d.detail ? d.detail : '') + ' Please tell us how you will deal with the rest, and by when.';
+  if (kind === 'missing') return 'You have not provided any records for ' + name + '. Please tell us what you will do about this, and by when.';
+  if (kind === 'none') return 'We would expect you to hold records of ' + name + '. Please send them, or explain why you cannot.';
+  if (kind === 'commit') return 'Noted. Please send us confirmation that this has been done by ' + by + '. We will treat this point as open until then.';
+  if (kind === 'escalate') return 'Without these records we cannot be satisfied on this point. It will be considered as part of any formal action.';
+  return '';
+}
+
+function renderRehearsal() {
+  var el = document.getElementById('rehearse'); if (!el || !rh) return;
+  var qs = questions(), reg = selectedReg, cls = reg.toLowerCase();
+  var dots = qs.map(function(q, i){
+    var r = rh.turns[i].result;
+    var c = r === 'accepted' ? 'ok' : r === 'conditional' ? 'cond' : r === 'escalated' ? 'esc' : i === rh.idx && !rh.done ? 'now' : '';
+    return '<span class="rh-dot ' + c + '" title="Question ' + (i + 1) + '"></span>';
+  }).join('');
+  var html = '<div class="rh-head"><div><div class="rh-k">Rehearse your reply</div><div class="rh-t">' + (rh.done ? 'All ' + qs.length + ' questions answered' : 'Question ' + (rh.idx + 1) + ' of ' + qs.length) + '</div></div><div class="rh-dots">' + dots + '</div></div>'
+    + '<div class="rh-sub">Answer each question the way you would for real: attach the records Sendwize holds for you, or say you can’t. The ' + reg + ' replies to each answer.</div>';
+  // Past turns, then the current one
+  for (var i = 0; i <= Math.min(rh.idx, qs.length - 1); i++) html += turnHtml(i, cls);
+  if (rh.done) html += outcomeHtml();
+  el.innerHTML = html;
+}
+
+function turnHtml(i, cls) {
+  var q = questions()[i], d = docById(q.docId), t = rh.turns[i], reg = selectedReg;
+  var h = '<div class="rh-turn" id="rh-turn-' + i + '"><div class="bub reg ' + cls + '"><div class="bub-who">' + reg + ' &middot; Question ' + (i + 1) + '</div>' + escH(q.question) + '</div>';
+  h += t.log.map(function(m){
+    if (m.who === 'me') return '<div class="bub me"><div class="bub-who">You</div>' + m.html + '</div>';
+    return '<div class="bub reg ' + cls + '"><div class="bub-who">' + reg + ' <span class="verdict ' + m.v + '">' + escH(m.vl) + '</span></div>' + escH(m.text) + '</div>';
+  }).join('');
+  if (t.phase === 'ask') h += composerHtml(i, d);
+  else if (t.phase === 'follow') h += followHtml(i, d);
+  else if (i === rh.idx && !rh.done) h += '<button class="rh-next ' + cls + '" onclick="nextQuestion()">' + (i === questions().length - 1 ? 'See the outcome' : 'Next question') + ' &rarr;</button>';
+  return h + '</div>';
+}
+
+function composerHtml(i, d) {
+  var ev = evidenceOf(d);
+  var list = ev.length ? ev.map(function(e, k){
+      return '<label class="ev"><input type="checkbox" id="ev-' + i + '-' + k + '" onchange="evCount(' + i + ')"><span><b>' + escH(e.label) + '</b><span class="ev-m">' + escH([e.tool, shortDate(e.date)].filter(Boolean).join(' · ')) + '</span></span></label>';
+    }).join('')
+    : '<div class="ev-none">Sendwize holds no record for this yet.' + (closeOf(d) ? ' You can close this gap in ' + escH(closeOf(d).tool) + '.' : '') + '</div>';
+  return '<div class="composer"><div class="cmp-k">Attach records from Sendwize</div>' + list
+    + '<div class="cmp-btns">' + (ev.length ? '<button class="cmp-send" id="send-' + i + '" disabled onclick="sendAnswer(' + i + ')">Send answer</button>' : '')
+    + '<button class="cmp-cant" onclick="cantAnswer(' + i + ')">I can’t answer this yet</button></div></div>';
+}
+function evCount(i) {
+  var n = document.querySelectorAll('#rh-turn-' + i + ' .ev input:checked').length;
+  var b = document.getElementById('send-' + i);
+  if (b) { b.disabled = !n; b.textContent = n ? 'Send answer with ' + n + ' record' + (n === 1 ? '' : 's') : 'Send answer'; }
+}
+function followHtml(i, d) {
+  var ev = evidenceOf(d), t = rh.turns[i];
+  var canSend = d && d.status === 'available' && ev.length && !t.attached;
+  return '<div class="composer"><div class="cmp-k">Your reply</div><div class="cmp-btns">'
+    + (canSend ? '<button class="cmp-send" onclick="sendAll(' + i + ')">Send the record now</button>' : '')
+    + (closeOf(d) ? '<button class="cmp-commit" onclick="commitFix(' + i + ')">Commit to close it within 28 days</button>' : '')
+    + '<button class="cmp-cant" onclick="noMore(' + i + ')">Nothing more to add</button></div></div>';
+}
+function evNames(list) { return '<ul class="att">' + list.map(function(e){ return '<li>' + escH(e.label) + (e.date ? ' <span class="ev-m">' + escH(shortDate(e.date)) + '</span>' : '') + '</li>'; }).join('') + '</ul>'; }
+
+function sendAnswer(i) {
+  var d = docById(questions()[i].docId), ev = evidenceOf(d), t = rh.turns[i];
+  var picked = ev.filter(function(e, k){ var c = document.getElementById('ev-' + i + '-' + k); return c && c.checked; });
+  if (!picked.length) return;
+  t.attached = picked;
+  t.log.push({ who: 'me', html: 'Sent ' + picked.length + ' record' + (picked.length === 1 ? '' : 's') + ':' + evNames(picked) });
+  if (d.status === 'available') { t.log.push({ who: 'reg', v: 'ok', vl: 'Accepted', text: regReply('accept', d) }); t.result = 'accepted'; t.phase = 'done'; }
+  else { t.log.push({ who: 'reg', v: 'fu', vl: 'Follow-up question', text: regReply('partial', d) }); t.phase = 'follow'; }
+  renderRehearsal(); focusTurn(i);
+}
+function sendAll(i) {
+  var d = docById(questions()[i].docId), t = rh.turns[i], ev = evidenceOf(d);
+  t.attached = ev;
+  t.log.push({ who: 'me', html: 'Sent ' + ev.length + ' record' + (ev.length === 1 ? '' : 's') + ':' + evNames(ev) });
+  t.log.push({ who: 'reg', v: 'ok', vl: 'Accepted', text: regReply('accept', d) });
+  t.result = 'accepted'; t.phase = 'done';
+  renderRehearsal(); focusTurn(i);
+}
+function cantAnswer(i) {
+  var d = docById(questions()[i].docId), t = rh.turns[i];
+  t.attached = [];
+  t.log.push({ who: 'me', html: 'We can’t answer this yet.' });
+  t.log.push({ who: 'reg', v: 'fu', vl: 'Follow-up question', text: regReply(d && d.status === 'missing' ? 'missing' : 'none', d) });
+  t.phase = 'follow';
+  renderRehearsal(); focusTurn(i);
+}
+function commitFix(i) {
+  var d = docById(questions()[i].docId), t = rh.turns[i], c = closeOf(d);
+  t.committed = true;
+  t.log.push({ who: 'me', html: 'We will close this within 28 days:<ul class="att">' + c.steps.map(function(s){ return '<li>' + escH(s) + '</li>'; }).join('') + '</ul>' });
+  t.log.push({ who: 'reg', v: 'cond', vl: 'Accepted on condition', text: regReply('commit', d) });
+  t.result = 'conditional'; t.weight = d && d.status === 'missing' ? 2 : 1; t.phase = 'done';
+  renderRehearsal(); focusTurn(i);
+}
+function noMore(i) {
+  var d = docById(questions()[i].docId), t = rh.turns[i];
+  t.log.push({ who: 'me', html: 'Nothing more to add.' });
+  t.log.push({ who: 'reg', v: 'esc', vl: 'Escalation', text: regReply('escalate', d) });
+  t.result = 'escalated'; t.phase = 'done';
+  renderRehearsal(); focusTurn(i);
+}
+function nextQuestion() {
+  if (rh.idx < questions().length - 1) { rh.idx++; renderRehearsal(); focusTurn(rh.idx); return; }
+  rh.done = true; renderRehearsal();
+  document.getElementById('btnNext2').innerHTML = 'Close the gaps &rarr;';
+  var o = document.getElementById('rh-outcome'); if (o) o.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function focusTurn(i) { var el = document.getElementById('rh-turn-' + i); if (!el) return; var c = el.querySelector('.composer, .rh-next'); (c || el).scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+// Where the case ends. 0 points for each point accepted, 1 for a promise on a partial
+// record, 2 for a promise where nothing was held, 3 for each escalation.
+function outcome() {
+  if (!rh || !rh.done) return null;
+  var n = rh.turns.length, pts = 0, esc = 0, acc = 0, cond = 0;
+  rh.turns.forEach(function(t){ if (t.result === 'accepted') acc++; else if (t.result === 'conditional') { cond++; pts += t.weight || 1; } else { esc++; pts += 3; } });
+  var ratio = pts / (3 * n);
+  var level = esc === 0 && ratio < 0.15 ? 0 : esc <= 1 && ratio < 0.45 ? 1 : 2;
+  var reg = selectedReg, f = fineNow(false), m = simData.fineModel || {};
+  var O = {
+    ICO: [['No further action', 'The ICO is satisfied with your records and closes the enquiry. It may still write to you with advice.'],
+          ['Closed with advice and a follow-up check', 'The ICO accepts your answers on condition you do what you promised. It will check back; miss the date and the case reopens.'],
+          ['Formal action: notice of intent', f && f.high ? 'The ICO opens a formal investigation and writes with a notice of intent to fine. The likely fine, from comparable published cases, is about ' + gbp(f.likely) + ' (range ' + gbp(f.low) + ' to ' + gbp(f.high) + '). It can also order you to stop sending.' : 'The ICO opens a formal investigation and can order you to stop sending until your records are in order.']],
+    ASA: [['No further action', 'The ASA decides the ad does not need a formal investigation.'],
+          ['Resolved informally', 'You agree to change or withdraw the ad. No ruling is published. The ASA does not fine.'],
+          ['Formal investigation and a published ruling', 'The complaint goes to the ASA Council, which is likely to uphold it. The ruling is published on asa.org.uk with your name, and the ad must come down. The ASA does not fine, but it can refer repeat cases to Trading Standards.']],
+    CMA: [['No further action', 'The CMA is satisfied and takes no further action.'],
+          ['Closed with an advisory letter', 'The CMA accepts your answers and writes to you setting out what it expects you to change.'],
+          ['Formal investigation', 'The CMA opens a formal investigation and can fine without going to court. ' + (m.max ? 'The legal maximum for a business your size is ' + gbp(m.max) + '.' : 'The legal maximum is the higher of £300,000 or 10% of global turnover.') + ' We show the legal maximum only, not a likely figure.']],
+  }[reg];
+  return { level: level, title: O[level][0], text: O[level][1], accepted: acc, conditional: cond, escalated: esc, total: n };
+}
+function outcomeHtml() {
+  var o = outcome(); if (!o) return '';
+  var cl = ['good', 'mid', 'bad'][o.level];
+  return '<div class="outcome ' + cl + '" id="rh-outcome"><div class="oc-k">Where this ends</div><div class="oc-t">' + escH(o.title) + '</div><div class="oc-d">' + escH(o.text) + '</div>'
+    + '<div class="oc-tally"><span><b>' + o.accepted + '</b> accepted</span><span><b>' + o.conditional + '</b> accepted on condition</span><span><b>' + o.escalated + '</b> escalated</span></div>'
+    + '<div class="oc-btns"><button class="cmp-cant" onclick="restartRehearsal()">Rehearse again</button><button class="cmp-send" onclick="unlockStage(3)">Close the gaps &rarr;</button></div></div>';
+}
+
+// ── Stage 4: close the gaps, with readiness and fine updating live ──
+function renderStage4() {
+  var data = simData; if (!data) return;
+  var list = docs(), r = data.readiness;
+  if (!list.length) { document.getElementById('stage4-docs').innerHTML = '<div style="font-size:13px;color:var(--mu)">No documentation data available.</div>'; return; }
+  var html = '<div class="live" id="liveMeter"></div>';
+  html += list.map(function(d){
+    var closed = preview[d.id] && d.status !== 'available', c = closeOf(d);
+    var st = closed ? 'available' : d.status;
+    var lbl = closed ? 'Closed (preview)' : STATUS_LABEL[d.status] || d.status;
+    var gap = d.status !== 'available';
+    return '<div class="doc-row ' + st + '" id="doc-' + escH(d.id) + '"><div class="doc-status-pill">' + escH(lbl) + '</div><div style="flex:1;min-width:0">'
+      + '<div class="doc-name">' + escH(d.name) + '</div><div class="doc-desc">' + escH(d.detail || '') + '</div>'
+      + (gap && (d.fixIds || []).length && simData.fineModel && simData.fineModel.kind === 'range' ? '<div class="doc-meta">Closes ' + d.fixIds.length + ' open finding' + (d.fixIds.length === 1 ? '' : 's') + ' behind the fine estimate.</div>' : '')
+      + (gap ? '<div class="gap-acts"><button class="gap-btn" onclick="toggleClose(\'' + escH(d.id) + '\')">' + (c ? 'Close this gap' : 'How to close it') + '</button>'
+        + '<button class="gap-prev' + (closed ? ' on' : '') + '" onclick="togglePreview(\'' + escH(d.id) + '\')">' + (closed ? '&#10003; Closed in preview' : 'Preview it closed') + '</button></div>'
+        + '<div class="gap-steps" id="steps-' + escH(d.id) + '" style="display:none">' + (c ? '<ol>' + c.steps.map(function(s){ return '<li>' + escH(s) + '</li>'; }).join('') + '</ol>' : '')
+        + '<div class="gap-foot">' + toolLink(d.tool, 'Open ' + (c ? c.tool : (TOOL_NAMES[d.tool] || 'the tool'))) + (isDemo || simData.demo ? '<span class="ev-m">Sign in to open the tool with your own records.</span>' : '') + '</div></div>' : '')
+      + '</div></div>';
+  }).join('');
+  html += '<div class="recheck">' + (isDemo || simData.demo ? '<span class="ev-m">In the real simulator, closing a gap in another tool and pressing <b>Re-check my records</b> updates this list for real.</span>'
+    : '<button class="cmp-cant" id="btnRecheck" onclick="recheck()">Re-check my records</button><span class="ev-m" id="recheckNote">Closed a gap in another tool? Re-check to see it here for real. No new letter, nothing saved.</span>') + '</div>';
+  document.getElementById('stage4-docs').innerHTML = html;
+  renderLive();
+}
+function toggleClose(id) { var el = document.getElementById('steps-' + id); if (el) el.style.display = el.style.display === 'none' ? '' : 'none'; }
+function togglePreview(id) {
+  preview[id] = !preview[id];
+  var open = {}; docs().forEach(function(d){ var el = document.getElementById('steps-' + d.id); if (el && el.style.display !== 'none') open[d.id] = 1; });
+  renderStage4();
+  Object.keys(open).forEach(function(k){ var el = document.getElementById('steps-' + k); if (el) el.style.display = ''; });
+  renderDock(); if (document.getElementById('stage5-content').innerHTML) renderStage5();
+}
+function liveFigures() {
+  var now = readinessOf(previewDocs()), was = readinessOf(docs());
+  var fNow = fineNow(true), fWas = fineNow(false);
+  return { now: now, was: was, fNow: fNow, fWas: fWas, any: Object.keys(preview).some(function(k){ return preview[k]; }) };
+}
+function fineCell(x) {
+  var m = simData.fineModel || {}, reg = selectedReg;
+  if (reg === 'ASA') return '<div class="lv-n">No fine</div><div class="lv-s">The ASA doesn’t fine. What changes is whether a ruling is published.</div>';
+  if (reg === 'CMA') return '<div class="lv-n">' + (m.max ? gbp(m.max) : '10% of turnover') + '</div><div class="lv-s">Legal maximum only. Closing gaps doesn’t change the cap; it changes what the CMA would find.</div>';
+  if (!x.fWas) {
+    var p = (simData.stage5 || {}).penalty || {};
+    return p.high ? '<div class="lv-n">' + gbp(p.low) + '&ndash;' + gbp(p.high) + '</div><div class="lv-s">Comparable case range.</div>' : '<div class="lv-n">&pound;0</div><div class="lv-s">No open ICO findings carry a fine estimate.</div>';
+  }
+  return '<div class="lv-n">' + (x.any && x.fNow.likely !== x.fWas.likely ? '<s>' + gbp(x.fWas.likely) + '</s> ' : '') + gbp(x.fNow.likely) + '</div>'
+    + '<div class="lv-s">Likely, from comparable published cases (range ' + gbp(x.fNow.low) + ' to ' + gbp(x.fNow.high) + '). Not a prediction.</div>';
+}
+function renderLive() {
+  var el = document.getElementById('liveMeter'); if (!el) return;
+  var x = liveFigures(), sc = x.now.score;
+  var col = sc >= 80 ? 'var(--g)' : sc >= 50 ? '#ca8a04' : 'var(--r)';
+  el.innerHTML = '<div class="lv"><div class="lv-k">Readiness</div><div class="lv-n" style="color:' + col + '">' + (x.any && x.was.score !== sc ? '<s>' + x.was.score + '%</s> ' : '') + sc + '%</div>'
+    + '<div class="lv-s">' + escH(x.now.label) + ': ' + x.now.counts.available + ' ready, ' + x.now.counts.partial + ' partly, ' + x.now.counts.missing + ' missing.</div></div>'
+    + '<div class="lv"><div class="lv-k">' + (selectedReg === 'ICO' ? 'Likely fine' : selectedReg === 'CMA' ? 'CMA fine' : 'ASA fine') + '</div>' + fineCell(x) + '</div>'
+    + (x.any ? '<div class="lv-note">Preview: this is how it would look with the gaps you ticked closed. The regulator only sees real records, so close them in the tools, then re-check.</div>' : '<div class="lv-note">Press <b>Preview it closed</b> on any gap to see how much it moves your readiness' + (selectedReg === 'ICO' ? ' and the likely fine' : '') + '.</div>');
+  renderDock();
+}
+// A small bar pinned to the bottom of the screen while you work through the gaps
+function renderDock() {
+  var el = document.getElementById('liveDock'); if (!el) return;
+  var s4 = document.getElementById('stage-3');
+  if (!simData || !s4 || !s4.classList.contains('active') || !docs().length) { el.className = 'dock'; return; }
+  var x = liveFigures();
+  var fine = selectedReg === 'ICO' && x.fNow ? ' &middot; Likely fine <b>' + gbp(x.fNow.likely) + '</b>' : selectedReg === 'ASA' ? ' &middot; No fine' : selectedReg === 'CMA' && simData.fineModel && simData.fineModel.max ? ' &middot; Cap <b>' + gbp(simData.fineModel.max) + '</b>' : '';
+  el.innerHTML = 'Readiness <b>' + x.now.score + '%</b>' + fine + (x.any ? ' <span class="dock-p">preview</span>' : '');
+  el.className = 'dock on';
+}
+function recheck() {
+  var b = document.getElementById('btnRecheck'); if (b) { b.disabled = true; b.textContent = 'Re-checking…'; }
+  swFetch(APP_URL + '/api/data?action=simulation-recheck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: userId, regulator: selectedReg }) })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d){
+      var before = readinessOf(docs()).score;
+      simData.stage4.documents = d.documents; simData.readiness = d.readiness; if (d.fineModel) simData.fineModel = d.fineModel;
+      var byId = {}; d.documents.forEach(function(x){ byId[x.id] = x; });
+      questions().forEach(function(q){ var x = byId[q.docId]; if (x) q.answer = { status: x.status, label: STATUS_LABEL[x.status], detail: x.detail, tool: x.tool, name: x.name }; });
+      preview = {};
+      renderStage4();
+      var n = document.getElementById('recheckNote');
+      if (n) n.textContent = 'Re-checked just now: readiness ' + (d.readiness.score === before ? 'is still ' + d.readiness.score + '%.' : 'went from ' + before + '% to ' + d.readiness.score + '%.') + ' Rehearse again to answer with the new records.';
+      rh = null;
+    })
+    .catch(function(){ var bb = document.getElementById('btnRecheck'); if (bb) { bb.disabled = false; bb.textContent = 'Re-check my records'; } showToast('Re-check failed. Please try again.', 'er'); });
+}
+
+// ── Stage 5: outcome, penalty frame and your reply letter ──
+function replyLetter() {
+  var d = simData, l = (d.stage3 && d.stage3.letter) || {}, reg = selectedReg, m = d.member || {};
+  var co = m.company || '[Your company name]';
+  var lines = [co, '[Your address]', '', longDate(new Date()), '', ORG[reg], (l.signatory || ''), 'Your reference: ' + (l.reference || ''), '', 'Re: ' + (l.subject || ''), '', 'Dear Sir or Madam,', '',
+    'Thank you for your letter. We have answered each of your questions below from our own records. Copies of every record named are enclosed.', ''];
+  var by = inDays(28);
+  questions().forEach(function(q, i){
+    var doc = docById(q.docId); if (!doc) return;
+    var t = rh && rh.turns[i];
+    var ev = t && t.attached && t.attached.length ? t.attached : evidenceOf(doc);
+    var c = closeOf(doc);
+    lines.push((i + 1) + '. ' + doc.name);
+    if (doc.status === 'available') lines.push('We hold this record. Enclosed: ' + ev.map(function(e){ return e.label + (e.date ? ' (' + shortDate(e.date) + ')' : ''); }).join('; ') + '.');
+    else {
+      if (ev.length && doc.status === 'partial') lines.push('We hold part of this record. Enclosed: ' + ev.map(function(e){ return e.label + (e.date ? ' (' + shortDate(e.date) + ')' : ''); }).join('; ') + '.');
+      else lines.push('We do not yet hold a complete record of this.');
+      if (c) { lines.push('We are putting this right now:'); c.steps.forEach(function(s){ lines.push('  - ' + s); }); }
+      lines.push('We will send you confirmation by ' + by + '.');
+    }
+    lines.push('');
+  });
+  lines.push('We take our obligations seriously and will keep you updated. If you have any questions, please contact [name] at [email address].', '', 'Yours faithfully,', '', '[Name]', '[Position]', co);
+  return lines.join('\n');
+}
 function renderStage5() {
   var data = simData; if (!data) return;
-  var s5    = data.stage5 || {};
-  var pen   = s5.penalty || {};
-  var reps  = Array.isArray(s5.representations) ? s5.representations : [];
-  var reg   = selectedReg;
-  var cls   = reg.toLowerCase();
-  var cfg   = REG_CFG[reg];
-  var html  = '';
+  var s5 = data.stage5 || {}, pen = s5.penalty || {}, reps = Array.isArray(s5.representations) ? s5.representations : [];
+  var reg = selectedReg, cls = reg.toLowerCase(), html = '';
+  var o = outcome();
+  if (o) html += '<div class="outcome ' + ['good', 'mid', 'bad'][o.level] + '" style="margin-top:0"><div class="oc-k">Your rehearsal ended with</div><div class="oc-t">' + escH(o.title) + '</div><div class="oc-d">' + escH(o.text) + '</div></div>';
+  else if (interactive()) html += '<div class="penalty-ceiling" style="margin-bottom:16px"><div class="penalty-ceiling-icon">&#9432;</div><div class="penalty-ceiling-text">Answer the letter in step 3 to see where this case would end. The reply below is built from your records either way.</div></div>';
 
   if (reg === 'ASA') {
-    html += '<div class="penalty-reputational">'
-      +'<div class="penalty-reputational-title">Reputational &amp; Operational Sanctions</div>'
-      +'<div class="penalty-reputational-sub">'+escH(pen.context||'The ASA does not impose direct financial fines.')+'</div>'
-      +'<div class="sanction-list">'
-      +'<div class="sanction-item"><div>Mandatory ad withdrawal or amendment: immediate and public</div></div>'
-      +'<div class="sanction-item"><div>Upheld ruling published permanently on asa.org.uk: visible to consumers and competitors</div></div>'
-      +'<div class="sanction-item"><div>Referral to Trading Standards under DMCCA 2024 for persistent or serious breach</div></div>'
-      +'<div class="sanction-item"><div>Compliance monitoring: the ASA may require you to have future campaigns pre-cleared before publication</div></div>'
-      +'</div></div>';
-  } else if (pen.low != null && pen.high != null && pen.high > 0) {
-    html += '<div class="penalty-block">'
-      +'<div class="penalty-realistic">'
-      +'<div class="penalty-realistic-label">Comparable case range &mdash; not a prediction</div>'
-      +'<div class="penalty-range-row">'
-      +'<div class="penalty-amt">£'+fmtNum(pen.low)+'</div>'
-      +'<div class="penalty-to">to</div>'
-      +'<div class="penalty-amt">£'+fmtNum(pen.high)+'</div>'
-      +'</div>'
-      +'<div class="penalty-basis">'+escH(pen.context||'')+'</div>'
-      +'</div>'
-      +'<div class="penalty-ceiling">'
-      +'<div class="penalty-ceiling-icon">&#9888;&#65039;</div>'
-      +'<div class="penalty-ceiling-text"><strong>Statutory maximum: </strong>'+escH(reg==='ICO'?'£17.5M or 4% of global annual turnover (DUAA 2025)':'Higher of £300,000 or 10% of global annual turnover (DMCCA 2024)')+'</div>'
-      +'</div>'
-      +'</div>';
-  } else if (pen.context) {
-    html += '<div class="penalty-ceiling" style="margin-bottom:20px"><div class="penalty-ceiling-icon">&#9432;</div><div class="penalty-ceiling-text">'+escH(pen.context)+'</div></div>';
+    html += '<div class="penalty-reputational"><div class="penalty-reputational-title">The ASA does not fine</div><div class="penalty-reputational-sub">' + escH(pen.context || 'Upheld rulings are published and ads must be withdrawn or changed.') + '</div>'
+      + '<div class="sanction-list"><div class="sanction-item"><div>Change or withdraw the ad</div></div><div class="sanction-item"><div>An upheld ruling published on asa.org.uk, naming you</div></div><div class="sanction-item"><div>Referral to Trading Standards for repeat or serious cases</div></div></div></div>';
+  } else if (reg === 'CMA') {
+    var mx = data.fineModel && data.fineModel.max;
+    html += '<div class="penalty-ceiling" style="margin-bottom:16px"><div class="penalty-ceiling-icon">&#9878;&#65039;</div><div class="penalty-ceiling-text"><strong>Legal maximum' + (mx ? ': ' + gbp(mx) : '') + '. </strong>' + escH(pen.context || 'The CMA can fine up to the higher of £300,000 or 10% of global turnover.') + '</div></div>';
+  } else {
+    var x = liveFigures(), f = x.fWas, g = x.fNow;
+    if (f && f.high) html += '<div class="penalty-block"><div class="penalty-realistic"><div class="penalty-realistic-label">Likely fine today, from comparable cases &mdash; not a prediction</div>'
+      + '<div class="penalty-range-row"><div class="penalty-amt">' + gbp(f.likely) + '</div></div>'
+      + '<div class="penalty-basis">Range ' + gbp(f.low) + ' to ' + gbp(f.high) + '. ' + escH(pen.context || '') + '</div>'
+      + (x.any && g.likely !== f.likely ? '<div class="pen-after">With the gaps you previewed closed: <b>' + gbp(g.likely) + '</b> (range ' + gbp(g.low) + ' to ' + gbp(g.high) + ')</div>' : '') + '</div>'
+      + '<div class="penalty-ceiling"><div class="penalty-ceiling-icon">&#9888;&#65039;</div><div class="penalty-ceiling-text"><strong>Statutory maximum: </strong>£17.5M or 4% of global annual turnover (DUAA 2025)</div></div></div>';
+    else if (pen.high) html += '<div class="penalty-block"><div class="penalty-realistic"><div class="penalty-realistic-label">Comparable case range &mdash; not a prediction</div><div class="penalty-range-row"><div class="penalty-amt">' + gbp(pen.low) + '</div><div class="penalty-to">to</div><div class="penalty-amt">' + gbp(pen.high) + '</div></div><div class="penalty-basis">' + escH(pen.context || '') + '</div></div></div>';
+    else if (pen.context) html += '<div class="penalty-ceiling" style="margin-bottom:20px"><div class="penalty-ceiling-icon">&#9432;</div><div class="penalty-ceiling-text">' + escH(pen.context) + '</div></div>';
   }
 
-  if (reps.length) {
-    html += '<div class="rep-title">Your Representations Strategy</div>'
-      +'<div class="rep-items">'
-      +reps.map(function(r,i){ return '<div class="rep-item"><div class="rep-num '+cls+'">'+(i+1)+'</div><div class="rep-text">'+escH(r)+'</div></div>'; }).join('')
-      +'</div>';
-  }
+  if (interactive()) {
+    html += '<div class="rep-title">Your reply, drafted from your records</div>'
+      + '<div class="reply-note">Every line comes from what Sendwize holds for you: nothing is made up. Fill in the words in [square brackets], check each point, and edit freely. If the letter is real, speak to a solicitor before you send it.</div>'
+      + '<textarea class="reply" id="replyText" spellcheck="true">' + escH(replyLetter()) + '</textarea>'
+      + '<div class="reply-btns"><button class="pack-btn" onclick="copyReply()">Copy the reply</button><button class="cmp-cant" onclick="downloadPack()">Download response pack</button></div>';
+  } else if (data.readiness) html += '<div style="margin:20px 0"><button class="pack-btn" onclick="downloadPack()">Download response pack</button></div>';
 
-  if (data.readiness) html += '<div style="margin:20px 0"><button class="pack-btn" onclick="downloadPack()">Download response pack</button></div>';
+  if (reps.length) html += '<div class="rep-title">How to reply</div><div class="rep-items">' + reps.map(function(r, i){ return '<div class="rep-item"><div class="rep-num ' + cls + '">' + (i + 1) + '</div><div class="rep-text">' + escH(r) + '</div></div>'; }).join('') + '</div>';
 
-  // Try other regulators
-  var others = ['ICO','ASA','CMA'].filter(function(r){ return r!==reg; });
-  html += '<div class="try-others">'
-    +'<div class="try-others-title">Try another regulator</div>'
-    +'<div class="try-others-sub">See how the same compliance data looks across a different regulator\'s lens.</div>'
-    +'<div class="try-others-grid">'
-    +others.map(function(r){
-      var c=r.toLowerCase();
-      return '<button class="try-other-btn '+c+'" onclick="resetToRegulator(\''+r+'\')">'
-        +'<div class="try-other-name '+c+'">'+r+'</div>'
-        +'<div class="try-other-desc">'+(r==='ICO'?"PECR & UK GDPR":r==='ASA'?"CAP Code & claims":"DMCCA 2024")+'</div>'
-        +'</button>';
-    }).join('')
-    +'</div></div>';
-
+  var others = ['ICO', 'ASA', 'CMA'].filter(function(r){ return r !== reg; });
+  html += '<div class="try-others"><div class="try-others-title">Try another regulator</div><div class="try-others-sub">See how the same records look to a different regulator.</div><div class="try-others-grid">'
+    + others.map(function(r){ var c = r.toLowerCase(); return '<button class="try-other-btn ' + c + '" onclick="resetToRegulator(\'' + r + '\')"><div class="try-other-name ' + c + '">' + r + '</div><div class="try-other-desc">' + (r === 'ICO' ? 'PECR & UK GDPR' : r === 'ASA' ? 'CAP Code & claims' : 'DMCCA 2024') + '</div></button>'; }).join('')
+    + '</div></div>';
   document.getElementById('stage5-content').innerHTML = html;
+}
+function copyReply() {
+  var t = document.getElementById('replyText'); if (!t) return;
+  var done = function(){ showToast('Reply copied', 'ok'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done, function(){ t.select(); document.execCommand('copy'); done(); });
+  else { t.select(); document.execCommand('copy'); done(); }
 }
 
 function resetToRegulator(reg) {
@@ -981,8 +1510,10 @@ function resetToRegulator(reg) {
   document.querySelector('.intro').style.display = '';
   document.getElementById('startWrap').style.display = '';
   document.getElementById('spine').style.display = 'none';
+  document.getElementById('triggerBox').style.display = 'none';
   document.getElementById('discText').textContent = '';
-  simData = null;
+  simData = null; rh = null; preview = {};
+  renderDock();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1026,6 +1557,7 @@ function loadPastSimulations() {
       sw.parentNode.insertBefore(box, sw.nextSibling);
     }).catch(function(){});
 }
+initPage();
 (function(){
   var simId = new URLSearchParams(window.location.search).get('simulationId');
   if (simId && userId) loadSimulation(simId); else loadPastSimulations();
