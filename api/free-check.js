@@ -16,6 +16,7 @@
 // an alert goes out the moment the daily total runs out.
 // ─────────────────────────────────────────────────────────────
 import crypto from 'crypto';
+import './_redis.js'; // accepts the KV_REST_API_* names too
 import { claudeFetch, parseJson } from './_claude.js';
 import { SYSTEM_PROMPT, ANALYSIS_SCHEMA, CHANNEL_RULES, cleanWriting } from './analyze-copy.js';
 import { copyFacts, factsBlock, reviewFindings } from './_copy-review.js';

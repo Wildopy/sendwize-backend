@@ -14,6 +14,7 @@
 //
 // Override any cap with an env var, e.g. SENDWIZE_LIMIT_COPY_SCAN=100.
 // ─────────────────────────────────────────────────────────────
+import './_redis.js'; // accepts the KV_REST_API_* names too
 
 const DEFAULT_LIMITS = {
   copy_scan:      60,  // AI Scanner, Campaign Defence copy checks

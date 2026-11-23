@@ -1,9 +1,16 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — _redis.js v1.0
+// SENDWIZE — _redis.js v1.1
 // Small Upstash Redis REST helper (same store as _limits.js).
 // Env vars, added by the Vercel → Upstash integration:
 //   UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
+// v1.1: Vercel's Storage → Upstash for Redis integration names them
+// KV_REST_API_URL / KV_REST_API_TOKEN instead. Either pair works:
+// importing this file copies the KV_ names across when the UPSTASH_
+// ones are missing, so _limits.js and free-check.js see them too.
 // ─────────────────────────────────────────────────────────────
+
+if (!process.env.UPSTASH_REDIS_REST_URL && process.env.KV_REST_API_URL) process.env.UPSTASH_REDIS_REST_URL = process.env.KV_REST_API_URL;
+if (!process.env.UPSTASH_REDIS_REST_TOKEN && process.env.KV_REST_API_TOKEN) process.env.UPSTASH_REDIS_REST_TOKEN = process.env.KV_REST_API_TOKEN;
 
 export function redisConfigured() {
   return !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
