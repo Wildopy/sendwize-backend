@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-23T20:26:18.380Z",
+ "generated": "2026-11-23T21:55:06.442Z",
  "note": "Imported from regulator records. Not live: cases reach the product only once approved in data/case-approvals.json and published.",
  "counts": {
   "ready": {
@@ -3074,30 +3074,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "asa_ovira_australia_t_a_ovira_uk_a25-1281265",
-   "regulator": "ASA",
-   "name": "Ovira Australia t/a Ovira UK",
-   "source": "ASA ruling",
-   "url": "https://www.asa.org.uk/rulings/ovira-australia-a25-1281265-ovira-australia.html",
-   "match": "Ovira",
-   "date": "2025-08-06",
-   "penalty": null,
-   "outcome": "Upheld ASA ruling",
-   "law": "ASA ruling",
-   "volume": null,
-   "sector": null,
-   "media": "Social media (paid ad)",
-   "summary": "Two paid-for Meta ads for food supplements made unauthorised and misleading medical and health claims for weight loss.",
-   "action": "The ads must not appear again in the form investigated. We told Ovira Australia t/a Ovira not to claim that a food supplement could prevent, treat or cure human disease, or make medicinal claims for a product that did not have the necessary authorisation.",
-   "types": [],
-   "evidence": {
-    "rules": [],
-    "topic": "Food, drink and supplements",
-    "decision": "Upheld"
-   },
-   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
-  },
-  {
    "id": "asa_pheon_inc_2025",
    "regulator": "ASA",
    "name": "Pheon Inc",
@@ -3122,6 +3098,30 @@
      "4.9"
     ],
     "topic": "Gender, sex and relationships",
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
+   "id": "asa_ovira_australia_t_a_ovira_uk_a25-1281265",
+   "regulator": "ASA",
+   "name": "Ovira Australia t/a Ovira UK",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/ovira-australia-a25-1281265-ovira-australia.html",
+   "match": "Ovira",
+   "date": "2025-08-06",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "ASA ruling",
+   "volume": null,
+   "sector": null,
+   "media": "Social media (paid ad)",
+   "summary": "Two paid-for Meta ads for food supplements made unauthorised and misleading medical and health claims for weight loss.",
+   "action": "The ads must not appear again in the form investigated. We told Ovira Australia t/a Ovira not to claim that a food supplement could prevent, treat or cure human disease, or make medicinal claims for a product that did not have the necessary authorisation.",
+   "types": [],
+   "evidence": {
+    "rules": [],
+    "topic": "Food, drink and supplements",
     "decision": "Upheld"
    },
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
@@ -12302,12 +12302,12 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "cma_viagogo_2025",
+   "id": "cma_trainline_2026",
    "regulator": "CMA",
-   "name": "viagogo",
+   "name": "Trainline",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
-   "match": "viagogo",
+   "url": "https://www.gov.uk/cma-cases/trainline-consumer-protection-enforcement-case",
+   "match": "Trainline",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -12315,7 +12315,7 @@
    "volume": null,
    "refunds": null,
    "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk and www.viagogo.com/ww) to UK consumers.",
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for train and coach tickets by Trainline in the UK. ",
    "action": null,
    "types": [
     "drip_pricing"
@@ -12359,23 +12359,23 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_autotrader_2026",
+   "id": "cma_viagogo_2025",
    "regulator": "CMA",
-   "name": "Autotrader",
+   "name": "viagogo",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/autotrader-consumer-protection-enforcement-case",
-   "match": "Autotrader",
+   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
+   "match": "viagogo",
    "date": null,
    "penalty": null,
    "outcome": null,
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
-   "sector": "media",
-   "summary": "The Competition and Markets Authority (CMA) is investigating Autotrader Limited’s (‘Autotrader’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.   ",
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk and www.viagogo.com/ww) to UK consumers.",
    "action": null,
    "types": [
-    "fake_reviews"
+    "drip_pricing"
    ],
    "evidence": {
     "outcome_type": null,
@@ -12387,12 +12387,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_trainline_2026",
+   "id": "cma_secret_escapes_limited_2026",
    "regulator": "CMA",
-   "name": "Trainline",
+   "name": "Secret Escapes Limited",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/trainline-consumer-protection-enforcement-case",
-   "match": "Trainline",
+   "url": "https://www.gov.uk/cma-cases/secret-escapes-limited-consumer-protection-enforcement-case",
+   "match": "Secret",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -12400,10 +12400,11 @@
    "volume": null,
    "refunds": null,
    "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for train and coach tickets by Trainline in the UK. ",
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees and price variations by Secret Escapes Limited, trading as Secret Escapes, in the UK.",
    "action": null,
    "types": [
-    "drip_pricing"
+    "drip_pricing",
+    "misleading_reference_price"
    ],
    "evidence": {
     "outcome_type": null,
@@ -12470,29 +12471,56 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_secret_escapes_limited_2026",
+   "id": "cma_autotrader_2026",
    "regulator": "CMA",
-   "name": "Secret Escapes Limited",
+   "name": "Autotrader",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/secret-escapes-limited-consumer-protection-enforcement-case",
-   "match": "Secret",
+   "url": "https://www.gov.uk/cma-cases/autotrader-consumer-protection-enforcement-case",
+   "match": "Autotrader",
    "date": null,
    "penalty": null,
    "outcome": null,
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees and price variations by Secret Escapes Limited, trading as Secret Escapes, in the UK.",
+   "sector": "media",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Autotrader Limited’s (‘Autotrader’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.   ",
    "action": null,
    "types": [
-    "drip_pricing",
-    "misleading_reference_price"
+    "fake_reviews"
    ],
    "evidence": {
     "outcome_type": null,
     "case_state": [
      "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_fast_moving_consumer_goods_fmcg_2023",
+   "regulator": "CMA",
+   "name": "Fast Moving Consumer Goods (FMCG)",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/fast-moving-consumer-goods-fmcg",
+   "match": "Fast",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "ecommerce",
+   "summary": "The Competition and Markets Authority (CMA) investigated Unilever UK Limited’s compliance with consumer protection law.",
+   "action": null,
+   "types": [
+    "misleading_claim"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "closed"
     ],
     "penalty_sentence": null
    },
@@ -12526,62 +12554,6 @@
     "penalty_sentence": null,
     "listed_summary": "The CMA is investigating the use of urgency claims by the Emma Group. ",
     "summary_from": "case page"
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_fast_moving_consumer_goods_fmcg_2023",
-   "regulator": "CMA",
-   "name": "Fast Moving Consumer Goods (FMCG)",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/fast-moving-consumer-goods-fmcg",
-   "match": "Fast",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The Competition and Markets Authority (CMA) investigated Unilever UK Limited’s compliance with consumer protection law.",
-   "action": null,
-   "types": [
-    "misleading_claim"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "closed"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_feefo_2026",
-   "regulator": "CMA",
-   "name": "Feefo",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/feefo-consumer-protection-enforcement-case",
-   "match": "Feefo",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "media",
-   "summary": "The Competition and Markets Authority (CMA) is investigating Feefo Holdings Limited’s (‘Feefo’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.  ",
-   "action": null,
-   "types": [
-    "fake_reviews"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
    },
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
@@ -12642,20 +12614,20 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_dignity_2026",
+   "id": "cma_feefo_2026",
    "regulator": "CMA",
-   "name": "Dignity",
+   "name": "Feefo",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/dignity-consumer-protection-enforcement-case",
-   "match": "Dignity",
+   "url": "https://www.gov.uk/cma-cases/feefo-consumer-protection-enforcement-case",
+   "match": "Feefo",
    "date": null,
    "penalty": null,
    "outcome": null,
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating Dignity Group Holdings Limited’s (‘Dignity’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews about crematoria.",
+   "sector": "media",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Feefo Holdings Limited’s (‘Feefo’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.  ",
    "action": null,
    "types": [
     "fake_reviews"
@@ -12694,6 +12666,60 @@
     "penalty_sentence": null
    },
    "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_dignity_2026",
+   "regulator": "CMA",
+   "name": "Dignity",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/dignity-consumer-protection-enforcement-case",
+   "match": "Dignity",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating Dignity Group Holdings Limited’s (‘Dignity’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews about crematoria.",
+   "action": null,
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_leasehold_2019",
+   "regulator": "CMA",
+   "name": "Leasehold",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/leasehold",
+   "match": "Leasehold",
+   "date": null,
+   "penalty": null,
+   "outcome": "Gave undertakings to the CMA",
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
+   "action": "Since our last update, there has been further progress in relation to leases with less than 20-year doubling clauses. A further 3 freeholders with affected Taylor Wimpey leases have provided the CMA with undertakings for the benefit of leaseholders: Island Apartments Freehold Limited (PDF, 112KB) (13.3.24); Madison Close Freeholders Limited (PDF, 115KB) (13.3.24); Plaza 2 Surbiton Limited (PDF, 117KB) (13.3.24).",
+   "types": [],
+   "evidence": {
+    "outcome_type": "consumer-enforcement-undertakings",
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no decision date in the record"
   },
   {
    "id": "cma_just_eat_2026",
@@ -12752,34 +12778,6 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_pasta_evangelists_2026",
-   "regulator": "CMA",
-   "name": "Pasta Evangelists",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
-   "match": "Pasta",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
-   "action": null,
-   "types": [
-    "fake_reviews"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
    "id": "cma_online_reviews_2020",
    "regulator": "CMA",
    "name": "Amazon Europe Core SARL, Amazon and Google LLC",
@@ -12796,6 +12794,34 @@
    "sector": "media",
    "summary": "The Competition and Markets Authority (CMA) investigation into fake online reviews.",
    "action": "Amazon Europe Core SARL has signed undertakings committing to enhance its existing systems for tackling fake reviews and ‘catalogue abuse’. Catalogue abuse involves sellers hijacking the reviews of well-performing products and adding them to an entirely separate and different product to falsely boost its star rating.",
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_pasta_evangelists_2026",
+   "regulator": "CMA",
+   "name": "Pasta Evangelists",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
+   "match": "Pasta",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": "ecommerce",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
+   "action": null,
    "types": [
     "fake_reviews"
    ],
@@ -12887,32 +12913,6 @@
     "penalty_sentence": null
    },
    "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_leasehold_2019",
-   "regulator": "CMA",
-   "name": "Leasehold",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/leasehold",
-   "match": "Leasehold",
-   "date": null,
-   "penalty": null,
-   "outcome": "Gave undertakings to the CMA",
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
-   "action": "Since our last update, there has been further progress in relation to leases with less than 20-year doubling clauses. A further 3 freeholders with affected Taylor Wimpey leases have provided the CMA with undertakings for the benefit of leaseholders: Island Apartments Freehold Limited (PDF, 112KB) (13.3.24); Madison Close Freeholders Limited (PDF, 115KB) (13.3.24); Plaza 2 Surbiton Limited (PDF, 117KB) (13.3.24).",
-   "types": [],
-   "evidence": {
-    "outcome_type": "consumer-enforcement-undertakings",
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no decision date in the record"
   },
   {
    "id": "cma_online_hotel_booking_2017",
