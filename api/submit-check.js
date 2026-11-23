@@ -1561,7 +1561,7 @@ async function handleBriefCheck(req, res) {
 // v5.5 — SIGN-OFF, OFFER END, COMPLAINTS
 // ══════════════════════════════════════════════════════════════
 const SIGNOFF_PAGE = `${APP_URL}/sign-off.html`;
-const DASH_URL = process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+const DASH_URL = process.env.DASHBOARD_URL || 'https://sendwize.co.uk/dashboard';
 
 function dossierBase() {
   const token = process.env.AIRTABLE_TOKEN;
