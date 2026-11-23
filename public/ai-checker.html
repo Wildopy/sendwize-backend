@@ -238,10 +238,10 @@
 <body>
 
 <header class="sw-ph-header">
-  <a href="https://new-mvp-v2.webflow.io/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <a href="https://sendwize.co.uk/"><img class="sw-ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
   <nav class="sw-ph-nav">
-    <a href="https://new-mvp-v2.webflow.io/">Home</a>
-    <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy">Dashboard</a>
+    <a href="https://sendwize.co.uk/">Home</a>
+    <a href="https://sendwize.co.uk/dashboard">Dashboard</a>
   </nav>
 </header>
 
@@ -253,7 +253,7 @@
       <div class="gate-icon">&#128274;</div>
       <div class="gate-title">Copy checker</div>
       <div class="gate-sub">This tool is available to Sendwize subscribers. Sign in via the dashboard to access your compliance data.</div>
-      <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard &rarr;</a>
+      <a href="https://sendwize.co.uk/dashboard" class="gate-btn">Go to Dashboard &rarr;</a>
       <button class="gate-demo-btn" onclick="runDemo()"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF4EA;color:var(--orange)">DEMO</span> Try with example data</button>
     </div>
   </div>
@@ -389,7 +389,7 @@
       <div class="form-group" id="copyGroup">
         <label for="copyText" id="copyLabel">Marketing copy</label>
         <textarea id="copyText" placeholder="Paste your copy here&hellip;"></textarea>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">Your copy is sent to our AI for analysis and is not stored after the scan completes. See our <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy" style="color:var(--orange);text-decoration:underline;">Privacy Policy</a> for details.</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">Your copy is sent to our AI for analysis and is not stored after the scan completes. See our <a href="https://sendwize.co.uk/privacy-policy" style="color:var(--orange);text-decoration:underline;">Privacy Policy</a> for details.</div>
       </div>
 
       <div class="form-group" id="imageGroup">
@@ -492,15 +492,15 @@
   <img class="sw-ph-footer-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize">
   <div class="sw-ph-footer-links">
     <a href="#">About Us</a>
-    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/privacy-policy">Privacy Policy</a>
-    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/cookie-policy">Cookie Policy</a>
-    <a href="https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/terms-of-use">Terms of Service</a>
+    <a href="https://sendwize.co.uk/privacy-policy">Privacy Policy</a>
+    <a href="https://sendwize.co.uk/cookie-policy">Cookie Policy</a>
+    <a href="https://sendwize.co.uk/terms-of-use">Terms of Service</a>
   </div>
 </footer>
 
 <script>
   var APP_URL = 'https://sendwize-backend.vercel.app';
-  var DASHBOARD_URL = (window.SW && SW.dashboard) || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  var DASHBOARD_URL = (window.SW && SW.dashboard) || 'https://sendwize.co.uk/dashboard';
 
   var currentContentType = 'email';
   var userId = null;

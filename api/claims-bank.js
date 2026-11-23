@@ -47,7 +47,7 @@ const TABLE = 'Claims_Bank';
 // Shown as the finding's tool on the dashboard; TOOL_PAGE in sw-dashboard.js
 // sends 'campaign defence claims' to the Claims watched tab
 const TOOL = 'Campaign Defence claims';
-const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://sendwize.co.uk/dashboard';
 
 const base = () => `https://api.airtable.com/v0/${process.env.BASE_ID}`;
 const authH = () => ({ Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' });

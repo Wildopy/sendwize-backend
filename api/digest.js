@@ -32,7 +32,7 @@ import { fq } from './_airtable.js';
 import { buildAlerts } from './_memory.js';
 
 const RESEND_FROM = 'alerts@sendwize.co.uk';
-const DASH_URL    = process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+const DASH_URL    = process.env.DASHBOARD_URL || 'https://sendwize.co.uk/dashboard';
 const STALE_DAYS  = 10;   // no upload in this many days → nudge mode
 const MAX_USERS   = 200;  // safety cap per run
 
