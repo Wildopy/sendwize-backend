@@ -328,15 +328,18 @@ async function fetchSmallText(rawUrl) {
 }
 
 async function checkMeta(domain, token) {
-  let reached = false;
+  let reached = false, otherCode = false;
   for (const u of [`https://${domain}/`, `https://www.${domain}/`]) {
     const p = await fetchPage(u);
     if (!p.ok) continue;
     reached = true;
     const nameRe = new RegExp(`name=["']?${META_NAME}["']?`, 'i');
-    if ((p.html.match(/<meta\b[^>]*>/gi) || []).some(m => nameRe.test(m) && m.includes(token))) return { ok: true };
+    const tags = (p.html.match(/<meta\b[^>]*>/gi) || []).filter(m => nameRe.test(m));
+    if (tags.some(m => m.includes(token))) return { ok: true };
+    if (tags.length) otherCode = true;
   }
-  return { ok: false, reason: reached ? 'Homepage reached but the verification tag was not found. If you just published it, wait a minute and try again.' : 'Homepage could not be reached.' };
+  if (otherCode) return { ok: false, reason: 'We found the Sendwize tag on your homepage, but with a different code. Each website address has its own code, so copy the one shown here for this address.' };
+  return { ok: false, reason: reached ? 'We reached your homepage but the Sendwize tag isn\'t on it yet. If you just published it, wait a minute and try again.' : `We couldn't reach https://${domain}/. Check the address is right and the site is live.` };
 }
 
 async function checkFile(domain, token) {
