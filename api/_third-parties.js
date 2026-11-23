@@ -48,7 +48,7 @@ const DATA_BY_CATEGORY = {
   support:     'Names, emails and everything customers write to you.',
   forms:       'Whatever people type into your forms.',
   agency:      'Whatever customer data you share for campaigns.',
-  other:       'Customer data you share with it. Tell us what in the paperwork section.',
+  other:       'Customer data you share with it. Tell us what under Contract.',
 };
 
 // ── Does the platform use the data for its own purposes? ──────
@@ -255,6 +255,129 @@ function nextActionFrom(risks, paperwork, verdict) {
   if (!paperwork.ok && paperwork.action) return paperwork.action;
   return { label: verdict === 'keep' ? 'Nothing to do. We keep watching.' : 'Review the details', go: 'none' };
 }
+// ── How reliable is this third party? ────────────────────────
+// What the member actually wants to know: will they keep me within
+// marketing law, and will they cause me commercial problems? Built from
+// the same evidence as the risks. The contract is one piece of evidence
+// ("if they cause a breach, are you covered?"), not a checklist.
+const COMMERCIAL_KEYS = ['performance', 'record'];
+const RELIABILITY = {
+  good:    { label: 'Reliable',          tone: 'g' },
+  mixed:   { label: 'Some doubts',       tone: 'y' },
+  poor:    { label: 'Unreliable',        tone: 'r' },
+  unknown: { label: 'Not proven yet',    tone: 'mu' },
+};
+const clauseStatus = (clauses, id) => (clauses[id] || {}).status || null;
+const CLAUSE_STATUS = { pass: 'ok', warn: 'warn', fail: 'bad' };
+
+function commercialItems(type, f, risks, paperwork, extra) {
+  const items = [];
+  const name = f.VendorName || f.PartnerName || f.AffiliateName || 'They';
+  // Contacts that perform (partners and affiliates)
+  const perf = risks.find(r => r.key === 'performance');
+  if (perf) items.push({ key: 'quality', q: 'Are their contacts worth having?',
+    status: perf.status === 'ok' ? 'ok' : 'warn',
+    answer: perf.status === 'ok' ? 'Yes, they engage like your own' : 'Many never engage',
+    detail: perf.detail + (perf.status === 'ok' ? '' : ' Unengaged contacts drag down where your emails land and waste send costs.') });
+  else if (type !== 'platform' && extra.bringsContacts) items.push({ key: 'quality', q: 'Are their contacts worth having?', status: 'unknown',
+    answer: 'Not measured yet', detail: `Run List health with ${name}'s contacts tagged by source and we compare them with the rest of your list.`,
+    action: { label: 'Run List health', go: 'listhealth' } });
+
+  // Fixes problems when asked (affiliates with live posts)
+  const live = extra.liveCheck;
+  if (live && live.checkedAt) {
+    const m = live.missesInRow || 0;
+    items.push({ key: 'fixes', q: 'Do they fix problems when asked?',
+      status: m >= 2 ? 'bad' : m === 1 ? 'warn' : 'ok',
+      answer: m >= 2 ? `Not fixed after ${m} monthly checks` : m === 1 ? 'Not fixed since the last check' : 'Nothing outstanding',
+      detail: 'From our monthly re-check of their posts about you.' });
+  }
+
+  // If they cause a breach, are you covered?
+  const agr = (paperwork.items || []).find(i => i.key === 'agreement') || {};
+  const refused = lc(f.DPAStatus || f.AgreementStatus) === 'refused';
+  const notNeeded = /^Not needed/.test(agr.answer || '');
+  items.push({ key: 'cover', q: 'If they cause a problem, are you covered?',
+    status: refused ? 'bad' : agr.status === 'ok' ? 'ok' : agr.status === 'warn' ? 'warn' : agr.status === 'unknown' ? 'unknown' : 'bad',
+    answer: refused ? 'No, they refuse to sign' : notNeeded ? 'Nothing to cover: no customer data shared'
+      : agr.status === 'ok' || agr.status === 'warn' ? 'Yes, a contract puts duties on them'
+      : agr.status === 'unknown' ? 'Not known yet' : 'No contract, so it lands on you',
+    detail: notNeeded ? '' : agr.status === 'ok' || agr.status === 'warn'
+      ? 'A signed contract means they must follow your instructions and you can hold them to it if they slip.'
+      : `Without a contract you cannot make ${name} put things right, and a regulator treats their mistakes as yours.`,
+    action: agr.status === 'ok' || notNeeded ? null : paperwork.action });
+
+  // What their contract promises (platforms, once the terms are read)
+  if (type === 'platform' && (agr.status === 'ok' || agr.status === 'warn')) {
+    const clauses = safeJSON(f.DPAClauseResults, {});
+    if (Object.keys(clauses).length) {
+      const terms = [
+        ['breach', 'a28-6', 'Will they warn you fast if data is lost?'],
+        ['exit',   'a28-7', 'Can you leave and have your data deleted?'],
+        ['others', 'a28-4', 'Do they tell you who else gets your data?'],
+      ];
+      for (const [key, id, q] of terms) {
+        const st = CLAUSE_STATUS[clauseStatus(clauses, id)] || 'unknown';
+        items.push({ key, q, status: st,
+          answer: st === 'ok' ? 'Yes, their terms promise it' : st === 'warn' ? 'Their terms are vague on it' : st === 'bad' ? 'Not in their terms' : 'Not found in what we read' });
+      }
+    } else items.push({ key: 'terms', q: 'What their terms promise you', status: 'unknown', answer: 'Not read yet',
+      detail: 'Give us a link to their data terms and we check three things: they warn you fast if data is lost, you can leave and have it deleted, and they tell you who else gets it.',
+      action: { label: 'Let us read their terms', go: 'paperwork' } });
+  }
+
+  // Open about what they do with data (only once reviewed, never a nag)
+  const pv = privacyDone(f);
+  if (pv.reviewed) items.push({ key: 'open', q: 'Are they open about what they do with data?',
+    status: pv.gaps ? 'warn' : 'ok', answer: pv.gaps ? `${pv.gaps} gap${pv.gaps !== 1 ? 's' : ''} in their privacy policy` : 'Yes, their privacy policy is clear' });
+
+  // Their own track record
+  const rec = risks.find(r => r.key === 'record');
+  items.push(rec
+    ? { key: 'record', q: 'Have regulators acted against them?', status: 'warn', answer: rec.answer, detail: rec.detail }
+    : { key: 'record', q: 'Have regulators acted against them?', status: 'ok', answer: 'Nothing found', detail: 'We check ICO, ASA and CMA enforcement records.' });
+  return items;
+}
+
+function reliabilityFrom(type, f, risks, paperwork, extra) {
+  const law = risks.filter(r => !r.info && !COMMERCIAL_KEYS.includes(r.key));
+  const commercial = commercialItems(type, f, risks, paperwork, extra);
+  const count = list => ({
+    ok: list.filter(x => x.status === 'ok').length,
+    bad: list.filter(x => x.status === 'bad').length,
+    warn: list.filter(x => x.status === 'warn').length,
+    unknown: list.filter(x => x.status === 'unknown').length,
+    total: list.length,
+  });
+  const L = count(law), C = count(commercial);
+  const lawAnswer = !L.total ? 'Nothing for them to get wrong'
+    : L.bad ? `${L.bad} problem${L.bad !== 1 ? 's' : ''} now`
+    : L.warn ? `${L.warn} thing${L.warn !== 1 ? 's' : ''} to tighten`
+    : L.unknown === L.total ? 'Not checked yet'
+    : L.unknown ? `Fine so far, ${L.unknown} not checked yet` : 'Yes, on everything we check';
+  const comAnswer = C.bad ? `${C.bad} weak spot${C.bad !== 1 ? 's' : ''}`
+    : C.warn ? `${C.warn} thing${C.warn !== 1 ? 's' : ''} to watch`
+    : C.unknown ? `Fine so far, ${C.unknown} not known yet` : 'Yes';
+  // A platform tag firing before consent is the member's set-up, not the
+  // platform letting them down: it makes the picture mixed, not poor.
+  const theirFault = law.filter(r => r.status === 'bad' && !(type === 'platform' && r.key === 'consent')).length;
+  let level;
+  if (risks.some(r => r.stop) || theirFault || C.bad >= 2) level = 'poor';
+  else if (L.bad + L.warn + C.bad + C.warn) level = 'mixed';
+  else if (L.unknown || L.ok + C.ok <= 1 || C.unknown > C.ok) level = 'unknown';
+  else level = 'good';
+  const name = f.VendorName || f.PartnerName || f.AffiliateName || 'They';
+  const summary = {
+    good: `${name} is doing what keeps you safe, on the evidence we have.`,
+    mixed: `${name} mostly works, but there are gaps that could land on you.`,
+    poor: `${name} is putting you at risk, legally or commercially.`,
+    unknown: `Too little is known about ${name} to rely on them yet.`,
+  }[level];
+  return { level, label: RELIABILITY[level].label, tone: RELIABILITY[level].tone, summary,
+    law: { status: L.bad ? 'bad' : L.warn ? 'warn' : L.unknown ? 'unknown' : 'ok', answer: lawAnswer, keys: law.map(r => r.key) },
+    commercial: { status: C.bad ? 'bad' : C.warn ? 'warn' : C.unknown ? 'unknown' : 'ok', answer: comAnswer, items: commercial } };
+}
+
 function finish(type, f, risks, paperwork, profile, extra = {}) {
   const verdict = verdictFrom(risks, paperwork);
   // The headline £ is the risks only. Missing paperwork has its own
@@ -267,9 +390,10 @@ function finish(type, f, risks, paperwork, profile, extra = {}) {
   return {
     type, verdict, verdictLabel: VERDICT[verdict].label, tone: VERDICT[verdict].tone,
     rank: lead ? RANK[lead.status] : 4,
-    headline: lead ? lead.headline || lead.title + ': ' + lead.answer : (paperwork.ok ? 'No open risks found.' : 'Only the paperwork is left to finish.'),
+    headline: lead ? lead.headline || lead.title + ': ' + lead.answer : (paperwork.ok ? 'No open risks found.' : 'Works well. No contract in place yet.'),
     risks, paperwork, exposure, nextAction: nextActionFrom(risks, paperwork, verdict),
     found: isFound(f) ? String(f.Notes).split('\n')[0].replace(/^Found by Sendwize:?\s*/i, '') : null,
+    reliability: reliabilityFrom(type, f, risks, paperwork, extra),
     ...extra,
   };
 }
@@ -381,7 +505,7 @@ function platformPaperwork(f) {
   return {
     ok: ok && !fails, items,
     risks: ok ? [] : [{ key: 'agreement', status: 'bad', fixType: 'dpa_breach' }],
-    action: !ok ? { label: 'Get their data agreement on file', go: 'paperwork' } : fails ? { label: 'Check the missing clauses', go: 'paperwork' } : null,
+    action: !ok ? { label: 'Accept or upload their data terms', go: 'paperwork' } : fails ? { label: 'See what their terms leave out', go: 'paperwork' } : null,
   };
 }
 
@@ -436,7 +560,7 @@ export function assessPartner(f, ctx = {}) {
   if (enf) risks.push(enf);
 
   const paperwork = partnerPaperwork(f, rel);
-  return finish('partner', f, risks, paperwork, ctx.profile, { performance: perf });
+  return finish('partner', f, risks, paperwork, ctx.profile, { performance: perf, bringsContacts });
 }
 
 function partnerPaperwork(f, rel) {
@@ -457,7 +581,7 @@ function partnerPaperwork(f, rel) {
   const ok = agreement.status === 'ok';
   return { ok, items,
     risks: agreement.fixType && !ok ? [{ key: 'agreement', status: 'bad', fixType: agreement.fixType }] : [],
-    action: ok ? null : { label: rel === 'unknown' ? 'Tell us how data is shared with them' : 'Get the data agreement on file', go: 'paperwork' } };
+    action: ok ? null : { label: rel === 'unknown' ? 'Tell us how data is shared with them' : 'Put a data sharing contract in place', go: 'paperwork' } };
 }
 
 // ── Affiliates and influencers ────────────────────────────────
@@ -565,9 +689,9 @@ export function assessAffiliate(f, ctx = {}) {
       { key: 'privacy', label: 'Their privacy policy', status: pv.reviewed ? (pv.gaps ? 'warn' : 'ok') : 'unknown', answer: pv.reviewed ? (pv.gaps ? `${pv.gaps} gap${pv.gaps !== 1 ? 's' : ''}` : 'Reviewed') : 'Not reviewed' },
     ],
     risks: [],
-    action: agreementOk ? null : { label: 'Get the agreement on file', go: 'paperwork' },
+    action: agreementOk ? null : { label: 'Put a contract in place with them', go: 'paperwork' },
   };
-  return finish('affiliate', f, risks, paperwork, ctx.profile, { performance: perf, livePages: urls.livePages || [], liveCheck: live });
+  return finish('affiliate', f, risks, paperwork, ctx.profile, { performance: perf, bringsContacts: q.consent || q.landing, livePages: urls.livePages || [], liveCheck: live });
 }
 
 // ── Live page check: ad labels and claims ─────────────────────
@@ -590,4 +714,4 @@ export function checkPostText(text) {
   return { adLabel: !!label, labelText: label ? label[0] : null, claims: uniq.slice(0, 6) };
 }
 
-export { DATA_BY_CATEGORY, VERDICT };
+export { DATA_BY_CATEGORY, VERDICT, RELIABILITY };

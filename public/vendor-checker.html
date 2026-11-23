@@ -468,6 +468,16 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .risk-detail{font-size:12px;color:var(--tm);line-height:1.55;margin-top:4px}
 .risk-note{font-size:11px;color:var(--mu);margin-top:4px;font-style:italic}
 .risk-ask{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.rel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:4px 0 12px}
+.rel-q{font-size:15px;font-weight:700}
+.rel-sum{font-size:12.5px;color:var(--tm);margin-top:3px;line-height:1.5}
+.vpill.mu{background:var(--bg);color:var(--tm);border:1px solid var(--b)}
+.rel-sec{border:1px solid var(--b);border-radius:var(--rad-sm);padding:4px 14px 2px;margin-bottom:12px;background:var(--w)}
+.rel-sec-h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;padding:11px 0 9px;border-bottom:1px solid var(--b);font-size:13px;font-weight:700}
+.rel-sec-h span{display:flex;align-items:center;gap:7px}
+.rel-sec-h strong{font-size:12.5px}
+.rel-sec-h strong.ok{color:var(--g)}.rel-sec-h strong.bad{color:var(--r)}.rel-sec-h strong.warn{color:#a16207}.rel-sec-h strong.unknown{color:var(--mu)}
+.rel-pill{font-size:11px;color:var(--tm);white-space:nowrap}
 .pw-card{background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;margin-top:18px}
 .pw-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
 .pw-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
@@ -538,7 +548,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sum-tile"><div class="sum-label">Stop using</div><div class="sum-num r" id="sumStop">&mdash;</div><div class="sum-sub">act this week</div></div>
     <div class="sum-tile"><div class="sum-label">Fix this</div><div class="sum-num y" id="sumFix">&mdash;</div><div class="sum-sub">one step each</div></div>
     <div class="sum-tile"><div class="sum-label">Keep</div><div class="sum-num g" id="sumKeep">&mdash;</div><div class="sum-sub">no open risks</div></div>
-    <div class="sum-tile"><div class="sum-label">Third-party score</div><div class="sum-num mu" id="sbTotal">&mdash;</div><div class="sum-sub" id="sbTotalSub">out of 100, paperwork included</div></div>
+    <div class="sum-tile"><div class="sum-label">Third-party score</div><div class="sum-num mu" id="sbTotal">&mdash;</div><div class="sum-sub" id="sbTotalSub">out of 100</div></div>
   </div>
 
   <div id="foundCard"></div>
@@ -940,7 +950,7 @@ function renderSummary() {
   } else {
     m.textContent = money(t.likely||0); m.className = 'sum-num'+(t.likely?' r':' g');
     sub.textContent = (t.likely ? 'Most likely, if the ICO acted on all of it. Range '+money(t.low)+'–'+money(t.high)+'.' : 'No open data protection risks.')
-      + (t.paperwork ? ' Missing paperwork adds about '+money(t.paperwork)+'.' : '');
+      + (t.paperwork ? ' Missing contracts add about '+money(t.paperwork)+'.' : '');
   }
   document.getElementById('sumStop').textContent = t.stop||0;
   document.getElementById('sumFix').textContent = t.fix||0;
@@ -1118,7 +1128,7 @@ function renderList(records) {
     return '<div class="tp-row '+a.tone+(selId[currentType]===r.id?' sel':'')+'" onclick="showDetail(\''+escJ(r.id)+'\')">'
       + '<div class="tp-name">'+escH(name)+' <span class="tp-kind">'+escH(getTypeInfo(f))+'</span>'+(a.found?'<span class="tp-found">Found by Sendwize</span>':'')+'</div>'
       + '<div class="tp-right"><span class="vpill '+a.tone+'"><span class="tc-status-dot"></span>'+escH(a.verdictLabel||'')+'</span>'+moneyHtml(a)+'</div>'
-      + '<div class="tp-head">'+escH(a.headline||'')+'</div>'
+      + '<div class="tp-head">'+escH(a.headline||'')+(a.reliability?' <span class="rel-pill">· Reliability: <strong>'+escH(a.reliability.label)+'</strong></span>':'')+'</div>'
       + (showNext ? '<div class="tp-next"><button class="tp-next-btn" onclick="event.stopPropagation();doNext(\''+escJ(r.id)+'\')">'+escH(next.label)+' <i class="ph ph-arrow-right"></i></button></div>' : '')
       + '</div>';
   }).join('');
@@ -1134,11 +1144,11 @@ function getTypeInfo(f) {
 // ── Detail panel ──────────────────────────────────────────────
 function tabsFor(type) {
   if (type==='competitors') return [['Overview','overview'],['Rulings','rulings'],['Promo tactics','promos']];
-  if (type==='processors')  return [['What it risks','overview'],['Your set-up','marketing'],['Paperwork','paperwork']];
-  if (type==='partners')    return [['What it risks','overview'],['Checks','verification'],['Paperwork','paperwork']];
+  if (type==='processors')  return [['What it risks','overview'],['Your set-up','marketing'],['Contract','paperwork']];
+  if (type==='partners')    return [['What it risks','overview'],['Checks','verification'],['Contract','paperwork']];
   var rec = S.affiliates.find(function(r){ return r.id===selId.affiliates; });
   var mails = rec && affiliateRequirements(rec.fields).senderIdentity;
-  return [['What it risks','overview'],['Live posts','live'],['Checks','verification']].concat(mails ? [['Email copy','creative']] : []).concat([['Paperwork','paperwork']]);
+  return [['What it risks','overview'],['Live posts','live'],['Checks','verification']].concat(mails ? [['Email copy','creative']] : []).concat([['Contract','paperwork']]);
 }
 
 function showDetail(recordId, tab) {
@@ -1195,8 +1205,11 @@ function goToDetailTab(tabName) {
 function doNext(recordId) {
   var rec = S[currentType].find(function(r){ return r.id===recordId; });
   if (!rec || !rec.a) return;
-  var go = (rec.a.nextAction||{}).go, key = (rec.a.nextAction||{}).key;
+  goTo(recordId, (rec.a.nextAction||{}).go, (rec.a.nextAction||{}).key);
+}
+function goTo(recordId, go, key) {
   if (go==='sweep') { window.location.href = APP_URL+'/site-sweep.html?userId='+encodeURIComponent(userId); return; }
+  if (go==='listhealth') { window.location.href = APP_URL+'/list-intelligence.html?userId='+encodeURIComponent(userId); return; }
   if (selId[currentType]!==recordId) showDetail(recordId);
   var tab = { checks: currentType==='processors' ? 'marketing' : 'verification', consent:'verification', paperwork:'paperwork', live:'live', ask:'overview' }[go];
   if (tab && tab!=='overview') { goToDetailTab(tab); return; }
@@ -1209,6 +1222,16 @@ function doNext(recordId) {
 
 var STATUS_ICON = { ok:'check-circle', warn:'warning', bad:'x-circle', unknown:'question', info:'info' };
 
+function perfBoxHtml(rec) {
+  var p = rec.a && rec.a.performance;
+  if (!p) return '';
+  var cells = [];
+  if (p.greenPct!=null) cells.push([p.greenPct+'%','safe to email']);
+  if (p.neverEngagedPct!=null) cells.push([p.neverEngagedPct+'%','never engaged']);
+  if (p.buyersPct!=null) cells.push([p.buyersPct+'%','bought from you']);
+  if (p.redPct!=null && cells.length<3) cells.push([p.redPct+'%','risky to email']);
+  return cells.length ? '<div class="perf-box">'+cells.map(function(c){ return '<div class="perf-cell"><div class="perf-num">'+c[0]+'</div><div class="perf-lbl">'+c[1]+'</div></div>'; }).join('')+'</div>' : '';
+}
 function riskRowHtml(rec, r) {
   var cls = r.info ? 'info' : r.status;
   var ask = '';
@@ -1224,16 +1247,7 @@ function riskRowHtml(rec, r) {
       + '<button class="cb cb-warn" onclick="askMechanism(\''+escJ(rec.id)+'\')">Outside the UK and EU</button></div>'
       + '<div id="mech-'+escH(rec.id)+'"></div>';
   }
-  var perf = '';
-  if (r.key==='performance' && rec.a.performance) {
-    var p = rec.a.performance;
-    var cells = [];
-    if (p.greenPct!=null) cells.push([p.greenPct+'%','safe to email']);
-    if (p.neverEngagedPct!=null) cells.push([p.neverEngagedPct+'%','never engaged']);
-    if (p.buyersPct!=null) cells.push([p.buyersPct+'%','bought from you']);
-    if (p.redPct!=null && cells.length<3) cells.push([p.redPct+'%','risky to email']);
-    if (cells.length) perf = '<div class="perf-box">'+cells.map(function(c){ return '<div class="perf-cell"><div class="perf-num">'+c[0]+'</div><div class="perf-lbl">'+c[1]+'</div></div>'; }).join('')+'</div>';
-  }
+  var perf = r.key==='performance' ? perfBoxHtml(rec) : '';
   return '<div class="risk-row" id="risk-'+escH(r.key)+'"><span class="risk-ico '+cls+'"><i class="ph ph-'+(STATUS_ICON[cls]||'circle')+' icon-18"></i></span>'
     + '<div class="risk-body"><div class="risk-top"><span class="risk-title">'+escH(r.title)+'</span><span class="risk-answer">'+escH(r.answer||'')+'</span></div>'
     + (r.detail ? '<div class="risk-detail">'+escH(r.detail)+'</div>' : '')
@@ -1249,7 +1263,7 @@ function verdictCardHtml(rec) {
   else if (e.likely) moneyBlock = '<div class="verdict-money-num">'+money(e.likely)+'</div><div class="verdict-money-sub">most likely if the ICO acted. Range '+money(e.low)+'–'+money(e.high)+'.</div>';
   else if (e.asa || e.cma) moneyBlock = '<div class="verdict-money-num" style="font-size:16px">'+(e.asa?'ASA ruling risk':'CMA risk')+'</div><div class="verdict-money-sub">'+(e.asa?'The ASA publishes rulings, it does not fine.':'The CMA can fine up to 10% of turnover.')+'</div>';
   else if (e.unpriced) moneyBlock = '<div class="verdict-money-num" style="font-size:16px">No published fines yet</div><div class="verdict-money-sub">The ICO has not published fines for this, so it is not in the £ figure. It is still a breach.</div>';
-  else moneyBlock = '<div class="verdict-money-num" style="color:var(--g)">£0</div><div class="verdict-money-sub">'+(a.paperwork && a.paperwork.exposure && a.paperwork.exposure.likely ? 'Only the paperwork is open: see below.' : 'No open data protection risk')+'</div>';
+  else moneyBlock = '<div class="verdict-money-num" style="color:var(--g)">£0</div><div class="verdict-money-sub">'+(a.paperwork && a.paperwork.exposure && a.paperwork.exposure.likely ? 'No contract in place yet: see below.' : 'No open data protection risk')+'</div>';
   var showNext = next.go && next.go!=='none';
   return '<div class="verdict-card '+a.tone+'"><div><div class="verdict-word">'+escH(a.verdictLabel)+'</div><div class="verdict-why">'+escH(a.headline)+'</div></div>'
     + '<div class="verdict-money">'+moneyBlock+'</div>'
@@ -1258,14 +1272,20 @@ function verdictCardHtml(rec) {
     + '</div></div>';
 }
 
-function paperworkSummaryHtml(rec) {
-  var pw = rec.a.paperwork || {};
-  return '<div class="pw-card"><div class="pw-head"><div class="pw-title"><i class="ph ph-files icon-16"></i>Paperwork</div>'
-    + '<button class="btn btn-ghost btn-xs" onclick="goToDetailTab(\'paperwork\')">Open paperwork</button></div>'
-    + '<div class="pw-sub">Counts toward your score. Rarely the first thing that gets a business into trouble, but a regulator will ask for it.'
-    + (S.profile.complete && pw.exposure && pw.exposure.likely ? ' If it is still missing when asked: about '+money(pw.exposure.likely)+' in comparable cases.' : '')+'</div>'
-    + (pw.items||[]).map(function(i){ return '<div class="pw-item"><span>'+escH(i.label)+'</span><strong class="'+i.status+'">'+escH(i.answer)+'</strong></div>'; }).join('')
-    + '</div>';
+var COMMERCIAL_KEYS = ['performance','record'];
+function reliabilityHeadHtml(rec) {
+  var rel = rec.a.reliability;
+  return '<div class="rel-head"><div><div class="rel-q">How reliable is '+escH(getName(rec.fields))+'?</div><div class="rel-sum">'+escH(rel.summary)+'</div></div>'
+    + '<span class="vpill '+rel.tone+'"><span class="tc-status-dot"></span>'+escH(rel.label)+'</span></div>';
+}
+function commercialRowHtml(rec, c) {
+  var perf = c.key==='quality' ? perfBoxHtml(rec) : '';
+  return '<div class="risk-row" id="risk-'+escH(c.key)+'"><span class="risk-ico '+c.status+'"><i class="ph ph-'+(STATUS_ICON[c.status]||'circle')+' icon-18"></i></span>'
+    + '<div class="risk-body"><div class="risk-top"><span class="risk-title">'+escH(c.q)+'</span><span class="risk-answer">'+escH(c.answer||'')+'</span></div>'
+    + (c.detail ? '<div class="risk-detail">'+escH(c.detail)+'</div>' : '')
+    + perf
+    + (c.action ? '<div class="risk-ask"><button class="btn btn-ghost btn-xs" onclick="goTo(\''+escJ(rec.id)+'\',\''+escJ(c.action.go)+'\')">'+escH(c.action.label)+' <i class="ph ph-arrow-right"></i></button></div>' : '')
+    + '</div></div>';
 }
 
 function renderDetailOverview(rec) {
@@ -1289,10 +1309,18 @@ function renderDetailOverview(rec) {
   if (!a) { body.innerHTML = ''; return; }
   var risks = a.risks||[];
   var foundNote = a.found ? '<div style="font-size:11.5px;color:var(--mu);margin-top:14px;display:flex;gap:6px"><i class="ph ph-sparkle"></i><span>'+escH(a.found)+'</span></div>' : '';
+  var rel = a.reliability;
+  if (!rel) {
+    body.innerHTML = verdictCardHtml(rec) + '<div class="risk-h">The risks to you</div>' + risks.map(function(r){ return riskRowHtml(rec, r); }).join('') + foundNote;
+    return;
+  }
+  var lawRows = risks.filter(function(r){ return COMMERCIAL_KEYS.indexOf(r.key)<0; });
   body.innerHTML = verdictCardHtml(rec)
-    + '<div class="risk-h">The risks to you</div>'
-    + risks.map(function(r){ return riskRowHtml(rec, r); }).join('')
-    + paperworkSummaryHtml(rec)
+    + reliabilityHeadHtml(rec)
+    + '<div class="rel-sec"><div class="rel-sec-h"><span><i class="ph ph-scales icon-16"></i>Do they keep you within marketing law?</span><strong class="'+rel.law.status+'">'+escH(rel.law.answer)+'</strong></div>'
+    + lawRows.map(function(r){ return riskRowHtml(rec, r); }).join('') + '</div>'
+    + '<div class="rel-sec"><div class="rel-sec-h"><span><i class="ph ph-handshake icon-16"></i>Could they cause you commercial problems?</span><strong class="'+rel.commercial.status+'">'+escH(rel.commercial.answer)+'</strong></div>'
+    + rel.commercial.items.map(function(c){ return commercialRowHtml(rec, c); }).join('') + '</div>'
     + foundNote;
 }
 
@@ -1375,31 +1403,31 @@ function checkCaption(recordId) {
     .catch(function(e){ hideLoading(); showToast('Check failed: '+e.message,'er'); });
 }
 
-// ── Paperwork: agreement and privacy policy, last ─────────────
+// ── Contract: the agreement and privacy policy, last ─────────
 function renderPaperwork(rec) {
   var body = document.getElementById('dpBody');
   if (!body) return;
   var f = rec.fields, name = getName(f), t = currentType;
-  var intro = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">The agreement and privacy policy for '+escH(name)+'. This counts toward your third-party score and a regulator will ask to see it, so keep it on file.</p>';
+  var intro = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">The contract decides whether you are covered if '+escH(name)+' lets you down. Tell us what is in place and give us their terms: we read them and answer the questions under <a href="#" style="color:var(--o);font-weight:600" onclick="goToDetailTab(\'overview\');return false">How reliable</a> for you. It also counts toward your score.</p>';
   var agreement = '';
   if (t==='processors') {
     var st = f.DPAStatus||f.AgreementStatus||'Not yet';
-    agreement = '<div class="pw-section"><h3>Data processing agreement</h3>'
-      + '<div class="pw-sub">UK GDPR Article 28 needs a written agreement with any platform that handles customer data for you. Most platforms publish one you accept in your account settings.</div>'
+    agreement = '<div class="pw-section"><h3>Their data terms</h3>'
+      + '<div class="pw-sub">Most platforms publish their data terms and you accept them in your account settings. That is enough.</div>'
       + '<div class="fg" style="max-width:280px"><label>Status</label><select onchange="savePlatformAgreement(\''+escJ(rec.id)+'\',this.value)">'
       + optionsHtml([['Not yet','Not on file'],['Requested','Requested'],['Confirmed','In place'],['Refused','They refused']], isDPAConfirmed(st)?'Confirmed':st)+'</select></div>'
       + '<div id="pwAgreement"></div></div>';
   } else if (t==='partners') {
-    agreement = '<div class="pw-section"><h3>How data is shared, and the agreement it needs</h3><div id="pwRel"></div><div id="pwA26"></div></div>';
+    agreement = '<div class="pw-section"><h3>How data is shared, and the contract it needs</h3><div id="pwRel"></div><div id="pwA26"></div></div>';
   } else {
     var q = affiliateRequirements(f);
-    agreement = '<div class="pw-section"><h3>Agreement</h3>'
+    agreement = '<div class="pw-section"><h3>Contract</h3>'
       + '<div class="pw-sub">'+(q.agreement==='unknown' ? 'Tell us what '+escH(name)+' does with data in the Checks tab; that decides which agreement applies.' : !q.agreement ? 'Not needed: they promote you without sending messages or passing you data.' : 'Needed: '+escH(q.agreement)+'.')+'</div>'
       + (q.agreement && q.agreement!=='unknown' ? '<div class="fg" style="max-width:280px"><label>Status</label><select onchange="saveAffiliateAgreement(\''+escJ(rec.id)+'\',this.value)">'+optionsHtml([['Not yet','Not on file'],['Requested','Requested'],['Confirmed','In place']], isDPAConfirmed(f.DPAStatus)?'Confirmed':(f.DPAStatus||'Not yet'))+'</select></div><div id="pwAgreement"></div>' : '')
       + '</div>';
   }
   body.innerHTML = intro + agreement
-    + '<div class="pw-section"><h3>Their privacy policy</h3><div id="pwPrivacy"></div></div>'
+    + '<details class="pw-section"><summary style="cursor:pointer;font-size:14px;font-weight:700">Their privacy policy (optional)</summary><div id="pwPrivacy" style="margin-top:10px"></div></details>'
     + (t==='processors' ? '<div id="pwAssurance"></div>' : '');
   if (document.getElementById('pwAgreement')) renderDPAReview(rec, 'pwAgreement');
   if (t==='partners') {
@@ -1544,14 +1572,14 @@ function renderDPAReview(rec, target) {
 
   var mode = scanMode[currentType]||'url';
   var file = scanFile[currentType];
-  var urlHtml = '<div class="scan-row"><input type="url" id="dpa-url" placeholder="Link to their data processing agreement" value="'+escH(url)+'"><button class="btn btn-primary btn-sm" onclick="runDPAScan(\''+rec.id+'\',\'url\')">Scan <i class="ph ph-arrow-right icon-16"></i></button></div>';
+  var urlHtml = '<div class="scan-row"><input type="url" id="dpa-url" placeholder="Link to their data terms" value="'+escH(url)+'"><button class="btn btn-primary btn-sm" onclick="runDPAScan(\''+rec.id+'\',\'url\')">Scan <i class="ph ph-arrow-right icon-16"></i></button></div>';
   var fileHtml = file
     ? '<div class="scan-row"><div class="file-chosen"><i class="ph ph-file-pdf icon-16"></i><span class="file-chosen-name">'+escH(file.name)+'</span><button class="file-clear" onclick="clearScanFile()"><i class="ph ph-x icon-16"></i></button></div><button class="btn btn-primary btn-sm" onclick="runDPAScan(\''+rec.id+'\',\'file\')">Scan <i class="ph ph-arrow-right icon-16"></i></button></div>'
     : '<label class="file-drop" id="fileDrop"><strong>Click to choose a PDF</strong>Or drag and drop the agreement here<input type="file" accept=".pdf,application/pdf" onchange="chooseScanFile(this)"></label>';
 
-  body.innerHTML = '<div class="pw-sub" style="margin-top:8px">Have it checked against the terms UK GDPR Article 28 requires, and the UK transfer rules. Paste a link, upload the PDF, or mark each term yourself.</div>'
+  body.innerHTML = '<div class="pw-sub" style="margin-top:8px">Give us their terms and we check the parts that protect you: they warn you fast if data is lost, you can leave and have it deleted, and they tell you who else gets it.</div>'
     + '<div class="scan-controls">'
-    + '<div class="scan-controls-label">Check the agreement</div>'
+    + '<div class="scan-controls-label">Read their terms</div>'
     + '<div class="scan-tabs">'
     + '<button class="scan-tab'+(mode==='url'?' on':'')+'" onclick="setScanMode(\'url\',\''+rec.id+'\')">URL</button>'
     + '<button class="scan-tab'+(mode==='file'?' on':'')+'" onclick="setScanMode(\'file\',\''+rec.id+'\')">Upload PDF</button>'
@@ -1559,7 +1587,8 @@ function renderDPAReview(rec, target) {
     + (mode==='url' ? urlHtml : fileHtml)
     + '</div>'
     + '<div id="dpaScanRes">'+(lastScanHtml[rec.id]||'')+'</div>'
-    + scoreHtml + clauses;
+    + '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;color:var(--tm);font-weight:600;padding:6px 0">Clause-by-clause detail, for your lawyer or DPO</summary><div style="margin-top:8px">'
+    + scoreHtml + clauses + '</div></details>';
 
   if (mode==='file') wireFileDrop();
 }
@@ -1868,7 +1897,7 @@ function renderVerification(rec) {
     done: q.role!=='unknown',
     render: function(){
       var note = q.role==='unknown' ? '' :
-        q.agreement ? '<div class="verif-result warn">Agreement needed: <strong>'+escH(q.agreement)+'</strong>. Record it under Paperwork.</div>' :
+        q.agreement ? '<div class="verif-result warn">Agreement needed: <strong>'+escH(q.agreement)+'</strong>. Record it under Contract.</div>' :
         '<div class="verif-result pass">No data agreement or consent check needed for this set-up.</div>';
       return '<div style="margin-top:12px"><div class="fg"><label>Data role</label><select id="verif-role">'+optionsHtml(AFF_ROLES, q.role)+'</select></div>'
         + '<button class="btn btn-primary btn-sm" onclick="saveAffiliateRole(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save</button>'+note+'</div>';
