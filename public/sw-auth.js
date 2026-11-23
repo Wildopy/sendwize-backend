@@ -25,10 +25,10 @@
   var KEY = 'sw_token';
   var BACKEND = /^https:\/\/sendwize-backend\.vercel\.app\//;
   // The one place the dashboard URL lives: every tool page's Dashboard link
-  // and back button follow it. The live dashboard is the default; change it here
+  // and back button follow it. Change STAGING_DASHBOARD's replacement here
   // (or set window.SW_DASHBOARD_URL before this script) when the live URL moves.
-  var DEFAULT_DASHBOARD = 'https://sendwize.co.uk/dashboard';
-  var DASHBOARD = window.SW_DASHBOARD_URL || DEFAULT_DASHBOARD;
+  var STAGING_DASHBOARD = 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+  var DASHBOARD = window.SW_DASHBOARD_URL || STAGING_DASHBOARD;
   var cached = null;
   var WS_KEY = 'sw_ws';
   var ON_BACKEND = BACKEND.test(location.href);
@@ -83,7 +83,7 @@
   }
 
   // Shown when the member has no active paid plan (API returns 402)
-  var PRICING = window.SW_PRICING_URL || 'https://sendwize.co.uk/pricing';
+  var PRICING = window.SW_PRICING_URL || 'https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/pricing-1';
   function showPlanRequired() {
     if (document.getElementById('sw-plan-banner')) return;
     var d = document.createElement('div');
@@ -154,9 +154,9 @@
 
   // Tool pages: point hard-coded dashboard links at DASHBOARD
   function retargetDashboardLinks() {
-    if (DASHBOARD === DEFAULT_DASHBOARD) return;
-    var links = document.querySelectorAll('a[href^="' + DEFAULT_DASHBOARD + '"]');
-    for (var i = 0; i < links.length; i++) links[i].setAttribute('href', DASHBOARD + links[i].getAttribute('href').slice(DEFAULT_DASHBOARD.length));
+    if (DASHBOARD === STAGING_DASHBOARD) return;
+    var links = document.querySelectorAll('a[href^="' + STAGING_DASHBOARD + '"]');
+    for (var i = 0; i < links.length; i++) links[i].setAttribute('href', DASHBOARD + links[i].getAttribute('href').slice(STAGING_DASHBOARD.length));
   }
   if (BACKEND.test(location.href)) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', retargetDashboardLinks);

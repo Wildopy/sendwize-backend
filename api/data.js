@@ -69,7 +69,7 @@ import { transferPosition, ICO_REGISTER_NOTE, sweepTrackers, trackerMatchesVendo
 const APP_URL     = 'https://sendwize-backend.vercel.app';
 const RESEND_FROM = 'alerts@sendwize.co.uk';
 // Where alert emails send people. Set DASHBOARD_URL in Vercel to the live dashboard.
-const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://sendwize.co.uk/dashboard';
+const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
 
 // ── Airtable helpers ──────────────────────────────────────────
 function atHeaders(token) {

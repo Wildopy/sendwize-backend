@@ -11,7 +11,7 @@
  */
 (function () {
   var API = window.SW_API_URL || 'https://sendwize-backend.vercel.app';
-  var SIGNUP = window.SW_SIGNUP_URL || window.SW_PRICING_URL || 'https://sendwize.co.uk/pricing';
+  var SIGNUP = window.SW_SIGNUP_URL || window.SW_PRICING_URL || 'https://new-mvp-v2.webflow.io/marketing-templates/marketing-template-1/pricing-1';
   // Every container on the page gets its own widget. Webflow pages sometimes end
   // up with two (an old free-check embed left behind, or one per breakpoint), and
   // the old code only filled the first, which could be the hidden one.
