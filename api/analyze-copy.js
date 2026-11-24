@@ -1,4 +1,19 @@
-// api/analyze-copy.js  v6.0
+// api/analyze-copy.js  v7.0
+// v7.0 (24 Nov 2026): wider rules, house rules and documents.
+//   + The rulebook (_rulebook.js): every check gets the rule sets that
+//     apply to it, picked from the business's sector, the channel and what
+//     the copy talks about (FCA, medicines, gambling, alcohol, HFSS, green
+//     claims, credit, crypto, children, promotions and more), added to the
+//     message as [RULES THAT APPLY]. The response lists them (rulesApplied).
+//   + House rules (_house-rules.js, saved on the profile as
+//     HouseRulesJson): banned phrases and required wording are found by
+//     code; approved claims get no evidence check; notes go to the AI.
+//   + Documents: upload a PDF, Word (.docx) or PowerPoint (.pptx) as
+//     `file: { name, mediaType, data }` (_doc-text.js). Word and PowerPoint
+//     are read to text here; a PDF goes to Claude as a document. New
+//     content type 'document' for brochures, decks, leaflets and web copy.
+//     No rewrite is written for an uploaded file.
+//   + `sector` in the body overrides the profile's sector for one check.
 // Influencer and creator posts (contentType 'influencer', from PR #28). Rules
 //   run first on the post and the brand relationship (paid, gifted,
 //   affiliate, own brand): no clear ad label, an unclear label such as #sp
@@ -48,11 +63,16 @@ import { sendCall } from './_send-call.js';
 import { ISSUE_IDS, issueOf } from './_copy-issues.js';
 import { copyFacts, factsBlock, reviewFindings, copyScore, guardRewrite, guessIssue } from './_copy-review.js';
 import { caseForIssue } from './_exposure.js';
+import { selectRules, RULEBOOK_VERSION } from './_rulebook.js';
+import { parseHouseRules, houseFindings, houseBlock, hasHouseRules, isApprovedClaim } from './_house-rules.js';
+import { readDocument } from './_doc-text.js';
 
 // Bump when the prompt or the house rules change, so saved answers for
 // identical copy are not reused across versions.
-export const COPY_ENGINE = 'copy-6.3';
-const CHANNEL_NAMES = { email: 'Email', sms: 'SMS', push: 'Push notification', social: 'Social ad', influencer: 'Influencer post', directmail: 'Direct mail' };
+export const COPY_ENGINE = 'copy-7.0';
+const CHANNEL_NAMES = { email: 'Email', sms: 'SMS', push: 'Push notification', social: 'Social ad', influencer: 'Influencer post', directmail: 'Direct mail', document: 'Document' };
+const CONTENT_TYPES = Object.keys(CHANNEL_NAMES);
+const SECTORS = ['ecommerce', 'agency', 'finance', 'healthcare', 'health', 'gambling', 'b2b', 'saas', 'media', 'charity', 'general', 'other'];
 
 const APP_URL = 'https://sendwize-backend.vercel.app';
 
@@ -219,6 +239,9 @@ SECTION 2C -- ISSUE TYPES, FACTS AND WHAT NOT TO FLAG
 
 Every finding carries an issue_type from this fixed list: ${ISSUE_IDS.join(', ')}.
 Use the most specific one. One finding per issue: never merge two issues (e.g. a missing unsubscribe and a missing sender) into one finding, and never raise the same issue twice.
+
+A [RULES THAT APPLY TO THIS PIECE] block comes with the copy. It lists the rule sets chosen for this piece (sector rules such as FCA, medicines, gambling, alcohol, food, children, promotions). Check the piece against every rule in it as well as the rules in this prompt, and cite the reference it gives.
+A [HOUSE RULES] block may come too: the business's own banned words, required wording, approved claims and notes. Follow it as it says. House rule findings use issue_type house_rule and regulation "Your house rules".
 
 A [FACTS CHECKED BY CODE] block comes with the copy. Those facts are settled: if it says an opt-out is present or the sender is named, do not raise a finding saying otherwise.
 
@@ -532,6 +555,12 @@ Check: is the post obviously an ad from the first glance (a clear "Ad" or "#ad" 
 The [INFLUENCER CONTEXT] block says what the brand gave the creator. Labelling rules already checked by Sendwize appear in it; do not repeat them, review everything else.
 Rewrite: put "Ad" or "#ad" at the very start, keep the creator's voice and hook, same length ±20%.`,
 
+  document: `CHANNEL: DOCUMENT (brochure, leaflet, slide deck, sales presentation, web page copy, product sheet or other printed or online material)
+Apply: ASA CAP Code, CMA/DMCCA, consumer law, plus every sector rule in the [RULES THAT APPLY] block. UK GDPR where the document collects personal data.
+DO NOT apply PECR Reg 22 or the email footer rules (opt-out, company details) unless the document is itself an email.
+Check every page or slide, including footnotes, small print, charts, tables and images. In "location", say which page or slide.
+Do not write a fixedVersion: the document is too long to rewrite. Put the fix for each item in its recommendation.`,
+
   directmail: `CHANNEL: DIRECT MAIL
 Apply: UK GDPR (LI most common basis), ASA CAP Code, CMA/DMCCA.
 DO NOT apply PECR Reg 22.
@@ -638,6 +667,8 @@ function getContextViolations(ctx) {
 
 function mapViolationToFixType(violation) {
   if (violation._fixType) return violation._fixType;
+  // The business's own rules are not a regulatory fix (and never reach the £ figures)
+  if (violation.issue_type === 'house_rule') return null;
   if (isEvidenceViolation(violation)) return null;
   const known = violation.issue_type && issueOf(violation.issue_type);
   if (known && known.fixType) return known.fixType;
@@ -834,6 +865,18 @@ export function cleanWriting(list) {
     .map(w => ({ original: w.original.trim().slice(0, 300), suggestion: w.suggestion.trim().slice(0, 300), why: String(w.why || '').trim().slice(0, 300) }));
 }
 
+// Sector and house rules from the business profile (the active workspace's)
+async function loadProfile(userId) {
+  try {
+    const r = await fetch(`https://api.airtable.com/v0/${process.env.BASE_ID}/User_Profile?filterByFormula=${encodeURIComponent(`{UserID}=${fq(userId)}`)}&maxRecords=1`, {
+      headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` },
+    });
+    if (!r.ok) return {};
+    const f = (await r.json()).records?.[0]?.fields || {};
+    return { sector: f.Sector || '', house: parseHouseRules(f.HouseRulesJson) };
+  } catch { return {}; }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -847,16 +890,32 @@ export default async function handler(req, res) {
     const auth = await requireAuth(req, res);
     if (!auth) return;
     if (!(await checkLimit(req, res, auth, 'copy_scan'))) return;
-    const { contentType, subject, userId, autoFix, sendingContext, influencerContext, images, recheckOf } = req.body ?? {};
-    const content = String(req.body?.content || '').trim();
+    const { contentType, subject, userId, sendingContext, influencerContext, recheckOf } = req.body ?? {};
+    let { autoFix, images } = req.body ?? {};
+    let content = String(req.body?.content || '').trim();
     const from = String(req.body?.from || '').trim().slice(0, 200);
     const campaignName = String(req.body?.campaignName || '').trim().slice(0, 120);
-    const hasImages = Array.isArray(images) && images.length > 0;
     if (!userId)      return res.status(400).json({ error: 'Missing userId' });
     if (!contentType) return res.status(400).json({ error: 'Missing contentType' });
-    if (!['email','sms','push','social','influencer','directmail'].includes(contentType)) return res.status(400).json({ error: 'Invalid contentType' });
-    // An image on its own is a complete check: many ads have no caption
-    if (!content && !hasImages) return res.status(400).json({ error: 'Paste the copy or upload an image' });
+    if (!CONTENT_TYPES.includes(contentType)) return res.status(400).json({ error: 'Invalid contentType' });
+
+    // An uploaded document: Word and PowerPoint become text, a PDF goes to Claude whole
+    let doc = null;
+    if (req.body?.file) {
+      try { doc = readDocument(req.body.file); }
+      catch (e) { return res.status(400).json({ error: e.message }); }
+      if (doc.kind === 'text') content = [content, doc.text].filter(Boolean).join('\n\n');
+      images = [];          // one upload per check keeps the request small
+      autoFix = false;      // a whole document is not rewritten
+    }
+    const isPdf = doc?.kind === 'pdf';
+    const hasImages = Array.isArray(images) && images.length > 0;
+    // An image or a PDF on its own is a complete check: many ads have no caption
+    if (!content && !hasImages && !isPdf) return res.status(400).json({ error: 'Paste the copy or upload an image or document' });
+
+    const profile = await loadProfile(userId);
+    const sector = SECTORS.includes(req.body?.sector) ? req.body.sector : profile.sector || '';
+    const house = profile.house || parseHouseRules(null);
 
     const infCtx            = contentType === 'influencer' && influencerContext && typeof influencerContext === 'object' ? influencerContext : null;
     const labelViolations   = infCtx ? influencerViolations(content, infCtx) : [];
@@ -864,14 +923,25 @@ export default async function handler(req, res) {
     const contextViolations = [...(contentType === 'influencer' ? [] : getContextViolations(sendingContext)), ...labelViolations];
     // The From line and subject are part of what the reader sees: check them with the body
     const head              = [from ? `From: ${from}` : '', contentType === 'email' && subject ? `Subject: ${subject}` : ''].filter(Boolean).join('\n');
-    const body              = content || '(No text pasted. The image is the whole piece: read every word in it, including small print.)';
+    const body              = content || (isPdf ? `(The attached PDF${doc.name ? ` "${doc.name}"` : ''} is the whole piece: read every page, including small print, footnotes and images.)` : '(No text pasted. The image is the whole piece: read every word in it, including small print.)');
     const copyText          = head ? `${head}\n\n${contentType === 'email' ? 'Email body:\n' : ''}${body}` : body;
-    const savedCopy         = [head, content || (hasImages ? '(Image only)' : '')].filter(Boolean).join('\n\n');
+    const savedCopy         = [doc ? `File: ${doc.name || 'document'}` : '', head, content || (isPdf ? '(PDF only)' : hasImages ? '(Image only)' : '')].filter(Boolean).join('\n\n');
     const contextBlock      = contentType === 'influencer' ? buildInfluencerContextBlock(infCtx, labelViolations) : buildSendingContextBlock(sendingContext);
     const facts             = copyFacts(contentType, copyText);
     const imageKey          = Array.isArray(images) ? images.map(i => crypto.createHash('sha256').update(String(i?.data || '')).digest('hex').slice(0, 12)).join(',') : '';
-    const checkHash         = contentHash(userId, contentType, content, `${subject || ''}|${from}|${contextBlock}|${infCtx ? JSON.stringify(infCtx) : ''}|${imageKey}|${autoFix ? 'rw' : ''}`);
-    const analysisContent   = `${factsBlock(facts, { images: hasImages })}\n\n${contextBlock ? `${contextBlock}\n\n` : ''}[COPY TO ANALYSE]\n${copyText}`;
+    const fileKey           = isPdf ? crypto.createHash('sha256').update(doc.pdfBase64).digest('hex').slice(0, 12) : '';
+    // Rules: picked from the sector, the channel and the words. Nothing to read yet (PDF, image only): all of them
+    const unread            = !content && (isPdf || hasImages);
+    const rules             = selectRules({ sector, channel: contentType, text: copyText, unread });
+    // Code can only rule out a missing disclaimer when it has read everything: not with an image or PDF attached
+    const codeReadAll       = !hasImages && !isPdf;
+    const houseText         = houseBlock(house, { codeChecked: codeReadAll });
+    const houseKey          = hasHouseRules(house) ? crypto.createHash('sha256').update(JSON.stringify(house)).digest('hex').slice(0, 12) : '';
+    const checkHash         = contentHash(userId, contentType, content, `${subject || ''}|${from}|${contextBlock}|${infCtx ? JSON.stringify(infCtx) : ''}|${imageKey}|${fileKey}|${autoFix ? 'rw' : ''}|${RULEBOOK_VERSION}|${sector}|${houseKey}`);
+    const analysisContent   = `${rules.block}\n\n${houseText ? `${houseText}\n\n` : ''}${factsBlock(facts, { images: hasImages || isPdf })}\n\n${contextBlock ? `${contextBlock}\n\n` : ''}[COPY TO ANALYSE]\n${copyText}`;
+    const rulesApplied      = rules.packs.map(p => p.name);
+    // The business's banned phrases and required wording, found by code in the text
+    const houseHits         = unread ? [] : houseFindings(copyText, house, contentType, { disclaimers: codeReadAll });
 
     // Identical copy (and context, images, engine) gives the saved answer back
     if (!recheckOf) {
@@ -882,7 +952,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
           score: same.fields.RiskScore ?? copyScore(violations), verdict: call.label, violations,
           summary: same.analysis.summary || '', fixedVersion: same.fields.FixedVersion || '', content_kind: same.analysis.contentKind || 'marketing',
-          sendCall: call, contentType, checkHash, sourceRecordId: same.id, comparison: null, reused: true,
+          sendCall: call, contentType, checkHash, sourceRecordId: same.id, comparison: null, reused: true, rulesApplied,
         });
       }
     }
@@ -890,6 +960,7 @@ export default async function handler(req, res) {
     const userMessage = `${CHANNEL_RULES[contentType]}\n\nCONTENT TO ANALYSE:\n${analysisContent}${autoFix ? '\nGenerate a fixedVersion field in the JSON following the Section 2B rewrite rules exactly. Fix compliance issues. Preserve brand voice, energy, and marketing punch. Do NOT include [EVIDENCE REQUIRED:] markers in the rewrite.' : ''}`;
 
     const messageContent = [{ type: 'text', text: userMessage }];
+    if (isPdf) messageContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: doc.pdfBase64 }, title: doc.name || 'Document' });
     const validMediaTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (Array.isArray(images) && images.length > 0) {
       const imageBlocks = images.slice(0, 3)
@@ -907,7 +978,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        max_tokens: 5000,
+        max_tokens: doc || contentType === 'document' ? 8000 : 5000,
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: messageContent }]
       })
@@ -946,7 +1017,10 @@ export default async function handler(req, res) {
     const analysisFailed = aiAnalysis?.verdict === 'Analysis Error';
     const contentKind = aiAnalysis?.content_kind || 'marketing';
     const reviewed = analysisFailed ? taggedAiViolations
-      : reviewFindings(taggedAiViolations, facts, { contentKind, contextFindings: contextViolations, imageOnly: hasImages && !content });
+      : reviewFindings(
+          // Approved claims need no evidence check; code has already found the house rules in the text
+          taggedAiViolations.filter(v => !isApprovedClaim(v, house) && !(v.issue_type === 'house_rule' && codeReadAll)),
+          facts, { contentKind, contextFindings: [...contextViolations, ...houseHits], imageOnly: (hasImages || isPdf) && !content });
     const allViolations = reviewed.map(v => withClosestCase(v, contentType));
 
     let finalScore = analysisFailed ? (aiAnalysis?.score ?? 50) : copyScore(allViolations);
@@ -954,6 +1028,7 @@ export default async function handler(req, res) {
 
     // The rewrite may only say what the original said; anything new becomes a [check: ...] placeholder
     // With no typed text the original is in the image, so every word would look new: skip the guard
+    if (!autoFix) delete aiAnalysis.fixedVersion;
     if (aiAnalysis.fixedVersion && !analysisFailed && content) aiAnalysis.fixedVersion = await guardRewrite(copyText, aiAnalysis.fixedVersion, { timeoutMs: 50000 - (Date.now() - startedAt) });
 
     // Go / Fix first / Hold for the copy only (see _send-call.js). No answer
@@ -986,8 +1061,8 @@ export default async function handler(req, res) {
           CriticalIssues: criticalCount,
           Warnings:       warningCount,
           MarketingCopy:  savedCopy.slice(0, 10000),
-          FileName:       campaignName || (contentType === 'email' ? (subject ? `Email: ${subject}` : 'Email (no subject)') : `${CHANNEL_NAMES[contentType] || contentType}${hasImages && !content ? ' image' : ''} check`),
-          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', contentKind, engine: COPY_ENGINE, writing: aiAnalysis.writing, ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
+          FileName:       campaignName || doc?.name || (contentType === 'email' ? (subject ? `Email: ${subject}` : 'Email (no subject)') : `${CHANNEL_NAMES[contentType] || contentType}${hasImages && !content ? ' image' : ''} check`),
+          Analysis:       JSON.stringify({ violations: allViolations, summary: aiAnalysis?.summary ?? '', contentKind, engine: COPY_ENGINE, writing: aiAnalysis.writing, rulesApplied, sector, ...(previous ? { recheckOf: previous.id, recheckRoot: previous.root, comparison } : {}) }),
           FixedVersion:   aiAnalysis?.fixedVersion ?? '',
           RelatedCases:   [...new Set(allViolations.map(v => v.case_id).filter(Boolean))].join(','),
           SendingContext: contextBlock || '',
@@ -1028,7 +1103,7 @@ export default async function handler(req, res) {
       const bankCall = fetch(`${APP_URL}/api/claims-bank?action=add`, {
         method: 'POST', headers: internalHeaders(),
         body: JSON.stringify({
-          userId, copy: [head, content].filter(Boolean).join('\n\n'), images: hasImages ? images.slice(0, 3) : [],
+          userId, copy: [head, content].filter(Boolean).join('\n\n').slice(0, 20000), images: hasImages ? images.slice(0, 3) : [],
           campaign: campaignName, channel: contentType, source: 'Copy checker', sourceRecordId: savedRecordId,
           replaces: previous ? [previous.id, previous.root].filter(Boolean) : [],
         }),
@@ -1037,8 +1112,8 @@ export default async function handler(req, res) {
       else await Promise.race([bankCall, new Promise(r => setTimeout(r, 1500))]);
     }
 
-    const cleanViolations = allViolations.map(({ _fromContext, _fixType, ...rest }) => rest);
-    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, sendCall: call, contentType, checkHash, sourceRecordId: savedRecordId, comparison, ...(bank ? { bank: { added: (bank.added || []).length, skipped: bank.skipped || 0, matched: bank.matched || 0 } } : {}) });
+    const cleanViolations = allViolations.map(({ _fromContext, _fixType, _house, ...rest }) => rest);
+    return res.status(200).json({ ...aiAnalysis, score: finalScore, verdict: finalVerdict, violations: cleanViolations, sendCall: call, contentType, checkHash, sourceRecordId: savedRecordId, comparison, rulesApplied, sector: sector || null, houseRules: hasHouseRules(house), ...(doc ? { file: { name: doc.name, kind: doc.kind, pages: doc.pages || null, truncated: !!doc.truncated } } : {}), ...(bank ? { bank: { added: (bank.added || []).length, skipped: bank.skipped || 0, matched: bank.matched || 0 } } : {}) });
 
   } catch (error) {
     console.error('analyze-copy error:', error);
