@@ -1,0 +1,834 @@
+{
+ "version": "1.4",
+ "domain": "brightside-test.netlify.app",
+ "startedAt": "2026-11-24T00:23:14.343Z",
+ "completedAt": "2026-11-24T00:23:16.503Z",
+ "homepage": "https://brightside-test.netlify.app/",
+ "pages": [
+  {
+   "role": "home",
+   "url": "https://brightside-test.netlify.app/",
+   "ok": true,
+   "error": null,
+   "title": "Brightside Home | Homeware made for real life"
+  },
+  {
+   "role": "privacy",
+   "url": "https://brightside-test.netlify.app/privacy.html",
+   "ok": true,
+   "error": null,
+   "title": "Privacy | Brightside Home"
+  },
+  {
+   "role": "signup",
+   "url": "https://brightside-test.netlify.app/newsletter.html",
+   "ok": true,
+   "error": null,
+   "title": "Join the Brightside newsletter"
+  },
+  {
+   "role": "contact",
+   "url": "https://brightside-test.netlify.app/contact.html",
+   "ok": true,
+   "error": null,
+   "title": "Contact | Brightside Home"
+  },
+  {
+   "role": "offers",
+   "url": "https://brightside-test.netlify.app/sale.html",
+   "ok": true,
+   "error": null,
+   "title": "Black Friday Sale | Brightside Home"
+  },
+  {
+   "role": "partner",
+   "url": "https://brightside-test.netlify.app/partner-picks.html",
+   "ok": true,
+   "error": null,
+   "title": "Sophie's Home Edit picks | Brightside Home"
+  }
+ ],
+ "browserCheck": {
+  "status": "unavailable",
+  "reason": "Headless browser not installed"
+ },
+ "findings": [
+  {
+   "key": "cookies_consent_tool_not_evidenced",
+   "checkId": "cookies_consent_tool_not_evidenced",
+   "category": "cookies",
+   "severity": "medium",
+   "regulator": "ICO",
+   "title": "Tracking tags with no consent tool in page source",
+   "detail": "Tracking tags were found (Google Analytics / Tag Manager, Meta Pixel, Hotjar, Klaviyo) but no consent management platform was detected in the page source. A consent tool loaded through a tag manager would not be visible to this check.",
+   "ruleRef": "PECR Reg 6",
+   "page": "/",
+   "excerpt": "",
+   "evidenceType": "page_observed",
+   "confidence": "low",
+   "where": "Page /",
+   "case": null,
+   "cost": {
+    "regulator": "ICO",
+    "low": 22000,
+    "high": 88000,
+    "label": "£22,000 to £88,000, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Add a consent banner (a CMP such as Cookiebot, CookieYes or your platform's own) and load tracking tags only after someone accepts.",
+    "paste": ""
+   }
+  },
+  {
+   "key": "cookies_no_policy",
+   "checkId": "cookies_no_policy",
+   "category": "cookies",
+   "severity": "medium",
+   "regulator": "ICO",
+   "title": "No cookie information identified",
+   "detail": "No cookie policy page was found and the privacy notice does not explain cookies. Users must be given clear information about the cookies a site uses.",
+   "ruleRef": "PECR Reg 6(2)",
+   "page": "",
+   "excerpt": "",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "where": "",
+   "case": null,
+   "cost": {
+    "regulator": "ICO",
+    "low": 5500,
+    "high": 19800,
+    "label": "£5,500 to £19,800, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Add a cookie policy page (or a cookies section in your privacy notice) listing each cookie, who sets it, what it is for and how long it lasts. Link it from the footer and the banner.",
+    "paste": "Cookies we use\n• Strictly necessary: [name], [purpose], [duration]\n• Analytics (only with your consent): [name], [provider], [purpose], [duration]\n• Advertising (only with your consent): [name], [provider], [purpose], [duration]\nYou can change your choice at any time: [Cookie settings]"
+   }
+  },
+  {
+   "key": "privacy_notice_incomplete",
+   "checkId": "privacy_notice_incomplete",
+   "category": "privacy",
+   "severity": "medium",
+   "regulator": "ICO",
+   "title": "Privacy notice: required information not evidenced",
+   "detail": "The notice text does not appear to cover: lawful basis for each use; how long data is kept; individual rights; right to complain to the ico; who data is shared with; international transfers. This is a keyword check, so review the notice to confirm.",
+   "ruleRef": "UK GDPR Art 13-14",
+   "page": "/privacy.html",
+   "excerpt": "",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "where": "Page /privacy.html",
+   "case": null,
+   "cost": {
+    "regulator": "ICO",
+    "low": 5500,
+    "high": 19800,
+    "label": "£5,500 to £19,800, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Add the missing sections to your privacy notice.",
+    "paste": "Who we are: Brightside Home [Ltd], [address], [contact email]\nWhat we use your data for, and our lawful basis for each\nWho we share it with\nInternational transfers\nHow long we keep it\nYour rights (access, correction, erasure, objection)\nYou can complain to the Information Commissioner's Office at ico.org.uk"
+   }
+  },
+  {
+   "key": "capture_pre_ticked|/newsletter.html",
+   "checkId": "capture_pre_ticked",
+   "category": "capture",
+   "severity": "high",
+   "regulator": "ICO",
+   "title": "Pre-ticked marketing consent box",
+   "detail": "A checkbox that appears to relate to marketing is ticked by default. Consent needs a clear affirmative action, so a pre-ticked box does not provide valid consent.",
+   "ruleRef": "PECR Reg 22; UK GDPR Art 4(11)",
+   "page": "/newsletter.html",
+   "excerpt": "Send me offers and news from Brightside Yes, I'd also like offers from selected partners Join &copy; 2026 Brightside Home",
+   "evidenceType": "page_observed",
+   "confidence": "high",
+   "where": "Page /newsletter.html",
+   "case": null,
+   "cost": {
+    "regulator": "ICO",
+    "low": 27500,
+    "high": 110000,
+    "label": "£27,500 to £110,000, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Untick every marketing box by default. Use a separate box for each channel (email, text) and drop any \"partners\" box.",
+    "paste": "<label><input type=\"checkbox\" name=\"email_marketing\"> Email me offers and news from Brightside Home. Unsubscribe any time.</label>"
+   }
+  },
+  {
+   "key": "capture_no_privacy_link|/newsletter.html",
+   "checkId": "capture_no_privacy_link",
+   "category": "capture",
+   "severity": "medium",
+   "regulator": "ICO",
+   "title": "Sign-up form without a privacy link",
+   "detail": "An email sign-up form was found but no link to the privacy notice was identified on the same page.",
+   "ruleRef": "UK GDPR Art 13",
+   "page": "/newsletter.html",
+   "excerpt": "",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "where": "Page /newsletter.html",
+   "case": null,
+   "cost": {
+    "regulator": "ICO",
+    "low": 5500,
+    "high": 19800,
+    "label": "£5,500 to £19,800, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Add a privacy link directly under the form.",
+    "paste": "See our <a href=\"/privacy\">privacy notice</a> for how we use your details."
+   }
+  },
+  {
+   "key": "identity_company_details",
+   "checkId": "identity_company_details",
+   "category": "identity",
+   "severity": "low",
+   "regulator": "Companies House",
+   "title": "Company registration details not identified",
+   "detail": "No company number or place of registration was found. Limited companies must show their registered name, number, place of registration and registered office on their website.",
+   "ruleRef": "Companies (Trading Disclosures) Regs 2008",
+   "page": "",
+   "excerpt": "",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "where": "",
+   "case": null,
+   "cost": null,
+   "fix": {
+    "steps": "Add your registered company details to the footer of every page.",
+    "paste": "Brightside Home Ltd. Registered in England and Wales, company number [number]. Registered office: [address]."
+   }
+  },
+  {
+   "key": "identity_no_address",
+   "checkId": "identity_no_address",
+   "category": "identity",
+   "severity": "low",
+   "regulator": "Trading Standards",
+   "title": "No geographic address identified",
+   "detail": "No UK postal address was found on the pages reviewed. Online traders must give a geographic address.",
+   "ruleRef": "E-Commerce Regs 2002 reg 6",
+   "page": "",
+   "excerpt": "",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "where": "",
+   "case": null,
+   "cost": null,
+   "fix": {
+    "steps": "Add a geographic postal address to the footer or contact page.",
+    "paste": "Brightside Home Ltd, [street], [town] [postcode]"
+   }
+  },
+  {
+   "key": "terms_missing",
+   "checkId": "terms_missing",
+   "category": "terms",
+   "severity": "medium",
+   "regulator": "CMA",
+   "title": "No terms and conditions found",
+   "detail": "The site appears to sell to consumers, but no terms and conditions page was linked from the homepage. Consumers must be given key information before they buy, including the right to cancel, and the terms should be easy to find.",
+   "ruleRef": "Consumer Contracts Regs 2013 reg 13",
+   "page": "",
+   "excerpt": "",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "where": "",
+   "case": null,
+   "cost": {
+    "regulator": "CMA",
+    "max": 1000000,
+    "label": "Up to £1,000,000 for a business your size (higher of £300k or 10% of turnover, DMCCA 2024)"
+   },
+   "fix": {
+    "steps": "Publish terms and conditions and link them in the footer and at checkout.",
+    "paste": ""
+   }
+  },
+  {
+   "key": "signup_purpose_unclear|/",
+   "checkId": "signup_purpose_unclear",
+   "category": "marketing",
+   "severity": "high",
+   "regulator": "ICO",
+   "title": "\"10% off\" for signing up, but the form never says it means marketing emails",
+   "detail": "The discount is only given in return for an email address, but the form doesn't tell people they are agreeing to receive marketing. Offering a reward for signing up is allowed, but the consent behind it has to be informed: say plainly what they will get, how often, and that they can unsubscribe.",
+   "ruleRef": "PECR Reg 22; UK GDPR Art 4(11) and 7",
+   "page": "/",
+   "excerpt": "Get 10% off your first order",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "element": "Sign-up form on /",
+   "issue": "consent_basis",
+   "where": "Sign-up form on /",
+   "case": {
+    "id": "ico_poxell_ltd_2023",
+    "name": "Poxell Ltd",
+    "regulator": "ICO",
+    "date": "2023-08-03",
+    "penalty": 150000,
+    "outcome": "Fined £150,000",
+    "summary": "Poxell first came to the attention of the Commissioner in April 2022 as part of an investigation formed to assess and analyse complaint trends in relation to the energy and home improvements sector. The investigation established that between 31 March 2022 and 20 July 2022, Poxell made 2,647,805 unsolicited direct marketing calls in breach of regulations 21 and 24 of PECR.",
+    "action": null,
+    "url": null
+   },
+   "cost": {
+    "regulator": "ICO",
+    "low": 27500,
+    "high": 110000,
+    "label": "£27,500 to £110,000, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Say next to the button what people are signing up to, and that they can unsubscribe.",
+    "paste": "Sign up for emails about new products and offers from Brightside Home. Unsubscribe any time. See our <a href=\"/privacy\">privacy notice</a>."
+   }
+  },
+  {
+   "key": "signup_sms_wording|/#popup",
+   "checkId": "signup_sms_wording",
+   "category": "marketing",
+   "severity": "high",
+   "regulator": "ICO",
+   "title": "Phone number collected, but the wording never mentions texts",
+   "detail": "This form asks for a mobile number, but nothing near it says you will send marketing texts. Consent for texts has to be specific: people need to know they are agreeing to SMS, not just email. This is the exact gap in the HelloFresh fine.",
+   "ruleRef": "PECR Reg 22; UK GDPR Art 4(11)",
+   "page": "/",
+   "excerpt": "Wait! Unlock 15% off",
+   "evidenceType": "page_observed",
+   "confidence": "high",
+   "element": "Pop-up sign-up on /",
+   "issue": "consent_basis",
+   "caseId": "hellofresh_2024",
+   "where": "Pop-up sign-up on /",
+   "case": {
+    "id": "hellofresh_2024",
+    "name": "HelloFresh (Grocery Delivery E-Services UK Ltd)",
+    "regulator": "ICO",
+    "date": "2024-01-12",
+    "penalty": 140000,
+    "outcome": "Fined £140,000",
+    "summary": "About 79M marketing emails and 1M texts. Consent was bundled with an age confirmation, never mentioned texts, and did not say marketing would continue for 24 months after cancellation. Some people were contacted after asking it to stop.",
+    "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/01/grocery-delivery-e-services-uk-ltd-ta-hellofresh/"
+   },
+   "cost": {
+    "regulator": "ICO",
+    "low": 27500,
+    "high": 110000,
+    "label": "£27,500 to £110,000, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Add wording that names texts, with a separate tick box for SMS, and say how to stop.",
+    "paste": "<label><input type=\"checkbox\" name=\"sms_marketing\"> Text me offers and news from Brightside Home. Reply STOP to opt out any time.</label>"
+   }
+  },
+  {
+   "key": "signup_purpose_unclear|/#popup",
+   "checkId": "signup_purpose_unclear",
+   "category": "marketing",
+   "severity": "high",
+   "regulator": "ICO",
+   "title": "\"15% off\" for signing up, but the form never says it means marketing emails",
+   "detail": "The discount is only given in return for an email address, but the form doesn't tell people they are agreeing to receive marketing. Offering a reward for signing up is allowed, but the consent behind it has to be informed: say plainly what they will get, how often, and that they can unsubscribe.",
+   "ruleRef": "PECR Reg 22; UK GDPR Art 4(11) and 7",
+   "page": "/",
+   "excerpt": "Wait! Unlock 15% off",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "element": "Pop-up sign-up on /",
+   "issue": "consent_basis",
+   "where": "Pop-up sign-up on /",
+   "case": {
+    "id": "hellofresh_2024",
+    "name": "HelloFresh (Grocery Delivery E-Services UK Ltd)",
+    "regulator": "ICO",
+    "date": "2024-01-12",
+    "penalty": 140000,
+    "outcome": "Fined £140,000",
+    "summary": "About 79M marketing emails and 1M texts. Consent was bundled with an age confirmation, never mentioned texts, and did not say marketing would continue for 24 months after cancellation. Some people were contacted after asking it to stop.",
+    "action": null,
+    "url": "https://ico.org.uk/action-weve-taken/enforcement/2024/01/grocery-delivery-e-services-uk-ltd-ta-hellofresh/"
+   },
+   "cost": {
+    "regulator": "ICO",
+    "low": 27500,
+    "high": 110000,
+    "label": "£27,500 to £110,000, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Say next to the button what people are signing up to, and that they can unsubscribe.",
+    "paste": "Sign up for emails about new products and offers from Brightside Home. Unsubscribe any time. See our <a href=\"/privacy\">privacy notice</a>."
+   }
+  },
+  {
+   "key": "popup_hidden_decline|/",
+   "checkId": "popup_hidden_decline",
+   "category": "marketing",
+   "severity": "medium",
+   "regulator": "CMA",
+   "title": "Sign-up pop-up makes saying no hard",
+   "detail": "On this pop-up the way out reads \"Unlock 15% off Unlock my discount No thanks, I prefer paying full price\", which shames people for saying no; and the \"No thanks, I prefer paying full price\" option is 9px text, pale grey text, much harder to see than the sign-up button. Saying no to marketing should be as easy as saying yes. The CMA treats pressure like this as harmful online choice architecture, and consent given under it may not be freely given.",
+   "ruleRef": "DMCCA 2024 Part 4 Ch 1 (unfair practices); UK GDPR Art 7(4); CMA online choice architecture guidance",
+   "page": "/",
+   "excerpt": "Wait! Unlock 15% off Unlock my discount No thanks, I prefer paying full price",
+   "evidenceType": "page_observed",
+   "confidence": "high",
+   "element": "Pop-up on /",
+   "evidence": [
+    "the way out reads \"Unlock 15% off Unlock my discount No thanks, I prefer paying full price\", which shames people for saying no",
+    "the \"No thanks, I prefer paying full price\" option is 9px text, pale grey text, much harder to see than the sign-up button"
+   ],
+   "issue": "other",
+   "where": "Pop-up on /",
+   "case": null,
+   "cost": {
+    "regulator": "ICO",
+    "low": 27500,
+    "high": 110000,
+    "label": "£27,500 to £110,000, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Add a clear close button and a neutral \"No thanks\" link, as easy to see as the sign-up button.",
+    "paste": "<button class=\"popup-close\" aria-label=\"Close\">×</button>\n...\n<button class=\"popup-decline\">No thanks</button>"
+   }
+  },
+  {
+   "key": "cookies_reject_layer_down",
+   "checkId": "cookies_reject_layer_down",
+   "category": "cookies",
+   "severity": "medium",
+   "regulator": "ICO",
+   "title": "\"Reject\" is hidden a layer down in the cookie banner",
+   "detail": "The first layer of the banner offers \"Accept all\" in one click, but to refuse people have to open \"Manage settings\" first. The ICO expects reject to be on the first layer and as easy as accept.",
+   "ruleRef": "PECR Reg 6; ICO guidance on cookies",
+   "page": "/",
+   "excerpt": "We use cookies to give you the best experience and to show you relevant ads. Accept all Manage settings",
+   "evidenceType": "page_observed",
+   "confidence": "high",
+   "element": "Cookie banner on /",
+   "evidence": [
+    "First layer: \"Accept all\", \"Manage settings\""
+   ],
+   "where": "Cookie banner on /",
+   "case": null,
+   "cost": {
+    "regulator": "ICO",
+    "low": 22000,
+    "high": 88000,
+    "label": "£22,000 to £88,000, from comparable published ICO fines for a business your size (£1M–£10M)"
+   },
+   "fix": {
+    "steps": "Move \"Reject all\" onto the first layer of the banner, next to \"Accept all\", same size and style. Keep \"Manage choices\" as a third option.",
+    "paste": "<button class=\"cookie-btn\" data-consent=\"accept\">Accept all</button>\n<button class=\"cookie-btn\" data-consent=\"reject\">Reject all</button>\n<button class=\"cookie-link\" data-consent=\"manage\">Manage choices</button>"
+   }
+  },
+  {
+   "key": "urgency_timer_resets|/sale.html",
+   "checkId": "urgency_timer_resets",
+   "category": "marketing",
+   "severity": "high",
+   "regulator": "CMA",
+   "title": "Countdown timer that doesn't count down to a real deadline",
+   "detail": "A countdown that restarts, or carries on after its deadline, tells shoppers an offer is ending when it isn't. Falsely saying a product or price is only available for a very limited time is banned outright under the DMCCA 2024, and the CMA has taken action against Emma Sleep and Wowcher for exactly this.",
+   "ruleRef": "DMCCA 2024 Sch 20 (false urgency); CAP Code 3.30",
+   "page": "/sale.html",
+   "excerpt": "Sale ends at midnight tonight: 05:42:17",
+   "evidenceType": "page_observed",
+   "confidence": "high",
+   "element": "Countdown timer on /sale.html",
+   "evidence": [
+    "The page's own script sets the deadline from the visitor's clock (for example \"midnight tonight\" or \"now plus a few hours\"), so the sale never actually ends: every visitor, every day, sees a fresh countdown.",
+    "We loaded the page twice, 2 seconds apart. Both times the timer showed 05:42:17 left, so it isn't counting down to a real deadline."
+   ],
+   "issue": "fake_urgency",
+   "caseId": "emma_cma_2026",
+   "where": "Countdown timer on /sale.html",
+   "case": {
+    "id": "emma_cma_2026",
+    "name": "Emma Sleep",
+    "regulator": "CMA",
+    "date": "2026-05-22",
+    "penalty": null,
+    "outcome": "Court-backed undertakings",
+    "summary": "Admitted misleading countdown timers and false \"high demand\" and discount claims, and gave court-enforceable undertakings to stop.",
+    "url": "https://www.gov.uk/cma-cases/emma-group-consumer-protection-case"
+   },
+   "cost": {
+    "regulator": "ASA",
+    "label": "No fine, but an upheld ruling is published under your name. Medium referral risk to Trading Standards if it continues."
+   },
+   "fix": {
+    "steps": "Only show a countdown when there is a real, fixed end date, the same for every visitor. Take the offer down when it ends, and don't re-run it straight away.",
+    "paste": "<p>Sale ends 23:59 on [day date month]. <a href=\"/terms\">Offer terms</a></p>"
+   }
+  },
+  {
+   "key": "claim_superlative_claim",
+   "checkId": "claim_superlative_claim",
+   "category": "marketing",
+   "severity": "medium",
+   "regulator": "ASA",
+   "title": "Always-on claim in your announcement bar: best, biggest, no.1 or similar",
+   "detail": "\"The UK's No.1 home brand\" sits in the announcement bar, so every visitor sees it on this page whatever campaign is running. Under the CAP Code a \"best\" or \"No.1\" claim needs evidence that compares you with the whole market, kept up to date. Hold that evidence before the claim goes live, or soften the wording.",
+   "ruleRef": "CAP Code 3.7",
+   "page": "/",
+   "excerpt": "The UK's No.1 home brand",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "element": "Site announcement bar on /",
+   "issue": "superlative_claim",
+   "where": "Site announcement bar on /",
+   "case": {
+    "id": "asa_hgvt_ltd_a25-1317888",
+    "name": "HGVT Ltd",
+    "regulator": "ASA",
+    "date": "2026-04-22",
+    "outcome": "Upheld ASA ruling",
+    "summary": "A website and pages for Heavy Goods Vehicle (HGV) training service providers made misleading claims about HGV test pass rates, the nature of a promotion and being the largest and best rated HGV training provider. The ad also falsely implied they were acting for purposes outside their business.",
+    "action": "The ads must not appear again in the form complained of. The ASA told HGVT Ltd not to make “up to” claims unless a significant proportion of items were available at the advertised maximum discount, to ensure that seasonal offers and pass rate claims were not misleading, and that all such claims could be substantiated.",
+    "url": "https://www.asa.org.uk/rulings/hgvt-ltd-a25-1317888-hgvt-ltd.html"
+   },
+   "cost": {
+    "regulator": "ASA",
+    "label": "No fine, but an upheld ruling is published under your name. Medium referral risk to Trading Standards if it continues."
+   },
+   "fix": {
+    "steps": "Keep current, independent evidence that you are No.1 across the market (for example sales data), and say what it is based on. Or soften it.",
+    "paste": "Loved by over [number] customers"
+   }
+  },
+  {
+   "key": "claim_credential_claim",
+   "checkId": "claim_credential_claim",
+   "category": "marketing",
+   "severity": "medium",
+   "regulator": "ASA",
+   "title": "Always-on claim in your announcement bar: awards, memberships or origin",
+   "detail": "\"Award-winning homeware\" sits in the announcement bar, so every visitor sees it on this page whatever campaign is running. Under the CAP Code an award or endorsement needs to be real, current and named (who gave it, and when). Hold that evidence before the claim goes live, or soften the wording.",
+   "ruleRef": "CAP Code 3.7",
+   "page": "/",
+   "excerpt": "Award-winning homeware",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "element": "Site announcement bar on /",
+   "issue": "credential_claim",
+   "noCase": true,
+   "where": "Site announcement bar on /",
+   "case": null,
+   "cost": {
+    "regulator": "ASA",
+    "label": "No fine, but an upheld ruling is published under your name. Medium referral risk to Trading Standards if it continues."
+   },
+   "fix": {
+    "steps": "Name the award, who gave it, and the year, and only while it's current.",
+    "paste": "Winner, [award name] [year]"
+   }
+  },
+  {
+   "key": "claim_green_claim",
+   "checkId": "claim_green_claim",
+   "category": "marketing",
+   "severity": "medium",
+   "regulator": "ASA",
+   "title": "Always-on claim in your announcement bar: environmental claim",
+   "detail": "\"100% eco-friendly packaging\" sits in the announcement bar, so every visitor sees it on this page whatever campaign is running. Under the CAP Code an environmental claim needs evidence across the product's whole life, and absolute words like \"eco-friendly\" need the strongest proof. Hold that evidence before the claim goes live, or soften the wording.",
+   "ruleRef": "CAP Code 11.1 / 11.3",
+   "page": "/",
+   "excerpt": "100% eco-friendly packaging",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "element": "Site announcement bar on /",
+   "issue": "green_claim",
+   "where": "Site announcement bar on /",
+   "case": {
+    "id": "asa_virgin_atlantic_airways_ltd_t_a_virgin_a_2024",
+    "name": "Virgin Atlantic Airways Ltd t/a Virgin Atlantic",
+    "regulator": "ASA",
+    "date": "2024-08-07",
+    "outcome": "Upheld ASA ruling",
+    "summary": "A radio ad for Virgin Atlantic included the unqualified claim \"100% sustainable aviation fuel\", which gave a misleading impression of the fuel's environmental impact.",
+    "action": null,
+    "url": "https://www.asa.org.uk/rulings/virgin-atlantic-airways-ltd-g23-1224417-virgin-atlantic-airways-ltd.html"
+   },
+   "cost": {
+    "regulator": "ASA",
+    "label": "No fine, but an upheld ruling is published under your name. Medium referral risk to Trading Standards if it continues."
+   },
+   "fix": {
+    "steps": "Replace absolute green words with a specific, provable fact.",
+    "paste": "Packaging made from 100% recycled cardboard"
+   }
+  },
+  {
+   "key": "reviews_only_top|/",
+   "checkId": "reviews_only_top",
+   "category": "reviews",
+   "severity": "high",
+   "regulator": "CMA",
+   "title": "Only 5-star reviews are shown",
+   "detail": "The review widget on this page is set to show only top-rated reviews (data-stars=\"5\"). Showing only the best reviews without saying so gives a false picture of what customers think, which the DMCCA 2024 bans outright.",
+   "ruleRef": "DMCCA 2024 Sch 20 (fake reviews); CMA fake reviews guidance",
+   "page": "/",
+   "excerpt": "data-stars=\"5\"",
+   "evidenceType": "page_observed",
+   "confidence": "high",
+   "element": "Review widget on /",
+   "evidence": [
+    "Widget setting: data-stars=\"5\""
+   ],
+   "issue": "incentivised_review",
+   "caseId": "google_cma_2025",
+   "where": "Review widget on /",
+   "case": {
+    "id": "google_cma_2025",
+    "name": "Google",
+    "regulator": "CMA",
+    "date": "2025-01",
+    "penalty": null,
+    "outcome": "Undertakings",
+    "summary": "Agreed to sanction businesses that boost star ratings with fake reviews and to warn consumers on their profiles.",
+    "url": "https://www.gov.uk/government/news/cma-secures-important-changes-from-google-to-tackle-fake-reviews"
+   },
+   "cost": {
+    "regulator": "CMA",
+    "max": 1000000,
+    "label": "Up to £1,000,000 for a business your size (higher of £300k or 10% of turnover, DMCCA 2024)"
+   },
+   "fix": {
+    "steps": "Show all genuine reviews, low ratings included, in date order by default. If you filter, say so clearly next to the reviews.",
+    "paste": "Showing all [number] reviews from verified buyers, newest first."
+   }
+  },
+  {
+   "key": "reviews_no_check_statement",
+   "checkId": "reviews_no_check_statement",
+   "category": "reviews",
+   "severity": "medium",
+   "regulator": "CMA",
+   "title": "No statement on how reviews are collected and checked",
+   "detail": "Reviews are shown (Trustpilot), but nowhere on the site says how they are collected, whether they come from verified buyers, or whether any are filtered out. Since April 2025 businesses must take reasonable steps to keep fake and misleading reviews off their site, and the CMA expects a clear, published policy.",
+   "ruleRef": "DMCCA 2024 Sch 20 (fake reviews); CMA fake reviews guidance",
+   "page": "/",
+   "excerpt": "",
+   "evidenceType": "page_observed",
+   "confidence": "medium",
+   "element": "Reviews on /",
+   "issue": "review_claim",
+   "caseId": "google_cma_2025",
+   "where": "Reviews on /",
+   "case": {
+    "id": "google_cma_2025",
+    "name": "Google",
+    "regulator": "CMA",
+    "date": "2025-01",
+    "penalty": null,
+    "outcome": "Undertakings",
+    "summary": "Agreed to sanction businesses that boost star ratings with fake reviews and to warn consumers on their profiles.",
+    "url": "https://www.gov.uk/government/news/cma-secures-important-changes-from-google-to-tackle-fake-reviews"
+   },
+   "cost": {
+    "regulator": "CMA",
+    "max": 1000000,
+    "label": "Up to £1,000,000 for a business your size (higher of £300k or 10% of turnover, DMCCA 2024)"
+   },
+   "fix": {
+    "steps": "Publish a short review policy and link it next to your reviews.",
+    "paste": "About our reviews: we invite every customer to review after delivery and publish all genuine reviews, good and bad. We never pay for reviews or remove them for being negative. We check reviews for fakes using [method] and remove any that don't meet our policy."
+   }
+  },
+  {
+   "key": "ad_label_missing|/partner-picks.html",
+   "checkId": "ad_label_missing",
+   "category": "marketing",
+   "severity": "high",
+   "regulator": "ASA",
+   "title": "Influencer or affiliate page with no \"Ad\" label",
+   "detail": "This page has influencer-style wording (\"Hi lovelies\") and a personal discount code (\"Use code SOPHIE15\") and affiliate tracking links, but no \"Ad\", \"Paid partnership\" or affiliate label. Paid-for content must be obviously identifiable as advertising before people start reading. The brand is responsible alongside the influencer.",
+   "ruleRef": "CAP Code 2.1 / 2.3 / DMCCA 2024 Sch 20",
+   "page": "/partner-picks.html",
+   "excerpt": "Hi lovelies! These are the pieces I can't stop styling. Honestly the best lamp I've ever owned. Rattan table…",
+   "evidenceType": "page_observed",
+   "confidence": "high",
+   "element": "Page /partner-picks.html",
+   "evidence": [
+    "influencer-style wording (\"Hi lovelies\")",
+    "a personal discount code (\"Use code SOPHIE15\")",
+    "affiliate tracking links"
+   ],
+   "issue": "hidden_ad",
+   "caseId": "sancarlo_asa_2026",
+   "where": "Page /partner-picks.html",
+   "case": {
+    "id": "sancarlo_asa_2026",
+    "name": "Harnbury Holdings Ltd (San Carlo)",
+    "regulator": "ASA",
+    "date": "2026-09-23",
+    "penalty": null,
+    "outcome": "Upheld ASA ruling",
+    "summary": "An influencer post paid for with free food and drink was not labelled as an ad.",
+    "url": "https://www.asa.org.uk/rulings/harnbury-holdings-ltd.html"
+   },
+   "cost": {
+    "regulator": "ASA",
+    "label": "No fine, but an upheld ruling is published under your name. High referral risk to Trading Standards if it continues."
+   },
+   "fix": {
+    "steps": "Put \"Ad\" or \"Paid partnership with Brightside Home\" at the very top of the page, before any content. Add \"affiliate link\" next to any paid links.",
+    "paste": "<p class=\"ad-label\"><strong>Ad</strong> · Paid partnership with Brightside Home</p>"
+   }
+  }
+ ],
+ "notes": [
+  "The live cookie test is not enabled, so cookie behaviour was assessed from page source only.",
+  "We saved the urgency and stock messages on /sale.html, /partner-picks.html. When you run the sweep again (or the monthly re-check runs) a week or more from now, we'll tell you if they still say exactly the same thing."
+ ],
+ "thirdParties": [
+  "Google Analytics / Tag Manager",
+  "Meta Pixel",
+  "Hotjar",
+  "Klaviyo"
+ ],
+ "trackers": [
+  {
+   "vendor": "Google Analytics",
+   "category": "analytics",
+   "aliases": [
+    "google analytics",
+    "ga4",
+    "tag manager"
+   ],
+   "detectedAs": [
+    "Google Analytics / Tag Manager"
+   ],
+   "firedBeforeConsent": false,
+   "seenInSource": true,
+   "browserTested": false
+  },
+  {
+   "vendor": "Meta Ads",
+   "category": "advertising",
+   "aliases": [
+    "meta",
+    "facebook",
+    "instagram"
+   ],
+   "detectedAs": [
+    "Meta Pixel"
+   ],
+   "firedBeforeConsent": false,
+   "seenInSource": true,
+   "browserTested": false
+  },
+  {
+   "vendor": "Hotjar",
+   "category": "analytics",
+   "aliases": [
+    "hotjar"
+   ],
+   "detectedAs": [
+    "Hotjar"
+   ],
+   "firedBeforeConsent": false,
+   "seenInSource": true,
+   "browserTested": false
+  },
+  {
+   "vendor": "Klaviyo",
+   "category": "esp",
+   "aliases": [
+    "klaviyo"
+   ],
+   "detectedAs": [
+    "Klaviyo"
+   ],
+   "firedBeforeConsent": false,
+   "seenInSource": true,
+   "browserTested": false
+  }
+ ],
+ "score": 37,
+ "breakdown": [
+  {
+   "id": "cookies",
+   "label": "Cookies & tracking",
+   "max": 25,
+   "score": 13,
+   "status": "Needs attention",
+   "note": "Assessed from page source only"
+  },
+  {
+   "id": "privacy",
+   "label": "Privacy notice",
+   "max": 15,
+   "score": 8,
+   "status": "Needs attention",
+   "note": ""
+  },
+  {
+   "id": "capture",
+   "label": "Data capture",
+   "max": 15,
+   "score": 0,
+   "status": "Needs attention",
+   "note": ""
+  },
+  {
+   "id": "marketing",
+   "label": "Marketing on your site",
+   "max": 20,
+   "score": 0,
+   "status": "Needs attention",
+   "note": ""
+  },
+  {
+   "id": "terms",
+   "label": "Terms & consumer rights",
+   "max": 15,
+   "score": 8,
+   "status": "Needs attention",
+   "note": ""
+  },
+  {
+   "id": "identity",
+   "label": "Business identity",
+   "max": 10,
+   "score": 8,
+   "status": "Minor gaps",
+   "note": ""
+  }
+ ],
+ "totals": {
+  "findings": 20,
+  "high": 7,
+  "medium": 11,
+  "low": 2
+ },
+ "urgencySnapshot": {
+  "/sale.html": {
+   "at": "2026-11-24T00:23:16.454Z",
+   "time": [
+    "final hours",
+    "ends at midnight tonight",
+    "hurry",
+    "once it's gone, it's gone"
+   ],
+   "stock": [
+    "only 2 left in stock",
+    "14 people are viewing this right now",
+    "selling fast",
+    "in 23 baskets"
+   ]
+  },
+  "/partner-picks.html": {
+   "at": "2026-11-24T00:23:16.454Z",
+   "time": [
+    "today only"
+   ],
+   "stock": []
+  }
+ }
+}

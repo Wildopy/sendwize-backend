@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Black Friday Sale | Brightside Home</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><strong>Brightside Home</strong> &nbsp; <a href="index.html">Home</a></header>
+<main>
+  <h1>⏰ FINAL HOURS: up to 70% off everything</h1>
+  <!-- Planted: countdown timer -->
+  <p class="timer" id="countdown" data-deadline="2026-11-30T23:59:00Z">Sale ends at midnight tonight: 05:42:17</p>
+  <!-- Planted (marketing): the deadline is always "midnight tonight" on the visitor's own clock, so it never really ends -->
+  <script>
+    (function(){var end=new Date();end.setHours(23,59,59,0);var el=document.getElementById('countdown');
+    function tick(){var s=Math.max(0,Math.floor((end-new Date())/1000));el.textContent='Sale ends at midnight tonight: '+[Math.floor(s/3600),Math.floor(s/60)%60,s%60].map(function(n){return String(n).padStart(2,'0')}).join(':');}
+    tick();setInterval(tick,1000);})();
+  </script>
+
+  <div class="card">
+    <h2>Oslo armchair</h2>
+    <p>The UK's No.1 armchair, rated 5 stars by thousands of customers.</p>
+    <!-- Planted: reference ("was") price -->
+    <p class="price"><s>Was £249</s> <strong>Now £74.99</strong></p>
+    <p><strong>Only 2 left in stock</strong> &middot; 14 people are viewing this right now</p>
+  </div>
+
+  <div class="card">
+    <h2>Bamboo Dream bedding</h2>
+    <p>Clinically proven to improve your sleep by 40%. 100% eco-friendly.</p>
+    <p class="price">RRP £129 <strong>Now £59</strong></p>
+    <p>Selling fast: in 23 baskets</p>
+  </div>
+
+  <div class="card">
+    <h2>FREE delivery on everything*</h2>
+    <p>*Free delivery on orders over £150. Excludes furniture. All orders carry a £9.99 handling fee at checkout.</p>
+  </div>
+
+  <p>Hurry: once it's gone, it's gone.</p>
+</main>
+<footer><p>&copy; 2026 Brightside Home</p></footer>
+</body>
+</html>

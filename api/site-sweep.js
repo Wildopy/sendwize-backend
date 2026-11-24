@@ -1,5 +1,13 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — site-sweep.js v1.3
+// SENDWIZE — site-sweep.js v1.4
+// v1.4: always-on marketing checks (_marketing-sweep.js): sign-up forms
+//   and pop-ups, cookie-banner dark patterns, countdowns that reset and
+//   urgency that never ends, always-on claims in the header and footer,
+//   reviews under the DMCCA, and influencer pages with no ad label. The
+//   sweep now also reads the sale/offer page and any partner page. Every
+//   finding is enriched (_sweep-enrich.js) with the exact element, a real
+//   published case, a £ figure from the exposure engine and a
+//   ready-to-paste fix. New score category 'marketing'.
 // v1.3: terms checks (_terms-check.js): what a consumer seller's terms
 //   should cover (14-day cancellation, returns, statutory rights, trader,
 //   subscriptions) and where the site promises something the terms
@@ -43,10 +51,12 @@
 // CHECK OWNERSHIP (no duplication with Campaign Defence):
 //   Site Sweep owns site-wide checks: cookies and trackers, privacy
 //   and cookie notices, sign-up consent (pre-ticked boxes, privacy
-//   link at capture), business identity, reviews.
-//   Campaign Defence's page scan owns offer/claim checks (pricing,
-//   urgency, scarcity, claim conflicts, ad disclosure) and does not
-//   raise any of the above.
+//   link at capture, pop-ups), business identity, reviews, and (v1.4)
+//   what the site does all the time: timers that reset, urgency that
+//   never ends, claims in the header/footer, unlabelled partner pages.
+//   Campaign Defence's page scan owns each campaign's own offer and
+//   claim checks (pricing, a campaign's urgency and scarcity, claim
+//   conflicts, ad disclosure on pages the campaign links to).
 //
 // IDEMPOTENT RE-RUNS:
 //   One record per user + domain. Every finding has a stable key
@@ -80,12 +90,15 @@ import { checkLimit } from './_limits.js';
 import { fetchPage, extractSignals, extractLinks, isSafePublicUrl, resolvesPublic } from './_page-scan.js';
 import { sweepTrackers } from './_processor-rules.js';
 import { evaluateTerms } from './_terms-check.js';
+import { evaluateMarketing } from './_marketing-sweep.js';
+import { enrichFindings, brandFrom } from './_sweep-enrich.js';
 import { memberEmail } from './_email.js';
 
 const APP_URL       = 'https://sendwize-backend.vercel.app';
 const TABLE         = 'Site_Sweeps';
-const SWEEP_VERSION = '1.0';
-const MAX_PAGES     = 8;
+const SWEEP_VERSION = '1.4';
+const MAX_PAGES     = 10;
+const RELOAD_GAP_MS = 4000; // second load of pages with a countdown
 const RUN_LOCK_MS   = 3 * 60 * 1000;
 const META_NAME     = 'sendwize-verification';
 const DNS_PREFIX    = 'sendwize-verification=';
@@ -113,14 +126,33 @@ export const SITE_FIX_MAP = {
   terms_mismatch_free_returns:     'consumer_terms',
   terms_mismatch_return_days:      'consumer_terms',
   terms_mismatch_guarantee:        'consumer_terms',
+  // v1.4 marketing checks (_marketing-sweep.js)
+  cookies_reject_layer_down:       'cookie_reject_missing',
+  cookies_reject_less_prominent:   'cookie_reject_missing',
+  signup_sms_wording:              'invalid_consent_mechanism',
+  signup_purpose_unclear:          'invalid_consent_mechanism',
+  signup_discount_terms:           'missing_terms',
+  popup_hidden_decline:            'invalid_consent_mechanism',
+  urgency_timer_resets:            'fake_urgency',
+  urgency_never_ends:              'fake_urgency',
+  scarcity_never_changes:          'fake_scarcity',
+  claim_superlative_claim:         'misleading_claim',
+  claim_credential_claim:          'misleading_claim',
+  claim_green_claim:               'misleading_claim',
+  claim_performance_claim:         'misleading_claim',
+  claim_medicinal_claim:           'unauthorised_health_claim',
+  reviews_only_top:                'fake_reviews',
+  reviews_no_check_statement:      'fake_reviews',
+  ad_label_missing:                'affiliate_ad_disclosure',
 };
 
 const SCORE_CATEGORIES = [
-  { id: 'cookies',  label: 'Cookies & tracking',  max: 30 },
-  { id: 'privacy',  label: 'Privacy notice',      max: 20 },
-  { id: 'capture',  label: 'Data capture',        max: 20 },
-  { id: 'terms',    label: 'Terms & consumer rights', max: 20 },
-  { id: 'identity', label: 'Business identity',   max: 10 },
+  { id: 'cookies',   label: 'Cookies & tracking',      max: 25 },
+  { id: 'privacy',   label: 'Privacy notice',          max: 15 },
+  { id: 'capture',   label: 'Data capture',            max: 15 },
+  { id: 'marketing', label: 'Marketing on your site',  max: 20, covers: ['marketing', 'reviews'] },
+  { id: 'terms',     label: 'Terms & consumer rights', max: 15 },
+  { id: 'identity',  label: 'Business identity',       max: 10 },
 ];
 
 // ── Small helpers ─────────────────────────────────────────────
@@ -406,10 +438,14 @@ async function browserCookieTest(url) {
     const banner = await page.evaluate(() => {
       const els = Array.from(document.querySelectorAll('button, a, [role="button"], input[type="button"], input[type="submit"]'));
       const visible = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; };
-      const texts = els.filter(visible)
-        .map(el => (el.innerText || el.value || el.getAttribute('aria-label') || '').trim().toLowerCase())
-        .filter(t => t && t.length < 40);
+      const shown = els.filter(visible)
+        .map(el => ({ t: (el.innerText || el.value || el.getAttribute('aria-label') || '').trim().toLowerCase(), r: el.getBoundingClientRect() }))
+        .filter(x => x.t && x.t.length < 40);
+      const texts = shown.map(x => x.t);
+      // v1.4: on-screen size of the first accept and reject, to compare prominence
+      const area = re => { const x = shown.find(y => re.test(y.t)); return x ? Math.round(x.r.width * x.r.height) : 0; };
       return {
+        sizes: { accept: area(/\b(accept|allow|agree)\b/), reject: area(/\b(reject|decline|deny|refuse|necessary only|only necessary|essential only|only essential)\b/) },
         accept: texts.filter(t => /\b(accept|allow|agree|got it)\b/.test(t)).slice(0, 3),
         reject: texts.filter(t => /\b(reject|decline|deny|refuse|necessary only|only necessary|essential only|only essential|strictly necessary|continue without)\b/.test(t)).slice(0, 3),
         manage: texts.filter(t => /\b(manage|preferences|settings|customi[sz]e|options)\b/.test(t)).slice(0, 3),
@@ -431,6 +467,9 @@ const PAGE_ROLES = [
   ['returns', /returns|refund/i],
   ['signup',  /sign[\s-]?up|register|newsletter|subscribe|join|create[\s-]?account/i],
   ['contact', /contact|about/i],
+  // v1.4: where always-on urgency and partner content live
+  ['offers',  /\bsale\b|offers?|deals?|black[\s-]?friday|cyber[\s-]?monday|clearance|promo/i],
+  ['partner', /partner|picks|collab|influencer|ambassador|affiliate|['’]s edit|gift[\s-]?guide/i],
 ];
 
 function discoverPages(homeHtml, homeUrl, domain) {
@@ -466,10 +505,17 @@ function finding(key, checkId, category, severity, regulator, title, detail, rul
     page: opts.page || '', excerpt: opts.excerpt || '',
     evidenceType: opts.evidenceType || 'page_observed',
     confidence: opts.confidence || 'medium',
+    // v1.4: richer detail (element, evidence lines, Copy Checker issue, a pinned case)
+    ...(opts.element ? { element: opts.element } : {}),
+    ...(opts.evidence?.length ? { evidence: opts.evidence.slice(0, 4) } : {}),
+    ...(opts.issue ? { issue: opts.issue } : {}),
+    ...(opts.caseId ? { caseId: opts.caseId } : {}),
+    ...(opts.info ? { info: true } : {}),
+    ...(opts.noCase ? { noCase: true } : {}),
   };
 }
 
-export function evaluateSite({ domain, pages, browser, sector = null }) {
+export function evaluateSite({ domain, pages, browser, sector = null, reloads = {}, previous = null, now = Date.now() }) {
   const findings = [];
   const notes = [];
   const ok = pages.filter(p => p.ok);
@@ -594,18 +640,25 @@ export function evaluateSite({ domain, pages, browser, sector = null }) {
   findings.push(...termsResult.findings);
   notes.push(...termsResult.notes);
 
-  // ── Reviews (informational) ──
-  if (reviews.length) {
+  // ── Marketing on the site (v1.4, _marketing-sweep.js) ──
+  const mk = evaluateMarketing({ pages, finding, reloads, previous, browser, now });
+  // The live browser test already reported a missing reject option
+  const hasNoReject = findings.some(x => x.checkId === 'cookies_no_reject_option');
+  findings.push(...mk.findings.filter(x => !(hasNoReject && x.category === 'cookies')));
+  notes.push(...mk.notes);
+
+  // ── Reviews (informational, when no specific review issue was found) ──
+  if (reviews.length && !findings.some(x => x.category === 'reviews')) {
     findings.push(finding('reviews_displayed', 'reviews_displayed', 'reviews', 'low', 'CMA',
       'Customer reviews displayed',
       `Review content detected (${reviews.join(', ')}). Businesses must take reasonable steps to prevent and remove fake reviews and reviews with concealed incentives.`,
-      'DMCCA 2024 Sch 20 (fake reviews)', { confidence: 'medium' }));
+      'DMCCA 2024 Sch 20 (fake reviews)', { confidence: 'medium', info: true }));
   }
 
   // ── Score ──
   const RANK = { high: 3, medium: 2, low: 1 };
   const breakdown = SCORE_CATEGORIES.map(cat => {
-    const fs = findings.filter(x => x.category === cat.id && x.confidence !== 'low');
+    const fs = findings.filter(x => (cat.covers || [cat.id]).includes(x.category) && x.confidence !== 'low' && !x.info);
     const worst = fs.reduce((w, x) => Math.max(w, RANK[x.severity] || 0), 0);
     const factor = worst === 3 ? 0 : worst === 2 ? 0.5 : worst === 1 ? 0.8 : 1;
     let note = '';
@@ -625,15 +678,18 @@ export function evaluateSite({ domain, pages, browser, sector = null }) {
   // Per-vendor tracker evidence for the Commercial Relationships register
   const trackers = sweepTrackers({ seenInSource: staticTrackers, firedBeforeConsent: browserTrackers, browserTested: browser?.status === 'ok' });
 
-  return { findings, notes, thirdParties, trackers, score, breakdown, totals };
+  return { findings, notes, thirdParties, trackers, score, breakdown, totals, urgencySnapshot: mk.snapshot };
 }
 
 // ── Sweep orchestration ───────────────────────────────────────
+// opts: { sector, revenueBand, previous (last sweep), browserTest, fetch (tests) }
 export async function runSweep(domain, opts = {}) {
+  const get = opts.fetch || fetchPage;
   const startedAt = nowIso();
-  let home = await fetchPage(`https://${domain}/`);
-  if (!home.ok) home = await fetchPage(`https://www.${domain}/`);
+  let home = await get(`https://${domain}/`);
+  if (!home.ok) home = await get(`https://www.${domain}/`);
   if (!home.ok) { const e = new Error(`The homepage could not be reached (${home.error}).`); e.userFacing = true; throw e; }
+  const homeAt = Date.now();
 
   const homeUrl = home.finalUrl;
   const roles = discoverPages(home.html, homeUrl, domain);
@@ -647,18 +703,36 @@ export async function runSweep(domain, opts = {}) {
 
   const [fetched, browser] = await Promise.all([
     Promise.all(targets.map(async t => {
-      const p = await fetchPage(t.url);
+      const p = await get(t.url);
       if (!p.ok) return { ...t, ok: false, error: p.error };
       const { signals, text } = extractSignals(p.html, p.finalUrl);
-      return { ...t, url: p.finalUrl, ok: true, signals, text };
+      return { ...t, url: p.finalUrl, ok: true, signals, text, html: p.html, fetchedAt: Date.now() };
     })),
     (opts.browserTest || browserCookieTest)(homeUrl),
   ]);
 
   const homeSig = extractSignals(home.html, homeUrl);
-  const pages = [{ role: 'home', url: homeUrl, ok: true, signals: homeSig.signals, text: homeSig.text }, ...fetched];
+  const pages = [{ role: 'home', url: homeUrl, ok: true, signals: homeSig.signals, text: homeSig.text, html: home.html, fetchedAt: homeAt }, ...fetched];
+
+  // Load every page with a countdown a second time, a few seconds later,
+  // to see whether the timer really counts down (v1.4)
+  const timed = pages.filter(p => p.ok && p.signals?.countdownTimer);
+  const reloads = {};
+  if (timed.length) {
+    const wait = Math.max(0, RELOAD_GAP_MS - (Date.now() - Math.min(...timed.map(p => p.fetchedAt || Date.now()))));
+    if (wait) await new Promise(r => setTimeout(r, opts.reloadWaitMs ?? wait));
+    await Promise.all(timed.map(async p => {
+      const again = await get(p.url);
+      if (again.ok) reloads[p.url] = { html: again.html, at: Date.now() };
+    }));
+  }
+
   // Roles that share a page (e.g. privacy + cookies on one URL) resolve to the same fetch
-  const evaluation = evaluateSite({ domain, pages, browser, sector: opts.sector || null });
+  const evaluation = evaluateSite({ domain, pages, browser, sector: opts.sector || null, reloads, previous: opts.previous || null });
+  evaluation.findings = enrichFindings(evaluation.findings, {
+    fixMap: SITE_FIX_MAP, revenueBand: opts.revenueBand || null, sector: opts.sector || null,
+    brand: brandFrom(homeSig.signals.title, domain), domain,
+  });
 
   return {
     version: SWEEP_VERSION, domain, startedAt, completedAt: nowIso(), homepage: homeUrl,
@@ -854,8 +928,8 @@ async function handleRun(req, res, auth) {
 
   let sweep;
   try {
-    const sector = (await memberEmail(userId).catch(() => null))?.sector || null;
-    sweep = await runSweep(domain, { sector });
+    const member = await memberEmail(userId).catch(() => null);
+    sweep = await runSweep(domain, { sector: member?.sector || null, revenueBand: member?.revenueBand || null, previous: safeJson(f.SweepJson, null) });
   } catch (e) {
     await patchRecord(ctx, record.id, { Status: previousStatus }).catch(() => {});
     console.error('Site sweep run failed:', domain, e);

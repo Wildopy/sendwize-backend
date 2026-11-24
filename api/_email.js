@@ -52,6 +52,6 @@ export async function memberEmail(userId) {
     const r = await fetch(`${base}/User_Profile?filterByFormula=${f}&maxRecords=1`, { headers: { Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` } });
     if (!r.ok) return null;
     const rec = (await r.json()).records?.[0];
-    return rec ? { email: rec.fields?.Email || null, sector: rec.fields?.Sector || null, name: rec.fields?.Name || rec.fields?.CompanyName || null } : null;
+    return rec ? { email: rec.fields?.Email || null, sector: rec.fields?.Sector || null, revenueBand: rec.fields?.RevenueBand || null, name: rec.fields?.Name || rec.fields?.CompanyName || null } : null;
   } catch { return null; }
 }
