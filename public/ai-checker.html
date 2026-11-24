@@ -344,6 +344,7 @@
             <option value="social">Social ad</option>
             <option value="influencer">Influencer or creator post</option>
             <option value="directmail">Direct mail</option>
+            <option value="document">Brochure, deck, leaflet or web page</option>
           </select>
         </div>
       </div>
@@ -406,6 +407,21 @@
       </div>
     </div>
 
+    <div class="card">
+      <div class="form-group" id="docGroup" style="margin-bottom:0">
+        <label>Or upload a document <span style="color:var(--muted);font-weight:400;">(PDF, Word or PowerPoint, up to 3MB)</span></label>
+        <div class="image-upload-area" onclick="document.getElementById('docFileInput').click()">
+          <input type="file" id="docFileInput" accept=".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation" style="display:none;" onchange="onDocSelected(event)">
+          <div class="image-upload-prompt" id="docPrompt">
+            <span style="font-size:13px;color:var(--muted);">Brochures, slide decks, leaflets, product sheets, email proofs</span>
+            <span style="font-size:11px;color:var(--muted);margin-top:2px;">Every page is checked, small print included. No rewrite is written for a document.</span>
+          </div>
+          <div id="docChosen" style="display:none;font-size:13px;"></div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5">Checks use the rules for your sector from your <a id="profileLink" href="/profile.html" style="color:var(--orange);font-weight:600;text-decoration:none">business profile</a>, plus your own <a id="houseRulesLink" href="/house-rules.html" style="color:var(--orange);font-weight:600;text-decoration:none">house rules</a> (banned words, required wording, approved claims).</div>
+    </div>
+
     <button class="btn-primary" id="submitBtn" onclick="runCheck()">Run Compliance Check</button>
     <button class="btn-demo" id="demoBtn" onclick="runDemo()">
       <span class="demo-pill">DEMO</span>
@@ -437,6 +453,7 @@
         <p id="verdictSub">&mdash;</p>
       </div>
     </div>
+    <div id="rulesApplied" style="display:none;font-size:12px;color:var(--muted);line-height:1.6;margin:-6px 0 18px"></div>
 
     <div class="card not-checked" id="notChecked">
       <div class="section-title">Not checked here</div>
@@ -540,6 +557,18 @@
   function certifiedViolations() {
     return Object.keys(evidenceMap).filter(function(id) { var c = document.getElementById('certify-chk-' + id); return c && c.checked; }).map(function(id) { return evidenceMap[id]; });
   }
+  // Which rule sets this check used, so the member can see the sector rules were applied
+  function renderRulesApplied(data) {
+    var el = document.getElementById('rulesApplied');
+    var list = (data && data.rulesApplied) || [];
+    if (!list.length) { el.style.display = 'none'; return; }
+    var hr = '/house-rules.html' + (userId ? '?userId=' + encodeURIComponent(userId) : '');
+    el.innerHTML = '<strong style="color:var(--text)">Rules checked:</strong> ' + list.map(escH).join(' &middot; ')
+      + (data.houseRules ? ' &middot; Your house rules' : ' &middot; <a href="' + hr + '" style="color:var(--orange);font-weight:600;text-decoration:none">Add your own house rules</a>')
+      + (data.file ? '<br><strong style="color:var(--text)">File:</strong> ' + escH(data.file.name) + (data.file.pages ? ' (' + data.file.pages + ' slides)' : '') + (data.file.truncated ? '. Only the first part of this long file was checked.' : '') : '');
+    el.style.display = 'block';
+  }
+
   function renderNotChecked() {
     var qs = userId ? '?userId=' + encodeURIComponent(userId) : '';
     document.getElementById('notCheckedList').innerHTML = NOT_CHECKED.map(function(t) {
@@ -562,6 +591,7 @@
       document.getElementById('formSection').style.display = 'none';
       return;
     }
+    ['profileLink', 'houseRulesLink'].forEach(function(id) { var a = document.getElementById(id); if (a) a.href += '?userId=' + encodeURIComponent(userId); });
     var checkId = new URLSearchParams(window.location.search).get('checkId');
     if (checkId) openPastCheck(checkId);
     prefillFromLink();
@@ -602,7 +632,7 @@
         if (!rec || !rec.fields) throw new Error('not found');
         var f = rec.fields, a = {};
         try { a = JSON.parse(f.Analysis || '{}'); } catch (e) {}
-        var types = ['email', 'sms', 'push', 'social', 'influencer', 'directmail'];
+        var types = ['email', 'sms', 'push', 'social', 'influencer', 'directmail', 'document'];
         if (types.indexOf(f.ContentType) !== -1) {
           var sel = document.getElementById('contentType'); if (sel) sel.value = f.ContentType;
           onContentTypeChange();
@@ -617,7 +647,7 @@
         renderResults({
           score: f.RiskScore, verdict: f.Verdict, summary: a.summary || '',
           violations: (a.violations || []).map(function(v) { var c = Object.assign({}, v); delete c._fromContext; delete c._fixType; return c; }),
-          fixedVersion: f.FixedVersion || '', sourceRecordId: rec.id, comparison: a.comparison || null, writing: a.writing || [],
+          fixedVersion: f.FixedVersion || '', sourceRecordId: rec.id, comparison: a.comparison || null, writing: a.writing || [], rulesApplied: a.rulesApplied || [],
         });
         document.getElementById('verdictSub').textContent = 'Saved check from ' + (f.CheckDate || '') + '. This answer covers the copy only. Edit the rewrite and recheck to see what has changed.';
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -710,6 +740,7 @@
     social: 'Paste your social ad headline and copy here\u2026',
     influencer: 'Paste the caption exactly as it will be posted, hashtags included\u2026',
     directmail: 'Paste your direct mail copy here\u2026',
+    document: 'Paste the text of the brochure, deck or page here, or upload the file below\u2026',
   };
   function onContentTypeChange() {
     currentContentType = document.getElementById('contentType').value;
@@ -760,6 +791,33 @@
     loadingInterval = setInterval(function() { el.textContent = loadingSteps[i = (i + 1) % loadingSteps.length]; }, 1800);
   }
   function stopLoading() { clearInterval(loadingInterval); }
+
+  // One document per check (PDF, Word, PowerPoint). It replaces any images.
+  var uploadedDoc = null;
+  function onDocSelected(event) {
+    var file = (event.target.files || [])[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!/\.(pdf|docx|pptx)$/i.test(file.name)) { showError('Upload a PDF, Word (.docx) or PowerPoint (.pptx) file. For an older .doc or .ppt, save it as .docx, .pptx or PDF first.'); return; }
+    if (file.size > 3 * 1024 * 1024) { showError('That file is over 3MB. Save a smaller copy (for example, compress the images) or upload the pages that matter.'); return; }
+    clearError();
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      uploadedDoc = { name: file.name, mediaType: file.type || '', data: e.target.result.split(',')[1] };
+      uploadedImages = []; renderImagePreviews();
+      if (currentContentType !== 'email') { document.getElementById('contentType').value = 'document'; onContentTypeChange(); }
+      renderDoc();
+    };
+    reader.readAsDataURL(file);
+  }
+  function removeDoc() { uploadedDoc = null; renderDoc(); }
+  function renderDoc() {
+    var p = document.getElementById('docPrompt'), c = document.getElementById('docChosen');
+    document.getElementById('imageGroup').style.display = uploadedDoc ? 'none' : '';
+    if (!uploadedDoc) { p.style.display = 'flex'; c.style.display = 'none'; return; }
+    p.style.display = 'none'; c.style.display = 'block';
+    c.innerHTML = '&#x1F4C4; <strong>' + escH(uploadedDoc.name) + '</strong> <button onclick="removeDoc();event.stopPropagation();" style="margin-left:8px;background:none;border:1px solid var(--border-mid);border-radius:6px;padding:2px 8px;cursor:pointer;font-family:inherit;color:var(--muted)">Remove</button>';
+  }
 
   var uploadedImages = [];
   function onImagesSelected(event) {
@@ -825,19 +883,20 @@
     var fromLine = showFrom ? document.getElementById('fromLine').value.trim() : '';
     var subject = currentContentType === 'email' ? document.getElementById('subjectLine').value.trim() : '';
     var campaignName = document.getElementById('campaignName').value.trim();
-    if (!copy && !uploadedImages.length) { showError('Paste your marketing copy or upload an image before running a check.'); return; }
-    lastCopy = [fromLine ? 'From: ' + fromLine : '', subject ? 'Subject: ' + subject : '', copy].filter(Boolean).join('\n') || '(Image only)';
+    if (!copy && !uploadedImages.length && !uploadedDoc) { showError('Paste your marketing copy, or upload an image or document, before running a check.'); return; }
+    lastCopy = [uploadedDoc ? 'File: ' + uploadedDoc.name : '', fromLine ? 'From: ' + fromLine : '', subject ? 'Subject: ' + subject : '', copy].filter(Boolean).join('\n') || '(Image only)';
     setLoadingState(true);
     try {
       var sendingContext = getSendingContext();
-      var payload = { userId: userId, contentType: currentContentType, content: copy, autoFix: true };
+      var payload = { userId: userId, contentType: currentContentType, content: copy, autoFix: !uploadedDoc };
+      if (uploadedDoc) payload.file = uploadedDoc;
       if (fromLine) payload.from = fromLine;
       if (subject) payload.subject = subject;
       if (campaignName) payload.campaignName = campaignName;
       if (opts.recheckOf) payload.recheckOf = opts.recheckOf;
       if (sendingContext && currentContentType !== 'influencer') payload.sendingContext = sendingContext;
       if (currentContentType === 'influencer') payload.influencerContext = { platform: document.getElementById('infPlatform').value, relationship: document.getElementById('infRelationship').value };
-      if (uploadedImages.length > 0) payload.images = uploadedImages.map(function(i) { return { data: i.data, mediaType: i.mediaType }; });
+      if (uploadedImages.length > 0 && !uploadedDoc) payload.images = uploadedImages.map(function(i) { return { data: i.data, mediaType: i.mediaType }; });
       var res = await swFetch(APP_URL + '/api/analyze-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) { var err = await res.json().catch(function() { return {}; }); throw new Error(err.error || 'Server error ' + res.status); }
       var data = await res.json();
@@ -874,6 +933,7 @@
     }
     document.getElementById('verdictSub').textContent = 'Copy score ' + score + ' out of 100. This answer covers the wording only, not who it goes to or the pages it links to.';
     renderNotChecked();
+    renderRulesApplied(data);
 
     // Rewrite panel
     var panel = document.getElementById('rewritePanel');
@@ -1060,6 +1120,7 @@
     document.querySelectorAll('.demo-notice').forEach(function(n) { n.remove(); });
     ['copyText','campaignName','fromLine','subjectLine'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
     uploadedImages = []; renderImagePreviews();
+    uploadedDoc = null; renderDoc();
     document.querySelectorAll('.radio-option input[type="radio"]').forEach(function(r) { r.checked = false; });
     document.querySelectorAll('.radio-option').forEach(function(el) { el.classList.remove('selected'); });
     contextSkipped = false; contextOpen = true;

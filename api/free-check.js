@@ -18,6 +18,7 @@
 import crypto from 'crypto';
 import { claudeFetch, parseJson } from './_claude.js';
 import { SYSTEM_PROMPT, ANALYSIS_SCHEMA, CHANNEL_RULES, cleanWriting } from './analyze-copy.js';
+import { selectRules } from './_rulebook.js';
 import { copyFacts, factsBlock, reviewFindings } from './_copy-review.js';
 import { requireAuth } from './_auth.js';
 import { atFetch } from './_airtable.js';
@@ -176,7 +177,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         max_tokens: 4000,
         system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: `${CHANNEL_RULES[ch]}\n\nCONTENT TO ANALYSE:\n${factsBlock(facts)}\n\n[COPY TO ANALYSE]\n${copyText}\n\nDo not include a fixedVersion.` }],
+        messages: [{ role: 'user', content: `${CHANNEL_RULES[ch]}\n\nCONTENT TO ANALYSE:\n${selectRules({ channel: ch, text: copyText }).block}\n\n${factsBlock(facts)}\n\n[COPY TO ANALYSE]\n${copyText}\n\nDo not include a fixedVersion.` }],
       }),
     }, { effort: 'medium', schema: ANALYSIS_SCHEMA, cacheSystem: true });
     if (!r.ok) return res.status(502).json({ error: 'The check could not run. Please try again.' });

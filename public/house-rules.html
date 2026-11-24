@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://sendwize-backend.vercel.app/sw-auth.js"></script>
+  <script>window.swFetch=window.swFetch||fetch.bind(window);</script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>House Rules | Sendwize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--o:#EA7317;--od:#c85f0f;--ol:#fff4ec;--bg:#F6F5F2;--w:#fff;--b:#E8E6E1;--t:#0C0B09;--tm:#5C5852;--mu:#9C9890;--g:#16a34a;--gb:#f0fdf4;--r:#dc2626;--rad:12px;--sh:0 1px 3px rgba(0,0,0,.06);--shm:0 4px 16px rgba(0,0,0,.08)}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--w);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:100}
+.ph a{text-decoration:none}.ph-logo{height:28px}.ph-nav{display:flex;gap:20px;align-items:center}
+.ph-nav a{color:var(--tm);font-size:14px;font-weight:500;cursor:pointer}
+.page{max-width:560px;margin:0 auto;padding:40px 20px 80px}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--mu);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;margin-bottom:28px}
+.back:hover{color:var(--t)}
+.hdr{margin-bottom:32px}
+.hdr h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.hdr p{font-size:14px;color:var(--tm)}
+.card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:28px;box-shadow:var(--sh);margin-bottom:20px}
+.card-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:20px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:18px}
+.fg:last-child{margin-bottom:0}
+.fg label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tm)}
+.fg .hint{font-size:11px;color:var(--mu);margin-top:3px;line-height:1.5}
+.fi{font-family:inherit;font-size:14px;padding:10px 13px;border:1px solid var(--b);border-radius:8px;background:#faf9f7;color:var(--t);outline:none;transition:border-color .15s,box-shadow .15s;width:100%;appearance:none}
+.fi:focus{border-color:var(--o);box-shadow:0 0 0 3px rgba(234,115,23,.1);background:var(--w)}
+.fi-wrap{position:relative}
+.fi-wrap .fi{padding-left:26px}
+.fi-pfx{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mu);font-size:13px;pointer-events:none}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cpl-calc{background:var(--bg);border-radius:8px;padding:16px;margin-top:10px;display:none}
+.cpl-calc.show{display:block}
+.cpl-est{font-size:13px;font-weight:600;color:var(--o);margin-top:8px;min-height:20px}
+.chk-label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tm);cursor:pointer;margin-top:4px}
+.chk-label input{accent-color:var(--o);width:15px;height:15px;flex-shrink:0}
+.rb-opts{display:flex;flex-direction:column;gap:7px}
+.rb-opt{display:flex;align-items:center;gap:11px;padding:11px 14px;border:2px solid var(--b);border-radius:var(--rad);cursor:pointer;transition:all .15s;background:#faf9f7}
+.rb-opt:hover{border-color:var(--o);background:var(--ol)}
+.rb-opt.on{border-color:var(--o);background:var(--ol)}
+.rb-opt input{accent-color:var(--o);width:15px;height:15px;flex-shrink:0}
+.rb-label{font-size:13px;font-weight:500}
+.rb-sub{font-size:11px;color:var(--mu);margin-top:1px}
+.btn-save{width:100%;background:var(--o);color:#fff;border:none;padding:13px;border-radius:var(--rad);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:8px}
+.btn-save:hover{background:var(--od)}.btn-save:disabled{opacity:.4;cursor:not-allowed}
+.saved-msg{font-size:12px;color:var(--g);font-weight:600;text-align:center;margin-top:10px;min-height:18px}
+.ld{padding:60px 20px;text-align:center;color:var(--mu);font-size:13px}
+.spin{width:20px;height:20px;border:2px solid var(--b);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.req{color:var(--o)}
+.card.must{border-color:#fed7aa;border-top:4px solid var(--o)}
+.must-badge{display:inline-block;background:var(--ol);color:var(--od);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
+.fi.miss{border-color:var(--r);box-shadow:0 0 0 3px rgba(220,38,38,.08)}
+.algo{font-size:12px;color:var(--tm);margin-top:14px;line-height:1.6}
+.algo a{color:var(--o);font-weight:600;text-decoration:none}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--t);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;transform:translateY(80px);opacity:0;transition:all .22s;max-width:280px}
+.toast.on{transform:translateY(0);opacity:1}.toast.ok{background:var(--g)}.toast.er{background:var(--r)}
+@media(max-width:480px){.two-col{grid-template-columns:1fr}.ph{flex-direction:column;gap:10px;align-items:flex-start}}
+.row{display:grid;gap:8px;align-items:start;margin-bottom:8px}
+.row.b{grid-template-columns:1fr 110px 1fr 32px}
+.row.d{grid-template-columns:1fr 150px 130px 32px}
+.row.a{grid-template-columns:1fr 1fr 32px}
+.row .fi{padding:8px 10px;font-size:13px}
+.x{width:32px;height:36px;border:1px solid var(--b);border-radius:8px;background:var(--w);color:var(--mu);cursor:pointer;font-size:16px;font-family:inherit}
+.x:hover{color:var(--r);border-color:var(--r)}
+.add{background:none;border:1px dashed var(--b);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:13px;font-weight:600;color:var(--o);cursor:pointer;width:100%;margin-top:4px}
+.add:hover{border-color:var(--o);background:var(--ol)}
+.intro{font-size:13px;color:var(--tm);margin:-8px 0 16px;line-height:1.55}
+.colh{display:grid;gap:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}
+.page{max-width:760px}
+textarea.fi{min-height:110px;resize:vertical;line-height:1.5}
+@media(max-width:640px){.row.b,.row.d,.row.a{grid-template-columns:1fr}.colh{display:none}.x{width:100%}}
+</style>
+</head>
+<body>
+<header class="ph">
+  <a href="https://new-mvp-v2.webflow.io/"><img class="ph-logo" src="https://sendwize-backend.vercel.app/logo.png" alt="Sendwize"></a>
+  <nav class="ph-nav"><a href="javascript:goChecker()">Copy checker</a><a href="javascript:goBack()">Dashboard</a></nav>
+</header>
+<div class="page">
+  <div id="loadingState"><div class="ld"><div class="spin"></div>Loading your house rules&hellip;</div></div>
+  <div id="mainContent" style="display:none">
+    <button class="back" onclick="goBack()">&#x2190; Back to dashboard</button>
+    <div class="hdr">
+      <h1>House rules</h1>
+      <p>Your own rules, checked on every piece of copy alongside the regulators&rsquo; rules. Useful for legal&rsquo;s standing asks, brand words to avoid, required disclaimers and claims you have already proved.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Words and phrases never to use</div>
+      <p class="intro">Sendwize flags any of these it finds. &ldquo;Hold&rdquo; stops the copy going out; &ldquo;Fix first&rdquo; asks for a change.</p>
+      <div class="colh" style="grid-template-columns:1fr 110px 1fr 32px"><span>Word or phrase</span><span>If found</span><span>Why (shown to the writer)</span><span></span></div>
+      <div id="bannedRows"></div>
+      <button class="add" onclick="addRow('banned')">+ Add a word or phrase</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Wording that must appear</div>
+      <p class="intro">Disclaimers and statements legal always asks for. Choose a channel, or leave it on every channel. Add a trigger word to require it only when the copy mentions that word (for example, a risk warning only when the copy says &ldquo;invest&rdquo;).</p>
+      <div class="colh" style="grid-template-columns:1fr 150px 130px 32px"><span>Required wording</span><span>Channel</span><span>Only when copy says</span><span></span></div>
+      <div id="disclaimersRows"></div>
+      <button class="add" onclick="addRow('disclaimers')">+ Add required wording</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Claims you have already proved</div>
+      <p class="intro">Sendwize won&rsquo;t ask for evidence again for these. A claim that goes further than the wording here (a bigger number, a stronger word) is still flagged.</p>
+      <div class="colh" style="grid-template-columns:1fr 1fr 32px"><span>Claim, as you use it</span><span>What proves it</span><span></span></div>
+      <div id="approvedRows"></div>
+      <button class="add" onclick="addRow('approved')">+ Add a claim</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Anything else the reviewer should know</div>
+      <div class="fg">
+        <textarea class="fi" id="notes" maxlength="2000" placeholder="e.g. We are FCA authorised (FRN 123456) and approve our own promotions. Never compare us with named competitors. Always say 'from' before a monthly price."></textarea>
+        <span class="hint">Up to 2,000 characters. Sendwize follows these where they don&rsquo;t conflict with the law.</span>
+      </div>
+    </div>
+
+    <button class="btn-save" id="btnSave" onclick="saveRules()">Save house rules</button>
+    <div class="saved-msg" id="savedMsg"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+var AU='https://sendwize-backend.vercel.app';
+var DASH=(window.SW && SW.dashboard) || 'https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy';
+var userId=new URLSearchParams(window.location.search).get('userId')||'';
+var CHANNELS=[['','Every channel'],['email','Email'],['sms','SMS'],['push','Push'],['social','Social ad'],['influencer','Influencer post'],['directmail','Direct mail'],['document','Documents']];
+var rules={banned:[],disclaimers:[],approved:[],notes:''};
+
+function goBack(){window.location.href=DASH+(userId?'?userId='+userId:'');}
+function goChecker(){window.location.href=AU+'/ai-checker.html'+(userId?'?userId='+encodeURIComponent(userId):'');}
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function rowHtml(kind,r,i){
+  var x='<button class="x" title="Remove" onclick="removeRow(\''+kind+'\','+i+')">&times;</button>';
+  if(kind==='banned')return '<div class="row b"><input class="fi" maxlength="120" data-k="banned" data-i="'+i+'" data-f="phrase" value="'+escH(r.phrase)+'" placeholder="e.g. guaranteed"><select class="fi" data-k="banned" data-i="'+i+'" data-f="severity"><option value="fix"'+(r.severity!=='hold'?' selected':'')+'>Fix first</option><option value="hold"'+(r.severity==='hold'?' selected':'')+'>Hold</option></select><input class="fi" maxlength="300" data-k="banned" data-i="'+i+'" data-f="reason" value="'+escH(r.reason)+'" placeholder="e.g. Legal: we never guarantee results">'+x+'</div>';
+  if(kind==='disclaimers'){var ch=(r.channels&&r.channels[0])||'';return '<div class="row d"><input class="fi" maxlength="600" data-k="disclaimers" data-i="'+i+'" data-f="text" value="'+escH(r.text)+'" placeholder="e.g. Capital at risk. Past performance is not a reliable indicator of future results."><select class="fi" data-k="disclaimers" data-i="'+i+'" data-f="channels">'+CHANNELS.map(function(c){return '<option value="'+c[0]+'"'+(c[0]===ch?' selected':'')+'>'+c[1]+'</option>';}).join('')+'</select><input class="fi" maxlength="80" data-k="disclaimers" data-i="'+i+'" data-f="whenContains" value="'+escH(r.whenContains)+'" placeholder="optional">'+x+'</div>';}
+  return '<div class="row a"><input class="fi" maxlength="300" data-k="approved" data-i="'+i+'" data-f="claim" value="'+escH(r.claim)+'" placeholder="e.g. Rated 4.8 on Trustpilot"><input class="fi" maxlength="300" data-k="approved" data-i="'+i+'" data-f="evidence" value="'+escH(r.evidence)+'" placeholder="e.g. Trustpilot page, checked monthly">'+x+'</div>';
+}
+function render(){
+  ['banned','disclaimers','approved'].forEach(function(k){
+    document.getElementById(k+'Rows').innerHTML=rules[k].map(function(r,i){return rowHtml(k,r,i);}).join('');
+  });
+  document.getElementById('notes').value=rules.notes||'';
+}
+document.addEventListener('input',onEdit);document.addEventListener('change',onEdit);
+function onEdit(e){
+  var el=e.target,k=el.getAttribute('data-k');if(!k)return;
+  var r=rules[k][+el.getAttribute('data-i')],f=el.getAttribute('data-f');
+  r[f]=f==='channels'?(el.value?[el.value]:[]):el.value;
+}
+function addRow(k){
+  rules[k].push(k==='banned'?{phrase:'',severity:'fix',reason:''}:k==='disclaimers'?{text:'',channels:[],whenContains:''}:{claim:'',evidence:''});
+  render();
+  var inputs=document.querySelectorAll('#'+k+'Rows .row:last-child input');if(inputs[0])inputs[0].focus();
+}
+function removeRow(k,i){rules[k].splice(i,1);render();}
+
+async function load(){
+  if(!userId){document.getElementById('loadingState').innerHTML='<div class="ld">Open this page from your dashboard.</div>';return;}
+  try{
+    var r=await swFetch(AU+'/api/profile?action=house-rules&userId='+encodeURIComponent(userId));
+    if(!r.ok)throw r;
+    var d=await r.json();
+    rules=d.houseRules||rules;
+    render();
+    document.getElementById('loadingState').style.display='none';
+    document.getElementById('mainContent').style.display='block';
+  }catch(e){
+    document.getElementById('loadingState').innerHTML='<div class="ld">Could not load your house rules. <button onclick="load()" style="background:none;border:none;color:var(--o);font-weight:600;cursor:pointer;font-family:inherit">Retry</button></div>';
+  }
+}
+async function saveRules(){
+  var btn=document.getElementById('btnSave'),msg=document.getElementById('savedMsg');
+  rules.notes=document.getElementById('notes').value;
+  btn.disabled=true;btn.textContent='Saving…';msg.textContent='';
+  try{
+    var r=await swFetch(AU+'/api/profile?action=house-rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:userId,houseRules:rules})});
+    var d=await r.json().catch(function(){return {};});
+    if(!r.ok)throw new Error(d.error||'Could not save');
+    rules=d.houseRules;render();
+    msg.textContent='✓ Saved. Every copy check now uses these rules.';
+    showToast('House rules saved','ok');
+  }catch(e){showToast(e.message||'Could not save — please try again','er');}
+  finally{btn.disabled=false;btn.textContent='Save house rules';}
+}
+function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast on'+(type?' '+type:'');setTimeout(function(){t.classList.remove('on');},3500);}
+load();
+</script>
+</body>
+</html>

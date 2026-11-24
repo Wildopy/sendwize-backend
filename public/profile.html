@@ -194,6 +194,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
       <span class="hint">Used only to estimate the business cost of an advertising or pricing finding (an ad withdrawn, customers refunded). Never presented as a fine.</span>
     </div>
 
+    <div class="card">
+      <div class="card-title">House rules</div>
+      <span class="hint" style="font-size:13px;color:var(--tm)">Your sector above decides which regulator rules every copy check uses. Add your own rules too: words never to use, wording that must appear, and claims you have already proved.</span>
+      <div style="margin-top:12px"><a id="houseLink" href="/house-rules.html" style="color:var(--o);font-weight:600;font-size:14px;text-decoration:none">Edit house rules &rarr;</a></div>
+    </div>
+
     <button class="btn-save" id="btnSave" onclick="saveProfile()">Save settings</button>
     <div class="saved-msg" id="savedMsg"></div>
   </div>
@@ -206,6 +212,7 @@ var userId=new URLSearchParams(window.location.search).get('userId')||'';
 var selRevBand=null;
 
 function goBack(){window.location.href=DASH+(userId?'?userId='+userId:'');}
+(function(){var h=document.getElementById('houseLink');if(h&&userId)h.href+='?userId='+encodeURIComponent(userId);})();
 (function(){var a=document.getElementById('algoLink');if(a&&userId)a.href+='?userId='+encodeURIComponent(userId);})();
 
 function selBand(lbl,val){
