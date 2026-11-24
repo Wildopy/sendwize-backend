@@ -50,6 +50,7 @@ export const ISSUES = {
   vulnerable_audience:  { label: 'Children or vulnerable people',        fixType: 'asa_liability',                  caseable: true },
   privacy_transparency: { label: 'Privacy information',                  fixType: 'no_privacy_policy',              caseable: false },
   tracking_consent:     { label: 'Tracking or browsing data',            fixType: 'invalid_consent_mechanism',      caseable: false },
+  house_rule:           { label: 'Your house rules',                     fixType: null,                             caseable: false },
   not_marketing:        { label: 'Not recognisable as marketing',        fixType: null,                             caseable: false, single: true },
   other:                { label: 'Other',                                fixType: null,                             caseable: false },
 };

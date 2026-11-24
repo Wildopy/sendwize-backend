@@ -96,6 +96,8 @@ export function guessIssue(v) {
 
 const SEV = ['low', 'medium', 'high', 'critical'];
 const DISGUISE = /\b(dressed up|presented|disguised|posing|pretend\w*|imperson\w*|masquerad\w*) as\b|\b(parcel|delivery|account|security) (notice|notification|alert|update)\b|\bmislead\w* about who\b/i;
+// Citations from the sector packs in _rulebook.js: kept as the model gave them
+const SECTOR_CITE = /\b(FCA|COBS|CONC|ICOBS|MCOB|PRIN|FSMA|FG24|Human Medicines|HMR|MHRA|ABPI|MDR|UKGC|LCCP|Gambling Act|NHC|1924\/2006|1223\/2009|Cosmetics Reg|Tobacco|Ofcom|Tenant Fees|Package Travel|Fundraising|BPRs?|Consumer Rights Act|Consumer Contracts|Price Marking|Health and Care Act|CAP Code (1[2-9]|2[0-2])\b|CAP Code section (5|8|1[1-9]|2[0-2])\b)/i;
 const rank = s => SEV.indexOf(String(s || '').toLowerCase());
 const evidence = (issue_type, regulation, issue, location, recommendation) =>
   ({ regulation, severity: 'high', issue, location, recommendation, requiresEvidence: true, issue_type });
@@ -123,14 +125,15 @@ export function reviewFindings(aiFindings, facts, { contentKind = 'marketing', c
     }
     // A "from £49" price is a plain price, not a was/now saving
     if (t === 'reference_price' && /\bfrom £\s?\d/i.test(`${v.issue} ${v.location}`) && !/\b(was|rrp|save|saving|off|reduced|half price)\b|%/i.test(`${v.issue} ${v.location}`)) continue;
-    // The rule a finding is shown under comes from a checked list, not the model
-    if (ISSUES[t].cite && !v._fromContext) v.regulation = ISSUES[t].cite;
+    // The rule a finding is shown under comes from a checked list, not the model,
+    // unless the model cited a sector rule from the rulebook (FCA, medicines, gambling...)
+    if (ISSUES[t].cite && !v._fromContext && !SECTOR_CITE.test(String(raw.regulation || ''))) v.regulation = ISSUES[t].cite;
 
     // A service message (order, delivery, account) isn't marketing: no opt-out or consent rules
     if (contentKind === 'service' && ['opt_out_missing', 'consent_basis', 'third_party_consent'].includes(t)) continue;
     // Facts the code has already settled
-    if (t === 'opt_out_missing' && (facts.optOut || ch === 'social' || ch === 'push')) continue;
-    if (t === 'sender_details' && (ch === 'social' || ch === 'push' || (ch === 'sms' && facts.senderNamed))) continue;
+    if (t === 'opt_out_missing' && (facts.optOut || ch === 'social' || ch === 'push' || ch === 'document')) continue;
+    if (t === 'sender_details' && (ch === 'social' || ch === 'push' || ch === 'document' || (ch === 'sms' && facts.senderNamed))) continue;
     if ((t === 'sender_details' || t === 'sender_hidden') && facts.senderNamed && sev <= rank('medium')) continue;
     // "Hidden" means disguised, like a fake delivery notice. A name that is
     // simply missing from the pasted copy is a sender-details finding (high):
@@ -146,7 +149,7 @@ export function reviewFindings(aiFindings, facts, { contentKind = 'marketing', c
     // An absolute green claim ("100% sustainable", "100% eco-friendly") can't be proved: it has to go
     if (t === 'green_claim' && !v.requiresEvidence && /100\s?%/.test(`${v.issue} ${v.location}`)) v.severity = 'critical';
     if (t === 'consent_basis' || t === 'third_party_consent') {
-      if (facts.corporateRecipient || ch === 'social') continue;
+      if (facts.corporateRecipient || ch === 'social' || ch === 'document') continue;
       // The copy can't show whether someone consented: it's something to hold on file
       if (!v.requiresEvidence && t === 'consent_basis') Object.assign(v, { requiresEvidence: true, severity: 'medium' });
     }

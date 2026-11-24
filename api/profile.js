@@ -1,5 +1,9 @@
 // ─────────────────────────────────────────────────────────────
-// SENDWIZE — profile.js v6.6
+// SENDWIZE — profile.js v6.7
+// v6.7: house rules. GET ?action=house-rules returns the business's own
+//       rules for the copy checker; POST ?action=house-rules saves them
+//       (body { houseRules: { banned, disclaimers, approved, notes } },
+//       cleaned by _house-rules.js) into User_Profile.HouseRulesJson.
 // v6.6: the business profile is required before exposure figures show.
 //       get/save return profileComplete and profileMissing (keys of
 //       REQUIRED_PROFILE in _exposure.js still to answer).
@@ -18,6 +22,7 @@
 import { atFetch } from './_airtable.js';
 import { requireAuth, CORS_HEADERS } from './_auth.js';
 import { bandFromTurnover, BAND_LABELS, CONSENT_RECORDS, profileGaps } from './_exposure.js';
+import { cleanHouseRules, parseHouseRules } from './_house-rules.js';
 
 const posNum = v => (typeof v === 'number' && Number.isFinite(v) && v > 0 && v < 1e12) ? Math.round(v) : null;
 const yesNo  = v => (v === 'Yes' || v === 'No') ? v : null;
@@ -34,7 +39,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET'  && action === 'get')    return handleGet(req, res);
   if (req.method === 'POST' && action === 'save')   return handleSave(req, res);
   if (req.method === 'POST' && action === 'streak') return handleStreak(req, res);
-  return res.status(400).json({ error: 'Unknown action. Use ?action=get|save|streak' });
+  if (action === 'house-rules' && (req.method === 'GET' || req.method === 'POST')) return handleHouseRules(req, res);
+  return res.status(400).json({ error: 'Unknown action. Use ?action=get|save|streak|house-rules' });
 }
 
 function hdrs(token) {
@@ -270,4 +276,27 @@ async function handleStreak(req, res) {
   }
 
   return res.json({ success: true, currentStreak: newStreak, longestStreak: newLongest, lastCheckDate: todayStr, streakContinued: newStreak > 1 });
+}
+
+// ── House rules (the business's own rules for the copy checker) ──
+async function handleHouseRules(req, res) {
+  const userId = req.method === 'GET' ? req.query.userId : req.body?.userId;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+  const BASE_ID        = process.env.BASE_ID;
+  const { record, lookupFailed } = await fetchProfile(userId, AIRTABLE_TOKEN, BASE_ID);
+  if (lookupFailed) return res.status(502).json({ error: 'Could not load your profile. Please try again.' });
+
+  if (req.method === 'GET') return res.json({ success: true, houseRules: parseHouseRules(record?.fields?.HouseRulesJson) });
+
+  const houseRules = cleanHouseRules(req.body?.houseRules);
+  const fields = { HouseRulesJson: JSON.stringify(houseRules) };
+  const r = record
+    ? await atFetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile/${record.id}`, { method: 'PATCH', headers: hdrs(AIRTABLE_TOKEN), body: JSON.stringify({ fields }) })
+    : await atFetch(`https://api.airtable.com/v0/${BASE_ID}/User_Profile`, { method: 'POST', headers: hdrs(AIRTABLE_TOKEN), body: JSON.stringify({ records: [{ fields: { UserID: userId, Sector: 'ecommerce', BusinessSize: 'smb', EmailVolume: 'medium_send', ...fields } }] }) });
+  if (!r.ok) {
+    console.error('House rules save failed:', r.status);
+    return res.status(r.status === 422 ? 422 : 502).json({ error: r.status === 422 ? 'The HouseRulesJson field is missing in Airtable. Add it to User_Profile (long text).' : 'Could not save your house rules. Please try again.' });
+  }
+  return res.json({ success: true, houseRules });
 }
