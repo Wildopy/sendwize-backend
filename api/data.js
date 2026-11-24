@@ -65,6 +65,7 @@ import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { transferPosition, ICO_REGISTER_NOTE, sweepTrackers, trackerMatchesVendor, applySweepEvidence } from './_processor-rules.js';
+import { isHidden } from './_third-parties.js';
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
 const RESEND_FROM = 'alerts@sendwize.co.uk';
@@ -136,12 +137,17 @@ function withDefaults(isCreate) {
     (value !== undefined && value !== null && value !== '') ? value : (isCreate ? fallback : undefined);
 }
 
+// Third parties Site Sweep or List health found that the member said they
+// don't use stay in the register (so they are not added again) but are
+// left out of the score and the watch list (third-parties.js hide).
+const notHidden = recs => recs.filter(r => !isHidden(r.fields));
+
 // ── Third-party risk score (v7.3 — ad compliance dimensions) ──
 async function calculateThirdPartyScore(userId, base) {
   const [processors, partners, affiliates, profile] = await Promise.all([
-    atGet(base, 'Vendor_Register',   `{UserID}='${userId}'`, '', 50).catch(() => []),
-    atGet(base, 'Partner_Register',  `{UserID}='${userId}'`, '', 50).catch(() => []),
-    atGet(base, 'Affiliate_Register',`{UserID}='${userId}'`, '', 50).catch(() => []),
+    atGet(base, 'Vendor_Register',   `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
+    atGet(base, 'Partner_Register',  `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
+    atGet(base, 'Affiliate_Register',`{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
     atGet(base, 'User_Profile',      `{UserID}='${userId}'`, '', 1).catch(() => []),
   ]);
 
@@ -1119,8 +1125,6 @@ async function handlePartnerRegister(req, res) {
       LastChecked: recordId ? undefined : new Date().toISOString().split('T')[0],
       EnforcementRelevanceJson: enforcementResult ? JSON.stringify({ relevant: enforcementResult.relevant, rejected: enforcementResult.rejected, summary: enforcementResult.summary }) : undefined,
       // v7.5 new
-      AffiliateDataRole: d(affiliate.AffiliateDataRole, 'unknown'),
-      LandingPageChecksJson: affiliate.LandingPageChecksJson,
       RelationshipActivity: partner.RelationshipActivity,
       MarketingChannels: Array.isArray(partner.MarketingChannels) ? JSON.stringify(partner.MarketingChannels) : partner.MarketingChannels,
       AdComplianceReviewed: d(partner.AdComplianceReviewed, false),
@@ -1445,9 +1449,9 @@ async function handleRelationshipWatch(req, res) {
   const base  = airtableBase();
   const today = new Date();
   const [vendors, partners, affiliates, competitors, profileRows] = await Promise.all([
-    atGet(base, 'Vendor_Register',    `{UserID}='${userId}'`, '', 50).catch(() => []),
-    atGet(base, 'Partner_Register',   `{UserID}='${userId}'`, '', 50).catch(() => []),
-    atGet(base, 'Affiliate_Register', `{UserID}='${userId}'`, '', 50).catch(() => []),
+    atGet(base, 'Vendor_Register',    `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
+    atGet(base, 'Partner_Register',   `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
+    atGet(base, 'Affiliate_Register', `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
     atGet(base, 'Competitor_Watch',   `AND({UserID}='${userId}',{WatchStatus}=1)`, '', 50).catch(() => []),
     atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []),
   ]);

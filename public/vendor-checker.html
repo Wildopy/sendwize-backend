@@ -401,6 +401,100 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .creative-issue.critical .creative-issue-type{color:var(--r)}
 .creative-clear{background:var(--gb);border:1px solid var(--gc);border-radius:var(--rad-sm);padding:12px 14px;font-size:12.5px;color:#166534;display:flex;align-items:center;gap:8px}
 
+/* ── v2: risk-first layout ─────────────────────────────── */
+.sum-strip{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;background:var(--w);border-radius:var(--rad);box-shadow:var(--sh);border:1px solid var(--b);margin-bottom:18px;overflow:hidden}
+.sum-tile{padding:16px 18px;border-right:1px solid var(--b);min-width:0}
+.sum-tile:last-child{border-right:none}
+.sum-tile.money{background:linear-gradient(180deg,#fff8f0,#fff4ec);position:relative}
+.sum-tile.money::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--o)}
+.sum-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--mu);margin-bottom:6px}
+.sum-tile.money .sum-label{color:var(--od)}
+.sum-num{font-size:26px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.sum-num.r{color:var(--r)}.sum-num.y{color:var(--y)}.sum-num.g{color:var(--g)}.sum-num.mu{color:var(--mu);font-size:16px}
+.sum-sub{font-size:11px;color:var(--mu);margin-top:5px;line-height:1.35}
+.sum-sub a{color:var(--od);font-weight:600}
+@media(max-width:720px){.sum-strip{grid-template-columns:1fr 1fr}.sum-tile.money{grid-column:1 / -1;border-right:none;border-bottom:1px solid var(--b)}.sum-tile:nth-child(3){border-right:none}.sum-tile:nth-child(2),.sum-tile:nth-child(3){border-bottom:1px solid var(--b)}}
+.found-card{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:14px 18px;margin-bottom:24px;display:flex;gap:12px;align-items:flex-start}
+.found-card .ph{color:var(--o);flex-shrink:0;margin-top:2px}
+.found-title{font-size:13.5px;font-weight:700;margin-bottom:3px}
+.found-sub{font-size:12.5px;color:var(--tm);line-height:1.55}
+.found-sub a{color:var(--od);font-weight:600}
+.found-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.found-chip{font-size:11.5px;padding:3px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--b);color:var(--t)}
+.vpill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.vpill.g{background:var(--gb);color:var(--g);border:1px solid var(--gc)}
+.vpill.y{background:var(--yb);color:#a16207;border:1px solid var(--yc)}
+.vpill.r{background:var(--rb);color:var(--r);border:1px solid var(--rc)}
+.vpill .tc-status-dot{width:6px;height:6px}
+.tp-row{background:var(--w);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;display:grid;grid-template-columns:1fr auto;gap:6px 16px;align-items:center}
+.tp-row:hover{border-color:var(--bm);box-shadow:var(--sh)}
+.tp-row.sel{border-color:var(--o);background:var(--ol)}
+.tp-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.tp-row.r::before{background:var(--r)}.tp-row.y::before{background:var(--y)}.tp-row.g::before{background:var(--g)}
+.tp-name{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tp-kind{font-size:11.5px;font-weight:500;color:var(--mu)}
+.tp-found{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:var(--blueb);color:var(--blue);letter-spacing:.02em}
+.tp-head{font-size:12.5px;color:var(--tm);line-height:1.45;grid-column:1}
+.tp-right{grid-row:1 / span 2;grid-column:2;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.tp-money{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.tp-money.none{font-size:11.5px;font-weight:500;color:var(--mu)}
+.tp-next{grid-column:1 / -1;display:flex;align-items:center;gap:8px;margin-top:4px}
+.tp-next-btn{font-family:inherit;font-size:12px;font-weight:600;padding:6px 11px;border-radius:6px;border:1px solid var(--om);background:var(--ol);color:var(--od);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.tp-next-btn:hover{background:var(--om)}
+@media(max-width:560px){.tp-row{grid-template-columns:1fr}.tp-right{grid-row:auto;grid-column:1;flex-direction:row;justify-content:space-between;align-items:center;text-align:left}}
+.verdict-card{border-radius:var(--rad);padding:18px 20px;margin-bottom:16px;display:grid;grid-template-columns:1fr auto;gap:12px 20px;align-items:center;border:1px solid}
+.verdict-card.g{background:var(--gb);border-color:var(--gc)}
+.verdict-card.y{background:var(--yb);border-color:var(--yc)}
+.verdict-card.r{background:var(--rb);border-color:var(--rc)}
+.verdict-word{font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:1.1}
+.verdict-card.g .verdict-word{color:var(--g)}.verdict-card.y .verdict-word{color:#a16207}.verdict-card.r .verdict-word{color:var(--r)}
+.verdict-why{font-size:13px;color:var(--t);margin-top:4px;line-height:1.5}
+.verdict-money{text-align:right}
+.verdict-money-num{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.verdict-money-sub{font-size:11px;color:var(--tm);margin-top:4px;max-width:200px;line-height:1.35}
+.verdict-next{grid-column:1 / -1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:12px;border-top:1px solid rgba(0,0,0,.07)}
+.verdict-next-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--tm)}
+@media(max-width:560px){.verdict-card{grid-template-columns:1fr}.verdict-money{text-align:left}}
+.risk-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--tm);margin:4px 0 8px}
+.risk-row{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--b)}
+.risk-row:last-child{border-bottom:none}
+.risk-row.hl{background:var(--ol);margin:0 -10px;padding:13px 10px;border-radius:8px}
+.risk-ico{flex-shrink:0;margin-top:1px}
+.risk-ico.ok{color:var(--g)}.risk-ico.warn{color:var(--y)}.risk-ico.bad{color:var(--r)}.risk-ico.unknown{color:var(--mu)}.risk-ico.info{color:var(--blue)}
+.risk-body{flex:1;min-width:0}
+.risk-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.risk-title{font-size:13px;color:var(--tm);font-weight:500}
+.risk-answer{font-size:13.5px;font-weight:700}
+.risk-detail{font-size:12px;color:var(--tm);line-height:1.55;margin-top:4px}
+.risk-note{font-size:11px;color:var(--mu);margin-top:4px;font-style:italic}
+.risk-ask{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.rel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:4px 0 12px}
+.rel-q{font-size:15px;font-weight:700}
+.rel-sum{font-size:12.5px;color:var(--tm);margin-top:3px;line-height:1.5}
+.vpill.mu{background:var(--bg);color:var(--tm);border:1px solid var(--b)}
+.rel-sec{border:1px solid var(--b);border-radius:var(--rad-sm);padding:4px 14px 2px;margin-bottom:12px;background:var(--w)}
+.rel-sec-h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;padding:11px 0 9px;border-bottom:1px solid var(--b);font-size:13px;font-weight:700}
+.rel-sec-h span{display:flex;align-items:center;gap:7px}
+.rel-sec-h strong{font-size:12.5px}
+.rel-sec-h strong.ok{color:var(--g)}.rel-sec-h strong.bad{color:var(--r)}.rel-sec-h strong.warn{color:#a16207}.rel-sec-h strong.unknown{color:var(--mu)}
+.rel-pill{font-size:11px;color:var(--tm);white-space:nowrap}
+.pw-card{background:var(--bg);border:1px solid var(--b);border-radius:var(--rad-sm);padding:14px 16px;margin-top:18px}
+.pw-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.pw-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.pw-sub{font-size:11.5px;color:var(--mu);line-height:1.5;margin-bottom:6px}
+.pw-item{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:7px 0;border-top:1px solid var(--b)}
+.pw-item span:first-child{color:var(--tm)}
+.pw-item strong.ok{color:var(--g)}.pw-item strong.bad{color:var(--r)}.pw-item strong.warn{color:#a16207}.pw-item strong.unknown{color:var(--mu)}
+.pw-section{border:1px solid var(--b);border-radius:var(--rad-sm);padding:16px;margin-bottom:14px;background:var(--w)}
+.pw-section h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.perf-box{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.perf-cell{background:var(--w);border:1px solid var(--b);border-radius:6px;padding:8px 10px}
+.perf-num{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.perf-lbl{font-size:10.5px;color:var(--mu)}
+.live-page{border:1px solid var(--b);border-radius:var(--rad-sm);padding:11px 13px;margin-bottom:7px;background:var(--w);font-size:12.5px}
+.live-page-url{font-weight:600;word-break:break-all}
+.live-page-res{margin-top:5px;color:var(--tm);line-height:1.5}
+
 </style>
 </head>
 <body>
@@ -432,7 +526,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     <div class="gate-logo">sendwize</div>
     <i class="ph ph-lock-key ph icon-32 gate-icon"></i>
     <div class="gate-title">Third parties</div>
-    <div class="gate-sub">Sign in via the dashboard to access your relationships register.</div>
+    <div class="gate-sub">Sign in through the dashboard to see your third parties.</div>
     <a href="https://new-mvp-v2.webflow.io/flow-templates/dashboard-templates/dashboard-template/dashboard-1-copy" class="gate-btn">Go to Dashboard <i class="ph ph-arrow-right"></i></a>
   </div>
 </div>
@@ -440,49 +534,37 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div class="page-wrap" id="mainWrap" style="display:none">
 
   <div class="intro">
-    <div class="intro-eyebrow">Third parties &amp; risk register</div>
-    <h1 class="intro-title">Every third party in one place</h1>
-    <p class="intro-sub">Processors, partners, affiliates and competitors &mdash; tracked with a live risk score that feeds your main dashboard.</p>
+    <div class="intro-eyebrow">Third parties</div>
+    <h1 class="intro-title">Who gets your customers' data, and what it could cost you</h1>
+    <p class="intro-sub">Sendwize fills this in from your website and your lists. Each platform, partner and affiliate gets a plain verdict, a &pound; figure and the one thing to do next.</p>
   </div>
 
-  <div class="score-strip" id="scoreStrip">
-    <div class="ss-tile total">
-      <div class="ss-label">Third-party risk</div>
-      <div class="ss-row">
-        <div class="ss-num o" id="sbTotal">&mdash;</div>
-        <div class="ss-verdict" id="sbTotalVerdict"></div>
-      </div>
-      <div class="ss-sub" id="sbTotalSub">out of 100</div>
+  <div class="sum-strip" id="sumStrip">
+    <div class="sum-tile money">
+      <div class="sum-label">Could cost you</div>
+      <div class="sum-num" id="sumMoney">&mdash;</div>
+      <div class="sum-sub" id="sumMoneySub">Loading&hellip;</div>
     </div>
-    <div class="ss-tile">
-      <div class="ss-label">Platforms</div>
-      <div class="ss-row"><div class="ss-num mu" id="sbProc">&mdash;</div></div>
-      <div class="ss-sub" id="sbProcSub">not started</div>
-    </div>
-    <div class="ss-tile">
-      <div class="ss-label">Partners</div>
-      <div class="ss-row"><div class="ss-num mu" id="sbPart">&mdash;</div></div>
-      <div class="ss-sub" id="sbPartSub">not started</div>
-    </div>
-    <div class="ss-tile">
-      <div class="ss-label">Affiliates</div>
-      <div class="ss-row"><div class="ss-num mu" id="sbAff">&mdash;</div></div>
-      <div class="ss-sub" id="sbAffSub">not started</div>
-    </div>
+    <div class="sum-tile"><div class="sum-label">Stop using</div><div class="sum-num r" id="sumStop">&mdash;</div><div class="sum-sub">act this week</div></div>
+    <div class="sum-tile"><div class="sum-label">Fix this</div><div class="sum-num y" id="sumFix">&mdash;</div><div class="sum-sub">one step each</div></div>
+    <div class="sum-tile"><div class="sum-label">Keep</div><div class="sum-num g" id="sumKeep">&mdash;</div><div class="sum-sub">no open risks</div></div>
+    <div class="sum-tile"><div class="sum-label">Third-party score</div><div class="sum-num mu" id="sbTotal">&mdash;</div><div class="sum-sub" id="sbTotalSub">out of 100</div></div>
   </div>
 
-  <div class="section-title">Choose a relationship type</div>
+  <div id="foundCard"></div>
+
+  <div class="section-title">Choose a type</div>
   <div class="type-grid" id="typeGrid">
     <button class="type-card on" data-type="processors" onclick="pickType('processors')">
       <div class="type-card-top">
         <span class="type-card-icon"><i class="ph ph-package icon-20"></i></span>
         <span class="type-card-arrow"><i class="ph ph-arrow-right icon-16"></i></span>
       </div>
-      <div class="type-card-name">Platform Vendors</div>
-      <div class="type-card-desc">Your marketing platforms, CRMs, analytics, and payment providers.</div>
+      <div class="type-card-name">Platforms</div>
+      <div class="type-card-desc">Email, ads, analytics, CRM: tools that get your customers' data.</div>
       <div class="type-card-meta">
-        <span class="type-card-count"><strong id="tcProcN">0</strong> registered</span>
-        <span class="type-card-status tc-status-empty" id="tcProcPill"><span class="tc-status-dot"></span>Not started</span>
+        <span class="type-card-count"><strong id="tcProcN">0</strong> listed</span>
+        <span class="type-card-status tc-status-empty" id="tcProcPill"><span class="tc-status-dot"></span>None yet</span>
       </div>
     </button>
     <button class="type-card" data-type="partners" onclick="pickType('partners')">
@@ -490,35 +572,35 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
         <span class="type-card-icon"><i class="ph ph-handshake icon-20"></i></span>
         <span class="type-card-arrow"><i class="ph ph-arrow-right icon-16"></i></span>
       </div>
-      <div class="type-card-name">Partners</div>
-      <div class="type-card-desc">Brands you co-market with, run joint ads alongside, or share data with.</div>
+      <div class="type-card-name">Lead &amp; data partners</div>
+      <div class="type-card-desc">Anyone who passes you contacts or runs joint campaigns with you.</div>
       <div class="type-card-meta">
-        <span class="type-card-count"><strong id="tcPartN">0</strong> registered</span>
-        <span class="type-card-status tc-status-empty" id="tcPartPill"><span class="tc-status-dot"></span>Not started</span>
+        <span class="type-card-count"><strong id="tcPartN">0</strong> listed</span>
+        <span class="type-card-status tc-status-empty" id="tcPartPill"><span class="tc-status-dot"></span>None yet</span>
       </div>
     </button>
     <button class="type-card" data-type="affiliates" onclick="pickType('affiliates')">
       <div class="type-card-top">
-        <span class="type-card-icon"><i class="ph ph-link icon-20"></i></span>
+        <span class="type-card-icon"><i class="ph ph-megaphone icon-20"></i></span>
         <span class="type-card-arrow"><i class="ph ph-arrow-right icon-16"></i></span>
       </div>
-      <div class="type-card-name">Affiliates</div>
-      <div class="type-card-desc">Anyone promoting your brand &mdash; email senders, influencers, lead generators.</div>
+      <div class="type-card-name">Affiliates &amp; influencers</div>
+      <div class="type-card-desc">Anyone promoting you: posts, cashback, voucher and comparison sites.</div>
       <div class="type-card-meta">
-        <span class="type-card-count"><strong id="tcAffN">0</strong> registered</span>
-        <span class="type-card-status tc-status-empty" id="tcAffPill"><span class="tc-status-dot"></span>Not started</span>
+        <span class="type-card-count"><strong id="tcAffN">0</strong> listed</span>
+        <span class="type-card-status tc-status-empty" id="tcAffPill"><span class="tc-status-dot"></span>None yet</span>
       </div>
     </button>
     <button class="type-card" data-type="competitors" onclick="pickType('competitors')">
       <div class="type-card-top">
-        <span class="type-card-icon"><i class="ph ph-magnifying-glass icon-20"></i></span>
+        <span class="type-card-icon"><i class="ph ph-binoculars icon-20"></i></span>
         <span class="type-card-arrow"><i class="ph ph-arrow-right icon-16"></i></span>
       </div>
       <div class="type-card-name">Competitors</div>
-      <div class="type-card-desc">Named competitors to monitor for regulatory activity.</div>
+      <div class="type-card-desc">Rivals we watch for regulator action.</div>
       <div class="type-card-meta">
         <span class="type-card-count"><strong id="tcCompN">0</strong> watched</span>
-        <span class="type-card-status tc-status-empty" id="tcCompPill"><span class="tc-status-dot"></span>Not started</span>
+        <span class="type-card-status tc-status-empty" id="tcCompPill"><span class="tc-status-dot"></span>None yet</span>
       </div>
     </button>
   </div>
@@ -526,8 +608,8 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <div class="work-area" id="workArea">
     <div class="work-hdr">
       <div>
-        <div class="work-hdr-title"><i class="ph ph-package icon-20" id="workHdrIcon"></i><span id="workTitle">Platform Vendors</span></div>
-        <p class="work-hdr-sub" id="workSub">Your marketing stack &mdash; every platform handling customer data on your behalf.</p>
+        <div class="work-hdr-title"><i class="ph ph-package icon-20" id="workHdrIcon"></i><span id="workTitle">Platforms</span></div>
+        <p class="work-hdr-sub" id="workSub"></p>
       </div>
       <div class="work-hdr-actions" id="workActions">
         <button class="btn btn-ghost btn-sm" id="workExport" onclick="exportCSV()"><i class="ph ph-download-simple icon-16"></i>CSV</button>
@@ -541,13 +623,13 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
-  <div class="section-title mt">Monitoring &amp; Intelligence</div>
+  <div class="section-title mt">What we are watching</div>
   <div class="mon-section" id="monSection" onclick="toggleMon(event)">
     <div class="mon-hdr">
       <div class="mon-hdr-left">
         <span class="mon-hdr-icon"><i class="ph ph-broadcast icon-20"></i></span>
         <div>
-          <div class="mon-hdr-title">Live monitoring across all your relationships</div>
+          <div class="mon-hdr-title">Alerts and regulator news across your third parties</div>
           <div class="mon-hdr-meta" id="monMeta">Click to expand</div>
         </div>
       </div>
@@ -562,7 +644,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
-    <p class="disc">Evidence-based assessment &mdash; not legal advice. Sendwize identifies potential compliance gaps from publicly available and vendor-provided information. Always verify directly with each party. Findings distinguish between verified evidence, vendor documentation, public sources, and AI assessment.</p>
+    <p class="disc">Not legal advice. &pound; figures come from comparable published ICO cases for your turnover and sector; they are not a prediction. ASA and CMA risks are shown as risks, never as a fine. Check anything important directly with the third party.</p>
 </div>
 
 <footer class="sw-ph-footer">
@@ -592,52 +674,31 @@ var scanFile = { processors:null, partners:null, affiliates:null };
 
 var TYPE_CONFIG = {
   processors: {
-    title:'Platform Vendors', icon:'package',
-    sub:'Your marketing stack \u2014 every platform handling customer data on your behalf.',
-    emptyTitle:'Start with your marketing platform',
-    emptySub:'Add the platforms in your marketing stack \u2014 email, CRM, analytics, ads, payments. We check each one against the enforcement database, scan their data agreements, and flag gaps to your dashboard.',
+    title:'Platforms', icon:'package', kind:'platform',
+    sub:'Email, ads, analytics and CRM tools. For each: what data it gets, whether it leaves the UK, and whether it uses your data for its own ads or AI.',
+    emptyTitle:'No platforms yet',
+    emptySub:'Run Site Sweep on your website and we add the analytics and ad tags it finds here by ourselves. Or add your email platform and CRM below.',
     addLabel:'Add platform', modalKey:'processor',
-    steps:[
-      {title:'Add platform',desc:'Name and type'},
-      {title:'Data agreement',desc:'DPA confirmed'},
-      {title:'Scan agreement',desc:'URL or PDF upload'},
-      {title:'Keep current',desc:'Re-check quarterly'},
-    ],
-    stepShort:['Added','DPA','Policy','Current'],
   },
   partners: {
-    title:'Partners & Joint Ventures', icon:'handshake',
-    sub:'Brands you co-market with, run joint campaigns alongside, or share customer data with.',
-    emptyTitle:'Add your first partner',
-    emptySub:'Any brand you co-market with, run joint ads alongside, or share customer data with. We check their regulatory history, track the Article 26 agreement, and flag advertising compliance gaps across CAP Code and CMA/DMCCA.',
+    title:'Lead & data partners', icon:'handshake', kind:'partner',
+    sub:'Anyone who passes you contacts or runs joint campaigns with you. For each: does their consent cover you, and how did their contacts do on your list.',
+    emptyTitle:'No lead or data partners yet',
+    emptySub:'Upload a list with a source column in List health and we add partners from it, but only when the source clearly names them. Or add one yourself.',
     addLabel:'Add partner', modalKey:'partner',
-    steps:[
-      {title:'Add partner',desc:'Name, type, and activity'},
-      {title:'Confirm Art. 26',desc:'Joint controller arrangement'},
-      {title:'Verify consent',desc:'Chain ownership'},
-      {title:'Compliance review',desc:'Brand safety, CAP and CMA checks'},
-    ],
-    stepShort:['Added','Art. 26','Consent','Compliance'],
   },
   affiliates: {
-    title:'Affiliates & Third-Party Promoters', icon:'link',
-    sub:'Anyone promoting your brand \u2014 email senders, influencers, lead generators, comparison sites. You are responsible for their claims and consent under PECR, CAP Code, and CMA/DMCCA.',
-    emptyTitle:'Add an affiliate or third-party promoter',
-    emptySub:'Email affiliates, influencers, cashback sites, comparison sites, lead generators \u2014 any third party promoting your brand. We check consent chains, sender identity, marketing materials, ad disclosure, and landing page compliance.',
+    title:'Affiliates & influencers', icon:'megaphone', kind:'affiliate',
+    sub:'Anyone promoting you. For each: are their posts labelled as ads, and what claims are they making about you. We re-check their posts every month.',
+    emptyTitle:'No affiliates or influencers yet',
+    emptySub:'Add anyone who promotes you, then paste links to their posts. We check each one for an ad label and risky claims, and re-check monthly.',
     addLabel:'Add affiliate', modalKey:'affiliate',
-    steps:[
-      {title:'Add affiliate',desc:'Name, type, and activity'},
-      {title:'Confirm DPA',desc:'Agreement in place'},
-      {title:'Verify consent',desc:'Chain and landing pages'},
-      {title:'Marketing compliance',desc:'Materials, disclosure, sender ID'},
-    ],
-    stepShort:['Added','DPA','Consent','Marketing'],
   },
   competitors: {
-    title:'Competitor Watch', icon:'magnifying-glass',
-    sub:'Named competitors we monitor for regulatory activity, refreshed weekly.',
+    title:'Competitor watch', icon:'binoculars',
+    sub:'Rivals we monitor for regulator action, refreshed weekly.',
     emptyTitle:'Add a competitor to watch',
-    emptySub:'We\'ll pull their regulatory history and recent promotional tactics automatically and alert you when something changes.',
+    emptySub:'We pull their regulatory history and recent promotional tactics automatically and tell you when something changes.',
     addLabel:'Add competitor', modalKey:'competitor',
     steps:null,
   },
@@ -749,8 +810,6 @@ var AFF_ROLES = [
 
 function parseJSON(s, fb) { try { return s ? JSON.parse(s) : fb; } catch(e) { return fb; } }
 function scoreColour(n) { return n>=70 ? 'var(--g)' : n>=40 ? 'var(--y)' : 'var(--r)'; }
-function hasDPAScan(f) { return Object.keys(parseJSON(f.DPAClauseResults, {})).length > 0; }
-function dpaFailCount(f) { var r = parseJSON(f.DPAClauseResults, {}); return A28.filter(function(c){ return (r[c.id]||{}).status==='fail'; }).length; }
 function optionsHtml(list, selected) { return list.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===selected?' selected':'')+'>'+escH(o[1])+'</option>'; }).join(''); }
 
 function marketingStatus(f) {
@@ -782,7 +841,7 @@ function affiliateRequirements(f) {
   var act = (f.RelationshipActivity || f.AffiliateType || '').toLowerCase();
   return {
     role: role,
-    agreement: role==='our_list' ? 'Article 28 DPA' : (role==='own_list'||role==='lead_capture') ? 'Marketing / data sharing agreement' : role==='no_mailing' ? null : 'unknown',
+    agreement: role==='our_list' ? 'Data processing agreement' : (role==='own_list'||role==='lead_capture') ? 'Marketing / data sharing agreement' : role==='no_mailing' ? null : 'unknown',
     consentNaming: role==='own_list' || role==='lead_capture' || role==='unknown',
     senderIdentity: role==='own_list' || role==='our_list' || (role==='unknown' && act.indexOf('email')>=0),
     landingPage: role==='lead_capture' || /lead|comparison|cashback/.test(act),
@@ -791,44 +850,8 @@ function affiliateRequirements(f) {
 }
 
 function reopenTab(recordId, tab) {
-  return loadAll().then(function(){
-    if (S[currentType].some(function(r){ return r.id===recordId; })) { showDetail(recordId); goToDetailTab(tab); }
-  });
-}
-
-function exposureStripHtml(low, high, riskSub, okSub, rec) {
-  var has = low>0 || high>0;
-  var steps = getRowProgress(rec);
-  var done = steps.filter(function(s){ return s==='done'; }).length;
-  return '<div class="exposure-strip">'
-    + '<div class="exposure-card '+(has?'risk':'ok')+'"><div class="exposure-label">Estimated exposure</div>'
-    + '<div class="exposure-value '+(has?'risk':'ok')+'">'+(has ? '\u00a3'+fmtNum(low)+'\u2013\u00a3'+fmtNum(high) : '\u00a30')+'</div>'
-    + '<div class="exposure-sub">'+(has?riskSub:okSub)+'</div></div>'
-    + '<div class="exposure-card"><div class="exposure-label">Verification progress</div>'
-    + '<div class="exposure-value" style="color:var(--'+(done===steps.length?'g':done>=steps.length/2?'y':'r')+')">'+done+'/'+steps.length+'</div>'
-    + '<div class="exposure-sub">compliance steps complete</div></div></div>';
-}
-
-function invPreviewHtml(questions) {
-  var allOk = questions.every(function(q){ return q.ok; });
-  return '<div class="inv-preview'+(allOk?' clear':'')+'">'
-    + '<div class="inv-preview-title"><i class="ph ph-'+(allOk?'shield-check':'warning-circle')+' icon-16"></i>'+(allOk ? 'Evidence-based assessment \u2014 all checks passed' : 'A regulator reviewing this relationship would ask:')+'</div>'
-    + questions.map(function(q){
-        var icon = q.ok ? '<i class="ph ph-check-circle icon-16" style="color:var(--g)"></i>' : '<i class="ph ph-x-circle icon-16" style="color:var(--r)"></i>';
-        return '<div class="inv-preview-q"><span class="inv-preview-status">'+icon+'</span><div class="inv-preview-text"><strong>'+q.q+'</strong> \u2014 <em>'+escH(q.label)+'</em></div></div>';
-      }).join('')
-    + '</div>';
-}
-
-function passportHtml(name, sub, f) {
-  return '<div class="passport-card"><div class="passport-icon" style="color:var(--g)"><i class="ph ph-shield-check icon-32"></i></div><div>'
-    + '<div class="passport-title">'+escH(name)+' \u2014 All checks passed</div><div class="passport-sub">'+sub+'</div>'
-    + '<div class="passport-date">Last verified '+fmtDate(f.LastChecked||new Date().toISOString().split('T')[0])+'</div></div></div>';
-}
-
-function narrativeHtml(lines, actions) {
-  if (actions.length) lines.push('<strong>'+actions.length+' action'+(actions.length!==1?'s':'')+' required:</strong> '+actions.join(', ')+'.');
-  return '<div class="narrative-card"><div class="narrative-text">'+lines.join(' ')+'</div></div>';
+  selId[currentType] = recordId;
+  return loadAll({ discover:false, quiet:true, tab:tab });
 }
 
 function renderConsentResult(c, name) {
@@ -858,27 +881,38 @@ function watchLevel(w) {
   loadAll();
 })();
 
-function loadAll() {
-  showLoading('Loading relationships\u2026');
+// Everything comes from /api/third-parties (verdicts, risks, £, what
+// Sendwize added by itself). Competitors, check definitions and the
+// watch feed come from data.js as before.
+function loadAll(opts) {
+  opts = opts || {};
+  if (!opts.quiet) showLoading('Loading your third parties…');
   return Promise.all([
-    fetchRel('vendor'), fetchRel('partner'), fetchRel('affiliate'), fetchRel('competitor'),
-    swFetch(APP_URL+'/api/data?action=vendors').then(function(r){return r.json();}).catch(function(){return{vendors:[]};}),
-    swFetch(APP_URL+'/api/data?action=marketing-checks').then(function(r){return r.json();}).catch(function(){return{categories:{}};}),
-    swFetch(APP_URL+'/api/data?action=relationship-watch&userId='+userId).then(function(r){return r.json();}).catch(function(){return{};}),
-    swFetch(APP_URL+'/api/site-sweep?action=get&userId='+encodeURIComponent(userId)).then(function(r){return r.json();}).catch(function(){return{};})
+    swFetch(APP_URL+'/api/third-parties?action=load&userId='+encodeURIComponent(userId)+(opts.discover===false?'&discover=0':'')).then(function(r){return r.json();}),
+    fetchRel('competitor'),
+    S.marketingDefs ? Promise.resolve({categories:S.marketingDefs}) : swFetch(APP_URL+'/api/data?action=marketing-checks').then(function(r){return r.json();}).catch(function(){return{categories:{}};}),
   ]).then(function(res){
-    S.processors  = res[0];
-    S.partners    = res[1];
-    S.affiliates  = res[2];
-    S.competitors = res[3];
-    (res[4].vendors||[]).forEach(function(v){ S.knownVendors[v.name]=v; });
-    S.marketingDefs = res[5].categories || {};
-    if (res[6].tradingName) S.tradingName = res[6].tradingName;
-    S.watch = res[6].watch || S.watch || [];
-    S.sweep = latestSweepTrackers(res[7]);
+    var d = res[0] || {};
+    if (d.error) throw new Error(d.error);
+    S.processors  = d.platforms || [];
+    S.partners    = d.partners || [];
+    S.affiliates  = d.affiliates || [];
+    S.competitors = res[1];
+    S.marketingDefs = res[2].categories || {};
+    S.totals = d.totals || {};
+    S.profile = d.profile || {};
+    S.sources = d.sources || {};
+    if (d.tradingName) S.tradingName = d.tradingName;
+    if (d.added && d.added.length) S.added = (S.added||[]).concat(d.added);
     hideLoading();
+    renderSummary();
+    renderFound();
     updateTypeCards();
     renderWorkArea();
+    if (selId[currentType]) {
+      var still = S[currentType].some(function(r){ return r.id===selId[currentType]; });
+      if (still) showDetail(selId[currentType], opts.tab); else closeDetail();
+    }
     loadScore();
   }).catch(function(e){ hideLoading(); showToast('Could not load: '+e.message,'er'); });
 }
@@ -894,85 +928,94 @@ function loadScore() {
     .then(function(d){
       S.watch = d.watch||[];
       S.score = d.thirdPartyScore;
+      if (d.tradingName && !S.tradingName) S.tradingName = d.tradingName;
       renderScoreStrip();
       renderMonMeta();
     }).catch(function(){});
 }
 
-function scoreVerdict(n) {
-  if (n === null || n === undefined) return { label:'', cls:'' };
-  if (n >= 70) return { label:'All clear', cls:'g' };
-  if (n >= 40) return { label:'Needs attention', cls:'y' };
-  return { label:'At risk', cls:'r' };
+function money(n) { return '£'+fmtNum(n); }
+function profileLink() { return APP_URL+'/profile.html?userId='+encodeURIComponent(userId); }
+
+function renderSummary() {
+  var t = S.totals || {};
+  var m = document.getElementById('sumMoney'), sub = document.getElementById('sumMoneySub');
+  var listed = S.processors.length + S.partners.length + S.affiliates.length;
+  if (!S.profile.complete) {
+    m.textContent = '—'; m.className = 'sum-num mu';
+    sub.innerHTML = 'Fill in <a href="'+profileLink()+'">your business details</a> to see &pound; figures. They depend on your turnover and sector.';
+  } else if (!listed) {
+    m.textContent = '£0'; m.className = 'sum-num';
+    sub.textContent = 'Nothing listed yet';
+  } else {
+    m.textContent = money(t.likely||0); m.className = 'sum-num'+(t.likely?' r':' g');
+    sub.textContent = (t.likely ? 'Most likely, if the ICO acted on all of it. Range '+money(t.low)+'–'+money(t.high)+'.' : 'No open data protection risks.')
+      + (t.paperwork ? ' Missing contracts add about '+money(t.paperwork)+'.' : '');
+  }
+  document.getElementById('sumStop').textContent = t.stop||0;
+  document.getElementById('sumFix').textContent = t.fix||0;
+  document.getElementById('sumKeep').textContent = t.keep||0;
 }
 
 function renderScoreStrip() {
-  var tp = S.score;
-  var setNum = function(id, val, cls){
-    var el = document.getElementById(id);
-    if (val === null || val === undefined) { el.textContent='N/A'; el.className='ss-num na'; }
-    else { el.textContent=val; el.className='ss-num '+(cls||'mu'); }
-  };
-  var col = function(n){ return n>=70?'g':n>=40?'y':'r'; };
+  var tp = S.score, el = document.getElementById('sbTotal');
+  if (!tp || tp.total === null || tp.total === undefined) { el.textContent = '—'; el.className = 'sum-num mu'; return; }
+  el.textContent = tp.total;
+  el.className = 'sum-num '+(tp.total>=70?'g':tp.total>=40?'y':'r');
+}
 
-  if (!tp || tp.total === null || tp.total === undefined) {
-    setNum('sbTotal', null);
-    document.getElementById('sbTotalVerdict').textContent = 'Not started';
-    document.getElementById('sbTotalVerdict').className = 'ss-verdict';
-    document.getElementById('sbTotalSub').textContent = 'add relationships to score';
+// What Sendwize added by itself, and where it looked
+function renderFound() {
+  var el = document.getElementById('foundCard');
+  var src = S.sources || {};
+  var sweep = src.sweep, lists = (src.lists||[]).filter(function(l){ return l.sources; });
+  var found = [].concat(S.processors, S.partners, S.affiliates).filter(function(r){ return r.a && r.a.found; });
+  var looked = [];
+  if (sweep) looked.push('Site Sweep of <strong>'+escH(sweep.domain||'your website')+'</strong> ('+fmtDate(sweep.sweptAt)+')');
+  if (lists.length) looked.push('the sources on '+lists.length+' list'+(lists.length!==1?'s':'')+' in List health');
+  var missing = [];
+  if (!sweep) missing.push('<a href="'+APP_URL+'/site-sweep.html?userId='+encodeURIComponent(userId)+'">Run Site Sweep</a> to add the tags on your website');
+  if (!lists.length) missing.push('<a href="'+APP_URL+'/list-intelligence.html?userId='+encodeURIComponent(userId)+'">upload a list with a source column</a> to add the partners that sent you contacts');
+  var html = '<div class="found-card"><i class="ph ph-sparkle icon-20"></i><div style="flex:1;min-width:0">';
+  if (found.length) {
+    html += '<div class="found-title">Sendwize found '+found.length+' of these for you</div>'
+      + '<div class="found-sub">From '+looked.join(' and ')+'. We only add a third party when the match is obvious, such as a named ad tag or a source labelled with a company name. If one is not yours, open it and choose “We don’t use this”.</div>'
+      + '<div class="found-chips">'+found.slice(0,10).map(function(r){ return '<span class="found-chip">'+escH(getName(r.fields))+'</span>'; }).join('')+'</div>';
+  } else if (looked.length) {
+    html += '<div class="found-title">Nothing new to add</div><div class="found-sub">We checked '+looked.join(' and ')+'. Everything we could clearly match is already listed.</div>';
   } else {
-    setNum('sbTotal', tp.total, col(tp.total));
-    var v = scoreVerdict(tp.total);
-    document.getElementById('sbTotalVerdict').textContent = v.label;
-    document.getElementById('sbTotalVerdict').className = 'ss-verdict '+v.cls;
-    document.getElementById('sbTotalSub').textContent = 'out of 100';
+    html += '<div class="found-title">Let Sendwize fill this in</div><div class="found-sub">We have nothing to work from yet.</div>';
   }
+  if (missing.length) html += '<div class="found-sub" style="margin-top:6px">'+missing.join('; ')+'.</div>';
+  el.innerHTML = html + '</div></div>';
+}
 
-  var br = tp && tp.breakdown ? tp.breakdown : {};
-  var doTile = function(numId, subId, cat){
-    if (br[cat] && br[cat].applicable) {
-      setNum(numId, br[cat].score, col(br[cat].score));
-      document.getElementById(subId).textContent = br[cat].count+' registered';
-    } else {
-      setNum(numId, null);
-      document.getElementById(subId).textContent = 'none registered';
-    }
-  };
-  doTile('sbProc','sbProcSub','processors');
-  doTile('sbPart','sbPartSub','partners');
-  doTile('sbAff','sbAffSub','affiliates');
+function verdictCounts(records) {
+  var c = { stop:0, fix:0, keep:0 };
+  records.forEach(function(r){ if (r.a) c[r.a.verdict]++; });
+  return c;
 }
 
 function updateTypeCards() {
-  var counts = { processors:S.processors.length, partners:S.partners.length, affiliates:S.affiliates.length, competitors:S.competitors.length };
   var map = { processors:['tcProcN','tcProcPill'], partners:['tcPartN','tcPartPill'], affiliates:['tcAffN','tcAffPill'], competitors:['tcCompN','tcCompPill'] };
   Object.keys(map).forEach(function(t){
-    var ids = map[t]; var n = counts[t];
+    var ids = map[t], records = S[t], n = records.length;
     document.getElementById(ids[0]).textContent = n;
     var pill = document.getElementById(ids[1]);
-    if (n === 0) { pill.className='type-card-status tc-status-empty'; pill.innerHTML='<span class="tc-status-dot"></span>Not started'; return; }
-    if (t === 'competitors') { pill.className='type-card-status tc-status-clear'; pill.innerHTML='<span class="tc-status-dot"></span>Watching'; return; }
-    var records = S[t];
-    var risks = records.filter(function(r){
-      var f = r.fields;
-      if (t==='processors')  return !isDPAConfirmed(f.DPAStatus||f.AgreementStatus);
-      if (t==='partners')    return !isDPAConfirmed(f.Article26Status) || f.BrandSafetyFlag;
-      if (t==='affiliates')  return !f.ConsentChainVerified || f.SenderIdentityCompliant==='Unverified';
-      return false;
-    }).length;
-    if (risks > 0) { pill.className='type-card-status tc-status-risk'; pill.innerHTML='<span class="tc-status-dot"></span>'+risks+' at risk'; }
-    else { pill.className='type-card-status tc-status-clear'; pill.innerHTML='<span class="tc-status-dot"></span>All clear'; }
+    if (!n) { pill.className='type-card-status tc-status-empty'; pill.innerHTML='<span class="tc-status-dot"></span>None yet'; return; }
+    if (t==='competitors') { pill.className='type-card-status tc-status-clear'; pill.innerHTML='<span class="tc-status-dot"></span>Watching'; return; }
+    var c = verdictCounts(records);
+    if (c.stop) { pill.className='type-card-status tc-status-risk'; pill.innerHTML='<span class="tc-status-dot"></span>'+c.stop+' to stop'; }
+    else if (c.fix) { pill.className='type-card-status tc-status-attn'; pill.innerHTML='<span class="tc-status-dot"></span>'+c.fix+' to fix'; }
+    else { pill.className='type-card-status tc-status-clear'; pill.innerHTML='<span class="tc-status-dot"></span>All keep'; }
   });
 }
-
 
 function pickType(type) {
   currentType = type;
   currentFilter = 'all';
   currentSearch = '';
-  document.querySelectorAll('.type-card').forEach(function(c){
-    c.classList.toggle('on', c.getAttribute('data-type')===type);
-  });
+  document.querySelectorAll('.type-card').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-type')===type); });
   Object.keys(selId).forEach(function(k){ selId[k]=null; });
   document.getElementById('detailPanel').classList.remove('show');
   document.getElementById('confirmPanel').innerHTML = '';
@@ -989,69 +1032,17 @@ function renderWorkArea() {
   document.getElementById('workExport').style.display = currentType==='competitors' ? 'none' : 'inline-flex';
   var records = S[currentType];
   var content = document.getElementById('workContent');
-  var sweepHtml = currentType==='processors' ? sweepSuggestionsHtml() : '';
-  if (!records.length) { content.innerHTML = sweepHtml + renderEmpty(); return; }
-  content.innerHTML = sweepHtml + renderListControls() + '<div class="rel-list" id="relList">'+renderList(records)+'</div>';
-}
-
-// ── Site Sweep → register ─────────────────────────────────────
-// Trackers Site Sweep found on the member's website. Any not yet in the
-// register are offered for one-click adding; matching vendors get the
-// evidence on their cookie check server-side (data.js sweep-trackers).
-var SWEEP_CATEGORY_LABEL = { analytics:'Analytics', advertising:'Advertising', esp:'Email Service Provider' };
-
-function latestSweepTrackers(d) {
-  var list = (d && d.sweeps) || [];
-  for (var i = 0; i < list.length; i++) {
-    var sw = list[i].sweep;
-    if (sw) return { domain: list[i].domain, sweptAt: sw.completedAt || list[i].lastSweptAt, trackers: sw.trackers || [] };
-  }
-  return null;
-}
-
-function trackerInRegister(t) {
-  return S.processors.some(function(r){
-    var n = getName(r.fields).toLowerCase();
-    return t.aliases.concat([t.vendor.toLowerCase()]).some(function(a){
-      var esc = a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp('(^|[^a-z0-9])'+esc+'($|[^a-z0-9])').test(n);
-    });
-  });
-}
-
-function sweepSuggestionsHtml() {
-  if (!S.sweep) {
-    return '<div class="info-banner"><i class="ph ph-magnifying-glass icon-16"></i><div>Run <a href="'+APP_URL+'/site-sweep.html?userId='+encodeURIComponent(userId)+'" style="color:inherit;font-weight:700">Site Sweep</a> on your website and we will list the analytics and ad trackers it finds here, with proof of whether they fire before consent.</div></div>';
-  }
-  var missing = S.sweep.trackers.filter(function(t){ return !trackerInRegister(t); });
-  if (!missing.length) return '';
-  return '<div class="narrative-card" style="margin-bottom:14px">'
-    + '<div style="font-size:13px;font-weight:700;margin-bottom:4px">Found on '+escH(S.sweep.domain||'your website')+' but not in your register</div>'
-    + '<div style="font-size:11.5px;color:var(--mu);margin-bottom:10px">Site Sweep, '+fmtDate(S.sweep.sweptAt)+'. Each one receives your visitors\' data, so it needs a DPA and a consent check.</div>'
-    + missing.map(function(t){
-        var badge = t.firedBeforeConsent ? '<span class="pill pr">Fired before consent</span>' : '<span class="pill pmu">Found on your site</span>';
-        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--b)">'
-          + '<div style="flex:1;min-width:0;font-size:13px;font-weight:600">'+escH(t.vendor)+' <span style="font-size:11px;font-weight:400;color:var(--mu)">detected as '+escH(t.detectedAs.join(', '))+'</span></div>'
-          + badge
-          + '<button class="btn btn-primary btn-sm" onclick="quickAdd(\''+escJ(t.vendor)+'\',\''+escJ(SWEEP_CATEGORY_LABEL[t.category]||'Analytics')+'\')">Add</button></div>';
-      }).join('')
-    + '</div>';
+  if (!records.length) { content.innerHTML = renderEmpty(); return; }
+  content.innerHTML = renderListControls() + '<div class="rel-list" id="relList">'+renderList(filtered())+'</div>';
 }
 
 function renderEmpty() {
   var cfg = TYPE_CONFIG[currentType];
-  var stepsHtml = '';
-  if (cfg.steps) {
-    stepsHtml = '<div class="steps-header">How this works</div><div class="steps-guide">'
-      + cfg.steps.map(function(s,i){
-        return '<div class="step-guide-item"><div class="step-guide-num"><span class="step-guide-num-dot">'+(i+1)+'</span></div><div class="step-guide-title">'+s.title+'</div><div class="step-guide-desc">'+s.desc+'</div></div>';
-      }).join('') + '</div>';
-  }
   var qaHtml = '';
   if (currentType==='processors') {
-    qaHtml = '<div class="qa-wrap"><div class="qa-label">Quick add \u2014 common processors</div><div class="qa-grid">'
+    qaHtml = '<div class="qa-wrap"><div class="qa-label">Quick add: email platforms</div><div class="qa-grid">'
       + QA_PROC.map(function(v){return '<button class="qa-btn" onclick="quickAdd(\''+escJ(v)+'\',\'Email Service Provider\')">'+escH(v)+'</button>';}).join('')
-      + '</div><button class="qa-more-toggle" onclick="toggleQAMore(this)">Show all categories \u2192</button>'
+      + '</div><button class="qa-more-toggle" onclick="toggleQAMore(this)">Show all categories →</button>'
       + '<div class="qa-more">' + QA_PROC_MORE.map(function(cat){
           return '<div class="qa-cat-label">'+escH(cat.label)+'</div><div class="qa-grid">'
             + cat.items.map(function(v){return '<button class="qa-btn" onclick="quickAdd(\''+escJ(v)+'\',\''+escJ(cat.label)+'\')">'+escH(v)+'</button>';}).join('')
@@ -1062,228 +1053,123 @@ function renderEmpty() {
       + QA_PART.map(function(v){return '<button class="qa-btn" onclick="openModalPre(\'partner\',\''+escJ(v)+'\')">'+escH(v)+'</button>';}).join('')
       + '</div></div>';
   } else if (currentType==='affiliates') {
-    qaHtml = '<div class="qa-wrap"><div class="qa-label">Common affiliate types</div><div class="qa-grid">'
+    qaHtml = '<div class="qa-wrap"><div class="qa-label">Common types</div><div class="qa-grid">'
       + QA_AFF.map(function(v){return '<button class="qa-btn" onclick="openModalPre(\'affiliate\',\''+escJ(v)+'\')">'+escH(v)+'</button>';}).join('')
       + '</div></div>';
   }
-  var affWarn = currentType==='affiliates'
-    ? '<div class="info-banner red"><i class="ph ph-warning-circle icon-16"></i><div><strong>Saga Services and Saga Personal Finance (ICO, \u00a3150k and \u00a375k, 2021):</strong> partners and affiliates sent marketing using consent that did not name Saga. You cannot rely on consent an affiliate collected unless it names your organisation specifically.</div></div>'
-    : '';
-  return affWarn
-    + '<div class="guided-empty">'
+  return '<div class="guided-empty">'
     + '<div class="guided-empty-title">'+cfg.emptyTitle+'</div>'
     + '<div class="guided-empty-sub">'+cfg.emptySub+'</div>'
     + '<button class="btn btn-primary" onclick="openModal(\''+cfg.modalKey+'\')"><i class="ph ph-plus icon-16"></i>'+cfg.addLabel+'</button>'
-    + stepsHtml + qaHtml + '</div>';
+    + qaHtml + '</div>';
+}
+
+function rowVerdict(r) {
+  if (currentType==='competitors') return (r.fields.RulingCount||0) >= 2 ? 'stop' : (r.fields.RulingCount||0) > 0 ? 'fix' : 'keep';
+  return r.a ? r.a.verdict : 'fix';
 }
 
 function renderListControls() {
   var records = S[currentType];
-  var counts = { all: records.length, risk: 0, attn: 0, clear: 0 };
-  records.forEach(function(r){
-    var s = getRowStatus(r);
-    if (s==='risk') counts.risk++; else if (s==='attn') counts.attn++; else counts.clear++;
-  });
+  if (currentType==='competitors') return '';
+  var c = verdictCounts(records);
   var chips = [
-    {k:'all',   label:'All',       n:counts.all},
-    {k:'risk',  label:'At risk',   n:counts.risk},
-    {k:'attn',  label:'Attention', n:counts.attn},
-    {k:'clear', label:'Clear',     n:counts.clear},
-  ].map(function(c){
-    return '<button class="chip'+(currentFilter===c.k?' on':'')+'" onclick="setFilter(\''+c.k+'\')">'+c.label+' <span class="chip-count">'+c.n+'</span></button>';
+    {k:'all',  label:'All',        n:records.length},
+    {k:'stop', label:'Stop using', n:c.stop},
+    {k:'fix',  label:'Fix this',   n:c.fix},
+    {k:'keep', label:'Keep',       n:c.keep},
+  ].filter(function(x){ return x.k==='all' || x.n; }).map(function(x){
+    return '<button class="chip'+(currentFilter===x.k?' on':'')+'" onclick="setFilter(\''+x.k+'\')">'+x.label+' <span class="chip-count">'+x.n+'</span></button>';
   }).join('');
   return '<div class="list-controls">'
-    + '<div class="search-wrap"><input class="search-input" placeholder="Search by name\u2026" value="'+escH(currentSearch)+'" oninput="setSearch(this.value)"></div>'
+    + (records.length > 6 ? '<div class="search-wrap"><input class="search-input" placeholder="Search by name…" value="'+escH(currentSearch)+'" oninput="setSearch(this.value)"></div>' : '')
     + '<div class="filter-chips">'+chips+'</div></div>';
 }
 
 function setFilter(k){ currentFilter=k; refreshList(); }
 function setSearch(v){ currentSearch=v; refreshList(); }
 
+function filtered() {
+  return S[currentType].filter(function(r){
+    if (currentSearch && getName(r.fields).toLowerCase().indexOf(currentSearch.toLowerCase())<0) return false;
+    return currentFilter==='all' || rowVerdict(r)===currentFilter;
+  });
+}
+
 function refreshList() {
   var listEl = document.getElementById('relList');
   if (!listEl) return;
-  var records = S[currentType].filter(function(r){
-    if (currentSearch) {
-      var name = getName(r.fields).toLowerCase();
-      if (name.indexOf(currentSearch.toLowerCase())<0) return false;
-    }
-    if (currentFilter==='all') return true;
-    return getRowStatus(r) === currentFilter;
-  });
-  if (!records.length) {
-    listEl.innerHTML = '<div style="font-size:12.5px;color:var(--mu);text-align:center;padding:26px">No relationships match.</div>';
-    return;
-  }
-  listEl.innerHTML = renderList(records);
+  var records = filtered();
+  listEl.innerHTML = records.length ? renderList(records) : '<div style="font-size:12.5px;color:var(--mu);text-align:center;padding:26px">None match.</div>';
   var controlsWrap = document.querySelector('.list-controls');
   if (controlsWrap) controlsWrap.outerHTML = renderListControls();
 }
 
-function getRowStatus(rec, type) {
-  type = type || currentType;
-  var f = rec.fields;
-  if (type==='processors') {
-    var m = marketingStatus(f);
-    if (!isDPAConfirmed(f.DPAStatus||f.AgreementStatus) || m.criticalGap) return 'risk';
-    if (isStale(f.LastChecked||f.LastAutoChecked) || !m.complete || m.gaps.length) return 'attn';
-    return 'clear';
-  }
-  if (type==='partners') {
-    var agr = partnerAgreement(f);
-    var act = f.RelationshipActivity || '';
-    if (agr.rel!=='unknown' && !agr.ok) return 'risk';
-    if (agr.rel==='unknown') return 'attn';
-    if (agr.rel!=='none' && !f.ConsentChainVerified) return 'attn';
-    if (AD_ACTIVITIES.indexOf(act)>=0 && !f.AdComplianceReviewed) return 'attn';
-    if (PRICING_ACTIVITIES.indexOf(act)>=0 && !f.PricingComplianceReviewed) return 'attn';
-    if (f.BrandSafetyFlag) return 'attn';
-    return 'clear';
-  }
-  if (type==='affiliates') {
-    var q = affiliateRequirements(f);
-    if (q.consentNaming && !f.ConsentChainVerified) return 'risk';
-    if (q.senderIdentity && f.SenderIdentityCompliant==='Unverified') return 'risk';
-    if (q.role==='unknown' || !f.MarketingMaterialsReviewed) return 'attn';
-    if (q.adDisclosure && f.AdDisclosureCompliant!=='Verified') return 'attn';
-    if (q.landingPage && !f.LandingPageReviewed) return 'attn';
-    if (q.agreement && q.agreement!=='unknown' && !isDPAConfirmed(f.DPAStatus)) return 'attn';
-    return 'clear';
-  }
-  if (type==='competitors') {
-    if ((f.RulingCount||0) >= 2) return 'risk';
-    if ((f.RulingCount||0) > 0) return 'attn';
-    return 'clear';
-  }
-  return 'clear';
-}
-
-function getRowProgress(rec) {
-  var f = rec.fields;
-  var steps = ['done'];
-  if (currentType==='processors') {
-    var dpaOk = isDPAConfirmed(f.DPAStatus||f.AgreementStatus);
-    steps.push(!dpaOk ? 'risk' : (hasDPAScan(f) && !dpaFailCount(f)) ? 'done' : 'partial');
-    var m = marketingStatus(f);
-    steps.push(m.criticalGap ? 'risk' : (m.complete && !m.gaps.length) ? 'done' : m.answered ? 'partial' : 'todo');
-    steps.push(isStale(f.LastChecked||f.LastAutoChecked) ? 'partial' : 'done');
-  } else if (currentType==='partners') {
-    var agr = partnerAgreement(f);
-    var act = f.RelationshipActivity || '';
-    steps.push(agr.ok ? 'done' : agr.rel==='unknown' ? 'todo' : 'risk');
-    steps.push(agr.rel==='none' || f.ConsentChainVerified ? 'done' : 'todo');
-    var adOk = AD_ACTIVITIES.indexOf(act)<0 || !!f.AdComplianceReviewed;
-    var prOk = PRICING_ACTIVITIES.indexOf(act)<0 || !!f.PricingComplianceReviewed;
-    steps.push(adOk && prOk ? (f.BrandSafetyFlag ? 'partial' : 'done') : 'partial');
-  } else if (currentType==='affiliates') {
-    var q = affiliateRequirements(f);
-    steps.push(!q.agreement ? 'done' : q.agreement==='unknown' ? 'todo' : isDPAConfirmed(f.DPAStatus) ? 'done' : 'partial');
-    var cOk = !q.consentNaming || !!f.ConsentChainVerified;
-    var lpOk = !q.landingPage || !!f.LandingPageReviewed;
-    steps.push(!cOk ? 'risk' : lpOk ? 'done' : 'partial');
-    var sOk = !q.senderIdentity || f.SenderIdentityCompliant==='Verified' || f.SenderIdentityCompliant==='N/A';
-    var dOk = !q.adDisclosure || f.AdDisclosureCompliant==='Verified';
-    steps.push(q.senderIdentity && f.SenderIdentityCompliant==='Unverified' ? 'risk' : (sOk && dOk && f.MarketingMaterialsReviewed) ? 'done' : 'partial');
-  }
-  return steps;
-}
-
-function firstOutstandingStep(steps, shortLabels) {
-  for (var i=0; i<steps.length; i++) {
-    if (steps[i]==='risk' || steps[i]==='todo') return shortLabels[i];
-  }
-  for (var j=0; j<steps.length; j++) {
-    if (steps[j]==='partial') return shortLabels[j];
-  }
-  return null;
+function moneyHtml(a) {
+  if (!S.profile.complete) return '<span class="tp-money none">&pound; after <a href="'+profileLink()+'" onclick="event.stopPropagation()">business details</a></span>';
+  var e = a.exposure || {};
+  if (e.likely) return '<span class="tp-money">'+money(e.likely)+'</span>';
+  if (e.asa || e.cma) return '<span class="tp-money none">'+(e.asa?'ASA ruling risk':'CMA risk')+'</span>';
+  if (e.unpriced) return '<span class="tp-money none">No published fines yet</span>';
+  return '<span class="tp-money none">£0</span>';
 }
 
 function renderList(records) {
-  var cfg = TYPE_CONFIG[currentType];
+  if (currentType==='competitors') return records.map(function(r){
+    var f = r.fields, rc = f.RulingCount||0, v = rowVerdict(r), tone = v==='stop'?'r':v==='fix'?'y':'g';
+    return '<div class="tp-row '+tone+(selId[currentType]===r.id?' sel':'')+'" onclick="showDetail(\''+escJ(r.id)+'\')">'
+      + '<div class="tp-name">'+escH(getName(f))+' <span class="tp-kind">'+escH(f.Sector||'')+'</span></div>'
+      + '<div class="tp-head">'+rc+' regulator action'+(rc!==1?'s':'')+(f.LastRulingDate?', latest '+fmtDate(f.LastRulingDate):'')+'</div></div>';
+  }).join('');
   return records.map(function(r){
-    var f = r.fields;
-    var name = getName(f);
-    var status = getRowStatus(r);
-    var statusClass = status==='risk'?'has-risk':status==='attn'?'needs-attn':'clear';
-    var known = S.knownVendors[f.VendorName||''];
-    var badges = '';
-    if (known) badges += '<span class="badge badge-verified">Verified</span>';
-    if ((currentType!=='competitors') && isStale(f.LastChecked||f.LastAutoChecked)) badges += '<span class="badge badge-stale">Stale</span>';
-    var isSel = selId[currentType]===r.id;
-    var typeInfo = getTypeInfo(f);
-    var progressHtml = '';
-    if (cfg.steps) {
-      var steps = getRowProgress(r);
-      var dots = steps.map(function(s){return '<div class="progress-dot '+s+'"></div>';}).join('');
-      var doneCount = steps.filter(function(s){return s==='done';}).length;
-      var outstanding = firstOutstandingStep(steps, cfg.stepShort);
-      // Score badge for processors
-      var scoreBadge = '';
-      if (currentType === 'processors') {
-        var ms = marketingStatus(f);
-        var msCls = !ms.answered ? 'pmu' : ms.score>=70 ? 'pg' : ms.score>=40 ? 'py' : 'pr';
-        scoreBadge = '<span class="pill '+msCls+'" style="margin-right:6px">'+(ms.answered ? 'Marketing '+ms.score+'/100' : 'Marketing not assessed')+'</span>';
-      }
-
-      var dpaInline = '';
-      if (currentType === 'processors') {
-        var dpaS = f.DPAStatus || f.AgreementStatus || '';
-        dpaInline = isDPAConfirmed(dpaS) ? '<span class="pill pg" style="margin-right:6px">DPA confirmed</span>' : '<span class="pill pr" style="margin-right:6px">No DPA</span>';
-      }
-      var summary = '<div class="progress-summary">' + scoreBadge + dpaInline + '<strong>'+doneCount+' of '+steps.length+' steps</strong>'
-        + (outstanding ? '<span class="progress-outstanding">'+escH(outstanding)+' outstanding</span>' : '<span style="color:var(--g)">All checks passed</span>')
-        + '</div>';
-      progressHtml = '<div class="progress-dots">'+dots+'</div>'+summary;
-    } else {
-      var rc = f.RulingCount||0;
-      progressHtml = '<div class="progress-summary"><strong>'+rc+' regulatory action'+(rc!==1?'s':'')+'</strong>'
-        + (f.LastRulingDate?'<span>latest '+fmtDate(f.LastRulingDate)+'</span>':'') + '</div>';
-    }
-    return '<div class="rel-item '+statusClass+(isSel?' sel':'')+'" onclick="showDetail(\''+escJ(r.id)+'\')">'
-      + '<div class="rel-item-top"><div class="rel-item-main"><div class="rel-item-name">'+escH(name)+' '+badges+'</div>'
-      + '<div class="rel-item-meta">'+escH(typeInfo)+'</div></div>'
-      + '<div class="rel-item-actions"><button class="rel-item-delete" onclick="event.stopPropagation();deleteRel(\''+escJ(r.id)+'\',\''+escJ(name)+'\')" title="Remove"><i class="ph ph-trash icon-16"></i></button></div></div>'
-      + progressHtml + '</div>';
+    var f = r.fields, a = r.a || {}, name = getName(f);
+    var next = a.nextAction || {};
+    var showNext = next.go && next.go!=='none';
+    return '<div class="tp-row '+a.tone+(selId[currentType]===r.id?' sel':'')+'" onclick="showDetail(\''+escJ(r.id)+'\')">'
+      + '<div class="tp-name">'+escH(name)+' <span class="tp-kind">'+escH(getTypeInfo(f))+'</span>'+(a.found?'<span class="tp-found">Found by Sendwize</span>':'')+'</div>'
+      + '<div class="tp-right"><span class="vpill '+a.tone+'"><span class="tc-status-dot"></span>'+escH(a.verdictLabel||'')+'</span>'+moneyHtml(a)+'</div>'
+      + '<div class="tp-head">'+escH(a.headline||'')+(a.reliability?' <span class="rel-pill">· Reliability: <strong>'+escH(a.reliability.label)+'</strong></span>':'')+'</div>'
+      + (showNext ? '<div class="tp-next"><button class="tp-next-btn" onclick="event.stopPropagation();doNext(\''+escJ(r.id)+'\')">'+escH(next.label)+' <i class="ph ph-arrow-right"></i></button></div>' : '')
+      + '</div>';
   }).join('');
 }
 
 function getTypeInfo(f) {
-  if (currentType==='processors') return f.VendorType||f.Category||'Processor';
+  if (currentType==='processors') return f.VendorType||MKT_CATEGORIES[f.Category]||'Platform';
   if (currentType==='partners')   return f.PartnerType||'Partner';
   if (currentType==='affiliates') return f.AffiliateType||'Affiliate';
-  return (f.Sector||'')+ ' \u00b7 last checked '+(f.LastAutoChecked?fmtDate(f.LastAutoChecked):'\u2014');
+  return (f.Sector||'')+ ' · last checked '+(f.LastAutoChecked?fmtDate(f.LastAutoChecked):'—');
 }
 
-
 // ── Detail panel ──────────────────────────────────────────────
-function showDetail(recordId) {
+function tabsFor(type) {
+  if (type==='competitors') return [['Overview','overview'],['Rulings','rulings'],['Promo tactics','promos']];
+  if (type==='processors')  return [['What it risks','overview'],['Your set-up','marketing'],['Contract','paperwork']];
+  if (type==='partners')    return [['What it risks','overview'],['Checks','verification'],['Contract','paperwork']];
+  var rec = S.affiliates.find(function(r){ return r.id===selId.affiliates; });
+  var mails = rec && affiliateRequirements(rec.fields).senderIdentity;
+  return [['What it risks','overview'],['Live posts','live'],['Checks','verification']].concat(mails ? [['Email copy','creative']] : []).concat([['Contract','paperwork']]);
+}
+
+function showDetail(recordId, tab) {
   selId[currentType] = recordId;
   var panel = document.getElementById('detailPanel');
   var rec = S[currentType].find(function(r){return r.id===recordId;});
   if (!rec) return;
-  var f = rec.fields;
-  var name = getName(f);
-  var tabDefs;
-if (currentType==='competitors') {
-    tabDefs = [['Overview','overview'],['Rulings','rulings'],['Promo Tactics','promos']];
-  } else if (currentType==='partners') {
-    tabDefs = [['Overview','overview'],['Verification','verification']];
-    if (partnerAgreement(f).rel==='joint_controller') tabDefs.push(['Article 26','a26']);
-    tabDefs.push(['Privacy Policy','privacy']);
-  } else if (currentType==='affiliates') {
-    tabDefs = [['Overview','overview'],['Verification','verification'],['Creative','creative'],['Agreement','dpa'],['Privacy Policy','privacy']];
-  } else {
-    tabDefs = [['Overview','overview'],['Marketing checks','marketing'],['Agreement','dpa'],['Privacy Policy','privacy']];
-  }
+  var f = rec.fields, name = getName(f);
+  var tabDefs = tabsFor(currentType);
+  var found = rec.a && rec.a.found;
   panel.innerHTML =
-    '<div class="dp-hdr"><div><div class="dp-name">'+escH(name)+'</div><div class="dp-meta">'+escH(getTypeInfo(f))+'</div></div>'
+    '<div class="dp-hdr"><div><div class="dp-name">'+escH(name)+'</div><div class="dp-meta">'+escH(getTypeInfo(f))+(found?' · found by Sendwize':'')+'</div></div>'
     +'<div class="dp-btns"><button class="btn btn-ghost btn-xs" onclick="closeDetail()"><i class="ph ph-x icon-16"></i>Close</button>'
-    +'<button class="btn btn-danger btn-xs" onclick="deleteRel(\''+escJ(recordId)+'\',\''+escJ(name)+'\')">Remove</button></div></div>'
+    +(found && currentType!=='competitors'
+      ? '<button class="btn btn-ghost btn-xs" onclick="hideRel(\''+escJ(recordId)+'\',\''+escJ(name)+'\')">We don’t use this</button>'
+      : '<button class="btn btn-danger btn-xs" onclick="deleteRel(\''+escJ(recordId)+'\',\''+escJ(name)+'\')">Remove</button>')+'</div></div>'
     +'<div class="dp-tabs" id="dpTabs">'+tabDefs.map(function(t,i){return'<button class="dp-tab'+(i===0?' on':'')+'" data-tab="'+t[1]+'" onclick="switchDetailTab(\''+t[1]+'\',this)">'+t[0]+'</button>';}).join('')+'</div>'
     +'<div class="dp-body" id="dpBody"></div>';
   panel.classList.add('show');
+  if (tab && tab!=='overview') goToDetailTab(tab); else renderDetailOverview(rec);
   panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
-  renderDetailOverview(rec);
   refreshList();
 }
 
@@ -1293,21 +1179,21 @@ function closeDetail() {
   refreshList();
 }
 
+var currentTab = 'overview';
 function switchDetailTab(name, btn) {
   document.querySelectorAll('#dpTabs .dp-tab').forEach(function(b){b.classList.remove('on');});
   btn.classList.add('on');
+  currentTab = name;
   var rec = S[currentType].find(function(r){return r.id===selId[currentType];});
   if (!rec) return;
-  if (name==='overview') renderDetailOverview(rec);
-if (name==='marketing') renderMarketingChecks(rec);
-  if (name==='dpa')      renderDPAReview(rec);
-  if (name==='a26')      renderA26Review(rec);
-  if (name==='privacy')  renderPrivacyReview(rec);
-  if (name==='edit')          renderDetailEdit(rec);
+  if (name==='overview')     renderDetailOverview(rec);
+  if (name==='marketing')    renderMarketingChecks(rec);
+  if (name==='paperwork')    renderPaperwork(rec);
+  if (name==='live')         renderLive(rec);
+  if (name==='creative')     renderCreative(rec);
   if (name==='verification') { if (currentType==='partners') renderPartnerVerification(rec); else renderVerification(rec); }
-  if (name==='creative')      renderCreative(rec);
-  if (name==='rulings')       renderCompRulings(rec);
-  if (name==='promos')   renderCompPromos(rec);
+  if (name==='rulings')      renderCompRulings(rec);
+  if (name==='promos')       renderCompPromos(rec);
 }
 
 function goToDetailTab(tabName) {
@@ -1315,146 +1201,278 @@ function goToDetailTab(tabName) {
   if (btn) switchDetailTab(tabName, btn);
 }
 
+// The "best next action" button, from the list or the verdict card
+function doNext(recordId) {
+  var rec = S[currentType].find(function(r){ return r.id===recordId; });
+  if (!rec || !rec.a) return;
+  goTo(recordId, (rec.a.nextAction||{}).go, (rec.a.nextAction||{}).key);
+}
+function goTo(recordId, go, key) {
+  if (go==='sweep') { window.location.href = APP_URL+'/site-sweep.html?userId='+encodeURIComponent(userId); return; }
+  if (go==='listhealth') { window.location.href = APP_URL+'/list-intelligence.html?userId='+encodeURIComponent(userId); return; }
+  if (selId[currentType]!==recordId) showDetail(recordId);
+  var tab = { checks: currentType==='processors' ? 'marketing' : 'verification', consent:'verification', paperwork:'paperwork', live:'live', ask:'overview' }[go];
+  if (tab && tab!=='overview') { goToDetailTab(tab); return; }
+  goToDetailTab('overview');
+  if (key) {
+    var row = document.getElementById('risk-'+key);
+    if (row) { row.classList.add('hl'); row.scrollIntoView({ behavior:'smooth', block:'center' }); }
+  }
+}
+
+var STATUS_ICON = { ok:'check-circle', warn:'warning', bad:'x-circle', unknown:'question', info:'info' };
+
+function perfBoxHtml(rec) {
+  var p = rec.a && rec.a.performance;
+  if (!p) return '';
+  var cells = [];
+  if (p.greenPct!=null) cells.push([p.greenPct+'%','safe to email']);
+  if (p.neverEngagedPct!=null) cells.push([p.neverEngagedPct+'%','never engaged']);
+  if (p.buyersPct!=null) cells.push([p.buyersPct+'%','bought from you']);
+  if (p.redPct!=null && cells.length<3) cells.push([p.redPct+'%','risky to email']);
+  return cells.length ? '<div class="perf-box">'+cells.map(function(c){ return '<div class="perf-cell"><div class="perf-num">'+c[0]+'</div><div class="perf-lbl">'+c[1]+'</div></div>'; }).join('')+'</div>' : '';
+}
+function riskRowHtml(rec, r) {
+  var cls = r.info ? 'info' : r.status;
+  var ask = '';
+  if (r.ask==='ownUse') {
+    ask = '<div class="risk-ask"><span style="font-size:11.5px;color:var(--tm)">Does it use your data for its own ads or AI?</span>'
+      + '<button class="cb cb-fail" onclick="answer(\''+escJ(rec.id)+'\',\'ownUse\',\'yes\')">Yes</button>'
+      + '<button class="cb cb-pass" onclick="answer(\''+escJ(rec.id)+'\',\'ownUse\',\'no\')">No, only for us</button></div>';
+  }
+  if (r.ask==='transfer') {
+    ask = '<div class="risk-ask"><span style="font-size:11.5px;color:var(--tm)">Where is the data held?</span>'
+      + '<button class="cb cb-pass" onclick="answer(\''+escJ(rec.id)+'\',\'transfer\',\'uk\')">UK only</button>'
+      + '<button class="cb cb-pass" onclick="answer(\''+escJ(rec.id)+'\',\'transfer\',\'eea\')">UK or EU</button>'
+      + '<button class="cb cb-warn" onclick="askMechanism(\''+escJ(rec.id)+'\')">Outside the UK and EU</button></div>'
+      + '<div id="mech-'+escH(rec.id)+'"></div>';
+  }
+  var perf = r.key==='performance' ? perfBoxHtml(rec) : '';
+  return '<div class="risk-row" id="risk-'+escH(r.key)+'"><span class="risk-ico '+cls+'"><i class="ph ph-'+(STATUS_ICON[cls]||'circle')+' icon-18"></i></span>'
+    + '<div class="risk-body"><div class="risk-top"><span class="risk-title">'+escH(r.title)+'</span><span class="risk-answer">'+escH(r.answer||'')+'</span></div>'
+    + (r.detail ? '<div class="risk-detail">'+escH(r.detail)+'</div>' : '')
+    + perf
+    + (r.note && r.status!=='ok' ? '<div class="risk-note">'+escH(r.note)+'</div>' : '')
+    + ask + '</div></div>';
+}
+
+function verdictCardHtml(rec) {
+  var a = rec.a, e = a.exposure || {}, next = a.nextAction || {};
+  var moneyBlock;
+  if (!S.profile.complete) moneyBlock = '<div class="verdict-money-num" style="font-size:15px;color:var(--mu)">&pound; hidden</div><div class="verdict-money-sub"><a href="'+profileLink()+'" style="color:inherit;font-weight:600">Add your business details</a> to see the figure.</div>';
+  else if (e.likely) moneyBlock = '<div class="verdict-money-num">'+money(e.likely)+'</div><div class="verdict-money-sub">most likely if the ICO acted. Range '+money(e.low)+'–'+money(e.high)+'.</div>';
+  else if (e.asa || e.cma) moneyBlock = '<div class="verdict-money-num" style="font-size:16px">'+(e.asa?'ASA ruling risk':'CMA risk')+'</div><div class="verdict-money-sub">'+(e.asa?'The ASA publishes rulings, it does not fine.':'The CMA can fine up to 10% of turnover.')+'</div>';
+  else if (e.unpriced) moneyBlock = '<div class="verdict-money-num" style="font-size:16px">No published fines yet</div><div class="verdict-money-sub">The ICO has not published fines for this, so it is not in the £ figure. It is still a breach.</div>';
+  else moneyBlock = '<div class="verdict-money-num" style="color:var(--g)">£0</div><div class="verdict-money-sub">'+(a.paperwork && a.paperwork.exposure && a.paperwork.exposure.likely ? 'No contract in place yet: see below.' : 'No open data protection risk')+'</div>';
+  var showNext = next.go && next.go!=='none';
+  return '<div class="verdict-card '+a.tone+'"><div><div class="verdict-word">'+escH(a.verdictLabel)+'</div><div class="verdict-why">'+escH(a.headline)+'</div></div>'
+    + '<div class="verdict-money">'+moneyBlock+'</div>'
+    + '<div class="verdict-next"><span class="verdict-next-label">Best next step</span>'
+    + (showNext ? '<button class="btn btn-primary btn-sm" onclick="doNext(\''+escJ(rec.id)+'\')">'+escH(next.label)+' <i class="ph ph-arrow-right icon-16"></i></button>' : '<span style="font-size:13px;font-weight:600">'+escH(next.label||'')+'</span>')
+    + '</div></div>';
+}
+
+var COMMERCIAL_KEYS = ['performance','record'];
+function reliabilityHeadHtml(rec) {
+  var rel = rec.a.reliability;
+  return '<div class="rel-head"><div><div class="rel-q">How reliable is '+escH(getName(rec.fields))+'?</div><div class="rel-sum">'+escH(rel.summary)+'</div></div>'
+    + '<span class="vpill '+rel.tone+'"><span class="tc-status-dot"></span>'+escH(rel.label)+'</span></div>';
+}
+function commercialRowHtml(rec, c) {
+  var perf = c.key==='quality' ? perfBoxHtml(rec) : '';
+  return '<div class="risk-row" id="risk-'+escH(c.key)+'"><span class="risk-ico '+c.status+'"><i class="ph ph-'+(STATUS_ICON[c.status]||'circle')+' icon-18"></i></span>'
+    + '<div class="risk-body"><div class="risk-top"><span class="risk-title">'+escH(c.q)+'</span><span class="risk-answer">'+escH(c.answer||'')+'</span></div>'
+    + (c.detail ? '<div class="risk-detail">'+escH(c.detail)+'</div>' : '')
+    + perf
+    + (c.action ? '<div class="risk-ask"><button class="btn btn-ghost btn-xs" onclick="goTo(\''+escJ(rec.id)+'\',\''+escJ(c.action.go)+'\')">'+escH(c.action.label)+' <i class="ph ph-arrow-right"></i></button></div>' : '')
+    + '</div></div>';
+}
+
 function renderDetailOverview(rec) {
   var body = document.getElementById('dpBody');
   if (!body) return;
   var f = rec.fields;
-  var name = getName(f);
-  var known = S.knownVendors[f.VendorName||f.PartnerName||f.AffiliateName||'']||{};
-  var rows = [];
-  var t = currentType;
-  if (t==='processors') {
-    var dpaOk = isDPAConfirmed(f.DPAStatus||f.AgreementStatus);
-    var scanned = hasDPAScan(f);
-    var stale = isStale(f.LastChecked||f.LastAutoChecked);
-    var m = marketingStatus(f);
-    var expLo = 0, expHi = 0;
-    if (!dpaOk) { expLo += f.ICORiskLevel==='High'?20000:10000; expHi += f.ICORiskLevel==='High'?50000:25000; }
-    if (stale) { expLo += 5000; expHi += 15000; }
-    var allClear = dpaOk && scanned && !stale && m.complete && !m.gaps.length;
-
-    var mHtml = '<div class="narrative-card"><div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
-      + '<div style="font-size:32px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;color:'+(m.answered?scoreColour(m.score):'var(--mu)')+'">'+(m.answered?m.score:'\u2014')+'</div>'
-      + '<div style="flex:1;min-width:180px"><div style="font-size:14px;font-weight:700">How you use it \u2014 '+escH(MKT_CATEGORIES[m.category])+'</div>'
-      + '<div style="font-size:11px;color:var(--mu)">'+m.answered+' of '+m.total+' checks answered'+(m.gaps.length?' \u00b7 '+m.gaps.length+' need attention':'')+' \u00b7 self-assessed</div></div>'
-      + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'marketing\')">'+(m.answered?'Review':'Start')+' checks</button></div>';
-    if (m.gaps.length) mHtml += '<div style="margin-top:12px">'+m.gaps.map(function(d){ return '<div class="creative-issue'+(d.severity==='critical'?' critical':'')+'"><div class="creative-issue-type">'+escH(d.rule)+'</div>'+escH(d.label)+'</div>'; }).join('')+'</div>';
-    mHtml += '</div>';
-
-    var mLabel = !m.answered ? 'Not assessed' : m.gaps.length ? m.gaps.length+' gap'+(m.gaps.length!==1?'s':'') : m.complete ? 'Evidenced' : 'Partly assessed';
-    body.innerHTML = exposureStripHtml(expLo, expHi, 'Based on agreement gaps and review status', 'DPA confirmed and current', rec)
-      + mHtml
-      + vendorAssuranceHtml(f, name)
-      + invPreviewHtml([
-          { q:'Provide your Article 28 DPA with '+escH(name)+'.', ok:dpaOk, label:dpaOk?'In place':'Not in place' },
-          { q:'Show how your use of '+escH(name)+' meets PECR and advertising rules.', ok:m.complete && !m.gaps.length, label:mLabel },
-          { q:'Confirm when this relationship was last reviewed.', ok:!stale && !!f.LastChecked, label:f.LastChecked && !stale ? 'Current ('+fmtDate(f.LastChecked)+')' : stale ? 'Stale' : 'No record' },
-        ])
-      + (allClear ? passportHtml(name, 'DPA confirmed and scanned, marketing checks evidenced, review current.', f) : '')
-      + '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'
-      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'dpa\')"><i class="ph ph-scan icon-16"></i>Scan DPA</button>'
-      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'privacy\')">Review privacy policy</button></div>';
-    return;
-  }
-
-  if (t==='partners') {
-    var agr = partnerAgreement(f);
-    var act = f.RelationshipActivity || '';
-    var actLabels = {joint_ads:'Joint advertising',co_branded_content:'Co-branded content',influencer:'Influencer partnership',lead_generation:'Lead generation',data_sharing:'Data sharing'};
-    var consentApplies = agr.rel!=='none';
-    var consentOk = !consentApplies || !!f.ConsentChainVerified;
-    var needsAd = AD_ACTIVITIES.indexOf(act)>=0, needsPr = PRICING_ACTIVITIES.indexOf(act)>=0;
-    var adOk = !needsAd || !!f.AdComplianceReviewed, prOk = !needsPr || !!f.PricingComplianceReviewed;
-    var allClear = agr.ok && consentOk && adOk && prOk;
-
-    var lo = 0, hi = 0;
-    if (!agr.ok && agr.rel!=='unknown') { lo += 15000; hi += 75000; }
-    if (!consentOk) { lo += 10000; hi += 50000; }
-    if (!adOk) { lo += 5000; hi += 25000; }
-    if (!prOk) { lo += 5000; hi += 25000; }
-
-    var lines = ['<strong>'+escH(name)+'</strong> is registered as a '+escH((f.PartnerType||'partner').toLowerCase())+(act?' ('+escH(actLabels[act]||act)+')':'')+'.'];
-    var actions = [];
-    if (agr.rel==='unknown') { lines.push('You haven\'t recorded whether personal data is shared with them. That decides whether you need an Article 26 arrangement, a data sharing agreement, a DPA, or nothing.'); actions.push('record the data relationship'); }
-    else if (agr.required && !agr.ok) { lines.push('Based on how data is shared, you need a confirmed <strong>'+escH(agr.required)+'</strong>.'); actions.push('confirm '+agr.required); }
-    if (consentApplies && !f.ConsentChainVerified) { lines.push('Consent for data shared between you has not been checked \u2014 it must name the organisation that uses it for marketing.'); actions.push('check consent wording'); }
-    if (!adOk) { lines.push('Joint advertising content has <strong>not been reviewed</strong> against the CAP Code. Both parties are responsible for claims in joint campaigns.'); actions.push('review ad compliance'); }
-    if (!prOk) { lines.push('Pricing and promotional claims have <strong>not been verified</strong> against CMA/DMCCA 2024.'); actions.push('review pricing claims'); }
-    if (f.BrandSafetyFlag) lines.push('<strong>Reputation note:</strong> '+escH(f.BrandSafetyReason||'relevant enforcement history found in sources reviewed')+'. This doesn\'t create a compliance gap for you on its own, but worth knowing.');
-    if (allClear) lines.push('All verification steps are complete.');
-
-    var qs = [{ q:agr.required ? 'Provide your '+escH(agr.required)+' with '+escH(name)+'.' : 'Explain how data is (or is not) shared with '+escH(name)+'.', ok:agr.ok, label:agr.rel==='unknown' ? 'Not recorded' : agr.ok ? (agr.required ? 'In place' : 'No data shared') : 'Not in place' }];
-    if (consentApplies) qs.push({ q:'Show us the consent covering data shared with '+escH(name)+'.', ok:consentOk, label:consentOk?'Checked':'Not checked' });
-    if (needsAd || needsPr) qs.push({ q:'Provide evidence joint advertising and pricing claims were reviewed.', ok:adOk && prOk, label:adOk && prOk ? 'Reviewed' : 'Not reviewed' });
-
-    body.innerHTML = exposureStripHtml(lo, hi, 'Based on agreement and review gaps', 'All verification steps complete', rec)
-      + narrativeHtml(lines, actions) + invPreviewHtml(qs)
-      + (allClear ? passportHtml(name, 'Right agreement in place'+(consentApplies?', consent checked':'')+(needsAd?', ads reviewed':'')+(needsPr?', pricing verified':'')+'.', f) : '')
-      + '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'
-      + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'verification\')"><i class="ph ph-list-checks icon-16"></i>Start verification</button>'
-      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'privacy\')">Review privacy policy</button></div>';
-    return;
-  }
-
-  if (t==='affiliates') {
-    var q = affiliateRequirements(f);
-    var roleLabel = (AFF_ROLES.filter(function(r){ return r[0]===q.role; })[0]||['',''])[1];
-    var agreeOk = !q.agreement || (q.agreement!=='unknown' && isDPAConfirmed(f.DPAStatus));
-    var consentOk = !q.consentNaming || !!f.ConsentChainVerified;
-    var senderOk = !q.senderIdentity || f.SenderIdentityCompliant==='Verified' || f.SenderIdentityCompliant==='N/A';
-    var lpOk = !q.landingPage || !!f.LandingPageReviewed;
-    var discOk = !q.adDisclosure || f.AdDisclosureCompliant==='Verified';
-    var matOk = !!f.MarketingMaterialsReviewed;
-    var allClear = q.role!=='unknown' && agreeOk && consentOk && senderOk && lpOk && discOk && matOk;
-
-    var volume = f.TotalVolumeSent ? parseInt(f.TotalVolumeSent).toLocaleString() : null;
-    var lines = ['<strong>'+escH(name)+'</strong> is registered as '+escH((f.AffiliateType||'an affiliate').toLowerCase())+(q.role!=='unknown' ? ' \u2014 '+escH(roleLabel.toLowerCase()) : '')+(volume?' (approx. '+volume+' messages)':'')+'.'];
-    var actions = [];
-    if (q.role==='unknown') { lines.push('You haven\'t recorded how they handle data. That decides whether you need a DPA, a marketing agreement, or neither, and which checks apply.'); actions.push('record data role'); }
-    if (!consentOk) { lines.push('Their consent wording hasn\'t been confirmed to name you. Consent that doesn\'t name your organisation can\'t be relied on for your marketing (the ICO fined two Saga companies \u00a3150k and \u00a375k for this in 2021).'); actions.push('check consent wording'); }
-    if (!senderOk) { lines.push('The From name used on your behalf hasn\'t been verified (PECR Reg 23).'); actions.push('check sender identity'); }
-    if (!matOk) { lines.push('Their marketing materials haven\'t been reviewed against the CAP Code. You are responsible for claims made on your behalf.'); actions.push('review creative'); }
-    if (!discOk) { lines.push('Influencer content must be clearly identified as advertising.'); actions.push('verify ad disclosure'); }
-    if (!lpOk) { lines.push('Their landing pages haven\'t been checked for how consent is captured.'); actions.push('review landing page'); }
-    if (q.agreement && q.agreement!=='unknown' && !agreeOk) { lines.push('No confirmed <strong>'+escH(q.agreement)+'</strong>.'); actions.push('confirm agreement'); }
-    if (q.role==='no_mailing') lines.push('As they don\'t send messages or pass you data, no data agreement or consent check is needed.');
-    if (allClear) lines.push('All verification steps are complete.');
-
-    var qs = [];
-    if (q.consentNaming) qs.push({ q:'Show us the consent wording '+escH(name)+' uses that names your organisation.', ok:consentOk, label:consentOk?'Checked':'Not checked' });
-    if (q.senderIdentity) qs.push({ q:'Confirm the sender identity used in messages sent on your behalf.', ok:senderOk, label:senderOk?'Verified':'Unverified' });
-    if (q.agreement) qs.push({ q:q.agreement==='unknown' ? 'Explain what data '+escH(name)+' handles for you.' : 'Provide your '+escH(q.agreement)+' with '+escH(name)+'.', ok:agreeOk, label:q.agreement==='unknown'?'Not recorded':agreeOk?'In place':'Not in place' });
-    qs.push({ q:'Show that their marketing about you was reviewed.', ok:matOk, label:matOk?'Reviewed':'Not reviewed' });
-
-    body.innerHTML = exposureStripHtml(f.ExposureEstimateLow||0, f.ExposureEstimateHigh||0, 'Based on unverified consent and volume', 'No exposure estimated', rec)
-      + narrativeHtml(lines, actions) + invPreviewHtml(qs)
-      + (allClear ? passportHtml(name, 'All checks that apply to this affiliate are complete.', f) : '')
-      + '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'
-      + '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'verification\')"><i class="ph ph-list-checks icon-16"></i>Start verification</button>'
-      + '<button class="btn btn-ghost btn-sm" onclick="goToDetailTab(\'creative\')">Review creative</button></div>';
-    return;
-  }
-
-  if (t==='competitors') {
-    rows = [
+  if (currentType==='competitors') {
+    var rows = [
       ['Sector',escH(f.Sector||'')],
-      ['Enforcement','<span style="font-weight:600">'+(f.RulingCount||0)+' relevant action'+(f.RulingCount!==1?'s':'')+' identified in sources reviewed</span>'],
-      ['Latest ruling',f.LastRulingDate?fmtDate(f.LastRulingDate)+' ('+escH(f.LastRulingRegulator||'')+')':'No relevant actions identified'],
-      ['Latest summary',f.LastRulingSummary?escH(f.LastRulingSummary.slice(0,200)):'\u2014'],
-      ['Intelligence source','Public website, enforcement databases. No ad platform data (Meta, TikTok, etc) is accessed.'],
+      ['Regulator action','<span style="font-weight:600">'+(f.RulingCount||0)+' relevant action'+(f.RulingCount!==1?'s':'')+' found</span>'],
+      ['Latest',f.LastRulingDate?fmtDate(f.LastRulingDate)+' ('+escH(f.LastRulingRegulator||'')+')':'None found'],
+      ['Summary',f.LastRulingSummary?escH(f.LastRulingSummary.slice(0,200)):'—'],
+      ['Where we look','Public websites and regulator enforcement records. No ad platform data is accessed.'],
     ];
-    if (f.Notes) rows.push(['Notes',escH(f.Notes)]);
+    body.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+      + rows.map(function(r){return '<tr><td style="padding:9px 0;color:var(--tm);width:150px;vertical-align:top;border-bottom:1px solid var(--b);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em">'+r[0]+'</td><td style="padding:9px 0 9px 12px;border-bottom:1px solid var(--b)">'+r[1]+'</td></tr>';}).join('')
+      + '</table>';
+    return;
   }
-  var staleWarn = t!=='competitors' && isStale(f.LastChecked||f.LastAutoChecked)
-    ? '<div class="info-banner"><i class="ph ph-warning icon-16"></i><div>Last scanned 90+ days ago. Re-scan to confirm current status.</div></div>' : '';
-  var cta = '';
-  if (t==='processors' || t==='affiliates') cta = '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'dpa\')">Scan DPA <i class="ph ph-arrow-right icon-16"></i></button>';
-  else if (t==='partners') cta = '<button class="btn btn-primary btn-sm" onclick="goToDetailTab(\'a26\')">Review Art. 26 <i class="ph ph-arrow-right icon-16"></i></button>';
-  body.innerHTML = staleWarn
-    + '<table style="width:100%;border-collapse:collapse;font-size:13px">'
-    + rows.map(function(r){return '<tr><td style="padding:9px 0;color:var(--tm);width:170px;vertical-align:top;border-bottom:1px solid var(--b);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em">'+r[0]+'</td><td style="padding:9px 0 9px 12px;border-bottom:1px solid var(--b)">'+r[1]+'</td></tr>';}).join('')
-    + '</table>'
-    + (cta ? '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'+cta+'</div>' : '');
+  var a = rec.a;
+  if (!a) { body.innerHTML = ''; return; }
+  var risks = a.risks||[];
+  var foundNote = a.found ? '<div style="font-size:11.5px;color:var(--mu);margin-top:14px;display:flex;gap:6px"><i class="ph ph-sparkle"></i><span>'+escH(a.found)+'</span></div>' : '';
+  var rel = a.reliability;
+  if (!rel) {
+    body.innerHTML = verdictCardHtml(rec) + '<div class="risk-h">The risks to you</div>' + risks.map(function(r){ return riskRowHtml(rec, r); }).join('') + foundNote;
+    return;
+  }
+  var lawRows = risks.filter(function(r){ return COMMERCIAL_KEYS.indexOf(r.key)<0; });
+  body.innerHTML = verdictCardHtml(rec)
+    + reliabilityHeadHtml(rec)
+    + '<div class="rel-sec"><div class="rel-sec-h"><span><i class="ph ph-scales icon-16"></i>Do they keep you within marketing law?</span><strong class="'+rel.law.status+'">'+escH(rel.law.answer)+'</strong></div>'
+    + lawRows.map(function(r){ return riskRowHtml(rec, r); }).join('') + '</div>'
+    + '<div class="rel-sec"><div class="rel-sec-h"><span><i class="ph ph-handshake icon-16"></i>Could they cause you commercial problems?</span><strong class="'+rel.commercial.status+'">'+escH(rel.commercial.answer)+'</strong></div>'
+    + rel.commercial.items.map(function(c){ return commercialRowHtml(rec, c); }).join('') + '</div>'
+    + foundNote;
+}
+
+// ── Member answers (platforms) ────────────────────────────────
+function askMechanism(recordId) {
+  var el = document.getElementById('mech-'+recordId);
+  if (!el) return;
+  el.innerHTML = '<div class="risk-ask"><span style="font-size:11.5px;color:var(--tm)">Which UK protection do they use?</span>'
+    + [['IDTA','IDTA'],['UK Addendum','UK Addendum to the EU SCCs'],['UK-US Bridge','UK-US Data Bridge'],['Unknown','Not sure']].map(function(m){
+        return '<button class="cb '+(m[0]==='Unknown'?'cb-fail':'cb-pass')+'" onclick="answer(\''+escJ(recordId)+'\',\'transfer\',\'outside\',\''+m[0]+'\')">'+m[1]+'</button>';
+      }).join('') + '</div>';
+}
+
+function answer(recordId, key, value, mechanism) {
+  showLoading('Saving…');
+  swFetch(APP_URL+'/api/third-parties?action=answer', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, key:key, value:value, mechanism:mechanism||null }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d.error) throw new Error(d.error); showToast('Saved','ok'); return loadAll({ discover:false, quiet:true }); })
+    .catch(function(e){ hideLoading(); showToast('Could not save: '+e.message,'er'); });
+}
+
+function hideRel(recordId, name) {
+  var type = TYPE_CONFIG[currentType].kind;
+  showLoading('Removing…');
+  swFetch(APP_URL+'/api/third-parties?action=hide', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, type:type, recordId:recordId }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d.error) throw new Error(d.error); showToast(name+' removed. We won’t add it again.','ok'); selId[currentType]=null; document.getElementById('detailPanel').classList.remove('show'); return loadAll({ discover:false }); })
+    .catch(function(e){ hideLoading(); showToast('Could not remove: '+e.message,'er'); });
+}
+
+// ── Live posts (affiliates and influencers) ───────────────────
+function renderLive(rec) {
+  var body = document.getElementById('dpBody');
+  if (!body) return;
+  var a = rec.a || {}, name = getName(rec.fields);
+  var pages = a.livePages || [];
+  var check = a.liveCheck || null;
+  var results = (check && check.pages) || [];
+  var html = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Paste links to posts or pages where '+escH(name)+' promotes you. We check each for an ad label (“#ad”, “Ad”, “paid partnership”) and for claims you would need to prove. We re-check them on the 1st of every month and tell you if something changes.</p>'
+    + '<div class="fg"><label>Links, one per line (up to 6)</label><textarea id="live-urls" rows="4" placeholder="https://www.instagram.com/p/...\nhttps://their-blog.co.uk/review">'+escH(pages.join('\n'))+'</textarea></div>'
+    + '<button class="btn btn-primary btn-sm" onclick="saveLive(\''+escJ(rec.id)+'\')"><i class="ph ph-magnifying-glass icon-16"></i>Save and check now</button>';
+  if (results.length) {
+    html += '<div class="risk-h" style="margin-top:20px">Last checked '+fmtDate(check.checkedAt)+'</div>'
+      + results.map(function(p){
+          var res = !p.read ? '<span style="color:var(--mu)">'+escH(p.error||'Could not read this page')+'</span>'
+            : (p.adLabel ? '<span style="color:var(--g);font-weight:600">Labelled as an ad ('+escH(p.labelText||'')+')</span>' : '<span style="color:var(--r);font-weight:600">No ad label found</span>')
+              + ((p.claims||[]).length ? '<br>Claims to back up: '+p.claims.map(function(c){ return '“'+escH(c)+'”'; }).join(', ') : '');
+          return '<div class="live-page"><div class="live-page-url">'+escH(p.url)+(p.pasted?' <span class="pill pmu">pasted</span>':'')+'</div><div class="live-page-res">'+res+'</div></div>';
+        }).join('');
+  }
+  html += '<div class="pw-section" style="margin-top:18px"><h3>Page would not open?</h3>'
+    + '<div class="pw-sub">Instagram and TikTok often hide posts from automatic checks. Paste the caption and we check that instead.</div>'
+    + '<div class="fg"><label>Which post</label><input type="url" id="live-paste-url" placeholder="Link to the post (optional)"></div>'
+    + '<div class="fg"><label>Caption or post text</label><textarea id="live-paste-text" rows="3"></textarea></div>'
+    + '<button class="btn btn-ghost btn-sm" onclick="checkCaption(\''+escJ(rec.id)+'\')">Check this text</button></div>';
+  body.innerHTML = html;
+}
+
+function saveLive(recordId) {
+  var urls = ((document.getElementById('live-urls')||{}).value||'').split(/\s*\n\s*/).filter(Boolean);
+  showLoading('Checking their posts…');
+  swFetch(APP_URL+'/api/third-parties?action=live-pages', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, urls:urls }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d.error) throw new Error(d.error); showToast('Checked','ok'); return loadAll({ discover:false, quiet:true, tab:'live' }); })
+    .catch(function(e){ hideLoading(); showToast('Check failed: '+e.message,'er'); });
+}
+
+function checkCaption(recordId) {
+  var text = (document.getElementById('live-paste-text')||{}).value||'';
+  var url = (document.getElementById('live-paste-url')||{}).value||'';
+  if (!text.trim()) { showToast('Paste the caption first','er'); return; }
+  showLoading('Checking…');
+  swFetch(APP_URL+'/api/third-parties?action=live-text', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, url:url, text:text }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d.error) throw new Error(d.error); showToast('Checked','ok'); return loadAll({ discover:false, quiet:true, tab:'live' }); })
+    .catch(function(e){ hideLoading(); showToast('Check failed: '+e.message,'er'); });
+}
+
+// ── Contract: the agreement and privacy policy, last ─────────
+function renderPaperwork(rec) {
+  var body = document.getElementById('dpBody');
+  if (!body) return;
+  var f = rec.fields, name = getName(f), t = currentType;
+  var intro = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">The contract decides whether you are covered if '+escH(name)+' lets you down. Tell us what is in place and give us their terms: we read them and answer the questions under <a href="#" style="color:var(--o);font-weight:600" onclick="goToDetailTab(\'overview\');return false">How reliable</a> for you. It also counts toward your score.</p>';
+  var agreement = '';
+  if (t==='processors') {
+    var st = f.DPAStatus||f.AgreementStatus||'Not yet';
+    agreement = '<div class="pw-section"><h3>Their data terms</h3>'
+      + '<div class="pw-sub">Most platforms publish their data terms and you accept them in your account settings. That is enough.</div>'
+      + '<div class="fg" style="max-width:280px"><label>Status</label><select onchange="savePlatformAgreement(\''+escJ(rec.id)+'\',this.value)">'
+      + optionsHtml([['Not yet','Not on file'],['Requested','Requested'],['Confirmed','In place'],['Refused','They refused']], isDPAConfirmed(st)?'Confirmed':st)+'</select></div>'
+      + '<div id="pwAgreement"></div></div>';
+  } else if (t==='partners') {
+    agreement = '<div class="pw-section"><h3>How data is shared, and the contract it needs</h3><div id="pwRel"></div><div id="pwA26"></div></div>';
+  } else {
+    var q = affiliateRequirements(f);
+    agreement = '<div class="pw-section"><h3>Contract</h3>'
+      + '<div class="pw-sub">'+(q.agreement==='unknown' ? 'Tell us what '+escH(name)+' does with data in the Checks tab; that decides which agreement applies.' : !q.agreement ? 'Not needed: they promote you without sending messages or passing you data.' : 'Needed: '+escH(q.agreement)+'.')+'</div>'
+      + (q.agreement && q.agreement!=='unknown' ? '<div class="fg" style="max-width:280px"><label>Status</label><select onchange="saveAffiliateAgreement(\''+escJ(rec.id)+'\',this.value)">'+optionsHtml([['Not yet','Not on file'],['Requested','Requested'],['Confirmed','In place']], isDPAConfirmed(f.DPAStatus)?'Confirmed':(f.DPAStatus||'Not yet'))+'</select></div><div id="pwAgreement"></div>' : '')
+      + '</div>';
+  }
+  body.innerHTML = intro + agreement
+    + '<details class="pw-section"><summary style="cursor:pointer;font-size:14px;font-weight:700">Their privacy policy (optional)</summary><div id="pwPrivacy" style="margin-top:10px"></div></details>'
+    + (t==='processors' ? '<div id="pwAssurance"></div>' : '');
+  if (document.getElementById('pwAgreement')) renderDPAReview(rec, 'pwAgreement');
+  if (t==='partners') {
+    document.getElementById('pwRel').innerHTML = partnerRelationshipHtml(rec);
+    if (partnerAgreement(f).rel==='joint_controller') renderA26Review(rec, 'pwA26');
+  }
+  renderPrivacyReview(rec, 'pwPrivacy');
+  if (t==='processors') document.getElementById('pwAssurance').innerHTML = vendorAssuranceHtml(f, name);
+}
+function rerenderPaperwork() {
+  var rec = S[currentType].find(function(r){return r.id===selId[currentType];});
+  if (rec) renderPaperwork(rec);
+}
+
+function savePlatformAgreement(recordId, status) {
+  var rec = S.processors.find(function(r){ return r.id===recordId; });
+  if (!rec) return;
+  showLoading('Saving…');
+  swFetch(APP_URL+'/api/data?action=register', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, vendor:{ VendorName:rec.fields.VendorName, DPAStatus:status } }) })
+    .then(function(r){ return r.json(); })
+    .then(function(){ showToast('Saved','ok'); return loadAll({ discover:false, quiet:true, tab:'paperwork' }); })
+    .catch(function(e){ hideLoading(); showToast('Save failed: '+e.message,'er'); });
+}
+function saveAffiliateAgreement(recordId, status) {
+  var rec = S.affiliates.find(function(r){ return r.id===recordId; });
+  if (!rec) return;
+  showLoading('Saving…');
+  swFetch(APP_URL+'/api/data?action=affiliate-register', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ userId:userId, recordId:recordId, affiliate:{ AffiliateName:rec.fields.AffiliateName, DPAStatus:status } }) })
+    .then(function(r){ return r.json(); })
+    .then(function(){ showToast('Saved','ok'); return loadAll({ discover:false, quiet:true, tab:'paperwork' }); })
+    .catch(function(e){ hideLoading(); showToast('Save failed: '+e.message,'er'); });
+}
+
+function partnerRelationshipHtml(rec) {
+  var f = rec.fields, agr = partnerAgreement(f);
+  var statusVal = agr.statusField ? (f[agr.statusField] || 'Not yet') : 'Not yet';
+  var statusOpts = [['Not yet','Not on file'],['Requested','Requested'],['Confirmed','In place']];
+  var html = '<div class="fg"><label>Is personal data shared?</label><select id="pv-rel">'+optionsHtml(PARTNER_RELS, agr.rel)+'</select></div>'
+    + '<div class="fg"><label>Status of the agreement it needs</label><select id="pv-agr-status">'+optionsHtml(statusOpts, isDPAConfirmed(statusVal)?'Confirmed':statusVal)+'</select></div>'
+    + '<p style="font-size:11.5px;color:var(--mu);margin-bottom:10px;line-height:1.55">You decide together how data is used: joint controller arrangement (Article 26). You each use it for your own purposes: data sharing agreement. They act only on your instructions: data processing agreement. No personal data shared: nothing needed.</p>'
+    + '<button class="btn btn-primary btn-sm" onclick="savePartnerRelationship(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save</button>';
+  if (agr.rel!=='unknown') html += '<div class="verif-result '+(agr.ok?'pass':'warn')+'">'+(agr.required ? 'Needs: <strong>'+escH(agr.required)+'</strong>, '+(agr.ok?'in place':'not on file yet') : escH(agr.label))+'</div>';
+  return html;
 }
 
 
@@ -1516,8 +1534,9 @@ function postMarketingCheck(recordId, payload) {
 function setMarketingCheck(recordId, checkId, status) { postMarketingCheck(recordId, { checkId:checkId, status:status }); }
 function changeMarketingCategory(recordId, category) { postMarketingCheck(recordId, { category:category }); }
 
-function renderDPAReview(rec) {
-  var body = document.getElementById('dpBody');
+var lastScanHtml = {};
+function renderDPAReview(rec, target) {
+  var body = document.getElementById(target || 'pwAgreement');
   if (!body) return;
   var f = rec.fields;
   var url = f.PrivacyPolicyUrl||'';
@@ -1527,7 +1546,7 @@ function renderDPAReview(rec) {
   var passed = A28.filter(function(c){return (stored[c.id]||{}).status==='pass';}).length;
   var pct = A28.length ? Math.round(passed/A28.length*100) : 0;
   var scoreHtml = Object.keys(stored).length
-    ? '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Article 28 coverage</span><strong>'+passed+'/'+A28.length+' ('+pct+'%)</strong></div><div class="dpa-score-bar"><div class="dpa-score-fill" style="width:'+pct+'%;background:'+(pct>=80?'var(--g)':pct>=50?'var(--y)':'var(--r)')+'"></div></div></div>'
+    ? '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Required terms covered</span><strong>'+passed+'/'+A28.length+' ('+pct+'%)</strong></div><div class="dpa-score-bar"><div class="dpa-score-fill" style="width:'+pct+'%;background:'+(pct>=80?'var(--g)':pct>=50?'var(--y)':'var(--r)')+'"></div></div></div>'
     : '';
 
   var clauses = A28.map(function(c, i){
@@ -1553,29 +1572,30 @@ function renderDPAReview(rec) {
 
   var mode = scanMode[currentType]||'url';
   var file = scanFile[currentType];
-  var urlHtml = '<div class="scan-row"><input type="url" id="dpa-url" placeholder="https://vendor.com/dpa" value="'+escH(url)+'"><button class="btn btn-primary btn-sm" onclick="runDPAScan(\''+rec.id+'\',\'url\')">Scan <i class="ph ph-arrow-right icon-16"></i></button></div>';
+  var urlHtml = '<div class="scan-row"><input type="url" id="dpa-url" placeholder="Link to their data terms" value="'+escH(url)+'"><button class="btn btn-primary btn-sm" onclick="runDPAScan(\''+rec.id+'\',\'url\')">Scan <i class="ph ph-arrow-right icon-16"></i></button></div>';
   var fileHtml = file
     ? '<div class="scan-row"><div class="file-chosen"><i class="ph ph-file-pdf icon-16"></i><span class="file-chosen-name">'+escH(file.name)+'</span><button class="file-clear" onclick="clearScanFile()"><i class="ph ph-x icon-16"></i></button></div><button class="btn btn-primary btn-sm" onclick="runDPAScan(\''+rec.id+'\',\'file\')">Scan <i class="ph ph-arrow-right icon-16"></i></button></div>'
-    : '<label class="file-drop" id="fileDrop"><strong>Click to choose a PDF</strong>Or drag and drop the DPA here<input type="file" accept=".pdf,application/pdf" onchange="chooseScanFile(this)"></label>';
+    : '<label class="file-drop" id="fileDrop"><strong>Click to choose a PDF</strong>Or drag and drop the agreement here<input type="file" accept=".pdf,application/pdf" onchange="chooseScanFile(this)"></label>';
 
-  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Evidence-based DPA review: check this vendor\'s agreement against the Article 28 UK GDPR requirements and the UK transfer rules. Paste a URL, upload the PDF, or self-certify each clause.</p>'
+  body.innerHTML = '<div class="pw-sub" style="margin-top:8px">Give us their terms and we check the parts that protect you: they warn you fast if data is lost, you can leave and have it deleted, and they tell you who else gets it.</div>'
     + '<div class="scan-controls">'
-    + '<div class="scan-controls-label">Scan the DPA</div>'
+    + '<div class="scan-controls-label">Read their terms</div>'
     + '<div class="scan-tabs">'
     + '<button class="scan-tab'+(mode==='url'?' on':'')+'" onclick="setScanMode(\'url\',\''+rec.id+'\')">URL</button>'
     + '<button class="scan-tab'+(mode==='file'?' on':'')+'" onclick="setScanMode(\'file\',\''+rec.id+'\')">Upload PDF</button>'
     + '</div>'
     + (mode==='url' ? urlHtml : fileHtml)
     + '</div>'
-    + '<div id="dpaScanRes"></div>'
-    + scoreHtml + clauses;
+    + '<div id="dpaScanRes">'+(lastScanHtml[rec.id]||'')+'</div>'
+    + '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;color:var(--tm);font-weight:600;padding:6px 0">Clause-by-clause detail, for your lawyer or DPO</summary><div style="margin-top:8px">'
+    + scoreHtml + clauses + '</div></details>';
 
   if (mode==='file') wireFileDrop();
 }
 
-function setScanMode(mode, recordId){ scanMode[currentType]=mode; var rec=S[currentType].find(function(r){return r.id===recordId;}); if (rec) renderDPAReview(rec); }
-function chooseScanFile(input){ if (input.files && input.files[0]) { scanFile[currentType]=input.files[0]; var rec=S[currentType].find(function(r){return r.id===selId[currentType];}); if (rec) renderDPAReview(rec); } }
-function clearScanFile(){ scanFile[currentType]=null; var rec=S[currentType].find(function(r){return r.id===selId[currentType];}); if (rec) renderDPAReview(rec); }
+function setScanMode(mode, recordId){ scanMode[currentType]=mode; var rec=S[currentType].find(function(r){return r.id===recordId;}); if (rec) rerenderPaperwork(); }
+function chooseScanFile(input){ if (input.files && input.files[0]) { scanFile[currentType]=input.files[0]; var rec=S[currentType].find(function(r){return r.id===selId[currentType];}); if (rec) rerenderPaperwork(); } }
+function clearScanFile(){ scanFile[currentType]=null; var rec=S[currentType].find(function(r){return r.id===selId[currentType];}); if (rec) rerenderPaperwork(); }
 function wireFileDrop(){
   var el = document.getElementById('fileDrop'); if (!el) return;
   el.addEventListener('dragover', function(e){ e.preventDefault(); el.classList.add('drag'); });
@@ -1585,7 +1605,7 @@ function wireFileDrop(){
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       scanFile[currentType] = e.dataTransfer.files[0];
       var rec = S[currentType].find(function(r){return r.id===selId[currentType];});
-      if (rec) renderDPAReview(rec);
+      if (rec) rerenderPaperwork();
     }
   });
 }
@@ -1603,7 +1623,7 @@ function setClause(recordId, clauseId, status) {
   else if (currentType==='affiliates') patchData[patchKey].AffiliateName = rec.fields.AffiliateName;
   else patchData[patchKey].PartnerName = rec.fields.PartnerName;
   swFetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patchData)}).catch(function(){});
-  renderDPAReview(rec);
+  rerenderPaperwork();
 }
 
 function runDPAScan(recordId, mode) {
@@ -1613,11 +1633,11 @@ function runDPAScan(recordId, mode) {
   if (mode==='url') {
     var url = (document.getElementById('dpa-url')||{}).value||'';
     if (!url) { showToast('Enter a URL first','er'); return; }
-    if (res) res.innerHTML = '<div class="scan-spin-wrap"><div class="scan-spin"></div>Scanning '+escH(getName(rec.fields))+' policy\u2026</div>';
+    if (res) res.innerHTML = '<div class="scan-spin-wrap"><div class="scan-spin"></div>Checking the agreement from '+escH(getName(rec.fields))+'\u2026</div>';
     swFetch(APP_URL+'/api/dpa-scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), vendorRegisterId:recordId, sourceType:'url', sourceContent:url})})
       .then(function(r){return r.json();})
       .then(function(d){ handleScanResult(d, rec, res); })
-      .catch(function(){ if (res) res.innerHTML=''; showToast('Scan failed \u2014 self-certify manually','er'); });
+      .catch(function(){ if (res) res.innerHTML=''; showToast('Could not check it. Mark each term yourself below.','er'); });
   } else {
     var file = scanFile[currentType];
     if (!file) { showToast('Choose a PDF first','er'); return; }
@@ -1628,7 +1648,7 @@ function runDPAScan(recordId, mode) {
       swFetch(APP_URL+'/api/dpa-scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, vendorName:getName(rec.fields), vendorRegisterId:recordId, sourceType:'pdf', sourceContent:base64})})
         .then(function(r){return r.json();})
         .then(function(d){ handleScanResult(d, rec, res); scanFile[currentType]=null; })
-        .catch(function(){ if (res) res.innerHTML=''; showToast('Scan failed \u2014 self-certify manually','er'); });
+        .catch(function(){ if (res) res.innerHTML=''; showToast('Could not check it. Mark each term yourself below.','er'); });
     };
     reader.readAsDataURL(file);
   }
@@ -1692,7 +1712,7 @@ function handleScanResult(d, rec, res) {
     var bannerIcon = (d.score||0) >= 80 ? 'check-circle' : 'warning-circle';
     var bannerHtml = '<div class="info-banner '+bannerCls+'">'
       + '<i class="ph ph-'+bannerIcon+' icon-16"></i><div>'
-      + '<strong>DPA review: '+(d.counts.found||0)+'/'+(d.counts.total||12)+' clauses evidenced</strong>'
+      + '<strong>'+(d.counts.found||0)+' of '+(d.counts.total||12)+' required terms found</strong>'
       + (d.counts.missing > 0 ? ' \u00b7 '+d.counts.missing+' missing' : '')
       + '. Score: <strong style="color:'+scoreColor+'">'+(d.score||0)+'%</strong>'
       + '</div></div>';
@@ -1721,7 +1741,7 @@ function handleScanResult(d, rec, res) {
           guidanceHtml += '<div class="scan-guidance-group">';
           guidanceHtml += '<div class="scan-guidance-group-title partial"><i class="ph ph-warning icon-16" style="vertical-align:-2px;margin-right:4px"></i>'+partial.length+' clause'+(partial.length!==1?'s':'')+' unclear</div>';
           partial.forEach(function(r) {
-            guidanceHtml += '<div class="scan-guidance-row"><strong>'+escH(r.label)+'</strong> \u2014 may be covered but wording is ambiguous. Self-certify below if your DPA covers this differently.</div>';
+            guidanceHtml += '<div class="scan-guidance-row"><strong>'+escH(r.label)+'</strong> \u2014 may be covered, but the wording is unclear. Mark it below if your agreement covers it.</div>';
           });
           guidanceHtml += '</div>';
         }
@@ -1729,28 +1749,28 @@ function handleScanResult(d, rec, res) {
         var fixCount = missing.length + partial.length;
         guidanceHtml += '<div class="scan-guidance-actions">'
           + '<strong>Suggested actions:</strong><br>'
-          + '\u2022 Contact '+vendorDisplayName+' to request an updated DPA that addresses the missing clauses.<br>'
-          + '\u2022 Self-certify clauses below if your DPA covers them in different wording.<br>'
+          + '\u2022 Ask '+vendorDisplayName+' for an updated agreement that covers the missing terms.<br>'
+          + '\u2022 Mark terms yourself below if the agreement covers them in other words.<br>'
           + '\u2022 '+fixCount+' compliance fix'+(fixCount!==1?'es have':' has')+' been added to your dashboard.'
           + '</div>';
 
         guidanceHtml += '</div>';
       } else {
-        guidanceHtml = '<div class="info-banner green" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><div><strong>All Article 28 clauses evidenced.</strong> Sendwize\'s evidence-based review identifies all required UK GDPR provisions. Re-review quarterly to stay current.</div></div>';
+        guidanceHtml = '<div class="info-banner green" style="margin-top:12px"><i class="ph ph-check-circle icon-16"></i><div><strong>Every Article 28 term found.</strong> Check again when they update it.</div></div>';
       }
     }
 
-    res.innerHTML = bannerHtml + guidanceHtml;
+    lastScanHtml[rec.id] = bannerHtml + guidanceHtml;
   }
 
-  renderDPAReview(rec);
-  showToast('DPA scan complete','ok');
-  loadAll();
+  rerenderPaperwork();
+  showToast('Agreement checked','ok');
+  loadAll({ discover:false, quiet:true, tab:'paperwork' });
 }
 
 
-function renderA26Review(rec) {
-  var body = document.getElementById('dpBody');
+function renderA26Review(rec, target) {
+  var body = document.getElementById(target || 'pwA26');
   if (!body) return;
   var f = rec.fields;
   var stored = clauseCache[rec.id]||{};
@@ -1774,7 +1794,7 @@ function renderA26Review(rec) {
       +'<button class="cb cb-fail" onclick="setA26Clause(\''+rec.id+'\',\''+c.id+'\',\'fail\')">Not evidenced</button>'
       +'</div></div>';
   }).join('');
-  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Check this partner relationship against the 8 Article 26 UK GDPR requirements for joint controllers. Self-certify each clause by reviewing your joint controller arrangement.</p>'
+  body.innerHTML = '<div class="pw-sub" style="margin-top:14px">Joint controllers need an arrangement covering the 8 points in UK GDPR Article 26. Mark each one from your agreement.</div>'
     + scoreHtml + clauses;
 }
 
@@ -1784,11 +1804,11 @@ function setA26Clause(recordId, clauseId, status) {
   var rec = S.partners.find(function(r){return r.id===recordId;});
   if (!rec) return;
   swFetch(APP_URL+'/api/data?action=partner-register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:userId, recordId:recordId, partner:{PartnerName:rec.fields.PartnerName, A26ClauseResults:JSON.stringify(clauseCache[recordId])}})}).catch(function(){});
-  renderA26Review(rec);
+  rerenderPaperwork();
 }
 
-function renderPrivacyReview(rec) {
-  var body = document.getElementById('dpBody');
+function renderPrivacyReview(rec, target) {
+  var body = document.getElementById(target || 'pwPrivacy');
   if (!body) return;
   var f = rec.fields;
   var url = f.PrivacyPolicyUrl||'';
@@ -1812,8 +1832,8 @@ function renderPrivacyReview(rec) {
       +'<button class="cb cb-fail" onclick="setPrivacy(\''+rec.id+'\',\''+c.key+'\',\'no\')">No</button>'
       +'</div></div>';
   }).join('');
-  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Review this party\'s public privacy policy against UK GDPR Articles 13/14 transparency requirements.</p>'
-    + (url?'<div style="margin-bottom:14px"><a href="'+escH(url)+'" target="_blank" rel="noopener" class="btn btn-ghost btn-xs"><i class="ph ph-arrow-square-out icon-16"></i>Open privacy policy</a></div>':'<div style="font-size:12px;color:var(--mu);margin-bottom:14px">No URL recorded. Add one in the Edit tab.</div>')
+  body.innerHTML = '<div class="pw-sub">Does their public privacy policy tell people what UK GDPR Articles 13 and 14 require?</div>'
+    + (url?'<div style="margin-bottom:14px"><a href="'+escH(url)+'" target="_blank" rel="noopener" class="btn btn-ghost btn-xs"><i class="ph ph-arrow-square-out icon-16"></i>Open privacy policy</a></div>':'<div style="font-size:12px;color:var(--mu);margin-bottom:14px">No link to their privacy policy on file.</div>')
     + scoreHtml + rows;
 }
 
@@ -1830,7 +1850,7 @@ function setPrivacy(recordId, key, value) {
   else if (currentType==='affiliates') body[pKey].AffiliateName = rec.fields.AffiliateName;
   else body[pKey].PartnerName = rec.fields.PartnerName;
   swFetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).catch(function(){});
-  renderPrivacyReview(rec);
+  rerenderPaperwork();
 }
 
 function renderCompRulings(rec) {
@@ -1873,11 +1893,11 @@ function renderVerification(rec) {
   var steps = [];
 
   steps.push({
-    title:'How this affiliate handles data', sub:'Decides which agreement and checks apply.',
+    title:'What they do with data', sub:'Decides which checks apply to them.',
     done: q.role!=='unknown',
     render: function(){
       var note = q.role==='unknown' ? '' :
-        q.agreement ? '<div class="verif-result warn">Agreement needed: <strong>'+escH(q.agreement)+'</strong>. Record its status in the Agreement tab.</div>' :
+        q.agreement ? '<div class="verif-result warn">Agreement needed: <strong>'+escH(q.agreement)+'</strong>. Record it under Contract.</div>' :
         '<div class="verif-result pass">No data agreement or consent check needed for this set-up.</div>';
       return '<div style="margin-top:12px"><div class="fg"><label>Data role</label><select id="verif-role">'+optionsHtml(AFF_ROLES, q.role)+'</select></div>'
         + '<button class="btn btn-primary btn-sm" onclick="saveAffiliateRole(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save</button>'+note+'</div>';
@@ -2062,7 +2082,7 @@ function savePartnerRelationship(recordId) {
   swFetch(APP_URL+'/api/data?action=partner-register', { method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch }) })
     .then(function(r){ return r.json(); })
-    .then(function(){ hideLoading(); showToast('Data relationship saved','ok'); reopenTab(recordId,'verification'); })
+    .then(function(){ hideLoading(); showToast('Saved','ok'); reopenTab(recordId,'paperwork'); })
     .catch(function(e){ hideLoading(); showToast('Save failed: '+e.message,'er'); });
 }
 
@@ -2074,78 +2094,62 @@ function renderPartnerVerification(rec) {
   if (!body) return;
   var f = rec.fields;
   var name = getName(f);
-var agr = partnerAgreement(f);
-  var steps = [{
-    title:'Data relationship', sub:'Is personal data shared, and who decides how it is used?',
-    done: agr.rel!=='unknown' && agr.ok,
-    render: function(){
-      var statusVal = agr.statusField ? (f[agr.statusField] || 'Not yet') : 'Not yet';
-      var statusOpts = [['Not yet','Not yet'],['Requested','Requested'],['Confirmed','Confirmed']];
-      var html = '<div style="margin-top:12px">'
-        + '<div class="fg"><label>Data relationship</label><select id="pv-rel">'+optionsHtml(PARTNER_RELS, agr.rel)+'</select></div>'
-        + '<div class="fg"><label>Status of the required agreement</label><select id="pv-agr-status">'+optionsHtml(statusOpts, isDPAConfirmed(statusVal)?'Confirmed':statusVal)+'</select></div>'
-        + '<p style="font-size:11.5px;color:var(--mu);margin-bottom:10px;line-height:1.55">Joint controllers \u2192 Article 26 arrangement. Each using data for your own purposes \u2192 data sharing agreement. Partner acts on your instructions \u2192 Article 28 DPA. No personal data shared \u2192 no agreement needed.</p>'
-        + '<button class="btn btn-primary btn-sm" onclick="savePartnerRelationship(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save</button>';
-      if (agr.rel!=='unknown') html += '<div class="verif-result '+(agr.ok?'pass':'warn')+'">'+(agr.required ? 'Required: <strong>'+escH(agr.required)+'</strong> \u2014 '+(agr.ok?'confirmed':'not yet confirmed') : escH(agr.label))+'</div>';
-      return html + '</div>';
-    }
-  }];
+  var act = f.RelationshipActivity || '';
+  var agr = partnerAgreement(f);
+  var steps = [];
 
-  if (agr.rel!=='none') steps.push({
-    title:'Consent for shared data', sub:'Does the consent people gave name the organisation using it?',
+  if (agr.rel!=='none' || act==='lead_generation' || act==='data_sharing') steps.push({
+    title:'Does their consent cover you?', sub:'Paste the wording people saw when '+name+' collected their details.',
     done: !!f.ConsentChainVerified,
     render: function(){
       return '<div style="margin-top:12px">'
-        + '<div class="fg"><label>Where the data was collected (URL)</label><input type="url" id="pv-signup-url" placeholder="https://partner.com/signup"></div>'
-        + '<div class="fg"><label>Consent wording people saw</label><textarea id="pv-consent-wording" rows="3" placeholder="Paste the consent text shown when the data was collected\u2026">'+escH(f.PartnerConsentWording||'')+'</textarea></div>'
+        + '<div class="fg"><label>Where they collected it (link)</label><input type="url" id="pv-signup-url" placeholder="https://partner.com/signup"></div>'
+        + '<div class="fg"><label>Consent wording people saw</label><textarea id="pv-consent-wording" rows="3" placeholder="Paste the consent text exactly as shown…">'+escH(f.PartnerConsentWording||'')+'</textarea></div>'
         + '<div class="fg"><label>Your registered trading name</label><input type="text" id="pv-trading-name" value="'+escH(S.tradingName||'')+'"></div>'
         + '<button class="btn btn-primary btn-sm" onclick="runConsentCheck(\'partner\',\''+escJ(rec.id)+'\')"><i class="ph ph-magnifying-glass icon-16"></i>Check wording</button>'
         + renderConsentResult(parseJSON(f.ConsentCheckResultJson, null), name) + '</div>';
     }
   });
+
+  if (AD_ACTIVITIES.indexOf(act)>=0) steps.push({
+    title:'Joint ads', sub:'Paste the copy of an ad you run together.',
+    done: !!f.AdComplianceReviewed,
+    render: function(){
+      return '<div style="margin-top:12px">'
+        + '<div class="fg"><label>Headline or subject</label><input type="text" id="pv-ad-subject"></div>'
+        + '<div class="fg"><label>Ad copy</label><textarea id="pv-ad-body" rows="4"></textarea></div>'
+        + '<button class="btn btn-primary btn-sm" onclick="runPartnerAdCheck(\''+escJ(rec.id)+'\')"><i class="ph ph-sparkle icon-16"></i>Check the copy</button><div id="partnerAdResult"></div></div>';
+    }
+  });
+
+  if (PRICING_ACTIVITIES.indexOf(act)>=0 && act!=='lead_generation') steps.push({
+    title:'Prices and offers', sub:'Paste the prices, discounts and deadlines used in joint campaigns.',
+    done: !!f.PricingComplianceReviewed,
+    render: function(){
+      return '<div style="margin-top:12px">'
+        + '<div class="fg"><label>Pricing and offer wording</label><textarea id="pv-pricing-body" rows="4"></textarea></div>'
+        + '<button class="btn btn-primary btn-sm" onclick="runPartnerPricingCheck(\''+escJ(rec.id)+'\')"><i class="ph ph-sparkle icon-16"></i>Check prices</button><div id="partnerPricingResult"></div></div>';
+    }
+  });
+
+  if (!steps.length) { body.innerHTML = '<div style="font-size:12.5px;color:var(--mu);padding:12px 0">No checks apply: you have told us no personal data is shared and there are no joint ads.</div>'; return; }
+  if (partnerVerifStep >= steps.length) partnerVerifStep = 0;
+  var html = '<div class="verif-stepper">';
+  steps.forEach(function(st, i){
+    var cls = st.done ? 'done' : i===partnerVerifStep ? 'active' : '';
+    html += '<div class="verif-step '+cls+(st.done && i===partnerVerifStep ? ' active' : '')+'">'
+      + '<div class="verif-step-hdr" onclick="setPartnerVerifStep('+i+',\''+escJ(rec.id)+'\')"><div class="verif-step-num">'+(st.done?'✓':(i+1))+'</div>'
+      + '<div class="verif-step-info"><div class="verif-step-title">'+escH(st.title)+'</div><div class="verif-step-sub">'+escH(st.sub)+'</div></div>'
+      + (st.done ? '<span style="color:var(--g)"><i class="ph ph-check-circle icon-16"></i></span>' : '') + '</div>'
+      + '<div class="verif-step-body">'+st.render()+'</div></div>';
+  });
+  body.innerHTML = html + '</div>';
 }
 
 function setPartnerVerifStep(i, recordId) {
   partnerVerifStep = i;
   var rec = S.partners.find(function(r){return r.id===recordId;});
   if (rec) renderPartnerVerification(rec);
-}
-
-function setPartnerConsentAnswer(recordId, answer) {
-  var rec = S.partners.find(function(r){return r.id===recordId;});
-  if (!rec) return;
-  rec.fields._consentAnswer = answer;
-}
-
-function savePartnerConsent(recordId) {
-  var rec = S.partners.find(function(r){return r.id===recordId;});
-  if (!rec) return;
-  var owner = (document.getElementById('pv-consent-owner')||{}).value||'Unknown';
-  var clause = (document.getElementById('pv-consent-clause')||{}).value||'';
-  var answer = rec.fields._consentAnswer;
-  if (answer === undefined) { showToast('Select whether consent covers both parties','er'); return; }
-
-  var patch = {
-    PartnerName: rec.fields.PartnerName,
-    ConsentChainOwner: owner,
-    ConsentChainNotes: clause,
-    ConsentChainVerified: !!answer,
-  };
-
-  showLoading('Saving consent check\u2026');
-  swFetch(APP_URL+'/api/data?action=partner-register', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ userId:userId, recordId:recordId, partner:patch })
-  }).then(function(r){return r.json();})
-  .then(function() {
-    hideLoading();
-    showToast(answer ? 'Consent chain verified' : 'Consent chain flagged \u2014 review your agreement', answer ? 'ok' : 'er');
-    loadAll().then(function() {
-      var updated = S.partners.find(function(r){return r.id===recordId;});
-      if (updated) { showDetail(recordId); goToDetailTab('verification'); }
-    });
-  })
-  .catch(function(e) { hideLoading(); showToast('Save failed: '+e.message, 'er'); });
 }
 
 function runPartnerAdCheck(recordId) {
@@ -2197,7 +2201,7 @@ function runPartnerAdCheck(recordId) {
       }
     }
     showToast(issues.length ? issues.length+' issue'+(issues.length!==1?'s':'')+' found' : 'Ad compliance check passed', issues.length ? 'er' : 'ok');
-    loadAll();
+    loadAll({ discover:false, quiet:true, tab:'verification' });
   })
   .catch(function(e) {
     if (resEl) resEl.innerHTML = '';
@@ -2252,7 +2256,7 @@ function runPartnerPricingCheck(recordId) {
       }
     }
     showToast(issues.length ? issues.length+' pricing issue'+(issues.length!==1?'s':'')+' found' : 'Pricing compliance check passed', issues.length ? 'er' : 'ok');
-    loadAll();
+    loadAll({ discover:false, quiet:true, tab:'verification' });
   })
   .catch(function(e) {
     if (resEl) resEl.innerHTML = '';
@@ -2346,7 +2350,7 @@ function runCreativeReview(recordId) {
       }
     }
     showToast(issues.length ? issues.length+' issue'+(issues.length!==1?'s':'')+' found' : 'Creative check passed \u2014 no issues', issues.length ? 'er' : 'ok');
-    loadAll();
+    loadAll({ discover:false, quiet:true, tab:'creative' });
   })
   .catch(function(e) {
     if (resEl) resEl.innerHTML = '';
@@ -2354,105 +2358,8 @@ function runCreativeReview(recordId) {
   });
 }
 
-function renderDetailEdit(rec) {
-  var body = document.getElementById('dpBody');
-  if (!body) return;
-  var f = rec.fields;
-  var t = currentType;
-  var fields = '';
-  if (t==='processors') {
-    fields = '<div class="form-grid">'
-      +'<div class="fg"><label>Name</label><input type="text" id="ed-name" value="'+escH(f.VendorName||'')+'"></div>'
-      +'<div class="fg"><label>Type/Category</label><input type="text" id="ed-type" value="'+escH(f.VendorType||f.Category||'')+'"></div>'
-      +'<div class="fg"><label>DPA Status</label><select id="ed-dpa"><option value="Not yet"'+(f.DPAStatus==='Not yet'||(!f.DPAStatus&&!f.AgreementStatus)?' selected':'')+'>Not yet</option><option value="Requested"'+((f.DPAStatus||f.AgreementStatus)==='Requested'?' selected':'')+'>Requested</option><option value="Confirmed"'+(isDPAConfirmed(f.DPAStatus||f.AgreementStatus)?' selected':'')+'>Confirmed</option></select></div>'
-      +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="ed-pp" value="'+escH(f.PrivacyPolicyUrl||'')+'"></div>'
-      +'</div>'
-      +'<div class="fg"><label>Notes</label><textarea id="ed-notes">'+escH(f.Notes||'')+'</textarea></div>';
-  } else if (t==='partners') {
-    fields = '<div class="form-grid">'
-      +'<div class="fg"><label>Name</label><input type="text" id="ed-name" value="'+escH(f.PartnerName||'')+'"></div>'
-      +'<div class="fg"><label>Partner Type</label><input type="text" id="ed-type" value="'+escH(f.PartnerType||'')+'"></div>'
-      +'<div class="fg"><label>Article 26 Status</label><select id="ed-a26"><option value="Not yet"'+(f.Article26Status==='Not yet'||!f.Article26Status?' selected':'')+'>Not yet</option><option value="Requested"'+(f.Article26Status==='Requested'?' selected':'')+'>Requested</option><option value="Confirmed"'+(isDPAConfirmed(f.Article26Status)?' selected':'')+'>Confirmed</option></select></div>'
-      +'<div class="fg"><label>Consent Chain Verified</label><select id="ed-cc"><option value="0"'+(!f.ConsentChainVerified?' selected':'')+'>No</option><option value="1"'+(f.ConsentChainVerified?' selected':'')+'>Yes</option></select></div>'
-      +'<div class="fg"><label>Ad Compliance Reviewed</label><select id="ed-adcomp"><option value="0"'+(!f.AdComplianceReviewed?' selected':'')+'>No</option><option value="1"'+(f.AdComplianceReviewed?' selected':'')+'>Yes</option></select></div>'
-      +'<div class="fg"><label>Pricing Compliance Reviewed</label><select id="ed-pricecomp"><option value="0"'+(!f.PricingComplianceReviewed?' selected':'')+'>No</option><option value="1"'+(f.PricingComplianceReviewed?' selected':'')+'>Yes</option></select></div>'
-      +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="ed-pp" value="'+escH(f.PrivacyPolicyUrl||'')+'"></div>'
-      +'</div>'
-      +'<div class="fg"><label>Notes</label><textarea id="ed-notes">'+escH(f.Notes||'')+'</textarea></div>';
-  } else if (t==='affiliates') {
-    fields = '<div class="form-grid">'
-      +'<div class="fg"><label>Name</label><input type="text" id="ed-name" value="'+escH(f.AffiliateName||'')+'"></div>'
-      +'<div class="fg"><label>Affiliate Type</label><input type="text" id="ed-type" value="'+escH(f.AffiliateType||'')+'"></div>'
-      +'<div class="fg"><label>DPA Status</label><select id="ed-dpa"><option value="Not yet"'+(f.DPAStatus==='Not yet'||!f.DPAStatus?' selected':'')+'>Not yet</option><option value="Requested"'+(f.DPAStatus==='Requested'?' selected':'')+'>Requested</option><option value="Confirmed"'+(isDPAConfirmed(f.DPAStatus)?' selected':'')+'>Confirmed</option></select></div>'
-      +'<div class="fg"><label>Consent Chain Verified</label><select id="ed-cc"><option value="0"'+(!f.ConsentChainVerified?' selected':'')+'>No</option><option value="1"'+(f.ConsentChainVerified?' selected':'')+'>Yes</option></select></div>'
-      +'<div class="fg"><label>Sender Identity</label><select id="ed-sender"><option value="Unverified"'+(f.SenderIdentityCompliant==='Unverified'||!f.SenderIdentityCompliant?' selected':'')+'>Unverified</option><option value="Partial"'+(f.SenderIdentityCompliant==='Partial'?' selected':'')+'>Partial</option><option value="Verified"'+(f.SenderIdentityCompliant==='Verified'?' selected':'')+'>Verified</option></select></div>'
-      +'<div class="fg"><label>Marketing Materials Reviewed</label><select id="ed-mktmat"><option value="0"'+(!f.MarketingMaterialsReviewed?' selected':'')+'>No</option><option value="1"'+(f.MarketingMaterialsReviewed?' selected':'')+'>Yes</option></select></div>'
-      +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="ed-pp" value="'+escH(f.PrivacyPolicyUrl||'')+'"></div>'
-      +'</div>'
-      +'<div class="fg"><label>Notes</label><textarea id="ed-notes">'+escH(f.Notes||'')+'</textarea></div>';
-  }
-  body.innerHTML = '<p style="font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.55">Edit the record fields below. Changes are saved immediately.</p>'
-    + fields
-    + '<div class="form-actions"><button class="btn btn-primary btn-sm" onclick="saveEdit(\''+escJ(rec.id)+'\')"><i class="ph ph-floppy-disk icon-16"></i>Save changes</button></div>';
-}
-
-function saveEdit(recordId) {
-  var rec = S[currentType].find(function(r){return r.id===recordId;});
-  if (!rec) return;
-  var t = currentType;
-  var action, pKey, patch = {};
-  if (t==='processors') {
-    action = 'register'; pKey = 'vendor';
-    patch = {
-      VendorName: (document.getElementById('ed-name')||{}).value||'',
-      VendorType: (document.getElementById('ed-type')||{}).value||'',
-      DPAStatus:  (document.getElementById('ed-dpa')||{}).value||'Not yet',
-      PrivacyPolicyUrl: (document.getElementById('ed-pp')||{}).value||'',
-      Notes: (document.getElementById('ed-notes')||{}).value||'',
-    };
-  } else if (t==='partners') {
-    action = 'partner-register'; pKey = 'partner';
-    patch = {
-      PartnerName: (document.getElementById('ed-name')||{}).value||'',
-      PartnerType: (document.getElementById('ed-type')||{}).value||'',
-      Article26Status: (document.getElementById('ed-a26')||{}).value||'Not yet',
-      ConsentChainVerified: (document.getElementById('ed-cc')||{}).value==='1',
-      AdComplianceReviewed: (document.getElementById('ed-adcomp')||{}).value==='1',
-      PricingComplianceReviewed: (document.getElementById('ed-pricecomp')||{}).value==='1',
-      PrivacyPolicyUrl: (document.getElementById('ed-pp')||{}).value||'',
-      Notes: (document.getElementById('ed-notes')||{}).value||'',
-    };
-  } else {
-    action = 'affiliate-register'; pKey = 'affiliate';
-    patch = {
-      AffiliateName: (document.getElementById('ed-name')||{}).value||'',
-      AffiliateType: (document.getElementById('ed-type')||{}).value||'',
-      DPAStatus: (document.getElementById('ed-dpa')||{}).value||'Not yet',
-      ConsentChainVerified: (document.getElementById('ed-cc')||{}).value==='1',
-      SenderIdentityCompliant: (document.getElementById('ed-sender')||{}).value||'Unverified',
-      MarketingMaterialsReviewed: (document.getElementById('ed-mktmat')||{}).value==='1',
-      PrivacyPolicyUrl: (document.getElementById('ed-pp')||{}).value||'',
-      Notes: (document.getElementById('ed-notes')||{}).value||'',
-    };
-  }
-  showLoading('Saving\u2026');
-  var bodyData = { userId:userId, recordId:recordId };
-  bodyData[pKey] = patch;
-  swFetch(APP_URL+'/api/data?action='+action, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyData)})
-    .then(function(r){return r.json();})
-    .then(function(){
-      hideLoading();
-      showToast('Saved','ok');
-      loadAll().then(function(){
-        var updated = S[currentType].find(function(r){return r.id===recordId;});
-        if (updated) showDetail(recordId);
-      });
-    })
-    .catch(function(e){ hideLoading(); showToast('Save failed: '+e.message,'er'); });
-}
-
 function deleteRel(recordId, name) {
-  if (!confirm('Remove '+name+' from your register?')) return;
+  if (!confirm('Remove '+name+' from your third parties?')) return;
   showLoading('Removing\u2026');
   var action = currentType==='processors'?'register':currentType==='partners'?'partner-register':currentType==='affiliates'?'affiliate-register':'competitor-watch';
   swFetch(APP_URL+'/api/data?action='+action+'&userId='+encodeURIComponent(userId)+'&recordId='+encodeURIComponent(recordId), {method:'DELETE'})
@@ -2565,8 +2472,8 @@ function openModal(type) {
   var sub = document.getElementById('addModalSub');
   var form = document.getElementById('addModalForm');
   if (type==='processor') {
-    title.textContent = 'Add a platform vendor';
-    sub.textContent = 'Register a new marketing platform, CRM, analytics tool or payment processor. We\u2019ll check the enforcement database automatically.';
+    title.textContent = 'Add a platform';
+    sub.textContent = 'An email platform, CRM, analytics or ad tool, or a payment provider. We check what it does with your data and its regulator record.';
     form.innerHTML = '<div class="form-grid">'
       +'<div class="fg"><label>Platform name</label><input type="text" id="m-name" placeholder="e.g. Mailchimp"></div>'
       +'<div class="fg"><label>Type</label><input type="text" id="m-type" placeholder="e.g. Email Service Provider"></div>'
@@ -2575,7 +2482,7 @@ function openModal(type) {
       +'</div>';
   } else if (type==='partner') {
     title.textContent = 'Add a partner';
-    sub.textContent = 'Register a brand you co-market with, run joint campaigns alongside, or share customer data with.';
+    sub.textContent = 'Anyone who passes you contacts, runs joint campaigns with you, or shares customer data with you.';
     form.innerHTML = '<div class="form-grid">'
       +'<div class="fg"><label>Partner name</label><input type="text" id="m-name" placeholder="e.g. Acme Co"></div>'
       +'<div class="fg"><label>Partner type</label><input type="text" id="m-type" placeholder="e.g. Joint Advertising Partner"></div>'
@@ -2584,8 +2491,8 @@ function openModal(type) {
       +'<div class="fg"><label>Privacy Policy URL</label><input type="url" id="m-pp" placeholder="https://..."></div>'
       +'</div>';
   } else if (type==='affiliate') {
-    title.textContent = 'Add an affiliate';
-    sub.textContent = 'Register anyone promoting your brand \u2014 email senders, influencers, lead generators, comparison sites. You are responsible for their consent and claims.';
+    title.textContent = 'Add an affiliate or influencer';
+    sub.textContent = 'Anyone promoting you: influencers, email affiliates, cashback, voucher and comparison sites. You are responsible for what they say about you.';
     form.innerHTML = '<div class="form-grid">'
       +'<div class="fg"><label>Affiliate name</label><input type="text" id="m-name" placeholder="e.g. TopCashback"></div>'
       +'<div class="fg"><label>Type</label><input type="text" id="m-type" placeholder="e.g. Cashback Site"></div>'
@@ -2613,7 +2520,7 @@ function submitModal() {
   var name = (document.getElementById('m-name')||{}).value||'';
   if (!name.trim()) { showToast('Name is required','er'); return; }
   closeModal();
-  showLoading('Adding '+name+' and checking enforcement database\u2026');
+  showLoading('Adding '+name+'\u2026');
   var action, bodyData;
   if (modalType==='processor') {
     action = 'register';
@@ -2653,13 +2560,13 @@ function showConfirmPanel(name, d) {
       return '<div style="margin-top:4px;padding-left:8px;border-left:2px solid var(--rc)">\u2022 <strong>'+escH(v.Regulator||'')+'</strong>: '+escH((v.Violation||'').slice(0,140))+(v.FineAmount?' (\u00a3'+fmtNum(v.FineAmount)+')':'')+'</div>';
     }).join('')+'</div>' : '';
   var NEXT = {
-    processors:['marketing','Next: answer the marketing checks \u2014 they cover how you use this platform, which is what regulators look at.'],
-    partners:['verification','Next: record whether personal data is shared \u2014 that decides which agreement you need.'],
-    affiliates:['verification','Next: record how this affiliate handles data, then check their consent wording names you.'],
+    processors:['overview','Next: see what it risks and the one thing to do first.'],
+    partners:['overview','Next: check their consent covers you.'],
+    affiliates:['overview','Next: add links to their posts, or check their consent covers you.'],
     competitors:['overview',''],
   }[currentType];
   var recId = d.record && d.record.id;
-  var go = recId ? 'showDetail(\''+escJ(recId)+'\');goToDetailTab(\''+NEXT[0]+'\')' : '';
+  var go = recId ? 'showDetail(\''+escJ(recId)+'\')' : '';
   panel.innerHTML = '<div class="confirm-panel '+cls+'">'
     + '<i class="ph ph-'+(hits.length?'warning-circle':'check-circle')+' icon-18 confirm-icon"></i>'
     + '<div class="confirm-body"><div class="confirm-title">'+title+'</div><div class="confirm-sub">'+sub+(NEXT[1]?'<br>'+NEXT[1]:'')+'</div>'+list
@@ -2673,7 +2580,7 @@ function dismissConfirm() { document.getElementById('confirmPanel').innerHTML = 
 
 function quickAdd(name, typeName) {
   closeModal();
-  showLoading('Adding '+name+' and checking enforcement database\u2026');
+  showLoading('Adding '+name+'\u2026');
   var action = currentType==='processors'?'register':currentType==='affiliates'?'affiliate-register':'partner-register';
   var pKey = currentType==='processors'?'vendor':currentType==='affiliates'?'affiliate':'partner';
   var nameKey = currentType==='processors'?'VendorName':currentType==='affiliates'?'AffiliateName':'PartnerName';
