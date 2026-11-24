@@ -60,11 +60,12 @@
 
 import { claudeFetch } from './_claude.js';
 import { createHash } from 'node:crypto';
-import { gatherRecords, buildChecklist, readinessScore, readinessLabel, backgroundChecks, representations, STATUS_WEIGHT } from './_readiness.js';
+import { gatherRecords, buildChecklist, readinessScore, readinessLabel, backgroundChecks, representations, STATUS_WEIGHT, findTrigger, fineModel, fineFrom } from './_readiness.js';
 import { atFetch } from './_airtable.js';
 import { requireAuth, internalHeaders, isRecordId, CORS_HEADERS } from './_auth.js';
 import { checkLimit } from './_limits.js';
 import { transferPosition, ICO_REGISTER_NOTE, sweepTrackers, trackerMatchesVendor, applySweepEvidence } from './_processor-rules.js';
+import { isHidden } from './_third-parties.js';
 
 const APP_URL     = 'https://sendwize-backend.vercel.app';
 const RESEND_FROM = 'alerts@sendwize.co.uk';
@@ -136,12 +137,17 @@ function withDefaults(isCreate) {
     (value !== undefined && value !== null && value !== '') ? value : (isCreate ? fallback : undefined);
 }
 
+// Third parties Site Sweep or List health found that the member said they
+// don't use stay in the register (so they are not added again) but are
+// left out of the score and the watch list (third-parties.js hide).
+const notHidden = recs => recs.filter(r => !isHidden(r.fields));
+
 // ── Third-party risk score (v7.3 — ad compliance dimensions) ──
 async function calculateThirdPartyScore(userId, base) {
   const [processors, partners, affiliates, profile] = await Promise.all([
-    atGet(base, 'Vendor_Register',   `{UserID}='${userId}'`, '', 50).catch(() => []),
-    atGet(base, 'Partner_Register',  `{UserID}='${userId}'`, '', 50).catch(() => []),
-    atGet(base, 'Affiliate_Register',`{UserID}='${userId}'`, '', 50).catch(() => []),
+    atGet(base, 'Vendor_Register',   `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
+    atGet(base, 'Partner_Register',  `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
+    atGet(base, 'Affiliate_Register',`{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
     atGet(base, 'User_Profile',      `{UserID}='${userId}'`, '', 1).catch(() => []),
   ]);
 
@@ -1119,8 +1125,6 @@ async function handlePartnerRegister(req, res) {
       LastChecked: recordId ? undefined : new Date().toISOString().split('T')[0],
       EnforcementRelevanceJson: enforcementResult ? JSON.stringify({ relevant: enforcementResult.relevant, rejected: enforcementResult.rejected, summary: enforcementResult.summary }) : undefined,
       // v7.5 new
-      AffiliateDataRole: d(affiliate.AffiliateDataRole, 'unknown'),
-      LandingPageChecksJson: affiliate.LandingPageChecksJson,
       RelationshipActivity: partner.RelationshipActivity,
       MarketingChannels: Array.isArray(partner.MarketingChannels) ? JSON.stringify(partner.MarketingChannels) : partner.MarketingChannels,
       AdComplianceReviewed: d(partner.AdComplianceReviewed, false),
@@ -1445,9 +1449,9 @@ async function handleRelationshipWatch(req, res) {
   const base  = airtableBase();
   const today = new Date();
   const [vendors, partners, affiliates, competitors, profileRows] = await Promise.all([
-    atGet(base, 'Vendor_Register',    `{UserID}='${userId}'`, '', 50).catch(() => []),
-    atGet(base, 'Partner_Register',   `{UserID}='${userId}'`, '', 50).catch(() => []),
-    atGet(base, 'Affiliate_Register', `{UserID}='${userId}'`, '', 50).catch(() => []),
+    atGet(base, 'Vendor_Register',    `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
+    atGet(base, 'Partner_Register',   `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
+    atGet(base, 'Affiliate_Register', `{UserID}='${userId}'`, '', 50).then(notHidden).catch(() => []),
     atGet(base, 'Competitor_Watch',   `AND({UserID}='${userId}',{WatchStatus}=1)`, '', 50).catch(() => []),
     atGet(base, 'User_Profile', `{UserID}='${userId}'`, '', 1).catch(() => []),
   ]);
@@ -1737,6 +1741,13 @@ async function handleVendorWatch(req, res) { return handleRelationshipWatch(req,
 // frame from the exposure engine. Claude only words the letter, and only
 // picks questions from the checklist; if it fails, a plain letter is
 // built from the checklist so the stage is never empty.
+// v8.0 (version 3 result): an interactive rehearsal. The run opens with
+// the trigger in the member's own data and the published case that began
+// the same way; every item carries the records the member can attach,
+// the findings it would close and the steps to close it; fineModel lets
+// the page recompute the likely ICO fine live. ASA never fines, CMA shows
+// the legal maximum only. simulation-recheck re-reads the records (no AI)
+// so a gap closed in another tool shows here without a new letter.
 const SIM_REG = {
   ICO: { orgName: "Information Commissioner's Office", refPrefix: 'ICO-ENF', signatory: 'Senior Enforcement Officer, Direct Marketing Team', tone: 'formal ICO tone, referring to PECR and UK GDPR by regulation or article number' },
   ASA: { orgName: 'Advertising Standards Authority', refPrefix: 'ASA-ENQ', signatory: 'Investigations Executive', tone: 'formal ASA tone, referring to CAP Code rules by number' },
@@ -1759,9 +1770,15 @@ function simRef(prefix, userId) {
   return `${prefix}-${h}`;
 }
 
-function plainLetter(regulator, items, userId) {
+// The trigger's record is asked about first, then the gaps
+function letterOrder(items, trigger) {
+  const lead = items.find(i => i.id === trigger?.itemId);
+  return [...(lead ? [lead] : []), ...[...items].filter(i => i !== lead).sort((a, b) => STATUS_WEIGHT[a.status] - STATUS_WEIGHT[b.status])];
+}
+
+function plainLetter(regulator, items, userId, trigger = null) {
   const cfg = SIM_REG[regulator];
-  const pick = [...items].sort((a, b) => STATUS_WEIGHT[a.status] - STATUS_WEIGHT[b.status]).slice(0, 6);
+  const pick = letterOrder(items, trigger).slice(0, 6);
   return {
     reference: simRef(cfg.refPrefix, userId),
     subject: regulator === 'ICO' ? 'Information request: your direct marketing' : regulator === 'ASA' ? 'Enquiry about your advertising' : 'Information request: your consumer-facing practices',
@@ -1773,7 +1790,7 @@ function plainLetter(regulator, items, userId) {
   };
 }
 
-async function simLetter(regulator, items, pending, userId) {
+async function simLetter(regulator, items, pending, userId, trigger = null) {
   const cfg = SIM_REG[regulator];
   const ids = items.map(i => i.id);
   const schema = {
@@ -1786,22 +1803,55 @@ async function simLetter(regulator, items, pending, userId) {
   };
   const findings = pending.filter(f => f.exposure?.category === regulator).slice(0, 6).map(f => `- ${String(f.fixType || '').replace(/_/g, ' ')} (${f.severity}): ${String(f.description || '').slice(0, 200)}`).join('\n') || '- none open';
   const menu = items.map(i => `- ${i.id}: ${i.name}`).join('\n');
+  const why = trigger && trigger.kind !== 'none' ? `What prompted the letter: ${trigger.title} Ask about ${trigger.itemId || 'the most relevant record'} first.\n\n` : '';
   try {
     const r = await claudeFetch('https://api.anthropic.com/v1/messages', { method: 'POST', body: JSON.stringify({ max_tokens: 1500, messages: [{ role: 'user', content:
-      `Write a realistic first-contact letter from the ${cfg.orgName} to a UK business, for a training simulation. Tone: ${cfg.tone}.\n\nOpen findings that would have prompted the letter:\n${findings}\n\nAsk 5 or 6 questions. Each question must ask for one of these records, named by its id (use each id at most once, start with the ones most relevant to the findings):\n${menu}\n\nWrite each question as the regulator would, in one or two sentences. Opening, context and closing are one short paragraph each. Plain text, no markdown, no dashes as punctuation. Do not invent dates, figures or case names.` }] }) },
+      `Write a realistic first-contact letter from the ${cfg.orgName} to a UK business, for a training simulation. Tone: ${cfg.tone}.\n\n${why}Open findings that would have prompted the letter:\n${findings}\n\nAsk 5 or 6 questions. Each question must ask for one of these records, named by its id (use each id at most once, start with the ones most relevant to the findings):\n${menu}\n\nWrite each question as the regulator would, in one or two sentences. Opening, context and closing are one short paragraph each. Plain text, no markdown, no dashes as punctuation. Do not invent dates, figures or case names.` }] }) },
       { effort: 'low', schema });
     if (!r.ok) throw new Error(`Claude ${r.status}`);
     const l = parseJsonSafe((await r.json()).content?.[0]?.text);
     const seen = new Set();
     const qs = (l?.questions || []).filter(q => ids.includes(q.docId) && !seen.has(q.docId) && seen.add(q.docId)).slice(0, 6);
     if (!l?.opening || qs.length < 3) throw new Error('letter too short');
+    // The trigger's record always comes first
+    const lead = qs.findIndex(q => q.docId === trigger?.itemId);
+    if (lead > 0) qs.unshift(qs.splice(lead, 1)[0]);
     return { ...l, questions: qs, reference: simRef(cfg.refPrefix, userId), signatory: cfg.signatory };
   } catch (e) {
     console.warn('Simulation letter fell back to the plain version:', e.message);
-    return plainLetter(regulator, items, userId);
+    return plainLetter(regulator, items, userId, trigger);
   }
 }
 function parseJsonSafe(t) { try { return JSON.parse(String(t || '').replace(/```json|```/g, '').trim()); } catch { return null; } }
+
+// Records, findings and the checklist for one regulator (no AI)
+async function simulationRecords(userId, regulator) {
+  const [fixesRes, rec] = await Promise.all([
+    fetch(`${APP_URL}/api/fixes?action=get&userId=${encodeURIComponent(userId)}`, { headers: internalHeaders() }),
+    gatherRecords(userId),
+  ]);
+  const fixesData = fixesRes.ok ? await fixesRes.json() : null;
+  const pending = fixesData?.fixes?.pending || [];
+  // The checklist for this regulator, with the gaps first
+  const items = buildChecklist(rec, pending).filter(i => i.regs.includes(regulator))
+    .sort((x, y) => STATUS_WEIGHT[x.status] - STATUS_WEIGHT[y.status]);
+  const model = fineModel(pending, regulator, fixesData?.exposure?.regulators?.cma?.max?.amount || null);
+  return { fixesData, pending, rec, items, model };
+}
+const simDocs = items => items.map(i => ({ id: i.id, name: i.name, status: i.status, detail: i.detail, tool: i.tool, at: i.at || null, evidence: i.evidence || [], fixIds: i.fixIds || [], close: i.close || null }));
+const simReadiness = items => {
+  const score = readinessScore(items), c = s => items.filter(i => i.status === s).length;
+  return { score, label: readinessLabel(score), counts: { available: c('available'), partial: c('partial'), missing: c('missing') } };
+};
+
+// Re-read the records after the member closes a gap elsewhere. Same
+// checklist and fine model as a run, no letter, nothing saved.
+async function handleSimulationRecheck(req, res) {
+  const { userId, regulator } = req.body || {};
+  if (!userId || !SIM_REG[regulator]) return res.status(400).json({ error: 'userId and regulator (ICO | CMA | ASA) required' });
+  const { items, model } = await simulationRecords(userId, regulator);
+  return res.status(200).json({ regulator, checkedAt: new Date().toISOString(), readiness: simReadiness(items), documents: simDocs(items), fineModel: model, fine: fineFrom(model) });
+}
 
 async function handleSimulationRun(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -1809,18 +1859,10 @@ async function handleSimulationRun(req, res) {
   if (!userId || !regulator) return res.status(400).json({ error: 'userId and regulator required' });
   if (!SIM_REG[regulator]) return res.status(400).json({ error: 'regulator must be ICO | CMA | ASA' });
   const base = airtableBase();
-  const [fixesRes, rec] = await Promise.all([
-    fetch(`${APP_URL}/api/fixes?action=get&userId=${userId}`, { headers: internalHeaders() }),
-    gatherRecords(userId),
-  ]);
-  const fixesData = fixesRes.ok ? await fixesRes.json() : null;
-  const pending = fixesData?.fixes?.pending || [];
+  const { fixesData, pending, rec, items, model } = await simulationRecords(userId, regulator);
   const score = fixesData?.score || 0;
-
-  // The checklist for this regulator, with the gaps first
-  const items = buildChecklist(rec, pending).filter(i => i.regs.includes(regulator))
-    .sort((x, y) => STATUS_WEIGHT[x.status] - STATUS_WEIGHT[y.status]);
   const readiness = readinessScore(items);
+  const trigger = findTrigger(rec, pending, regulator);
 
   // Risk band and factors (stage 2)
   const mine = pending.filter(f => f.exposure?.category === regulator);
@@ -1833,7 +1875,7 @@ async function handleSimulationRun(req, res) {
   if (missing.length) factors.push({ icon: '•', text: `${missing.length} record${missing.length === 1 ? '' : 's'} a regulator would ask for ${missing.length === 1 ? 'is' : 'are'} missing: ${missing.slice(0, 3).map(i => i.name.toLowerCase()).join('; ')}` });
 
   // Letter (stage 3): every question carries the answer from the records
-  const letter = await simLetter(regulator, items, pending, userId);
+  const letter = await simLetter(regulator, items, pending, userId, trigger);
   const byId = Object.fromEntries(items.map(i => [i.id, i]));
   letter.questions = letter.questions.map(q => {
     const it = byId[q.docId];
@@ -1845,7 +1887,8 @@ async function handleSimulationRun(req, res) {
   let penalty = { low: 0, high: 0, context: '' };
   if (regulator === 'ICO') {
     const ico = regs.ico || {};
-    penalty = ico.count ? { low: ico.low || 0, high: ico.high || 0, context: `Range from comparable published ICO cases for ${ico.count} open finding${ico.count === 1 ? '' : 's'}, sized to your business. Not a prediction.` }
+    const f = fineFrom(model);
+    penalty = ico.count ? { low: ico.low || 0, high: ico.high || 0, likely: f?.likely || ico.mostLikely || null, context: `Range from comparable published ICO cases for ${ico.count} open finding${ico.count === 1 ? '' : 's'}, sized to your business. Not a prediction.` }
       : { low: 0, high: 0, context: 'No open ICO findings, so there is no comparable case range to show.' };
   } else if (regulator === 'CMA') {
     const cma = regs.cma || {};
@@ -1856,12 +1899,15 @@ async function handleSimulationRun(req, res) {
 
   const b = SIM_BANDS[band];
   const result = {
-    regulator, version: 2, createdAt: new Date().toISOString(),
-    readiness: { score: readiness, label: readinessLabel(readiness), counts: { available: items.length - missing.length - items.filter(i => i.status === 'partial').length, partial: items.filter(i => i.status === 'partial').length, missing: missing.length } },
+    regulator, version: 3, createdAt: new Date().toISOString(),
+    member: { company: rec.profile.CompanyName || rec.profile.BusinessName || '', name: rec.profile.Name || rec.profile.OwnerName || '' },
+    trigger,
+    fineModel: model,
+    readiness: simReadiness(items),
     stage1: { checks: backgroundChecks(rec, pending, regulator) },
     stage2: { band, bandLabel: b.label, bandColour: b.colour, bandBg: b.bg, bandBorder: b.border, bandDescription: SIM_BAND_TEXT[regulator][band], factors },
     stage3: { letter },
-    stage4: { documents: items.map(i => ({ id: i.id, name: i.name, status: i.status, detail: i.detail, tool: i.tool, at: i.at || null })) },
+    stage4: { documents: simDocs(items) },
     stage5: { penalty, representations: representations(items) },
   };
   // Keep every run so the member can reopen it and see readiness change
@@ -1959,6 +2005,7 @@ export default async function handler(req, res) {
     if (action === 'briefing'                && req.method === 'GET')                       return await handleBriefing(req, res);
     if (action === 'consent-expiry-check'    && req.method === 'POST')                      return await handleConsentExpiryCheck(req, res);
     if (action === 'simulation-run'          && req.method === 'POST')                      return (await checkLimit(req, res, auth, 'simulation')) ? await handleSimulationRun(req, res) : undefined;
+    if (action === 'simulation-recheck'      && req.method === 'POST')                      return await handleSimulationRecheck(req, res);
     if (action === 'vendor-watch'            && req.method === 'GET')                       return await handleVendorWatch(req, res);
     if (action === 'relationship-watch'      && req.method === 'GET')                       return await handleRelationshipWatch(req, res);
     if (action === 'sector-intelligence'     && req.method === 'GET')                       return await handleSectorIntelligence(req, res);
