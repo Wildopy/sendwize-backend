@@ -1,4 +1,6 @@
 {
+ "generated": "2026-11-24T00:33:16.874Z",
+ "generated": "2026-11-23T21:55:06.442Z",
  "generated": "2026-11-24T16:23:51.644Z",
  "note": "Imported from regulator records. Not live: cases reach the product only once approved in data/case-approvals.json and published.",
  "counts": {
@@ -12274,63 +12276,6 @@
    "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
   },
   {
-   "id": "cma_viagogo_2025",
-   "regulator": "CMA",
-   "name": "viagogo",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
-   "match": "viagogo",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk and www.viagogo.com/ww) to UK consumers.",
-   "action": null,
-   "types": [
-    "drip_pricing"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
-   "id": "cma_bannatyne_health_club_2026",
-   "regulator": "CMA",
-   "name": "Bannatyne Health Club",
-   "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/bannatyne-health-club-consumer-protection-enforcement-case",
-   "match": "Bannatyne",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by The Bannatyne Group Limited trading as Bannatyne Health Club in the UK.",
-   "action": null,
-   "types": [
-    "drip_pricing",
-    "misleading_reference_price"
-   ],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
    "id": "cma_secret_escapes_limited_2026",
    "regulator": "CMA",
    "name": "Secret Escapes Limited",
@@ -12360,6 +12305,164 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_bannatyne_health_club_2026",
+   "id": "asa_appquantum_publishing_ltd_2021",
+   "regulator": "ASA",
+   "name": "AppQuantum Publishing Ltd",
+   "source": "ASA ruling",
+   "url": "https://www.asa.org.uk/rulings/appquantum-publishing-ltd-g21-1125809-appquantum-publishing-ltd.html",
+   "match": "AppQuantum",
+   "date": "2021-11-24",
+   "penalty": null,
+   "outcome": "Upheld ASA ruling",
+   "law": "CAP Code (Edition",
+   "volume": null,
+   "sector": null,
+   "media": "App (paid ad)",
+   "summary": "An in-app ad for a mobile app game was banned for trivialising and condoning domestic violence against women.",
+   "action": "The ad must not appear again in its current form. We told AppQuantum Publishing Ltd not to trivialise or condone domestic violence in its advertising.",
+   "types": [],
+   "evidence": {
+    "rules": [
+     "1.3",
+     "4.1",
+     "4.4"
+    ],
+    "topic": null,
+    "decision": "Upheld"
+   },
+   "reason": "not a Sendwize finding type (e.g. harm, offence, alcohol, gambling)"
+  },
+  {
+   "id": "cma_trainline_2026",
+   "regulator": "CMA",
+   "name": "Bannatyne Health Club",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/bannatyne-health-club-consumer-protection-enforcement-case",
+   "match": "Bannatyne",
+   "id": "cma_viagogo_2025",
+   "regulator": "CMA",
+   "name": "viagogo",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
+   "match": "viagogo",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by The Bannatyne Group Limited trading as Bannatyne Health Club in the UK.",
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk and www.viagogo.com/ww) to UK consumers.",
+   "action": null,
+   "types": [
+    "drip_pricing",
+    "misleading_reference_price"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_caledonian_leisure_ltd_trading_as_caledo_2026",
+   "regulator": "CMA",
+   "name": "Caledonian Leisure Ltd trading as Caledonian Travel",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/caledonian-leisure-ltd-trading-as-caledonian-travel-consumer-protection-enforcement-case",
+   "match": "Caledonian",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by Caledonian Leisure Ltd trading as Caledonian Travel in the UK.",
+   "action": null,
+   "types": [
+    "drip_pricing",
+    "misleading_reference_price"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_viagogo_2025",
+   "regulator": "CMA",
+   "name": "viagogo",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
+   "match": "viagogo",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk and www.viagogo.com/ww) to UK consumers.",
+   "action": null,
+   "types": [
+    "drip_pricing"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_trainline_2026",
+   "id": "cma_secret_escapes_limited_2026",
+   "regulator": "CMA",
+   "name": "Trainline",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/trainline-consumer-protection-enforcement-case",
+   "match": "Trainline",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for train and coach tickets by Trainline in the UK. ",
+   "action": null,
+   "types": [
+    "drip_pricing"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_viagogo_2025",
+   "regulator": "CMA",
+   "name": "viagogo",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/viagogo-consumer-protection-enforcement-case",
+   "match": "viagogo",
+   "id": "cma_euro_car_parks_2026",
    "id": "cma_trainline_2026",
    "regulator": "CMA",
    "name": "Trainline",
@@ -12373,6 +12476,12 @@
    "volume": null,
    "refunds": null,
    "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees by viagogo Entertainment Inc. (trading as viagogo via www.viagogo.com) and viagogo GmbH (trading as viagogo via www.viagogo.co.uk and www.viagogo.com/ww) to UK consumers.",
+   "action": null,
+   "types": [
+    "drip_pricing"
+   ],
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to Euro Car Parks Limited’s (ECP) practices at petrol stations and their appeals processes.",
    "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for train and coach tickets by Trainline in the UK. ",
    "action": null,
    "types": [
@@ -12417,6 +12526,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_fast_moving_consumer_goods_fmcg_2023",
+   "regulator": "CMA",
+   "name": "Fast Moving Consumer Goods (FMCG)",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/fast-moving-consumer-goods-fmcg",
+   "match": "Fast",
    "id": "cma_autotrader_2026",
    "regulator": "CMA",
    "name": "Autotrader",
@@ -12429,6 +12544,11 @@
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
+   "sector": "ecommerce",
+   "summary": "The Competition and Markets Authority (CMA) investigated Unilever UK Limited’s compliance with consumer protection law.",
+   "action": null,
+   "types": [
+    "misleading_claim"
    "sector": "media",
    "summary": "The Competition and Markets Authority (CMA) is investigating Autotrader Limited’s (‘Autotrader’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer reviews and consumer review information like star ratings.   ",
    "action": null,
@@ -12438,13 +12558,14 @@
    "evidence": {
     "outcome_type": null,
     "case_state": [
-     "open"
+     "closed"
     ],
     "penalty_sentence": null
    },
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_ryanair_2026",
    "id": "cma_euro_car_parks_2026",
    "regulator": "CMA",
    "name": "Euro Car Parks",
@@ -12473,26 +12594,26 @@
   {
    "id": "cma_fast_moving_consumer_goods_fmcg_2023",
    "regulator": "CMA",
-   "name": "Fast Moving Consumer Goods (FMCG)",
+   "name": "Ryanair",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/fast-moving-consumer-goods-fmcg",
-   "match": "Fast",
+   "url": "https://www.gov.uk/cma-cases/ryanair-consumer-protection-enforcement-case",
+   "match": "Ryanair",
    "date": null,
    "penalty": null,
    "outcome": null,
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
-   "sector": "ecommerce",
-   "summary": "The Competition and Markets Authority (CMA) investigated Unilever UK Limited’s compliance with consumer protection law.",
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to Ryanair’s use of a potentially unfair mandatory fee, and the presentation of that fee on its UK website.",
    "action": null,
    "types": [
-    "misleading_claim"
+    "drip_pricing"
    ],
    "evidence": {
     "outcome_type": null,
     "case_state": [
-     "closed"
+     "open"
     ],
     "penalty_sentence": null
    },
@@ -12592,6 +12713,12 @@
    "source": "GOV.UK CMA case page",
    "url": "https://www.gov.uk/cma-cases/online-consumer-reviews",
    "match": "Online",
+   "id": "cma_ryanair_2026",
+   "regulator": "CMA",
+   "name": "Online consumer reviews",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/online-consumer-reviews",
+   "match": "Online",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -12600,6 +12727,11 @@
    "refunds": null,
    "sector": "ecommerce",
    "summary": "The Competition and Market Authority's (CMA’s) work to protect consumers who rely on online reviews.",
+   "action": null,
+   "types": [
+    "fake_reviews"
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to Ryanair’s use of a potentially unfair mandatory fee, and the presentation of that fee on its UK website.",
    "action": null,
    "types": [
     "fake_reviews"
@@ -12642,6 +12774,12 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_just_eat_2026",
+   "regulator": "CMA",
+   "name": "Just Eat",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/just-eat-consumer-protection-enforcement-case",
+   "match": "Just",
    "id": "cma_microsoft_2026",
    "regulator": "CMA",
    "name": "Microsoft",
@@ -12655,6 +12793,7 @@
    "volume": null,
    "refunds": null,
    "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating Just Eat.co.uk Limited’s (‘Just Eat’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer review information like star ratings.",
    "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of information to customers about changes to Microsoft 365 Personal and Family subscriptions made by Microsoft Ireland Operations Limited.",
    "action": null,
    "types": [],
@@ -12668,6 +12807,13 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
+   "id": "cma_leasehold_2019",
+   "regulator": "CMA",
+   "name": "Leasehold",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/leasehold",
+   "match": "Leasehold",
+   "id": "cma_dignity_2026",
    "id": "cma_just_eat_2026",
    "regulator": "CMA",
    "name": "Just Eat",
@@ -12676,26 +12822,31 @@
    "match": "Just",
    "date": null,
    "penalty": null,
-   "outcome": null,
+   "outcome": "Gave undertakings to the CMA",
    "law": "Consumer protection law",
    "volume": null,
    "refunds": null,
    "sector": null,
+   "summary": "The CMA is investigating potential breaches of consumer protection law in the leasehold housing market. ",
+   "action": "Since our last update, there has been further progress in relation to leases with less than 20-year doubling clauses. A further 3 freeholders with affected Taylor Wimpey leases have provided the CMA with undertakings for the benefit of leaseholders: Island Apartments Freehold Limited (PDF, 112KB) (13.3.24); Madison Close Freeholders Limited (PDF, 115KB) (13.3.24); Plaza 2 Surbiton Limited (PDF, 117KB) (13.3.24).",
+   "types": [],
+   "summary": "The Competition and Markets Authority (CMA) is investigating Dignity Group Holdings Limited’s (‘Dignity’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews about crematoria.",
    "summary": "The Competition and Markets Authority (CMA) is investigating Just Eat.co.uk Limited’s (‘Just Eat’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to publishing consumer review information like star ratings.",
    "action": null,
    "types": [
     "fake_reviews"
    ],
    "evidence": {
-    "outcome_type": null,
+    "outcome_type": "consumer-enforcement-undertakings",
     "case_state": [
      "open"
     ],
     "penalty_sentence": null
    },
-   "reason": "no outcome published yet (open investigation, no finding made)"
+   "reason": "no decision date in the record"
   },
   {
+   "id": "cma_microsoft_2026",
    "id": "cma_leasehold_2019",
    "regulator": "CMA",
    "name": "Leasehold",
@@ -12724,6 +12875,10 @@
   {
    "id": "cma_virgin_atlantic_2026",
    "regulator": "CMA",
+   "name": "Microsoft",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/microsoft-consumer-protection-enforcement-case",
+   "match": "Microsoft",
    "name": "Virgin Atlantic",
    "source": "GOV.UK CMA case page",
    "url": "https://www.gov.uk/cma-cases/virgin-atlantic-consumer-protection-enforcement-case",
@@ -12735,6 +12890,9 @@
    "volume": null,
    "refunds": null,
    "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of information to customers about changes to Microsoft 365 Personal and Family subscriptions made by Microsoft Ireland Operations Limited.",
+   "action": null,
+   "types": [],
    "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for package holidays offered by Virgin Atlantic in the UK. ",
    "action": null,
    "types": [
@@ -12756,6 +12914,12 @@
    "source": "GOV.UK CMA case page",
    "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
    "match": "Pasta",
+   "id": "cma_virgin_atlantic_2026",
+   "regulator": "CMA",
+   "name": "Pasta Evangelists",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/pasta-evangelists-consumer-protection-enforcement-case",
+   "match": "Pasta",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -12764,6 +12928,11 @@
    "refunds": null,
    "sector": "ecommerce",
    "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
+   "action": null,
+   "types": [
+    "fake_reviews"
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for package holidays offered by Virgin Atlantic in the UK. ",
    "action": null,
    "types": [
     "fake_reviews"
@@ -12784,6 +12953,12 @@
    "source": "GOV.UK CMA case page",
    "url": "https://www.gov.uk/cma-cases/heating-oil-review-consumer-protection-enforcement-case",
    "match": "Heating",
+   "id": "cma_online_reviews_2020",
+   "regulator": "CMA",
+   "name": "Heating oil review",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/heating-oil-review-consumer-protection-enforcement-case",
+   "match": "Heating",
    "date": null,
    "penalty": null,
    "outcome": null,
@@ -12792,6 +12967,79 @@
    "refunds": null,
    "sector": null,
    "summary": "The Competition and Markets Authority (CMA) commenced a consumer protection review of the supply of heating oil to consumers.",
+   "action": null,
+   "types": [],
+   "sector": "media",
+   "summary": "The Competition and Markets Authority (CMA) investigation into fake online reviews.",
+   "action": "Amazon Europe Core SARL has signed undertakings committing to enhance its existing systems for tackling fake reviews and ‘catalogue abuse’. Catalogue abuse involves sellers hijacking the reviews of well-performing products and adding them to an entirely separate and different product to falsely boost its star rating.",
+   "types": [
+    "fake_reviews"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_virgin_atlantic_2026",
+   "regulator": "CMA",
+   "name": "Virgin Atlantic",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/virgin-atlantic-consumer-protection-enforcement-case",
+   "match": "Virgin",
+   "id": "cma_pasta_evangelists_2026",
+   "id": "cma_online_reviews_2020",
+   "regulator": "CMA",
+   "name": "Amazon Europe Core SARL, Amazon and Google LLC",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/online-reviews",
+   "caseTitle": "Online reviews",
+   "match": "Amazon",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for package holidays offered by Virgin Atlantic in the UK. ",
+   "sector": "ecommerce",
+   "summary": "The Competition and Markets Authority (CMA) is investigating Pasta Evangelists Limited’s (‘Pasta Evangelists’) compliance with the law on unfair commercial practices under the Digital Markets, Competition and Consumers Act 2024 (DMCC Act) in relation to obtaining consumer reviews.",
+   "action": null,
+   "sector": "media",
+   "summary": "The Competition and Markets Authority (CMA) investigation into fake online reviews.",
+   "action": "Amazon Europe Core SARL has signed undertakings committing to enhance its existing systems for tackling fake reviews and ‘catalogue abuse’. Catalogue abuse involves sellers hijacking the reviews of well-performing products and adding them to an entirely separate and different product to falsely boost its star rating.",
+   "types": [
+    "drip_pricing"
+   ],
+   "evidence": {
+    "outcome_type": null,
+    "case_state": [
+     "open"
+    ],
+    "penalty_sentence": null
+   },
+   "reason": "no outcome published yet (open investigation, no finding made)"
+  },
+  {
+   "id": "cma_adobe_2026",
+   "regulator": "CMA",
+   "name": "Adobe",
+   "source": "GOV.UK CMA case page",
+   "url": "https://www.gov.uk/cma-cases/adobe-consumer-protection-enforcement-case",
+   "match": "Adobe",
+   "date": null,
+   "penalty": null,
+   "outcome": null,
+   "law": "Consumer protection law",
+   "volume": null,
+   "refunds": null,
+   "sector": null,
+   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer protection law in relation to an early termination fee term for certain products provided in the UK by Adobe Systems Software Ireland Limited (trading as Adobe).",
    "action": null,
    "types": [],
    "evidence": {
@@ -12833,32 +13081,13 @@
    "reason": "no outcome published yet (open investigation, no finding made)"
   },
   {
-   "id": "cma_adobe_2026",
+   "id": "cma_secondary_ticketing_websites_2012",
    "regulator": "CMA",
-   "name": "Adobe",
+   "name": "StubHub and Seatwave",
    "source": "GOV.UK CMA case page",
-   "url": "https://www.gov.uk/cma-cases/adobe-consumer-protection-enforcement-case",
-   "match": "Adobe",
-   "date": null,
-   "penalty": null,
-   "outcome": null,
-   "law": "Consumer protection law",
-   "volume": null,
-   "refunds": null,
-   "sector": null,
-   "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer protection law in relation to an early termination fee term for certain products provided in the UK by Adobe Systems Software Ireland Limited (trading as Adobe).",
-   "action": null,
-   "types": [],
-   "evidence": {
-    "outcome_type": null,
-    "case_state": [
-     "open"
-    ],
-    "penalty_sentence": null
-   },
-   "reason": "no outcome published yet (open investigation, no finding made)"
-  },
-  {
+   "url": "https://www.gov.uk/cma-cases/secondary-ticketing-websites",
+   "caseTitle": "Secondary ticketing websites",
+   "match": "StubHub",
    "id": "cma_red_driving_school_2026",
    "regulator": "CMA",
    "name": "Red Driving School",
@@ -12872,6 +13101,9 @@
    "volume": null,
    "refunds": null,
    "sector": null,
+   "summary": "The CMA is investigating suspected breaches of consumer protection law in the online secondary tickets market.",
+   "action": "The CMA has today warned viagogo it is still not compliant with the court order we secured, requiring improved information be displayed about the tickets listed for resale on its site.",
+   "types": [],
    "summary": "The Competition and Markets Authority (CMA) is investigating suspected infringements of consumer law in relation to the presentation of mandatory fees for driving lessons by Red Driving School in the UK.",
    "action": null,
    "types": [

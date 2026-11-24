@@ -75,6 +75,17 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .f-d{font-size:13px;color:var(--tm);line-height:1.55}
 .f-ex{font-size:12px;font-style:italic;margin-top:5px;padding-left:8px;border-left:2px solid var(--bm)}
 .f-meta{font-size:11px;color:var(--mu);margin-top:5px}
+.f-where{font-size:12px;font-weight:600;color:var(--tm);margin:2px 0 4px}
+.f-evid{font-size:12px;color:var(--tm);margin:6px 0 0 16px}.f-evid li{margin:2px 0}
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.f-box{background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5;color:var(--tm);min-width:0}
+.f-box b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);margin-bottom:3px}
+.f-box a{color:var(--o);text-decoration:none;font-weight:600}
+.f-cost{color:var(--t);font-weight:600}
+.f-fix{margin-top:8px;border:1px solid var(--b);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--tm)}
+.f-fix summary{cursor:pointer;font-weight:700;color:var(--od);font-size:12px}
+.f-fix pre{background:#faf9f7;border:1px solid var(--b);border-radius:6px;padding:8px 10px;margin-top:8px;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--t)}
+.f-fix .btn{margin-top:8px}
 .list{background:var(--w);border:1px solid var(--b);border-radius:var(--rad);padding:6px 16px}
 .li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--b);font-size:13px}.li:last-child{border-bottom:none}
 .li a{color:var(--o);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -96,7 +107,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .gd-set{display:grid;grid-template-columns:1fr 1fr;gap:10px}.gd-set label{font-size:12px;color:var(--tm);display:flex;flex-direction:column;gap:4px}
 .gd-set input{font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--bm);border-radius:7px;width:100%}
 @media(max-width:600px){.gd-set{grid-template-columns:1fr}}
-@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.checks{grid-template-columns:1fr}.score{font-size:44px}}
+@media(max-width:640px){.sw-ph-header{flex-direction:column;gap:12px;align-items:flex-start}.checks{grid-template-columns:1fr}.score{font-size:44px}.f-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -170,13 +181,18 @@ const CHECKS=`<div class="checks">
  <div class="chk"><b>Cookies &amp; tracking</b><span>Does tracking start before consent? Is there a real reject option?</span></div>
  <div class="chk"><b>Privacy notice</b><span>Can people find it, and does it cover what the law requires?</span></div>
  <div class="chk"><b>Data capture</b><span>Pre-ticked boxes and missing privacy links on sign-up forms.</span></div>
+ <div class="chk"><b>Sign-ups &amp; pop-ups</b><span>Is SMS and email consent worded properly? Can people say no as easily as yes?</span></div>
+ <div class="chk"><b>Urgency that never ends</b><span>Countdowns that restart on reload, and "only 2 left" that never changes.</span></div>
+ <div class="chk"><b>Always-on claims</b><span>"No.1", award-winning, eco-friendly or clinically proven in your header, footer and banners.</span></div>
+ <div class="chk"><b>Reviews &amp; influencers</b><span>Only 5-star reviews shown, no review policy, partner pages without an "Ad" label.</span></div>
+ <div class="chk"><b>Terms &amp; consumer rights</b><span>14-day cancellation, returns and what your terms promise.</span></div>
  <div class="chk"><b>Business identity</b><span>Company number, registered office and a geographic address.</span></div></div>`;
 
 function renderSetup(){
   $('app').innerHTML=`<div class="view"><div class="head"><h1>Site Sweep</h1><p>One review of your whole website. Major gaps go straight to your dashboard.</p></div>
   <div class="card hero"><div class="card-t">Which website should we review?</div><div class="card-s">Next we'll ask you to confirm it's yours. Usually that's one click on an email, with no code.</div>
   <div class="fg"><input id="dom" placeholder="yourbrand.co.uk" autocomplete="off" onkeydown="if(event.key==='Enter')start()"><button class="btn btn-o" id="bStart" onclick="start()">Continue →</button></div></div>
-  <div class="card"><div class="card-t">What the sweep checks</div>${CHECKS}<p class="hint">Offer and pricing claims are checked per campaign in Campaign Defence, so nothing is checked twice.</p></div></div>`;
+  <div class="card"><div class="card-t">What the sweep checks</div>${CHECKS}<p class="hint">Each campaign's own offer and pricing claims are checked in Campaign Defence. The sweep covers what your site shows every visitor, all the time.</p></div></div>`;
   setTimeout(()=>$('dom')?.focus(),50);
 }
 
@@ -255,7 +271,7 @@ async function verify(){
 
 function renderReady(){
   $('app').innerHTML=`<div class="view"><div class="head"><h1>Site Sweep</h1><p>${E(S.domain)} · confirmed as yours</p></div>
-  <div class="card hero"><div class="card-t">Ready to review ${E(S.domain)}</div><div class="card-s">We'll read your homepage and key pages (privacy, cookies, terms, sign-up, contact) and load your homepage the way a first-time visitor would. It takes about a minute.</div>
+  <div class="card hero"><div class="card-t">Ready to review ${E(S.domain)}</div><div class="card-s">We'll read your homepage and key pages (privacy, cookies, terms, sign-up, sale, partner pages, contact), load your homepage the way a first-time visitor would, and load any page with a countdown twice. It takes about a minute.</div>
   <button class="btn btn-o" onclick="run()">Run site sweep →</button></div>
   <div class="card"><div class="card-t">What the sweep checks</div>${CHECKS}</div></div>`;
 }
@@ -335,7 +351,13 @@ function placeGuard(d){const h=$('app').querySelector('.head');if(h&&h.parentNod
 async function gEnable(){G_BUSY=true;renderGuard();try{G=await gPost('enable',{});toast('Site guard is on. Add the line to your site.','ok');}catch(e){toast(e.message,'er');}finally{G_BUSY=false;renderGuard();}}
 async function gDisable(){try{G=await gPost('disable',{});toast('Site guard turned off');renderGuard();}catch(e){toast(e.message,'er');}}
 
-const CATS=[['cookies','Cookies & tracking'],['privacy','Privacy notice'],['capture','Data capture'],['identity','Business identity'],['reviews','Reviews']];
+const CATS=[['marketing','Marketing on your site'],['reviews','Reviews'],['cookies','Cookies & tracking'],['capture','Data capture'],['privacy','Privacy notice'],['terms','Terms & consumer rights'],['identity','Business identity']];
+const money=n=>'£'+Number(n).toLocaleString('en-GB');
+function caseBox(c){if(!c)return'';const when=c.date?String(c.date).slice(0,4):'';return`<div class="f-box"><b>Real case</b>${E(c.name)} (${E(c.regulator)}${when?', '+E(when):''}): ${E(c.outcome||'')}. ${E(String(c.summary||'').slice(0,190))}${String(c.summary||'').length>190?'…':''}${c.url?` <a href="${E(c.url)}" target="_blank" rel="noopener">Read it →</a>`:''}</div>`;}
+function costBox(x){if(!x)return'';return`<div class="f-box"><b>What it could cost</b><span class="f-cost">${E(x.label)}</span></div>`;}
+function fixBox(f,i){const x=f.fix;if(!x)return'';return`<details class="f-fix"><summary>How to fix it${x.paste?' (ready to paste)':''}</summary><div style="margin-top:6px">${E(x.steps)}</div>${x.paste?`<pre id="fx${i}">${E(x.paste)}</pre><button class="btn btn-w btn-sm" onclick="copyText(this,'${encodeURIComponent(x.paste)}')">Copy</button>`:''}</details>`;}
+let FI=0;
+function findingHtml(f,newSet){const i=FI++;return`<div class="f ${E(f.severity)}"><div class="f-top"><span class="f-sev">${E(f.severity)}</span>${f.regulator?`<span class="f-reg">${E(f.regulator)}</span>`:''}${newSet.has(f.key)?'<span class="f-new">New</span>':''}<span class="f-t">${E(f.title)}</span></div>${f.where?`<div class="f-where">${E(f.where)}</div>`:''}<div class="f-d">${E(f.detail)}</div>${f.excerpt?`<div class="f-ex">"${E(f.excerpt)}"</div>`:''}${(f.evidence||[]).length?`<ul class="f-evid">${f.evidence.map(e=>`<li>${E(e)}</li>`).join('')}</ul>`:''}${f.case||f.cost?`<div class="f-grid">${caseBox(f.case)}${costBox(f.cost)}</div>`:''}${fixBox(f,i)}<div class="f-meta">${[f.ruleRef?'Rule: '+f.ruleRef:'',f.confidence==='low'?'Low confidence: not added to dashboard':''].filter(Boolean).map(E).join(' · ')}</div></div>`;}
 const RANK={high:0,medium:1,low:2};
 function renderResults(){
   const w=S.sweep,t=w.totals||{},ch=w.changes||{},newSet=new Set(ch.newKeys||[]);
@@ -345,7 +367,7 @@ function renderResults(){
   const groups=CATS.map(([id,label])=>{
     const fs=(w.findings||[]).filter(f=>f.category===id).sort((a,b)=>RANK[a.severity]-RANK[b.severity]);
     if(!fs.length)return'';
-    return`<div class="sec-t">${label} <span class="cnt">${fs.length}</span></div>`+fs.map(f=>`<div class="f ${E(f.severity)}"><div class="f-top"><span class="f-sev">${E(f.severity)}</span>${f.regulator?`<span class="f-reg">${E(f.regulator)}</span>`:''}${newSet.has(f.key)?'<span class="f-new">New</span>':''}<span class="f-t">${E(f.title)}</span></div><div class="f-d">${E(f.detail)}</div>${f.excerpt?`<div class="f-ex">"${E(f.excerpt)}"</div>`:''}<div class="f-meta">${[f.ruleRef,f.page?'Page: '+f.page:'',f.confidence==='low'?'Low confidence: not added to dashboard':''].filter(Boolean).map(E).join(' · ')}</div></div>`).join('');
+    return`<div class="sec-t">${label} <span class="cnt">${fs.length}</span></div>`+fs.map(f=>findingHtml(f,newSet)).join('');
   }).join('');
   const pages=(w.pages||[]).map(p=>`<div class="li"><a href="${E(p.url)}" target="_blank" rel="noopener">${E(p.url)}</a><span class="muted">${E(p.role)}${p.ok?'':' · could not load'}</span></div>`).join('');
   const third=(w.thirdParties||[]).length?`<div class="sec-t">Third parties detected <span class="cnt">${w.thirdParties.length}</span></div><div class="list">${w.thirdParties.map(n=>`<div class="li"><span>${E(n)}</span><a href="vendor-checker.html?userId=${encodeURIComponent(U)}">Add to Vendor Register →</a></div>`).join('')}</div>`:'';
@@ -361,7 +383,7 @@ function renderResults(){
   <div class="sec-t">Pages reviewed <span class="cnt">${(w.pages||[]).length}</span></div><div class="list">${pages}</div>
   <div style="display:flex;gap:14px;align-items:center;margin-top:22px;flex-wrap:wrap"><button class="btn btn-w btn-sm" onclick="run()">Run again</button><span class="muted">Re-running updates this report. Issues already on your dashboard are never added twice.</span></div>
   <label class="cad"><input type="checkbox" id="cadBox" ${S.cadence==='monthly'?'checked':''} onchange="setCadence(this)"><span><b>Re-check this site every month</b><br><span class="muted">${S.cadence==='monthly'?(S.nextCheckAt?'Next check around '+E(new Date(S.nextCheckAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))+'. ':'')+'We only email you if something new turns up.':'Off. The sweep only runs when you press Run again. Turn this on and we email you only if something new turns up.'}</span></span></label>
-  <p class="disc">Evidence-based assessment of the pages reviewed, not legal advice. The sweep covers site-wide practices; offer and pricing claims are checked per campaign in Campaign Defence.</p></div>`;
+  <p class="disc">Evidence-based assessment of the pages reviewed, not legal advice. £ figures are comparable published cases for a business your size, not a prediction. The sweep covers what your site does all the time; each campaign's own offer and pricing claims are checked in Campaign Defence.</p></div>`;
 }
 </script>
 </body>
